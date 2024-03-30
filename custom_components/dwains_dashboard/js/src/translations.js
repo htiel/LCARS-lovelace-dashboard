@@ -140,6 +140,11 @@ const translations = {
             automation: 'Automation',
             group: 'Group by areas',
             ungroup: 'Ungroup by areas',
+            update: 'Update',
+            script: 'Script',
+            time: 'Time',
+            event: 'Event',
+            text: 'Text',
         },
         more: {
             title: 'More',

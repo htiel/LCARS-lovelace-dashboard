@@ -1528,6 +1528,8 @@ const translations = {
             instruction: 'Odszukaj żądany schemat na Dwains Dashboard Community Blueprints Github i wklej kod YAML. Po instalacji lovelace strona zostanie ponownie załadowana abyś mógł użyć zainstalowanego schematu. ',
         }
     },
+    
+    //ZH Chinese
     zh: {
         global: {
             dwains_dashboard_settings: 'Dwains 仪表板设置',

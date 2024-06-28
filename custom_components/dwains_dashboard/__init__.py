@@ -249,7 +249,8 @@ async def ws_handle_install_blueprint(
     """Handle save new blueprint."""
     
     #filecontent = json.loads(msg["yamlCode"])
-    filecontent = yaml.safe_load(json.loads(msg["yamlCode"]))
+    yaml_string = json.dumps(msg["yamlCode"])
+    filecontent = yaml.safe_load(yaml_string)
 
     #_LOGGER.warning(filecontent)
 

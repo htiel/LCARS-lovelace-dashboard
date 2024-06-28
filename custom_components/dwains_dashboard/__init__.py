@@ -236,6 +236,8 @@ def websocket_get_blueprints(
 
 
 #install_blueprint
+import yaml
+
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "dwains_dashboard/install_blueprint",
@@ -247,12 +249,8 @@ async def ws_handle_install_blueprint(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
 ) -> None:
     """Handle save new blueprint."""
-    
-    #filecontent = json.loads(msg["yamlCode"])
-    yaml_string = json.dumps(msg["yamlCode"])
-    filecontent = yaml.safe_load(yaml_string)
 
-    #_LOGGER.warning(filecontent)
+    filecontent = yaml.safe_load(msg["yamlCode"])
 
     if not filecontent.get("blueprint"):
         _LOGGER.warning('no blueprint data')
@@ -300,15 +298,13 @@ async def ws_handle_install_blueprint(
     with open(hass.config.path("dwains-dashboard/blueprints/"+filename), 'w') as f:
         yaml.dump(filecontent, f, default_flow_style=False, sort_keys=False)
 
-    #reload_configuration(hass)
-
-
     connection.send_result(
         msg["id"],
         {
             "succesfull": filename
         },
     )
+
 
 
 

@@ -236,8 +236,6 @@ def websocket_get_blueprints(
 
 
 #install_blueprint
-import yaml
-
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "dwains_dashboard/install_blueprint",

@@ -349,8 +349,8 @@ async def ws_handle_install_blueprint(
 ) -> None:
     """Handle save new blueprint."""
     
-    #filecontent = json.loads(msg["yamlCode"])
-    filecontent = yaml.safe_load(json.loads(msg["yamlCode"]))
+    filecontents = json.loads(msg["yamlCode"])
+    filecontent = yaml.safe_load(json.dumps(filecontents))
 
     #_LOGGER.warning(filecontent)
 
@@ -1463,12 +1463,13 @@ async def ws_handle_remove_more_page(
     """Handle remove more page command."""
 
     path_to_more_page = hass.config.path("dwains-dashboard/configs/more_pages/"+msg["foldername"]+"/page.yaml")
+    _LOGGER.warning(f"Removing more_page: {msg["foldername"]} -- {path_to_more_page}")
 
     #if os.path.exists(path_to_more_page):
-    if await hass.async_add_executor_job(os.path.exists, path_to_page):
+    if await hass.async_add_executor_job(os.path.exists, path_to_more_page):
         #remove folder and content
         #shutil.rmtree(hass.config.path("dwains-dashboard/configs/more_pages/"+msg["foldername"]), ignore_errors=True)
-        await hass.async_add_executor_job(shutil.rmtree, path_to_folder, True)
+        await hass.async_add_executor_job(shutil.rmtree, hass.config.path("dwains-dashboard/configs/more_pages/"+msg["foldername"]), True)
 
     hass.bus.async_fire("dwains_dashboard_navigation_card_reload")
 

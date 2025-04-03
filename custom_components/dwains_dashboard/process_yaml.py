@@ -12,7 +12,10 @@ from concurrent.futures import ThreadPoolExecutor
 import asyncio
 from aiofiles.os import scandir
 
-from homeassistant.util.yaml import Secrets, loader
+#from homeassistant.util.yaml import Secrets, loader
+from annotatedyaml import loader
+from annotatedyaml.loader import Secrets
+
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.core import HomeAssistant
 
@@ -36,6 +39,8 @@ def load_yamll(fname, secrets = None, args={}):
         with open(fname, encoding="utf-8") as f:
             if f.readline().lower().startswith(("# dwains_dashboard", "# dwains_theme", "# lovelace_gen", "#dwains_dashboard")):
                 process_yaml = True
+
+        #_LOGGER.debug(f"load_yamll() Loading YAML: {fname}, process_yaml={process_yaml}")
 
         if process_yaml:
             stream = io.StringIO(jinja.get_template(fname).render({
@@ -161,7 +166,7 @@ async def process_yaml(hass: HomeAssistant, config_entry):
         #Service call to reload Dwains Theme config
         _LOGGER.warning("Reload Dwains Dashboard Configuration")
 
-        reload_configuration(hass)
+        await reload_configuration(hass)
 
     # Register service dwains_dashboard.reload
     hass.services.async_register(DOMAIN, "reload", handle_reload)

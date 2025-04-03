@@ -178,7 +178,7 @@ async def websocket_get_configuration(
             fnames = sorted(await hass.async_add_executor_job(os.listdir, hass.config.path(f"dwains-dashboard/configs/cards/areas/{subdir}")))
             for fname in fnames:
                 if fname.endswith('.yaml'):
-                    _LOGGER.warning(f"area_cards: {fname}")
+                    #_LOGGER.warning(f"websocket_get_configuration() area_cards: {fname}")
                     data = await hass.async_add_executor_job(open, hass.config.path(f"dwains-dashboard/configs/cards/areas/{subdir}/{fname}"), "r")
                     with data as f:
                         filecontent = yaml.safe_load(f)
@@ -194,7 +194,7 @@ async def websocket_get_configuration(
             fnames = sorted(await hass.async_add_executor_job(os.listdir, hass.config.path(f"dwains-dashboard/configs/cards/devices/{subdir}")))
             for fname in fnames:
                 if fname.endswith('.yaml'):
-                    _LOGGER.warning(f"device_cards: {fname}")
+                    #_LOGGER.warning(f"websocket_get_configuration() device_cards: {fname}")
                     #file_path = hass.config.path(f"dwains-dashboard/configs/cards/devices/{subdir}/{fname}")
                     #filecontent = await read_yaml_file(file_path)
                     data = await hass.async_add_executor_job(open, hass.config.path(f"dwains-dashboard/configs/cards/devices/{subdir}/{fname}"), "r")
@@ -209,7 +209,7 @@ async def websocket_get_configuration(
         fnames = await hass.async_add_executor_job(os.listdir, hass.config.path("dwains-dashboard/configs/cards/entities"))
         for fname in fnames:
             if fname.endswith('.yaml'):
-                _LOGGER.warning(f"entity_cards: {fname}")
+                #_LOGGER.warning(f"websocket_get_configuration() entity_cards: {fname}")
                 #file_path = hass.config.path(f"dwains-dashboard/configs/cards/entities/{fname}")
                 #filecontent = await read_yaml_file(file_path)
                 data = await hass.async_add_executor_job(open, hass.config.path(f"dwains-dashboard/configs/cards/entities/{fname}"), "r")
@@ -223,7 +223,7 @@ async def websocket_get_configuration(
         fnames = await hass.async_add_executor_job(os.listdir, hass.config.path("dwains-dashboard/configs/cards/entities_popup"))
         for fname in fnames:
             if fname.endswith('.yaml'):
-                _LOGGER.warning(f"entities_popup: {fname}")
+                #_LOGGER.warning(f"websocket_get_configuration() entities_popup: {fname}")
                 #file_path = hass.config.path(f"dwains-dashboard/configs/cards/entities_popup/{fname}")
                 #filecontent = await read_yaml_file(file_path)
                 data = await hass.async_add_executor_job(open, hass.config.path(f"dwains-dashboard/configs/cards/entities_popup/{fname}"), "r")
@@ -238,7 +238,7 @@ async def websocket_get_configuration(
         fnames = await hass.async_add_executor_job(os.listdir, hass.config.path("dwains-dashboard/configs/cards/devices_card"))
         for fname in fnames:
             if fname.endswith('.yaml'):
-                _LOGGER.warning(f"devices_card: {fname}")
+                #_LOGGER.warning(f"websocket_get_configuration() devices_card: {fname}")
                 #file_path = hass.config.path(f"dwains-dashboard/configs/cards/devices_card/{fname}")
                 #filecontent = await read_yaml_file(file_path)
                 data = await hass.async_add_executor_job(open, hass.config.path(f"dwains-dashboard/configs/cards/devices_card/{fname}"), "r")
@@ -252,7 +252,7 @@ async def websocket_get_configuration(
         fnames = await hass.async_add_executor_job(os.listdir, hass.config.path("dwains-dashboard/configs/cards/devices_popup"))
         for fname in fnames:
             if fname.endswith('.yaml'):
-                _LOGGER.warning(f"devices_popup: {fname}")
+                #_LOGGER.warning(f"websocket_get_configuration() devices_popup: {fname}")
                 #file_path = hass.config.path(f"dwains-dashboard/configs/cards/devices_popup/{fname}")
                 #filecontent = await read_yaml_file(file_path)
                 data = await hass.async_add_executor_job(open, hass.config.path(f"dwains-dashboard/configs/cards/devices_popup/{fname}"), "r")
@@ -267,12 +267,13 @@ async def websocket_get_configuration(
         for subdir in subdirs:
             if (os.path.exists(hass.config.path("dwains-dashboard/configs/more_pages/"+subdir+"/page.yaml"))) and (os.path.exists(hass.config.path("dwains-dashboard/configs/more_pages/"+subdir+"/config.yaml"))):
                 if fname.endswith('.yaml'):
+                    #_LOGGER.warning(f"websocket_get_configuration() more_pages: {fname}")
                     data = await hass.async_add_executor_job(open, hass.config.path(f"dwains-dashboard/configs/more_pages/{subdir}/config.yaml"), "r")
                     with data as f:
                         filecontent = yaml.safe_load(f)
                         more_pages[subdir] = filecontent
 
-    #_LOGGER.warning(cards)
+    #_LOGGER.warning(f"websocket_get_configuration() {cards}")
 
     connection.send_result(
         msg["id"],
@@ -460,8 +461,11 @@ async def ws_handle_edit_area_button(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
 ) -> None:
     """Handle saving editing area button."""
-    
+    #_LOGGER.warning(f"ws_handle_edit_area_button() called.")
+
     if(msg["areaId"]):
+        #_LOGGER.warning(f"Editing area: {msg["areaId"]}")
+
         if os.path.exists(hass.config.path("dwains-dashboard/configs/areas.yaml")):
             #with open(hass.config.path("dwains-dashboard/configs/areas.yaml")) as f:
             data = await hass.async_add_executor_job(open, "dwains-dashboard/configs/areas.yaml", "r")
@@ -489,6 +493,11 @@ async def ws_handle_edit_area_button(
         with data as f:
             yaml.dump(areas, f, default_flow_style=False, sort_keys=False)
 
+        if areas:
+            areas = await hass.async_add_executor_job(
+                lambda: yaml.safe_load(open(hass.config.path("dwains-dashboard/configs/areas.yaml"), "r"))
+            )
+        
     hass.bus.async_fire("dwains_dashboard_homepage_card_reload")
 
     connection.send_result(
@@ -1463,7 +1472,7 @@ async def ws_handle_remove_more_page(
     """Handle remove more page command."""
 
     path_to_more_page = hass.config.path("dwains-dashboard/configs/more_pages/"+msg["foldername"]+"/page.yaml")
-    _LOGGER.warning(f"Removing more_page: {msg["foldername"]} -- {path_to_more_page}")
+    #_LOGGER.warning(f"Removing more_page: {msg["foldername"]} -- {path_to_more_page}")
 
     #if os.path.exists(path_to_more_page):
     if await hass.async_add_executor_job(os.path.exists, path_to_more_page):

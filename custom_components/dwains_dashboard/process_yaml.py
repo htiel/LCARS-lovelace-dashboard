@@ -109,7 +109,7 @@ async def process_yaml(hass: HomeAssistant, config_entry):
 
     # Check for HKI installation
     if os.path.exists(hass.config.path("hki-user/config")):
-        _LOGGER.warning("HKI Installed!")
+        #_LOGGER.warning("HKI Installed!")
         for fname in loader._find_files(hass.config.path("hki-user/config"), "*.yaml"):
             loaded_yaml = load_yamll(fname)
             if isinstance(loaded_yaml, dict):
@@ -125,7 +125,7 @@ async def process_yaml(hass: HomeAssistant, config_entry):
                 if os.path.exists(hass.config.path("dwains-dashboard/configs/more_pages/"+subdir+"/page.yaml")):
                     # Page.yaml exists now check if there is a config.yaml otherwise create it
                     if not os.path.exists(hass.config.path("dwains-dashboard/configs/more_pages/"+subdir+"/config.yaml")):
-                        _LOGGER.warning(f"process_yaml() config.yaml does not exist, {subdir}")
+                        #_LOGGER.warning(f"process_yaml() config.yaml does not exist, {subdir}")
                         #with open(hass.config.path("dwains-dashboard/configs/more_pages/"+subdir+"/config.yaml"), 'w') as f:
                         file_content = await hass.async_add_executor_job(open, hass.config.path("dwains-dashboard/configs/more_pages/"+subdir+"/config.yaml"), "w")
                         with file_content as f:
@@ -141,14 +141,14 @@ async def process_yaml(hass: HomeAssistant, config_entry):
                                 "path": "dwains-dashboard/configs/more_pages/"+subdir+"/page.yaml",
                             }
                     else:
-                        _LOGGER.warning(f"process_yaml() config.yaml exists, {subdir}")
+                        #_LOGGER.warning(f"process_yaml() config.yaml exists, {subdir}")
                         try:
                             #with open(hass.config.path("dwains-dashboard/configs/more_pages/"+subdir+"/config.yaml")) as f:
                             data = await hass.async_add_executor_job(open, hass.config.path("dwains-dashboard/configs/more_pages/"+subdir+"/config.yaml"), "r")
                             with data as f:
                                 filecontent = yaml.safe_load(f)
 
-                                _LOGGER.warning(f"FILE CONTENT: {filecontent}")
+                                #_LOGGER.warning(f"FILE CONTENT: {filecontent}")
                                 if "name" in filecontent and "icon" in filecontent:
                                     dwains_dashboard_more_pages[subdir] = {
                                         "name": filecontent["name"],

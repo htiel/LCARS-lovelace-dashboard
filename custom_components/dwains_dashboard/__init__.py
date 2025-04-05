@@ -39,10 +39,6 @@ devices = OrderedDict()
 homepage_header = OrderedDict()
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    global areas
-    global entities
-    global devices
-    global homepage_header
     #_LOGGER.warning("async_setup")
 
     #_LOGGER.warning(config)
@@ -56,51 +52,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         "commands": {},
         'latest_version': ""
     }
-
-    areas = (
-        await hass.async_add_executor_job(os.path.exists, hass.config.path("dwains-dashboard/configs/areas.yaml"))
-    )
-
-    if areas:
-        areas = await hass.async_add_executor_job(
-            lambda: yaml.safe_load(open(hass.config.path("dwains-dashboard/configs/areas.yaml"), "r"))
-        )
-    else:
-        areas = OrderedDict()
-
-    entities = (
-        await hass.async_add_executor_job(os.path.exists, hass.config.path("dwains-dashboard/configs/entities.yaml"))
-    )
-
-    if entities:
-        entities = await hass.async_add_executor_job(
-            lambda: yaml.safe_load(open(hass.config.path("dwains-dashboard/configs/entities.yaml"), "r"))
-        )
-    else:
-        entities = OrderedDict()
-
-
-    devices = (
-        await hass.async_add_executor_job(os.path.exists, hass.config.path("dwains-dashboard/configs/devices.yaml"))
-    )
-
-    if devices:
-        devices = await hass.async_add_executor_job(
-            lambda: yaml.safe_load(open(hass.config.path("dwains-dashboard/configs/devices.yaml"), "r"))
-        )
-    else:
-        devices = OrderedDict()
-
-    homepage_header = (
-        await hass.async_add_executor_job(os.path.exists, hass.config.path("dwains-dashboard/configs/settings.yaml"))
-    )
-
-    if homepage_header:
-        homepage_header = await hass.async_add_executor_job(
-            lambda: yaml.safe_load(open(hass.config.path("dwains-dashboard/configs/settings.yaml"), "r"))
-        )
-    else:
-        homepage_header = OrderedDict()
 
     websocket_api.async_register_command(hass, websocket_get_configuration)
     websocket_api.async_register_command(hass, websocket_get_blueprints)
@@ -167,6 +118,52 @@ async def websocket_get_configuration(
     global entities
     global devices
     global homepage_header
+
+    # These need to be loaded here so any changes are reflected immediately.
+    areas = (
+        await hass.async_add_executor_job(os.path.exists, hass.config.path("dwains-dashboard/configs/areas.yaml"))
+    )
+
+    if areas:
+        areas = await hass.async_add_executor_job(
+            lambda: yaml.safe_load(open(hass.config.path("dwains-dashboard/configs/areas.yaml"), "r"))
+        )
+    else:
+        areas = OrderedDict()
+
+    entities = (
+        await hass.async_add_executor_job(os.path.exists, hass.config.path("dwains-dashboard/configs/entities.yaml"))
+    )
+
+    if entities:
+        entities = await hass.async_add_executor_job(
+            lambda: yaml.safe_load(open(hass.config.path("dwains-dashboard/configs/entities.yaml"), "r"))
+        )
+    else:
+        entities = OrderedDict()
+
+
+    devices = (
+        await hass.async_add_executor_job(os.path.exists, hass.config.path("dwains-dashboard/configs/devices.yaml"))
+    )
+
+    if devices:
+        devices = await hass.async_add_executor_job(
+            lambda: yaml.safe_load(open(hass.config.path("dwains-dashboard/configs/devices.yaml"), "r"))
+        )
+    else:
+        devices = OrderedDict()
+
+    homepage_header = (
+        await hass.async_add_executor_job(os.path.exists, hass.config.path("dwains-dashboard/configs/settings.yaml"))
+    )
+
+    if homepage_header:
+        homepage_header = await hass.async_add_executor_job(
+            lambda: yaml.safe_load(open(hass.config.path("dwains-dashboard/configs/settings.yaml"), "r"))
+        )
+    else:
+        homepage_header = OrderedDict()
 
     area_cards = {}
     if os.path.isdir(hass.config.path("dwains-dashboard/configs/cards/areas")):

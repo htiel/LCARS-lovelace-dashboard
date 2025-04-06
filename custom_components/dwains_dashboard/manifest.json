@@ -7,5 +7,6 @@
   "codeowners": ["@dwainscheeren"],
   "config_flow": true,
   "version": "3.7.1",
-  "iot_class": "calculated"
+  "iot_class": "calculated",
+  "homeassistant": "2025.4.0"
 }

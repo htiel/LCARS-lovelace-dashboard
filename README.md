@@ -1,5 +1,17 @@
 # dwains-lovelace-dashboard
 
+## Important Announcement
+
+As of now, I have officially stopped active development on Dwains Dashboard. While I will continue to merge community-submitted pull requests (PRs), my focus has shifted entirely to my new project: **[SmartHomeShop.io](https://smarthomeshop.io/en)**, where I develop innovative products for smart homes (Home Assistant and ESPHome based).
+
+Dwains Dashboard currently works with Home Assistant 2025.4, thanks to the efforts of the community. However, I no longer have the time to maintain it at the same level as before. I encourage users to test and verify PRs to ensure compatibility with future Home Assistant updates. Once verified, I will gladly merge them.
+
+I want to thank everyone who has supported Dwains Dashboard over the years. It has been an incredible journey, and I am proud of what we have achieved together. Moving forward, I am excited to focus on creating hardware and solutions tailored for the Home Assistant ecosystem through SmartHomeShop.io and I hope to see you as a customer there.
+
+Thank you for your understanding and continued support!
+
+— Dwain
+
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
 
 <a href="https://discord.gg/7yt64uX">

@@ -2,15 +2,21 @@
 
 ## Important Announcement
 
-As of now, I have officially stopped active development on Dwains Dashboard. While I will continue to merge community-submitted pull requests (PRs), my focus has shifted entirely to my new project: **[SmartHomeShop.io](https://smarthomeshop.io/en)**, where I develop innovative products for smart homes (Home Assistant and ESPHome based).
+As of now, I have officially stopped active development on Dwains Dashboard. While I will continue to merge community-submitted pull requests (PRs), my focus has shifted entirely to my new project: [SmartHomeShop.io](https://smarthomeshop.io/en), where I develop innovative hardware products for smart homes—built around Home Assistant and ESPHome.
 
-Dwains Dashboard currently works with Home Assistant 2025.4, thanks to the efforts of the community. However, I no longer have the time to maintain it at the same level as before. I encourage users to test and verify PRs to ensure compatibility with future Home Assistant updates. Once verified, I will gladly merge them.
+Dwains Dashboard now works again with Home Assistant 2024.4, thanks to the amazing efforts of the community. However, I no longer have the time to maintain this project at the same level as before. I encourage users to test and verify PRs to ensure compatibility with future Home Assistant updates. Once verified, I will gladly merge them and publish a new release.
 
-I want to thank everyone who has supported Dwains Dashboard over the years. It has been an incredible journey, and I am proud of what we have achieved together. Moving forward, I am excited to focus on creating hardware and solutions tailored for the Home Assistant ecosystem through SmartHomeShop.io and I hope to see you as a customer there.
+I also want to take a moment to address a recent misunderstanding. Dwains Dashboard was a free, open-source passion project that I worked on for years in my spare time, alongside my regular job—completely without commercial intent. SmartHomeShop.io, on the other hand, is a professional and sustainable venture that allows me to continue contributing to the Home Assistant ecosystem in a different way: through reliable hardware and supported solutions that are actually built to last.
 
-Thank you for your understanding and continued support!
+To be fully transparent: I’ve sometimes felt overlooked or treated as a small player by parts of the Home Assistant team, despite everything Dwains Dashboard has meant to the community over the past few years. That’s okay—I'm proud of what we've built together. And more than ever, I feel motivated to keep innovating and supporting the community, now through a different medium.
 
+That’s why I’d like to ask for a small favor: if you’ve appreciated my work over the years, it would mean the world to me if you’d share [SmartHomeShop.io](https://smarthomeshop.io/en) with others. Whether it’s through social media, word of mouth, or simply mentioning it in a Discord or forum post—it all helps an independent creator like me immensely.
+
+Thank you to everyone who has supported Dwains Dashboard over the years. It’s been an incredible journey, and I’m genuinely proud of what we’ve achieved together. Moving forward, I’m excited to keep contributing—this time through high-quality hardware and solutions tailored specifically for Home Assistant users.
+
+Thanks again for your understanding and continued support 🙏  
 — Dwain
+
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
 

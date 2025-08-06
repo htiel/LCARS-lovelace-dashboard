@@ -16,11 +16,12 @@ Download the build at https://discord.gg/7yt64uX
 Join the server. Share your feedback.
 
 Dwains Dashboard 3.x story
-I have paused active development on Dwains Dashboard 3.x since start of 2025 and will focus on my new company (SmartHomeShop.io) with developing smart home products. Regarding DD 3.x I will try merging community pull requests. 3.0 will have compatibility with Home Assistant 2025.4. If you want to make new PR then please submit it. Once it passes verification, I will merge it and publish a release.
+
+I have paused active development on Dwains Dashboard 3.x since start of 2025 and will focus on my new company (SmartHomeShop.io). Regarding DD 3.x I will try merging community pull requests. 3.0 will have compatibility with Home Assistant 2025.4. If you want to make new PR then please submit it. Once it passes verification, I will merge it and publish a release.
 
 I built Dwains Dashboard as a free, open-source project in my spare time alongside my job. Today my main venture is SmartHomeShop.io, where I develop hardware solutions for Home Assistant and ESPHome. SmartHomeShop.io offers reliable components and ongoing support.
 
-I sometimes felt overlooked by parts of the Home Assistant team, but I remain proud of what we built together and motivated to support the community in a new way. If you have valued my work, please share SmartHomeShop.io on social media, in Discord channels, or on forums. Your support helps me keep delivering quality solutions.
+I remain proud of what we built together and motivated to support the community in a new way. If you have valued my work, then also please share my new project SmartHomeShop.io on social media, in Discord channels, or on forums. Your support helps me keep delivering quality solutions.
 Thank you for your support. I look forward to building 4.0 and hardware projects at SmartHomeShop.io.
 
 — Dwain
@@ -88,5 +89,6 @@ Dwain
 
 **EXTRA LICENSE INFORMATION**
 You are not allowed without my permission to resell, re-distribute or sell my dashboard!
+
 
 

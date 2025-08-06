@@ -2,6 +2,19 @@
 
 ## Important Announcement
 
+UPDATE AUGUST 2025:
+I’ve been missing my own Dwains Dashboard for months with a lot of issues also myself, so I decided to build a fresh 4.0 version from scratch, based on the latest public 3.0 release. This is an alpha preview, so it’s deliberately super‑simple:
+
+Left: list of Areas
+Right: entities for the selected Area
+No more shareable Dwains blueprints or device pages
+Just your classic homepage, re‑skinned and non‑editable
+If you’d like to give it a spin and help me iron out the rough edges, you can grab the alpha build and discuss feedback on my Discord server: https://discord.gg/7yt64uX
+
+Thanks in advance for checking it out, let me know what you think!
+
+----
+
 As of now, I have officially stopped active development on Dwains Dashboard. While I will continue to merge community-submitted pull requests (PRs), my focus has shifted entirely to my new project: [SmartHomeShop.io](https://smarthomeshop.io/en), where I develop innovative hardware products for smart homes—built around Home Assistant and ESPHome.
 
 Dwains Dashboard now works again with Home Assistant 2024.4, thanks to the amazing efforts of the community. However, I no longer have the time to maintain this project at the same level as before. I encourage users to test and verify PRs to ensure compatibility with future Home Assistant updates. Once verified, I will gladly merge them and publish a new release.
@@ -80,3 +93,4 @@ Dwain
 
 **EXTRA LICENSE INFORMATION**
 You are not allowed without my permission to resell, re-distribute or sell my dashboard!
+

@@ -3,19 +3,19 @@
 ## Important Announcement
 
 Update August 2025
-I thought I had ended Dwains Dashboard. I missed it. I rebuilt version 4.0 from scratch based on the public 3.0 release. This alpha preview focuses on simplicity and feedback.
+I thought I had ended Dwains Dashboard. I missed it. I rebuilt version 4.0 from scratch based on the public 3.0 release.
 
 Features:
 Ultra simple panel layout. Left shows your Areas. Right shows entities for the selected Area.
 Classic homepage skin. No blueprint screens. Non editable.
 
-Alpha phase. Test features and report issues on Discord.
+Currently in Alpha phase. Test features and report issues on Discord.
 
 How to try the alpha?
 Download the build at https://discord.gg/7yt64uX
 Join the server. Share your feedback.
 
-Dwains Dashboard 3.x story
+Dwains Dashboard 3.x story: 
 
 I have paused active development on Dwains Dashboard 3.x since start of 2025 and will focus on my new company (SmartHomeShop.io). Regarding DD 3.x I will try merging community pull requests. 3.0 will have compatibility with Home Assistant 2025.4. If you want to make new PR then please submit it. Once it passes verification, I will merge it and publish a release.
 
@@ -89,6 +89,7 @@ Dwain
 
 **EXTRA LICENSE INFORMATION**
 You are not allowed without my permission to resell, re-distribute or sell my dashboard!
+
 
 
 

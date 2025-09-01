@@ -11,14 +11,14 @@
             }
             `]}static get properties(){return{inputs:{},blueprint:{}}}async connectedCallback(){super.connectedCallback(),await this._loadBlueprints()}async _loadBlueprints(){if(this.blueprints=await this.hass.callWS({type:"dwains_dashboard/get_blueprints"}),null!=this.blueprints||0!=this.blueprints.length){const e=this.blueprints.blueprints[this._config.blueprint];if(e){if(this.blueprint=e,e.blueprint.input&&(this.inputs=e.blueprint.input,!this._config.data||0===this._config.data.length)){const e={};Object.entries(this.inputs).map((([t,i])=>e[t]=t)),this._config.data=e}this._config.card=e.card;const t=new Event("config-changed",{bubbles:!0,composed:!0});t.detail={config:this._config},this.dispatchEvent(t)}}}setConfig(e){this._config=e,this.hass=(0,a.mo)()}_inputChanged(e){const t=e.target.key,i=e.target.value,a=this._config;a.data[t]=i;const n=new Event("config-changed",{bubbles:!0,composed:!0});n.detail={config:a},this.dispatchEvent(n)}_checkboxChanged(e){const t=e.target.key,i=e.target.checked,a=this._config;a.data[t]=i;const n=new Event("config-changed",{bubbles:!0,composed:!0});n.detail={config:a},this.dispatchEvent(n)}_renderInput(e,t){let i,a="";return this._config.data&&this._config.data[e]&&this._config.data[e]!=e&&(a=this._config.data[e]),t.type&&"entity-picker"==t.type?i=n.qy`
             <ha-entity-picker
-                .label=${t.name}
+               label=${t.name}
                 .value=${a}
                 .key=${e}
                 .hass=${this.hass}
                 @value-changed=${this._inputChanged}
             ></ha-entity-picker>`:t.type&&"icon-picker"==t.type?i=n.qy`
             <ha-icon-picker
-              .label=${t.name}
+             label=${t.name}
               .value=${a}
               .key=${e}
               .name=${t.name}
@@ -27,7 +27,7 @@
             `:t.type&&"checkbox"==t.type?(a=!(a||!t.default_value)&&t.default_value,i=n.qy`
             <ha-formfield
                   style="display: block;"
-                  .label=${t.name}
+                 label=${t.name}
                 >
                 <ha-checkbox
                     @change=${this._checkboxChanged}
@@ -38,7 +38,7 @@
             </ha-formfield>
             `):i=n.qy`
             <ha-textfield 
-                .label=${t.name}
+               label=${t.name}
                 .value=${a}
                 .key=${e}
                 @input=${this._inputChanged}
@@ -252,7 +252,7 @@
           <p>${(0,o.A)(this.hass,"blueprint.instruction")}</p>
           <a href="https://github.com/dwainscheeren/dwains-dashboard-blueprints" target="_blank">Dwains Dashboard Blueprints Github</a>
           <ha-yaml-editor
-            .label=${(0,o.A)(this.hass,"blueprint.yaml_code")}
+           label=${(0,o.A)(this.hass,"blueprint.yaml_code")}
             name="description"
             @value-changed=${this._installBlueprintYamlChanged}
           ><ha-code-editor mode="yaml" autocomplete-entities="" autocomplete-icons="" dir="ltr"></ha-code-editor></ha-yaml-editor>
@@ -282,7 +282,7 @@
             <h2>${(0,o.A)(this.hass,"editor.default_col_row")}</h2>
             <div class="grid-2">
               <ha-select
-                .label=${(0,o.A)(this.hass,"editor.row_span")}
+               label=${(0,o.A)(this.hass,"editor.row_span")}
                 .value=${this.rowSpan}
                 .type=${"rowSpan"}
                 name="rowSpan"
@@ -293,7 +293,7 @@
                 <mwc-list-item value="2">2 ${(0,o.A)(this.hass,"editor.rows")}</mwc-list-item>
               </ha-select>
               <ha-select
-                .label=${(0,o.A)(this.hass,"editor.col_span")}
+               label=${(0,o.A)(this.hass,"editor.col_span")}
                 .value=${this.colSpan}
                 .type=${"colSpan"}
                 name="colSpan"
@@ -308,7 +308,7 @@
             <h2>${(0,o.A)(this.hass,"editor.large_col_row")}</h2>
             <div class="grid-2">
               <ha-select
-                .label=${(0,o.A)(this.hass,"editor.row_span")}
+               label=${(0,o.A)(this.hass,"editor.row_span")}
                 .value=${this.rowSpanLg}
                 .type=${"rowSpanLg"}
                 name="rowSpanLg"
@@ -320,7 +320,7 @@
                 <mwc-list-item value="3">3 ${(0,o.A)(this.hass,"editor.rows")}</mwc-list-item>
               </ha-select>
               <ha-select
-                .label=${(0,o.A)(this.hass,"editor.col_span")}
+               label=${(0,o.A)(this.hass,"editor.col_span")}
                 .value=${this.colSpanLg}
                 .type=${"colSpanLg"}
                 name="colSpanLg"
@@ -336,7 +336,7 @@
             <h2>${(0,o.A)(this.hass,"editor.extra_large_col_row")}</h2>
             <div class="grid-2">
               <ha-select
-                .label=${(0,o.A)(this.hass,"editor.row_span")}
+               label=${(0,o.A)(this.hass,"editor.row_span")}
                 .value=${this.rowSpanXl}
                 .type=${"rowSpanXl"}
                 name="rowSpanXl"
@@ -349,7 +349,7 @@
                 <mwc-list-item value="4">4 ${(0,o.A)(this.hass,"editor.rows")}</mwc-list-item>
               </ha-select>
               <ha-select
-                .label=${(0,o.A)(this.hass,"editor.col_span")}
+               label=${(0,o.A)(this.hass,"editor.col_span")}
                 .value=${this.colSpanXl}
                 .type=${"colSpanXl"}
                 name="colSpanXl"
@@ -460,7 +460,7 @@
                       absolute
                     >
                       <ha-icon-button
-                        .label=${this._hass.localize("ui.common.overflow_menu")}
+                       label=${this._hass.localize("ui.common.overflow_menu")}
                         .path=${d.TdJ}
                         slot="trigger"
                       ></ha-icon-button>
@@ -553,7 +553,7 @@
                   absolute
                 >
                   <ha-icon-button
-                    .label=${this._hass.localize("ui.common.overflow_menu")}
+                   label=${this._hass.localize("ui.common.overflow_menu")}
                     .path=${d.TdJ}
                     slot="trigger"
                   ></ha-icon-button>
@@ -718,7 +718,7 @@
                       absolute
                     >
                       <ha-icon-button
-                        .label=${this._hass.localize("ui.common.overflow_menu")}
+                       label=${this._hass.localize("ui.common.overflow_menu")}
                         .path=${d.TdJ}
                         slot="trigger"
                       ></ha-icon-button>
@@ -853,7 +853,7 @@
                             absolute
                           >
                             <ha-icon-button
-                              .label=${this._hass.localize("ui.common.overflow_menu")}
+                             label=${this._hass.localize("ui.common.overflow_menu")}
                               .path=${d.TdJ}
                               slot="trigger"
                             ></ha-icon-button>
@@ -1229,7 +1229,7 @@
                 text-transform: capitalize
             }
             .text-gray {
-              color: var(--paper-item-body-secondary-color, var(--secondary-text-color));
+                color: var(--secondary-text-color);
             }
             .text-white {
                 --tw-text-opacity: 1;
@@ -1332,23 +1332,24 @@
         `]}setConfig(e){this.hass=(0,a.mo)(),this.areaId=e.areaId,this.icon=e.icon?e.icon:"",this.floor=e.floor?e.floor:"",this.disableArea=!!e.disableArea&&e.disableArea}async connectedCallback(){super.connectedCallback();const e=await window.loadCardHelpers(),t=await e.createCardElement({type:"button"});await t.constructor.getConfigElement()}_iconPickerChange(e){this.icon=e.detail.value}_floorChanged(e){this.floor=e.target.value}_disableValueChanged(e){this.disableArea=e.target.checked}_saveButton(e){e.stopPropagation(),this.hass.connection.sendMessagePromise({type:"dwains_dashboard/edit_area_button",icon:this.icon,areaId:this.areaId,floor:this.floor,disableArea:this.disableArea}).then((e=>{console.log(e),(0,s.f)()}),(e=>{console.error("Message failed!",e)}))}render(){return n.qy`
       <div class="edit-element">
           <ha-icon-picker
-            .label=${(0,o.A)(this.hass,"area.icon")}
+           label=${(0,o.A)(this.hass,"area.icon")}
             .value=${this.icon}
             .name=${(0,o.A)(this.hass,"area.icon")}
             @value-changed=${this._iconPickerChange}
           ></ha-icon-picker>
           <ha-textfield
-            .label=${(0,o.A)(this.hass,"area.floor")}
+           label=${(0,o.A)(this.hass,"area.floor")}
             .name=${(0,o.A)(this.hass,"area.floor")}
             .value=${this.floor}
             .style=${"width: 100%"}
             @input=${this._floorChanged}
           ></ha-textfield>
-          <mwc-formfield .label=${(0,o.A)(this.hass,"area.disable")}>
+          <mwc-formfield>
             <ha-checkbox
               @change=${this._disableValueChanged}
-              .checked=${this.disableArea}
-            ></ha-checkbox>
+              .checked=${this.disableArea}>
+            </ha-checkbox>
+            <span slot="label">${(0,o.A)(this.hass,"area.disable")}</span>
           </mwc-formfield>
           <div class="card-footer">
             <mwc-button slot="secondaryAction" @click=${e=>(0,s.f)()}>
@@ -1384,12 +1385,12 @@
           `]}setConfig(e){this.hass=(0,a.mo)(),this.device=e.device,this.icon=e.icon?e.icon:"",this.showInNavbar=!!e.showInNavbar&&e.showInNavbar}async connectedCallback(){if(super.connectedCallback(),customElements.get("ha-yaml-editor"))return;const e=document.createElement("partial-panel-resolver").getRoutes([{component_name:"developer-tools",url_path:"a"}]);await e.routes.a.load();const t=document.createElement("developer-tools-router");await t.routerOptions.routes.service.load()}_iconPickerChange(e){this.icon=e.detail.value}_showInMainNavbarValueChanged(e){this.showInNavbar=e.target.checked}_saveButton(e){e.stopPropagation(),!this.showInNavbar||this.icon?this.hass.connection.sendMessagePromise({type:"dwains_dashboard/edit_device_button",icon:this.icon,device:this.device,showInNavbar:this.showInNavbar}).then((e=>{console.log(e),(0,s.f)()}),(e=>{console.error("Message failed!",e)})):alert((0,o.A)(this.hass,"device.icon_required"))}render(){return n.qy`
         <div class="edit-element">
             <ha-icon-picker
-              .label=${(0,o.A)(this.hass,"device.icon")}
+             label=${(0,o.A)(this.hass,"device.icon")}
               .value=${this.icon}
               @value-changed=${this._iconPickerChange}
             ></ha-icon-picker>
 
-            <ha-formfield .label=${(0,o.A)(this.hass,"device.show_in_navbar")}>
+            <ha-formfieldlabel=${(0,o.A)(this.hass,"device.show_in_navbar")}>
               <ha-switch
                 @change=${this._showInMainNavbarValueChanged}
                 .checked=${this.showInNavbar}
@@ -1585,7 +1586,7 @@
             <p>${(0,o.A)(this.hass,"blueprint.instruction")}</p>
             <a href="https://github.com/dwainscheeren/dwains-dashboard-blueprints" target="_blank">Dwains Dashboard Blueprints Github</a>
             <ha-yaml-editor
-              .label=${(0,o.A)(this.hass,"blueprint.yaml_code")}
+             label=${(0,o.A)(this.hass,"blueprint.yaml_code")}
               name="description"
               @value-changed=${this._installBlueprintYamlChanged}
             ><ha-code-editor mode="yaml" autocomplete-entities="" autocomplete-icons="" dir="ltr"></ha-code-editor></ha-yaml-editor>
@@ -1794,7 +1795,7 @@
             <p>${(0,o.A)(this.hass,"blueprint.instruction")}</p>
             <a href="https://github.com/dwainscheeren/dwains-dashboard-blueprints" target="_blank">Dwains Dashboard Blueprints Github</a>
             <ha-yaml-editor
-              .label=${(0,o.A)(this.hass,"blueprint.yaml_code")}
+             label=${(0,o.A)(this.hass,"blueprint.yaml_code")}
               name="description"
               @value-changed=${this._installBlueprintYamlChanged}
             ><ha-code-editor mode="yaml" autocomplete-entities="" autocomplete-icons="" dir="ltr"></ha-code-editor></ha-yaml-editor>
@@ -2029,7 +2030,7 @@
           <p>${(0,s.A)(this.hass,"blueprint.instruction")}</p>
           <a href="https://github.com/dwainscheeren/dwains-dashboard-blueprints" target="_blank">Dwains Dashboard Blueprints Github</a>
           <ha-yaml-editor
-            .label=${(0,s.A)(this.hass,"blueprint.yaml_code")}
+           label=${(0,s.A)(this.hass,"blueprint.yaml_code")}
             name="description"
             @value-changed=${this._installBlueprintYamlChanged}
           ><ha-code-editor mode="yaml" autocomplete-entities="" autocomplete-icons="" dir="ltr"></ha-code-editor></ha-yaml-editor>
@@ -2118,7 +2119,7 @@
             <h1 style="font-size: 15px; font-weight: bold;">${(0,o.A)(this.hass,"entity.edit_entity")} "${this.entity}"</h1>
 
             <ha-textfield 
-              .label=${(0,o.A)(this.hass,"entity.friendly_name")}
+             label=${(0,o.A)(this.hass,"entity.friendly_name")}
               .value=${this.friendlyName}
               @input=${this._friendlyNameChanged}
             ></ha-textfield>
@@ -2126,7 +2127,7 @@
             <h2>${(0,o.A)(this.hass,"editor.default_col_row")}</h2>
             <div class="grid-2">
               <ha-select
-                .label=${(0,o.A)(this.hass,"editor.row_span")}
+               label=${(0,o.A)(this.hass,"editor.row_span")}
                 .value=${this.rowSpan}
                 .type=${"rowSpan"}
                 name="rowSpan"
@@ -2137,7 +2138,7 @@
                 <mwc-list-item value="2">2 ${(0,o.A)(this.hass,"editor.rows")}</mwc-list-item>
               </ha-select>
               <ha-select
-                .label=${(0,o.A)(this.hass,"editor.col_span")}
+               label=${(0,o.A)(this.hass,"editor.col_span")}
                 .value=${this.colSpan}
                 .type=${"colSpan"}
                 name="colSpan"
@@ -2152,7 +2153,7 @@
             <h2>${(0,o.A)(this.hass,"editor.large_col_row")}</h2>
             <div class="grid-2">
               <ha-select
-                .label=${(0,o.A)(this.hass,"editor.row_span")}
+               label=${(0,o.A)(this.hass,"editor.row_span")}
                 .value=${this.rowSpanLg}
                 .type=${"rowSpanLg"}
                 name="rowSpanLg"
@@ -2164,7 +2165,7 @@
                 <mwc-list-item value="3">3 ${(0,o.A)(this.hass,"editor.rows")}</mwc-list-item>
               </ha-select>
               <ha-select
-                .label=${(0,o.A)(this.hass,"editor.col_span")}
+               label=${(0,o.A)(this.hass,"editor.col_span")}
                 .value=${this.colSpanLg}
                 .type=${"colSpanLg"}
                 name="colSpanLg"
@@ -2180,7 +2181,7 @@
             <h2>${(0,o.A)(this.hass,"editor.extra_large_col_row")}</h2>
             <div class="grid-2">
               <ha-select
-                .label=${(0,o.A)(this.hass,"editor.row_span")}
+               label=${(0,o.A)(this.hass,"editor.row_span")}
                 .value=${this.rowSpanXl}
                 .type=${(0,o.A)(this.hass,"editor.row_span")}
                 name="rowSpanXl"
@@ -2193,7 +2194,7 @@
                 <mwc-list-item value="4">4 ${(0,o.A)(this.hass,"editor.rows")}</mwc-list-item>
               </ha-select>
               <ha-select
-                .label=${(0,o.A)(this.hass,"editor.col_span")}
+               label=${(0,o.A)(this.hass,"editor.col_span")}
                 .value=${this.colSpanXl}
                 .type=${"colSpanXl"}
                 name="colSpanXl"
@@ -2449,7 +2450,7 @@
           <p>${(0,s.A)(this.hass,"blueprint.instruction")}</p>
           <a href="https://github.com/dwainscheeren/dwains-dashboard-blueprints" target="_blank">Dwains Dashboard Blueprints Github</a>
           <ha-yaml-editor
-            .label=${(0,s.A)(this.hass,"blueprint.yaml_code")}
+           label=${(0,s.A)(this.hass,"blueprint.yaml_code")}
             name="description"
             @value-changed=${this._installBlueprintYamlChanged}
           ><ha-code-editor mode="yaml" autocomplete-entities="" autocomplete-icons="" dir="ltr"></ha-code-editor></ha-yaml-editor>
@@ -2532,69 +2533,75 @@
         }
         `]}static get properties(){return{configuration:{}}}setConfig(e){this.hass=(0,a.mo)(),this.disableClock=!!e.disableClock&&e.disableClock,this.amPmClock=!!e.amPmClock&&e.amPmClock,this.disableWelcomeMessage=!!e.disableWelcomeMessage&&e.disableWelcomeMessage,this.v2Mode=!!e.v2Mode&&e.v2Mode,this.weatherEntity=e.weatherEntity?e.weatherEntity:"",this.alarmEntity=e.alarmEntity?e.alarmEntity:"",this.disableSensorGraph=!!e.disableSensorGraph&&e.disableSensorGraph,this.selectedTab=1,this.invertCover=!!e.invertCover&&e.invertCover}async connectedCallback(){super.connectedCallback();const e=await window.loadCardHelpers();(await e.createCardElement({type:"entities",entities:[]})).constructor.getConfigElement(),await this._loadConfiguration()}async _loadConfiguration(){this.configuration=await this.hass.callWS({type:"dwains_dashboard/configuration/get"})}_disableClockValueChanged(e){this.disableClock=e.target.checked}_amPmClockValueChanged(e){this.amPmClock=e.target.checked}_disableWelcomeMessageValueChanged(e){this.disableWelcomeMessage=e.target.checked}_v2ModeValueChanged(e){this.v2Mode=e.target.checked}_weatherEntityPicked(e){this.weatherEntity=e.detail.value}_alarmEntityPicked(e){this.alarmEntity=e.detail.value}_disableSensorGraphValueChanged(e){this.disableSensorGraph=e.target.checked}_invertCoverValueChanged(e){this.invertCover=e.target.checked}_saveButton(e){e.stopPropagation(),this.hass.connection.sendMessagePromise({type:"dwains_dashboard/edit_homepage_header",disableClock:this.disableClock,amPmClock:this.amPmClock,disableWelcomeMessage:this.disableWelcomeMessage,v2Mode:this.v2Mode,disableSensorGraph:this.disableSensorGraph,weatherEntity:this.weatherEntity?this.weatherEntity:"",alarmEntity:this.alarmEntity?this.alarmEntity:"",invertCover:this.invertCover}).then((e=>{console.log(e),(0,s.f)()}),(e=>{console.error("Message failed!",e)}))}_handleTabClick(e){const t=e.currentTarget.page;this.selectedTab=t,this.requestUpdate()}render(){return this.configuration&&0!==this.configuration.length?n.qy`
       <div class="edit-element">
-        <paper-tabs selected="${this.selectedTab}">
-            <paper-tab .page=${"1"} @click=${this._handleTabClick}">${(0,o.A)(this.hass,"global.settings")}</paper-tab>
-            <paper-tab .page=${"2"} @click=${this._handleTabClick}">${(0,o.A)(this.hass,"global.dashboard_information")}</paper-tab>
-        </paper-tabs>
+        <ha-tabs .activeIndex=${this.selectedTab} @active-index-changed=${this._handleTabChanged}>
+            <ha-tab .page=${"1"} @click=${this._handleTabClick}">${(0,o.A)(this.hass,"global.settings")}</ha-tab>
+            <ha-tab .page=${"2"} @click=${this._handleTabClick}">${(0,o.A)(this.hass,"global.dashboard_information")}</ha-tab>
+        </ha-tabs>
         <div class=${1==this.selectedTab?"block":"hidden"}>
           <div class="w-full">
-          <mwc-formfield .label=${(0,o.A)(this.hass,"global.disable_clock")}>
+          <mwc-formfield>
             <ha-checkbox
               @change=${this._disableClockValueChanged}
-              .checked=${this.disableClock}
-            ></ha-checkbox>
+              .checked=${this.disableClock}>
+            </ha-checkbox>
+            <span slot="label">${(0,o.A)(this.hass,"global.disable_clock")}</span>
           </mwc-formfield>
           </div>
           <div class="w-full">
-          <mwc-formfield .label=${(0,o.A)(this.hass,"global.am_pm_clock")}>
+          <mwc-formfield>
             <ha-checkbox
               @change=${this._amPmClockValueChanged}
-              .checked=${this.amPmClock}
-            ></ha-checkbox>
+              .checked=${this.amPmClock}>
+            </ha-checkbox>
+            <span slot="label">${(0,o.A)(this.hass,"global.am_pm_clock")}</span>
           </mwc-formfield>
           </div>
           <div class="w-full">
-          <mwc-formfield .label=${(0,o.A)(this.hass,"global.disable_welcome_message")}>
+          <mwc-formfield>
             <ha-checkbox
               @change=${this._disableWelcomeMessageValueChanged}
-              .checked=${this.disableWelcomeMessage}
-            ></ha-checkbox>
+              .checked=${this.disableWelcomeMessage}>
+            </ha-checkbox>
+            <span slot="label">${(0,o.A)(this.hass,"global.disable_welcome_message")}</span>
           </mwc-formfield>
           </div>
           <div class="w-full">
-          <mwc-formfield .label=${(0,o.A)(this.hass,"global.v2_mode")}>
+          <mwc-formfield>
             <ha-checkbox
               @change=${this._v2ModeValueChanged}
-              .checked=${this.v2Mode}
-            ></ha-checkbox>
+              .checked=${this.v2Mode}>
+            </ha-checkbox>
+            <span slot="label">${(0,o.A)(this.hass,"global.v2_mode")}</span>
           </mwc-formfield>
           </div>
           <div class="w-full">
-          <mwc-formfield .label=${(0,o.A)(this.hass,"global.disable_sensor_graph")}>
+          <mwc-formfield>
             <ha-checkbox
               @change=${this._disableSensorGraphValueChanged}
-              .checked=${this.disableSensorGraph}
-            ></ha-checkbox>
+              .checked=${this.disableSensorGraph}>
+            </ha-checkbox>
+            <span slot="label">${(0,o.A)(this.hass,"global.disable_sensor_graph")}</span>
           </mwc-formfield>
           </div>
           <div class="w-full">
-          <mwc-formfield .label=${(0,o.A)(this.hass,"global.invert_cover")}>
+          <mwc-formfield>
             <ha-checkbox
               @change=${this._invertCoverValueChanged}
-              .checked=${this.invertCover}
-            ></ha-checkbox>
+              .checked=${this.invertCover}>
+            </ha-checkbox>
+            <span slot="label">${(0,o.A)(this.hass,"global.invert_cover")}</span>
           </mwc-formfield>
           </div>      
           <ha-entity-picker 
             .hass=${this.hass}
-            .label=${(0,o.A)(this.hass,"global.weather_entity")}
+           label=${(0,o.A)(this.hass,"global.weather_entity")}
             .value=${this.weatherEntity}
             .includeDomains=${["weather"]}
             @value-changed=${this._weatherEntityPicked}
           ></ha-entity-picker>
           <ha-entity-picker 
             .hass=${this.hass}
-            .label=${(0,o.A)(this.hass,"global.alarm_entity")}
+           label=${(0,o.A)(this.hass,"global.alarm_entity")}
             .includeDomains=${["alarm_control_panel"]}
             .value=${this.alarmEntity}
             @value-changed=${this._alarmEntityPicked}
@@ -2810,7 +2817,7 @@
         <p>${(0,s.A)(this._hass,"blueprint.instruction")}</p>
         <a href="https://github.com/dwainscheeren/dwains-dashboard-blueprints" target="_blank">Dwains Dashboard Blueprints Github</a>
         <ha-yaml-editor
-            .label=${(0,s.A)(this._hass,"blueprint.yaml_code")}
+           label=${(0,s.A)(this._hass,"blueprint.yaml_code")}
             name="description"
             @value-changed=${this._installBlueprintYamlChanged}
         ><ha-code-editor mode="yaml" autocomplete-entities="" autocomplete-icons="" dir="ltr"></ha-code-editor></ha-yaml-editor>
@@ -2832,14 +2839,14 @@
         <div class="edit-element">
             <div class="more-page-settings">
             <ha-textfield
-                .label=${(0,s.A)(this._hass,"more.name")}
+               label=${(0,s.A)(this._hass,"more.name")}
                 .name=${(0,s.A)(this._hass,"more.name")}
                 .value=${this.name}
                 .style=${"width: 100%"}
                 @input=${this._nameChanged}
             ></ha-textfield>     
             <ha-icon-picker
-                .label=${(0,s.A)(this._hass,"more.icon")}
+               label=${(0,s.A)(this._hass,"more.icon")}
                 .value=${this.icon}
                 @value-changed=${this._iconPickerChange}
             ></ha-icon-picker>
@@ -4078,7 +4085,7 @@
               absolute
             >
               <ha-icon-button
-                .label=${this._hass.localize("ui.common.overflow_menu")}
+               label=${this._hass.localize("ui.common.overflow_menu")}
                 .path=${s.TdJ}
                 slot="trigger"
               ></ha-icon-button>
@@ -4226,7 +4233,7 @@
                   absolute
                 >
                   <ha-icon-button
-                    .label=${this._hass.localize("ui.common.overflow_menu")}
+                   label=${this._hass.localize("ui.common.overflow_menu")}
                     .path=${s.TdJ}
                     slot="trigger"
                   ></ha-icon-button>
@@ -4378,7 +4385,7 @@
               absolute
             >
               <ha-icon-button
-                .label=${this._hass.localize("ui.common.overflow_menu")}
+               label=${this._hass.localize("ui.common.overflow_menu")}
                 .path=${s.TdJ}
                 slot="trigger"
               ></ha-icon-button>
@@ -4459,7 +4466,7 @@
                 absolute
               >
                 <ha-icon-button
-                  .label=${this._hass.localize("ui.common.overflow_menu")}
+                 label=${this._hass.localize("ui.common.overflow_menu")}
                   .path=${s.TdJ}
                   slot="trigger"
                 ></ha-icon-button>
@@ -4564,7 +4571,7 @@
                         absolute
                       >
                         <ha-icon-button
-                          .label=${this._hass.localize("ui.common.overflow_menu")}
+                         label=${this._hass.localize("ui.common.overflow_menu")}
                           .path=${s.TdJ}
                           slot="trigger"
                         ></ha-icon-button>
@@ -4979,7 +4986,7 @@
             text-transform: capitalize
         }
         .text-gray {
-            color: var(--paper-item-body-secondary-color, var(--secondary-text-color));
+            color: var(--secondary-text-color);
         }
         .text-white {
             --tw-text-opacity: 1;
@@ -5135,35 +5142,113 @@
         color: var(--dwains-house-information-badge-color, var(--ha-card-background, var(--card-background-color, white) ) );
       }
 
-      paper-tabs {
-        height: 110px;
-        margin: 0 0.25rem !important;
+      .dd-header-tabs{
+        overflow-x:auto; 
+        overscroll-behavior-x:contain;
+        -webkit-overflow-scrolling:touch;
+        scrollbar-width:none;
+        display:flex;
+        flex-direction:row;
+        align-items:center;
+        gap:8px;
+        padding:4px 8px;
+        height:110px;
+        margin:0 .25rem !important;
+        background:rgba(var(--rgb-card-background-color),.08);
+        border:0 !important;
+        border-radius:12px;
+        --ha-tabs-selection-bar-height:0;
+        --mdc-ripple-color:transparent;
       }
-      paper-tabs paper-tab {
-        padding: 0 0.25rem !important;
+
+      .dd-header-tabs::-webkit-scrollbar{display:none}
+
+      @media (max-width:600px){
+        .dd-header-tabs ha-tab{
+          flex:0 0 auto;
+          min-width:68px;
+        }
+        .dd-header-tabs{
+        padding-inline:6px;
+        gap:6px;
+        }
       }
+
+      dwains-house-information-card ha-card{
+        border:0 !important;
+        box-shadow:none !important;
+        --ha-card-border-width:0;
+      }
+
+      .dd-header-tabs ha-tab{
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        flex:1 1 0;
+        min-width:60px;
+        max-width:88px;
+        padding:0 4px;
+        --mdc-tab-text-label-color-default:var(--secondary-text-color);
+        --mdc-tab-color-default:var(--secondary-text-color);
+        --mdc-tab-text-transform:capitalize;
+        --mdc-typography-button-text-transform:none;
+      }
+
+      .dd-header-tabs h3{
+        font-size:1rem;
+        line-height:1.3;
+        font-weight:500;
+        margin:10px 0 2px;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+
+      .dd-header-tabs span{
+      font-size:.92rem;
+      line-height:1.25;
+      }
+
+      .edit-element mwc-formfield{
+        display:flex;
+        align-items:flex-start;
+        gap:.75rem;
+        margin:.35rem 0;
+        padding-inline-start:.25rem;
+      }
+
+      .edit-element mwc-formfield label{
+        display:inline-block !important;
+        margin-top:.2rem;
+        color:var(--primary-text-color);
+        font-size:.92rem;
+        line-height:1.3;
+        white-space:normal;
+      }
+
       .loading-component {
         height: 110px;
       }
       `}static get properties(){return{_hass:{type:Object},configuration:{type:Object},domains:{type:Object},persons:{type:Array}}}setConfig(e){this.configuration=e}set hass(e){this._hass=e,this.requestUpdate()}async connectedCallback(){super.connectedCallback(),await this._loadData()}async _reloadCard(){await this._loadData(),this.requestUpdate()}async _loadData(){if(this.areas=await this._hass.callWS({type:"config/area_registry/list"}),this.devices=await this._hass.callWS({type:"config/device_registry/list"}),this.entities=await this._hass.callWS({type:"config/entity_registry/list"}),this.configuration=await this._hass.callWS({type:"dwains_dashboard/configuration/get"}),null==this.areas||0===this.areas.length||null==this.devices||0===this.devices.length||null==this.entities||0===this.entities.length||null==this.configuration||0===this.configuration.length);else{const e=[],t=[];for(const e of this.entities)"person"==(0,r.mD)(e.entity_id)&&(this.configuration.entities[e.entity_id]&&this.configuration.entities[e.entity_id].disabled||this.configuration.entities[e.entity_id]&&this.configuration.entities[e.entity_id].excluded||t.push(e.entity_id));for(const t of this.areas)if(!this.configuration.areas[t.area_id]||!this.configuration.areas[t.area_id].disabled){const i=new Set;new Set;for(const e of this.devices)e.area_id===t.area_id&&i.add(e.id);for(const a of this.entities)if(a.area_id?a.area_id===t.area_id:i.has(a.device_id)){const i=!!this.configuration.entities[a.entity_id]&&!!this.configuration.entities[a.entity_id].disabled,n=!!this.configuration.entities[a.entity_id]&&!!this.configuration.entities[a.entity_id].excluded;if(!i&&!n){const i=this.configuration.entities[a.entity_id]?this.configuration.entities[a.entity_id].friendly_name:"",n=(0,r.mD)(a.entity_id);if(!(l.Zz.includes(n)||l.Ti.includes(n)||l.K5.includes(n)||l.ge.includes(n)||l.R9.includes(n)))continue;n in e||(e[n]={domain:n,entities:[]}),e[n].entities.push({entity_id:a.entity_id,area:t,friendlyName:i})}}}this.domains=e,this.persons=t}}_handleMoreInfo(e){if(e.currentTarget.entity)(0,n.Q)(e.currentTarget.entity);else{const t=e.currentTarget.domain,i=e.currentTarget.deviceClass;window.setTimeout((()=>{(0,s.r)("hass-more-info",{entityId:""},document.querySelector("home-assistant")),(0,o.d)((0,d.A)(this._hass,"device."+t),{type:"custom:dwains-house-information-more-info-card",domain:t,entities:this.domains[t].entities,deviceClass:i},!0,"")}),50)}}_isOn(e,t,i){if(e)return(i?e.filter((e=>e.attributes.device_class===i)):e).filter((e=>!l.s7.includes(e.state)&&!l.jj.includes(e.state))).length}_isOnCover(e,t,i){if(e)return(i?e.filter((e=>e.attributes.device_class===i)):e).filter((e=>!l.s7.includes(e.state)&&!l.jj.includes(e.state)&&!this.configuration.homepage_header.invert_cover)).length}_isOffCover(e,t,i){if(e)return(i?e.filter((e=>e.attributes.device_class===i)):e).filter((e=>!l.s7.includes(e.state)&&l.jj.includes(e.state)&&this.configuration.homepage_header.invert_cover)).length}_isOnClimate(e,t){if(!e)return;const i=[];for(const t of e)t.attributes.hvac_action&&"idle"!=t.attributes.hvac_action?l.s7.includes(t.attributes.hvac_action)||l.jj.includes(t.attributes.hvac_action)||i.push(t.entity_id):t.attributes.hvac_action||l.s7.includes(t.state)||l.jj.includes(t.state)||i.push(t.entity_id);return i.length}_renderDomain(e){const t=[];for(const i of e.entities){const e=this._hass.states[i.entity_id];e&&t.push(e)}if(l.Zz.includes(e.domain)){const i=this._isOn(t,e);if(i)return this._renderDomainBadgeCard(e.domain,(0,d.A)(this._hass,"device."+e.domain),l.qJ[e.domain][i?"on":"off"],i,"")}else{if(l.Ti.includes(e.domain))return l.gJ[e.domain].map((i=>{const a=this._isOn(t,e.domain,i);if(a)return this._renderDomainBadgeCard(e.domain,(0,d.A)(this._hass,"device."+i),l.qJ[e.domain][i],a,i)}));if(l.K5.includes(e.domain))return l.gJ[e.domain].map((i=>{const a=this._isOnCover(t,e.domain,i),n=this._isOffCover(t,e.domain,i);return a?this._renderDomainBadgeCard(e.domain,(0,d.A)(this._hass,"device."+i),l.qJ[e.domain][i],a,i):n?this._renderDomainBadgeCard(e.domain,(0,d.A)(this._hass,"device."+i),l.qJ[e.domain][i],n,i):void 0}));if(l.ge.includes(e.domain)){const i=this._isOnClimate(t,e.domain);if(i)return this._renderDomainBadgeCard(e.domain,(0,d.A)(this._hass,"device."+e.domain),l.qJ[e.domain][i?"on":"off"],i,"")}else if(l.R9.includes(e.domain)){const i=this._isOn(t,e);if(i)return this._renderDomainBadgeCard(e.domain,(0,d.A)(this._hass,"device."+e.domain),l.qJ[e.domain][i?"on":"off"],i,"")}}}_renderDomainBadgeCard(e,t,i,n,o){let s;return s="window"!=o&&"door"!=o&&"cover"!=e&&"lock"!=e||this.configuration.homepage_header.invert_cover?this.configuration.homepage_header.invert_cover&&"cover"==e?(0,d.A)(this._hass,"device.closed"):(0,d.A)(this._hass,"device.on"):(0,d.A)(this._hass,"device.open"),a.qy`
-      <paper-tab>
+      <ha-tab>
         <div class="text-center cursor-pointer domain-badge-card" .domain=${e} .deviceClass=${o} @click=${this._handleMoreInfo}>
-          <div class="rounded-full flex items-center justify-center m-auto round-badge" style="width: 50px; height: 50px;">
-            <div class="">
+          <div class="rounded-full flex items-center justify-center m-auto round-badge" style="width: 54px; height: 54px;">
+            <div class="flex items-center justify-center">
               <ha-icon
                 class="w-8 h-8 badge-icon"
                 .icon=${this.configuration.devices[e]&&this.configuration.devices[e].icon?this.configuration.devices[e].icon:i}
               ></ha-icon>
             </div>
           </div>
-          <h3 class="capitalize">${t}</h3>
-          <span class="text-gray-500">
-          ${n} ${s}
+          <h3 class="capitalize mt-2 mb-1 text-sm font-medium">${t}</h3>
+          <span class="text-gray-500 text-xs">
+            ${n} ${s}
           </span>
         </div>
-      </paper-tab>
+      </ha-tab>
       `}_renderPersonCard(e){const t=this._hass.states[e];if(t&&t.attributes){let i=t.attributes.entity_picture_local||t.attributes.entity_picture;i&&this._hass&&(i=this._hass.hassUrl(i));const n=void 0===t.attributes.friendly_name?t.entity_id.replace(/_/g," "):t.attributes.friendly_name;return a.qy`
-                <paper-tab>
+                <ha-tab>
                 <div class="text-center cursor-pointer" .entity=${e} @click=${this._handleMoreInfo}>
                     ${i?a.qy`
                     <img src="${i}" width="50" class="rounded-full m-auto ${t.state}">
@@ -5182,12 +5267,12 @@
                     ${(0,c.F)(this._hass.localize,t,this._hass.locale)}
                     </span>
                 </div>
-                </paper-tab>`}}render(){return this._hass?null==this.domains||0===Object.keys(this.domains).length?a.qy``:a.qy`
+                </ha-tab>`}}render(){return this._hass?null==this.domains||0===Object.keys(this.domains).length?a.qy``:a.qy`
                 <ha-card>
-                <paper-tabs selected="0" scrollable hide-scroll-buttons>
+                <ha-tabs class="dd-header-tabs" .activeIndex=${0} scrollable hide-scroll-buttons>
                     ${this.persons.map((e=>this._renderPersonCard(e)))}
                     ${Object.values(this.domains).map((e=>this._renderDomain(e)))}
-                </paper-tabs>
+                </ha-tabs>
                 </ha-card>
             `:a.qy``}}customElements.define("dwains-house-information-card",h)},780:(e,t,i)=>{"use strict";var a=i(845),n=i(89),o=i(177),s=i(969),r=i(153);class l extends a.WF{static get styles(){return a.AH`
         .p-20px {
@@ -5268,7 +5353,7 @@
         .information .state {
             font-size: 0.9rem;
             line-height: 1.25rem;
-            color: var(--paper-item-body-secondary-color, var(--secondary-text-color));
+            color: var(--secondary-text-color);
         }
         .handle-button {
             background-color: var(--secondary-background-color);
@@ -5355,7 +5440,7 @@
                   absolute
                 >
                   <ha-icon-button
-                    .label=${this._hass.localize("ui.common.overflow_menu")}
+                   label=${this._hass.localize("ui.common.overflow_menu")}
                     .path=${o.TdJ}
                     slot="trigger"
                   ></ha-icon-button>
@@ -5407,7 +5492,7 @@
                     absolute
                   >
                     <ha-icon-button
-                      .label=${this._hass.localize("ui.common.overflow_menu")}
+                     label=${this._hass.localize("ui.common.overflow_menu")}
                       .path=${r.TdJ}
                       slot="trigger"
                     ></ha-icon-button>
@@ -5455,7 +5540,7 @@
                         absolute
                         >
                           <ha-icon-button
-                              .label=${this._hass.localize("ui.common.overflow_menu")}
+                             label=${this._hass.localize("ui.common.overflow_menu")}
                               .path=${r.TdJ}
                               slot="trigger"
                           ></ha-icon-button>
@@ -5796,7 +5881,7 @@
                 text-transform: capitalize
             }
             .text-gray {
-                color: var(--paper-item-body-secondary-color, var(--secondary-text-color));
+                color: var(--secondary-text-color);
             }
             .text-white {
                 --tw-text-opacity: 1;
@@ -6086,7 +6171,7 @@
             ${this.fullscreen?t`<div slot="heading"></div>`:t`
                 <app-toolbar slot="heading">
                   <mwc-icon-button
-                    .label=${"dismiss"}
+                   label=${"dismiss"}
                     dialogAction="cancel"
                   >
                     <ha-icon

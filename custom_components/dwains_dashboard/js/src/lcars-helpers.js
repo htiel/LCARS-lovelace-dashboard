@@ -1,0 +1,107 @@
+/**
+ * LCARS Helpers — Shared utility functions for accessing HA internals
+ * Extracted from compiled bundle's card-tools patterns
+ */
+
+/**
+ * Get the hass object from the DOM
+ */
+export function getHass() {
+  const hcMain = document.querySelector('hc-main');
+  if (hcMain) return hcMain.hass;
+  const ha = document.querySelector('home-assistant');
+  if (ha) return ha.hass;
+  return undefined;
+}
+
+/**
+ * Register an element to receive hass updates
+ */
+export function provideHass(element) {
+  const hcMain = document.querySelector('hc-main');
+  if (hcMain) return hcMain.provideHass(element);
+  const ha = document.querySelector('home-assistant');
+  if (ha) return ha.provideHass(element);
+  return undefined;
+}
+
+/**
+ * Get the current Lovelace view element
+ */
+export function getLovelace() {
+  let root = document.querySelector('hc-main');
+  if (root) {
+    root = root?.shadowRoot?.querySelector('hc-lovelace')?.shadowRoot;
+    return root?.querySelector('hui-view') || root?.querySelector('hui-panel-view');
+  }
+  root = document.querySelector('home-assistant');
+  root = root?.shadowRoot?.querySelector('home-assistant-main')?.shadowRoot;
+  root = root?.querySelector('app-drawer-layout partial-panel-resolver');
+  root = root?.shadowRoot || root;
+  root = root?.querySelector('ha-panel-lovelace')?.shadowRoot;
+  root = root?.querySelector('hui-root')?.shadowRoot;
+  root = root?.querySelector('ha-app-layout')?.querySelector('#view');
+  return root?.firstElementChild;
+}
+
+/**
+ * Fire a custom event on the HA root
+ */
+export function fireEvent(type, detail = {}, target = null) {
+  const event = new Event(type, {
+    bubbles: true,
+    cancelable: false,
+    composed: true,
+  });
+  event.detail = detail;
+  if (target) {
+    target.dispatchEvent(event);
+  } else {
+    const root = getLovelace();
+    if (root) root.dispatchEvent(event);
+  }
+}
+
+/**
+ * Navigate within HA
+ */
+export function navigate(path, replace = false) {
+  if (replace) {
+    history.replaceState(null, '', path);
+  } else {
+    history.pushState(null, '', path);
+  }
+  fireEvent('location-changed', { replace }, window);
+}
+
+/**
+ * Open a more-info dialog for an entity
+ */
+export function showMoreInfo(entityId) {
+  const root = document.querySelector('hc-main') || document.querySelector('home-assistant');
+  fireEvent('hass-more-info', { entityId }, root);
+}
+
+/**
+ * Ensure Lovelace helpers are loaded (for createCardElement)
+ */
+export async function ensureLovelaceLoaded() {
+  if (customElements.get('hui-view')) return true;
+  await customElements.whenDefined('partial-panel-resolver');
+  const el = document.createElement('partial-panel-resolver');
+  el.hass = { panels: [{ url_path: 'tmp', component_name: 'lovelace' }] };
+  el._updateRoutes();
+  await el.routerOptions.routes.tmp.load();
+  if (!customElements.get('ha-panel-lovelace')) return false;
+  const panel = document.createElement('ha-panel-lovelace');
+  panel.hass = getHass();
+  if (panel.hass === undefined) {
+    await new Promise((resolve) => {
+      window.addEventListener('connection-status', () => resolve(), { once: true });
+    });
+    panel.hass = getHass();
+  }
+  panel.panel = { config: { mode: null } };
+  panel._fetchConfig();
+  return true;
+}

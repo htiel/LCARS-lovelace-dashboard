@@ -2,6 +2,43 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.4.6] — 2026-04-11
+
+### Fixed
+- **CONFIGURATION ERROR resolved**: Removed non-standard top-level keys from `ui-lovelace.yaml` (`lcars_dashboard`, `button_card_templates`, `apexcharts_card_templates`, `lovelace-background`) that HA 2025.x+ Lovelace config validation rejects
+- Debug log noise: Added `_is_our_file()` filter in `process_yaml.py` so the global YAML loader patch only debug-logs LCARS-related files (eliminates 40+ core HA services.yaml entries)
+- Comprehensive debug logging across Python backend (`__init__.py`, `process_yaml.py`, `load_dashboard.py`, `load_plugins.py`) and JS frontend (`lcars-dashboard.js`, `lcars-dashboard-layout.js`, `lcars-homepage-card.js`)
+- Debug flag auto-sync: Python sends `debug` boolean in websocket `configuration/get` response; JS reads it and sets `window.__LCARS_DEBUG`
+- Enhanced error handling in `process_yaml.py` with separate catches for YAMLError, UnicodeDecodeError, Jinja2 template errors
+
+## [4.4.5] — 2026-04-11
+
+### Added
+- Two-column split layout: entities displayed on the left, camera panels on the right
+
+## [4.4.4] — 2026-04-11
+
+### Added
+- Auto-refresh camera still images every 10 seconds using `IntersectionObserver` (only refreshes visible cameras)
+
+## [4.4.3] — 2026-04-11
+
+### Fixed
+- Camera image caching: added cache-busting timestamp query parameter to prevent stale/wrong camera feeds
+- Camera error handling: graceful fallback when camera entity is unavailable or stream fails
+
+## [4.4.2] — 2026-04-10
+
+### Fixed
+- Added structured debug logging across Python and JS modules
+- Removed stray quote on line 733 causing SyntaxError in JS bundle
+
+## [4.4.1] — 2026-04-10
+
+### Fixed
+- Dynamic area handling — areas now update correctly when HA area registry changes
+- Fixed Configuration Error on initial dashboard load
+
 ## [4.4.0] — 2026-04-10
 
 ### Security

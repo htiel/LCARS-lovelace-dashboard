@@ -4,17 +4,9 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
+import { createCardElement } from './lcars-helpers.js';
 
-const waitForHelpers = [
-  customElements.whenDefined('hui-masonry-view'),
-  customElements.whenDefined('hc-lovelace'),
-];
-
-Promise.race(waitForHelpers).then(async () => {
-  await new Promise((r) => setTimeout(r, 2000));
-  const helpers = await window.loadCardHelpers();
-
-  class LcarsBlueprintCard extends LitElement {
+class LcarsBlueprintCard extends LitElement {
     static get properties() {
       return {
         _hass: { type: Object },
@@ -42,7 +34,7 @@ Promise.race(waitForHelpers).then(async () => {
 
     async _createCard(cardConfig) {
       try {
-        this._card = await helpers.createCardElement(cardConfig);
+        this._card = await createCardElement(cardConfig);
         if (this._hass) this._card.hass = this._hass;
         this.requestUpdate();
       } catch (e) {
@@ -86,7 +78,6 @@ Promise.race(waitForHelpers).then(async () => {
     getCardSize() { return this._card ? 2 : 1; }
   }
 
-  if (!customElements.get('lcars-blueprint-card')) {
-    customElements.define('lcars-blueprint-card', LcarsBlueprintCard);
-  }
-});
+if (!customElements.get('lcars-blueprint-card')) {
+  customElements.define('lcars-blueprint-card', LcarsBlueprintCard);
+}

@@ -17,13 +17,6 @@ const EDIT_STYLES = css`
   .action-btn:hover { filter: brightness(1.2); }
 `;
 
-const waitForHelpers = [
-  customElements.whenDefined('hui-masonry-view'),
-  customElements.whenDefined('hc-lovelace'),
-];
-
-Promise.race(waitForHelpers).then(async () => {
-  await new Promise((r) => setTimeout(r, 2000));
 
   class LcarsEditDeviceCardCard extends LitElement {
     static get properties() {
@@ -70,4 +63,3 @@ Promise.race(waitForHelpers).then(async () => {
   if (!customElements.get('lcars-edit-device-card-card')) {
     customElements.define('lcars-edit-device-card-card', LcarsEditDeviceCardCard);
   }
-});

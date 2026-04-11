@@ -4,17 +4,9 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
+import { createCardElement } from './lcars-helpers.js';
 
-const waitForHelpers = [
-  customElements.whenDefined('hui-masonry-view'),
-  customElements.whenDefined('hc-lovelace'),
-];
-
-Promise.race(waitForHelpers).then(async () => {
-  await new Promise((r) => setTimeout(r, 2000));
-  const helpers = await window.loadCardHelpers();
-
-  class LcarsFlexboxCard extends LitElement {
+class LcarsFlexboxCard extends LitElement {
     static get properties() {
       return {
         _hass: { type: Object },
@@ -45,7 +37,7 @@ Promise.race(waitForHelpers).then(async () => {
       this._cards = await Promise.all(
         this._config.cards.map(async (cardConfig) => {
           try {
-            const card = await helpers.createCardElement(cardConfig);
+            const card = await createCardElement(cardConfig);
             if (this._hass) card.hass = this._hass;
             return card;
           } catch (e) {
@@ -89,7 +81,6 @@ Promise.race(waitForHelpers).then(async () => {
     getCardSize() { return 1; }
   }
 
-  if (!customElements.get('lcars-flexbox-card')) {
-    customElements.define('lcars-flexbox-card', LcarsFlexboxCard);
-  }
-});
+if (!customElements.get('lcars-flexbox-card')) {
+  customElements.define('lcars-flexbox-card', LcarsFlexboxCard);
+}

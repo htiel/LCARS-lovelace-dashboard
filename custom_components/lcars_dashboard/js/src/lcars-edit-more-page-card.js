@@ -5,13 +5,6 @@ import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { fireEvent } from './lcars-helpers.js';
 
-const waitForHelpers = [
-  customElements.whenDefined('hui-masonry-view'),
-  customElements.whenDefined('hc-lovelace'),
-];
-
-Promise.race(waitForHelpers).then(async () => {
-  await new Promise((r) => setTimeout(r, 2000));
 
   class LcarsEditMorePageCard extends LitElement {
     static get properties() {
@@ -135,4 +128,3 @@ Promise.race(waitForHelpers).then(async () => {
   if (!customElements.get('lcars-edit-more-page-card')) {
     customElements.define('lcars-edit-more-page-card', LcarsEditMorePageCard);
   }
-});

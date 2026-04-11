@@ -18,13 +18,6 @@ const EDIT_STYLES = css`
   .action-btn.danger { background: var(--lcars-red-alert); color: var(--lcars-space-white); }
 `;
 
-const waitForHelpers = [
-  customElements.whenDefined('hui-masonry-view'),
-  customElements.whenDefined('hc-lovelace'),
-];
-
-Promise.race(waitForHelpers).then(async () => {
-  await new Promise((r) => setTimeout(r, 2000));
 
   class LcarsEditAreaButtonCard extends LitElement {
     static get properties() {
@@ -71,4 +64,3 @@ Promise.race(waitForHelpers).then(async () => {
   if (!customElements.get('lcars-edit-area-button-card')) {
     customElements.define('lcars-edit-area-button-card', LcarsEditAreaButtonCard);
   }
-});

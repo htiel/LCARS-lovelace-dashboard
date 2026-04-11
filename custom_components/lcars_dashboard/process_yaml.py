@@ -34,28 +34,41 @@ def load_yamll(fname, secrets = None, args={}):
             if f.readline().lower().startswith(("# lcars_dashboard", "# lcars_theme", "# lovelace_gen", "#lcars_dashboard")):
                 process_yaml = True
 
-        #_LOGGER.debug(f"load_yamll() Loading YAML: {fname}, process_yaml={process_yaml}")
         _LOGGER.debug("load_yamll: %s (jinja=%s)", fname, process_yaml)
 
         if process_yaml:
-            stream = io.StringIO(jinja.get_template(fname).render({
+            _LOGGER.debug("Rendering Jinja2 template: %s (args=%s)", fname, list(args.keys()) if args else [])
+            rendered = jinja.get_template(fname).render({
                 **args,
                 "_dd_more_pages": lcars_dashboard_more_pages,
                 "_global": llgen_config
-                }))
+                })
+            _LOGGER.debug("Jinja2 rendered %d chars for %s", len(rendered), fname)
+            stream = io.StringIO(rendered)
             stream.name = fname
-            return loader.yaml.load(stream, Loader=lambda _stream: loader.PythonSafeLoader(_stream, secrets)) or OrderedDict()
+            data = loader.yaml.load(stream, Loader=lambda _stream: loader.PythonSafeLoader(_stream, secrets)) or OrderedDict()
+            _LOGGER.debug("Parsed YAML from Jinja2: %s → %s (%d items)", fname, type(data).__name__, len(data) if isinstance(data, (dict, list)) else 0)
+            return data
         else:
             with open(fname, encoding="utf-8") as config_file:
                 data = loader.yaml.load(config_file, Loader=lambda stream: loader.PythonSafeLoader(stream, secrets)) or OrderedDict()
-                #_LOGGER.warning(f"load_yamll() DATA: {data}")
+                _LOGGER.debug("Parsed YAML: %s → %s (%d items)", fname, type(data).__name__, len(data) if isinstance(data, (dict, list)) else 0)
                 return data
 
     except loader.yaml.YAMLError as exc:
-        _LOGGER.error(f"YAMLError: {str(exc)}")
+        _LOGGER.error("YAML parse error in %s: %s", fname, exc)
         raise HomeAssistantError(exc)
     except UnicodeDecodeError as exc:
-        _LOGGER.error("Unicode Error :: Unable to read file %s: %s", fname, exc)
+        _LOGGER.error("Unicode decode error in %s: %s", fname, exc)
+        raise HomeAssistantError(exc)
+    except jinja2.TemplateSyntaxError as exc:
+        _LOGGER.error("Jinja2 syntax error in %s line %d: %s", fname, exc.lineno, exc.message)
+        raise HomeAssistantError(exc)
+    except jinja2.TemplateError as exc:
+        _LOGGER.error("Jinja2 render error in %s: %s", fname, exc)
+        raise HomeAssistantError(exc)
+    except Exception as exc:
+        _LOGGER.error("Unexpected error loading %s: %s", fname, exc, exc_info=True)
         raise HomeAssistantError(exc)
 
 
@@ -66,10 +79,13 @@ def _include_yaml(ldr, node):
     else:
         fn, args, *_ = ldr.construct_sequence(node)
     fname = os.path.abspath(os.path.join(os.path.dirname(ldr.name), fn))
+    _LOGGER.debug("!include resolving: %s → %s", fn, fname)
     try:
-        return loader._add_reference(load_yamll(fname, ldr.secrets, args=args), ldr, node)
+        result = load_yamll(fname, ldr.secrets, args=args)
+        _LOGGER.debug("!include loaded: %s (%s)", fname, type(result).__name__)
+        return loader._add_reference(result, ldr, node)
     except FileNotFoundError as exc:
-        _LOGGER.error("Unable to include file %s: %s", fname, exc);
+        _LOGGER.error("!include file not found: %s (resolved from %s in %s)", fname, fn, ldr.name)
         raise HomeAssistantError(exc)
 
 loader.load_yaml = load_yamll
@@ -100,7 +116,7 @@ yaml.composer.Composer.compose_node = compose_node
 
 async def process_yaml(hass: HomeAssistant, config_entry):
     """Process all YAML files for LCARS Dashboard."""
-    _LOGGER.debug("process_yaml starting")
+    _LOGGER.debug("process_yaml starting for config_entry: %s", config_entry.entry_id if config_entry else 'None')
 
     # Check for HKI installation
     if os.path.exists(hass.config.path("hki-user/config")):

@@ -33,21 +33,31 @@ class LcarsDashboardLayout extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     window.addEventListener('resize', this._resizeHandler);
+    lcarsLog.debug(TAG, 'connectedCallback — layout mounted');
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener('resize', this._resizeHandler);
+    lcarsLog.debug(TAG, 'disconnectedCallback — layout unmounted');
   }
 
   setConfig(config) {
-    this._config = config;
-    lcarsLog.debug(TAG, 'setConfig', config);
+    try {
+      this._config = config;
+      lcarsLog.debug(TAG, 'setConfig', config);
+    } catch (err) {
+      lcarsLog.error(TAG, 'setConfig FAILED — this causes CONFIGURATION ERROR:', err);
+      throw err;
+    }
   }
 
   set hass(hass) {
     const prev = this._hass;
     this._hass = hass;
+    if (!prev) {
+      lcarsLog.debug(TAG, 'First hass received — cards:', this.cards?.length || 0);
+    }
     // Auto-deselect area if it was deleted from HA
     if (prev && prev.areas !== hass.areas && this._selectedArea) {
       if (!hass.areas?.[this._selectedArea]) {
@@ -67,7 +77,7 @@ class LcarsDashboardLayout extends LitElement {
 
   _selectArea(areaId) {
     this._selectedArea = this._selectedArea === areaId ? null : areaId;
-    lcarsLog.debug(TAG, 'Area selected:', this._selectedArea);
+    lcarsLog.debug(TAG, 'Area selected:', this._selectedArea || '(deselected)');
     // Broadcast area selection via private event bus (prevents injection from untrusted cards)
     lcarsEventBus.dispatchEvent(
       new CustomEvent('lcars-area-selected', {
@@ -417,6 +427,7 @@ const ready = Promise.race([
   customElements.whenDefined('hui-masonry-view'),
   new Promise((r) => setTimeout(r, 5000)),
 ]);
+lcarsLog.debug(TAG, 'Waiting for hui-masonry-view (5s timeout)...');
 ready.then(() => {
   if (!customElements.get('lcars-dashboard-layout')) {
     customElements.define('lcars-dashboard-layout', LcarsDashboardLayout);
@@ -427,5 +438,9 @@ ready.then(() => {
       'color: #ff9966; font-weight: bold; background: black',
       'color: #f5f6fa; font-weight: bold; background: #333'
     );
+  } else {
+    lcarsLog.warn(TAG, 'lcars-dashboard-layout already registered — skipping');
   }
+}).catch((err) => {
+  lcarsLog.error(TAG, 'Failed to register lcars-dashboard-layout:', err);
 });

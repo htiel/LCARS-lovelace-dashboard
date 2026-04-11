@@ -1,27 +1,53 @@
 # LCARS Dashboard
 
-A Home Assistant dashboard with a full Star Trek LCARS (Library Computer Access/Retrieval System) user interface.
+A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer Access/Retrieval System) interface.
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
+![Version](https://img.shields.io/badge/version-4.2.2-blue)
+![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 
 ## Features
 
-- Full LCARS UI: elbows, header/footer bars, pill buttons, sidebar navigation
-- Click-to-expand area panels with slide animations
-- Devices view grouped by domain
-- Self-contained: all fonts and dependencies vendored locally
-- Responsive: mobile-friendly layout
-- Accessible: ARIA landmarks, keyboard navigation, reduced-motion support
+- **LCARS Frame Layout** — Authentic elbows, header/footer bars, endcaps, and sidebar in the classic Okudagram style
+- **Sidebar Area Navigation** — All HA areas listed as pill buttons in the left sidebar; click to view area detail in the main content panel
+- **Domain-Specific Entity Renderers**
+  - Camera → LCARS-framed live feed with viewscreen activation animation
+  - Light / Switch / Fan / Lock → Toggle pills with heartbeat pulse
+  - Sensor / Binary Sensor → Data readout bars with segmented fill
+  - Climate → Thermostat panel | Cover → Position controls | Media Player → Media strip
+- **Device-Grouped Layout** — Entities organized by device, then sorted by domain (cameras first, sensors last)
+- **6 LCARS Animations** — Cascade reveal, scan sweep, viewscreen activation, heartbeat pulse, distress pulse, segmented sensor bars
+- **Self-Contained** — All fonts (Antonio) and dependencies vendored locally, no external CDN calls
+- **Responsive** — Mobile-friendly layout with horizontal area scroll on narrow viewports
+- **Accessible** — ARIA landmarks, keyboard navigation, `prefers-reduced-motion` support
+
+## Screenshots
+
+*Coming soon*
 
 ## Installation (HACS)
 
 1. Open HACS in Home Assistant
-2. Go to **Integrations** > **Custom repositories**
+2. Go to **Integrations** → **Custom repositories**
 3. Add `https://github.com/htiel/LCARS-lovelace-dashboard` as an **Integration**
 4. Install **LCARS Dashboard**
 5. Restart Home Assistant
-6. Go to **Settings** > **Devices & Services** > **Add Integration** > **LCARS Dashboard**
+6. Go to **Settings** → **Devices & Services** → **Add Integration** → **LCARS Dashboard**
+
+## Architecture
+
+| Layer | Technology |
+|-------|-----------|
+| HA Integration | Python custom component (`lcars_dashboard`) |
+| Frontend | Lit Element v2 web components |
+| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~129 KiB) |
+| Styling | 40+ LCARS CSS custom properties in shared `lcars-styles.js` |
+| Communication | WebSocket API + window custom events |
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
 ## Attribution
 

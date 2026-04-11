@@ -120,6 +120,7 @@ homepage_header = OrderedDict()
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     _LOGGER.info("LCARS Dashboard v%s starting setup", VERSION)
+    _LOGGER.debug("Python %s, HA %s", __import__('sys').version.split()[0], hass.config.version if hasattr(hass.config, 'version') else 'unknown')
 
     hass.data[DOMAIN] = {
         "notifications": {},
@@ -127,6 +128,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         'latest_version': ""
     }
 
+    _LOGGER.debug("Registering %d websocket commands", 26)
     websocket_api.async_register_command(hass, websocket_get_configuration)
     websocket_api.async_register_command(hass, websocket_get_blueprints)
 
@@ -242,6 +244,7 @@ async def websocket_get_configuration(
                 "installed_version": VERSION,
                 "devices_card": devices_card,
                 "devices_popup": devices_popup,
+                "debug": logging.getLogger("custom_components.lcars_dashboard").getEffectiveLevel() <= logging.DEBUG,
             }
         )
     except Exception as err:
@@ -262,6 +265,7 @@ async def websocket_get_configuration(
                 "installed_version": VERSION,
                 "devices_card": {},
                 "devices_popup": {},
+                "debug": logging.getLogger("custom_components.lcars_dashboard").getEffectiveLevel() <= logging.DEBUG,
             }
         )
 
@@ -1766,9 +1770,21 @@ async def ws_handle_sort_more_page(
 
 
 async def async_setup_entry(hass, config_entry):
-    await process_yaml(hass, config_entry)
+    _LOGGER.debug("async_setup_entry starting for %s", config_entry.entry_id)
 
-    load_dashboard(hass, config_entry)
+    try:
+        await process_yaml(hass, config_entry)
+        _LOGGER.debug("process_yaml completed successfully")
+    except Exception as err:
+        _LOGGER.error("process_yaml failed: %s", err, exc_info=True)
+        return False
+
+    try:
+        load_dashboard(hass, config_entry)
+        _LOGGER.debug("load_dashboard completed successfully")
+    except Exception as err:
+        _LOGGER.error("load_dashboard failed: %s", err, exc_info=True)
+        return False
 
     config_entry.add_update_listener(_update_listener)
 
@@ -1779,15 +1795,16 @@ async def async_setup_entry(hass, config_entry):
         )
     )
 
+    _LOGGER.debug("async_setup_entry complete — sensor platform forwarded")
     return True
 
 async def async_remove_entry(hass, config_entry):
-    _LOGGER.warning("LCARS Dashboard is now uninstalled.")
+    _LOGGER.info("LCARS Dashboard is being uninstalled")
 
     frontend.async_remove_panel(hass, "lcars-dashboard")
 
 async def _update_listener(hass, config_entry):
-    _LOGGER.warning('Update_listener called')
+    _LOGGER.debug("Config entry update listener triggered")
 
     await process_yaml(hass, config_entry)
 

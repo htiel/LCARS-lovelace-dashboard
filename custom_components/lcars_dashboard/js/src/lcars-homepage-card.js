@@ -190,14 +190,24 @@ class LcarsHomepageCard extends LitElement {
     }
 
     setConfig(config) {
-      this._config = config;
+      try {
+        this._config = config;
+        lcarsLog.debug(TAG, 'setConfig:', config);
+      } catch (err) {
+        lcarsLog.error(TAG, 'setConfig FAILED — this causes CONFIGURATION ERROR:', err);
+        throw err;
+      }
     }
 
     set hass(hass) {
       const prev = this._hass;
       this._hass = hass;
+      if (!prev) {
+        lcarsLog.debug(TAG, 'First hass received — areas:', Object.keys(hass.areas || {}).length, 'entities:', Object.keys(hass.entities || {}).length);
+      }
       // Bust entity cache when registries change
       if (prev && (prev.entities !== hass.entities || prev.devices !== hass.devices)) {
+        lcarsLog.debug(TAG, 'Entity/device registry changed — busting cache');
         this._cachedEntities = null;
       }
       // Deselect area if it was removed from HA
@@ -223,21 +233,28 @@ class LcarsHomepageCard extends LitElement {
           type: 'lcars_dashboard/configuration/get',
         });
         this.data = result;
-        lcarsLog.debug(TAG, 'Configuration loaded:', Object.keys(result));
+        // Auto-sync debug flag from backend
+        if (result.debug !== undefined) {
+          window.__LCARS_DEBUG = result.debug;
+          if (result.debug) lcarsLog.info(TAG, 'Debug logging auto-enabled from HA backend');
+        }
+        lcarsLog.debug(TAG, 'Configuration loaded:', Object.keys(result), 'version:', result.installed_version);
       } catch (e) {
-        lcarsLog.error(TAG, 'Failed to load configuration', e);
+        lcarsLog.error(TAG, 'Failed to load configuration — WS call failed:', e);
         // Set empty data so we don't retry endlessly — card still works dynamically from hass
         this.data = {};
       }
     }
 
     _handleEntityClick(entityId) {
+      lcarsLog.debug(TAG, 'Entity click:', entityId);
       showMoreInfo(entityId);
     }
 
     /* ─── Toggle a light/switch/fan/etc ─── */
     _handleToggle(entityId) {
       const domain = entityId.split('.')[0];
+      lcarsLog.debug(TAG, 'Toggle:', entityId, 'domain:', domain);
       if (domain === 'lock') {
         const state = this._getEntityState(entityId);
         this._hass.callService('lock', state?.state === 'locked' ? 'unlock' : 'lock', { entity_id: entityId });
@@ -1177,18 +1194,26 @@ class LcarsHomepageCard extends LitElement {
 
     /* ──────────── RENDER ──────────── */
     render() {
-      if (!this._hass) return html`<div class="lcars-empty">Initializing...</div>`;
+      if (!this._hass) {
+        lcarsLog.debug(TAG, 'Render: waiting for hass');
+        return html`<div class="lcars-empty">Initializing...</div>`;
+      }
 
       // No area selected — show prompt
       if (!this.selectedArea) {
+        lcarsLog.debug(TAG, 'Render: no area selected');
         return html`<div class="lcars-empty">Select an area</div>`;
       }
 
       // Find the area object
       const area = this._hass.areas?.[this.selectedArea];
-      if (!area) return html`<div class="lcars-empty">Area not found</div>`;
+      if (!area) {
+        lcarsLog.debug(TAG, 'Render: area not found:', this.selectedArea);
+        return html`<div class="lcars-empty">Area not found</div>`;
+      }
 
       const entities = this._getAreaEntities(this.selectedArea);
+      lcarsLog.debug(TAG, 'Render: area=%s entities=%d', area.name, entities.length);
 
       return html`
         <div class="content-area-panel">
@@ -1600,4 +1625,7 @@ class LcarsHomepageCard extends LitElement {
 
   if (!customElements.get('homepage-card')) {
     customElements.define('homepage-card', LcarsHomepageCard);
+    lcarsLog.debug(TAG, 'Custom element registered: homepage-card');
+  } else {
+    lcarsLog.warn(TAG, 'Custom element homepage-card already registered — skipping');
   }

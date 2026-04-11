@@ -93,11 +93,6 @@ Promise.race(waitForHelpers).then(async () => {
       }
     }
 
-    /* ─── Area selection ─── */
-    _selectArea(areaId) {
-      this.selectedArea = this.selectedArea === areaId ? null : areaId;
-    }
-
     _handleEntityClick(entityId) {
       showMoreInfo(entityId);
     }
@@ -245,57 +240,25 @@ Promise.race(waitForHelpers).then(async () => {
         css`
           :host { display: block; }
 
-          /* ─── Areas List ─── */
-          .areas-grid {
-            display: flex;
-            flex-direction: column;
-            gap: var(--lcars-gap);
+          /* ─── Content Area Header (Geordi: gold = active area) ─── */
+          .content-area-panel {
+            animation: lcars-cascade-in 300ms ease-out both;
           }
-
-          .area-panel {
-            background: transparent;
-            padding: 0;
-            text-align: left;
-            max-width: 30rem;
-          }
-
-          .area-btn {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            height: var(--lcars-btn-height);
-            padding: 0 1rem 0 0.75rem;
-            background: var(--lcars-butterscotch);
-            color: var(--lcars-black);
-            border: none;
-            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+          .content-area-header {
             font-family: var(--lcars-font);
-            font-size: var(--lcars-font-size-data);
+            font-size: var(--lcars-font-size-title);
+            color: var(--lcars-gold);
             text-transform: uppercase;
-            cursor: pointer;
-            transition: filter var(--lcars-transition), background var(--lcars-transition);
-            width: 100%;
-            white-space: nowrap;
-            overflow: hidden;
-            user-select: none;
+            padding: 0.25rem 0 0.5rem 0;
+            border-left: 3px solid var(--lcars-gold);
+            padding-left: 1rem;
           }
-          .area-btn:hover { filter: brightness(1.2); }
-          .area-btn[data-active] { background: var(--lcars-btn-active); }
-          .area-btn ha-icon { --mdc-icon-size: 20px; flex-shrink: 0; }
-          .area-name { overflow: hidden; text-overflow: ellipsis; flex: 1; }
-          .area-count { font-size: 0.75rem; opacity: 0.7; flex-shrink: 0; }
-
-          /* ─── Expanded Area ─── */
-          .area-expanded {
-            overflow: hidden;
-            max-height: 0;
-            opacity: 0;
-            transition: max-height var(--lcars-transition-slow), opacity var(--lcars-transition);
-          }
-          .area-expanded[data-open] {
-            max-height: 8000px;
-            opacity: 1;
-            padding: 0.5rem 0;
+          .content-area-header::after {
+            content: '';
+            display: block;
+            height: 2px;
+            background: var(--lcars-data-accent);
+            margin-top: 0.5rem;
           }
 
           /* ─── Divider ─── */
@@ -694,13 +657,13 @@ Promise.race(waitForHelpers).then(async () => {
               clip-path: inset(0 0 0 0);
             }
           }
-          .area-expanded[data-open] .toggle-pill,
-          .area-expanded[data-open] .sensor-readout,
-          .area-expanded[data-open] .climate-panel,
-          .area-expanded[data-open] .cover-panel,
-          .area-expanded[data-open] .media-strip,
-          .area-expanded[data-open] .camera-frame,
-          .area-expanded[data-open] .entity-btn {
+          .content-area-panel .toggle-pill,
+          .content-area-panel .sensor-readout,
+          .content-area-panel .climate-panel,
+          .content-area-panel .cover-panel,
+          .content-area-panel .media-strip,
+          .content-area-panel .camera-frame,
+          .content-area-panel .entity-btn {
             animation: lcars-cascade-in 300ms ease-out both;
             animation-delay: calc(var(--i, 0) * 40ms);
           }
@@ -788,14 +751,14 @@ Promise.race(waitForHelpers).then(async () => {
           .sensor-readout[data-warn] .sensor-seg.filled { background: var(--lcars-space-white); }
 
           @media (prefers-reduced-motion: reduce) {
-            .area-expanded { transition: none; }
-            .area-expanded[data-open] .toggle-pill,
-            .area-expanded[data-open] .sensor-readout,
-            .area-expanded[data-open] .climate-panel,
-            .area-expanded[data-open] .cover-panel,
-            .area-expanded[data-open] .media-strip,
-            .area-expanded[data-open] .camera-frame,
-            .area-expanded[data-open] .entity-btn { animation: none; }
+            .content-area-panel { animation: none; }
+            .content-area-panel .toggle-pill,
+            .content-area-panel .sensor-readout,
+            .content-area-panel .climate-panel,
+            .content-area-panel .cover-panel,
+            .content-area-panel .media-strip,
+            .content-area-panel .camera-frame,
+            .content-area-panel .entity-btn { animation: none; }
             .sensor-readout::after { animation: none; }
             .camera-frame img { animation: none; }
             .toggle-pill[data-on],
@@ -813,38 +776,21 @@ Promise.race(waitForHelpers).then(async () => {
     render() {
       if (!this._hass) return html`<div class="lcars-empty">Initializing...</div>`;
 
-      const areas = this._hass.areas ? Object.values(this._hass.areas) : [];
-      if (areas.length === 0) return html`<div class="lcars-empty">No areas configured</div>`;
+      // No area selected — show prompt
+      if (!this.selectedArea) {
+        return html`<div class="lcars-empty">Select an area</div>`;
+      }
+
+      // Find the area object
+      const area = this._hass.areas?.[this.selectedArea];
+      if (!area) return html`<div class="lcars-empty">Area not found</div>`;
+
+      const entities = this._getAreaEntities(this.selectedArea);
 
       return html`
-        <div class="lcars-divider">
-          <span class="lcars-divider-label">Areas</span>
-          <div class="lcars-divider-line"></div>
-        </div>
-        <div class="areas-grid">
-          ${areas.map((area) => this._renderArea(area))}
-        </div>
-      `;
-    }
-
-    _renderArea(area) {
-      const isSelected = this.selectedArea === area.area_id;
-      const entities = this._getAreaEntities(area.area_id);
-
-      return html`
-        <div class="area-panel">
-          <button class="area-btn" ?data-active=${isSelected}
-            aria-expanded=${isSelected} aria-controls="area-${area.area_id}"
-            @click=${() => this._selectArea(area.area_id)}>
-            <ha-icon .icon=${area.icon || 'mdi:home-outline'}></ha-icon>
-            <span class="area-name">${area.name}</span>
-            <span class="area-count">${entities.length}</span>
-          </button>
-        </div>
-        <div class="area-expanded" id="area-${area.area_id}"
-          ?data-open=${isSelected} role="region"
-          aria-label="${area.name} entities">
-          ${isSelected ? this._renderAreaContent(entities) : ''}
+        <div class="content-area-panel">
+          <div class="content-area-header">${area.name}</div>
+          ${this._renderAreaContent(entities)}
         </div>
       `;
     }

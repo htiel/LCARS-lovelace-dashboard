@@ -35,6 +35,7 @@ def load_yamll(fname, secrets = None, args={}):
                 process_yaml = True
 
         #_LOGGER.debug(f"load_yamll() Loading YAML: {fname}, process_yaml={process_yaml}")
+        _LOGGER.debug("load_yamll: %s (jinja=%s)", fname, process_yaml)
 
         if process_yaml:
             stream = io.StringIO(jinja.get_template(fname).render({
@@ -99,7 +100,7 @@ yaml.composer.Composer.compose_node = compose_node
 
 async def process_yaml(hass: HomeAssistant, config_entry):
     """Process all YAML files for LCARS Dashboard."""
-    #_LOGGER.warning('Start of function to process all yaml files!')
+    _LOGGER.debug("process_yaml starting")
 
     # Check for HKI installation
     if os.path.exists(hass.config.path("hki-user/config")):

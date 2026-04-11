@@ -11,7 +11,9 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { getHass, showMoreInfo, fireEvent, createCardElement, lcarsEventBus } from './lcars-helpers.js';
+import { getHass, showMoreInfo, fireEvent, createCardElement, lcarsEventBus, lcarsLog } from './lcars-helpers.js';
+
+const TAG = 'Homepage';
 
 /* Domain rendering categories */
 const TOGGLE_DOMAINS = new Set(['light', 'switch', 'fan', 'input_boolean', 'lock', 'automation', 'script']);
@@ -59,6 +61,7 @@ class LcarsHomepageCard extends LitElement {
       this._cachedEntities = null;
       this._cachedAreaId = null;
       this._onAreaSelected = (e) => {
+        lcarsLog.debug(TAG, 'Area selected event:', e.detail.areaId);
         this.selectedArea = e.detail.areaId;
         this._cachedEntities = null; // bust cache on area change
       };
@@ -102,13 +105,15 @@ class LcarsHomepageCard extends LitElement {
 
     async _loadConfiguration() {
       if (!this._hass) return;
+      lcarsLog.debug(TAG, 'Loading configuration via WS...');
       try {
         const result = await this._hass.callWS({
           type: 'lcars_dashboard/configuration/get',
         });
         this.data = result;
+        lcarsLog.debug(TAG, 'Configuration loaded:', Object.keys(result));
       } catch (e) {
-        console.error('LCARS: Failed to load configuration', e);
+        lcarsLog.error(TAG, 'Failed to load configuration', e);
         // Set empty data so we don't retry endlessly — card still works dynamically from hass
         this.data = {};
       }
@@ -136,8 +141,10 @@ class LcarsHomepageCard extends LitElement {
       if (!this._hass) return [];
       // Return cached result if area and registry haven't changed
       if (this._cachedEntities && this._cachedAreaId === areaId) {
+        lcarsLog.debug(TAG, 'Entity cache HIT for area:', areaId, this._cachedEntities.length, 'entities');
         return this._cachedEntities;
       }
+      lcarsLog.debug(TAG, 'Entity cache MISS — resolving area:', areaId);
       const entityReg = Object.values(this._hass.entities || {});
       const deviceReg = this._hass.devices || {};
       const areaDeviceIds = new Set();
@@ -153,6 +160,7 @@ class LcarsHomepageCard extends LitElement {
       });
       this._cachedEntities = result;
       this._cachedAreaId = areaId;
+      lcarsLog.debug(TAG, 'Resolved', result.length, 'entities for area:', areaId);
       return result;
     }
 

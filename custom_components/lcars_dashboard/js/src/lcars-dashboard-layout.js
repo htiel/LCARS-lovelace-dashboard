@@ -6,7 +6,9 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { lcarsEventBus } from './lcars-helpers.js';
+import { lcarsEventBus, lcarsLog } from './lcars-helpers.js';
+
+const TAG = 'Layout';
 
 class LcarsDashboardLayout extends LitElement {
   static get properties() {
@@ -40,6 +42,7 @@ class LcarsDashboardLayout extends LitElement {
 
   setConfig(config) {
     this._config = config;
+    lcarsLog.debug(TAG, 'setConfig', config);
   }
 
   set hass(hass) {
@@ -48,6 +51,7 @@ class LcarsDashboardLayout extends LitElement {
     // Auto-deselect area if it was deleted from HA
     if (prev && prev.areas !== hass.areas && this._selectedArea) {
       if (!hass.areas?.[this._selectedArea]) {
+        lcarsLog.debug(TAG, 'Auto-deselecting deleted area:', this._selectedArea);
         this._selectedArea = null;
         lcarsEventBus.dispatchEvent(
           new CustomEvent('lcars-area-selected', { detail: { areaId: null } })
@@ -63,6 +67,7 @@ class LcarsDashboardLayout extends LitElement {
 
   _selectArea(areaId) {
     this._selectedArea = this._selectedArea === areaId ? null : areaId;
+    lcarsLog.debug(TAG, 'Area selected:', this._selectedArea);
     // Broadcast area selection via private event bus (prevents injection from untrusted cards)
     lcarsEventBus.dispatchEvent(
       new CustomEvent('lcars-area-selected', {
@@ -416,6 +421,7 @@ ready.then(() => {
   if (!customElements.get('lcars-dashboard-layout')) {
     customElements.define('lcars-dashboard-layout', LcarsDashboardLayout);
     const pkg = require('../package.json');
+    lcarsLog.info(TAG, `v${pkg.version} registered`);
     console.info(
       `%c LCARS-DASHBOARD \n%c Version ${pkg.version}`,
       'color: #ff9966; font-weight: bold; background: black',

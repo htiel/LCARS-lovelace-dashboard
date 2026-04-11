@@ -893,6 +893,30 @@
             gap: var(--lcars-gap);
             margin-bottom: 0.75rem;
           }
+
+          /* ─── Two-column split: entities left, camera panels right ─── */
+          .area-split-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            align-items: start;
+          }
+          .area-split-main {
+            min-width: 0;
+          }
+          .area-split-panels {
+            display: flex;
+            flex-direction: column;
+            gap: var(--lcars-gap);
+          }
+          .area-split-panels .lcars-device-panel {
+            max-width: none;
+          }
+          @media (max-width: 960px) {
+            .area-split-layout {
+              grid-template-columns: 1fr;
+            }
+          }
           .lcars-device-panel {
             --panel-frame-color: var(--lcars-butterscotch);
             --media-aspect: 16/9;
@@ -1386,12 +1410,7 @@
               `})}
           </div>
         </div>
-      `}_renderAreaContent(t){if(0===t.length)return e.qy`<div class="lcars-empty">No entities in this area</div>`;const{byDevice:a,noDevice:r}=this._groupEntities(t),s=[],i=[];for(const e of a.values()){const t=this._getDevicePanelType(e.entities);t?s.push({...e,panelType:t}):i.push(e)}return e.qy`
-        ${s.length>0?e.qy`
-          <div class="device-panels-section" aria-live="polite">
-            ${s.map(e=>this._renderDevicePanel(e.panelType,e))}
-          </div>
-        `:""}
+      `}_renderAreaContent(t){if(0===t.length)return e.qy`<div class="lcars-empty">No entities in this area</div>`;const{byDevice:a,noDevice:r}=this._groupEntities(t),s=[],i=[];for(const e of a.values()){const t=this._getDevicePanelType(e.entities);t?s.push({...e,panelType:t}):i.push(e)}const n=e.qy`
         ${i.map(t=>e.qy`
           <div class="device-group">
             <div class="device-header">
@@ -1410,6 +1429,13 @@
             ${this._renderDomainGroups(r)}
           </div>
         `:""}
+      `;return 0===s.length?n:e.qy`
+        <div class="area-split-layout">
+          <div class="area-split-main">${n}</div>
+          <div class="area-split-panels" aria-live="polite">
+            ${s.map(e=>this._renderDevicePanel(e.panelType,e))}
+          </div>
+        </div>
       `}_renderDomainGroups(t){const a=this._groupByDomain(t);return e.qy`${a.map(([t,a])=>e.qy`
         <div class="domain-label">${p[t]||t}</div>
         ${this._renderDomainEntities(t,a)}

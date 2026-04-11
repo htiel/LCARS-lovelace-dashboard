@@ -707,6 +707,30 @@ class LcarsHomepageCard extends LitElement {
             gap: var(--lcars-gap);
             margin-bottom: 0.75rem;
           }
+
+          /* ─── Two-column split: entities left, camera panels right ─── */
+          .area-split-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            align-items: start;
+          }
+          .area-split-main {
+            min-width: 0;
+          }
+          .area-split-panels {
+            display: flex;
+            flex-direction: column;
+            gap: var(--lcars-gap);
+          }
+          .area-split-panels .lcars-device-panel {
+            max-width: none;
+          }
+          @media (max-width: 960px) {
+            .area-split-layout {
+              grid-template-columns: 1fr;
+            }
+          }
           .lcars-device-panel {
             --panel-frame-color: var(--lcars-butterscotch);
             --media-aspect: 16/9;
@@ -1301,7 +1325,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ─── Render area content: panels first, then normal devices ─── */
+    /* ─── Render area content: two-column when cameras present ─── */
     _renderAreaContent(entities) {
       if (entities.length === 0)
         return html`<div class="lcars-empty">No entities in this area</div>`;
@@ -1320,12 +1344,8 @@ class LcarsHomepageCard extends LitElement {
         }
       }
 
-      return html`
-        ${panelDevices.length > 0 ? html`
-          <div class="device-panels-section" aria-live="polite">
-            ${panelDevices.map(g => this._renderDevicePanel(g.panelType, g))}
-          </div>
-        ` : ''}
+      // Build normal content once — used in both layouts
+      const normalContent = html`
         ${normalDevices.map((group) => html`
           <div class="device-group">
             <div class="device-header">
@@ -1344,6 +1364,19 @@ class LcarsHomepageCard extends LitElement {
             ${this._renderDomainGroups(noDevice)}
           </div>
         ` : ''}
+      `;
+
+      // No camera panels → single-column (unchanged behavior)
+      if (panelDevices.length === 0) return normalContent;
+
+      // Camera panels present → two-column split layout
+      return html`
+        <div class="area-split-layout">
+          <div class="area-split-main">${normalContent}</div>
+          <div class="area-split-panels" aria-live="polite">
+            ${panelDevices.map(g => this._renderDevicePanel(g.panelType, g))}
+          </div>
+        </div>
       `;
     }
 

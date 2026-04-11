@@ -77,11 +77,25 @@ Promise.race(waitForHelpers).then(async () => {
     }
 
     _getAreaEntities(areaId) {
-      if (!this._hass || !this.data) return [];
+      if (!this._hass) return [];
       const entityReg = Object.values(this._hass.entities || {});
-      return entityReg.filter(
-        (e) => e.area_id === areaId && !e.hidden_by && !e.disabled_by
-      );
+      const deviceReg = this._hass.devices || {};
+
+      // Build set of device IDs that belong to this area
+      const areaDeviceIds = new Set();
+      Object.values(deviceReg).forEach((dev) => {
+        if (dev.area_id === areaId) areaDeviceIds.add(dev.id);
+      });
+
+      return entityReg.filter((e) => {
+        if (e.hidden_by || e.disabled_by) return false;
+        // Entity directly assigned to this area
+        if (e.area_id === areaId) return true;
+        // Entity inherits area from its device (no direct area override)
+        if (!e.area_id && e.device_id && areaDeviceIds.has(e.device_id))
+          return true;
+        return false;
+      });
     }
 
     _getEntityState(entityId) {
@@ -120,8 +134,8 @@ Promise.race(waitForHelpers).then(async () => {
 
           /* ─── Areas Grid ─── */
           .areas-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+            display: flex;
+            flex-direction: column;
             gap: var(--lcars-gap);
           }
 
@@ -132,7 +146,7 @@ Promise.race(waitForHelpers).then(async () => {
             cursor: pointer;
             padding: 0;
             text-align: left;
-            width: 100%;
+            max-width: 30rem;
           }
 
           .area-btn {
@@ -183,7 +197,6 @@ Promise.race(waitForHelpers).then(async () => {
 
           /* ─── Expanded Area Content ─── */
           .area-expanded {
-            grid-column: 1 / -1;
             overflow: hidden;
             max-height: 0;
             opacity: 0;

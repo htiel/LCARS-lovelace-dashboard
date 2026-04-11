@@ -35,6 +35,10 @@ Promise.race(waitForHelpers).then(async () => {
       this._cards = {};
     }
 
+    setConfig(config) {
+      this._config = config;
+    }
+
     set hass(hass) {
       this._hass = hass;
       // Propagate hass to child cards

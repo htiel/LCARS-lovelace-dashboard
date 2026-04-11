@@ -37,6 +37,10 @@ const DOMAIN_LABELS = {
   update: 'Updates', event: 'Events', conversation: 'Conversation',
 };
 
+/* Device panel type constants */
+const PANEL_TYPE_CAMERA = 'camera';
+// Future: PANEL_TYPE_CLIMATE = 'climate', PANEL_TYPE_MEDIA = 'media'
+
 /* Domain sort priority (lower = shown first) */
 const DOMAIN_ORDER = {
   camera: 0, light: 1, switch: 2, climate: 3, cover: 4,
@@ -587,6 +591,187 @@ class LcarsHomepageCard extends LitElement {
           }
           .camera-frame[data-off] { border-color: var(--lcars-gray); opacity: 0.5; }
 
+          /* ═══════ DEVICE PANEL (reusable frame for camera / climate / media) ═══════ */
+          .device-panels-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: var(--lcars-gap);
+            margin-bottom: 0.75rem;
+          }
+          .lcars-device-panel {
+            --panel-frame-color: var(--lcars-butterscotch);
+            --media-aspect: 16/9;
+            display: grid;
+            grid-template-columns: minmax(10rem, 14rem) minmax(18rem, 1fr);
+            grid-template-rows: auto 1fr auto;
+            grid-template-areas:
+              "header  header"
+              "sensors media"
+              "controls controls";
+            gap: var(--lcars-gap);
+            width: 100%;
+            max-width: 42rem;
+            border-left: 4px solid var(--panel-frame-color);
+            border-bottom: 4px solid var(--panel-frame-color);
+            border-top: 2px solid var(--panel-frame-color);
+            border-right: 2px solid var(--panel-frame-color);
+            border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
+            padding: var(--lcars-gap);
+            background: var(--lcars-black);
+            position: relative;
+          }
+          /* Corner bracket — top-left */
+          .lcars-device-panel::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -4px;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-top: 4px solid var(--panel-frame-color);
+            border-left: 4px solid var(--panel-frame-color);
+            border-radius: 0.75rem 0 0 0;
+            pointer-events: none;
+          }
+          /* Corner bracket — bottom-right */
+          .lcars-device-panel::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            right: -2px;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-bottom: 4px solid var(--panel-frame-color);
+            border-right: 2px solid var(--panel-frame-color);
+            border-radius: 0 0 0.25rem 0;
+            pointer-events: none;
+          }
+
+          /* Panel header */
+          .device-panel-header {
+            grid-area: header;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.5rem;
+          }
+          .device-panel-name {
+            font-size: var(--lcars-font-size-sub);
+            color: var(--panel-frame-color);
+            text-transform: uppercase;
+            white-space: nowrap;
+          }
+          .device-panel-header-line {
+            flex: 1;
+            height: 2px;
+            background: var(--panel-frame-color);
+            opacity: 0.5;
+          }
+
+          /* Sensor telemetry readouts — left column */
+          .device-panel-sensors {
+            grid-area: sensors;
+            display: flex;
+            flex-direction: column;
+            gap: var(--lcars-gap);
+            overflow-y: auto;
+            max-height: 20rem;
+            padding: 0.25rem;
+          }
+          .device-sensor-line {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            cursor: pointer;
+            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+            transition: background var(--lcars-transition);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+          }
+          .device-sensor-line:hover {
+            background: rgba(255, 255, 255, 0.05);
+          }
+          .device-sensor-line:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
+          .sensor-indicator {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            flex-shrink: 0;
+          }
+          .sensor-label {
+            flex: 1;
+            color: var(--lcars-space-white);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 0.75rem;
+          }
+          .sensor-state-value {
+            flex-shrink: 0;
+            font-weight: 700;
+            font-size: var(--lcars-font-size-data);
+          }
+
+          /* Media viewscreen — right column */
+          .device-panel-media {
+            grid-area: media;
+            position: relative;
+            border: 3px solid var(--panel-frame-color);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background: var(--lcars-black);
+            aspect-ratio: var(--media-aspect);
+          }
+          .device-panel-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+          }
+          .device-panel-media[data-offline] {
+            border-color: var(--lcars-gray);
+            opacity: 0.5;
+          }
+
+          /* Control buttons — bottom row */
+          .device-panel-controls {
+            grid-area: controls;
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--lcars-gap);
+            padding: 0.25rem 0;
+          }
+          .device-control-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            height: 2.25rem;
+            padding: 0 0.75rem;
+            background: var(--lcars-sunflower);
+            color: var(--lcars-black);
+            border: none;
+            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: filter var(--lcars-transition), background var(--lcars-transition);
+            white-space: nowrap;
+          }
+          .device-control-btn:hover { filter: brightness(1.15); }
+          .device-control-btn:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
+          .device-control-btn ha-icon { --mdc-icon-size: 16px; flex-shrink: 0; }
+          .device-control-btn[data-on] { background: var(--lcars-gold); }
+          .device-control-btn[data-off] { background: var(--lcars-gray); color: var(--lcars-space-white); }
+
           /* ═══════ CLIMATE PANEL ═══════ */
           .climate-grid {
             display: grid;
@@ -728,7 +913,8 @@ class LcarsHomepageCard extends LitElement {
           .content-area-panel .cover-panel,
           .content-area-panel .media-strip,
           .content-area-panel .camera-frame,
-          .content-area-panel .entity-btn {
+          .content-area-panel .entity-btn,
+          .content-area-panel .lcars-device-panel {
             animation: lcars-cascade-in 300ms ease-out both;
             animation-delay: calc(var(--i, 0) * 40ms);
           }
@@ -793,6 +979,23 @@ class LcarsHomepageCard extends LitElement {
           .sensor-readout[data-off],
           .toggle-pill[data-off] { animation: lcars-distress 4s ease-in-out infinite; }
 
+          /* ── Device Panel Viewscreen Activation ── */
+          .device-panel-media img {
+            animation: viewscreen-activate 600ms ease-out both;
+          }
+          .device-panel-media[data-offline] img {
+            filter: saturate(0) brightness(0.3);
+            animation: none;
+          }
+          /* Unavailable panel pulsing border */
+          @keyframes panel-distress {
+            0%, 100% { border-color: var(--panel-frame-color); }
+            50%      { border-color: var(--lcars-tomato); }
+          }
+          .lcars-device-panel:has(.device-panel-media[data-offline]) {
+            animation: panel-distress 3s ease-in-out infinite;
+          }
+
           /* ── 5. Segmented Sensor Bar ── */
           .sensor-bar {
             display: flex;
@@ -823,15 +1026,18 @@ class LcarsHomepageCard extends LitElement {
             .content-area-panel .cover-panel,
             .content-area-panel .media-strip,
             .content-area-panel .camera-frame,
-            .content-area-panel .entity-btn { animation: none; }
+            .content-area-panel .entity-btn,
+            .content-area-panel .lcars-device-panel { animation: none; }
             .sensor-readout::after { animation: none; }
-            .camera-frame img { animation: none; }
+            .camera-frame img,
+            .device-panel-media img { animation: none; }
             .toggle-pill[data-on],
             .climate-panel[data-heat],
             .climate-panel[data-cool],
             .media-strip:not([data-off]),
             .sensor-readout[data-off],
-            .toggle-pill[data-off] { animation: none; }
+            .toggle-pill[data-off],
+            .lcars-device-panel:has(.device-panel-media[data-offline]) { animation: none; }
           }
         `,
       ];
@@ -860,15 +1066,154 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ─── Render area content grouped by device → domain ─── */
+    /* ─── Detect if a device warrants a unified panel ─── */
+    _getDevicePanelType(entries) {
+      if (entries.some(e => CAMERA_DOMAINS.has(e.domain))) return PANEL_TYPE_CAMERA;
+      // Future panel types go here in priority order
+      return null;
+    }
+
+    /* ─── Single-pass partition of device entities for panel rendering ─── */
+    _partitionDeviceEntities(entries) {
+      const cameras = [];
+      const sensors = [];
+      const controls = [];
+      for (const entry of entries) {
+        if (CAMERA_DOMAINS.has(entry.domain)) cameras.push(entry);
+        else if (SENSOR_DOMAINS.has(entry.domain)) sensors.push(entry);
+        else controls.push(entry);
+      }
+      return { cameras, sensors, controls };
+    }
+
+    /* ─── Dispatch to the correct panel renderer ─── */
+    _renderDevicePanel(panelType, group) {
+      switch (panelType) {
+        case PANEL_TYPE_CAMERA: return this._renderCameraPanel(group);
+        // Future: case PANEL_TYPE_CLIMATE: return this._renderClimatePanel(group);
+        default: return '';
+      }
+    }
+
+    /* ─── Sensor indicator color per state (Geordi spec) ─── */
+    _getSensorIndicatorColor(state) {
+      if (!state || state.state === 'unavailable' || state.state === 'unknown')
+        return 'var(--lcars-tomato)';
+      const deviceClass = state.attributes?.device_class || '';
+      const val = state.state;
+      // Motion sensor
+      if (deviceClass === 'motion' || deviceClass === 'occupancy')
+        return val === 'on' ? 'var(--lcars-butterscotch)' : 'var(--lcars-gray)';
+      // Person or presence
+      if (deviceClass === 'presence')
+        return val === 'on' || val === 'home' ? 'var(--lcars-gold)' : 'var(--lcars-gray)';
+      // Doorbell / tamper / problem / safety
+      if (['problem', 'safety', 'tamper'].includes(deviceClass))
+        return val === 'on' ? 'var(--lcars-tomato)' : 'var(--lcars-gray)';
+      // Generic binary on/off
+      if (state.entity_id?.startsWith('binary_sensor.'))
+        return val === 'on' ? 'var(--lcars-ice)' : 'var(--lcars-gray)';
+      // Numeric sensor — always data accent
+      return 'var(--lcars-data-accent)';
+    }
+
+    /* ═══ CAMERA DEVICE PANEL RENDERER ═══ */
+    _renderCameraPanel(group) {
+      const { cameras, sensors, controls } = this._partitionDeviceEntities(group.entities);
+      const deviceName = group.device.name_by_user || group.device.name || 'Device';
+
+      return html`
+        <div class="lcars-device-panel" data-panel-type="camera">
+          <div class="device-panel-header">
+            <span class="device-panel-name">${deviceName}</span>
+            <div class="device-panel-header-line"></div>
+          </div>
+
+          <div class="device-panel-sensors" role="list" aria-label="${deviceName} sensors">
+            ${sensors.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const val = state.state;
+              const unit = state.attributes?.unit_of_measurement || '';
+              const color = this._getSensorIndicatorColor(state);
+              return html`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  aria-label="${name}: ${val}${unit ? ' ' + unit : ''}"
+                  @click=${() => this._handleEntityClick(entity.entity_id)}
+                  @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
+                  <div class="sensor-indicator" style="background:${color}"></div>
+                  <span class="sensor-label">${name}</span>
+                  <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                </div>
+              `;
+            })}
+          </div>
+
+          <div class="device-panel-media"
+            ?data-offline=${cameras.length > 0 && this._isOff(cameras[0].state)}>
+            ${cameras.length > 0 && cameras[0].state.attributes?.entity_picture
+              ? html`<img src="${cameras[0].state.attributes.entity_picture}"
+                          alt="${deviceName} camera feed" loading="lazy" />`
+              : html`<div style="display:flex;align-items:center;justify-content:center;height:100%">
+                  <ha-icon icon="mdi:video-off" style="--mdc-icon-size:48px;color:var(--lcars-gray)"></ha-icon>
+                </div>`
+            }
+            ${cameras.length > 1 ? cameras.slice(1).map(({ entity, state }) => html`
+              <img src="${state.attributes?.entity_picture || ''}"
+                   alt="${this._friendlyName(state, entity)} camera feed"
+                   loading="lazy"
+                   style="margin-top:var(--lcars-gap);border-top:2px solid var(--panel-frame-color)"
+                   @click=${() => this._handleEntityClick(entity.entity_id)} />
+            `) : ''}
+          </div>
+
+          <div class="device-panel-controls" aria-label="${deviceName} controls">
+            ${controls.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const isOn = state.state === 'on';
+              const isOff = this._isOff(state);
+              const domain = entity.entity_id.split('.')[0];
+              return html`
+                <button class="device-control-btn" ?data-on=${isOn} ?data-off=${isOff}
+                  @click=${() => TOGGLE_DOMAINS.has(domain)
+                    ? this._handleToggle(entity.entity_id)
+                    : this._handleEntityClick(entity.entity_id)}
+                  title="${name}: ${state.state}">
+                  <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
+                  <span>${name}</span>
+                </button>
+              `;
+            })}
+          </div>
+        </div>
+      `;
+    }
+
+    /* ─── Render area content: panels first, then normal devices ─── */
     _renderAreaContent(entities) {
       if (entities.length === 0)
         return html`<div class="lcars-empty">No entities in this area</div>`;
 
       const { byDevice, noDevice } = this._groupEntities(entities);
 
+      // Partition devices into panel-worthy and normal
+      const panelDevices = [];
+      const normalDevices = [];
+      for (const group of byDevice.values()) {
+        const panelType = this._getDevicePanelType(group.entities);
+        if (panelType) {
+          panelDevices.push({ ...group, panelType });
+        } else {
+          normalDevices.push(group);
+        }
+      }
+
       return html`
-        ${[...byDevice.values()].map((group) => html`
+        ${panelDevices.length > 0 ? html`
+          <div class="device-panels-section" aria-live="polite">
+            ${panelDevices.map(g => this._renderDevicePanel(g.panelType, g))}
+          </div>
+        ` : ''}
+        ${normalDevices.map((group) => html`
           <div class="device-group">
             <div class="device-header">
               <span class="device-name">${group.device.name_by_user || group.device.name || 'Device'}</span>

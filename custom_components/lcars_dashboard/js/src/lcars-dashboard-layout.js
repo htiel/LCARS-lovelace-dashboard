@@ -151,7 +151,7 @@ class LcarsDashboardLayout extends LitElement {
           display: grid;
           grid-template-columns: var(--lcars-sidebar-w) 1fr;
           grid-template-rows: var(--lcars-elbow-h) 1fr var(--lcars-elbow-h);
-          gap: var(--lcars-gap);
+          gap: var(--lcars-gap) var(--lcars-gap);
           min-height: calc(100vh - 0.5rem);
         }
 
@@ -182,7 +182,7 @@ class LcarsDashboardLayout extends LitElement {
           grid-row: 1;
           display: flex;
           align-items: flex-end;
-          gap: var(--lcars-gap);
+          gap: 0;
         }
 
         .lcars-header-bar {
@@ -192,10 +192,14 @@ class LcarsDashboardLayout extends LitElement {
         }
 
         .lcars-header-endcap {
-          width: var(--lcars-endcap);
           height: var(--lcars-bar-h);
+          min-width: var(--lcars-endcap);
           background: var(--lcars-header-bar);
           border-radius: 0 var(--lcars-endcap) var(--lcars-endcap) 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 0.5rem;
         }
 
         .lcars-header-title {
@@ -205,6 +209,30 @@ class LcarsDashboardLayout extends LitElement {
           padding: 0 1rem;
           line-height: var(--lcars-bar-h);
         }
+
+        /* ─── Configure Button (in header endcap) ─── */
+        .configure-btn {
+          background: none;
+          border: none;
+          color: var(--lcars-black);
+          cursor: pointer;
+          padding: 0 0.25rem;
+          display: flex;
+          align-items: center;
+          font-family: var(--lcars-font);
+          font-size: 0.65rem;
+          text-transform: uppercase;
+          user-select: none;
+          gap: 0.25rem;
+          white-space: nowrap;
+          transition: filter var(--lcars-transition);
+        }
+        .configure-btn:hover { filter: brightness(0.8); }
+        .configure-btn:focus-visible {
+          outline: 2px solid var(--lcars-ice);
+          outline-offset: 2px;
+        }
+        .configure-btn ha-icon { --mdc-icon-size: 16px; }
 
         /* ─── Sidebar ─── */
         .lcars-sidebar {
@@ -281,36 +309,6 @@ class LcarsDashboardLayout extends LitElement {
         :host([edit-mode]) .lcars-header-bar { background: var(--lcars-lilac); }
         :host([edit-mode]) .lcars-header-endcap { background: var(--lcars-lilac); }
 
-        .configure-btn {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          background: var(--lcars-lilac);
-          color: var(--lcars-black);
-          border: none;
-          border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
-          height: var(--lcars-btn-height);
-          padding: 0 1rem 0 0.75rem;
-          font-family: var(--lcars-font);
-          font-size: var(--lcars-font-size-data);
-          text-transform: uppercase;
-          text-align: left;
-          cursor: pointer;
-          width: calc(100% - 0.25rem);
-          transition: filter var(--lcars-transition), background var(--lcars-transition);
-          user-select: none;
-          white-space: nowrap;
-          overflow: hidden;
-          flex-shrink: 0;
-        }
-        .configure-btn:hover { filter: brightness(1.2); }
-        .configure-btn:focus-visible {
-          outline: 2px solid var(--lcars-ice);
-          outline-offset: 2px;
-        }
-        .configure-btn[data-active] { background: var(--lcars-gold); }
-        .configure-btn ha-icon { --mdc-icon-size: 18px; flex-shrink: 0; }
-
         /* ─── Sidebar Nav Buttons (bottom) ─── */
         .lcars-sidebar-nav {
           display: flex;
@@ -349,7 +347,7 @@ class LcarsDashboardLayout extends LitElement {
           width: calc(var(--lcars-sidebar-w) - var(--lcars-elbow-w) + 2rem);
           height: calc(var(--lcars-elbow-h) - var(--lcars-bar-h));
           background: var(--lcars-bg);
-          border-radius: 1.875rem 0 0 0;
+          border-radius: 0 0 0 1.875rem;
         }
 
         /* ─── Footer Bar ─── */
@@ -358,7 +356,7 @@ class LcarsDashboardLayout extends LitElement {
           grid-row: 3;
           display: flex;
           align-items: flex-start;
-          gap: var(--lcars-gap);
+          gap: 0;
         }
 
         .lcars-footer-bar {
@@ -368,7 +366,7 @@ class LcarsDashboardLayout extends LitElement {
         }
 
         .lcars-footer-endcap {
-          width: var(--lcars-endcap);
+          min-width: var(--lcars-endcap);
           height: var(--lcars-bar-h);
           background: var(--lcars-footer-bar);
           border-radius: 0 var(--lcars-endcap) var(--lcars-endcap) 0;
@@ -460,7 +458,16 @@ class LcarsDashboardLayout extends LitElement {
             style="${this._editMode ? 'cursor:pointer' : ''}"
             >${this._editMode ? 'LCARS \u00B7 CONFIGURATION MODE' : 'LCARS'}</span>
           <div class="lcars-header-bar"></div>
-          <div class="lcars-header-endcap"></div>
+          <div class="lcars-header-endcap">
+            ${this._hass?.user?.is_admin ? html`
+              <button class="configure-btn"
+                aria-pressed=${this._editMode}
+                aria-label="${this._editMode ? 'Exit configuration mode' : 'Enter configuration mode'}"
+                @click=${() => this._toggleEditMode()}>
+                <ha-icon .icon=${'mdi:cog-outline'}></ha-icon>
+              </button>
+            ` : ''}
+          </div>
         </div>
 
         <!-- Sidebar -->
@@ -482,16 +489,6 @@ class LcarsDashboardLayout extends LitElement {
 
           <!-- Fixed nav buttons at bottom -->
           <div class="lcars-sidebar-nav">
-            ${this._hass?.user?.is_admin ? html`
-              <button class="configure-btn"
-                ?data-active=${this._editMode}
-                aria-pressed=${this._editMode}
-                aria-label="${this._editMode ? 'Exit configuration mode' : 'Enter configuration mode'}"
-                @click=${() => this._toggleEditMode()}>
-                <ha-icon .icon=${'mdi:cog-outline'}></ha-icon>
-                <span>Configure</span>
-              </button>
-            ` : ''}
             <slot name="sidebar"></slot>
           </div>
         </nav>

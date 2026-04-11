@@ -1,4 +1,2 @@
 node_modules/
-src/*
-!src/translations.js
 dwains-dashboard.js.map

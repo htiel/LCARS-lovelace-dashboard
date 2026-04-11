@@ -73,6 +73,11 @@ class LcarsHomepageCard extends LitElement {
       this._cards = {};
       this._cachedEntities = null;
       this._cachedAreaId = null;
+      /* Camera auto-refresh state */
+      this._cameraRefreshInterval = null;
+      this._cameraObserver = null;
+      this._visibleCameras = new Set();
+      this._loadingCameras = new Set();
       this._onAreaSelected = (e) => {
         lcarsLog.debug(TAG, 'Area selected event:', e.detail.areaId);
         this.selectedArea = e.detail.areaId;
@@ -83,11 +88,105 @@ class LcarsHomepageCard extends LitElement {
     connectedCallback() {
       super.connectedCallback();
       lcarsEventBus.addEventListener('lcars-area-selected', this._onAreaSelected);
+      this._startCameraRefresh();
+      document.addEventListener('visibilitychange', this._onVisibilityChange);
     }
 
     disconnectedCallback() {
       super.disconnectedCallback();
       lcarsEventBus.removeEventListener('lcars-area-selected', this._onAreaSelected);
+      this._stopCameraRefresh();
+      document.removeEventListener('visibilitychange', this._onVisibilityChange);
+    }
+
+    /* ─── Camera auto-refresh: pause/resume on tab visibility ─── */
+    _onVisibilityChange = () => {
+      if (document.hidden) {
+        this._stopCameraTimer();
+      } else {
+        this._startCameraTimer();
+        this._refreshVisibleCameras();
+      }
+    };
+
+    _startCameraRefresh() {
+      this._cameraObserver = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            const entityId = entry.target.dataset.entity;
+            if (!entityId) continue;
+            if (entry.isIntersecting) {
+              this._visibleCameras.add(entityId);
+            } else {
+              this._visibleCameras.delete(entityId);
+            }
+          }
+        },
+        { rootMargin: '50px' }
+      );
+      this._startCameraTimer();
+    }
+
+    _startCameraTimer() {
+      if (this._cameraRefreshInterval) return;
+      this._cameraRefreshInterval = setInterval(() => {
+        this._refreshVisibleCameras();
+      }, 10000);
+    }
+
+    _stopCameraTimer() {
+      if (this._cameraRefreshInterval) {
+        clearInterval(this._cameraRefreshInterval);
+        this._cameraRefreshInterval = null;
+      }
+    }
+
+    _stopCameraRefresh() {
+      this._stopCameraTimer();
+      if (this._cameraObserver) {
+        this._cameraObserver.disconnect();
+        this._cameraObserver = null;
+      }
+      this._visibleCameras.clear();
+      this._loadingCameras.clear();
+    }
+
+    _refreshVisibleCameras() {
+      if (document.hidden || !this._hass) return;
+      const now = Date.now();
+      for (const entityId of this._visibleCameras) {
+        if (this._loadingCameras.has(entityId)) continue;
+        const state = this._hass.states[entityId];
+        if (!state || state.state === 'unavailable') continue;
+        const base = state.attributes?.entity_picture;
+        if (!base) continue;
+        const img = this.shadowRoot?.querySelector(`img[data-entity="${CSS.escape(entityId)}"]`);
+        if (!img) continue;
+        const sep = base.includes('?') ? '&' : '?';
+        const newUrl = `${base}${sep}_cb=${now}`;
+        this._loadingCameras.add(entityId);
+        img.addEventListener('load', () => this._loadingCameras.delete(entityId), { once: true });
+        img.addEventListener('error', () => this._loadingCameras.delete(entityId), { once: true });
+        img.src = newUrl;
+      }
+    }
+
+    updated(changedProps) {
+      super.updated(changedProps);
+      if (this._cameraObserver) {
+        const imgs = this.shadowRoot?.querySelectorAll('img[data-entity]') || [];
+        const currentEntities = new Set();
+        for (const img of imgs) {
+          currentEntities.add(img.dataset.entity);
+          this._cameraObserver.observe(img);
+        }
+        for (const entityId of this._visibleCameras) {
+          if (!currentEntities.has(entityId)) {
+            this._visibleCameras.delete(entityId);
+            this._loadingCameras.delete(entityId);
+          }
+        }
+      }
     }
 
     setConfig(config) {

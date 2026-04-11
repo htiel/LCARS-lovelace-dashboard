@@ -6,13 +6,6 @@ import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getHass, navigate, fireEvent } from './lcars-helpers.js';
 
-const waitForHelpers = [
-  customElements.whenDefined('hui-masonry-view'),
-  customElements.whenDefined('hc-lovelace'),
-];
-
-Promise.race(waitForHelpers).then(async () => {
-  await new Promise((r) => setTimeout(r, 2000));
 
   class LcarsNavigationCard extends LitElement {
     static get properties() {
@@ -137,4 +130,3 @@ Promise.race(waitForHelpers).then(async () => {
   if (!customElements.get('lcars-navigation-card')) {
     customElements.define('lcars-navigation-card', LcarsNavigationCard);
   }
-});

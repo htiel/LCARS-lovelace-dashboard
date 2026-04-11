@@ -4,13 +4,6 @@
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 
-const waitForHelpers = [
-  customElements.whenDefined('hui-masonry-view'),
-  customElements.whenDefined('hc-lovelace'),
-];
-
-Promise.race(waitForHelpers).then(async () => {
-  await new Promise((r) => setTimeout(r, 2000));
 
   class LcarsCreateCustomCardCard extends LitElement {
     static get properties() {
@@ -72,4 +65,3 @@ Promise.race(waitForHelpers).then(async () => {
   if (!customElements.get('lcars-create-custom-card-card')) {
     customElements.define('lcars-create-custom-card-card', LcarsCreateCustomCardCard);
   }
-});

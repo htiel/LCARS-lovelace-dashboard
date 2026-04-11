@@ -105,3 +105,37 @@ export async function ensureLovelaceLoaded() {
   panel._fetchConfig();
   return true;
 }
+
+/**
+ * Create a Lovelace card element from config.
+ * Works with modern HA (2024.8+) where window.loadCardHelpers was removed.
+ */
+export async function createCardElement(cardConfig) {
+  // Try modern approach: direct custom element creation
+  const tag = cardConfig.type?.startsWith('custom:')
+    ? cardConfig.type.slice(7)
+    : `hui-${cardConfig.type}-card`;
+
+  // Ensure the element is defined
+  if (!customElements.get(tag)) {
+    await ensureLovelaceLoaded();
+    // Wait a bit for dynamic imports
+    await new Promise((r) => setTimeout(r, 100));
+  }
+
+  // Try window.loadCardHelpers first (older HA)
+  if (typeof window.loadCardHelpers === 'function') {
+    try {
+      const helpers = await window.loadCardHelpers();
+      const card = await helpers.createCardElement(cardConfig);
+      return card;
+    } catch (_) { /* fall through */ }
+  }
+
+  // Modern fallback: create the element directly
+  const el = document.createElement(tag);
+  if (el.setConfig) {
+    el.setConfig(cardConfig);
+  }
+  return el;
+}

@@ -11,7 +11,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { getHass, showMoreInfo, fireEvent } from './lcars-helpers.js';
+import { getHass, showMoreInfo, fireEvent, createCardElement } from './lcars-helpers.js';
 
 /* Domain rendering categories */
 const TOGGLE_DOMAINS = new Set(['light', 'switch', 'fan', 'input_boolean', 'lock', 'automation', 'script']);
@@ -41,23 +41,14 @@ const DOMAIN_ORDER = {
   media_player: 5, fan: 6, lock: 7, sensor: 8, binary_sensor: 9,
 };
 
-const waitForHelpers = [
-  customElements.whenDefined('hui-masonry-view'),
-  customElements.whenDefined('hc-lovelace'),
-];
-
-Promise.race(waitForHelpers).then(async () => {
-  await new Promise((r) => setTimeout(r, 2000));
-  const helpers = await window.loadCardHelpers();
-
-  class LcarsHomepageCard extends LitElement {
-    static get properties() {
-      return {
-        data: { type: Object },
-        selectedArea: { type: String },
-        _hass: { type: Object },
-        _cards: { type: Object },
-      };
+class LcarsHomepageCard extends LitElement {
+  static get properties() {
+    return {
+      data: { type: Object },
+      selectedArea: { type: String },
+      _hass: { type: Object },
+      _cards: { type: Object },
+    };
     }
 
     constructor() {
@@ -1048,4 +1039,3 @@ Promise.race(waitForHelpers).then(async () => {
   if (!customElements.get('homepage-card')) {
     customElements.define('homepage-card', LcarsHomepageCard);
   }
-});

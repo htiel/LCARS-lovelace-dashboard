@@ -1,18 +1,8 @@
-# Start of the LCARS Dashboard ui-lovelace.yaml
+# LCARS Dashboard — Lovelace YAML configuration
+# Non-standard top-level keys (lcars_dashboard, button_card_templates,
+# apexcharts_card_templates, lovelace-background) were removed because
+# HA 2025.x+ Lovelace config validation rejects unknown keys, causing
+# "CONFIGURATION ERROR" banner.
 
-#Load all settings for LCARS Dashboard
-lcars_dashboard:
-  active: true
-
-#For people who want to use button card templates
-button_card_templates: 
-  !include_dir_merge_named ../../../lcars-dashboard/button_card_templates
-
-#For people who want to use apexcharts card templates
-apexcharts_card_templates:
-  !include_dir_merge_named ../../../lcars-dashboard/apexcharts_card_templates
-
-# Start of main lovelace theme 
-lovelace-background: var(--background-image)
 views:
   !include_dir_merge_list views/

@@ -47,6 +47,15 @@ const DOMAIN_ORDER = {
   media_player: 5, fan: 6, lock: 7, sensor: 8, binary_sensor: 9,
 };
 
+/* Build a cache-busted camera image URL using last_updated timestamp */
+function cameraImageUrl(state) {
+  const base = state?.attributes?.entity_picture;
+  if (!base) return '';
+  const ts = state.last_updated || state.last_changed || '';
+  const sep = base.includes('?') ? '&' : '?';
+  return `${base}${sep}_cb=${encodeURIComponent(ts)}`;
+}
+
 class LcarsHomepageCard extends LitElement {
   static get properties() {
     return {
@@ -1150,20 +1159,25 @@ class LcarsHomepageCard extends LitElement {
 
           <div class="device-panel-media"
             ?data-offline=${cameras.length > 0 && this._isOff(cameras[0].state)}>
-            ${cameras.length > 0 && cameras[0].state.attributes?.entity_picture
-              ? html`<img src="${cameras[0].state.attributes.entity_picture}"
-                          alt="${deviceName} camera feed" loading="lazy" />`
-              : html`<div style="display:flex;align-items:center;justify-content:center;height:100%">
-                  <ha-icon icon="mdi:video-off" style="--mdc-icon-size:48px;color:var(--lcars-gray)"></ha-icon>
-                </div>`
-            }
-            ${cameras.length > 1 ? cameras.slice(1).map(({ entity, state }) => html`
-              <img src="${state.attributes?.entity_picture || ''}"
-                   alt="${this._friendlyName(state, entity)} camera feed"
-                   loading="lazy"
-                   style="margin-top:var(--lcars-gap);border-top:2px solid var(--panel-frame-color)"
-                   @click=${() => this._handleEntityClick(entity.entity_id)} />
-            `) : ''}
+            ${cameras.map(({ entity, state }, idx) => {
+              const imgUrl = cameraImageUrl(state);
+              const name = idx === 0 ? deviceName : this._friendlyName(state, entity);
+              return imgUrl
+                ? html`<img src="${imgUrl}"
+                            alt="${name} camera feed" loading="lazy"
+                            data-entity="${entity.entity_id}"
+                            style="${idx > 0 ? 'margin-top:var(--lcars-gap);border-top:2px solid var(--panel-frame-color)' : ''}"
+                            @error=${(e) => { e.target.style.display = 'none'; e.target.nextElementSibling && (e.target.nextElementSibling.style.display = ''); }}
+                            @load=${(e) => { e.target.style.display = ''; const sib = e.target.nextElementSibling; if (sib?.classList.contains('camera-error-fallback')) sib.style.display = 'none'; }}
+                            @click=${() => this._handleEntityClick(entity.entity_id)} /><div class="camera-error-fallback" style="display:none;aspect-ratio:16/9;align-items:center;justify-content:center"
+                            @click=${() => this._handleEntityClick(entity.entity_id)}>
+                    <ha-icon icon="mdi:video-off" style="--mdc-icon-size:48px;color:var(--lcars-gray)"></ha-icon>
+                  </div>`
+                : html`<div style="display:flex;aspect-ratio:16/9;align-items:center;justify-content:center"
+                            @click=${() => this._handleEntityClick(entity.entity_id)}>
+                    <ha-icon icon="mdi:video-off" style="--mdc-icon-size:48px;color:var(--lcars-gray)"></ha-icon>
+                  </div>`;
+            })}
           </div>
 
           <div class="device-panel-controls" aria-label="${deviceName} controls">
@@ -1260,9 +1274,7 @@ class LcarsHomepageCard extends LitElement {
         ${entries.map(({ entity, state }, i) => {
           const name = this._friendlyName(state, entity);
           const off = this._isOff(state);
-          const imgUrl = state.attributes?.entity_picture
-            ? state.attributes.entity_picture
-            : '';
+          const imgUrl = cameraImageUrl(state);
           return html`
             <div class="camera-frame" ?data-off=${off} style="--i:${i}"
               role="button"
@@ -1271,7 +1283,12 @@ class LcarsHomepageCard extends LitElement {
               @click=${() => this._handleEntityClick(entity.entity_id)}
               @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
               ${imgUrl
-                ? html`<img src="${imgUrl}" alt="${name}" loading="lazy" />`
+                ? html`<img src="${imgUrl}" alt="${name}" loading="lazy"
+                            data-entity="${entity.entity_id}"
+                            @error=${(e) => { e.target.style.display = 'none'; e.target.nextElementSibling && (e.target.nextElementSibling.style.display = 'flex'); }}
+                            @load=${(e) => { e.target.style.display = ''; const sib = e.target.nextElementSibling; if (sib?.classList.contains('camera-error-fallback')) sib.style.display = 'none'; }} /><div class="camera-error-fallback" style="display:none;aspect-ratio:16/9;align-items:center;justify-content:center;">
+                    <ha-icon icon="mdi:video-off" style="--mdc-icon-size:48px;color:var(--lcars-gray)"></ha-icon>
+                  </div>`
                 : html`<div style="aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;">
                     <ha-icon icon="mdi:video-off" style="--mdc-icon-size:48px;color:var(--lcars-gray)"></ha-icon>
                   </div>`

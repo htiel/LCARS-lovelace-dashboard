@@ -2,6 +2,20 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.5.0] — 2026-04-11
+
+### Added
+- **Configuration Mode**: Admin-only edit mode accessible via CONFIGURE pill button in sidebar or long-press (800ms) on the top-left elbow
+- Header bar and top elbow shift to lilac when configuration mode is active; header text shows "LCARS · CONFIGURATION MODE"
+- Edit pips (lilac dots) appear on every entity element and device header when in edit mode — click to open the edit popup
+- Entity edit popup: edit entity icon, display name, and entity ID via `lcars-edit-entity-card`
+- Device edit popup: edit device icon and display name via `lcars-edit-device-button-card`
+- Header edit popup: click the LCARS header title in edit mode to configure header via `lcars-edit-homepage-header-card`
+- `openEditPopup()` helper in `lcars-helpers.js` — creates `lcars-popup` overlay with auto-cleanup on close
+
+### Security
+- **Critical**: Added `@websocket_api.require_admin` to all 29 write-capable WebSocket handlers — previously any authenticated HA user (including guests) could write YAML config files to disk
+
 ## [4.4.6] — 2026-04-11
 
 ### Fixed

@@ -162,3 +162,33 @@ export async function createCardElement(cardConfig) {
   }
   return el;
 }
+
+/**
+ * Open an LCARS edit popup with the specified edit card type and config.
+ * Creates a lcars-popup element, injects it into the document body,
+ * passes hass, and opens it. Auto-removes on close.
+ *
+ * @param {Object} hass - The Home Assistant hass object
+ * @param {string} editCardType - The custom element tag (e.g. 'lcars-edit-entity-card')
+ * @param {Object} config - Config to pass to the edit card via setConfig
+ * @param {string} [title='Configure'] - Popup title
+ */
+export function openEditPopup(hass, editCardType, config, title = 'Configure') {
+  const popup = document.createElement('lcars-popup');
+  popup.hass = hass;
+  popup.setConfig({
+    title,
+    card: { type: `custom:${editCardType}`, ...config },
+  });
+  // Auto-remove from DOM when popup closes
+  const observer = new MutationObserver(() => {
+    const backdrop = popup.shadowRoot?.querySelector('.popup-backdrop');
+    if (backdrop && !backdrop.hasAttribute('data-open')) {
+      setTimeout(() => { popup.remove(); observer.disconnect(); }, 300);
+    }
+  });
+  document.body.appendChild(popup);
+  observer.observe(popup.shadowRoot || popup, { attributes: true, subtree: true });
+  // Open after one microtask so the element renders first
+  requestAnimationFrame(() => popup.open());
+}

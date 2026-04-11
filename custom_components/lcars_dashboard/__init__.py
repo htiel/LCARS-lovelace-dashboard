@@ -314,6 +314,7 @@ async def websocket_get_blueprints(
 
 
 #install_blueprint
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/install_blueprint",
@@ -393,6 +394,7 @@ async def ws_handle_install_blueprint(
 
 
 #delete_blueprint
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/delete_blueprint",
@@ -422,6 +424,7 @@ async def ws_handle_delete_blueprint(
 
 
 #edit_area_button
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_area_button",
@@ -486,6 +489,7 @@ async def ws_handle_edit_area_button(
 
  
 #edit_area_bool_value
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_area_bool_value",
@@ -540,6 +544,7 @@ async def ws_handle_edit_area_bool_value(
 
 
 #edit_homepage_header
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_homepage_header",
@@ -598,6 +603,7 @@ async def ws_handle_edit_homepage_header(
 
 
 #edit_device_button
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_device_button",
@@ -653,6 +659,7 @@ async def ws_handle_edit_device_button(
 
 
 #edit_device_card
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_device_card",
@@ -692,6 +699,7 @@ async def ws_handle_edit_device_card(
 
 
 #remove_device_card
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/remove_device_card",
@@ -721,6 +729,7 @@ async def ws_handle_remove_device_card(
 
 
 #edit_device_popup
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_device_popup",
@@ -760,6 +769,7 @@ async def ws_handle_edit_device_popup(
 
 
 #remove_device_popup
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/remove_device_popup",
@@ -790,6 +800,7 @@ async def ws_handle_remove_device_popup(
 
 
 #remove_entity_card
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/remove_entity_card",
@@ -820,6 +831,7 @@ async def ws_handle_remove_entity_card(
 
 
 #remove_entity_popup
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/remove_entity_popup",
@@ -850,6 +862,7 @@ async def ws_handle_remove_entity_popup(
 
 
 #edit_entity
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_entity",
@@ -926,6 +939,7 @@ async def ws_handle_edit_entity(
 
 
 #edit_entity_card
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_entity_card",
@@ -989,6 +1003,7 @@ async def ws_handle_edit_entity_card(
 
 
 #edit_entity_popup
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_entity_popup",
@@ -1052,6 +1067,7 @@ async def ws_handle_edit_entity_popup(
 
 
 #edit_entity_favorite
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_entity_favorite",
@@ -1102,6 +1118,7 @@ async def ws_handle_edit_entity_favorite(
 
  
 #edit_entity_bool_value
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_entity_bool_value",
@@ -1155,6 +1172,7 @@ async def ws_handle_edit_entity_bool_value(
 
 
 #edit_entities_bool_value
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_entities_bool_value",
@@ -1212,6 +1230,7 @@ async def ws_handle_edit_entities_bool_value(
     )
 
 #add_card
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/add_card",
@@ -1285,6 +1304,7 @@ async def ws_handle_add_card(
         )
 
 #remove_card
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/remove_card",
@@ -1325,6 +1345,7 @@ async def ws_handle_remove_card(
 
 #edit_more_page_button
 #NOT USED
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_more_page_button",
@@ -1375,6 +1396,7 @@ async def ws_handle_edit_more_page_button(
 
 
 #edit_more_page
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_more_page",
@@ -1445,6 +1467,7 @@ async def ws_handle_edit_more_page(
 
 
 #remove_more_page
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/remove_more_page",
@@ -1482,6 +1505,7 @@ async def ws_handle_remove_more_page(
 
 
 #add_more_page_to_navbar
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/add_more_page_to_navbar",
@@ -1522,6 +1546,7 @@ async def ws_handle_add_more_page_to_navbar(
 
 
 #sort_area_button
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/sort_area_button",
@@ -1576,6 +1601,7 @@ async def ws_handle_sort_area_button(
 
 
 #edit_device_bool_value
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_device_bool_value",
@@ -1627,6 +1653,7 @@ async def ws_handle_edit_device_bool_value(
 
 
 #sort_device_button
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/sort_device_button",
@@ -1675,6 +1702,7 @@ async def ws_handle_sort_device_button(
     )
 
 #sort_entity
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/sort_entity",
@@ -1728,6 +1756,7 @@ async def ws_handle_sort_entity(
 
 
 #sort_more_page
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/sort_more_page",

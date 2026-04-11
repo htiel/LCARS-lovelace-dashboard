@@ -11,7 +11,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { getHass, showMoreInfo, fireEvent, createCardElement, lcarsEventBus, lcarsLog } from './lcars-helpers.js';
+import { getHass, showMoreInfo, fireEvent, createCardElement, lcarsEventBus, lcarsLog, openEditPopup } from './lcars-helpers.js';
 
 const TAG = 'Homepage';
 
@@ -63,6 +63,7 @@ class LcarsHomepageCard extends LitElement {
       selectedArea: { type: String },
       _hass: { type: Object },
       _cards: { type: Object },
+      _editMode: { type: Boolean },
     };
     }
 
@@ -71,6 +72,7 @@ class LcarsHomepageCard extends LitElement {
       this.data = null;
       this.selectedArea = null;
       this._cards = {};
+      this._editMode = false;
       this._cachedEntities = null;
       this._cachedAreaId = null;
       /* Camera auto-refresh state */
@@ -83,11 +85,16 @@ class LcarsHomepageCard extends LitElement {
         this.selectedArea = e.detail.areaId;
         this._cachedEntities = null; // bust cache on area change
       };
+      this._onEditMode = (e) => {
+        this._editMode = e.detail.enabled;
+        lcarsLog.debug(TAG, 'Edit mode:', this._editMode);
+      };
     }
 
     connectedCallback() {
       super.connectedCallback();
       lcarsEventBus.addEventListener('lcars-area-selected', this._onAreaSelected);
+      lcarsEventBus.addEventListener('lcars-edit-mode', this._onEditMode);
       this._startCameraRefresh();
       document.addEventListener('visibilitychange', this._onVisibilityChange);
     }
@@ -95,6 +102,7 @@ class LcarsHomepageCard extends LitElement {
     disconnectedCallback() {
       super.disconnectedCallback();
       lcarsEventBus.removeEventListener('lcars-area-selected', this._onAreaSelected);
+      lcarsEventBus.removeEventListener('lcars-edit-mode', this._onEditMode);
       this._stopCameraRefresh();
       document.removeEventListener('visibilitychange', this._onVisibilityChange);
     }
@@ -251,6 +259,32 @@ class LcarsHomepageCard extends LitElement {
       showMoreInfo(entityId);
     }
 
+    _handleEditEntity(e, entityId) {
+      e.stopPropagation();
+      e.preventDefault();
+      if (!this._hass) return;
+      const state = this._getEntityState(entityId);
+      const name = state?.attributes?.friendly_name || entityId;
+      openEditPopup(this._hass, 'lcars-edit-entity-card', {
+        entity: entityId,
+        icon: state?.attributes?.icon || '',
+        name: name,
+      }, `Edit: ${name}`);
+    }
+
+    _handleEditDevice(e, deviceId) {
+      e.stopPropagation();
+      e.preventDefault();
+      if (!this._hass) return;
+      const device = this._hass.devices?.[deviceId];
+      const name = device?.name_by_user || device?.name || deviceId;
+      openEditPopup(this._hass, 'lcars-edit-device-button-card', {
+        device: deviceId,
+        name: name,
+        icon: '',
+      }, `Edit: ${name}`);
+    }
+
     /* ─── Toggle a light/switch/fan/etc ─── */
     _handleToggle(entityId) {
       const domain = entityId.split('.')[0];
@@ -359,6 +393,18 @@ class LcarsHomepageCard extends LitElement {
         script: 'mdi:script-text', update: 'mdi:package-up',
       };
       return iconMap[domain] || 'mdi:information-outline';
+    }
+
+    /* ─── Wrap an entity element with an edit pip overlay ─── */
+    _withEditPip(entityId, content) {
+      if (!this._editMode) return content;
+      return html`
+        <div class="edit-pip-wrap">
+          ${content}
+          <div class="edit-pip" title="Edit entity"
+            @click=${(e) => this._handleEditEntity(e, entityId)}></div>
+        </div>
+      `;
     }
 
     _friendlyName(state, entity) {
@@ -1041,6 +1087,49 @@ class LcarsHomepageCard extends LitElement {
             text-align: center;
           }
 
+          /* ═══════ EDIT MODE — Edit Pips ═══════ */
+          .edit-pip-wrap {
+            position: relative;
+          }
+          .edit-pip {
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--lcars-lilac);
+            cursor: pointer;
+            z-index: 5;
+            border: 1px solid rgba(0,0,0,0.3);
+            animation: edit-pip-pulse 2s ease-in-out infinite;
+          }
+          .edit-pip:hover {
+            transform: scale(1.5);
+            background: var(--lcars-gold);
+          }
+          @keyframes edit-pip-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+          }
+          .device-edit-pip {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--lcars-lilac);
+            cursor: pointer;
+            flex-shrink: 0;
+            border: 1px solid rgba(0,0,0,0.3);
+            animation: edit-pip-pulse 2s ease-in-out infinite;
+          }
+          .device-edit-pip:hover {
+            transform: scale(1.5);
+            background: var(--lcars-gold);
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .edit-pip, .device-edit-pip { animation: none; }
+          }
+
           /* ═══════ ANIMATIONS (Wesley Crusher specials) ═══════ */
 
           /* ── 1. Staggered Cascade Reveal ── */
@@ -1376,6 +1465,10 @@ class LcarsHomepageCard extends LitElement {
             <div class="device-header">
               <span class="device-name">${group.device.name_by_user || group.device.name || 'Device'}</span>
               <div class="device-line"></div>
+              ${this._editMode ? html`
+                <div class="device-edit-pip" title="Edit device"
+                  @click=${(e) => this._handleEditDevice(e, group.device.id)}></div>
+              ` : ''}
             </div>
             ${this._renderDomainGroups(group.entities)}
           </div>
@@ -1472,7 +1565,7 @@ class LcarsHomepageCard extends LitElement {
           const brightness = state.attributes?.brightness;
           const brightPct = brightness ? Math.round((brightness / 255) * 100) : 0;
 
-          return html`
+          return this._withEditPip(entity.entity_id, html`
             <button class="toggle-pill" ?data-on=${isOn} ?data-off=${isOff} style="--i:${i}"
               role="switch"
               aria-checked=${isOn}
@@ -1490,7 +1583,7 @@ class LcarsHomepageCard extends LitElement {
               <span class="toggle-state">${state.state}</span>
               <div class="toggle-switch"></div>
             </button>
-          `;
+          `);
         })}
       </div>`;
     }
@@ -1509,7 +1602,7 @@ class LcarsHomepageCard extends LitElement {
             state.attributes?.device_class === 'battery';
           const warn = isBattery && !isNaN(numVal) && numVal < 20;
 
-          return html`
+          return this._withEditPip(entity.entity_id, html`
             <button class="sensor-readout" ?data-off=${off} ?data-warn=${warn} style="--i:${i}"
               @click=${() => this._handleEntityClick(entity.entity_id)}
               title="${name}: ${val} ${unit}">
@@ -1519,7 +1612,7 @@ class LcarsHomepageCard extends LitElement {
               <span class="sensor-value">${val}</span>
               ${unit ? html`<span class="sensor-unit">${unit}</span>` : ''}
             </button>
-          `;
+          `);
         })}
       </div>`;
     }
@@ -1537,7 +1630,7 @@ class LcarsHomepageCard extends LitElement {
           const isCool = mode === 'cool';
           const isOff = mode === 'off';
 
-          return html`
+          return this._withEditPip(entity.entity_id, html`
             <button class="climate-panel" ?data-heat=${isHeat} ?data-cool=${isCool} ?data-off=${isOff} style="--i:${i}"
               @click=${() => this._handleEntityClick(entity.entity_id)}
               title="${name}: ${mode}">
@@ -1551,7 +1644,7 @@ class LcarsHomepageCard extends LitElement {
               </div>
               <span class="climate-mode">${mode}</span>
             </button>
-          `;
+          `);
         })}
       </div>`;
     }
@@ -1563,7 +1656,7 @@ class LcarsHomepageCard extends LitElement {
           const name = this._friendlyName(state, entity);
           const off = state.state === 'closed';
           const pos = state.attributes?.current_position;
-          return html`
+          return this._withEditPip(entity.entity_id, html`
             <button class="cover-panel" ?data-off=${off} style="--i:${i}"
               @click=${() => this._handleEntityClick(entity.entity_id)}
               title="${name}: ${state.state}">
@@ -1571,7 +1664,7 @@ class LcarsHomepageCard extends LitElement {
               <span class="cover-name">${name}</span>
               ${pos != null ? html`<span class="cover-position">${pos}%</span>` : ''}
             </button>
-          `;
+          `);
         })}
       </div>`;
     }
@@ -1585,7 +1678,7 @@ class LcarsHomepageCard extends LitElement {
           const title = state.attributes?.media_title || '';
           const artist = state.attributes?.media_artist || '';
           const nowPlaying = [title, artist].filter(Boolean).join(' — ');
-          return html`
+          return this._withEditPip(entity.entity_id, html`
             <button class="media-strip" ?data-off=${off} style="--i:${i}"
               @click=${() => this._handleEntityClick(entity.entity_id)}
               title="${name}: ${state.state}">
@@ -1596,7 +1689,7 @@ class LcarsHomepageCard extends LitElement {
               </div>
               <span class="media-state">${state.state}</span>
             </button>
-          `;
+          `);
         })}
       </div>`;
     }
@@ -1607,7 +1700,7 @@ class LcarsHomepageCard extends LitElement {
         ${entries.map(({ entity, state }, i) => {
           const name = this._friendlyName(state, entity);
           const off = this._isOff(state);
-          return html`
+          return this._withEditPip(entity.entity_id, html`
             <button class="entity-btn" ?data-off=${off} style="--i:${i}"
               @click=${() => this._handleEntityClick(entity.entity_id)}
               title="${name}: ${state.state}">
@@ -1615,7 +1708,7 @@ class LcarsHomepageCard extends LitElement {
               <span class="entity-name">${name}</span>
               <span class="entity-state">${state.state}</span>
             </button>
-          `;
+          `);
         })}
       </div>`;
     }

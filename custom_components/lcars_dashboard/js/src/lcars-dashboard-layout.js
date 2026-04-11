@@ -6,7 +6,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { lcarsEventBus, lcarsLog } from './lcars-helpers.js';
+import { lcarsEventBus, lcarsLog, openEditPopup } from './lcars-helpers.js';
 
 const TAG = 'Layout';
 
@@ -17,6 +17,7 @@ class LcarsDashboardLayout extends LitElement {
       _hass: { type: Object },
       _narrow: { type: Boolean },
       _selectedArea: { type: String },
+      _editMode: { type: Boolean },
     };
   }
 
@@ -25,6 +26,8 @@ class LcarsDashboardLayout extends LitElement {
     this.cards = [];
     this._narrow = window.innerWidth < 768;
     this._selectedArea = null;
+    this._editMode = false;
+    this._elbowPressTimer = null;
     this._resizeHandler = () => {
       this._narrow = window.innerWidth < 768;
     };
@@ -40,6 +43,17 @@ class LcarsDashboardLayout extends LitElement {
     super.disconnectedCallback();
     window.removeEventListener('resize', this._resizeHandler);
     lcarsLog.debug(TAG, 'disconnectedCallback — layout unmounted');
+  }
+
+  updated(changedProps) {
+    super.updated(changedProps);
+    if (changedProps.has('_editMode')) {
+      if (this._editMode) {
+        this.setAttribute('edit-mode', '');
+      } else {
+        this.removeAttribute('edit-mode');
+      }
+    }
   }
 
   setConfig(config) {
@@ -84,6 +98,36 @@ class LcarsDashboardLayout extends LitElement {
         detail: { areaId: this._selectedArea },
       })
     );
+  }
+
+  /* ─── Edit Mode ─── */
+  _toggleEditMode() {
+    if (!this._hass?.user?.is_admin) return;
+    this._editMode = !this._editMode;
+    lcarsLog.info(TAG, 'Edit mode:', this._editMode ? 'ENABLED' : 'DISABLED');
+    lcarsEventBus.dispatchEvent(
+      new CustomEvent('lcars-edit-mode', { detail: { enabled: this._editMode } })
+    );
+  }
+
+  _handleElbowPointerDown(e) {
+    if (!this._hass?.user?.is_admin) return;
+    this._elbowPressTimer = setTimeout(() => {
+      this._toggleEditMode();
+      this._elbowPressTimer = null;
+    }, 800);
+  }
+
+  _handleElbowPointerUp() {
+    if (this._elbowPressTimer) {
+      clearTimeout(this._elbowPressTimer);
+      this._elbowPressTimer = null;
+    }
+  }
+
+  _editHeaderTitle() {
+    if (!this._editMode || !this._hass) return;
+    openEditPopup(this._hass, 'lcars-edit-homepage-header-card', {}, 'Edit Header');
   }
 
   _getAreas() {
@@ -232,6 +276,41 @@ class LcarsDashboardLayout extends LitElement {
         .sidebar-area-btn ha-icon { --mdc-icon-size: 18px; flex-shrink: 0; }
         .sidebar-area-btn .area-name { overflow: hidden; text-overflow: ellipsis; flex: 1; }
 
+        /* ─── Edit Mode Indicator ─── */
+        :host([edit-mode]) .lcars-elbow-top { background: var(--lcars-lilac); }
+        :host([edit-mode]) .lcars-header-bar { background: var(--lcars-lilac); }
+        :host([edit-mode]) .lcars-header-endcap { background: var(--lcars-lilac); }
+
+        .configure-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: var(--lcars-lilac);
+          color: var(--lcars-black);
+          border: none;
+          border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+          height: var(--lcars-btn-height);
+          padding: 0 1rem 0 0.75rem;
+          font-family: var(--lcars-font);
+          font-size: var(--lcars-font-size-data);
+          text-transform: uppercase;
+          text-align: left;
+          cursor: pointer;
+          width: calc(100% - 0.25rem);
+          transition: filter var(--lcars-transition), background var(--lcars-transition);
+          user-select: none;
+          white-space: nowrap;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+        .configure-btn:hover { filter: brightness(1.2); }
+        .configure-btn:focus-visible {
+          outline: 2px solid var(--lcars-ice);
+          outline-offset: 2px;
+        }
+        .configure-btn[data-active] { background: var(--lcars-gold); }
+        .configure-btn ha-icon { --mdc-icon-size: 18px; flex-shrink: 0; }
+
         /* ─── Sidebar Nav Buttons (bottom) ─── */
         .lcars-sidebar-nav {
           display: flex;
@@ -368,12 +447,18 @@ class LcarsDashboardLayout extends LitElement {
 
     return html`
       <div class="lcars-frame" role="main">
-        <!-- Top-Left Elbow -->
-        <div class="lcars-elbow-top" aria-hidden="true"></div>
+        <!-- Top-Left Elbow (long-press to toggle edit mode) -->
+        <div class="lcars-elbow-top" aria-hidden="true"
+          @pointerdown=${(e) => this._handleElbowPointerDown(e)}
+          @pointerup=${() => this._handleElbowPointerUp()}
+          @pointerleave=${() => this._handleElbowPointerUp()}></div>
 
         <!-- Header Bar -->
         <div class="lcars-header" role="banner">
-          <span class="lcars-header-title">LCARS</span>
+          <span class="lcars-header-title"
+            @click=${() => this._editHeaderTitle()}
+            style="${this._editMode ? 'cursor:pointer' : ''}"
+            >${this._editMode ? 'LCARS \u00B7 CONFIGURATION MODE' : 'LCARS'}</span>
           <div class="lcars-header-bar"></div>
           <div class="lcars-header-endcap"></div>
         </div>
@@ -397,6 +482,16 @@ class LcarsDashboardLayout extends LitElement {
 
           <!-- Fixed nav buttons at bottom -->
           <div class="lcars-sidebar-nav">
+            ${this._hass?.user?.is_admin ? html`
+              <button class="configure-btn"
+                ?data-active=${this._editMode}
+                aria-pressed=${this._editMode}
+                aria-label="${this._editMode ? 'Exit configuration mode' : 'Enter configuration mode'}"
+                @click=${() => this._toggleEditMode()}>
+                <ha-icon .icon=${'mdi:cog-outline'}></ha-icon>
+                <span>Configure</span>
+              </button>
+            ` : ''}
             <slot name="sidebar"></slot>
           </div>
         </nav>

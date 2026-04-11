@@ -4,6 +4,22 @@
  */
 
 /**
+ * LCARS Logger — structured console logging with component prefixes.
+ * Respects a global debug flag: set window.__LCARS_DEBUG = true in
+ * browser console to enable verbose debug output.
+ */
+export const lcarsLog = {
+  _prefix: (tag) => `%c[LCARS ${tag}]`,
+  _style: 'color: #f1b864; font-weight: bold',
+  debug: (tag, ...args) => {
+    if (window.__LCARS_DEBUG) console.debug(lcarsLog._prefix(tag), lcarsLog._style, ...args);
+  },
+  info: (tag, ...args) => console.info(lcarsLog._prefix(tag), lcarsLog._style, ...args),
+  warn: (tag, ...args) => console.warn(lcarsLog._prefix(tag), lcarsLog._style, ...args),
+  error: (tag, ...args) => console.error(lcarsLog._prefix(tag), lcarsLog._style, ...args),
+};
+
+/**
  * Private event bus for LCARS inter-component communication.
  * Uses a dedicated EventTarget instead of window to prevent
  * event injection from other cards or extensions.

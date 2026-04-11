@@ -53,9 +53,13 @@ async def _read_yaml_file(hass, rel_path):
     full = hass.config.path(rel_path)
     def _read():
         if not os.path.exists(full):
+            _LOGGER.debug("YAML file not found, returning empty: %s", rel_path)
             return OrderedDict()
+        _LOGGER.debug("Reading YAML: %s", rel_path)
         with open(full, "r", encoding="utf-8") as f:
-            return yaml.safe_load(f) or OrderedDict()
+            result = yaml.safe_load(f) or OrderedDict()
+        _LOGGER.debug("Loaded YAML %s: %d keys", rel_path, len(result) if isinstance(result, dict) else 0)
+        return result
     return await hass.async_add_executor_job(_read)
 
 
@@ -66,6 +70,7 @@ async def _write_yaml_file(hass, rel_path, data):
         os.makedirs(os.path.dirname(full), exist_ok=True)
         with open(full, "w", encoding="utf-8") as f:
             yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+        _LOGGER.debug("Wrote YAML: %s", rel_path)
     await hass.async_add_executor_job(_write)
 
 
@@ -114,13 +119,7 @@ devices = OrderedDict()
 homepage_header = OrderedDict()
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    #_LOGGER.warning("async_setup")
-
-    #_LOGGER.warning(config)
-    #_LOGGER.warning(hass.data[DOMAIN])
-
-    # if not config.get(DOMAIN):
-    #     _LOGGER.warning("no config")
+    _LOGGER.info("LCARS Dashboard v%s starting setup", VERSION)
 
     hass.data[DOMAIN] = {
         "notifications": {},
@@ -170,6 +169,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     await load_plugins(hass, DOMAIN)
 
     notifications(hass, DOMAIN)
+
+    _LOGGER.info("LCARS Dashboard v%s setup complete — %d WS commands registered", VERSION, 26)
     
     return True
 
@@ -188,6 +189,8 @@ async def websocket_get_configuration(
     global entities
     global devices
     global homepage_header
+
+    _LOGGER.debug("configuration/get requested")
 
     try:
         # Load config files with proper file handle management
@@ -215,6 +218,15 @@ async def websocket_get_configuration(
                         filecontent = yaml.safe_load(f)
                         more_pages[subdir] = filecontent
 
+        _LOGGER.debug(
+            "configuration/get complete: %d areas, %d entities, %d devices, %d area_cards, %d more_pages",
+            len(areas) if isinstance(areas, dict) else 0,
+            len(entities) if isinstance(entities, dict) else 0,
+            len(devices) if isinstance(devices, dict) else 0,
+            len(area_cards),
+            len(more_pages),
+        )
+
         connection.send_result(
             msg["id"],
             {
@@ -233,7 +245,7 @@ async def websocket_get_configuration(
             }
         )
     except Exception as err:
-        _LOGGER.error("LCARS configuration/get failed: %s", err)
+        _LOGGER.error("LCARS configuration/get failed: %s", err, exc_info=True)
         # Always send a result so the frontend doesn't hang
         connection.send_result(
             msg["id"],
@@ -265,6 +277,7 @@ async def websocket_get_blueprints(
 ) -> None:
     """Return a list of installed blueprints asynchronously."""
 
+    _LOGGER.debug("get_blueprints requested")
     blueprints = {}
 
     blueprints_dir = hass.config.path("lcars-dashboard/blueprints")
@@ -309,7 +322,7 @@ async def ws_handle_install_blueprint(
 ) -> None:
     """Handle save new blueprint."""
 
-    #PR 817
+    _LOGGER.debug("install_blueprint called")
     #filecontent = yaml.safe_load(json.loads(msg["yamlCode"]))
     filecontent = yaml.safe_load(msg["yamlCode"])
 
@@ -387,6 +400,8 @@ async def ws_handle_delete_blueprint(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
 ) -> None:
     """Handle delete blueprint."""
+
+    _LOGGER.debug("delete_blueprint called: %s", msg.get("blueprint"))
     
     filename = hass.config.path("lcars-dashboard/blueprints/"+msg["blueprint"])
 
@@ -417,7 +432,8 @@ async def ws_handle_edit_area_button(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
 ) -> None:
     """Handle saving editing area button."""
-    #_LOGGER.warning(f"ws_handle_edit_area_button() called.")
+
+    _LOGGER.debug("edit_area_button called: areaId=%s", msg.get("areaId"))
 
     if(msg["areaId"]):
         #_LOGGER.warning(f"Editing area: {msg["areaId"]}")
@@ -646,6 +662,8 @@ async def ws_handle_edit_device_card(
 ) -> None:
     """Handle saving device card."""
 
+    _LOGGER.debug("edit_device_card called: domain=%s", msg.get("domain"))
+
     filecontent = json.loads(msg["cardData"])
 
     path = "lcars-dashboard/configs/cards/devices_card/"
@@ -711,6 +729,8 @@ async def ws_handle_edit_device_popup(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
 ) -> None:
     """Handle saving device popup."""
+
+    _LOGGER.debug("edit_device_popup called: domain=%s", msg.get("domain"))"
 
     filecontent = json.loads(msg["cardData"])
 
@@ -849,6 +869,8 @@ async def ws_handle_edit_entity(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
 ) -> None:
     """Handle saving editing entity."""
+
+    _LOGGER.debug("edit_entity called: entity=%s", msg.get("entity"))
 
     if os.path.exists(hass.config.path("lcars-dashboard/configs/entities.yaml")) and os.stat(hass.config.path("lcars-dashboard/configs/entities.yaml")).st_size != 0:
         #with open(hass.config.path("lcars-dashboard/configs/entities.yaml")) as f:
@@ -1210,6 +1232,8 @@ async def ws_handle_add_card(
 ) -> None:
     """Handle add new card command."""
 
+    _LOGGER.debug("add_card called: page=%s, area_id=%s, domain=%s", msg.get("page"), msg.get("area_id"), msg.get("domain"))
+
     if not msg["filename"]:
         type = json.loads(msg["card_data"])['type']
     else:
@@ -1271,6 +1295,8 @@ async def ws_handle_remove_card(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
 ) -> None:
     """Handle remove card command."""
+
+    _LOGGER.debug("remove_card called: filename=%s, page=%s", msg.get("filename"), msg.get("page"))
 
     if(msg["domain"]):
         path = "lcars-dashboard/configs/cards/devices/"+msg['domain']

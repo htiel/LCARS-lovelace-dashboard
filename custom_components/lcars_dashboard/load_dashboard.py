@@ -9,8 +9,7 @@ _LOGGER = logging.getLogger(__name__)
 
 def load_dashboard(hass, config_entry):
 
-    #_LOGGER.warning(config_entry.options)
-    #_LOGGER.warning(config_entry.options["sidepanel_title"])
+    _LOGGER.debug("Loading dashboard panel with config_entry options: %s", config_entry.options)
 
     sidepanel_title = "LCARS Dashboard"
     sidepanel_icon = "mdi:alpha-d-box"
@@ -31,6 +30,10 @@ def load_dashboard(hass, config_entry):
         "require_admin": False,
     }
 
+    _LOGGER.debug("Registering Lovelace panel: url=%s, title=%s, icon=%s", dashboard_url, sidepanel_title, sidepanel_icon)
+
     hass.data["lovelace"].dashboards[dashboard_url] = LovelaceYAML(hass, dashboard_url, dashboard_config)
 
     _register_panel(hass, dashboard_url, "yaml", dashboard_config, False)
+
+    _LOGGER.debug("Dashboard panel registered successfully")

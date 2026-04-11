@@ -43,7 +43,17 @@ class LcarsDashboardLayout extends LitElement {
   }
 
   set hass(hass) {
+    const prev = this._hass;
     this._hass = hass;
+    // Auto-deselect area if it was deleted from HA
+    if (prev && prev.areas !== hass.areas && this._selectedArea) {
+      if (!hass.areas?.[this._selectedArea]) {
+        this._selectedArea = null;
+        lcarsEventBus.dispatchEvent(
+          new CustomEvent('lcars-area-selected', { detail: { areaId: null } })
+        );
+      }
+    }
     if (this.cards) {
       this.cards.forEach((card) => {
         if (card) card.hass = hass;
@@ -104,7 +114,7 @@ class LcarsDashboardLayout extends LitElement {
           width: calc(var(--lcars-sidebar-w) - var(--lcars-elbow-w) + 2rem);
           height: calc(var(--lcars-elbow-h) - var(--lcars-bar-h));
           background: var(--lcars-bg);
-          border-radius: 0 0 0 1.875rem;
+          border-radius: 1.875rem 0 0 0;
         }
 
         /* ─── Header Bar ─── */

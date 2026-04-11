@@ -45,27 +45,19 @@ class LcarsDashboardLayout extends LitElement {
     this._hass = hass;
     if (this.cards) {
       this.cards.forEach((card) => {
-        if (card) {
-          card.hass = hass;
-          // Pass selectedArea to child cards
-          if (card.selectedArea !== undefined) {
-            card.selectedArea = this._selectedArea;
-          }
-        }
+        if (card) card.hass = hass;
       });
     }
   }
 
   _selectArea(areaId) {
     this._selectedArea = this._selectedArea === areaId ? null : areaId;
-    // Propagate to child cards
-    if (this.cards) {
-      this.cards.forEach((card) => {
-        if (card && card.selectedArea !== undefined) {
-          card.selectedArea = this._selectedArea;
-        }
-      });
-    }
+    // Broadcast area selection via window event (reaches cards inside hui-card wrappers)
+    window.dispatchEvent(
+      new CustomEvent('lcars-area-selected', {
+        detail: { areaId: this._selectedArea },
+      })
+    );
   }
 
   _getAreas() {

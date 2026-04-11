@@ -65,6 +65,19 @@ Promise.race(waitForHelpers).then(async () => {
       this.data = null;
       this.selectedArea = null;
       this._cards = {};
+      this._onAreaSelected = (e) => {
+        this.selectedArea = e.detail.areaId;
+      };
+    }
+
+    connectedCallback() {
+      super.connectedCallback();
+      window.addEventListener('lcars-area-selected', this._onAreaSelected);
+    }
+
+    disconnectedCallback() {
+      super.disconnectedCallback();
+      window.removeEventListener('lcars-area-selected', this._onAreaSelected);
     }
 
     setConfig(config) {

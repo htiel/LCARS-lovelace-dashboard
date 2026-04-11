@@ -1,11 +1,45 @@
 /**
- * LCARS Homepage Card — Main dashboard view with areas, favorites, house info
- * Fetches configuration via websocket, renders LCARS-styled area panels
- * Areas expand/contract on click with LCARS transition animations
+ * LCARS Homepage Card — Main dashboard view with areas
+ * Entities grouped by device → domain type with specialized renderers:
+ *   camera → LCARS-framed live feed
+ *   light/switch/fan/lock → LCARS toggle pill
+ *   sensor/binary_sensor → data readout bar
+ *   climate → thermostat panel
+ *   cover → position controls
+ *   media_player → media strip
+ *   default → LCARS button
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getHass, showMoreInfo, fireEvent } from './lcars-helpers.js';
+
+/* Domain rendering categories */
+const TOGGLE_DOMAINS = new Set(['light', 'switch', 'fan', 'input_boolean', 'lock', 'automation', 'script']);
+const SENSOR_DOMAINS = new Set(['sensor', 'binary_sensor']);
+const CAMERA_DOMAINS = new Set(['camera']);
+const CLIMATE_DOMAINS = new Set(['climate']);
+const COVER_DOMAINS = new Set(['cover']);
+const MEDIA_DOMAINS = new Set(['media_player']);
+
+/* Display-friendly domain labels */
+const DOMAIN_LABELS = {
+  light: 'Lights', switch: 'Switches', fan: 'Fans', lock: 'Locks',
+  input_boolean: 'Toggles', automation: 'Automations', script: 'Scripts',
+  sensor: 'Sensors', binary_sensor: 'Binary Sensors',
+  camera: 'Cameras', climate: 'Climate', cover: 'Covers',
+  media_player: 'Media', button: 'Buttons', number: 'Numbers',
+  select: 'Selects', input_number: 'Inputs', input_select: 'Selectors',
+  input_text: 'Text Inputs', input_button: 'Buttons',
+  input_datetime: 'Date/Time', scene: 'Scenes',
+  device_tracker: 'Trackers', person: 'People',
+  update: 'Updates', event: 'Events', conversation: 'Conversation',
+};
+
+/* Domain sort priority (lower = shown first) */
+const DOMAIN_ORDER = {
+  camera: 0, light: 1, switch: 2, climate: 3, cover: 4,
+  media_player: 5, fan: 6, lock: 7, sensor: 8, binary_sensor: 9,
+};
 
 const waitForHelpers = [
   customElements.whenDefined('hui-masonry-view'),
@@ -20,7 +54,6 @@ Promise.race(waitForHelpers).then(async () => {
     static get properties() {
       return {
         data: { type: Object },
-        favorites: { type: Object },
         selectedArea: { type: String },
         _hass: { type: Object },
         _cards: { type: Object },
@@ -30,7 +63,6 @@ Promise.race(waitForHelpers).then(async () => {
     constructor() {
       super();
       this.data = null;
-      this.favorites = {};
       this.selectedArea = null;
       this._cards = {};
     }
@@ -41,15 +73,12 @@ Promise.race(waitForHelpers).then(async () => {
 
     set hass(hass) {
       this._hass = hass;
-      // Propagate hass to child cards
       if (this._cards) {
         Object.values(this._cards).forEach((card) => {
           if (card && card.hass !== undefined) card.hass = hass;
         });
       }
-      if (!this.data) {
-        this._loadConfiguration();
-      }
+      if (!this.data) this._loadConfiguration();
     }
 
     async _loadConfiguration() {
@@ -64,38 +93,93 @@ Promise.race(waitForHelpers).then(async () => {
       }
     }
 
+    /* ─── Area selection ─── */
     _selectArea(areaId) {
-      if (this.selectedArea === areaId) {
-        this.selectedArea = null; // Collapse
-      } else {
-        this.selectedArea = areaId; // Expand
-      }
+      this.selectedArea = this.selectedArea === areaId ? null : areaId;
     }
 
     _handleEntityClick(entityId) {
       showMoreInfo(entityId);
     }
 
+    /* ─── Toggle a light/switch/fan/etc ─── */
+    _handleToggle(entityId) {
+      const domain = entityId.split('.')[0];
+      if (domain === 'lock') {
+        const state = this._getEntityState(entityId);
+        this._hass.callService('lock', state?.state === 'locked' ? 'unlock' : 'lock', { entity_id: entityId });
+      } else if (domain === 'script') {
+        this._hass.callService('script', 'turn_on', { entity_id: entityId });
+      } else {
+        this._hass.callService('homeassistant', 'toggle', { entity_id: entityId });
+      }
+    }
+
+    /* ─── Entity resolution: direct area_id OR via device ─── */
     _getAreaEntities(areaId) {
       if (!this._hass) return [];
       const entityReg = Object.values(this._hass.entities || {});
       const deviceReg = this._hass.devices || {};
-
-      // Build set of device IDs that belong to this area
       const areaDeviceIds = new Set();
       Object.values(deviceReg).forEach((dev) => {
         if (dev.area_id === areaId) areaDeviceIds.add(dev.id);
       });
-
       return entityReg.filter((e) => {
         if (e.hidden_by || e.disabled_by) return false;
-        // Entity directly assigned to this area
+        if (e.entity_category) return false; // skip diagnostic/config entities
         if (e.area_id === areaId) return true;
-        // Entity inherits area from its device (no direct area override)
-        if (!e.area_id && e.device_id && areaDeviceIds.has(e.device_id))
-          return true;
+        if (!e.area_id && e.device_id && areaDeviceIds.has(e.device_id)) return true;
         return false;
       });
+    }
+
+    /* ─── Group entities: device → domain ─── */
+    _groupEntities(entities) {
+      const devices = this._hass.devices || {};
+      const byDevice = new Map();     // deviceId → { device, entities[] }
+      const noDevice = [];             // entities with no device
+
+      entities.forEach((e) => {
+        const domain = e.entity_id.split('.')[0];
+        const entry = { entity: e, domain, state: this._getEntityState(e.entity_id) };
+        if (!entry.state) return;
+        if (e.device_id && devices[e.device_id]) {
+          if (!byDevice.has(e.device_id)) {
+            byDevice.set(e.device_id, { device: devices[e.device_id], entities: [] });
+          }
+          byDevice.get(e.device_id).entities.push(entry);
+        } else {
+          noDevice.push(entry);
+        }
+      });
+
+      // Within each device, sort entities by domain priority then name
+      const sortFn = (a, b) => {
+        const pa = DOMAIN_ORDER[a.domain] ?? 50;
+        const pb = DOMAIN_ORDER[b.domain] ?? 50;
+        if (pa !== pb) return pa - pb;
+        return (a.state?.attributes?.friendly_name || '').localeCompare(
+          b.state?.attributes?.friendly_name || ''
+        );
+      };
+
+      byDevice.forEach((v) => v.entities.sort(sortFn));
+      noDevice.sort(sortFn);
+
+      return { byDevice, noDevice };
+    }
+
+    /* ─── Group entries by domain ─── */
+    _groupByDomain(entries) {
+      const groups = new Map();
+      entries.forEach((entry) => {
+        if (!groups.has(entry.domain)) groups.set(entry.domain, []);
+        groups.get(entry.domain).push(entry);
+      });
+      // Sort domain groups by priority
+      return [...groups.entries()].sort(
+        (a, b) => (DOMAIN_ORDER[a[0]] ?? 50) - (DOMAIN_ORDER[b[0]] ?? 50)
+      );
     }
 
     _getEntityState(entityId) {
@@ -105,45 +189,71 @@ Promise.race(waitForHelpers).then(async () => {
 
     _getEntityIcon(state) {
       if (!state) return 'mdi:help-circle-outline';
-      if (state.attributes && state.attributes.icon) return state.attributes.icon;
+      if (state.attributes?.icon) return state.attributes.icon;
       const domain = state.entity_id.split('.')[0];
       const iconMap = {
-        light: 'mdi:lightbulb',
-        switch: 'mdi:toggle-switch',
-        sensor: 'mdi:eye',
-        binary_sensor: 'mdi:radiobox-blank',
-        climate: 'mdi:thermostat',
-        cover: 'mdi:window-shutter',
-        fan: 'mdi:fan',
-        lock: 'mdi:lock',
-        camera: 'mdi:video',
-        media_player: 'mdi:cast',
-        automation: 'mdi:robot',
-        script: 'mdi:script-text',
+        light: 'mdi:lightbulb', switch: 'mdi:toggle-switch', sensor: 'mdi:eye',
+        binary_sensor: 'mdi:radiobox-blank', climate: 'mdi:thermostat',
+        cover: 'mdi:window-shutter', fan: 'mdi:fan', lock: 'mdi:lock',
+        camera: 'mdi:video', media_player: 'mdi:cast', automation: 'mdi:robot',
+        script: 'mdi:script-text', update: 'mdi:package-up',
       };
       return iconMap[domain] || 'mdi:information-outline';
     }
 
+    _friendlyName(state, entity) {
+      return state?.attributes?.friendly_name
+        || entity.entity_id.split('.').pop().replace(/_/g, ' ');
+    }
+
+    _isOff(state) {
+      return ['off', 'unavailable', 'unknown', 'idle', 'standby', 'locked'].includes(state?.state);
+    }
+
+    /* ─── Segmented sensor bar for numeric values ─── */
+    _renderSensorBar(state) {
+      const val = parseFloat(state.state);
+      if (isNaN(val)) return '';
+      const deviceClass = state.attributes?.device_class || '';
+      let min = 0, max = 100;
+      if (deviceClass === 'temperature') { min = 10; max = 40; }
+      else if (deviceClass === 'humidity') { min = 0; max = 100; }
+      else if (deviceClass === 'battery') { min = 0; max = 100; }
+      else if (deviceClass === 'illuminance') { min = 0; max = 1000; }
+      else if (deviceClass === 'power') { min = 0; max = 3000; }
+      else if (state.attributes?.min != null) {
+        min = state.attributes.min; max = state.attributes.max;
+      }
+      else return '';
+      const pct = Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
+      const segments = 10;
+      const filled = Math.round((pct / 100) * segments);
+      return html`
+        <div class="sensor-bar" title="${Math.round(pct)}%">
+          ${Array.from({ length: segments }, (_, i) => html`
+            <div class="sensor-seg ${i < filled ? 'filled' : ''}"
+                 style="--seg-i:${i}"></div>
+          `)}
+        </div>
+      `;
+    }
+
+    /* ──────────── STYLES ──────────── */
     static get styles() {
       return [
         lcarsBaseStyles,
         css`
-          :host {
-            display: block;
-          }
+          :host { display: block; }
 
-          /* ─── Areas Grid ─── */
+          /* ─── Areas List ─── */
           .areas-grid {
             display: flex;
             flex-direction: column;
             gap: var(--lcars-gap);
           }
 
-          /* ─── Area Panel (LCARS bracket-style) ─── */
           .area-panel {
             background: transparent;
-            border: none;
-            cursor: pointer;
             padding: 0;
             text-align: left;
             max-width: 30rem;
@@ -169,55 +279,99 @@ Promise.race(waitForHelpers).then(async () => {
             overflow: hidden;
             user-select: none;
           }
+          .area-btn:hover { filter: brightness(1.2); }
+          .area-btn[data-active] { background: var(--lcars-btn-active); }
+          .area-btn ha-icon { --mdc-icon-size: 20px; flex-shrink: 0; }
+          .area-name { overflow: hidden; text-overflow: ellipsis; flex: 1; }
+          .area-count { font-size: 0.75rem; opacity: 0.7; flex-shrink: 0; }
 
-          .area-btn:hover {
-            filter: brightness(1.2);
-          }
-
-          .area-btn[data-active] {
-            background: var(--lcars-btn-active);
-          }
-
-          .area-btn ha-icon {
-            --mdc-icon-size: 20px;
-            flex-shrink: 0;
-          }
-
-          .area-name {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            flex: 1;
-          }
-
-          .area-count {
-            font-size: 0.75rem;
-            opacity: 0.7;
-            flex-shrink: 0;
-          }
-
-          /* ─── Expanded Area Content ─── */
+          /* ─── Expanded Area ─── */
           .area-expanded {
             overflow: hidden;
             max-height: 0;
             opacity: 0;
-            transition: max-height var(--lcars-transition-slow),
-                        opacity var(--lcars-transition);
+            transition: max-height var(--lcars-transition-slow), opacity var(--lcars-transition);
           }
-
           .area-expanded[data-open] {
-            max-height: 2000px;
+            max-height: 8000px;
             opacity: 1;
             padding: 0.5rem 0;
           }
 
-          /* ─── Entity List within Area ─── */
-          .entity-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
-            gap: var(--lcars-gap);
+          /* ─── Divider ─── */
+          .lcars-divider {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
             padding: 0.5rem 0;
           }
+          .lcars-divider-label {
+            font-size: var(--lcars-font-size-sub);
+            color: var(--lcars-text-heading);
+            white-space: nowrap;
+          }
+          .lcars-divider-line {
+            flex: 1;
+            height: 2px;
+            background: var(--lcars-data-accent);
+          }
 
+          /* ─── Device Group ─── */
+          .device-group {
+            margin-bottom: 0.75rem;
+            position: relative;
+            padding-left: 1.25rem;
+            border-left: 3px solid var(--lcars-gold);
+            border-image: linear-gradient(to bottom, var(--lcars-gold), transparent) 1;
+          }
+          .device-group::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -3px;
+            width: 1rem;
+            height: 1.5rem;
+            border-left: 3px solid var(--lcars-gold);
+            border-top: 3px solid var(--lcars-gold);
+            border-top-left-radius: 0.75rem;
+          }
+          .device-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0;
+            margin-bottom: 0.25rem;
+          }
+          .device-name {
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-gold);
+            text-transform: uppercase;
+            white-space: nowrap;
+          }
+          .device-line {
+            flex: 1;
+            height: 1px;
+            background: var(--lcars-gold);
+            opacity: 0.4;
+          }
+
+          /* ─── Domain Sub-header ─── */
+          .domain-label {
+            font-size: 0.7rem;
+            color: var(--lcars-african-violet);
+            text-transform: uppercase;
+            padding: 0.375rem 0 0.125rem 0.25rem;
+            letter-spacing: 0.05em;
+          }
+
+          /* ─── Entity Grid (default) ─── */
+          .entity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+            gap: var(--lcars-gap);
+            padding: 0.25rem 0;
+          }
+
+          /* ─── Generic Entity Button (fallback) ─── */
           .entity-btn {
             display: flex;
             align-items: center;
@@ -237,63 +391,287 @@ Promise.race(waitForHelpers).then(async () => {
             overflow: hidden;
             user-select: none;
           }
+          .entity-btn:hover { filter: brightness(1.2); }
+          .entity-btn:active { background: var(--lcars-btn-active); }
+          .entity-btn ha-icon { --mdc-icon-size: 16px; flex-shrink: 0; }
+          .entity-btn .entity-name { overflow: hidden; text-overflow: ellipsis; flex: 1; }
+          .entity-btn .entity-state { font-size: 0.75rem; opacity: 0.7; flex-shrink: 0; }
+          .entity-btn[data-off] { background: var(--lcars-gray); color: var(--lcars-space-white); }
 
-          .entity-btn:hover {
-            filter: brightness(1.2);
+          /* ═══════ TOGGLE PILL (light / switch / fan / lock) ═══════ */
+          .toggle-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+            gap: var(--lcars-gap);
+            padding: 0.25rem 0;
           }
-
-          .entity-btn:active {
-            background: var(--lcars-btn-active);
-          }
-
-          .entity-btn ha-icon {
-            --mdc-icon-size: 16px;
-            flex-shrink: 0;
-          }
-
-          .entity-btn .entity-name {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            flex: 1;
-          }
-
-          .entity-btn .entity-state {
-            font-size: 0.75rem;
-            color: var(--lcars-black);
-            opacity: 0.7;
-            flex-shrink: 0;
-          }
-
-          .entity-btn[data-off] {
-            background: var(--lcars-gray);
-            color: var(--lcars-space-white);
-          }
-
-          .entity-btn[data-off] .entity-state {
-            color: var(--lcars-space-white);
-          }
-
-          /* ─── Section Divider ─── */
-          .lcars-divider {
+          .toggle-pill {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.5rem 0;
+            height: var(--lcars-btn-height);
+            padding: 0 0.25rem 0 0.75rem;
+            background: var(--lcars-gold);
+            color: var(--lcars-black);
+            border: none;
+            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background var(--lcars-transition), filter var(--lcars-transition);
+            overflow: hidden;
+            user-select: none;
           }
-
-          .lcars-divider-label {
-            font-size: var(--lcars-font-size-sub);
-            color: var(--lcars-text-heading);
+          .toggle-pill:hover { filter: brightness(1.15); }
+          .toggle-pill ha-icon { --mdc-icon-size: 20px; flex-shrink: 0; }
+          .toggle-pill .toggle-name { overflow: hidden; text-overflow: ellipsis; flex: 1; }
+          .toggle-pill .toggle-state {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--lcars-btn-radius);
+            background: rgba(0,0,0,0.15);
             white-space: nowrap;
           }
-
-          .lcars-divider-line {
-            flex: 1;
-            height: 2px;
-            background: var(--lcars-data-accent);
+          .toggle-pill .toggle-switch {
+            width: 2.5rem;
+            height: 1.5rem;
+            border-radius: 0.75rem;
+            background: var(--lcars-black);
+            position: relative;
+            flex-shrink: 0;
+            transition: background var(--lcars-transition);
+            border: 2px solid transparent;
+          }
+          .toggle-pill .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px; left: 2px;
+            width: calc(1.5rem - 8px);
+            height: calc(1.5rem - 8px);
+            border-radius: 50%;
+            background: var(--lcars-gray);
+            transition: transform var(--lcars-transition), background var(--lcars-transition);
+          }
+          .toggle-pill[data-on] { background: var(--lcars-gold); }
+          .toggle-pill[data-on] .toggle-switch { background: var(--lcars-black); }
+          .toggle-pill[data-on] .toggle-switch::after {
+            transform: translateX(1rem);
+            background: var(--lcars-gold);
+          }
+          .toggle-pill[data-off] {
+            background: var(--lcars-gray);
+            color: var(--lcars-space-white);
+          }
+          .toggle-pill[data-off] .toggle-switch::after { background: var(--lcars-gray); }
+          /* Light brightness bar */
+          .toggle-pill .brightness-bar {
+            width: 3rem;
+            height: 0.375rem;
+            background: rgba(0,0,0,0.3);
+            border-radius: 0.2rem;
+            overflow: hidden;
+            flex-shrink: 0;
+          }
+          .toggle-pill .brightness-fill {
+            height: 100%;
+            background: var(--lcars-sunflower);
+            border-radius: 0.2rem;
+            transition: width var(--lcars-transition);
           }
 
-          /* ─── No data state ─── */
+          /* ═══════ SENSOR DATA READOUT ═══════ */
+          .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+            gap: var(--lcars-gap);
+            padding: 0.25rem 0;
+          }
+          .sensor-readout {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            height: 2.25rem;
+            padding: 0 0.75rem;
+            background: var(--lcars-ice);
+            color: var(--lcars-black);
+            border: none;
+            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            cursor: pointer;
+            overflow: hidden;
+            transition: filter var(--lcars-transition);
+          }
+          .sensor-readout:hover { filter: brightness(1.1); }
+          .sensor-readout ha-icon { --mdc-icon-size: 14px; flex-shrink: 0; }
+          .sensor-readout .sensor-name { overflow: hidden; text-overflow: ellipsis; flex: 1; font-size: 0.75rem; }
+          .sensor-readout .sensor-value {
+            font-size: var(--lcars-font-size-data);
+            font-weight: 700;
+            color: var(--lcars-black);
+            flex-shrink: 0;
+          }
+          .sensor-readout .sensor-unit {
+            font-size: 0.65rem;
+            opacity: 0.6;
+            flex-shrink: 0;
+          }
+          .sensor-readout[data-warn] { background: var(--lcars-tomato); color: var(--lcars-space-white); }
+          .sensor-readout[data-warn] .sensor-value { color: var(--lcars-space-white); }
+          .sensor-readout[data-off] { background: var(--lcars-gray); color: var(--lcars-space-white); }
+          .sensor-readout[data-off] .sensor-value { color: var(--lcars-space-white); }
+
+          /* ═══════ CAMERA FEED ═══════ */
+          .camera-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+            gap: var(--lcars-gap);
+            padding: 0.25rem 0;
+          }
+          .camera-frame {
+            position: relative;
+            border: 3px solid var(--lcars-butterscotch);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background: var(--lcars-black);
+            cursor: pointer;
+            transition: border-color var(--lcars-transition);
+          }
+          .camera-frame:hover { border-color: var(--lcars-gold); }
+          .camera-frame img {
+            width: 100%;
+            display: block;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            background: #111;
+          }
+          .camera-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            background: linear-gradient(transparent, rgba(0,0,0,0.85));
+            color: var(--lcars-sunflower);
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+          }
+          .camera-label ha-icon { --mdc-icon-size: 14px; }
+          .camera-label .cam-state {
+            margin-left: auto;
+            font-size: 0.65rem;
+            color: var(--lcars-space-white);
+            opacity: 0.7;
+          }
+          .camera-frame[data-off] { border-color: var(--lcars-gray); opacity: 0.5; }
+
+          /* ═══════ CLIMATE PANEL ═══════ */
+          .climate-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+            gap: var(--lcars-gap);
+            padding: 0.25rem 0;
+          }
+          .climate-panel {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--lcars-bluey);
+            color: var(--lcars-black);
+            border: none;
+            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+            font-family: var(--lcars-font);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: filter var(--lcars-transition);
+          }
+          .climate-panel:hover { filter: brightness(1.1); }
+          .climate-panel ha-icon { --mdc-icon-size: 24px; flex-shrink: 0; }
+          .climate-panel .climate-info { flex: 1; display: flex; flex-direction: column; gap: 0.125rem; }
+          .climate-panel .climate-name { font-size: var(--lcars-font-size-data); }
+          .climate-panel .climate-temps { font-size: 0.75rem; display: flex; gap: 0.5rem; }
+          .climate-panel .climate-current { font-weight: 700; font-size: 1.25rem; }
+          .climate-panel .climate-target { opacity: 0.6; }
+          .climate-panel .climate-mode {
+            font-size: 0.65rem;
+            padding: 0.125rem 0.5rem;
+            background: rgba(0,0,0,0.15);
+            border-radius: var(--lcars-btn-radius);
+            flex-shrink: 0;
+          }
+          .climate-panel[data-heat] { background: var(--lcars-peach); }
+          .climate-panel[data-cool] { background: var(--lcars-ice); }
+          .climate-panel[data-off] { background: var(--lcars-gray); color: var(--lcars-space-white); }
+
+          /* ═══════ COVER CONTROLS ═══════ */
+          .cover-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+            gap: var(--lcars-gap);
+            padding: 0.25rem 0;
+          }
+          .cover-panel {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            height: var(--lcars-btn-height);
+            padding: 0 0.75rem;
+            background: var(--lcars-almond-creme);
+            color: var(--lcars-black);
+            border: none;
+            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: filter var(--lcars-transition);
+          }
+          .cover-panel:hover { filter: brightness(1.1); }
+          .cover-panel ha-icon { --mdc-icon-size: 18px; flex-shrink: 0; }
+          .cover-panel .cover-name { overflow: hidden; text-overflow: ellipsis; flex: 1; }
+          .cover-panel .cover-position { font-size: 0.75rem; opacity: 0.7; flex-shrink: 0; }
+          .cover-panel[data-off] { background: var(--lcars-gray); color: var(--lcars-space-white); }
+
+          /* ═══════ MEDIA PLAYER ═══════ */
+          .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+            gap: var(--lcars-gap);
+            padding: 0.25rem 0;
+          }
+          .media-strip {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            height: 3rem;
+            padding: 0 0.75rem;
+            background: var(--lcars-violet-creme);
+            color: var(--lcars-black);
+            border: none;
+            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: filter var(--lcars-transition);
+            overflow: hidden;
+          }
+          .media-strip:hover { filter: brightness(1.1); }
+          .media-strip ha-icon { --mdc-icon-size: 20px; flex-shrink: 0; }
+          .media-strip .media-info { flex: 1; overflow: hidden; }
+          .media-strip .media-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          .media-strip .media-title { font-size: 0.7rem; opacity: 0.7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          .media-strip .media-state { font-size: 0.65rem; opacity: 0.5; flex-shrink: 0; }
+          .media-strip[data-off] { background: var(--lcars-gray); color: var(--lcars-space-white); }
+
+          /* ─── No data ─── */
           .lcars-empty {
             color: var(--lcars-gray);
             font-size: var(--lcars-font-size-sub);
@@ -301,34 +679,148 @@ Promise.race(waitForHelpers).then(async () => {
             text-align: center;
           }
 
-          @media (prefers-reduced-motion: reduce) {
-            .area-expanded {
-              transition: none;
+          /* ═══════ ANIMATIONS (Wesley Crusher specials) ═══════ */
+
+          /* ── 1. Staggered Cascade Reveal ── */
+          @keyframes lcars-cascade-in {
+            0% {
+              opacity: 0;
+              transform: translateX(-1.5rem);
+              clip-path: inset(0 100% 0 0);
             }
+            100% {
+              opacity: 1;
+              transform: translateX(0);
+              clip-path: inset(0 0 0 0);
+            }
+          }
+          .area-expanded[data-open] .toggle-pill,
+          .area-expanded[data-open] .sensor-readout,
+          .area-expanded[data-open] .climate-panel,
+          .area-expanded[data-open] .cover-panel,
+          .area-expanded[data-open] .media-strip,
+          .area-expanded[data-open] .camera-frame,
+          .area-expanded[data-open] .entity-btn {
+            animation: lcars-cascade-in 300ms ease-out both;
+            animation-delay: calc(var(--i, 0) * 40ms);
+          }
+
+          /* ── 2. Sensor Scan Sweep ── */
+          @keyframes lcars-scan-sweep {
+            0%   { transform: translateX(-100%); }
+            100% { transform: translateX(300%); }
+          }
+          .sensor-readout {
+            position: relative;
+          }
+          .sensor-readout::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 30%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            animation: lcars-scan-sweep 3s ease-in-out infinite;
+            pointer-events: none;
+          }
+          .sensor-readout:nth-child(2n)::after { animation-delay: 0.8s; }
+          .sensor-readout:nth-child(3n)::after { animation-delay: 1.6s; }
+          .sensor-readout:nth-child(5n)::after { animation-delay: 2.4s; }
+          .sensor-readout[data-off]::after { animation: none; }
+
+          /* ── 3. Camera Viewscreen Activation ── */
+          @keyframes viewscreen-activate {
+            0%   { clip-path: inset(50% 0 50% 0); filter: brightness(2) saturate(0); }
+            40%  { clip-path: inset(10% 0 10% 0); filter: brightness(1.5) saturate(0.3); }
+            100% { clip-path: inset(0 0 0 0); filter: brightness(1) saturate(1); }
+          }
+          .camera-frame img {
+            animation: viewscreen-activate 600ms ease-out both;
+          }
+          .camera-frame[data-off] img {
+            filter: saturate(0) brightness(0.3);
+            animation: none;
+          }
+          @keyframes frame-pulse {
+            0%, 100% { border-color: var(--lcars-butterscotch); }
+            50%      { border-color: var(--lcars-gold); box-shadow: 0 0 12px var(--lcars-gold); }
+          }
+          .camera-frame:active { animation: frame-pulse 400ms ease-out; }
+
+          /* ── 4. Heartbeat Pulse for Active Entities ── */
+          @keyframes lcars-heartbeat {
+            0%, 100% { box-shadow: none; }
+            50%      { box-shadow: inset 0 0 0 1px rgba(255, 170, 0, 0.3); }
+          }
+          .toggle-pill[data-on] { animation: lcars-heartbeat 3s ease-in-out infinite; }
+          .climate-panel[data-heat],
+          .climate-panel[data-cool] { animation: lcars-heartbeat 3s ease-in-out infinite; }
+          .media-strip:not([data-off]) { animation: lcars-heartbeat 2s ease-in-out infinite; }
+
+          /* Unavailable distress pulse */
+          @keyframes lcars-distress {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.5; }
+          }
+          .sensor-readout[data-off],
+          .toggle-pill[data-off] { animation: lcars-distress 4s ease-in-out infinite; }
+
+          /* ── 5. Segmented Sensor Bar ── */
+          .sensor-bar {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+            height: 0.625rem;
+            flex-shrink: 0;
+            margin-left: 0.25rem;
+          }
+          .sensor-seg {
+            width: 3px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 1px;
+            transition: background var(--lcars-transition), height var(--lcars-transition);
+            height: 40%;
+          }
+          .sensor-seg.filled {
+            background: var(--lcars-black);
+            height: calc(40% + var(--seg-i, 0) * 6%);
+          }
+          .sensor-readout[data-warn] .sensor-seg.filled { background: var(--lcars-space-white); }
+
+          @media (prefers-reduced-motion: reduce) {
+            .area-expanded { transition: none; }
+            .area-expanded[data-open] .toggle-pill,
+            .area-expanded[data-open] .sensor-readout,
+            .area-expanded[data-open] .climate-panel,
+            .area-expanded[data-open] .cover-panel,
+            .area-expanded[data-open] .media-strip,
+            .area-expanded[data-open] .camera-frame,
+            .area-expanded[data-open] .entity-btn { animation: none; }
+            .sensor-readout::after { animation: none; }
+            .camera-frame img { animation: none; }
+            .toggle-pill[data-on],
+            .climate-panel[data-heat],
+            .climate-panel[data-cool],
+            .media-strip:not([data-off]),
+            .sensor-readout[data-off],
+            .toggle-pill[data-off] { animation: none; }
           }
         `,
       ];
     }
 
+    /* ──────────── RENDER ──────────── */
     render() {
-      if (!this._hass) {
-        return html`<div class="lcars-empty">Initializing...</div>`;
-      }
+      if (!this._hass) return html`<div class="lcars-empty">Initializing...</div>`;
 
-      const areas = this._hass.areas
-        ? Object.values(this._hass.areas)
-        : [];
-
-      if (areas.length === 0) {
-        return html`<div class="lcars-empty">No areas configured</div>`;
-      }
+      const areas = this._hass.areas ? Object.values(this._hass.areas) : [];
+      if (areas.length === 0) return html`<div class="lcars-empty">No areas configured</div>`;
 
       return html`
         <div class="lcars-divider">
           <span class="lcars-divider-label">Areas</span>
           <div class="lcars-divider-line"></div>
         </div>
-
         <div class="areas-grid">
           ${areas.map((area) => this._renderArea(area))}
         </div>
@@ -341,73 +833,257 @@ Promise.race(waitForHelpers).then(async () => {
 
       return html`
         <div class="area-panel">
-          <button
-            class="area-btn"
-            ?data-active=${isSelected}
-            aria-expanded=${isSelected}
-            aria-controls="area-${area.area_id}"
-            @click=${() => this._selectArea(area.area_id)}
-          >
+          <button class="area-btn" ?data-active=${isSelected}
+            aria-expanded=${isSelected} aria-controls="area-${area.area_id}"
+            @click=${() => this._selectArea(area.area_id)}>
             <ha-icon .icon=${area.icon || 'mdi:home-outline'}></ha-icon>
             <span class="area-name">${area.name}</span>
             <span class="area-count">${entities.length}</span>
           </button>
         </div>
-
-        <div
-          class="area-expanded"
-          id="area-${area.area_id}"
-          ?data-open=${isSelected}
-          role="region"
-          aria-label="${area.name} entities"
-        >
-          ${isSelected ? this._renderAreaEntities(entities) : ''}
+        <div class="area-expanded" id="area-${area.area_id}"
+          ?data-open=${isSelected} role="region"
+          aria-label="${area.name} entities">
+          ${isSelected ? this._renderAreaContent(entities) : ''}
         </div>
       `;
     }
 
-    _renderAreaEntities(entities) {
-      if (entities.length === 0) {
+    /* ─── Render area content grouped by device → domain ─── */
+    _renderAreaContent(entities) {
+      if (entities.length === 0)
         return html`<div class="lcars-empty">No entities in this area</div>`;
-      }
+
+      const { byDevice, noDevice } = this._groupEntities(entities);
 
       return html`
-        <div class="entity-grid">
-          ${entities.map((entity) => {
-            const state = this._getEntityState(entity.entity_id);
-            if (!state) return '';
-            const isOff =
-              state.state === 'off' ||
-              state.state === 'unavailable' ||
-              state.state === 'unknown';
-            const friendlyName =
-              state.attributes?.friendly_name ||
-              entity.entity_id.split('.').pop().replace(/_/g, ' ');
-            const stateDisplay =
-              state.state === 'unavailable'
-                ? 'N/A'
-                : state.state;
-
-            return html`
-              <button
-                class="entity-btn"
-                ?data-off=${isOff}
-                @click=${() => this._handleEntityClick(entity.entity_id)}
-                title="${friendlyName}: ${stateDisplay}"
-              >
-                <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
-                <span class="entity-name">${friendlyName}</span>
-                <span class="entity-state">${stateDisplay}</span>
-              </button>
-            `;
-          })}
-        </div>
+        ${[...byDevice.values()].map((group) => html`
+          <div class="device-group">
+            <div class="device-header">
+              <span class="device-name">${group.device.name_by_user || group.device.name || 'Device'}</span>
+              <div class="device-line"></div>
+            </div>
+            ${this._renderDomainGroups(group.entities)}
+          </div>
+        `)}
+        ${noDevice.length > 0 ? html`
+          <div class="device-group">
+            <div class="device-header">
+              <span class="device-name">Other Entities</span>
+              <div class="device-line"></div>
+            </div>
+            ${this._renderDomainGroups(noDevice)}
+          </div>
+        ` : ''}
       `;
     }
 
-    getCardSize() {
-      return 6;
+    /* ─── Render domain-grouped entity lists ─── */
+    _renderDomainGroups(entries) {
+      const domainGroups = this._groupByDomain(entries);
+      return html`${domainGroups.map(([domain, items]) => html`
+        <div class="domain-label">${DOMAIN_LABELS[domain] || domain}</div>
+        ${this._renderDomainEntities(domain, items)}
+      `)}`;
     }
+
+    /* ─── Route to the correct renderer per domain ─── */
+    _renderDomainEntities(domain, entries) {
+      if (CAMERA_DOMAINS.has(domain)) return this._renderCameras(entries);
+      if (TOGGLE_DOMAINS.has(domain)) return this._renderToggles(entries);
+      if (CLIMATE_DOMAINS.has(domain)) return this._renderClimates(entries);
+      if (COVER_DOMAINS.has(domain)) return this._renderCovers(entries);
+      if (MEDIA_DOMAINS.has(domain)) return this._renderMedia(entries);
+      if (SENSOR_DOMAINS.has(domain)) return this._renderSensors(entries);
+      return this._renderGeneric(entries);
+    }
+
+    /* ═══ CAMERA RENDERER ═══ */
+    _renderCameras(entries) {
+      return html`<div class="camera-grid">
+        ${entries.map(({ entity, state }, i) => {
+          const name = this._friendlyName(state, entity);
+          const off = this._isOff(state);
+          const imgUrl = state.attributes?.entity_picture
+            ? state.attributes.entity_picture
+            : '';
+          return html`
+            <div class="camera-frame" ?data-off=${off} style="--i:${i}"
+              @click=${() => this._handleEntityClick(entity.entity_id)}>
+              ${imgUrl
+                ? html`<img src="${imgUrl}" alt="${name}" loading="lazy" />`
+                : html`<div style="aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;">
+                    <ha-icon icon="mdi:video-off" style="--mdc-icon-size:48px;color:var(--lcars-gray)"></ha-icon>
+                  </div>`
+              }
+              <div class="camera-label">
+                <ha-icon icon="mdi:video"></ha-icon>
+                <span>${name}</span>
+                <span class="cam-state">${state.state}</span>
+              </div>
+            </div>
+          `;
+        })}
+      </div>`;
+    }
+
+    /* ═══ TOGGLE RENDERER (light/switch/fan/lock) ═══ */
+    _renderToggles(entries) {
+      return html`<div class="toggle-grid">
+        ${entries.map(({ entity, state }, i) => {
+          const name = this._friendlyName(state, entity);
+          const isOn = state.state === 'on' || state.state === 'unlocked' || state.state === 'playing';
+          const isOff = this._isOff(state);
+          const domain = entity.entity_id.split('.')[0];
+          const brightness = state.attributes?.brightness;
+          const brightPct = brightness ? Math.round((brightness / 255) * 100) : 0;
+
+          return html`
+            <button class="toggle-pill" ?data-on=${isOn} ?data-off=${isOff} style="--i:${i}"
+              @click=${(e) => { e.stopPropagation(); this._handleToggle(entity.entity_id); }}
+              @dblclick=${() => this._handleEntityClick(entity.entity_id)}
+              title="${name}: ${state.state}${brightness ? ` (${brightPct}%)` : ''}">
+              <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
+              <span class="toggle-name">${name}</span>
+              ${domain === 'light' && brightness && isOn ? html`
+                <div class="brightness-bar">
+                  <div class="brightness-fill" style="width:${brightPct}%"></div>
+                </div>
+              ` : ''}
+              <span class="toggle-state">${state.state}</span>
+              <div class="toggle-switch"></div>
+            </button>
+          `;
+        })}
+      </div>`;
+    }
+
+    /* ═══ SENSOR RENDERER ═══ */
+    _renderSensors(entries) {
+      return html`<div class="sensor-grid">
+        ${entries.map(({ entity, state }, i) => {
+          const name = this._friendlyName(state, entity);
+          const off = this._isOff(state);
+          const unit = state.attributes?.unit_of_measurement || '';
+          const val = state.state;
+          const numVal = parseFloat(val);
+          // Warn if battery < 20% or any numeric > threshold patterns
+          const isBattery = entity.entity_id.includes('battery') ||
+            state.attributes?.device_class === 'battery';
+          const warn = isBattery && !isNaN(numVal) && numVal < 20;
+
+          return html`
+            <button class="sensor-readout" ?data-off=${off} ?data-warn=${warn} style="--i:${i}"
+              @click=${() => this._handleEntityClick(entity.entity_id)}
+              title="${name}: ${val} ${unit}">
+              <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
+              <span class="sensor-name">${name}</span>
+              ${this._renderSensorBar(state)}
+              <span class="sensor-value">${val}</span>
+              ${unit ? html`<span class="sensor-unit">${unit}</span>` : ''}
+            </button>
+          `;
+        })}
+      </div>`;
+    }
+
+    /* ═══ CLIMATE RENDERER ═══ */
+    _renderClimates(entries) {
+      return html`<div class="climate-grid">
+        ${entries.map(({ entity, state }, i) => {
+          const name = this._friendlyName(state, entity);
+          const mode = state.state; // heat, cool, heat_cool, off, etc.
+          const current = state.attributes?.current_temperature;
+          const target = state.attributes?.temperature;
+          const unit = state.attributes?.temperature_unit || '°';
+          const isHeat = mode === 'heat' || mode === 'heat_cool';
+          const isCool = mode === 'cool';
+          const isOff = mode === 'off';
+
+          return html`
+            <button class="climate-panel" ?data-heat=${isHeat} ?data-cool=${isCool} ?data-off=${isOff} style="--i:${i}"
+              @click=${() => this._handleEntityClick(entity.entity_id)}
+              title="${name}: ${mode}">
+              <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
+              <div class="climate-info">
+                <span class="climate-name">${name}</span>
+                <div class="climate-temps">
+                  ${current != null ? html`<span class="climate-current">${current}${unit}</span>` : ''}
+                  ${target != null ? html`<span class="climate-target">→ ${target}${unit}</span>` : ''}
+                </div>
+              </div>
+              <span class="climate-mode">${mode}</span>
+            </button>
+          `;
+        })}
+      </div>`;
+    }
+
+    /* ═══ COVER RENDERER ═══ */
+    _renderCovers(entries) {
+      return html`<div class="cover-grid">
+        ${entries.map(({ entity, state }, i) => {
+          const name = this._friendlyName(state, entity);
+          const off = state.state === 'closed';
+          const pos = state.attributes?.current_position;
+          return html`
+            <button class="cover-panel" ?data-off=${off} style="--i:${i}"
+              @click=${() => this._handleEntityClick(entity.entity_id)}
+              title="${name}: ${state.state}">
+              <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
+              <span class="cover-name">${name}</span>
+              ${pos != null ? html`<span class="cover-position">${pos}%</span>` : ''}
+            </button>
+          `;
+        })}
+      </div>`;
+    }
+
+    /* ═══ MEDIA PLAYER RENDERER ═══ */
+    _renderMedia(entries) {
+      return html`<div class="media-grid">
+        ${entries.map(({ entity, state }, i) => {
+          const name = this._friendlyName(state, entity);
+          const off = this._isOff(state);
+          const title = state.attributes?.media_title || '';
+          const artist = state.attributes?.media_artist || '';
+          const nowPlaying = [title, artist].filter(Boolean).join(' — ');
+          return html`
+            <button class="media-strip" ?data-off=${off} style="--i:${i}"
+              @click=${() => this._handleEntityClick(entity.entity_id)}
+              title="${name}: ${state.state}">
+              <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
+              <div class="media-info">
+                <div class="media-name">${name}</div>
+                ${nowPlaying ? html`<div class="media-title">${nowPlaying}</div>` : ''}
+              </div>
+              <span class="media-state">${state.state}</span>
+            </button>
+          `;
+        })}
+      </div>`;
+    }
+
+    /* ═══ GENERIC BUTTON RENDERER ═══ */
+    _renderGeneric(entries) {
+      return html`<div class="entity-grid">
+        ${entries.map(({ entity, state }, i) => {
+          const name = this._friendlyName(state, entity);
+          const off = this._isOff(state);
+          return html`
+            <button class="entity-btn" ?data-off=${off} style="--i:${i}"
+              @click=${() => this._handleEntityClick(entity.entity_id)}
+              title="${name}: ${state.state}">
+              <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
+              <span class="entity-name">${name}</span>
+              <span class="entity-state">${state.state}</span>
+            </button>
+          `;
+        })}
+      </div>`;
+    }
+
+    getCardSize() { return 6; }
   }
 
   if (!customElements.get('homepage-card')) {

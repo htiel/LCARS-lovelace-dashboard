@@ -4,6 +4,13 @@
  */
 
 /**
+ * Private event bus for LCARS inter-component communication.
+ * Uses a dedicated EventTarget instead of window to prevent
+ * event injection from other cards or extensions.
+ */
+export const lcarsEventBus = new EventTarget();
+
+/**
  * Get the hass object from the DOM
  */
 export function getHass() {

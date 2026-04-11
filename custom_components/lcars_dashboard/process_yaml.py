@@ -1,18 +1,12 @@
 import logging
 import yaml
 import os
-import logging
 import json
 import io
-import time
 from collections import OrderedDict
 import jinja2
-import shutil
-from concurrent.futures import ThreadPoolExecutor
-import asyncio
-from aiofiles.os import scandir
+from jinja2.sandbox import SandboxedEnvironment
 
-#from homeassistant.util.yaml import Secrets, loader
 from annotatedyaml import loader
 from annotatedyaml.loader import Secrets
 
@@ -26,7 +20,7 @@ _LOGGER = logging.getLogger(__name__)
 def fromjson(value):
     return json.loads(value)
 
-jinja = jinja2.Environment(loader=jinja2.FileSystemLoader("/"))
+jinja = SandboxedEnvironment(loader=jinja2.FileSystemLoader("/"))
 
 jinja.filters['fromjson'] = fromjson
 

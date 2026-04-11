@@ -109,6 +109,11 @@ export const lcarsBaseStyles = css`
     filter: brightness(1.2);
   }
 
+  .lcars-btn:focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
+  }
+
   .lcars-btn:active,
   .lcars-btn.active {
     background: var(--lcars-btn-active);

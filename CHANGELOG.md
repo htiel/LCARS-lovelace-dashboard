@@ -2,6 +2,31 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.4.0] — 2026-04-10
+
+### Security
+- **Critical**: Switched Jinja2 template engine from `Environment` to `SandboxedEnvironment` in `process_yaml.py` to prevent Server-Side Template Injection (SSTI)
+- Replaced `window` event dispatch with private `lcarsEventBus` (`EventTarget`) for inter-component communication — prevents event injection from untrusted cards/extensions
+- Added path validation helpers (`_validate_path_component`, `_safe_path`) in `__init__.py` for websocket API file operations
+- Added `_read_yaml_file` / `_write_yaml_file` helpers with proper `with` blocks — fixed 4 file handle leaks in `websocket_get_configuration`
+- Added missing `TemplateError` import in `notifications.py` (was catching an unimported exception — would crash at runtime)
+
+### Performance
+- Entity caching in homepage card: `_getAreaEntities()` now returns cached results when area and registries haven't changed
+- Cache busted only when `hass.entities` or `hass.devices` references change (not on every state update)
+- Disabled webpack source maps in production (`devtool: false`) — reduces bundle size
+
+### Accessibility
+- Sidebar area buttons: `role="group"` with `aria-pressed` on each button
+- Toggle pills: `role="switch"` + `aria-checked` + descriptive `aria-label`
+- Camera frames: `role="button"` + `tabindex="0"` + keyboard handler (Enter/Space)
+- Content region: `aria-live="polite"` for screen reader announcements on area change
+- Footer text: improved color contrast (`lcars-sky` instead of `lcars-gray`)
+
+### Fixed
+- Cleaned unused imports across Python modules (`time`, `shutil`, `ThreadPoolExecutor`, `asyncio`, `aiofiles.os.scandir`, duplicate `logging`, `entity_registry`, `discovery`, `aiofiles`)
+- Layout element registration uses `Promise.race` with 5-second timeout fallback instead of fragile `customElements.whenDefined` chain
+
 ## [4.2.2] — 2026-04-10
 
 ### Fixed

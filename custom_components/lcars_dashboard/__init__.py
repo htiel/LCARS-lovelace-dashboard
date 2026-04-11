@@ -3,8 +3,7 @@ import yaml
 import json
 import os
 import shutil
-
-from concurrent.futures import ThreadPoolExecutor
+import re
 
 from .load_plugins import load_plugins
 from .load_dashboard import load_dashboard
@@ -17,21 +16,57 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.config import ConfigType
 from homeassistant.components import frontend, websocket_api
-from homeassistant.helpers import entity_registry as er
 from homeassistant.util import slugify
 from homeassistant.const import Platform
 
 from collections import OrderedDict
 from typing import Any, Mapping, MutableMapping, Optional
 
-from homeassistant.helpers import discovery
-
 from yaml.representer import Representer
 import collections
 import asyncio
-import aiofiles
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# ─── Security: Path component validation ───
+def _validate_path_component(value):
+    """Reject path traversal or separator characters in user-supplied path segments."""
+    if not value or not re.match(r'^[a-zA-Z0-9_\-\.]+$', str(value)):
+        raise vol.Invalid(f"Invalid path component: {value!r}")
+    if '..' in str(value):
+        raise vol.Invalid(f"Path traversal detected: {value!r}")
+    return str(value)
+
+
+def _safe_path(base_dir, *parts):
+    """Ensure resolved path stays within base_dir."""
+    full = os.path.realpath(os.path.join(base_dir, *parts))
+    if not full.startswith(os.path.realpath(base_dir) + os.sep) and full != os.path.realpath(base_dir):
+        raise ValueError(f"Path traversal blocked: {os.path.join(*parts)}")
+    return full
+
+
+# ─── File I/O helpers (proper handle management) ───
+async def _read_yaml_file(hass, rel_path):
+    """Read a YAML config file safely with proper file handle management."""
+    full = hass.config.path(rel_path)
+    def _read():
+        if not os.path.exists(full):
+            return OrderedDict()
+        with open(full, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f) or OrderedDict()
+    return await hass.async_add_executor_job(_read)
+
+
+async def _write_yaml_file(hass, rel_path, data):
+    """Write a dict to a YAML config file, creating dirs as needed."""
+    full = hass.config.path(rel_path)
+    def _write():
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        with open(full, "w", encoding="utf-8") as f:
+            yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+    await hass.async_add_executor_job(_write)
 
 areas = OrderedDict()
 entities = OrderedDict()
@@ -119,51 +154,11 @@ async def websocket_get_configuration(
     global devices
     global homepage_header
 
-    # These need to be loaded here so any changes are reflected immediately.
-    areas = (
-        await hass.async_add_executor_job(os.path.exists, hass.config.path("lcars-dashboard/configs/areas.yaml"))
-    )
-
-    if areas:
-        areas = await hass.async_add_executor_job(
-            lambda: yaml.safe_load(open(hass.config.path("lcars-dashboard/configs/areas.yaml"), "r"))
-        )
-    else:
-        areas = OrderedDict()
-
-    entities = (
-        await hass.async_add_executor_job(os.path.exists, hass.config.path("lcars-dashboard/configs/entities.yaml"))
-    )
-
-    if entities:
-        entities = await hass.async_add_executor_job(
-            lambda: yaml.safe_load(open(hass.config.path("lcars-dashboard/configs/entities.yaml"), "r"))
-        )
-    else:
-        entities = OrderedDict()
-
-
-    devices = (
-        await hass.async_add_executor_job(os.path.exists, hass.config.path("lcars-dashboard/configs/devices.yaml"))
-    )
-
-    if devices:
-        devices = await hass.async_add_executor_job(
-            lambda: yaml.safe_load(open(hass.config.path("lcars-dashboard/configs/devices.yaml"), "r"))
-        )
-    else:
-        devices = OrderedDict()
-
-    homepage_header = (
-        await hass.async_add_executor_job(os.path.exists, hass.config.path("lcars-dashboard/configs/settings.yaml"))
-    )
-
-    if homepage_header:
-        homepage_header = await hass.async_add_executor_job(
-            lambda: yaml.safe_load(open(hass.config.path("lcars-dashboard/configs/settings.yaml"), "r"))
-        )
-    else:
-        homepage_header = OrderedDict()
+    # Load config files with proper file handle management
+    areas = await _read_yaml_file(hass, "lcars-dashboard/configs/areas.yaml")
+    entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
+    devices = await _read_yaml_file(hass, "lcars-dashboard/configs/devices.yaml")
+    homepage_header = await _read_yaml_file(hass, "lcars-dashboard/configs/settings.yaml")
 
     area_cards = {}
     if os.path.isdir(hass.config.path("lcars-dashboard/configs/cards/areas")):

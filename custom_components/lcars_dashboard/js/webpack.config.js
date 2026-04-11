@@ -32,5 +32,5 @@ module.exports = {
     filename: 'lcars-dashboard.js',
     path: path.resolve(__dirname)
   },
-  devtool: "source-map"
+  devtool: false
 };

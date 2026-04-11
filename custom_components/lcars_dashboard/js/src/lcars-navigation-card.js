@@ -76,6 +76,11 @@ import { getHass, navigate, fireEvent } from './lcars-helpers.js';
             filter: brightness(1.2);
           }
 
+          .nav-btn:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
+
           .nav-btn:active,
           .nav-btn[data-active] {
             background: var(--lcars-btn-active);

@@ -11,7 +11,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { getHass, showMoreInfo, fireEvent, createCardElement } from './lcars-helpers.js';
+import { getHass, showMoreInfo, fireEvent, createCardElement, lcarsEventBus } from './lcars-helpers.js';
 
 /* Domain rendering categories */
 const TOGGLE_DOMAINS = new Set(['light', 'switch', 'fan', 'input_boolean', 'lock', 'automation', 'script']);
@@ -56,19 +56,22 @@ class LcarsHomepageCard extends LitElement {
       this.data = null;
       this.selectedArea = null;
       this._cards = {};
+      this._cachedEntities = null;
+      this._cachedAreaId = null;
       this._onAreaSelected = (e) => {
         this.selectedArea = e.detail.areaId;
+        this._cachedEntities = null; // bust cache on area change
       };
     }
 
     connectedCallback() {
       super.connectedCallback();
-      window.addEventListener('lcars-area-selected', this._onAreaSelected);
+      lcarsEventBus.addEventListener('lcars-area-selected', this._onAreaSelected);
     }
 
     disconnectedCallback() {
       super.disconnectedCallback();
-      window.removeEventListener('lcars-area-selected', this._onAreaSelected);
+      lcarsEventBus.removeEventListener('lcars-area-selected', this._onAreaSelected);
     }
 
     setConfig(config) {
@@ -76,7 +79,12 @@ class LcarsHomepageCard extends LitElement {
     }
 
     set hass(hass) {
+      const prev = this._hass;
       this._hass = hass;
+      // Bust entity cache only when registry changes (not on every state update)
+      if (prev && (prev.entities !== hass.entities || prev.devices !== hass.devices)) {
+        this._cachedEntities = null;
+      }
       if (this._cards) {
         Object.values(this._cards).forEach((card) => {
           if (card && card.hass !== undefined) card.hass = hass;
@@ -114,22 +122,29 @@ class LcarsHomepageCard extends LitElement {
       }
     }
 
-    /* ─── Entity resolution: direct area_id OR via device ─── */
+    /* ─── Entity resolution: direct area_id OR via device (cached) ─── */
     _getAreaEntities(areaId) {
       if (!this._hass) return [];
+      // Return cached result if area and registry haven't changed
+      if (this._cachedEntities && this._cachedAreaId === areaId) {
+        return this._cachedEntities;
+      }
       const entityReg = Object.values(this._hass.entities || {});
       const deviceReg = this._hass.devices || {};
       const areaDeviceIds = new Set();
       Object.values(deviceReg).forEach((dev) => {
         if (dev.area_id === areaId) areaDeviceIds.add(dev.id);
       });
-      return entityReg.filter((e) => {
+      const result = entityReg.filter((e) => {
         if (e.hidden_by || e.disabled_by) return false;
-        if (e.entity_category) return false; // skip diagnostic/config entities
+        if (e.entity_category) return false;
         if (e.area_id === areaId) return true;
         if (!e.area_id && e.device_id && areaDeviceIds.has(e.device_id)) return true;
         return false;
       });
+      this._cachedEntities = result;
+      this._cachedAreaId = areaId;
+      return result;
     }
 
     /* ─── Group entities: device → domain ─── */
@@ -247,6 +262,7 @@ class LcarsHomepageCard extends LitElement {
           /* ─── Content Area Header (Geordi: gold = active area) ─── */
           .content-area-panel {
             animation: lcars-cascade-in 300ms ease-out both;
+            padding-left: 1rem;
           }
           .content-area-header {
             font-family: var(--lcars-font);
@@ -287,9 +303,9 @@ class LcarsHomepageCard extends LitElement {
           .device-group {
             margin-bottom: 0.75rem;
             position: relative;
-            padding-left: 1.25rem;
+            padding-left: 1rem;
             border-left: 3px solid var(--lcars-gold);
-            border-image: linear-gradient(to bottom, var(--lcars-gold), transparent) 1;
+            border-image: linear-gradient(to bottom, var(--lcars-gold) 70%, transparent) 1;
           }
           .device-group::before {
             content: '';
@@ -297,9 +313,9 @@ class LcarsHomepageCard extends LitElement {
             top: 0; left: -3px;
             width: 1rem;
             height: 1.5rem;
-            border-left: 3px solid var(--lcars-gold);
             border-top: 3px solid var(--lcars-gold);
-            border-top-left-radius: 0.75rem;
+            border-left: none;
+            border-top-left-radius: 0;
           }
           .device-header {
             display: flex;
@@ -359,6 +375,10 @@ class LcarsHomepageCard extends LitElement {
             user-select: none;
           }
           .entity-btn:hover { filter: brightness(1.2); }
+          .entity-btn:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
           .entity-btn:active { background: var(--lcars-btn-active); }
           .entity-btn ha-icon { --mdc-icon-size: 16px; flex-shrink: 0; }
           .entity-btn .entity-name { overflow: hidden; text-overflow: ellipsis; flex: 1; }
@@ -391,6 +411,10 @@ class LcarsHomepageCard extends LitElement {
             user-select: none;
           }
           .toggle-pill:hover { filter: brightness(1.15); }
+          .toggle-pill:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
           .toggle-pill ha-icon { --mdc-icon-size: 20px; flex-shrink: 0; }
           .toggle-pill .toggle-name { overflow: hidden; text-overflow: ellipsis; flex: 1; }
           .toggle-pill .toggle-state {
@@ -472,6 +496,10 @@ class LcarsHomepageCard extends LitElement {
             transition: filter var(--lcars-transition);
           }
           .sensor-readout:hover { filter: brightness(1.1); }
+          .sensor-readout:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
           .sensor-readout ha-icon { --mdc-icon-size: 14px; flex-shrink: 0; }
           .sensor-readout .sensor-name { overflow: hidden; text-overflow: ellipsis; flex: 1; font-size: 0.75rem; }
           .sensor-readout .sensor-value {
@@ -507,6 +535,10 @@ class LcarsHomepageCard extends LitElement {
             transition: border-color var(--lcars-transition);
           }
           .camera-frame:hover { border-color: var(--lcars-gold); }
+          .camera-frame:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
           .camera-frame img {
             width: 100%;
             display: block;
@@ -560,6 +592,10 @@ class LcarsHomepageCard extends LitElement {
             transition: filter var(--lcars-transition);
           }
           .climate-panel:hover { filter: brightness(1.1); }
+          .climate-panel:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
           .climate-panel ha-icon { --mdc-icon-size: 24px; flex-shrink: 0; }
           .climate-panel .climate-info { flex: 1; display: flex; flex-direction: column; gap: 0.125rem; }
           .climate-panel .climate-name { font-size: var(--lcars-font-size-data); }
@@ -601,6 +637,10 @@ class LcarsHomepageCard extends LitElement {
             transition: filter var(--lcars-transition);
           }
           .cover-panel:hover { filter: brightness(1.1); }
+          .cover-panel:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
           .cover-panel ha-icon { --mdc-icon-size: 18px; flex-shrink: 0; }
           .cover-panel .cover-name { overflow: hidden; text-overflow: ellipsis; flex: 1; }
           .cover-panel .cover-position { font-size: 0.75rem; opacity: 0.7; flex-shrink: 0; }
@@ -631,6 +671,10 @@ class LcarsHomepageCard extends LitElement {
             overflow: hidden;
           }
           .media-strip:hover { filter: brightness(1.1); }
+          .media-strip:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
           .media-strip ha-icon { --mdc-icon-size: 20px; flex-shrink: 0; }
           .media-strip .media-info { flex: 1; overflow: hidden; }
           .media-strip .media-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -710,14 +754,14 @@ class LcarsHomepageCard extends LitElement {
           }
           @keyframes frame-pulse {
             0%, 100% { border-color: var(--lcars-butterscotch); }
-            50%      { border-color: var(--lcars-gold); box-shadow: 0 0 12px var(--lcars-gold); }
+            50%      { border-color: var(--lcars-gold); }
           }
           .camera-frame:active { animation: frame-pulse 400ms ease-out; }
 
           /* ── 4. Heartbeat Pulse for Active Entities ── */
           @keyframes lcars-heartbeat {
-            0%, 100% { box-shadow: none; }
-            50%      { box-shadow: inset 0 0 0 1px rgba(255, 170, 0, 0.3); }
+            0%, 100% { filter: brightness(1); }
+            50%      { filter: brightness(1.1); }
           }
           .toggle-pill[data-on] { animation: lcars-heartbeat 3s ease-in-out infinite; }
           .climate-panel[data-heat],
@@ -859,7 +903,11 @@ class LcarsHomepageCard extends LitElement {
             : '';
           return html`
             <div class="camera-frame" ?data-off=${off} style="--i:${i}"
-              @click=${() => this._handleEntityClick(entity.entity_id)}>
+              role="button"
+              tabindex="0"
+              aria-label="${name} camera: ${state.state}"
+              @click=${() => this._handleEntityClick(entity.entity_id)}
+              @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
               ${imgUrl
                 ? html`<img src="${imgUrl}" alt="${name}" loading="lazy" />`
                 : html`<div style="aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;">
@@ -890,6 +938,9 @@ class LcarsHomepageCard extends LitElement {
 
           return html`
             <button class="toggle-pill" ?data-on=${isOn} ?data-off=${isOff} style="--i:${i}"
+              role="switch"
+              aria-checked=${isOn}
+              aria-label="${name}: ${state.state}${brightness ? ` (${brightPct}%)` : ''}"
               @click=${(e) => { e.stopPropagation(); this._handleToggle(entity.entity_id); }}
               @dblclick=${() => this._handleEntityClick(entity.entity_id)}
               title="${name}: ${state.state}${brightness ? ` (${brightPct}%)` : ''}">

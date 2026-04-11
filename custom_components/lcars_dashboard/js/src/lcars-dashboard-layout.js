@@ -6,6 +6,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
+import { lcarsEventBus } from './lcars-helpers.js';
 
 class LcarsDashboardLayout extends LitElement {
   static get properties() {
@@ -52,8 +53,8 @@ class LcarsDashboardLayout extends LitElement {
 
   _selectArea(areaId) {
     this._selectedArea = this._selectedArea === areaId ? null : areaId;
-    // Broadcast area selection via window event (reaches cards inside hui-card wrappers)
-    window.dispatchEvent(
+    // Broadcast area selection via private event bus (prevents injection from untrusted cards)
+    lcarsEventBus.dispatchEvent(
       new CustomEvent('lcars-area-selected', {
         detail: { areaId: this._selectedArea },
       })
@@ -100,7 +101,7 @@ class LcarsDashboardLayout extends LitElement {
           position: absolute;
           bottom: 0;
           right: 0;
-          width: 2rem;
+          width: calc(var(--lcars-sidebar-w) - var(--lcars-elbow-w) + 2rem);
           height: calc(var(--lcars-elbow-h) - var(--lcars-bar-h));
           background: var(--lcars-bg);
           border-radius: 0 0 0 1.875rem;
@@ -113,7 +114,6 @@ class LcarsDashboardLayout extends LitElement {
           display: flex;
           align-items: flex-end;
           gap: var(--lcars-gap);
-          padding-bottom: 0;
         }
 
         .lcars-header-bar {
@@ -134,7 +134,7 @@ class LcarsDashboardLayout extends LitElement {
           color: var(--lcars-text-heading);
           white-space: nowrap;
           padding: 0 1rem;
-          align-self: center;
+          line-height: var(--lcars-bar-h);
         }
 
         /* ─── Sidebar ─── */
@@ -185,13 +185,13 @@ class LcarsDashboardLayout extends LitElement {
           border: none;
           border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
           height: var(--lcars-btn-height);
-          padding: 0 0.75rem;
+          padding: 0 1rem 0 0.75rem;
           font-family: var(--lcars-font);
           font-size: var(--lcars-font-size-data);
           text-transform: uppercase;
           text-align: left;
           cursor: pointer;
-          width: 100%;
+          width: calc(100% - 0.25rem);
           transition: filter var(--lcars-transition), background var(--lcars-transition);
           user-select: none;
           white-space: nowrap;
@@ -199,6 +199,10 @@ class LcarsDashboardLayout extends LitElement {
           flex-shrink: 0;
         }
         .sidebar-area-btn:hover { filter: brightness(1.2); }
+        .sidebar-area-btn:focus-visible {
+          outline: 2px solid var(--lcars-ice);
+          outline-offset: 2px;
+        }
         .sidebar-area-btn[data-active] { background: var(--lcars-gold); }
         .sidebar-area-btn ha-icon { --mdc-icon-size: 18px; flex-shrink: 0; }
         .sidebar-area-btn .area-name { overflow: hidden; text-overflow: ellipsis; flex: 1; }
@@ -238,7 +242,7 @@ class LcarsDashboardLayout extends LitElement {
           position: absolute;
           top: 0;
           right: 0;
-          width: 2rem;
+          width: calc(var(--lcars-sidebar-w) - var(--lcars-elbow-w) + 2rem);
           height: calc(var(--lcars-elbow-h) - var(--lcars-bar-h));
           background: var(--lcars-bg);
           border-radius: 1.875rem 0 0 0;
@@ -268,10 +272,10 @@ class LcarsDashboardLayout extends LitElement {
 
         .lcars-footer-text {
           font-size: var(--lcars-font-size-data);
-          color: var(--lcars-gray);
+          color: var(--lcars-sky);
           padding: 0 0.5rem;
           white-space: nowrap;
-          align-self: center;
+          line-height: var(--lcars-bar-h);
         }
 
         /* ─── Mobile: Collapse sidebar to top nav ─── */
@@ -354,12 +358,11 @@ class LcarsDashboardLayout extends LitElement {
           <div class="lcars-sidebar-panel">Areas</div>
 
           <!-- Area buttons (scrollable) -->
-          <div class="lcars-sidebar-areas" role="listbox" aria-label="Area selection">
+          <div class="lcars-sidebar-areas" role="group" aria-label="Area selection">
             ${areas.map((area) => html`
               <button class="sidebar-area-btn"
-                role="option"
                 ?data-active=${this._selectedArea === area.area_id}
-                aria-selected=${this._selectedArea === area.area_id}
+                aria-pressed=${this._selectedArea === area.area_id}
                 @click=${() => this._selectArea(area.area_id)}>
                 <ha-icon .icon=${area.icon || 'mdi:home-outline'}></ha-icon>
                 <span class="area-name">${area.name}</span>
@@ -374,7 +377,7 @@ class LcarsDashboardLayout extends LitElement {
         </nav>
 
         <!-- Main Content -->
-        <div class="lcars-content" role="region" aria-label="Dashboard content">
+        <div class="lcars-content" role="region" aria-label="Dashboard content" aria-live="polite">
           ${this.cards && this.cards.length > 0
             ? this.cards.map((card) => html`${card}`)
             : html`<div class="lcars-heading">No data available</div>`}
@@ -394,7 +397,12 @@ class LcarsDashboardLayout extends LitElement {
   }
 }
 
-customElements.whenDefined('hui-masonry-view').then(() => {
+// Register with timeout fallback (hui-masonry-view may be renamed in future HA)
+const ready = Promise.race([
+  customElements.whenDefined('hui-masonry-view'),
+  new Promise((r) => setTimeout(r, 5000)),
+]);
+ready.then(() => {
   if (!customElements.get('lcars-dashboard-layout')) {
     customElements.define('lcars-dashboard-layout', LcarsDashboardLayout);
     const pkg = require('../package.json');

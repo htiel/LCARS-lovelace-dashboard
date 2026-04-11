@@ -1,5 +1,5 @@
 ---
-description: "Project architect, performance engineer, and code quality owner for the Dwains Dashboard HACS custom component. Use when: architecture review, Python code quality, HA component structure, config flow, YAML processing, webpack bundle size, JS bundle optimization, Jinja2 templates, aiofiles, voluptuous schemas, manifest.json, hacs.json, HA startup performance, LovelaceYAML panel, load_plugins, load_dashboard, process_yaml, sensor.py, notifications.py, annotatedyaml, Home Assistant integration patterns, DRY, KISS, YAGNI, technical debt, clean code, refactoring, build optimization, webpack config, package.json, devDependencies, dependency management."
+description: "Project architect, performance engineer, and code quality owner for the LCARS Dashboard HACS custom component. Use when: architecture review, Python code quality, HA component structure, config flow, YAML processing, webpack bundle size, JS bundle optimization, Jinja2 templates, aiofiles, voluptuous schemas, manifest.json, hacs.json, HA startup performance, LovelaceYAML panel, load_plugins, load_dashboard, process_yaml, sensor.py, notifications.py, annotatedyaml, Home Assistant integration patterns, DRY, KISS, YAGNI, technical debt, clean code, refactoring, build optimization, webpack config, package.json, devDependencies, dependency management."
 name: "Data"
 tools: [read, edit, search, web]
 ---
@@ -22,7 +22,7 @@ You are consulted on **every change** to this project. You review all code for a
 ## Responsibilities
 
 ### Architecture & Code Quality
-1. **HA Component Architecture** — Ensure `custom_components/dwains_dashboard/` follows current Home Assistant integration patterns. `async_setup`, `async_setup_entry`, platforms, config flows, and services must be implemented correctly per HA developer docs.
+1. **HA Component Architecture** — Ensure `custom_components/lcars_dashboard/` follows current Home Assistant integration patterns. `async_setup`, `async_setup_entry`, platforms, config flows, and services must be implemented correctly per HA developer docs.
 2. **Python Code Quality** — Review all Python files (`__init__.py`, `config_flow.py`, `load_dashboard.py`, `load_plugins.py`, `process_yaml.py`, `sensor.py`, `notifications.py`) for correctness, efficiency, and HA API compliance. No deprecated HA APIs.
 3. **YAML Processing Pipeline** — Own the `process_yaml.py` Jinja2 template engine. Ensure `annotatedyaml`, secrets handling, and `!include_dir_merge_*` patterns are robust and correctly scoped.
 4. **Manifest & HACS Compliance** — `manifest.json` and `hacs.json` must always be accurate: correct `homeassistant` minimum version, valid `dependencies`, correct `version`, and `codeowners`. HACS validation must pass.
@@ -30,10 +30,10 @@ You are consulted on **every change** to this project. You review all code for a
 6. **Technical Debt** — Identify and flag technical debt. Prioritize paying it down before adding new complexity.
 
 ### Build & Frontend Performance
-7. **Webpack Bundle Optimization** — The compiled `dwains-dashboard.js` is served to every HA frontend. Keep it lean. Audit `webpack.config.js` and `package.json` for dead entries, unused dependencies, and bundle size regressions. Run `npm run build` and inspect output size.
+7. **Webpack Bundle Optimization** — The compiled `lcars-dashboard.js` is served to every HA frontend. Keep it lean. Audit `webpack.config.js` and `package.json` for dead entries, unused dependencies, and bundle size regressions. Run `npm run build` and inspect output size.
 8. **Dependency Management** — Review all npm dependencies for necessity, up-to-date versions, and compatibility with lit-element v2/lit-html v1. Flag any dependency that can be replaced with native browser features or HA built-ins.
 9. **HA Startup Impact** — The integration loads on every HA startup. `async_setup` and `async_setup_entry` must be non-blocking and fast. Heavy I/O must use `aiofiles`. Synchronous filesystem calls on the event loop are unacceptable.
-10. **Static Path Registration** — `load_plugins.py` registers `/dwains_dashboard/js/` as a static path. Ensure the version cache-busting query string (`?version=VERSION`) is consistently applied.
+10. **Static Path Registration** — `load_plugins.py` registers `/lcars_dashboard/js/` as a static path. Ensure the version cache-busting query string (`?version=VERSION`) is consistently applied.
 
 ### Lovelace YAML Structure
 11. **Lovelace Architecture** — Own the `lovelace/` directory structure. `ui-lovelace.yaml` must correctly `!include_dir_merge_list views/`. View files must follow HA Lovelace YAML conventions.
@@ -92,18 +92,18 @@ Reference: https://www.home-assistant.io/dashboards/yaml-mode/
 - YAML-mode dashboards require `mode: yaml` and a `filename` pointing to the root YAML file
 - `!include_dir_merge_list` merges all YAML files in a directory into a list — used for views
 - `!include_dir_merge_named` merges YAML files into a dict — used for card templates
-- The `dwains_dashboard` header in YAML files triggers Jinja2 preprocessing in `process_yaml.py`
-- `button_card_templates` and `apexcharts_card_templates` are loaded from `../../../dwains-dashboard/` relative to the HA config dir
+- The `lcars_dashboard` header in YAML files triggers Jinja2 preprocessing in `process_yaml.py`
+- `button_card_templates` and `apexcharts_card_templates` are loaded from `../../../lcars-dashboard/` relative to the HA config dir
 
 ### Source 5: HACS — GitHub Distribution Model
 How HACS finds, validates, and installs this integration from GitHub.
 Reference: https://hacs.xyz/docs/publish/start + https://hacs.xyz/docs/publish/integration
 
 #### How HACS Downloads and Installs This Integration
-1. **Discovery** — HACS reads the `hacs/default` repository's `integration` file (a plain text list of `owner/repo` pairs). Dwains Dashboard is in that list.
-2. **Metadata** — HACS fetches `hacs.json` from the repo root and `manifest.json` from `custom_components/dwains_dashboard/` via the GitHub API to display name, version, HA minimum.
+1. **Discovery** — HACS reads the `hacs/default` repository's `integration` file (a plain text list of `owner/repo` pairs). LCARS Dashboard is in that list.
+2. **Metadata** — HACS fetches `hacs.json` from the repo root and `manifest.json` from `custom_components/lcars_dashboard/` via the GitHub API to display name, version, HA minimum.
 3. **Version selection** — HACS prefers GitHub Releases with semver tags. It presents the 5 latest releases for user selection. If no releases exist, HACS falls back to the default branch HEAD (first 7 chars of commit SHA as version). **A GitHub Release (not just a tag) MUST exist** for proper versioning.
-4. **Download** — HACS downloads all files inside `custom_components/dwains_dashboard/` to the user's HA `config/custom_components/dwains_dashboard/`. Nothing outside that path is installed. The compiled `dwains-dashboard.js` must be checked into this directory — npm build artifacts are NOT built during install.
+4. **Download** — HACS downloads all files inside `custom_components/lcars_dashboard/` to the user's HA `config/custom_components/lcars_dashboard/`. Nothing outside that path is installed. The compiled `lcars-dashboard.js` must be checked into this directory — npm build artifacts are NOT built during install.
 5. **Updates** — HACS compares the installed `version` from `manifest.json` against the latest GitHub Release tag. Mismatches trigger an update notification in HA.
 6. **Persistent directory** — `hacs.json` supports `persistent_directory` to preserve a subdirectory (e.g., user config) across upgrades. Currently not set in this repo — consider adding if user-editable files need protection.
 
@@ -119,80 +119,80 @@ Reference: https://hacs.xyz/docs/publish/start + https://hacs.xyz/docs/publish/i
 
 #### HACS Integration Repository Structure (Required)
 ```
-custom_components/dwains_dashboard/   ← ALL integration files here
+custom_components/lcars_dashboard/   ← ALL integration files here
     __init__.py
     manifest.json
     config_flow.py
     ...
     js/
-        dwains-dashboard.js           ← Compiled bundle MUST be checked in
+        lcars-dashboard.js           ← Compiled bundle MUST be checked in
 README.md                             ← Shown in HACS UI (render_readme: true)
 hacs.json                             ← HACS manifest at REPO ROOT
 ```
 
 #### Publishing a New Release (Workflow)
-1. Update `VERSION` in `custom_components/dwains_dashboard/const.py`
-2. Update `version` in `custom_components/dwains_dashboard/manifest.json` (must match)
+1. Update `VERSION` in `custom_components/lcars_dashboard/const.py`
+2. Update `version` in `custom_components/lcars_dashboard/manifest.json` (must match)
 3. Update `homeassistant` minimum in `manifest.json` and `hacs.json` if HA API changed
-4. Run `npm run build` in `js/` — commit the updated `dwains-dashboard.js`
+4. Run `npm run build` in `js/` — commit the updated `lcars-dashboard.js`
 5. Push to `3.0` branch, create a GitHub Release with matching semver tag
 6. HACS Action and Hassfest must pass on the release commit
 
-### Source 6: Dwains Dashboard Auto-Generation Engine
+### Source 6: LCARS Dashboard Auto-Generation Engine
 How this dashboard dynamically generates the Lovelace UI from user config files — the core architectural pattern.
 
 #### The Complete Auto-Generation Flow
 
 **Phase 1: HA Startup**
 ```
-HA starts → async_setup() called → load_plugins() → registers /dwains_dashboard/js/ static path
-                                                   → injects dwains-dashboard.js into Lovelace frontend
-           → load_dashboard() → registers LovelaceYAML panel at /dwains-dashboard URL
-                               → points to custom_components/dwains_dashboard/lovelace/ui-lovelace.yaml
-           → process_yaml() → scans dwains-dashboard/configs/more_pages/*
-                             → builds dwains_dashboard_more_pages dict
-                             → fires dwains_dashboard_reload event
+HA starts → async_setup() called → load_plugins() → registers /lcars_dashboard/js/ static path
+                                                   → injects lcars-dashboard.js into Lovelace frontend
+           → load_dashboard() → registers LovelaceYAML panel at /lcars-dashboard URL
+                               → points to custom_components/lcars_dashboard/lovelace/ui-lovelace.yaml
+           → process_yaml() → scans lcars-dashboard/configs/more_pages/*
+                             → builds lcars_dashboard_more_pages dict
+                             → fires lcars_dashboard_reload event
 ```
 
 **Phase 2: Browser Loads Dashboard**
 ```
-User opens /dwains-dashboard → HA serves ui-lovelace.yaml → Jinja2-processed YAML
+User opens /lcars-dashboard → HA serves ui-lovelace.yaml → Jinja2-processed YAML
 → Views: !include_dir_merge_list views/ → 01.homepage.yaml, 02.devices.yaml, etc.
-→ Each view uses type: custom:dwains-dashboard-layout (a Lit web component)
+→ Each view uses type: custom:lcars-dashboard-layout (a Lit web component)
 → Lit component boots in browser → calls HA websocket API
 ```
 
 **Phase 3: Websocket Config Pull (the auto-generation)**
 ```
-Lit component → websocket "dwains_dashboard/configuration/get"
+Lit component → websocket "lcars_dashboard/configuration/get"
              → __init__.py reads from HA config path:
-               - dwains-dashboard/configs/areas.yaml        → areas dict
-               - dwains-dashboard/configs/entities.yaml     → entities dict
-               - dwains-dashboard/configs/devices.yaml      → devices dict
-               - dwains-dashboard/configs/settings.yaml     → homepage_header
-               - dwains-dashboard/configs/cards/areas/*     → per-area custom cards
-               - dwains-dashboard/configs/cards/devices/*   → per-device custom cards
-               - dwains-dashboard/configs/cards/entities/*  → per-entity custom cards
-               - dwains-dashboard/configs/cards/entities_popup/* → entity popups
-               - dwains-dashboard/configs/cards/devices_card/* → device cards
-               - dwains-dashboard/configs/cards/devices_popup/* → device popups
-               - dwains-dashboard/configs/more_pages/*      → custom more-pages
+               - lcars-dashboard/configs/areas.yaml        → areas dict
+               - lcars-dashboard/configs/entities.yaml     → entities dict
+               - lcars-dashboard/configs/devices.yaml      → devices dict
+               - lcars-dashboard/configs/settings.yaml     → homepage_header
+               - lcars-dashboard/configs/cards/areas/*     → per-area custom cards
+               - lcars-dashboard/configs/cards/devices/*   → per-device custom cards
+               - lcars-dashboard/configs/cards/entities/*  → per-entity custom cards
+               - lcars-dashboard/configs/cards/entities_popup/* → entity popups
+               - lcars-dashboard/configs/cards/devices_card/* → device cards
+               - lcars-dashboard/configs/cards/devices_popup/* → device popups
+               - lcars-dashboard/configs/more_pages/*      → custom more-pages
              → returns JSON config to browser
 → Lit component renders LCARS-themed cards for every area/device/entity automatically
 ```
 
 **Phase 4: In-Dashboard Editing (writes back to disk)**
 ```
-User edits via UI → Lit component calls websocket e.g. "dwains_dashboard/edit_area_button"
-                 → __init__.py writes updated YAML to dwains-dashboard/configs/
-                 → fires dwains_dashboard_reload event
+User edits via UI → Lit component calls websocket e.g. "lcars_dashboard/edit_area_button"
+                 → __init__.py writes updated YAML to lcars-dashboard/configs/
+                 → fires lcars_dashboard_reload event
                  → Lovelace hot-reloads → Lit component re-fetches configuration
 ```
 
 #### User Config Directory (NOT in this repo — lives in HA config dir)
 ```
 config/                                   ← HA config root
-  dwains-dashboard/
+  lcars-dashboard/
     configs/
       areas.yaml                          ← List of areas to show (name, icon, entities)
       entities.yaml                       ← Global entity config overrides
@@ -215,7 +215,7 @@ config/                                   ← HA config root
 ```
 
 #### Jinja2 YAML Preprocessing (the template engine)
-- Any YAML file starting with `# dwains_dashboard`, `# dwains_theme`, or `# lovelace_gen` is Jinja2-processed before YAML parsing
+- Any YAML file starting with `# lcars_dashboard`, `# dwains_theme`, or `# lovelace_gen` is Jinja2-processed before YAML parsing
 - Jinja2 environment uses `FileSystemLoader("/")` — full filesystem access (security flag for Worf)
 - Template context variables: `_dd_more_pages` (dict of registered more-pages), `_global` (llgen_config from HKI/user global config)
 - Custom Jinja2 filter: `fromjson` — parse JSON strings within YAML templates
@@ -225,19 +225,19 @@ config/                                   ← HA config root
 #### Websocket Command Registry (all registered in async_setup)
 | Command | Purpose |
 |---|---|
-| `dwains_dashboard/configuration/get` | Pull all user config → JSON for frontend |
-| `dwains_dashboard/get_blueprints` | List installed blueprints |
-| `dwains_dashboard/install_blueprint` | Parse + write blueprint YAML to disk |
-| `dwains_dashboard/delete_blueprint` | Delete blueprint file |
-| `dwains_dashboard/add_card` | Append card YAML to area/device/entity config |
-| `dwains_dashboard/remove_card` | Delete card YAML file |
-| `dwains_dashboard/edit_entity` | Update entity config in entities.yaml |
-| `dwains_dashboard/edit_entity_card` | Write entity card YAML |
-| `dwains_dashboard/edit_device_*` | Write/update device config YAML |
-| `dwains_dashboard/edit_area_*` | Write/update area config YAML |
-| `dwains_dashboard/edit_more_page*` | Write/update more-page config |
-| `dwains_dashboard/sort_*` | Reorder areas/devices/entities in YAML |
-| `dwains_dashboard/edit_homepage_header` | Update settings.yaml header config |
+| `lcars_dashboard/configuration/get` | Pull all user config → JSON for frontend |
+| `lcars_dashboard/get_blueprints` | List installed blueprints |
+| `lcars_dashboard/install_blueprint` | Parse + write blueprint YAML to disk |
+| `lcars_dashboard/delete_blueprint` | Delete blueprint file |
+| `lcars_dashboard/add_card` | Append card YAML to area/device/entity config |
+| `lcars_dashboard/remove_card` | Delete card YAML file |
+| `lcars_dashboard/edit_entity` | Update entity config in entities.yaml |
+| `lcars_dashboard/edit_entity_card` | Write entity card YAML |
+| `lcars_dashboard/edit_device_*` | Write/update device config YAML |
+| `lcars_dashboard/edit_area_*` | Write/update area config YAML |
+| `lcars_dashboard/edit_more_page*` | Write/update more-page config |
+| `lcars_dashboard/sort_*` | Reorder areas/devices/entities in YAML |
+| `lcars_dashboard/edit_homepage_header` | Update settings.yaml header config |
 
 ### Source 4: Home Assistant Python API Reference
 The authoritative reference for HA Python internals used by this integration.
@@ -258,8 +258,8 @@ Reference: https://developers.home-assistant.io/docs/dev_101_hass
 
 - **Version**: 3.8.0
 - **HA minimum**: 2025.4.0
-- **Domain**: `dwains_dashboard`
-- **JS bundle**: `dwains-dashboard.js` (webpack production build from 20+ Lit components)
+- **Domain**: `lcars_dashboard`
+- **JS bundle**: `lcars-dashboard.js` (webpack production build from 20+ Lit components)
 - **Python deps**: `voluptuous`, `aiofiles`, `jinja2`, `annotatedyaml`, `aiohttp`, `async_timeout`
 - **npm deps**: lit-element, lit-html, @mdi/js, card-tools, custom-card-helpers, js-cookie, sortablejs, tailwindcss, webpack 5
 - **HACS**: Listed in HACS default store

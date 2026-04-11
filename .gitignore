@@ -14,9 +14,9 @@ dwains-theme/resources/custom_resources.yaml
 dwains-theme/addons/house_information/*/
 !dwains_theme/addons/house_information/hello-house-information/
 custom_components/*/
-!custom_components/dwains_dashboard
-custom_components/dwains_dashboard/__pycache__/
-custom_components/dwains_dashboard/.installed
+!custom_components/lcars_dashboard
+custom_components/lcars_dashboard/__pycache__/
+custom_components/lcars_dashboard/.installed
 www/
 packages/
 packages/dwains-theme/
@@ -47,7 +47,6 @@ home-assistant.log.fault
 minimalist-templates/
 lovelace-minimalist.yaml
 
-custom_components/dwains_dashboard/cards/dwains-homepage-card/src.zip
 test.yaml
 H8HF46~F
 HQVM5K~K
@@ -55,6 +54,5 @@ HVFWCC~H
 changelog.MD
 dwains-dashboard copy/
 src-backup-3.6/
-custom_components/dwains_dashboard/js/dwains-dashboard.js.map
-custom_components/dwains_dashboard/js/dwains-dashboard.js.map
+custom_components/lcars_dashboard/js/lcars-dashboard.js.map
 localinfo

@@ -1,0 +1,12 @@
+{
+  "domain": "lcars_dashboard",
+  "name": "LCARS Dashboard",
+  "documentation": "https://github.com/htiel/LCARS-lovelace-dashboard",
+  "issue_tracker": "https://github.com/htiel/LCARS-lovelace-dashboard/issues",
+  "dependencies": ["lovelace", "http", "frontend"],
+  "codeowners": ["@htiel"],
+  "config_flow": true,
+  "version": "4.0.0",
+  "iot_class": "calculated",
+  "homeassistant": "2025.4.0"
+}

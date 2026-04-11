@@ -20,12 +20,12 @@ You speak directly and without unnecessary pleasantries. You state threats clear
 
 1. **Jinja2 / YAML Injection** — `process_yaml.py` renders YAML files through Jinja2 using untrusted filenames from the filesystem. Ensure template rendering is sandboxed. No user-controlled strings may be passed into `jinja.get_template()` without strict path validation.
 2. **Websocket API Input Validation** — `notifications.py` registers websocket command handlers. Every handler must validate and sanitize all incoming payload fields using voluptuous schemas before processing. No raw dict access on untrusted websocket data.
-3. **External HTTP Calls** — `sensor.py` makes an outbound HTTP request to `dwains-dashboard.dwainscheeren.nl`. Validate the response. Wrap in try/except. Never expose raw error detail to HA logs in production.
+3. **External HTTP Calls** — `sensor.py` makes an outbound HTTP request to `lcars-dashboard.htiel.nl`. Validate the response. Wrap in try/except. Never expose raw error detail to HA logs in production.
 4. **Secrets Handling** — `annotatedyaml` Secrets loader handles HA `secrets.yaml`. Ensure secret values are never logged, serialized to state, or exposed via websocket responses.
 5. **HA Authentication** — The dashboard panel is registered with `require_admin: False`, meaning any HA user can access it. Ensure no admin-only data is exposed through websocket APIs without checking `hass.auth` permissions.
 6. **XSS in Lit Components** — Lit-html's `html` tagged template literal auto-escapes by default, but any use of `unsafeHTML()`, `innerHTML`, or direct DOM manipulation in `js/src/*.js` must be reviewed for XSS risk.
 7. **npm Dependency Security** — Audit all packages in `package.json` for known CVEs. `card-tools` is loaded from a GitHub repo ref (`thomasloven/lovelace-card-tools`) — pin to a specific commit hash, not a branch.
-8. **Static Path Exposure** — `load_plugins.py` registers `/dwains_dashboard/js/` as a public static path served by HA's HTTP component. Ensure only the compiled `dwains-dashboard.js` and its source map are present — no sensitive files in that directory.
+8. **Static Path Exposure** — `load_plugins.py` registers `/lcars_dashboard/js/` as a public static path served by HA's HTTP component. Ensure only the compiled `lcars-dashboard.js` and its source map are present — no sensitive files in that directory.
 9. **OWASP Top 10 Compliance** — Review all code changes against the current OWASP Top 10. Flag injection risks, broken access control, security misconfigurations, and vulnerable components.
 10. **Threat Modeling** — For significant changes, enumerate attack surfaces and potential threat vectors before approving.
 

@@ -12,7 +12,7 @@
 1. [Design Constants & Grid System](#1-design-constants--grid-system)
 2. [CSS Custom Properties](#2-css-custom-properties)
 3. [Typography](#3-typography)
-4. [LCARS Layout Mapping — `dwains-dashboard-layout`](#4-lcars-layout-mapping)
+4. [LCARS Layout Mapping — `lcars-dashboard-layout`](#4-lcars-layout-mapping)
 5. [Component Visual Specifications](#5-component-visual-specifications)
 6. [Color Assignment by UI Role](#6-color-assignment-by-ui-role)
 7. [Interaction Design & Animation](#7-interaction-design--animation)
@@ -61,7 +61,7 @@ Examples:
 
 ## 2. CSS Custom Properties
 
-Define these in the `:host` selector of `dwains-dashboard-layout`. All child components inherit via CSS cascade through shadow DOM `::slotted` or by re-declaring in their own `:host`.
+Define these in the `:host` selector of `lcars-dashboard-layout`. All child components inherit via CSS cascade through shadow DOM `::slotted` or by re-declaring in their own `:host`.
 
 ```css
 :host {
@@ -234,7 +234,7 @@ Define these in the `:host` selector of `dwains-dashboard-layout`. All child com
   Background: #000000
 ```
 
-### `dwains-dashboard-layout` — HTML Structure
+### `lcars-dashboard-layout` — HTML Structure
 
 ```html
 <div class="lcars-frame">
@@ -1345,11 +1345,11 @@ LCARS's strict geometric frame doesn't naturally reflow. Strategy: **collapse th
 
 ## 11. File Manifest
 
-Source files to create in `custom_components/dwains_dashboard/js/src/`:
+Source files to create in `custom_components/lcars_dashboard/js/src/`:
 
 | File | Custom Element | Purpose |
 |------|----------------|---------|
-| `dwains-dashboard-layout.js` | `dwains-dashboard-layout` | LCARS frame, grid, elbows, sidebar, header/footer bars |
+| `lcars-dashboard-layout.js` | `lcars-dashboard-layout` | LCARS frame, grid, elbows, sidebar, header/footer bars |
 | `dwains-navigation-card.js` | `dwains-navigation-card` | Sidebar nav button generation from HA config |
 | `dwains-homepage-card.js` | `homepage-card` | Area grid, favorites section, house info embed |
 | `dwains-devicespage-card.js` | `devices-card` | Device panels with entity rows |
@@ -1405,7 +1405,7 @@ class DwainsDashboardLayout extends LitElement {
   getCardSize() { return 1; }
 }
 
-customElements.define('dwains-dashboard-layout', DwainsDashboardLayout);
+customElements.define('lcars-dashboard-layout', DwainsDashboardLayout);
 ```
 
 ---

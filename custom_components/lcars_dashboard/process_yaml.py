@@ -27,6 +27,11 @@ jinja.filters['fromjson'] = fromjson
 lcars_dashboard_more_pages = {}
 llgen_config = {}
 
+def _is_our_file(fname):
+    """Check if a file belongs to LCARS Dashboard (skip noisy logging for other HA YAML)."""
+    return 'lcars_dashboard' in fname or 'lcars-dashboard' in fname
+
+
 def load_yamll(fname, secrets = None, args={}):
     try:
         process_yaml = False
@@ -34,7 +39,9 @@ def load_yamll(fname, secrets = None, args={}):
             if f.readline().lower().startswith(("# lcars_dashboard", "# lcars_theme", "# lovelace_gen", "#lcars_dashboard")):
                 process_yaml = True
 
-        _LOGGER.debug("load_yamll: %s (jinja=%s)", fname, process_yaml)
+        ours = _is_our_file(fname)
+        if ours:
+            _LOGGER.debug("load_yamll: %s (jinja=%s)", fname, process_yaml)
 
         if process_yaml:
             _LOGGER.debug("Rendering Jinja2 template: %s (args=%s)", fname, list(args.keys()) if args else [])
@@ -52,7 +59,8 @@ def load_yamll(fname, secrets = None, args={}):
         else:
             with open(fname, encoding="utf-8") as config_file:
                 data = loader.yaml.load(config_file, Loader=lambda stream: loader.PythonSafeLoader(stream, secrets)) or OrderedDict()
-                _LOGGER.debug("Parsed YAML: %s → %s (%d items)", fname, type(data).__name__, len(data) if isinstance(data, (dict, list)) else 0)
+                if ours:
+                    _LOGGER.debug("Parsed YAML: %s → %s (%d items)", fname, type(data).__name__, len(data) if isinstance(data, (dict, list)) else 0)
                 return data
 
     except loader.yaml.YAMLError as exc:

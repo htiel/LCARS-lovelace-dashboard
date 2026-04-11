@@ -730,7 +730,7 @@ async def ws_handle_edit_device_popup(
 ) -> None:
     """Handle saving device popup."""
 
-    _LOGGER.debug("edit_device_popup called: domain=%s", msg.get("domain"))"
+    _LOGGER.debug("edit_device_popup called: domain=%s", msg.get("domain"))
 
     filecontent = json.loads(msg["cardData"])
 

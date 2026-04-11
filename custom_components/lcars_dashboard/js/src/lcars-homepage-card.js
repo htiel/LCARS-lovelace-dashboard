@@ -81,9 +81,16 @@ class LcarsHomepageCard extends LitElement {
     set hass(hass) {
       const prev = this._hass;
       this._hass = hass;
-      // Bust entity cache only when registry changes (not on every state update)
+      // Bust entity cache when registries change
       if (prev && (prev.entities !== hass.entities || prev.devices !== hass.devices)) {
         this._cachedEntities = null;
+      }
+      // Deselect area if it was removed from HA
+      if (prev && prev.areas !== hass.areas && this.selectedArea) {
+        if (!hass.areas?.[this.selectedArea]) {
+          this.selectedArea = null;
+          this._cachedEntities = null;
+        }
       }
       if (this._cards) {
         Object.values(this._cards).forEach((card) => {
@@ -102,6 +109,8 @@ class LcarsHomepageCard extends LitElement {
         this.data = result;
       } catch (e) {
         console.error('LCARS: Failed to load configuration', e);
+        // Set empty data so we don't retry endlessly — card still works dynamically from hass
+        this.data = {};
       }
     }
 

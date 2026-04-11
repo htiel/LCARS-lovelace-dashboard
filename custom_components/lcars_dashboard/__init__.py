@@ -68,6 +68,46 @@ async def _write_yaml_file(hass, rel_path, data):
             yaml.dump(data, f, default_flow_style=False, sort_keys=False)
     await hass.async_add_executor_job(_write)
 
+
+async def _load_card_dir_nested(hass, rel_path):
+    """Load YAML card files from a two-level directory (subdir/file.yaml)."""
+    result = {}
+    full = hass.config.path(rel_path)
+    if not os.path.isdir(full):
+        return result
+    subdirs = await hass.async_add_executor_job(os.listdir, full)
+    for subdir in subdirs:
+        subdir_path = os.path.join(full, subdir)
+        if not os.path.isdir(subdir_path):
+            continue
+        result[subdir] = {}
+        fnames = sorted(await hass.async_add_executor_job(os.listdir, subdir_path))
+        for fname in fnames:
+            if fname.endswith('.yaml'):
+                try:
+                    content = await _read_yaml_file(hass, f"{rel_path}/{subdir}/{fname}")
+                    result[subdir][fname] = content
+                except Exception as err:
+                    _LOGGER.warning("Failed to load %s/%s/%s: %s", rel_path, subdir, fname, err)
+    return result
+
+
+async def _load_card_dir_flat(hass, rel_path):
+    """Load YAML card files from a single-level directory (file.yaml → key without extension)."""
+    result = {}
+    full = hass.config.path(rel_path)
+    if not os.path.isdir(full):
+        return result
+    fnames = await hass.async_add_executor_job(os.listdir, full)
+    for fname in fnames:
+        if fname.endswith('.yaml'):
+            try:
+                content = await _read_yaml_file(hass, f"{rel_path}/{fname}")
+                result[fname.replace(".yaml", "")] = content
+            except Exception as err:
+                _LOGGER.warning("Failed to load %s/%s: %s", rel_path, fname, err)
+    return result
+
 areas = OrderedDict()
 entities = OrderedDict()
 devices = OrderedDict()
@@ -142,149 +182,76 @@ async def websocket_get_configuration(
     connection: websocket_api.ActiveConnection,
     msg: Mapping[str, Any],
 ) -> None:
-    """Return a list of configuration."""
+    """Return dashboard configuration. Gracefully handles missing/stale config files."""
 
-    # Initialize all needed variables
-    #areas = OrderedDict()
-    #entities = OrderedDict()
-    #devices = OrderedDict()
-    #homepage_header = OrderedDict()
     global areas
     global entities
     global devices
     global homepage_header
 
-    # Load config files with proper file handle management
-    areas = await _read_yaml_file(hass, "lcars-dashboard/configs/areas.yaml")
-    entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
-    devices = await _read_yaml_file(hass, "lcars-dashboard/configs/devices.yaml")
-    homepage_header = await _read_yaml_file(hass, "lcars-dashboard/configs/settings.yaml")
+    try:
+        # Load config files with proper file handle management
+        areas = await _read_yaml_file(hass, "lcars-dashboard/configs/areas.yaml")
+        entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
+        devices = await _read_yaml_file(hass, "lcars-dashboard/configs/devices.yaml")
+        homepage_header = await _read_yaml_file(hass, "lcars-dashboard/configs/settings.yaml")
 
-    area_cards = {}
-    if os.path.isdir(hass.config.path("lcars-dashboard/configs/cards/areas")):
-        #for subdir in await listdir_async(hass.config.path("lcars-dashboard/configs/cards/areas")):
-        subdirs = await hass.async_add_executor_job(os.listdir, hass.config.path("lcars-dashboard/configs/cards/areas"))
-        for subdir in subdirs:
-            area_cards[subdir] = {}
-            #for fname in sorted(await listdir_async(hass.config.path(f"lcars-dashboard/configs/cards/areas/{subdir}"))):
-            fnames = sorted(await hass.async_add_executor_job(os.listdir, hass.config.path(f"lcars-dashboard/configs/cards/areas/{subdir}")))
-            for fname in fnames:
-                if fname.endswith('.yaml'):
-                    #_LOGGER.warning(f"websocket_get_configuration() area_cards: {fname}")
-                    data = await hass.async_add_executor_job(open, hass.config.path(f"lcars-dashboard/configs/cards/areas/{subdir}/{fname}"), "r")
-                    with data as f:
-                        filecontent = yaml.safe_load(f)
-                        area_cards[subdir].update({fname: filecontent})
+        area_cards = await _load_card_dir_nested(hass, "lcars-dashboard/configs/cards/areas")
+        device_cards = await _load_card_dir_nested(hass, "lcars-dashboard/configs/cards/devices")
+        entity_cards = await _load_card_dir_flat(hass, "lcars-dashboard/configs/cards/entities")
+        entities_popup = await _load_card_dir_flat(hass, "lcars-dashboard/configs/cards/entities_popup")
+        devices_card = await _load_card_dir_flat(hass, "lcars-dashboard/configs/cards/devices_card")
+        devices_popup = await _load_card_dir_flat(hass, "lcars-dashboard/configs/cards/devices_popup")
 
-    device_cards = {}
-    if os.path.isdir(hass.config.path("lcars-dashboard/configs/cards/devices")):
-        #for subdir in await listdir_async(hass.config.path("lcars-dashboard/configs/cards/devices")):
-        subdirs = await hass.async_add_executor_job(os.listdir, hass.config.path("lcars-dashboard/configs/cards/devices"))
-        for subdir in subdirs:
-            device_cards[subdir] = {}
-            #for fname in sorted(await listdir_async(hass.config.path(f"lcars-dashboard/configs/cards/devices/{subdir}"))):
-            fnames = sorted(await hass.async_add_executor_job(os.listdir, hass.config.path(f"lcars-dashboard/configs/cards/devices/{subdir}")))
-            for fname in fnames:
-                if fname.endswith('.yaml'):
-                    #_LOGGER.warning(f"websocket_get_configuration() device_cards: {fname}")
-                    #file_path = hass.config.path(f"lcars-dashboard/configs/cards/devices/{subdir}/{fname}")
-                    #filecontent = await read_yaml_file(file_path)
-                    data = await hass.async_add_executor_job(open, hass.config.path(f"lcars-dashboard/configs/cards/devices/{subdir}/{fname}"), "r")
-                    with data as f:
-                        filecontent = yaml.safe_load(f)
-                        device_cards[subdir].update({fname: filecontent})
-
-
-    entity_cards = {}
-    if os.path.isdir(hass.config.path("lcars-dashboard/configs/cards/entities")):
-        #for fname in await listdir_async(hass.config.path("lcars-dashboard/configs/cards/entities")):
-        fnames = await hass.async_add_executor_job(os.listdir, hass.config.path("lcars-dashboard/configs/cards/entities"))
-        for fname in fnames:
-            if fname.endswith('.yaml'):
-                #_LOGGER.warning(f"websocket_get_configuration() entity_cards: {fname}")
-                #file_path = hass.config.path(f"lcars-dashboard/configs/cards/entities/{fname}")
-                #filecontent = await read_yaml_file(file_path)
-                data = await hass.async_add_executor_job(open, hass.config.path(f"lcars-dashboard/configs/cards/entities/{fname}"), "r")
-                with data as f:
-                    filecontent = yaml.safe_load(f)
-                    entity_cards.update({fname.replace(".yaml",""): filecontent})
-
-    entities_popup = {}
-    if os.path.isdir(hass.config.path("lcars-dashboard/configs/cards/entities_popup")):
-        #for fname in await listdir_async(hass.config.path("lcars-dashboard/configs/cards/entities_popup")):
-        fnames = await hass.async_add_executor_job(os.listdir, hass.config.path("lcars-dashboard/configs/cards/entities_popup"))
-        for fname in fnames:
-            if fname.endswith('.yaml'):
-                #_LOGGER.warning(f"websocket_get_configuration() entities_popup: {fname}")
-                #file_path = hass.config.path(f"lcars-dashboard/configs/cards/entities_popup/{fname}")
-                #filecontent = await read_yaml_file(file_path)
-                data = await hass.async_add_executor_job(open, hass.config.path(f"lcars-dashboard/configs/cards/entities_popup/{fname}"), "r")
-                with data as f:
-                    filecontent = yaml.safe_load(f)
-                    entities_popup.update({fname.replace(".yaml",""): filecontent})
-
-    devices_card = {}
-    path_devices_card = hass.config.path("lcars-dashboard/configs/cards/devices_card")
-    if os.path.isdir(path_devices_card):
-        #for fname in await listdir_async(hass.config.path("lcars-dashboard/configs/cards/devices_card")):
-        fnames = await hass.async_add_executor_job(os.listdir, hass.config.path("lcars-dashboard/configs/cards/devices_card"))
-        for fname in fnames:
-            if fname.endswith('.yaml'):
-                #_LOGGER.warning(f"websocket_get_configuration() devices_card: {fname}")
-                #file_path = hass.config.path(f"lcars-dashboard/configs/cards/devices_card/{fname}")
-                #filecontent = await read_yaml_file(file_path)
-                data = await hass.async_add_executor_job(open, hass.config.path(f"lcars-dashboard/configs/cards/devices_card/{fname}"), "r")
-                with data as f:
-                    filecontent = yaml.safe_load(f)
-                    devices_card.update({fname.replace(".yaml",""): filecontent})
-
-    devices_popup = {}
-    if os.path.isdir(hass.config.path("lcars-dashboard/configs/cards/devices_popup")):
-        #for fname in await listdir_async(hass.config.path("lcars-dashboard/configs/cards/devices_popup")):
-        fnames = await hass.async_add_executor_job(os.listdir, hass.config.path("lcars-dashboard/configs/cards/devices_popup"))
-        for fname in fnames:
-            if fname.endswith('.yaml'):
-                #_LOGGER.warning(f"websocket_get_configuration() devices_popup: {fname}")
-                #file_path = hass.config.path(f"lcars-dashboard/configs/cards/devices_popup/{fname}")
-                #filecontent = await read_yaml_file(file_path)
-                data = await hass.async_add_executor_job(open, hass.config.path(f"lcars-dashboard/configs/cards/devices_popup/{fname}"), "r")
-                with data as f:
-                    filecontent = yaml.safe_load(f)
-                    devices_popup.update({fname.replace(".yaml",""): filecontent})
-
-    more_pages = {}
-    if os.path.isdir(hass.config.path("lcars-dashboard/configs/more_pages")):
-        #for subdir in await listdir_async(hass.config.path("lcars-dashboard/configs/more_pages")):
-        subdirs = await hass.async_add_executor_job(os.listdir, hass.config.path("lcars-dashboard/configs/more_pages"))
-        for subdir in subdirs:
-            if (os.path.exists(hass.config.path("lcars-dashboard/configs/more_pages/"+subdir+"/page.yaml"))) and (os.path.exists(hass.config.path("lcars-dashboard/configs/more_pages/"+subdir+"/config.yaml"))):
-                if fname.endswith('.yaml'):
-                    #_LOGGER.warning(f"websocket_get_configuration() more_pages: {fname}")
-                    data = await hass.async_add_executor_job(open, hass.config.path(f"lcars-dashboard/configs/more_pages/{subdir}/config.yaml"), "r")
+        more_pages = {}
+        if os.path.isdir(hass.config.path("lcars-dashboard/configs/more_pages")):
+            subdirs = await hass.async_add_executor_job(os.listdir, hass.config.path("lcars-dashboard/configs/more_pages"))
+            for subdir in subdirs:
+                page_path = hass.config.path(f"lcars-dashboard/configs/more_pages/{subdir}/page.yaml")
+                config_path = hass.config.path(f"lcars-dashboard/configs/more_pages/{subdir}/config.yaml")
+                if os.path.exists(page_path) and os.path.exists(config_path):
+                    data = await hass.async_add_executor_job(open, config_path, "r")
                     with data as f:
                         filecontent = yaml.safe_load(f)
                         more_pages[subdir] = filecontent
 
-    #_LOGGER.warning(f"websocket_get_configuration() {cards}")
-
-    connection.send_result(
-        msg["id"],
-        {
-            "areas": areas,
-            "area_cards": area_cards,
-            "device_cards": device_cards,
-            "entity_cards": entity_cards,
-            "entities_popup": entities_popup,
-            "entities": entities,
-            "devices": devices,
-            "homepage_header": homepage_header,
-            "more_pages": more_pages,
-            "installed_version": VERSION,
-            "devices_card": devices_card,
-            "devices_popup": devices_popup,
-
-        }
-    )
+        connection.send_result(
+            msg["id"],
+            {
+                "areas": areas,
+                "area_cards": area_cards,
+                "device_cards": device_cards,
+                "entity_cards": entity_cards,
+                "entities_popup": entities_popup,
+                "entities": entities,
+                "devices": devices,
+                "homepage_header": homepage_header,
+                "more_pages": more_pages,
+                "installed_version": VERSION,
+                "devices_card": devices_card,
+                "devices_popup": devices_popup,
+            }
+        )
+    except Exception as err:
+        _LOGGER.error("LCARS configuration/get failed: %s", err)
+        # Always send a result so the frontend doesn't hang
+        connection.send_result(
+            msg["id"],
+            {
+                "areas": OrderedDict(),
+                "area_cards": {},
+                "device_cards": {},
+                "entity_cards": {},
+                "entities_popup": {},
+                "entities": OrderedDict(),
+                "devices": OrderedDict(),
+                "homepage_header": OrderedDict(),
+                "more_pages": {},
+                "installed_version": VERSION,
+                "devices_card": {},
+                "devices_popup": {},
+            }
+        )
 
 
 #get_blueprints

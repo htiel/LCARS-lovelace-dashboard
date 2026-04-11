@@ -1,6 +1,7 @@
 /**
  * LCARS Dashboard Layout — Main view layout component
  * Implements the classic LCARS frame: elbow + header bar + sidebar + content + footer bar + elbow
+ * Sidebar contains area navigation; content shows detail for selected area
  * Registered as custom:lcars-dashboard-layout (Lovelace view type)
  */
 import { LitElement, html, css } from 'lit-element';
@@ -12,6 +13,7 @@ class LcarsDashboardLayout extends LitElement {
       cards: { type: Array },
       _hass: { type: Object },
       _narrow: { type: Boolean },
+      _selectedArea: { type: String },
     };
   }
 
@@ -19,6 +21,7 @@ class LcarsDashboardLayout extends LitElement {
     super();
     this.cards = [];
     this._narrow = window.innerWidth < 768;
+    this._selectedArea = null;
     this._resizeHandler = () => {
       this._narrow = window.innerWidth < 768;
     };
@@ -42,9 +45,32 @@ class LcarsDashboardLayout extends LitElement {
     this._hass = hass;
     if (this.cards) {
       this.cards.forEach((card) => {
-        if (card) card.hass = hass;
+        if (card) {
+          card.hass = hass;
+          // Pass selectedArea to child cards
+          if (card.selectedArea !== undefined) {
+            card.selectedArea = this._selectedArea;
+          }
+        }
       });
     }
+  }
+
+  _selectArea(areaId) {
+    this._selectedArea = this._selectedArea === areaId ? null : areaId;
+    // Propagate to child cards
+    if (this.cards) {
+      this.cards.forEach((card) => {
+        if (card && card.selectedArea !== undefined) {
+          card.selectedArea = this._selectedArea;
+        }
+      });
+    }
+  }
+
+  _getAreas() {
+    if (!this._hass || !this._hass.areas) return [];
+    return Object.values(this._hass.areas);
   }
 
   static get styles() {
@@ -82,7 +108,6 @@ class LcarsDashboardLayout extends LitElement {
           position: absolute;
           bottom: 0;
           right: 0;
-          width: calc(var(--lcars-elbow-w) - var(--lcars-sidebar-w) + var(--lcars-sidebar-w) - 2rem);
           width: 2rem;
           height: calc(var(--lcars-elbow-h) - var(--lcars-bar-h));
           background: var(--lcars-bg);
@@ -128,8 +153,8 @@ class LcarsDashboardLayout extends LitElement {
           flex-direction: column;
           gap: var(--lcars-gap);
           padding-top: var(--lcars-gap);
-          overflow-y: auto;
-          overflow-x: hidden;
+          overflow: hidden;
+          min-height: 0;
         }
 
         .lcars-sidebar-panel {
@@ -139,17 +164,59 @@ class LcarsDashboardLayout extends LitElement {
           font-size: var(--lcars-font-size-data);
           color: var(--lcars-black);
           text-transform: uppercase;
+          flex-shrink: 0;
         }
 
-        .lcars-sidebar-panel.accent {
-          background: var(--lcars-sidebar-accent);
-        }
-
-        .lcars-sidebar-buttons {
+        /* ─── Sidebar Area Buttons ─── */
+        .lcars-sidebar-areas {
           display: flex;
           flex-direction: column;
           gap: var(--lcars-gap);
-          padding: 0;
+          flex: 1;
+          overflow-y: auto;
+          overflow-x: hidden;
+          min-height: 0;
+          mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
+          -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
+        }
+
+        .lcars-sidebar-areas::-webkit-scrollbar { width: 4px; }
+        .lcars-sidebar-areas::-webkit-scrollbar-track { background: transparent; }
+        .lcars-sidebar-areas::-webkit-scrollbar-thumb { background: var(--lcars-gray); border-radius: 2px; }
+
+        .sidebar-area-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: var(--lcars-almond-creme);
+          color: var(--lcars-black);
+          border: none;
+          border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+          height: var(--lcars-btn-height);
+          padding: 0 0.75rem;
+          font-family: var(--lcars-font);
+          font-size: var(--lcars-font-size-data);
+          text-transform: uppercase;
+          text-align: left;
+          cursor: pointer;
+          width: 100%;
+          transition: filter var(--lcars-transition), background var(--lcars-transition);
+          user-select: none;
+          white-space: nowrap;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+        .sidebar-area-btn:hover { filter: brightness(1.2); }
+        .sidebar-area-btn[data-active] { background: var(--lcars-gold); }
+        .sidebar-area-btn ha-icon { --mdc-icon-size: 18px; flex-shrink: 0; }
+        .sidebar-area-btn .area-name { overflow: hidden; text-overflow: ellipsis; flex: 1; }
+
+        /* ─── Sidebar Nav Buttons (bottom) ─── */
+        .lcars-sidebar-nav {
+          display: flex;
+          flex-direction: column;
+          gap: var(--lcars-gap);
+          flex-shrink: 0;
         }
 
         /* ─── Main Content Area ─── */
@@ -241,11 +308,23 @@ class LcarsDashboardLayout extends LitElement {
             padding: var(--lcars-gap) 0;
           }
 
-          .lcars-sidebar-panel {
-            display: none;
+          .lcars-sidebar-panel { display: none; }
+
+          .lcars-sidebar-areas {
+            flex-direction: row;
+            overflow-x: auto;
+            overflow-y: hidden;
+            mask-image: none;
+            -webkit-mask-image: none;
           }
 
-          .lcars-sidebar-buttons {
+          .sidebar-area-btn {
+            flex-shrink: 0;
+            width: auto;
+            min-width: 8rem;
+          }
+
+          .lcars-sidebar-nav {
             flex-direction: row;
           }
 
@@ -264,6 +343,8 @@ class LcarsDashboardLayout extends LitElement {
   }
 
   render() {
+    const areas = this._getAreas();
+
     return html`
       <div class="lcars-frame" role="main">
         <!-- Top-Left Elbow -->
@@ -278,9 +359,24 @@ class LcarsDashboardLayout extends LitElement {
 
         <!-- Sidebar -->
         <nav class="lcars-sidebar" role="navigation" aria-label="Dashboard navigation">
-          <div class="lcars-sidebar-panel">System</div>
-          <div class="lcars-sidebar-panel accent">Status</div>
-          <div class="lcars-sidebar-buttons">
+          <div class="lcars-sidebar-panel">Areas</div>
+
+          <!-- Area buttons (scrollable) -->
+          <div class="lcars-sidebar-areas" role="listbox" aria-label="Area selection">
+            ${areas.map((area) => html`
+              <button class="sidebar-area-btn"
+                role="option"
+                ?data-active=${this._selectedArea === area.area_id}
+                aria-selected=${this._selectedArea === area.area_id}
+                @click=${() => this._selectArea(area.area_id)}>
+                <ha-icon .icon=${area.icon || 'mdi:home-outline'}></ha-icon>
+                <span class="area-name">${area.name}</span>
+              </button>
+            `)}
+          </div>
+
+          <!-- Fixed nav buttons at bottom -->
+          <div class="lcars-sidebar-nav">
             <slot name="sidebar"></slot>
           </div>
         </nav>

@@ -407,9 +407,50 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
+    /* Strip area name and device name prefixes from a display name */
+    _shortenName(fullName, entity) {
+      if (!fullName) return fullName;
+      const prefixes = [];
+      const area = this._hass?.areas?.[this.selectedArea];
+      if (area?.name) prefixes.push(area.name);
+      if (entity?.device_id) {
+        const dev = this._hass?.devices?.[entity.device_id];
+        const dn = dev?.name_by_user || dev?.name;
+        if (dn) prefixes.push(dn);
+      }
+      // Longest first to avoid partial matches
+      prefixes.sort((a, b) => b.length - a.length);
+      let result = fullName;
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const p of prefixes) {
+          if (result.toLowerCase().startsWith(p.toLowerCase())) {
+            result = result.slice(p.length).trim().replace(/^[-–:]\s*/, '');
+            changed = true;
+          }
+        }
+      }
+      return result || fullName;
+    }
+
     _friendlyName(state, entity) {
-      return state?.attributes?.friendly_name
+      const raw = state?.attributes?.friendly_name
         || entity.entity_id.split('.').pop().replace(/_/g, ' ');
+      return this._shortenName(raw, entity);
+    }
+
+    /* Strip area name from a device display name */
+    _shortDeviceName(device) {
+      const raw = device?.name_by_user || device?.name || '';
+      if (!raw) return 'Device';
+      const area = this._hass?.areas?.[this.selectedArea];
+      if (!area?.name) return raw;
+      if (raw.toLowerCase().startsWith(area.name.toLowerCase())) {
+        const stripped = raw.slice(area.name.length).trim().replace(/^[-–:]\s*/, '');
+        return stripped || raw;
+      }
+      return raw;
     }
 
     _isOff(state) {
@@ -1643,7 +1684,7 @@ class LcarsHomepageCard extends LitElement {
     /* ═══ CAMERA DEVICE PANEL RENDERER ═══ */
     _renderCameraPanel(group) {
       const { cameras, sensors, controls } = this._partitionDeviceEntities(group.entities);
-      const deviceName = group.device.name_by_user || group.device.name || 'Device';
+      const deviceName = this._shortDeviceName(group.device);
 
       return html`
         <div class="lcars-device-panel" data-panel-type="camera">
@@ -1808,7 +1849,7 @@ class LcarsHomepageCard extends LitElement {
     /* Render the battery panel */
     _renderBatteryPanel(group) {
       const { soc, powerIn, powerOut, telemetry, controls } = this._partitionBatteryEntities(group.entities);
-      const deviceName = group.device.name_by_user || group.device.name || 'Battery';
+      const deviceName = this._shortDeviceName(group.device) || 'Battery';
 
       // Primary SOC value
       const socEntry = soc[0];
@@ -1996,7 +2037,7 @@ class LcarsHomepageCard extends LitElement {
         ${normalDevices.map((group) => html`
           <div class="device-group">
             <div class="device-header">
-              <span class="device-name">${group.device.name_by_user || group.device.name || 'Device'}</span>
+              <span class="device-name">${this._shortDeviceName(group.device)}</span>
               <div class="device-line"></div>
               ${this._editMode ? html`
                 <div class="device-edit-pip" title="Edit device"

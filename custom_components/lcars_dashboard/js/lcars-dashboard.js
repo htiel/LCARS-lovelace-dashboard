@@ -42,7 +42,7 @@
   --lcars-unit: 7.5rem;
   --lcars-vunit: 3rem;
   --lcars-gap: 0.25rem;
-  --lcars-elbow-w: 9.5rem;
+  --lcars-elbow-w: 10.5rem;
   --lcars-elbow-h: 4.5rem;
   --lcars-elbow-radius: 3.75rem;
   --lcars-sidebar-w: 12rem;
@@ -281,10 +281,10 @@
           position: absolute;
           bottom: 0;
           right: 0;
-          width: calc(var(--lcars-sidebar-w) - var(--lcars-elbow-w) + 2rem);
+          width: calc(var(--lcars-sidebar-w) - var(--lcars-elbow-w));
           height: calc(var(--lcars-elbow-h) - var(--lcars-bar-h));
           background: var(--lcars-bg);
-          border-radius: 1.875rem 0 0 0;
+          border-radius: 1.5rem 0 0 0;
         }
 
         /* ─── Header Bar ─── */
@@ -498,10 +498,10 @@
           position: absolute;
           top: 0;
           right: 0;
-          width: calc(var(--lcars-sidebar-w) - var(--lcars-elbow-w) + 2rem);
+          width: calc(var(--lcars-sidebar-w) - var(--lcars-elbow-w));
           height: calc(var(--lcars-elbow-h) - var(--lcars-bar-h));
           background: var(--lcars-bg);
-          border-radius: 0 0 0 1.875rem;
+          border-radius: 0 0 0 1.5rem;
         }
 
         /* ─── Footer Bar ─── */

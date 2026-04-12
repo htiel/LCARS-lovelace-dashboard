@@ -315,7 +315,7 @@ class LcarsHomepageCard extends LitElement {
         if (dev.area_id === areaId) areaDeviceIds.add(dev.id);
       });
       const result = entityReg.filter((e) => {
-        if (e.hidden_by || e.disabled_by) return false;
+        if (e.hidden_by || e.hidden || e.disabled_by) return false;
         if (e.entity_category) return false;
         if (e.area_id === areaId) return true;
         if (!e.area_id && e.device_id && areaDeviceIds.has(e.device_id)) return true;

@@ -17,6 +17,7 @@ custom_components/*/
 !custom_components/lcars_dashboard
 custom_components/lcars_dashboard/__pycache__/
 custom_components/lcars_dashboard/.installed
+generate_icon.py
 www/
 packages/
 packages/dwains-theme/

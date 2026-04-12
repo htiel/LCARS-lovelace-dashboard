@@ -47,7 +47,7 @@ export const lcarsColors = css`
   --lcars-unit: 7.5rem;
   --lcars-vunit: 3rem;
   --lcars-gap: 0.25rem;
-  --lcars-elbow-w: 9.5rem;
+  --lcars-elbow-w: 10.5rem;
   --lcars-elbow-h: 4.5rem;
   --lcars-elbow-radius: 3.75rem;
   --lcars-sidebar-w: 12rem;

@@ -2,6 +2,37 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.9.0] — 2026-04-12
+
+### Added
+- **Floor-Grouped Area Navigation**: Sidebar area buttons are now grouped under floor headers, sorted by floor `level` from the HA floor registry
+- Floor header buttons (lilac) act as clickable selectors — click a floor to see a combined view of all areas on that floor
+- Click an area under a floor to drill down to the standard single-area view; selections are mutually exclusive (floor clears area, area clears floor)
+- `_getAreasGroupedByFloor()` groups areas by `hass.floors`, sorts by `level`, unassigned areas rendered at bottom under "Unassigned" label
+- `_selectFloor()` / `lcars-floor-selected` event dispatched via private event bus
+- **Floor Combined View**: `_renderFloorView(floorId)` renders a floor-level header (lilac) with all areas as subsections, each showing their full entity content
+- `_getFloorAreaIds(floorId)` helper resolves all area IDs belonging to a floor
+- Entity cache upgraded from single-entry to `Map`-based — supports concurrent multi-area resolution in floor view
+- Auto-deselects deleted floors (mirrors existing area auto-deselect behavior)
+- Mobile responsive: floor buttons render in horizontal scroll strip alongside area buttons
+- CSS: `.sidebar-floor-btn` (lilac, 70% height), `.sidebar-unassigned-label`, `.content-floor-panel`, `.content-floor-header`, `.floor-area-section`, `.floor-area-subheader`
+
+## [4.8.0] — 2026-04-12
+
+### Added
+- **Environment / Atmoscrubber Panel**: Auto-detects air quality devices (Awair, VeSync purifiers, etc.) and renders a dedicated environment panel per device in area views
+- AQ detection heuristic: ≥2 AQ-class sensors (CO₂, VOC, PM2.5, PM10, AQI) OR ≥1 AQ sensor + fan domain → `PANEL_TYPE_ENVIRONMENT`
+- Entity partitioning via `_partitionEnvironmentEntities()` → score, airQuality, telemetry, controls, diagnostics buckets
+- **Atmoscrubber cylinder**: CSS-animated reactor with two-layer radial-gradient particle system, `--scrubber-hue` color interpolation (green=good → red=hazardous), speed tied to fan percentage
+- Idle state: dimmed particles with breathing glow animation; `prefers-reduced-motion` pauses all animations
+- AQI color mapping: 0-50 ice, 51-100 sunflower, 101-150 butterscotch, 151-200 peach, 201+ tomato
+- **24h sparklines**: Hourly mean statistics via `recorder/statistics_during_period` WebSocket call, rendered as SVG polylines with 5-minute cache per device
+- Fan controls: toggle button + preset mode radio group (`role="radiogroup"`) with validation against entity's own `preset_modes` attribute
+- Switch controls (display, child lock) rendered as standard toggle pills
+- Sensor-only devices (e.g., Awair with no fan) automatically collapse the controls column via `.sensor-only` grid variant
+- **Panel ordering**: New `PANEL_TYPE_ORDER` constant sorts panels as camera → environment → battery in split layout
+- Grid layout: `header | sensors core controls | sparklines` — mirrors battery panel structure
+
 ## [4.7.0] — 2026-04-11
 
 ### Added

@@ -8,19 +8,20 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-4.7.0-blue)
+![Version](https://img.shields.io/badge/version-4.9.0-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 
 ## Features
 
 - **LCARS Frame Layout** — Authentic elbows, header/footer bars, endcaps, and sidebar in the classic Okudagram style
-- **Sidebar Area Navigation** — All HA areas listed as pill buttons in the left sidebar; click to view area detail in the main content panel
+- **Floor-Grouped Area Navigation** — Areas grouped by HA floor in the sidebar with clickable floor headers (lilac); click a floor for combined view, click an area to drill down
 - **Domain-Specific Entity Renderers**
   - Camera → LCARS-framed live feed with viewscreen activation animation
   - Light / Switch / Fan / Lock → Toggle pills with heartbeat pulse
   - Sensor / Binary Sensor → Data readout bars with segmented fill
   - Climate → Thermostat panel | Cover → Position controls | Media Player → Media strip
 - **Warp Core Battery Panel** — Auto-detects battery devices (EcoFlow, etc.), renders CSS reactor core with charge-level color, SOC gauge, power flow I/O arrows, telemetry sensors, and integrated config/diagnostic entity controls with LCARS option strips
+- **Atmoscrubber Environment Panel** — Auto-detects air quality devices (Awair, VeSync purifiers, etc.), renders animated particle cylinder with AQI-mapped colors, 24h SVG sparklines, fan/preset controls, and sensor-only mode for monitor-only devices
 - **Smart Name Shortening** — Automatically strips area and device name prefixes from entity names for cleaner display
 - **Device-Grouped Layout** — Entities organized by device, then sorted by domain (cameras first, sensors last)
 - **6 LCARS Animations** — Cascade reveal, scan sweep, viewscreen activation, heartbeat pulse, distress pulse, segmented sensor bars
@@ -47,7 +48,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 |-------|-----------|
 | HA Integration | Python custom component (`lcars_dashboard`) |
 | Frontend | Lit Element v2 web components |
-| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~179 KiB) |
+| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~200 KiB) |
 | Styling | 40+ LCARS CSS custom properties in shared `lcars-styles.js` |
 | Communication | WebSocket API + window custom events |
 

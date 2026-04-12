@@ -17,6 +17,7 @@ class LcarsDashboardLayout extends LitElement {
       _hass: { type: Object },
       _narrow: { type: Boolean },
       _selectedArea: { type: String },
+      _selectedFloor: { type: String },
       _editMode: { type: Boolean },
     };
   }
@@ -26,6 +27,7 @@ class LcarsDashboardLayout extends LitElement {
     this.cards = [];
     this._narrow = window.innerWidth < 768;
     this._selectedArea = null;
+    this._selectedFloor = null;
     this._editMode = false;
     this._elbowPressTimer = null;
     this._resizeHandler = () => {
@@ -82,6 +84,16 @@ class LcarsDashboardLayout extends LitElement {
         );
       }
     }
+    // Auto-deselect floor if it was deleted from HA
+    if (prev && prev.floors !== hass.floors && this._selectedFloor) {
+      if (!hass.floors?.[this._selectedFloor]) {
+        lcarsLog.debug(TAG, 'Auto-deselecting deleted floor:', this._selectedFloor);
+        this._selectedFloor = null;
+        lcarsEventBus.dispatchEvent(
+          new CustomEvent('lcars-floor-selected', { detail: { floorId: null } })
+        );
+      }
+    }
     if (this.cards) {
       this.cards.forEach((card) => {
         if (card) card.hass = hass;
@@ -90,12 +102,35 @@ class LcarsDashboardLayout extends LitElement {
   }
 
   _selectArea(areaId) {
+    // Deselect floor when an area is picked directly
+    if (this._selectedFloor) {
+      this._selectedFloor = null;
+      lcarsEventBus.dispatchEvent(
+        new CustomEvent('lcars-floor-selected', { detail: { floorId: null } })
+      );
+    }
     this._selectedArea = this._selectedArea === areaId ? null : areaId;
     lcarsLog.debug(TAG, 'Area selected:', this._selectedArea || '(deselected)');
-    // Broadcast area selection via private event bus (prevents injection from untrusted cards)
     lcarsEventBus.dispatchEvent(
       new CustomEvent('lcars-area-selected', {
         detail: { areaId: this._selectedArea },
+      })
+    );
+  }
+
+  _selectFloor(floorId) {
+    // Deselect area when a floor is picked
+    if (this._selectedArea) {
+      this._selectedArea = null;
+      lcarsEventBus.dispatchEvent(
+        new CustomEvent('lcars-area-selected', { detail: { areaId: null } })
+      );
+    }
+    this._selectedFloor = this._selectedFloor === floorId ? null : floorId;
+    lcarsLog.debug(TAG, 'Floor selected:', this._selectedFloor || '(deselected)');
+    lcarsEventBus.dispatchEvent(
+      new CustomEvent('lcars-floor-selected', {
+        detail: { floorId: this._selectedFloor },
       })
     );
   }
@@ -133,6 +168,46 @@ class LcarsDashboardLayout extends LitElement {
   _getAreas() {
     if (!this._hass || !this._hass.areas) return [];
     return Object.values(this._hass.areas);
+  }
+
+  /* Group areas by floor, sorted by floor level. Returns:
+     [{ floor: { floor_id, name, icon, level } | null, areas: [...] }, ...] */
+  _getAreasGroupedByFloor() {
+    const areas = this._getAreas();
+    const floors = this._hass?.floors ? Object.values(this._hass.floors) : [];
+
+    // Build floor lookup
+    const floorMap = new Map();
+    for (const f of floors) {
+      floorMap.set(f.floor_id, { ...f, areas: [] });
+    }
+
+    const unassigned = [];
+    for (const area of areas) {
+      const fid = area.floor_id;
+      if (fid && floorMap.has(fid)) {
+        floorMap.get(fid).areas.push(area);
+      } else {
+        unassigned.push(area);
+      }
+    }
+
+    // Sort floors by level (ascending), then by name
+    const sortedFloors = [...floorMap.values()]
+      .filter(f => f.areas.length > 0)
+      .sort((a, b) => (a.level ?? 99) - (b.level ?? 99) || a.name.localeCompare(b.name));
+
+    const groups = sortedFloors.map(f => ({
+      floor: { floor_id: f.floor_id, name: f.name, icon: f.icon, level: f.level },
+      areas: f.areas,
+    }));
+
+    // Unassigned areas at the bottom
+    if (unassigned.length > 0) {
+      groups.push({ floor: null, areas: unassigned });
+    }
+
+    return groups;
   }
 
   static get styles() {
@@ -304,6 +379,49 @@ class LcarsDashboardLayout extends LitElement {
         .sidebar-area-btn ha-icon { --mdc-icon-size: 18px; flex-shrink: 0; }
         .sidebar-area-btn .area-name { overflow: hidden; text-overflow: ellipsis; flex: 1; }
 
+        /* ─── Floor Header Buttons ─── */
+        .sidebar-floor-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: var(--lcars-lilac, #cc99cc);
+          color: var(--lcars-black);
+          border: none;
+          border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+          height: calc(var(--lcars-btn-height) * 0.7);
+          padding: 0 1rem 0 0.75rem;
+          font-family: var(--lcars-font);
+          font-size: calc(var(--lcars-font-size-data) * 0.85);
+          text-transform: uppercase;
+          text-align: left;
+          cursor: pointer;
+          width: 100%;
+          transition: filter var(--lcars-transition), background var(--lcars-transition);
+          user-select: none;
+          white-space: nowrap;
+          overflow: hidden;
+          flex-shrink: 0;
+          margin-top: 0.25rem;
+        }
+        .sidebar-floor-btn:first-child { margin-top: 0; }
+        .sidebar-floor-btn:hover { filter: brightness(1.2); }
+        .sidebar-floor-btn:focus-visible {
+          outline: 2px solid var(--lcars-ice);
+          outline-offset: 2px;
+        }
+        .sidebar-floor-btn[data-active] { background: var(--lcars-gold); }
+        .sidebar-floor-btn ha-icon { --mdc-icon-size: 16px; flex-shrink: 0; }
+        .sidebar-floor-btn .floor-name { overflow: hidden; text-overflow: ellipsis; flex: 1; }
+
+        .sidebar-unassigned-label {
+          font-family: var(--lcars-font);
+          font-size: calc(var(--lcars-font-size-data) * 0.7);
+          color: var(--lcars-gray);
+          text-transform: uppercase;
+          padding: 0.25rem 0.75rem 0;
+          flex-shrink: 0;
+        }
+
         /* ─── Edit Mode Indicator ─── */
         :host([edit-mode]) .lcars-elbow-top { background: var(--lcars-lilac); }
         :host([edit-mode]) .lcars-header-bar { background: var(--lcars-lilac); }
@@ -422,6 +540,17 @@ class LcarsDashboardLayout extends LitElement {
             min-width: 8rem;
           }
 
+          .sidebar-floor-btn {
+            flex-shrink: 0;
+            width: auto;
+            min-width: 6rem;
+            margin-top: 0;
+          }
+
+          .sidebar-unassigned-label {
+            display: none;
+          }
+
           .lcars-sidebar-nav {
             flex-direction: row;
           }
@@ -441,7 +570,7 @@ class LcarsDashboardLayout extends LitElement {
   }
 
   render() {
-    const areas = this._getAreas();
+    const floorGroups = this._getAreasGroupedByFloor();
 
     return html`
       <div class="lcars-frame" role="main">
@@ -474,16 +603,29 @@ class LcarsDashboardLayout extends LitElement {
         <nav class="lcars-sidebar" role="navigation" aria-label="Dashboard navigation">
           <div class="lcars-sidebar-panel">Areas</div>
 
-          <!-- Area buttons (scrollable) -->
-          <div class="lcars-sidebar-areas" role="group" aria-label="Area selection">
-            ${areas.map((area) => html`
-              <button class="sidebar-area-btn"
-                ?data-active=${this._selectedArea === area.area_id}
-                aria-pressed=${this._selectedArea === area.area_id}
-                @click=${() => this._selectArea(area.area_id)}>
-                <ha-icon .icon=${area.icon || 'mdi:home-outline'}></ha-icon>
-                <span class="area-name">${area.name}</span>
-              </button>
+          <!-- Area buttons grouped by floor (scrollable) -->
+          <div class="lcars-sidebar-areas" role="group" aria-label="Floor and area selection">
+            ${floorGroups.map(({ floor, areas }) => html`
+              ${floor ? html`
+                <button class="sidebar-floor-btn"
+                  ?data-active=${this._selectedFloor === floor.floor_id}
+                  aria-pressed=${this._selectedFloor === floor.floor_id}
+                  @click=${() => this._selectFloor(floor.floor_id)}>
+                  <ha-icon .icon=${floor.icon || 'mdi:home-floor-1'}></ha-icon>
+                  <span class="floor-name">${floor.name}</span>
+                </button>
+              ` : html`
+                <span class="sidebar-unassigned-label">Unassigned</span>
+              `}
+              ${areas.map((area) => html`
+                <button class="sidebar-area-btn"
+                  ?data-active=${this._selectedArea === area.area_id}
+                  aria-pressed=${this._selectedArea === area.area_id}
+                  @click=${() => this._selectArea(area.area_id)}>
+                  <ha-icon .icon=${area.icon || 'mdi:home-outline'}></ha-icon>
+                  <span class="area-name">${area.name}</span>
+                </button>
+              `)}
             `)}
           </div>
 

@@ -75,6 +75,7 @@ class LcarsHomepageCard extends LitElement {
     return {
       data: { type: Object },
       selectedArea: { type: String },
+      selectedFloor: { type: String },
       _hass: { type: Object },
       _cards: { type: Object },
       _editMode: { type: Boolean },
@@ -85,10 +86,10 @@ class LcarsHomepageCard extends LitElement {
       super();
       this.data = null;
       this.selectedArea = null;
+      this.selectedFloor = null;
       this._cards = {};
       this._editMode = false;
-      this._cachedEntities = null;
-      this._cachedAreaId = null;
+      this._entityCache = new Map();
       /* Camera auto-refresh state */
       this._cameraRefreshInterval = null;
       this._cameraObserver = null;
@@ -97,7 +98,14 @@ class LcarsHomepageCard extends LitElement {
       this._onAreaSelected = (e) => {
         lcarsLog.debug(TAG, 'Area selected event:', e.detail.areaId);
         this.selectedArea = e.detail.areaId;
-        this._cachedEntities = null; // bust cache on area change
+        this.selectedFloor = null; // area overrides floor
+        this._entityCache.clear();
+      };
+      this._onFloorSelected = (e) => {
+        lcarsLog.debug(TAG, 'Floor selected event:', e.detail.floorId);
+        this.selectedFloor = e.detail.floorId;
+        this.selectedArea = null; // floor overrides area
+        this._entityCache.clear();
       };
       this._onEditMode = (e) => {
         this._editMode = e.detail.enabled;
@@ -108,6 +116,7 @@ class LcarsHomepageCard extends LitElement {
     connectedCallback() {
       super.connectedCallback();
       lcarsEventBus.addEventListener('lcars-area-selected', this._onAreaSelected);
+      lcarsEventBus.addEventListener('lcars-floor-selected', this._onFloorSelected);
       lcarsEventBus.addEventListener('lcars-edit-mode', this._onEditMode);
       this._startCameraRefresh();
       document.addEventListener('visibilitychange', this._onVisibilityChange);
@@ -116,6 +125,7 @@ class LcarsHomepageCard extends LitElement {
     disconnectedCallback() {
       super.disconnectedCallback();
       lcarsEventBus.removeEventListener('lcars-area-selected', this._onAreaSelected);
+      lcarsEventBus.removeEventListener('lcars-floor-selected', this._onFloorSelected);
       lcarsEventBus.removeEventListener('lcars-edit-mode', this._onEditMode);
       this._stopCameraRefresh();
       document.removeEventListener('visibilitychange', this._onVisibilityChange);
@@ -230,13 +240,13 @@ class LcarsHomepageCard extends LitElement {
       // Bust entity cache when registries change
       if (prev && (prev.entities !== hass.entities || prev.devices !== hass.devices)) {
         lcarsLog.debug(TAG, 'Entity/device registry changed — busting cache');
-        this._cachedEntities = null;
+        this._entityCache.clear();
       }
       // Deselect area if it was removed from HA
       if (prev && prev.areas !== hass.areas && this.selectedArea) {
         if (!hass.areas?.[this.selectedArea]) {
           this.selectedArea = null;
-          this._cachedEntities = null;
+          this._entityCache.clear();
         }
       }
       if (this._cards) {
@@ -316,10 +326,9 @@ class LcarsHomepageCard extends LitElement {
     /* ─── Entity resolution: direct area_id OR via device (cached) ─── */
     _getAreaEntities(areaId) {
       if (!this._hass) return [];
-      // Return cached result if area and registry haven't changed
-      if (this._cachedEntities && this._cachedAreaId === areaId) {
-        lcarsLog.debug(TAG, 'Entity cache HIT for area:', areaId, this._cachedEntities.length, 'entities');
-        return this._cachedEntities;
+      // Return cached result if available
+      if (this._entityCache.has(areaId)) {
+        return this._entityCache.get(areaId);
       }
       lcarsLog.debug(TAG, 'Entity cache MISS — resolving area:', areaId);
       const entityReg = Object.values(this._hass.entities || {});
@@ -335,10 +344,17 @@ class LcarsHomepageCard extends LitElement {
         if (!e.area_id && e.device_id && areaDeviceIds.has(e.device_id)) return true;
         return false;
       });
-      this._cachedEntities = result;
-      this._cachedAreaId = areaId;
+      this._entityCache.set(areaId, result);
       lcarsLog.debug(TAG, 'Resolved', result.length, 'entities for area:', areaId);
       return result;
+    }
+
+    /* ─── Floor-level entity resolution: union all areas on a floor ─── */
+    _getFloorAreaIds(floorId) {
+      if (!this._hass?.areas) return [];
+      return Object.values(this._hass.areas)
+        .filter(a => a.floor_id === floorId)
+        .map(a => a.area_id);
     }
 
     /* ─── Fetch config/diagnostic entities for a specific device (battery panels) ─── */
@@ -542,6 +558,38 @@ class LcarsHomepageCard extends LitElement {
             height: 2px;
             background: var(--lcars-data-accent);
             margin-top: 0.5rem;
+          }
+
+          /* ─── Floor View ─── */
+          .content-floor-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            padding-left: 1rem;
+          }
+          .content-floor-header {
+            font-family: var(--lcars-font);
+            font-size: calc(var(--lcars-font-size-title) * 1.15);
+            color: var(--lcars-lilac, #cc99cc);
+            text-transform: uppercase;
+            padding: 0.25rem 0 0.5rem 0;
+            border-left: 4px solid var(--lcars-lilac, #cc99cc);
+            padding-left: 1rem;
+          }
+          .content-floor-header::after {
+            content: '';
+            display: block;
+            height: 3px;
+            background: var(--lcars-lilac, #cc99cc);
+            margin-top: 0.5rem;
+            opacity: 0.5;
+          }
+          .floor-area-section {
+            padding-left: 0;
+          }
+          .floor-area-subheader {
+            font-size: calc(var(--lcars-font-size-title) * 0.85);
+            border-left-width: 2px;
           }
 
           /* ─── Divider ─── */
@@ -1844,11 +1892,55 @@ class LcarsHomepageCard extends LitElement {
       ];
     }
 
+    /* ──────────── FLOOR VIEW ──────────── */
+    _renderFloorView(floorId) {
+      const floor = this._hass.floors?.[floorId];
+      if (!floor) {
+        lcarsLog.debug(TAG, 'Render: floor not found:', floorId);
+        return html`<div class="lcars-empty">Floor not found</div>`;
+      }
+
+      const areaIds = this._getFloorAreaIds(floorId);
+      if (areaIds.length === 0) {
+        return html`
+          <div class="content-area-panel">
+            <div class="content-area-header">${floor.name}</div>
+            <div class="lcars-empty">No areas on this floor</div>
+          </div>
+        `;
+      }
+
+      lcarsLog.debug(TAG, 'Render: floor=%s areas=%d', floor.name, areaIds.length);
+
+      return html`
+        <div class="content-floor-panel">
+          <div class="content-floor-header">${floor.name}</div>
+          ${areaIds.map(areaId => {
+            const area = this._hass.areas?.[areaId];
+            if (!area) return '';
+            const entities = this._getAreaEntities(areaId);
+            if (entities.length === 0) return '';
+            return html`
+              <div class="content-area-panel floor-area-section">
+                <div class="content-area-header floor-area-subheader">${area.name}</div>
+                ${this._renderAreaContent(entities)}
+              </div>
+            `;
+          })}
+        </div>
+      `;
+    }
+
     /* ──────────── RENDER ──────────── */
     render() {
       if (!this._hass) {
         lcarsLog.debug(TAG, 'Render: waiting for hass');
         return html`<div class="lcars-empty">Initializing...</div>`;
+      }
+
+      // Floor selected — combined view of all areas on that floor
+      if (this.selectedFloor) {
+        return this._renderFloorView(this.selectedFloor);
       }
 
       // No area selected — show prompt

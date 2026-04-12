@@ -49,7 +49,7 @@
   --lcars-bar-h: 1.5rem;
   --lcars-endcap: 1.5rem;
   --lcars-btn-radius: 1.5rem;
-  --lcars-btn-height: 3rem;
+  --lcars-btn-height: 3.5rem;
 
   /* ─── Typography ─── */
   --lcars-font: 'Antonio', 'Helvetica Neue', Arial, sans-serif;

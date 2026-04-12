@@ -8,7 +8,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-4.5.0-blue)
+![Version](https://img.shields.io/badge/version-4.7.0-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 
 ## Features
@@ -20,6 +20,8 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
   - Light / Switch / Fan / Lock → Toggle pills with heartbeat pulse
   - Sensor / Binary Sensor → Data readout bars with segmented fill
   - Climate → Thermostat panel | Cover → Position controls | Media Player → Media strip
+- **Warp Core Battery Panel** — Auto-detects battery devices (EcoFlow, etc.), renders CSS reactor core with charge-level color, SOC gauge, power flow I/O arrows, telemetry sensors, and integrated config/diagnostic entity controls with LCARS option strips
+- **Smart Name Shortening** — Automatically strips area and device name prefixes from entity names for cleaner display
 - **Device-Grouped Layout** — Entities organized by device, then sorted by domain (cameras first, sensors last)
 - **6 LCARS Animations** — Cascade reveal, scan sweep, viewscreen activation, heartbeat pulse, distress pulse, segmented sensor bars
 - **Self-Contained** — All fonts (Antonio) and dependencies vendored locally, no external CDN calls
@@ -45,7 +47,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 |-------|-----------|
 | HA Integration | Python custom component (`lcars_dashboard`) |
 | Frontend | Lit Element v2 web components |
-| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~129 KiB) |
+| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~179 KiB) |
 | Styling | 40+ LCARS CSS custom properties in shared `lcars-styles.js` |
 | Communication | WebSocket API + window custom events |
 

@@ -327,6 +327,22 @@ class LcarsHomepageCard extends LitElement {
       return result;
     }
 
+    /* ─── Fetch config/diagnostic entities for a specific device (battery panels) ─── */
+    _getDeviceCategoryEntities(deviceId) {
+      if (!this._hass || !deviceId) return { config: [], diagnostic: [] };
+      const entities = Object.values(this._hass.entities || {});
+      const config = [];
+      const diagnostic = [];
+      for (const e of entities) {
+        if (e.device_id !== deviceId) continue;
+        if (e.disabled_by) continue;
+        if (e.hidden_by === 'user' || e.hidden) continue;
+        if (e.entity_category === 'config') config.push(e);
+        else if (e.entity_category === 'diagnostic') diagnostic.push(e);
+      }
+      return { config, diagnostic };
+    }
+
     /* ─── Group entities: device → domain ─── */
     _groupEntities(entities) {
       const devices = this._hass.devices || {};
@@ -1181,6 +1197,71 @@ class LcarsHomepageCard extends LitElement {
             font-weight: 700;
           }
 
+          /* Section dividers and labels */
+          .battery-section-divider {
+            height: 1px;
+            background: var(--lcars-gray);
+            opacity: 0.3;
+            margin: 0.375rem 0;
+          }
+          .battery-section-label {
+            font-family: var(--lcars-font);
+            font-size: 0.55rem;
+            color: var(--lcars-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 0 0.5rem;
+            margin-bottom: 0.125rem;
+          }
+
+          /* LCARS Option Strip (for select entities) */
+          .lcars-option-strip {
+            display: flex;
+            flex-direction: column;
+            gap: 0.125rem;
+            padding: 0.125rem 0;
+          }
+          .lcars-option-strip-label {
+            font-size: 0.65rem;
+            color: var(--lcars-space-white, #f5f6fa);
+            text-transform: uppercase;
+            padding: 0 0.25rem;
+            margin-bottom: 0.125rem;
+          }
+          .lcars-option-strip-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+          }
+          .lcars-option-btn {
+            display: flex;
+            align-items: center;
+            height: 1.5rem;
+            padding: 0 0.75rem;
+            background: var(--lcars-gray);
+            color: var(--lcars-space-white, #f5f6fa);
+            border: none;
+            border-radius: 0 0.75rem 0.75rem 0;
+            font-family: var(--lcars-font);
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: filter 0.2s, background 0.2s;
+            user-select: none;
+            white-space: nowrap;
+          }
+          .lcars-option-btn:hover {
+            filter: brightness(1.2);
+          }
+          .lcars-option-btn:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
+          .lcars-option-btn[data-selected] {
+            background: var(--lcars-gold, var(--lcars-butterscotch));
+            color: var(--lcars-black, #000);
+          }
+
           /* Power I/O Flow */
           .battery-io-flow {
             grid-area: ioflow;
@@ -1782,12 +1863,14 @@ class LcarsHomepageCard extends LitElement {
     }
 
     /* Partition battery device entities into render groups */
-    _partitionBatteryEntities(entries) {
+    _partitionBatteryEntities(entries, categoryEntities) {
       const soc = [];
       const powerIn = [];
       const powerOut = [];
       const telemetry = [];
       const controls = [];
+      const configControls = [];
+      const diagnostics = [];
 
       for (const entry of entries) {
         const attrs = entry.state?.attributes || {};
@@ -1824,7 +1907,23 @@ class LcarsHomepageCard extends LitElement {
         telemetry.push(entry);
       }
 
-      return { soc, powerIn, powerOut, telemetry, controls };
+      // Partition category entities (config + diagnostic)
+      if (categoryEntities) {
+        for (const e of categoryEntities.config) {
+          const state = this._getEntityState(e.entity_id);
+          if (!state) continue;
+          const domain = e.entity_id.split('.')[0];
+          configControls.push({ entity: e, domain, state });
+        }
+        for (const e of categoryEntities.diagnostic) {
+          const state = this._getEntityState(e.entity_id);
+          if (!state) continue;
+          const domain = e.entity_id.split('.')[0];
+          diagnostics.push({ entity: e, domain, state });
+        }
+      }
+
+      return { soc, powerIn, powerOut, telemetry, controls, configControls, diagnostics };
     }
 
     /* Get warp core color for a given charge percentage */
@@ -1848,7 +1947,8 @@ class LcarsHomepageCard extends LitElement {
 
     /* Render the battery panel */
     _renderBatteryPanel(group) {
-      const { soc, powerIn, powerOut, telemetry, controls } = this._partitionBatteryEntities(group.entities);
+      const categoryEntities = this._getDeviceCategoryEntities(group.device.id);
+      const { soc, powerIn, powerOut, telemetry, controls, configControls, diagnostics } = this._partitionBatteryEntities(group.entities, categoryEntities);
       const deviceName = this._shortDeviceName(group.device) || 'Battery';
 
       // Primary SOC value
@@ -1883,6 +1983,13 @@ class LcarsHomepageCard extends LitElement {
         const name = (e.state?.attributes?.friendly_name || '').toLowerCase();
         return dc === 'temperature' || dc === 'duration' ||
           /state.*health|cycles|remain.*time|status|error.*code|battery.*count/.test(name);
+      }).slice(0, 8);
+
+      // Filter diagnostics to key items (temp, cycles, status, errors — skip hidden energy readings)
+      const keyDiagnostics = diagnostics.filter(e => {
+        const dc = e.state?.attributes?.device_class || '';
+        const name = (e.state?.attributes?.friendly_name || '').toLowerCase();
+        return dc === 'temperature' || /cycles|status|error|battery.*count|charging.*state|power.*diff/.test(name);
       }).slice(0, 8);
 
       return html`
@@ -1926,6 +2033,24 @@ class LcarsHomepageCard extends LitElement {
                 </div>
               `;
             })}
+            ${keyDiagnostics.length > 0 ? html`
+              <div class="battery-section-divider"></div>
+              <div class="battery-section-label">DIAGNOSTICS</div>
+              ${keyDiagnostics.map(({ entity, state }) => {
+                const name = this._friendlyName(state, entity);
+                const val = state.state;
+                const unit = state.attributes?.unit_of_measurement || '';
+                const color = this._getSensorIndicatorColor(state);
+                return html`
+                  <div class="device-sensor-line" tabindex="0" role="listitem"
+                    @click=${() => this._handleEntityClick(entity.entity_id)}>
+                    <div class="sensor-indicator" style="background:${color}"></div>
+                    <span class="sensor-label">${name}</span>
+                    <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                  </div>
+                `;
+              })}
+            ` : ''}
           </div>
 
           <!-- Warp Core (center) -->
@@ -1983,6 +2108,75 @@ class LcarsHomepageCard extends LitElement {
                 </button>
               `;
             })}
+            ${configControls.length > 0 ? html`
+              <div class="battery-section-divider"></div>
+              <div class="battery-section-label">CONFIG</div>
+              ${configControls.map(({ entity, state }) => {
+                const name = this._friendlyName(state, entity);
+                const domain = entity.entity_id.split('.')[0];
+                if (domain === 'number') {
+                  const min = state.attributes?.min || 0;
+                  const max = state.attributes?.max || 100;
+                  const step = state.attributes?.step || 1;
+                  const val = parseFloat(state.state) || 0;
+                  const unit = state.attributes?.unit_of_measurement || '';
+                  const pct = max > min ? ((val - min) / (max - min)) * 100 : 0;
+                  return html`
+                    <div class="battery-slider-control">
+                      <span class="battery-slider-label">${name}</span>
+                      <div class="battery-slider-track"
+                        @click=${(ev) => {
+                          const rect = ev.currentTarget.getBoundingClientRect();
+                          const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+                          let newVal = min + ratio * (max - min);
+                          newVal = Math.round(newVal / step) * step;
+                          newVal = Math.max(min, Math.min(max, newVal));
+                          this._hass.callService('number', 'set_value', { entity_id: entity.entity_id, value: newVal });
+                        }}>
+                        <div class="battery-slider-fill" style="width:${pct}%"></div>
+                        <div class="battery-slider-thumb" style="left:${pct}%"></div>
+                      </div>
+                      <span class="battery-slider-value">${val}${unit ? ' ' + unit : ''}</span>
+                    </div>
+                  `;
+                }
+                if (domain === 'select') {
+                  const options = state.attributes?.options || [];
+                  const current = state.state;
+                  return html`
+                    <div class="lcars-option-strip" role="radiogroup" aria-label="${name}">
+                      <span class="lcars-option-strip-label">${name}</span>
+                      <div class="lcars-option-strip-btns">
+                        ${options.map(opt => html`
+                          <button class="lcars-option-btn"
+                            role="radio"
+                            aria-checked="${opt === current}"
+                            ?data-selected=${opt === current}
+                            @click=${() => this._hass.callService('select', 'select_option', {
+                              entity_id: entity.entity_id, option: opt
+                            })}>
+                            ${opt}
+                          </button>
+                        `)}
+                      </div>
+                    </div>
+                  `;
+                }
+                // switch/button fallback
+                const isOn = state.state === 'on';
+                const isOff = this._isOff(state);
+                return html`
+                  <button class="device-control-btn" ?data-on=${isOn} ?data-off=${isOff}
+                    @click=${() => TOGGLE_DOMAINS.has(domain)
+                      ? this._handleToggle(entity.entity_id)
+                      : this._handleEntityClick(entity.entity_id)}
+                    title="${name}: ${state.state}">
+                    <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
+                    <span>${name}</span>
+                  </button>
+                `;
+              })}
+            ` : ''}
           </div>
 
           <!-- Power I/O Flow (bottom) -->

@@ -180,7 +180,7 @@ export function openEditPopup(hass, editCardType, config, title = 'Configure') {
     title,
     card: { type: `custom:${editCardType}`, ...config },
   });
-  // Auto-remove from DOM when popup closes
+  // Auto-remove from DOM when popup closes (with safety timeout)
   const observer = new MutationObserver(() => {
     const backdrop = popup.shadowRoot?.querySelector('.popup-backdrop');
     if (backdrop && !backdrop.hasAttribute('data-open')) {
@@ -189,6 +189,8 @@ export function openEditPopup(hass, editCardType, config, title = 'Configure') {
   });
   document.body.appendChild(popup);
   observer.observe(popup.shadowRoot || popup, { attributes: true, subtree: true });
+  // Safety: disconnect observer after 5 minutes to prevent leaks
+  setTimeout(() => { observer.disconnect(); }, 300000);
   // Open after one microtask so the element renders first
   requestAnimationFrame(() => popup.open());
 }

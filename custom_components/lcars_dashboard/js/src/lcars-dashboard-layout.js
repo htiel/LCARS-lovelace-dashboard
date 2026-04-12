@@ -590,7 +590,7 @@ class LcarsDashboardLayout extends LitElement {
             @click=${() => this._editHeaderTitle()}
             style="${this._editMode ? 'cursor:pointer' : ''}"
             >${this._editMode ? 'LCARS \u00B7 CONFIGURATION MODE' : 'LCARS'}</span>
-          <div class="lcars-header-bar"></div>
+          <div class="lcars-header-bar" aria-hidden="true"></div>
           <div class="lcars-header-endcap">
             ${this._hass?.user?.is_admin ? html`
               <button class="configure-btn"
@@ -651,9 +651,9 @@ class LcarsDashboardLayout extends LitElement {
 
         <!-- Footer Bar -->
         <div class="lcars-footer" role="contentinfo">
-          <div class="lcars-footer-bar"></div>
+          <div class="lcars-footer-bar" aria-hidden="true"></div>
           <span class="lcars-footer-text">LCARS 47</span>
-          <div class="lcars-footer-endcap"></div>
+          <div class="lcars-footer-endcap" aria-hidden="true"></div>
         </div>
       </div>
     `;

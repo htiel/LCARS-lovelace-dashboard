@@ -77,7 +77,6 @@ class LcarsHomepageCard extends LitElement {
       selectedArea: { type: String },
       selectedFloor: { type: String },
       _hass: { type: Object },
-      _cards: { type: Object },
       _editMode: { type: Boolean },
     };
     }
@@ -87,7 +86,6 @@ class LcarsHomepageCard extends LitElement {
       this.data = null;
       this.selectedArea = null;
       this.selectedFloor = null;
-      this._cards = {};
       this._editMode = false;
       this._configLoading = false;
       this._entityCache = new Map();
@@ -249,11 +247,6 @@ class LcarsHomepageCard extends LitElement {
           this.selectedArea = null;
           this._entityCache.clear();
         }
-      }
-      if (this._cards) {
-        Object.values(this._cards).forEach((card) => {
-          if (card && card.hass !== undefined) card.hass = hass;
-        });
       }
       if (!this.data && !this._configLoading) this._loadConfiguration();
     }
@@ -451,8 +444,9 @@ class LcarsHomepageCard extends LitElement {
       return html`
         <div class="edit-pip-wrap">
           ${content}
-          <div class="edit-pip" title="Edit entity"
-            @click=${(e) => this._handleEditEntity(e, entityId)}></div>
+          <div class="edit-pip" tabindex="0" role="button" aria-label="Edit entity"
+            @click=${(e) => this._handleEditEntity(e, entityId)}
+            @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEditEntity(e, entityId); } }}></div>
         </div>
       `;
     }
@@ -1730,6 +1724,11 @@ class LcarsHomepageCard extends LitElement {
             transform: scale(1.5);
             background: var(--lcars-gold);
           }
+          .edit-pip:focus-visible, .device-edit-pip:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+            transform: scale(1.5);
+          }
           @keyframes edit-pip-pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -2314,6 +2313,11 @@ class LcarsHomepageCard extends LitElement {
           types: ['mean'],
         });
         this._envHistoryCache.set(deviceId, { data, timestamp: now });
+        // Evict oldest entries if cache grows too large
+        if (this._envHistoryCache.size > 20) {
+          const oldest = this._envHistoryCache.keys().next().value;
+          this._envHistoryCache.delete(oldest);
+        }
         return data;
       } catch (err) {
         lcarsLog.error(TAG, 'Sparkline history fetch failed:', err);
@@ -2406,7 +2410,8 @@ class LcarsHomepageCard extends LitElement {
               return html`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
                   aria-label="${name}: ${val}${unit ? ' ' + unit : ''}"
-                  @click=${() => this._handleEntityClick(entity.entity_id)}>
+                  @click=${() => this._handleEntityClick(entity.entity_id)}
+                  @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                   <div class="sensor-indicator" style="background:${color}"></div>
                   <span class="sensor-label">${name}</span>
                   <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
@@ -2421,7 +2426,8 @@ class LcarsHomepageCard extends LitElement {
               return html`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
                   aria-label="${name}: ${val}${unit ? ' ' + unit : ''}"
-                  @click=${() => this._handleEntityClick(entity.entity_id)}>
+                  @click=${() => this._handleEntityClick(entity.entity_id)}
+                  @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                   <div class="sensor-indicator" style="background:${color}"></div>
                   <span class="sensor-label">${name}</span>
                   <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
@@ -2438,7 +2444,8 @@ class LcarsHomepageCard extends LitElement {
                 const color = this._getSensorIndicatorColor(state);
                 return html`
                   <div class="device-sensor-line" tabindex="0" role="listitem"
-                    @click=${() => this._handleEntityClick(entity.entity_id)}>
+                    @click=${() => this._handleEntityClick(entity.entity_id)}
+                    @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                     <div class="sensor-indicator" style="background:${color}"></div>
                     <span class="sensor-label">${name}</span>
                     <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
@@ -2635,7 +2642,8 @@ class LcarsHomepageCard extends LitElement {
               const color = this._getSensorIndicatorColor(state);
               return html`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
-                  @click=${() => this._handleEntityClick(entity.entity_id)}>
+                  @click=${() => this._handleEntityClick(entity.entity_id)}
+                  @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                   <div class="sensor-indicator" style="background:${color}"></div>
                   <span class="sensor-label">${name}</span>
                   <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
@@ -2652,7 +2660,8 @@ class LcarsHomepageCard extends LitElement {
                 const color = this._getSensorIndicatorColor(state);
                 return html`
                   <div class="device-sensor-line" tabindex="0" role="listitem"
-                    @click=${() => this._handleEntityClick(entity.entity_id)}>
+                    @click=${() => this._handleEntityClick(entity.entity_id)}
+                    @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                     <div class="sensor-indicator" style="background:${color}"></div>
                     <span class="sensor-label">${name}</span>
                     <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
@@ -2869,8 +2878,9 @@ class LcarsHomepageCard extends LitElement {
               <h3 class="device-name">${this._shortDeviceName(group.device)}</h3>
               <div class="device-line"></div>
               ${this._editMode ? html`
-                <div class="device-edit-pip" title="Edit device"
-                  @click=${(e) => this._handleEditDevice(e, group.device.id)}></div>
+                <div class="device-edit-pip" tabindex="0" role="button" aria-label="Edit device"
+                  @click=${(e) => this._handleEditDevice(e, group.device.id)}
+                  @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEditDevice(e, group.device.id); } }}></div>
               ` : ''}
             </div>
             ${this._renderDomainGroups(group.entities)}

@@ -178,6 +178,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 yaml.add_representer(collections.OrderedDict, Representer.represent_dict)
 
+@websocket_api.require_admin
 @websocket_api.async_response
 @websocket_api.websocket_command({vol.Required("type"): "lcars_dashboard/configuration/get"})
 async def websocket_get_configuration(
@@ -272,6 +273,7 @@ async def websocket_get_configuration(
 
 #get_blueprints
 #at callback -> websocket_api.async_response
+@websocket_api.require_admin
 @websocket_api.async_response
 @websocket_api.websocket_command({vol.Required("type"): "lcars_dashboard/get_blueprints"})
 async def websocket_get_blueprints(
@@ -1197,7 +1199,7 @@ async def ws_handle_edit_entities_bool_value(
 
     entitiesInput = json.loads(msg["entities"])
 
-    _LOGGER.warning(entitiesInput)
+    _LOGGER.debug("edit_entity_bool_value entities input: %s", entitiesInput)
 
     for num, entityId in enumerate(entitiesInput, start=1):
         entity = entities.get(entityId)
@@ -1209,7 +1211,7 @@ async def ws_handle_edit_entities_bool_value(
             msg["key"]: msg["value"]
         })
 
-    _LOGGER.warning(entities)
+    _LOGGER.debug("edit_entity_bool_value entities result: %s", entities)
 
     if not os.path.exists(hass.config.path("lcars-dashboard/configs")):
         os.makedirs(hass.config.path("lcars-dashboard/configs"))

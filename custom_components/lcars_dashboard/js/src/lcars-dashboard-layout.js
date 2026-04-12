@@ -44,6 +44,10 @@ class LcarsDashboardLayout extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener('resize', this._resizeHandler);
+    if (this._elbowPressTimer) {
+      clearTimeout(this._elbowPressTimer);
+      this._elbowPressTimer = null;
+    }
     lcarsLog.debug(TAG, 'disconnectedCallback — layout unmounted');
   }
 
@@ -416,7 +420,7 @@ class LcarsDashboardLayout extends LitElement {
         .sidebar-unassigned-label {
           font-family: var(--lcars-font);
           font-size: calc(var(--lcars-font-size-data) * 0.7);
-          color: var(--lcars-gray);
+          color: var(--lcars-sky, #aaaaff);
           text-transform: uppercase;
           padding: 0.25rem 0.75rem 0;
           flex-shrink: 0;
@@ -573,7 +577,7 @@ class LcarsDashboardLayout extends LitElement {
     const floorGroups = this._getAreasGroupedByFloor();
 
     return html`
-      <div class="lcars-frame" role="main">
+      <div class="lcars-frame">
         <!-- Top-Left Elbow (long-press to toggle edit mode) -->
         <div class="lcars-elbow-top" aria-hidden="true"
           @pointerdown=${(e) => this._handleElbowPointerDown(e)}
@@ -636,11 +640,11 @@ class LcarsDashboardLayout extends LitElement {
         </nav>
 
         <!-- Main Content -->
-        <div class="lcars-content" role="region" aria-label="Dashboard content" aria-live="polite">
+        <main class="lcars-content" aria-label="Dashboard content" aria-live="polite">
           ${this.cards && this.cards.length > 0
             ? this.cards.map((card) => html`${card}`)
             : html`<div class="lcars-heading">No data available</div>`}
-        </div>
+        </main>
 
         <!-- Bottom-Left Elbow -->
         <div class="lcars-elbow-bottom" aria-hidden="true"></div>

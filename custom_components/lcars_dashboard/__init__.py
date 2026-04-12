@@ -398,7 +398,7 @@ async def ws_handle_install_blueprint(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/delete_blueprint",
-        vol.Required("blueprint"): str,
+        vol.Required("blueprint"): _validate_path_component,
     }
 )
 @websocket_api.async_response
@@ -409,7 +409,7 @@ async def ws_handle_delete_blueprint(
 
     _LOGGER.debug("delete_blueprint called: %s", msg.get("blueprint"))
     
-    filename = hass.config.path("lcars-dashboard/blueprints/"+msg["blueprint"])
+    filename = _safe_path(hass.config.path("lcars-dashboard"), "blueprints", msg["blueprint"])
 
     if os.path.exists(filename):
         os.remove(filename)
@@ -664,7 +664,7 @@ async def ws_handle_edit_device_button(
     {
         vol.Required("type"): "lcars_dashboard/edit_device_card",
         vol.Required("cardData"): str,
-        vol.Required("domain"): str,
+        vol.Required("domain"): _validate_path_component,
     }
 )
 @websocket_api.async_response
@@ -703,7 +703,7 @@ async def ws_handle_edit_device_card(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/remove_device_card",
-        vol.Required("domain"): str,
+        vol.Required("domain"): _validate_path_component,
     }
 )
 @websocket_api.async_response
@@ -734,7 +734,7 @@ async def ws_handle_remove_device_card(
     {
         vol.Required("type"): "lcars_dashboard/edit_device_popup",
         vol.Required("cardData"): str,
-        vol.Required("domain"): str,
+        vol.Required("domain"): _validate_path_component,
     }
 )
 @websocket_api.async_response
@@ -773,7 +773,7 @@ async def ws_handle_edit_device_popup(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/remove_device_popup",
-        vol.Required("domain"): str,
+        vol.Required("domain"): _validate_path_component,
     }
 )
 @websocket_api.async_response
@@ -804,7 +804,7 @@ async def ws_handle_remove_device_popup(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/remove_entity_card",
-        vol.Required("entityId"): str,
+        vol.Required("entityId"): _validate_path_component,
     }
 )
 @websocket_api.async_response
@@ -835,7 +835,7 @@ async def ws_handle_remove_entity_card(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/remove_entity_popup",
-        vol.Required("entityId"): str,
+        vol.Required("entityId"): _validate_path_component,
     }
 )
 @websocket_api.async_response
@@ -944,7 +944,7 @@ async def ws_handle_edit_entity(
     {
         vol.Required("type"): "lcars_dashboard/edit_entity_card",
         vol.Required("cardData"): str,
-        vol.Required("entityId"): str,
+        vol.Required("entityId"): _validate_path_component,
     }
 )
 @websocket_api.async_response
@@ -1008,7 +1008,7 @@ async def ws_handle_edit_entity_card(
     {
         vol.Required("type"): "lcars_dashboard/edit_entity_popup",
         vol.Required("cardData"): str,
-        vol.Required("entityId"): str,
+        vol.Required("entityId"): _validate_path_component,
     }
 )
 @websocket_api.async_response
@@ -1071,7 +1071,7 @@ async def ws_handle_edit_entity_popup(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_entity_favorite",
-        vol.Required("entityId"): str,
+        vol.Required("entityId"): _validate_path_component,
         vol.Optional("favorite"): bool,
     }
 )
@@ -1122,7 +1122,7 @@ async def ws_handle_edit_entity_favorite(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_entity_bool_value",
-        vol.Required("entityId"): str,
+        vol.Required("entityId"): _validate_path_component,
         vol.Optional("key"): str,
         vol.Optional("value"): bool,
     }
@@ -1235,10 +1235,10 @@ async def ws_handle_edit_entities_bool_value(
     {
         vol.Required("type"): "lcars_dashboard/add_card",
         vol.Optional("card_data"): str,
-        vol.Optional("area_id"): str,
-        vol.Optional("domain"): str,
+        vol.Optional("area_id"): _validate_path_component,
+        vol.Optional("domain"): _validate_path_component,
         vol.Optional("position"): str,
-        vol.Optional("filename"): str,
+        vol.Optional("filename"): _validate_path_component,
         vol.Optional("page"): str,
         vol.Optional("rowSpan"): str,
         vol.Optional("colSpan"): str,
@@ -1308,9 +1308,9 @@ async def ws_handle_add_card(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/remove_card",
-        vol.Optional("area_id"): str,
-        vol.Optional("domain"): str,
-        vol.Optional("filename"): str,
+        vol.Optional("area_id"): _validate_path_component,
+        vol.Optional("domain"): _validate_path_component,
+        vol.Optional("filename"): _validate_path_component,
         vol.Optional("page"): str,
     }
 )
@@ -1349,7 +1349,7 @@ async def ws_handle_remove_card(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/edit_more_page_button",
-        vol.Optional("more_page"): str,
+        vol.Optional("more_page"): _validate_path_component,
         vol.Optional("name"): str,
         vol.Optional("icon"): str,
         vol.Optional("showInNavbar"): bool,
@@ -1401,7 +1401,7 @@ async def ws_handle_edit_more_page_button(
     {
         vol.Required("type"): "lcars_dashboard/edit_more_page",
         vol.Optional("card_data"): str,
-        vol.Optional("foldername"): str,
+        vol.Optional("foldername"): _validate_path_component,
         vol.Optional("name"): str,
         vol.Optional("icon"): str,
         vol.Optional("showInNavbar"): bool,
@@ -1471,7 +1471,7 @@ async def ws_handle_edit_more_page(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/remove_more_page",
-        vol.Required("foldername"): str,
+        vol.Required("foldername"): _validate_path_component,
     }
 )
 @websocket_api.async_response
@@ -1480,14 +1480,15 @@ async def ws_handle_remove_more_page(
 ) -> None:
     """Handle remove more page command."""
 
-    path_to_more_page = hass.config.path("lcars-dashboard/configs/more_pages/"+msg["foldername"]+"/page.yaml")
+    path_to_more_page = _safe_path(hass.config.path("lcars-dashboard"), "configs", "more_pages", msg["foldername"], "page.yaml")
     #_LOGGER.warning(f"Removing more_page: {msg["foldername"]} -- {path_to_more_page}")
 
     #if os.path.exists(path_to_more_page):
     if await hass.async_add_executor_job(os.path.exists, path_to_more_page):
         #remove folder and content
         #shutil.rmtree(hass.config.path("lcars-dashboard/configs/more_pages/"+msg["foldername"]), ignore_errors=True)
-        await hass.async_add_executor_job(shutil.rmtree, hass.config.path("lcars-dashboard/configs/more_pages/"+msg["foldername"]), True)
+        folder_path = _safe_path(hass.config.path("lcars-dashboard"), "configs", "more_pages", msg["foldername"])
+        await hass.async_add_executor_job(shutil.rmtree, folder_path, True)
 
     hass.bus.async_fire("lcars_dashboard_navigation_card_reload")
 
@@ -1509,7 +1510,7 @@ async def ws_handle_remove_more_page(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "lcars_dashboard/add_more_page_to_navbar",
-        vol.Required("more_page"): str,
+        vol.Required("more_page"): _validate_path_component,
     }
 )
 @websocket_api.async_response

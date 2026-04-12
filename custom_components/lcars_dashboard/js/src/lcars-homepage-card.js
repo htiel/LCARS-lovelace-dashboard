@@ -89,6 +89,7 @@ class LcarsHomepageCard extends LitElement {
       this.selectedFloor = null;
       this._cards = {};
       this._editMode = false;
+      this._configLoading = false;
       this._entityCache = new Map();
       /* Camera auto-refresh state */
       this._cameraRefreshInterval = null;
@@ -254,11 +255,12 @@ class LcarsHomepageCard extends LitElement {
           if (card && card.hass !== undefined) card.hass = hass;
         });
       }
-      if (!this.data) this._loadConfiguration();
+      if (!this.data && !this._configLoading) this._loadConfiguration();
     }
 
     async _loadConfiguration() {
       if (!this._hass) return;
+      this._configLoading = true;
       lcarsLog.debug(TAG, 'Loading configuration via WS...');
       try {
         const result = await this._hass.callWS({
@@ -275,6 +277,8 @@ class LcarsHomepageCard extends LitElement {
         lcarsLog.error(TAG, 'Failed to load configuration — WS call failed:', e);
         // Set empty data so we don't retry endlessly — card still works dynamically from hass
         this.data = {};
+      } finally {
+        this._configLoading = false;
       }
     }
 
@@ -518,6 +522,7 @@ class LcarsHomepageCard extends LitElement {
         min = state.attributes.min; max = state.attributes.max;
       }
       else return '';
+      if (min === max) return '';
       const pct = Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
       const segments = 10;
       const filled = Math.round((pct / 100) * segments);
@@ -546,6 +551,8 @@ class LcarsHomepageCard extends LitElement {
           .content-area-header {
             font-family: var(--lcars-font);
             font-size: var(--lcars-font-size-title);
+            font-weight: normal;
+            margin: 0;
             color: var(--lcars-gold);
             text-transform: uppercase;
             padding: 0.25rem 0 0.5rem 0;
@@ -570,6 +577,8 @@ class LcarsHomepageCard extends LitElement {
           .content-floor-header {
             font-family: var(--lcars-font);
             font-size: calc(var(--lcars-font-size-title) * 1.15);
+            font-weight: normal;
+            margin: 0;
             color: var(--lcars-lilac, #cc99cc);
             text-transform: uppercase;
             padding: 0.25rem 0 0.5rem 0;
@@ -637,6 +646,8 @@ class LcarsHomepageCard extends LitElement {
           }
           .device-name {
             font-size: var(--lcars-font-size-data);
+            font-weight: normal;
+            margin: 0;
             color: var(--lcars-gold);
             text-transform: uppercase;
             white-space: nowrap;
@@ -1269,7 +1280,7 @@ class LcarsHomepageCard extends LitElement {
           .battery-section-label {
             font-family: var(--lcars-font);
             font-size: 0.55rem;
-            color: var(--lcars-gray);
+            color: var(--lcars-sky, #aaaaff);
             text-transform: uppercase;
             letter-spacing: 0.08em;
             padding: 0 0.5rem;
@@ -1692,7 +1703,7 @@ class LcarsHomepageCard extends LitElement {
 
           /* ─── No data ─── */
           .lcars-empty {
-            color: var(--lcars-gray);
+            color: var(--lcars-sky, #aaaaff);
             font-size: var(--lcars-font-size-sub);
             padding: 2rem 0;
             text-align: center;
@@ -1904,7 +1915,7 @@ class LcarsHomepageCard extends LitElement {
       if (areaIds.length === 0) {
         return html`
           <div class="content-area-panel">
-            <div class="content-area-header">${floor.name}</div>
+            <h2 class="content-area-header">${floor.name}</h2>
             <div class="lcars-empty">No areas on this floor</div>
           </div>
         `;
@@ -1914,7 +1925,7 @@ class LcarsHomepageCard extends LitElement {
 
       return html`
         <div class="content-floor-panel">
-          <div class="content-floor-header">${floor.name}</div>
+          <h2 class="content-floor-header">${floor.name}</h2>
           ${areaIds.map(areaId => {
             const area = this._hass.areas?.[areaId];
             if (!area) return '';
@@ -1922,7 +1933,7 @@ class LcarsHomepageCard extends LitElement {
             if (entities.length === 0) return '';
             return html`
               <div class="content-area-panel floor-area-section">
-                <div class="content-area-header floor-area-subheader">${area.name}</div>
+                <h3 class="content-area-header floor-area-subheader">${area.name}</h3>
                 ${this._renderAreaContent(entities)}
               </div>
             `;
@@ -1961,7 +1972,7 @@ class LcarsHomepageCard extends LitElement {
 
       return html`
         <div class="content-area-panel">
-          <div class="content-area-header">${area.name}</div>
+          <h2 class="content-area-header">${area.name}</h2>
           ${this._renderAreaContent(entities)}
         </div>
       `;
@@ -2600,14 +2611,18 @@ class LcarsHomepageCard extends LitElement {
           <!-- Telemetry (left) -->
           <div class="battery-telemetry" role="list" aria-label="${deviceName} telemetry">
             ${totalIn ? html`
-              <div class="battery-total-line" @click=${() => this._handleEntityClick(totalIn.entity.entity_id)}>
+              <div class="battery-total-line" tabindex="0" role="button"
+                @click=${() => this._handleEntityClick(totalIn.entity.entity_id)}
+                @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(totalIn.entity.entity_id); } }}>
                 <ha-icon icon="mdi:transmission-tower-import" style="--mdc-icon-size:14px;color:var(--lcars-ice)"></ha-icon>
                 <span class="sensor-label">Total In</span>
                 <span class="sensor-state-value" style="color:var(--lcars-ice)">${totalIn.state.state} W</span>
               </div>
             ` : ''}
             ${totalOut ? html`
-              <div class="battery-total-line" @click=${() => this._handleEntityClick(totalOut.entity.entity_id)}>
+              <div class="battery-total-line" tabindex="0" role="button"
+                @click=${() => this._handleEntityClick(totalOut.entity.entity_id)}
+                @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(totalOut.entity.entity_id); } }}>
                 <ha-icon icon="mdi:transmission-tower-export" style="--mdc-icon-size:14px;color:var(--lcars-butterscotch)"></ha-icon>
                 <span class="sensor-label">Total Out</span>
                 <span class="sensor-state-value" style="color:var(--lcars-butterscotch)">${totalOut.state.state} W</span>
@@ -2674,12 +2689,25 @@ class LcarsHomepageCard extends LitElement {
                 const pct = max > min ? ((val - min) / (max - min)) * 100 : 0;
                 return html`
                   <div class="battery-slider-control">
-                    <span class="battery-slider-label">${name}</span>
+                    <span class="battery-slider-label" id="slider-${entity.entity_id}">${name}</span>
                     <div class="battery-slider-track"
+                      tabindex="0" role="slider"
+                      aria-labelledby="slider-${entity.entity_id}"
+                      aria-valuemin="${min}" aria-valuemax="${max}" aria-valuenow="${val}"
                       @click=${(ev) => {
                         const rect = ev.currentTarget.getBoundingClientRect();
                         const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
                         const newVal = Math.round(min + ratio * (max - min));
+                        this._hass.callService('number', 'set_value', { entity_id: entity.entity_id, value: newVal });
+                      }}
+                      @keydown=${(ev) => {
+                        let newVal = val;
+                        if (ev.key === 'ArrowRight' || ev.key === 'ArrowUp') { newVal = Math.min(max, val + 1); }
+                        else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowDown') { newVal = Math.max(min, val - 1); }
+                        else if (ev.key === 'Home') { newVal = min; }
+                        else if (ev.key === 'End') { newVal = max; }
+                        else return;
+                        ev.preventDefault();
                         this._hass.callService('number', 'set_value', { entity_id: entity.entity_id, value: newVal });
                       }}>
                       <div class="battery-slider-fill" style="width:${pct}%"></div>
@@ -2717,14 +2745,27 @@ class LcarsHomepageCard extends LitElement {
                   const pct = max > min ? ((val - min) / (max - min)) * 100 : 0;
                   return html`
                     <div class="battery-slider-control">
-                      <span class="battery-slider-label">${name}</span>
+                      <span class="battery-slider-label" id="slider-${entity.entity_id}">${name}</span>
                       <div class="battery-slider-track"
+                        tabindex="0" role="slider"
+                        aria-labelledby="slider-${entity.entity_id}"
+                        aria-valuemin="${min}" aria-valuemax="${max}" aria-valuenow="${val}"
                         @click=${(ev) => {
                           const rect = ev.currentTarget.getBoundingClientRect();
                           const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
                           let newVal = min + ratio * (max - min);
                           newVal = Math.round(newVal / step) * step;
                           newVal = Math.max(min, Math.min(max, newVal));
+                          this._hass.callService('number', 'set_value', { entity_id: entity.entity_id, value: newVal });
+                        }}
+                        @keydown=${(ev) => {
+                          let newVal = val;
+                          if (ev.key === 'ArrowRight' || ev.key === 'ArrowUp') { newVal = Math.min(max, val + step); }
+                          else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowDown') { newVal = Math.max(min, val - step); }
+                          else if (ev.key === 'Home') { newVal = min; }
+                          else if (ev.key === 'End') { newVal = max; }
+                          else return;
+                          ev.preventDefault();
                           this._hass.callService('number', 'set_value', { entity_id: entity.entity_id, value: newVal });
                         }}>
                         <div class="battery-slider-fill" style="width:${pct}%"></div>
@@ -2825,7 +2866,7 @@ class LcarsHomepageCard extends LitElement {
         ${normalDevices.map((group) => html`
           <div class="device-group">
             <div class="device-header">
-              <span class="device-name">${this._shortDeviceName(group.device)}</span>
+              <h3 class="device-name">${this._shortDeviceName(group.device)}</h3>
               <div class="device-line"></div>
               ${this._editMode ? html`
                 <div class="device-edit-pip" title="Edit device"
@@ -2838,7 +2879,7 @@ class LcarsHomepageCard extends LitElement {
         ${noDevice.length > 0 ? html`
           <div class="device-group">
             <div class="device-header">
-              <span class="device-name">Other Entities</span>
+              <h3 class="device-name">Other Entities</h3>
               <div class="device-line"></div>
             </div>
             ${this._renderDomainGroups(noDevice)}
@@ -2869,7 +2910,7 @@ class LcarsHomepageCard extends LitElement {
     _renderDomainGroups(entries) {
       const domainGroups = this._groupByDomain(entries);
       return html`${domainGroups.map(([domain, items]) => html`
-        <div class="domain-label">${DOMAIN_LABELS[domain] || domain}</div>
+        <div class="domain-label" role="heading" aria-level="4">${DOMAIN_LABELS[domain] || domain}</div>
         ${this._renderDomainEntities(domain, items)}
       `)}`;
     }

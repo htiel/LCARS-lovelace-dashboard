@@ -20,9 +20,23 @@ _LOGGER = logging.getLogger(__name__)
 def fromjson(value):
     return json.loads(value)
 
-jinja = SandboxedEnvironment(loader=jinja2.FileSystemLoader("/"))
+# Lazy-initialized Jinja2 environment scoped to HA config directory (not filesystem root)
+_jinja_env = None
+_jinja_base_dir = None
 
-jinja.filters['fromjson'] = fromjson
+def _get_jinja_env(config_dir=None):
+    """Get or create the sandboxed Jinja2 environment, scoped to config_dir."""
+    global _jinja_env, _jinja_base_dir
+    if _jinja_env is None or (config_dir and config_dir != _jinja_base_dir):
+        base = config_dir or _jinja_base_dir or "/"
+        _jinja_base_dir = base
+        _jinja_env = SandboxedEnvironment(loader=jinja2.FileSystemLoader(base))
+        _jinja_env.filters['fromjson'] = fromjson
+    return _jinja_env
+
+def init_jinja_env(config_dir):
+    """Initialize the Jinja2 environment with the HA config directory."""
+    _get_jinja_env(config_dir)
 
 lcars_dashboard_more_pages = {}
 llgen_config = {}
@@ -45,7 +59,12 @@ def load_yamll(fname, secrets = None, args={}):
 
         if process_yaml:
             _LOGGER.debug("Rendering Jinja2 template: %s (args=%s)", fname, list(args.keys()) if args else [])
-            rendered = jinja.get_template(fname).render({
+            jinja = _get_jinja_env()
+            # Convert absolute path to relative for the scoped loader
+            tpl_name = fname
+            if _jinja_base_dir and os.path.isabs(fname):
+                tpl_name = os.path.relpath(fname, _jinja_base_dir)
+            rendered = jinja.get_template(tpl_name).render({
                 **args,
                 "_dd_more_pages": lcars_dashboard_more_pages,
                 "_global": llgen_config
@@ -126,6 +145,9 @@ async def process_yaml(hass: HomeAssistant, config_entry):
     """Process all YAML files for LCARS Dashboard."""
     _LOGGER.debug("process_yaml starting for config_entry: %s", config_entry.entry_id if config_entry else 'None')
 
+    # Scope Jinja2 loader to HA config directory
+    init_jinja_env(hass.config.config_dir)
+
     # Check for HKI installation
     if os.path.exists(hass.config.path("hki-user/config")):
         #_LOGGER.warning("HKI Installed!")
@@ -194,6 +216,9 @@ async def process_yaml(hass: HomeAssistant, config_entry):
 
 async def reload_configuration(hass):
     _LOGGER.warning('Reload YAML configuration files...!')
+
+    # Ensure Jinja2 env is scoped to config dir
+    init_jinja_env(hass.config.config_dir)
 
     if os.path.exists(hass.config.path("lcars-dashboard/configs")):
         if os.path.isdir(hass.config.path("lcars-dashboard/configs/more_pages")):

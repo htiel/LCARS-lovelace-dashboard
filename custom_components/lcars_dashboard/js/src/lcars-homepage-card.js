@@ -39,7 +39,21 @@ const DOMAIN_LABELS = {
 
 /* Device panel type constants */
 const PANEL_TYPE_CAMERA = 'camera';
+const PANEL_TYPE_ENVIRONMENT = 'environment';
 const PANEL_TYPE_BATTERY = 'battery';
+
+/* Panel sort priority (lower = rendered first) */
+const PANEL_TYPE_ORDER = { camera: 0, environment: 1, battery: 2 };
+
+/* Air quality device_classes for environment panel detection */
+const AQ_DEVICE_CLASSES = new Set([
+  'carbon_dioxide', 'carbon_monoxide',
+  'volatile_organic_compounds', 'volatile_organic_compounds_parts',
+  'pm25', 'pm10', 'pm1', 'aqi',
+]);
+
+/* Entity ID suffix fallback for sensors with null device_class */
+const AQ_ENTITY_SUFFIX_RE = /_(air_quality|score)$/;
 
 /* Domain sort priority (lower = shown first) */
 const DOMAIN_ORDER = {
@@ -1262,6 +1276,165 @@ class LcarsHomepageCard extends LitElement {
             color: var(--lcars-black, #000);
           }
 
+          /* ═══ Environment Panel ═══ */
+          .env-panel {
+            grid-template-areas:
+              "header header header"
+              "sensors core controls"
+              "sparklines sparklines sparklines";
+            grid-template-columns: 1fr auto 1fr;
+            grid-template-rows: auto 1fr auto;
+          }
+          .env-panel.sensor-only {
+            grid-template-areas:
+              "header header"
+              "sensors core"
+              "sparklines sparklines";
+            grid-template-columns: 1fr auto;
+          }
+          .env-header {
+            grid-area: header;
+            display: flex;
+            align-items: center;
+            gap: var(--lcars-gap);
+            padding: 0.25rem 0.5rem;
+          }
+          .env-score-label {
+            font-size: 1.25rem;
+            font-weight: bold;
+            white-space: nowrap;
+          }
+          .env-sensors {
+            grid-area: sensors;
+            display: flex;
+            flex-direction: column;
+            gap: 0.125rem;
+            padding: 0.25rem 0.5rem;
+            overflow-y: auto;
+          }
+          .env-controls {
+            grid-area: controls;
+            display: flex;
+            flex-direction: column;
+            gap: var(--lcars-gap);
+            padding: 0.25rem 0.5rem;
+            border-left: 2px solid var(--panel-frame-color);
+          }
+          .env-sparklines {
+            grid-area: sparklines;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            border-top: 2px solid var(--panel-frame-color);
+          }
+          .env-sparkline-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            min-width: 6rem;
+            flex: 1 1 auto;
+          }
+          .env-sparkline-label {
+            font-size: 0.55rem;
+            color: var(--lcars-space-white);
+            text-transform: uppercase;
+            white-space: nowrap;
+            width: 3rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .env-sparkline {
+            width: 100%;
+            height: 1.5rem;
+            display: block;
+          }
+
+          /* Atmoscrubber cylinder */
+          .atmoscrubber-container {
+            grid-area: core;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 0;
+            min-height: 10rem;
+          }
+          .atmoscrubber {
+            position: relative;
+            width: 4rem;
+            height: 100%;
+            min-height: 10rem;
+            border-radius: 2rem;
+            border: 2px solid hsl(var(--scrubber-hue, 120), 70%, 60%);
+            background: var(--lcars-black);
+            overflow: hidden;
+            transition: border-color 1s ease, box-shadow 1s ease;
+            box-shadow: 0 0 8px hsla(var(--scrubber-hue, 120), 70%, 50%, 0.3);
+          }
+          .atmoscrubber::before,
+          .atmoscrubber::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background-image:
+              radial-gradient(circle 3px, hsla(var(--scrubber-hue, 120), 80%, 65%, 0.8) 50%, transparent 51%),
+              radial-gradient(circle 2px, hsla(var(--scrubber-hue, 120), 80%, 65%, 0.8) 50%, transparent 51%),
+              radial-gradient(circle 2.5px, hsla(var(--scrubber-hue, 120), 80%, 65%, 0.8) 50%, transparent 51%),
+              radial-gradient(circle 2px, hsla(var(--scrubber-hue, 120), 80%, 65%, 0.8) 50%, transparent 51%);
+            background-size: 100% 3rem;
+            background-position:
+              25% 0, 65% 33%, 40% 60%, 80% 85%;
+            background-repeat: repeat-y;
+            animation: scrubber-flow var(--scrubber-speed, 20s) linear infinite;
+          }
+          .atmoscrubber::after {
+            opacity: 0.4;
+            background-size: 100% 2.5rem;
+            background-position:
+              15% 10%, 55% 50%, 75% 75%;
+            background-image:
+              radial-gradient(circle 2px, hsla(var(--scrubber-hue, 120), 80%, 65%, 0.6) 50%, transparent 51%),
+              radial-gradient(circle 1.5px, hsla(var(--scrubber-hue, 120), 80%, 65%, 0.6) 50%, transparent 51%),
+              radial-gradient(circle 2px, hsla(var(--scrubber-hue, 120), 80%, 65%, 0.6) 50%, transparent 51%);
+            animation-duration: calc(var(--scrubber-speed, 20s) * 1.4);
+          }
+          @keyframes scrubber-flow {
+            from { background-position-y: 0; }
+            to { background-position-y: -3rem; }
+          }
+          .atmoscrubber.scrubber-idle {
+            opacity: 0.5;
+            animation: scrubber-idle-glow 3s ease-in-out infinite;
+          }
+          .atmoscrubber.scrubber-idle::before,
+          .atmoscrubber.scrubber-idle::after {
+            opacity: 0.2;
+          }
+          @keyframes scrubber-idle-glow {
+            0%, 100% { box-shadow: 0 0 4px hsla(var(--scrubber-hue, 120), 70%, 50%, 0.15); }
+            50% { box-shadow: 0 0 12px hsla(var(--scrubber-hue, 120), 70%, 50%, 0.35); }
+          }
+          .scrubber-score {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--lcars-space-white);
+            z-index: 1;
+            text-shadow: 0 0 4px rgba(0,0,0,0.8);
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .atmoscrubber::before,
+            .atmoscrubber::after,
+            .atmoscrubber.scrubber-idle {
+              animation: none;
+            }
+          }
+
           /* Power I/O Flow */
           .battery-io-flow {
             grid-area: ioflow;
@@ -1705,15 +1878,33 @@ class LcarsHomepageCard extends LitElement {
     /* ─── Detect if a device warrants a unified panel ─── */
     _getDevicePanelType(entries) {
       if (entries.some(e => CAMERA_DOMAINS.has(e.domain))) return PANEL_TYPE_CAMERA;
-      // Battery: has device_class=battery (%) AND ≥2 device_class=power (W) entities
+
       let hasBattery = false;
       let powerCount = 0;
+      let aqSignals = 0;
+      let hasFan = false;
+
       for (const e of entries) {
         const attrs = e.state?.attributes;
         if (!attrs) continue;
-        if (attrs.device_class === 'battery' && attrs.unit_of_measurement === '%') hasBattery = true;
-        if (attrs.device_class === 'power' && attrs.unit_of_measurement === 'W') powerCount++;
+        const dc = attrs.device_class || '';
+        const unit = attrs.unit_of_measurement || '';
+
+        if (dc === 'battery' && unit === '%') hasBattery = true;
+        if (dc === 'power' && unit === 'W') powerCount++;
+
+        // Environment detection
+        if (AQ_DEVICE_CLASSES.has(dc)) aqSignals++;
+        if (e.domain === 'fan') hasFan = true;
+        // Fallback: entity_id pattern for sensors with null device_class (Score, Air Quality)
+        if (!dc && e.domain === 'sensor' && AQ_ENTITY_SUFFIX_RE.test(e.entity.entity_id)) {
+          aqSignals++;
+        }
       }
+
+      // Environment: ≥2 AQ signals, OR ≥1 AQ signal + fan (purifier pattern)
+      if (aqSignals >= 2 || (aqSignals >= 1 && hasFan)) return PANEL_TYPE_ENVIRONMENT;
+
       if (hasBattery && powerCount >= 2) return PANEL_TYPE_BATTERY;
       return null;
     }
@@ -1735,6 +1926,7 @@ class LcarsHomepageCard extends LitElement {
     _renderDevicePanel(panelType, group) {
       switch (panelType) {
         case PANEL_TYPE_CAMERA: return this._renderCameraPanel(group);
+        case PANEL_TYPE_ENVIRONMENT: return this._renderEnvironmentPanel(group);
         case PANEL_TYPE_BATTERY: return this._renderBatteryPanel(group);
         default: return '';
       }
@@ -1924,6 +2116,314 @@ class LcarsHomepageCard extends LitElement {
       }
 
       return { soc, powerIn, powerOut, telemetry, controls, configControls, diagnostics };
+    }
+
+    /* ═══ ENVIRONMENT PANEL: partition, color, history, sparkline ═══ */
+
+    /* Partition environment device entities into functional buckets */
+    _partitionEnvironmentEntities(entries, categoryEntities) {
+      const score = [];
+      const airQuality = [];
+      const telemetry = [];
+      const controls = [];
+      const diagnostics = [];
+
+      for (const entry of entries) {
+        const dc = entry.state?.attributes?.device_class || '';
+        const domain = entry.domain;
+
+        // Controls: fan, switch, button, number, select
+        if (['fan', 'switch', 'button', 'number', 'select'].includes(domain)) {
+          controls.push(entry);
+          continue;
+        }
+
+        // AQ-specific device_classes → airQuality
+        if (AQ_DEVICE_CLASSES.has(dc)) {
+          airQuality.push(entry);
+          continue;
+        }
+
+        // Score: composite AQ index (no device_class, matched by entity_id)
+        if (!dc && domain === 'sensor' && AQ_ENTITY_SUFFIX_RE.test(entry.entity.entity_id)) {
+          score.push(entry);
+          continue;
+        }
+
+        // Everything else → telemetry (temperature, humidity, etc.)
+        telemetry.push(entry);
+      }
+
+      // Append category entities (diagnostic + config)
+      if (categoryEntities) {
+        for (const e of [...categoryEntities.diagnostic, ...categoryEntities.config]) {
+          const state = this._getEntityState(e.entity_id);
+          if (!state) continue;
+          diagnostics.push({ entity: e, domain: e.entity_id.split('.')[0], state });
+        }
+      }
+
+      return { score, airQuality, telemetry, controls, diagnostics };
+    }
+
+    /* Map AQI value → hue angle (120=green → 0=red) for atmoscrubber */
+    _getScrubberHue(aqi) {
+      if (aqi == null || aqi <= 50) return 120;
+      if (aqi <= 100) return 120 - ((aqi - 50) / 50) * 70;   // 120→50
+      if (aqi <= 150) return 50 - ((aqi - 100) / 50) * 35;    // 50→15
+      return Math.max(0, 15 - ((aqi - 150) / 100) * 15);       // 15→0
+    }
+
+    /* Map AQI value → LCARS color variable name */
+    _getAQColor(aqi) {
+      if (aqi == null || aqi <= 50) return 'var(--lcars-ice)';
+      if (aqi <= 100) return 'var(--lcars-sunflower)';
+      if (aqi <= 150) return 'var(--lcars-butterscotch)';
+      if (aqi <= 200) return 'var(--lcars-peach)';
+      return 'var(--lcars-tomato)';
+    }
+
+    /* Map fan percentage → particle animation duration (lower = faster) */
+    _getScrubberSpeed(fanPercentage) {
+      if (fanPercentage == null || fanPercentage === 0) return 20;
+      return 2 + (18 * Math.pow(1 - fanPercentage / 100, 1.5));
+    }
+
+    /* Fetch 24h statistics for sparklines (hourly means, cached 5 min) */
+    _envHistoryCache = new Map();
+    async _getSparklineData(deviceId, entityIds) {
+      const now = Date.now();
+      const cached = this._envHistoryCache.get(deviceId);
+      if (cached && now - cached.timestamp < 300000) return cached.data;
+      try {
+        const MAX_HISTORY_ENTITIES = 10;
+        const ENTITY_ID_RE = /^[a-z_]+\.[a-z0-9_]+$/;
+        const safeIds = entityIds.slice(0, MAX_HISTORY_ENTITIES).filter(id => ENTITY_ID_RE.test(id));
+        if (safeIds.length === 0) return {};
+        const end = new Date();
+        const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+        const data = await this._hass.callWS({
+          type: 'recorder/statistics_during_period',
+          start_time: start.toISOString(),
+          end_time: end.toISOString(),
+          statistic_ids: safeIds,
+          period: 'hour',
+          types: ['mean'],
+        });
+        this._envHistoryCache.set(deviceId, { data, timestamp: now });
+        return data;
+      } catch (err) {
+        lcarsLog.error(TAG, 'Sparkline history fetch failed:', err);
+        return {};
+      }
+    }
+
+    /* Render a tiny SVG sparkline from hourly statistics data */
+    _renderSparkline(points, color, label) {
+      if (!points?.length) return '';
+      const vals = points.map(p => p.mean).filter(v => v != null && Number.isFinite(v));
+      if (vals.length < 2) return '';
+      const w = 120, h = 24;
+      const min = Math.min(...vals), max = Math.max(...vals);
+      const range = max - min || 1;
+      const d = vals.map((v, i) =>
+        `${((i / (vals.length - 1)) * w).toFixed(1)},${(h - ((v - min) / range) * h).toFixed(1)}`
+      ).join(' ');
+      return html`
+        <div class="env-sparkline-wrap" aria-label="${label}: ${vals[vals.length - 1]?.toFixed(0) || ''}">
+          <span class="env-sparkline-label">${label}</span>
+          <svg class="env-sparkline" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+            <polyline points="${d}" fill="none" stroke="${color}" stroke-width="1.5"
+              vector-effect="non-scaling-stroke" />
+          </svg>
+        </div>
+      `;
+    }
+
+    /* Render the environment panel */
+    _renderEnvironmentPanel(group) {
+      const categoryEntities = this._getDeviceCategoryEntities(group.device.id);
+      const { score, airQuality, telemetry, controls, diagnostics } = this._partitionEnvironmentEntities(group.entities, categoryEntities);
+      const deviceName = this._shortDeviceName(group.device) || 'Environment';
+
+      // Find primary AQ reading for color mapping
+      const scoreEntry = score[0];
+      const scoreVal = scoreEntry ? parseFloat(scoreEntry.state.state) : null;
+      const pm25Entry = airQuality.find(e => (e.state?.attributes?.device_class || '') === 'pm25');
+      const pm25Val = pm25Entry ? parseFloat(pm25Entry.state.state) : null;
+      // Use Score as AQI proxy; fallback to PM2.5 mapped to AQI-ish range
+      const aqiEstimate = scoreVal != null && Number.isFinite(scoreVal) ? scoreVal
+        : pm25Val != null && Number.isFinite(pm25Val) ? Math.min(300, pm25Val * 4)
+        : null;
+      const hue = this._getScrubberHue(aqiEstimate);
+      const aqColor = this._getAQColor(aqiEstimate);
+
+      // Fan state
+      const fanEntry = controls.find(e => e.domain === 'fan');
+      const fanState = fanEntry?.state;
+      const fanPct = fanState?.attributes?.percentage ?? null;
+      const fanPresets = fanState?.attributes?.preset_modes || [];
+      const fanPreset = fanState?.attributes?.preset_mode || '';
+      const isIdle = !fanEntry || fanState?.state === 'off' || fanPct === 0;
+      const scrubberSpeed = this._getScrubberSpeed(isIdle ? 0 : fanPct);
+      const sensorOnly = !fanEntry;
+
+      // Non-fan controls (switches like display, child lock)
+      const switchControls = controls.filter(e => e.domain !== 'fan');
+
+      // Async trigger sparkline fetch (renders on next update)
+      const sparklineIds = [...score, ...airQuality].map(e => e.entity.entity_id);
+      if (sparklineIds.length > 0) {
+        this._getSparklineData(group.device.id, sparklineIds).then(() => this.requestUpdate());
+      }
+      const sparkData = this._envHistoryCache.get(group.device.id)?.data || {};
+
+      return html`
+        <div class="lcars-device-panel env-panel ${sensorOnly ? 'sensor-only' : ''}" data-panel-type="environment">
+          <!-- Header -->
+          <div class="env-header">
+            <span class="device-panel-name">${deviceName}</span>
+            <div class="device-panel-header-line"></div>
+            ${scoreEntry ? html`
+              <span class="env-score-label" style="color:${aqColor}">
+                ${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : '—'}
+              </span>
+            ` : ''}
+          </div>
+
+          <!-- Sensors (left) -->
+          <div class="env-sensors" role="list" aria-label="${deviceName} sensors">
+            ${airQuality.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const val = state.state;
+              const unit = state.attributes?.unit_of_measurement || '';
+              const color = this._getSensorIndicatorColor(state);
+              return html`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  aria-label="${name}: ${val}${unit ? ' ' + unit : ''}"
+                  @click=${() => this._handleEntityClick(entity.entity_id)}>
+                  <div class="sensor-indicator" style="background:${color}"></div>
+                  <span class="sensor-label">${name}</span>
+                  <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                </div>
+              `;
+            })}
+            ${telemetry.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const val = state.state;
+              const unit = state.attributes?.unit_of_measurement || '';
+              const color = this._getSensorIndicatorColor(state);
+              return html`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  aria-label="${name}: ${val}${unit ? ' ' + unit : ''}"
+                  @click=${() => this._handleEntityClick(entity.entity_id)}>
+                  <div class="sensor-indicator" style="background:${color}"></div>
+                  <span class="sensor-label">${name}</span>
+                  <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                </div>
+              `;
+            })}
+            ${diagnostics.length > 0 ? html`
+              <div class="battery-section-divider"></div>
+              <div class="battery-section-label">DIAGNOSTICS</div>
+              ${diagnostics.map(({ entity, state }) => {
+                const name = this._friendlyName(state, entity);
+                const val = state.state;
+                const unit = state.attributes?.unit_of_measurement || '';
+                const color = this._getSensorIndicatorColor(state);
+                return html`
+                  <div class="device-sensor-line" tabindex="0" role="listitem"
+                    @click=${() => this._handleEntityClick(entity.entity_id)}>
+                    <div class="sensor-indicator" style="background:${color}"></div>
+                    <span class="sensor-label">${name}</span>
+                    <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                  </div>
+                `;
+              })}
+            ` : ''}
+          </div>
+
+          <!-- Atmoscrubber Cylinder (center) -->
+          <div class="atmoscrubber-container" role="meter"
+            aria-valuenow="${aqiEstimate != null ? Math.round(aqiEstimate) : ''}"
+            aria-valuemin="0" aria-valuemax="300"
+            aria-label="Air quality: ${aqiEstimate != null ? Math.round(aqiEstimate) : 'unknown'}">
+            <div class="atmoscrubber ${isIdle ? 'scrubber-idle' : ''}"
+              style="--scrubber-hue:${Math.round(hue)};--scrubber-speed:${scrubberSpeed.toFixed(1)}s">
+              ${scoreEntry ? html`
+                <div class="scrubber-score">${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : '—'}</div>
+              ` : pm25Entry ? html`
+                <div class="scrubber-score">${pm25Val != null && Number.isFinite(pm25Val) ? Math.round(pm25Val) : '—'}</div>
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- Controls (right) — only for purifiers -->
+          ${!sensorOnly ? html`
+            <div class="env-controls" aria-label="${deviceName} controls">
+              ${fanEntry ? html`
+                <button class="device-control-btn"
+                  ?data-on=${fanState?.state === 'on'}
+                  ?data-off=${this._isOff(fanState)}
+                  @click=${() => this._handleToggle(fanEntry.entity.entity_id)}
+                  title="Fan: ${fanState?.state}">
+                  <ha-icon .icon=${'mdi:fan'}></ha-icon>
+                  <span>${fanState?.state === 'on' ? `${fanPct || ''}%` : 'Off'}</span>
+                </button>
+                ${fanPresets.length > 0 ? html`
+                  <div class="lcars-option-strip" role="radiogroup" aria-label="Preset mode">
+                    <span class="lcars-option-strip-label">Mode</span>
+                    <div class="lcars-option-strip-btns">
+                      ${fanPresets.map(mode => html`
+                        <button class="lcars-option-btn"
+                          role="radio"
+                          aria-checked="${mode === fanPreset}"
+                          ?data-selected=${mode === fanPreset}
+                          @click=${() => {
+                            const validModes = this._hass.states[fanEntry.entity.entity_id]?.attributes?.preset_modes || [];
+                            if (!validModes.includes(mode)) return;
+                            this._hass.callService('fan', 'set_preset_mode', {
+                              entity_id: fanEntry.entity.entity_id, preset_mode: mode
+                            });
+                          }}>
+                          ${mode}
+                        </button>
+                      `)}
+                    </div>
+                  </div>
+                ` : ''}
+              ` : ''}
+              ${switchControls.map(({ entity, state }) => {
+                const name = this._friendlyName(state, entity);
+                const isOn = state.state === 'on';
+                const isOff = this._isOff(state);
+                return html`
+                  <button class="device-control-btn" ?data-on=${isOn} ?data-off=${isOff}
+                    @click=${() => this._handleToggle(entity.entity_id)}
+                    title="${name}: ${state.state}">
+                    <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
+                    <span>${name}</span>
+                  </button>
+                `;
+              })}
+            </div>
+          ` : ''}
+
+          <!-- Sparklines (bottom) -->
+          <div class="env-sparklines" aria-label="24-hour history">
+            ${[...score, ...airQuality].map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const points = sparkData[entity.entity_id];
+              const dc = state.attributes?.device_class || '';
+              const color = dc === 'pm25' ? 'var(--lcars-peach)'
+                : dc === 'carbon_dioxide' ? 'var(--lcars-sunflower)'
+                : dc === 'volatile_organic_compounds_parts' || dc === 'volatile_organic_compounds' ? 'var(--lcars-african-violet)'
+                : 'var(--lcars-ice)';
+              return this._renderSparkline(points, color, name);
+            })}
+          </div>
+        </div>
+      `;
     }
 
     /* Get warp core color for a given charge percentage */
@@ -2255,7 +2755,12 @@ class LcarsHomepageCard extends LitElement {
       // No camera panels → single-column (unchanged behavior)
       if (panelDevices.length === 0) return normalContent;
 
-      // Camera panels present → two-column split layout
+      // Sort panels: camera → environment → battery
+      panelDevices.sort((a, b) =>
+        (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99)
+      );
+
+      // Panel devices present → two-column split layout
       return html`
         <div class="area-split-layout">
           <div class="area-split-main">${normalContent}</div>

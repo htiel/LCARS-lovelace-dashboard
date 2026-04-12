@@ -39,7 +39,7 @@ const DOMAIN_LABELS = {
 
 /* Device panel type constants */
 const PANEL_TYPE_CAMERA = 'camera';
-// Future: PANEL_TYPE_CLIMATE = 'climate', PANEL_TYPE_MEDIA = 'media'
+const PANEL_TYPE_BATTERY = 'battery';
 
 /* Domain sort priority (lower = shown first) */
 const DOMAIN_ORDER = {
@@ -967,6 +967,274 @@ class LcarsHomepageCard extends LitElement {
           .device-control-btn[data-on] { background: var(--lcars-gold); }
           .device-control-btn[data-off] { background: var(--lcars-gray); color: var(--lcars-space-white); }
 
+          /* ═══════ BATTERY WARP CORE PANEL ═══════ */
+          .battery-panel {
+            --panel-frame-color: var(--lcars-ice);
+            grid-template-columns: minmax(8rem, 1fr) minmax(5rem, 6rem) minmax(8rem, 1.2fr);
+            grid-template-rows: auto 1fr auto;
+            grid-template-areas:
+              "header   header    header"
+              "sensors  core      controls"
+              "ioflow   ioflow    ioflow";
+          }
+          .battery-header {
+            grid-area: header;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.5rem;
+          }
+          .battery-charge-label {
+            font-size: var(--lcars-font-size-title);
+            font-weight: 700;
+            text-transform: uppercase;
+            white-space: nowrap;
+            flex-shrink: 0;
+          }
+          .battery-telemetry {
+            grid-area: sensors;
+            display: flex;
+            flex-direction: column;
+            gap: var(--lcars-gap);
+            padding: 0.25rem;
+            overflow-y: auto;
+            max-height: 22rem;
+          }
+          .battery-total-line {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            cursor: pointer;
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+            transition: background var(--lcars-transition);
+          }
+          .battery-total-line:hover { background: rgba(255,255,255,0.05); }
+          .battery-controls {
+            grid-area: controls;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0.25rem;
+            overflow-y: auto;
+            max-height: 22rem;
+          }
+
+          /* Warp Core */
+          .warp-core-container {
+            grid-area: core;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 0;
+            min-height: 10rem;
+          }
+          .warp-core {
+            position: relative;
+            width: 4rem;
+            height: 100%;
+            min-height: 10rem;
+            border-radius: 2rem;
+            border: 2px solid var(--core-color);
+            background: var(--lcars-black);
+            overflow: hidden;
+            box-shadow: 0 0 calc(var(--core-charge, 0) * 0.2px) var(--core-color);
+            transition: border-color 1s ease, box-shadow 1s ease;
+          }
+          .warp-core-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: calc(var(--core-charge, 0) * 1%);
+            background: var(--core-color);
+            opacity: 0.8;
+            transition: height 1s ease, background 1s ease;
+          }
+          .warp-core-fill.core-idle {
+            animation: core-idle-pulse 3s ease-in-out infinite;
+          }
+          .warp-core-fill.core-charging {
+            animation: core-charge-flow 2s linear infinite;
+          }
+          .warp-core-stream {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.35);
+          }
+          .warp-core-tick {
+            position: absolute;
+            left: 10%;
+            right: 10%;
+            height: 1px;
+            background: var(--core-color);
+            opacity: 0.3;
+            pointer-events: none;
+          }
+          @keyframes core-idle-pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 0.55; }
+          }
+          @keyframes core-charge-flow {
+            0% { background-position-y: 0; }
+            100% { background-position-y: -2rem; }
+          }
+          .warp-core-fill.core-charging {
+            background-image: repeating-linear-gradient(
+              0deg,
+              transparent 0px,
+              transparent 0.75rem,
+              rgba(255,255,255,0.15) 0.75rem,
+              rgba(255,255,255,0.15) 1rem
+            );
+            background-size: 100% 2rem;
+          }
+
+          /* Number slider controls */
+          .battery-slider-control {
+            display: flex;
+            flex-direction: column;
+            gap: 0.125rem;
+            padding: 0.25rem 0.5rem;
+          }
+          .battery-slider-label {
+            font-size: 0.65rem;
+            color: var(--lcars-space-white);
+            text-transform: uppercase;
+          }
+          .battery-slider-track {
+            position: relative;
+            height: 1.25rem;
+            background: var(--lcars-gray);
+            border-radius: 0.625rem;
+            cursor: pointer;
+            overflow: visible;
+          }
+          .battery-slider-fill {
+            height: 100%;
+            background: var(--lcars-ice);
+            border-radius: 0.625rem 0 0 0.625rem;
+            transition: width 0.3s ease;
+          }
+          .battery-slider-thumb {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 50%;
+            background: var(--lcars-sunflower);
+            border: 2px solid var(--lcars-black);
+            pointer-events: none;
+          }
+          .battery-slider-value {
+            font-size: 0.7rem;
+            color: var(--lcars-data-accent, var(--lcars-ice));
+            text-align: right;
+            font-weight: 700;
+          }
+
+          /* Power I/O Flow */
+          .battery-io-flow {
+            grid-area: ioflow;
+            display: flex;
+            flex-direction: column;
+            gap: var(--lcars-gap);
+            padding: 0.25rem 0.5rem;
+            border-top: 2px solid var(--panel-frame-color);
+          }
+          .io-pair-row {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            min-height: 1.75rem;
+          }
+          .io-port {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 3.5rem;
+            flex-shrink: 0;
+          }
+          .io-port.io-out { order: 5; }
+          .io-label {
+            font-size: 0.6rem;
+            color: var(--lcars-space-white);
+            text-transform: uppercase;
+            white-space: nowrap;
+          }
+          .io-watts {
+            font-size: var(--lcars-font-size-data);
+            font-weight: 700;
+          }
+          .io-conduit {
+            flex: 1;
+            height: 3px;
+            position: relative;
+            overflow: hidden;
+          }
+          .io-conduit-in {
+            order: 2;
+            background: var(--lcars-ice);
+            opacity: 0.4;
+          }
+          .io-conduit-out {
+            order: 4;
+            background: var(--lcars-butterscotch);
+            opacity: 0.4;
+          }
+          .io-core-gap {
+            order: 3;
+            width: 1rem;
+            flex-shrink: 0;
+          }
+          /* Flow particles */
+          .io-conduit::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+          }
+          .io-conduit-in:not(.flow-stopped)::before {
+            background: repeating-linear-gradient(
+              90deg,
+              transparent 0px, transparent 6px,
+              var(--lcars-ice) 6px, var(--lcars-ice) 10px
+            );
+            background-size: 16px 100%;
+            animation: flow-in var(--flow-duration, 0.8s) linear infinite;
+          }
+          .io-conduit-out:not(.flow-stopped)::before {
+            background: repeating-linear-gradient(
+              270deg,
+              transparent 0px, transparent 6px,
+              var(--lcars-butterscotch) 6px, var(--lcars-butterscotch) 10px
+            );
+            background-size: 16px 100%;
+            animation: flow-out var(--flow-duration, 0.8s) linear infinite;
+          }
+          .flow-fast { --flow-duration: 0.4s; opacity: 1; }
+          .flow-medium { --flow-duration: 0.8s; opacity: 0.8; }
+          .flow-slow { --flow-duration: 1.5s; opacity: 0.6; }
+          .flow-stopped { opacity: 0.15; }
+          .flow-stopped::before { display: none; }
+          @keyframes flow-in {
+            from { background-position-x: 0; }
+            to { background-position-x: -16px; }
+          }
+          @keyframes flow-out {
+            from { background-position-x: 0; }
+            to { background-position-x: 16px; }
+          }
+
           /* ═══════ CLIMATE PANEL ═══════ */
           .climate-grid {
             display: grid;
@@ -1315,7 +1583,16 @@ class LcarsHomepageCard extends LitElement {
     /* ─── Detect if a device warrants a unified panel ─── */
     _getDevicePanelType(entries) {
       if (entries.some(e => CAMERA_DOMAINS.has(e.domain))) return PANEL_TYPE_CAMERA;
-      // Future panel types go here in priority order
+      // Battery: has device_class=battery (%) AND ≥2 device_class=power (W) entities
+      let hasBattery = false;
+      let powerCount = 0;
+      for (const e of entries) {
+        const attrs = e.state?.attributes;
+        if (!attrs) continue;
+        if (attrs.device_class === 'battery' && attrs.unit_of_measurement === '%') hasBattery = true;
+        if (attrs.device_class === 'power' && attrs.unit_of_measurement === 'W') powerCount++;
+      }
+      if (hasBattery && powerCount >= 2) return PANEL_TYPE_BATTERY;
       return null;
     }
 
@@ -1336,7 +1613,7 @@ class LcarsHomepageCard extends LitElement {
     _renderDevicePanel(panelType, group) {
       switch (panelType) {
         case PANEL_TYPE_CAMERA: return this._renderCameraPanel(group);
-        // Future: case PANEL_TYPE_CLIMATE: return this._renderClimatePanel(group);
+        case PANEL_TYPE_BATTERY: return this._renderBatteryPanel(group);
         default: return '';
       }
     }
@@ -1432,6 +1709,262 @@ class LcarsHomepageCard extends LitElement {
                   <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
                   <span>${name}</span>
                 </button>
+              `;
+            })}
+          </div>
+        </div>
+      `;
+    }
+
+    /* ═══ BATTERY DEVICE PANEL — WARP CORE VISUALIZATION ═══ */
+
+    /* Classify a power entity as input/output by friendly_name patterns */
+    _classifyPowerEntity(name) {
+      const n = (name || '').toLowerCase();
+      if (/total\s*in\s*power/.test(n)) return { side: 'in', type: 'total' };
+      if (/total\s*out\s*power/.test(n)) return { side: 'out', type: 'total' };
+      if (/solar.*in.*power/.test(n)) return { side: 'in', type: 'solar' };
+      if (/ac.*in.*power/.test(n)) return { side: 'in', type: 'ac' };
+      if (/ac.*out.*power/.test(n)) return { side: 'out', type: 'ac' };
+      if (/dc.*out.*power/.test(n)) return { side: 'out', type: 'dc' };
+      if (/usb.*out.*power/.test(n)) return { side: 'out', type: 'usb' };
+      if (/type.*c.*out.*power/.test(n)) return { side: 'out', type: 'usbc' };
+      if (/power.*i.*o.*input.*power/.test(n)) return { side: 'in', type: 'pio' };
+      if (/power.*i.*o.*output.*power/.test(n)) return { side: 'out', type: 'pio' };
+      if (/anderson.*out.*power/.test(n)) return { side: 'out', type: 'dc' };
+      if (/alternator.*in.*power/.test(n)) return { side: 'in', type: 'alt' };
+      if (/station.*power/.test(n)) return { side: 'out', type: 'station' };
+      // Fallback: check for "in" or "out" in name
+      if (/\bin\b/.test(n)) return { side: 'in', type: 'other' };
+      if (/\bout\b/.test(n)) return { side: 'out', type: 'other' };
+      return null;
+    }
+
+    /* Partition battery device entities into render groups */
+    _partitionBatteryEntities(entries) {
+      const soc = [];
+      const powerIn = [];
+      const powerOut = [];
+      const telemetry = [];
+      const controls = [];
+
+      for (const entry of entries) {
+        const attrs = entry.state?.attributes || {};
+        const dc = attrs.device_class || '';
+        const unit = attrs.unit_of_measurement || '';
+        const domain = entry.domain;
+        const name = attrs.friendly_name || entry.entity.entity_id;
+
+        // Controls: switches, numbers, buttons, selects
+        if (['switch', 'number', 'button', 'select'].includes(domain)) {
+          controls.push(entry);
+          continue;
+        }
+
+        // Battery SOC
+        if (dc === 'battery' && unit === '%') {
+          soc.push(entry);
+          continue;
+        }
+
+        // Power entities → classify as in/out
+        if (dc === 'power' && unit === 'W') {
+          const cls = this._classifyPowerEntity(name);
+          if (cls) {
+            if (cls.side === 'in') powerIn.push({ ...entry, ioType: cls.type });
+            else powerOut.push({ ...entry, ioType: cls.type });
+          } else {
+            telemetry.push(entry);
+          }
+          continue;
+        }
+
+        // Telemetry: temperature, duration, energy, voltage, current, etc.
+        telemetry.push(entry);
+      }
+
+      return { soc, powerIn, powerOut, telemetry, controls };
+    }
+
+    /* Get warp core color for a given charge percentage */
+    _getCoreColor(charge) {
+      if (charge >= 80) return 'var(--lcars-ice)';
+      if (charge >= 60) return 'var(--lcars-sky)';
+      if (charge >= 40) return 'var(--lcars-bluey)';
+      if (charge >= 20) return 'var(--lcars-butterscotch)';
+      if (charge >= 10) return 'var(--lcars-peach)';
+      return 'var(--lcars-tomato)';
+    }
+
+    /* Get flow animation speed class based on wattage */
+    _getFlowSpeed(watts) {
+      const w = Math.abs(parseFloat(watts) || 0);
+      if (w === 0) return 'flow-stopped';
+      if (w > 1000) return 'flow-fast';
+      if (w > 100) return 'flow-medium';
+      return 'flow-slow';
+    }
+
+    /* Render the battery panel */
+    _renderBatteryPanel(group) {
+      const { soc, powerIn, powerOut, telemetry, controls } = this._partitionBatteryEntities(group.entities);
+      const deviceName = group.device.name_by_user || group.device.name || 'Battery';
+
+      // Primary SOC value
+      const socEntry = soc[0];
+      const charge = socEntry ? parseFloat(socEntry.state.state) || 0 : 0;
+      const chargeAvailable = socEntry && socEntry.state.state !== 'unavailable' && socEntry.state.state !== 'unknown';
+      const coreColor = chargeAvailable ? this._getCoreColor(charge) : 'var(--lcars-gray)';
+
+      // Total power for determining charging/discharging state
+      const totalIn = powerIn.find(e => e.ioType === 'total');
+      const totalOut = powerOut.find(e => e.ioType === 'total');
+      const totalInW = totalIn ? parseFloat(totalIn.state.state) || 0 : 0;
+      const totalOutW = totalOut ? parseFloat(totalOut.state.state) || 0 : 0;
+      const isCharging = totalInW > 5;
+      const isDischarging = totalOutW > 5;
+      const isIdle = !isCharging && !isDischarging;
+
+      // Build I/O pairs: match in/out by type (ac, dc, solar, etc.)
+      const ioTypes = new Set();
+      powerIn.filter(e => e.ioType !== 'total').forEach(e => ioTypes.add(e.ioType));
+      powerOut.filter(e => e.ioType !== 'total').forEach(e => ioTypes.add(e.ioType));
+      const ioPairs = [...ioTypes].map(type => ({
+        type,
+        label: type.toUpperCase(),
+        inEntry: powerIn.find(e => e.ioType === type),
+        outEntry: powerOut.find(e => e.ioType === type),
+      }));
+
+      // Filter telemetry to key items for display
+      const keyTelemetry = telemetry.filter(e => {
+        const dc = e.state?.attributes?.device_class || '';
+        const name = (e.state?.attributes?.friendly_name || '').toLowerCase();
+        return dc === 'temperature' || dc === 'duration' ||
+          /state.*health|cycles|remain.*time|status|error.*code|battery.*count/.test(name);
+      }).slice(0, 8);
+
+      return html`
+        <div class="lcars-device-panel battery-panel" data-panel-type="battery">
+          <!-- Header -->
+          <div class="battery-header">
+            <span class="device-panel-name">${deviceName}</span>
+            <div class="device-panel-header-line"></div>
+            <span class="battery-charge-label" style="color:${coreColor}">
+              ${chargeAvailable ? `${Math.round(charge)}%` : 'N/A'}
+            </span>
+          </div>
+
+          <!-- Telemetry (left) -->
+          <div class="battery-telemetry" role="list" aria-label="${deviceName} telemetry">
+            ${totalIn ? html`
+              <div class="battery-total-line" @click=${() => this._handleEntityClick(totalIn.entity.entity_id)}>
+                <ha-icon icon="mdi:transmission-tower-import" style="--mdc-icon-size:14px;color:var(--lcars-ice)"></ha-icon>
+                <span class="sensor-label">Total In</span>
+                <span class="sensor-state-value" style="color:var(--lcars-ice)">${totalIn.state.state} W</span>
+              </div>
+            ` : ''}
+            ${totalOut ? html`
+              <div class="battery-total-line" @click=${() => this._handleEntityClick(totalOut.entity.entity_id)}>
+                <ha-icon icon="mdi:transmission-tower-export" style="--mdc-icon-size:14px;color:var(--lcars-butterscotch)"></ha-icon>
+                <span class="sensor-label">Total Out</span>
+                <span class="sensor-state-value" style="color:var(--lcars-butterscotch)">${totalOut.state.state} W</span>
+              </div>
+            ` : ''}
+            ${keyTelemetry.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const val = state.state;
+              const unit = state.attributes?.unit_of_measurement || '';
+              const color = this._getSensorIndicatorColor(state);
+              return html`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  @click=${() => this._handleEntityClick(entity.entity_id)}>
+                  <div class="sensor-indicator" style="background:${color}"></div>
+                  <span class="sensor-label">${name}</span>
+                  <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                </div>
+              `;
+            })}
+          </div>
+
+          <!-- Warp Core (center) -->
+          <div class="warp-core-container" role="meter"
+            aria-valuenow="${charge}" aria-valuemin="0" aria-valuemax="100"
+            aria-label="Battery charge level: ${Math.round(charge)} percent">
+            <div class="warp-core" style="--core-color:${coreColor};--core-charge:${chargeAvailable ? charge : 0}">
+              <div class="warp-core-fill ${isIdle ? 'core-idle' : ''} ${isCharging ? 'core-charging' : ''}">
+                <div class="warp-core-stream"></div>
+              </div>
+              <div class="warp-core-tick" style="bottom:25%"></div>
+              <div class="warp-core-tick" style="bottom:50%"></div>
+              <div class="warp-core-tick" style="bottom:75%"></div>
+            </div>
+          </div>
+
+          <!-- Controls (right) -->
+          <div class="battery-controls" aria-label="${deviceName} controls">
+            ${controls.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const domain = entity.entity_id.split('.')[0];
+              if (domain === 'number') {
+                const min = state.attributes?.min || 0;
+                const max = state.attributes?.max || 100;
+                const val = parseFloat(state.state) || 0;
+                const unit = state.attributes?.unit_of_measurement || '';
+                const pct = max > min ? ((val - min) / (max - min)) * 100 : 0;
+                return html`
+                  <div class="battery-slider-control">
+                    <span class="battery-slider-label">${name}</span>
+                    <div class="battery-slider-track"
+                      @click=${(ev) => {
+                        const rect = ev.currentTarget.getBoundingClientRect();
+                        const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+                        const newVal = Math.round(min + ratio * (max - min));
+                        this._hass.callService('number', 'set_value', { entity_id: entity.entity_id, value: newVal });
+                      }}>
+                      <div class="battery-slider-fill" style="width:${pct}%"></div>
+                      <div class="battery-slider-thumb" style="left:${pct}%"></div>
+                    </div>
+                    <span class="battery-slider-value">${val}${unit ? ' ' + unit : ''}</span>
+                  </div>
+                `;
+              }
+              const isOn = state.state === 'on';
+              const isOff = this._isOff(state);
+              return html`
+                <button class="device-control-btn" ?data-on=${isOn} ?data-off=${isOff}
+                  @click=${() => TOGGLE_DOMAINS.has(domain)
+                    ? this._handleToggle(entity.entity_id)
+                    : this._handleEntityClick(entity.entity_id)}
+                  title="${name}: ${state.state}">
+                  <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
+                  <span>${name}</span>
+                </button>
+              `;
+            })}
+          </div>
+
+          <!-- Power I/O Flow (bottom) -->
+          <div class="battery-io-flow" aria-label="Power flow">
+            ${ioPairs.map(pair => {
+              const inW = pair.inEntry ? parseFloat(pair.inEntry.state.state) || 0 : 0;
+              const outW = pair.outEntry ? parseFloat(pair.outEntry.state.state) || 0 : 0;
+              const inSpeed = this._getFlowSpeed(inW);
+              const outSpeed = this._getFlowSpeed(outW);
+              return html`
+                <div class="io-pair-row">
+                  <div class="io-port io-in" aria-label="${pair.label} input: ${inW} watts">
+                    <span class="io-label">${pair.label} IN</span>
+                    <span class="io-watts" style="color:var(--lcars-ice)">${inW > 0 ? `${Math.round(inW)}W` : '—'}</span>
+                  </div>
+                  <div class="io-conduit io-conduit-in ${inSpeed}"></div>
+                  <div class="io-core-gap"></div>
+                  <div class="io-conduit io-conduit-out ${outSpeed}"></div>
+                  <div class="io-port io-out" aria-label="${pair.label} output: ${outW} watts">
+                    <span class="io-label">${pair.label} OUT</span>
+                    <span class="io-watts" style="color:var(--lcars-butterscotch)">${outW > 0 ? `${Math.round(outW)}W` : '—'}</span>
+                  </div>
+                </div>
               `;
             })}
           </div>

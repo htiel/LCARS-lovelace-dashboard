@@ -181,7 +181,7 @@ class LcarsDashboardLayout extends LitElement {
           grid-column: 2;
           grid-row: 1;
           display: flex;
-          align-items: flex-end;
+          align-items: flex-start;
           gap: 0;
         }
 
@@ -355,7 +355,7 @@ class LcarsDashboardLayout extends LitElement {
           grid-column: 2;
           grid-row: 3;
           display: flex;
-          align-items: flex-start;
+          align-items: flex-end;
           gap: 0;
         }
 

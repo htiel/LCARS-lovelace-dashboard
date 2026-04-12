@@ -2286,12 +2286,12 @@ class LcarsHomepageCard extends LitElement {
     async _getSparklineData(deviceId, entityIds) {
       const now = Date.now();
       const cached = this._envHistoryCache.get(deviceId);
-      if (cached && now - cached.timestamp < 300000) return cached.data;
+      if (cached && now - cached.timestamp < 300000) return null; // cache hit — no new data
       try {
         const MAX_HISTORY_ENTITIES = 10;
         const ENTITY_ID_RE = /^[a-z_]+\.[a-z0-9_]+$/;
         const safeIds = entityIds.slice(0, MAX_HISTORY_ENTITIES).filter(id => ENTITY_ID_RE.test(id));
-        if (safeIds.length === 0) return {};
+        if (safeIds.length === 0) return null;
         const end = new Date();
         const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
         const data = await this._hass.callWS({
@@ -2306,7 +2306,7 @@ class LcarsHomepageCard extends LitElement {
         return data;
       } catch (err) {
         lcarsLog.error(TAG, 'Sparkline history fetch failed:', err);
-        return {};
+        return null;
       }
     }
 
@@ -2366,7 +2366,9 @@ class LcarsHomepageCard extends LitElement {
       // Async trigger sparkline fetch (renders on next update)
       const sparklineIds = [...score, ...airQuality].map(e => e.entity.entity_id);
       if (sparklineIds.length > 0) {
-        this._getSparklineData(group.device.id, sparklineIds).then(() => this.requestUpdate());
+        this._getSparklineData(group.device.id, sparklineIds).then((fresh) => {
+          if (fresh) this.requestUpdate(); // only re-render when new data arrived
+        });
       }
       const sparkData = this._envHistoryCache.get(group.device.id)?.data || {};
 

@@ -2,6 +2,41 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.7.0] — 2026-04-11
+
+### Added
+- **Battery Panel Config/Diagnostic Entities**: Battery warp core panels now discover and display `entity_category: "config"` and `"diagnostic"` entities for each battery device
+- New `_getDeviceCategoryEntities(deviceId)` method fetches config/diagnostic entities per device, respects `disabled_by` and user `hidden_by`, allows integration-hidden through (since HA hides config/diagnostic by default)
+- `_partitionBatteryEntities()` updated — now returns `configControls`, `diagnostics` alongside existing SOC/power/telemetry partitions
+- Diagnostic sensors render below telemetry with "DIAGNOSTICS" divider label
+- Config controls (number sliders, select dropdowns, switches) render below operational controls with "CONFIG" divider label
+- **LCARS Option Strips**: Select entities render as pill button rows (gold = active, gray = inactive) with `role="radiogroup"` ARIA semantics — calls `select.select_option` on click
+- New CSS: `.battery-section-divider`, `.battery-section-label`, `.lcars-option-strip`, `.lcars-option-btn`
+
+## [4.6.2] — 2026-04-11
+
+### Fixed
+- **Hidden entities now properly filtered**: Added `e.hidden` (runtime boolean) check alongside existing `e.hidden_by` (registry string) in `_getAreaEntities()` — fixes entities like Kasa switch_as_x conversions and hidden switches still appearing in area views
+
+## [4.6.1] — 2026-04-11
+
+### Added
+- **Name shortening**: `_shortenName()` iteratively strips area name and device name prefixes from entity friendly names (case-insensitive, longest-first, handles `-`/`–`/`:` separators). "Office Light" → "Light", "BigBoy-DPU AC Charging Power" → "AC Charging Power"
+- `_friendlyName()` now routes through `_shortenName()` — all 13+ call sites benefit automatically
+- `_shortDeviceName()` strips area name from device display names in panel/group headers
+
+## [4.6.0] — 2026-04-11
+
+### Added
+- **Warp Core Battery Panel**: Full battery device panel with EcoFlow auto-detection
+- Battery device detection via `_getDevicePanelType()` — triggers on devices with ≥2 of: battery SoC, power, energy, or voltage entities
+- `_partitionBatteryEntities()` separates entities into SOC gauge, power-in, power-out, telemetry sensors
+- Center visualization: CSS warp core reactor with charge-level-dependent color (blue < 20%, gold 20-80%, green > 80%) and pulsing glow animation
+- SOC percentage display overlaid on reactor core
+- Power flow I/O section with directional arrows showing charging/discharging state
+- Telemetry sensors displayed in left column, operational controls (switches/numbers) in right column
+- Grid layout: `header | sensors core controls | ioflow`
+
 ## [4.5.0] — 2026-04-11
 
 ### Added

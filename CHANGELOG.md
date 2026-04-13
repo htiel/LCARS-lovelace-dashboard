@@ -2,6 +2,39 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.11.0] — 2026-04-13
+
+### Added — New Device Panels & Shared Utilities
+
+#### Shared Utility Modules (Phase 0)
+- **`lcars-color-utils.js`**: 13 pure color resolver functions extracted from spec definitions — `getStateColor()`, `getAqiColor()`, `getAqiLabel()`, `getCo2Color()`, `getTempColor()`, `getHumidityColor()`, `getComfortColor()`, `getHvacActionColor()`, `getAlarmStateColor()`, `getPlaybackStateColor()`, `getPoolBodyColor()`, `getWeatherConditionColor()`, `getIrrigationZoneColor()`
+- **`lcars-entity-utils.js`**: Extensible panel type detection registry replacing hardcoded `_getDevicePanelType()` cascade. Priority-ordered detectors: camera → alarm → pool/spa → climate → media → environment → irrigation → weather → battery. Exports all domain sets, panel type constants, and display labels
+- **`lcars-service-utils.js`**: `clampSetpoint()` (range validation with absolute bounds), `createRateLimiter()` (token-bucket pattern), `createDebouncer()` (setpoint change collapsing)
+- **`lcars-sparkline.js`**: Shared SVG sparkline renderer and `fetchSparklineData()` with TTL cache, extracted from environment panel
+- **`lcars-weather-utils.js`**: `fetchForecasts()` wrapper for `weather.get_forecasts` with 10-minute TTL cache and fallback to older service call API
+
+#### New Panel Types (Items 4–7, 10–11)
+- **Climate Panel** (Item 5, CRITICAL): Thermostat support for Nest, Ecobee. SVG temperature arc with dynamic HVAC action colors (heating=butterscotch, cooling=ice), setpoint controls with debouncing and clamping, HVAC mode/fan mode/preset mode radiogroup strips, fault sensor display. Dual setpoint support for heat_cool mode
+- **Alarm Panel** (Item 6, HIGH): SimpliSafe/Honeywell/Ring support. SVG shield icon with state symbol, PIN keypad with 3-attempt/60s rate limiter (Worf mandate), arm mode selector strip, zone sensor roster, countdown timer for arming/pending states, triggered pulse animation, keyboard capture for physical keypad input
+- **Media Panel** (Item 4, MEDIUM): Apple TV, HomePod, Sonos support. Album art viewscreen with Worf-mandated URL validation (`/api/` or `/local/` only), transport controls (play/pause/prev/next/shuffle/repeat) gated by `supported_features` bitmask, click-to-set volume bar with keyboard arrow support, source/shuffle/repeat metadata display
+- **Pool & Spa Panel** (Item 7, HIGH): Pentair ScreenLogic support. 3-column layout (chemistry/aquatics/controls) or 2-column (no-chem variant), dual viewscreen bodies (pool=ice, spa=butterscotch) with setpoint controls, circuit toggles, chemistry sensor readouts, pool lighting controls
+- **Weather Panel** (Item 10, MEDIUM): Davis Instruments, WeatherFlow support. SVG weather display with condition glyph and temperature, wind compass SVG with directional arrow, 7-day forecast strip with range bars and precipitation probability, sensor roster for lightning/precipitation/wind/pressure
+- **Irrigation Panel** (Item 11, LOW): Rachio zone support. Zone list with START/STOP buttons, active zone fill bar, zone status colors, schedule info sidebar, standby toggle, rate-limited zone switching
+
+### Changed
+- **Refactored imports**: Homepage card now imports constants, domain sets, and labels from shared `lcars-entity-utils.js` instead of inline definitions
+- **`_getSensorIndicatorColor()`**: Delegates to shared `getStateColor()` from `lcars-color-utils.js`
+- **`_getDevicePanelType()`**: Delegates to shared `classifyDevice()` from `lcars-entity-utils.js`
+- **`_getSparklineData()`**: Delegates to shared `fetchSparklineData()` from `lcars-sparkline.js`
+- **`_renderSparkline()`**: Delegates to shared `renderSparkline()` from `lcars-sparkline.js`
+- **Panel detection priority**: Now runs 9 detectors in specificity order (camera → alarm → pool/spa → climate → media → environment → irrigation → weather → battery) with first-match-wins
+
+### Security
+- **Alarm PIN**: Never logged, never in DOM attributes, input sanitized to digits-only, maxLength=6, rate-limited to 3 attempts per 60 seconds (Worf review)
+- **Media artwork**: URL validation restricts to `/api/` or `/local/` paths, `crossorigin="anonymous"` and `referrerpolicy="no-referrer"` on `<img>` elements (Worf review)
+- **Setpoint clamping**: All temperature setpoints validated against entity `min_temp`/`max_temp` attributes with absolute safety bounds (Worf review)
+- **Service call rate limiting**: Token-bucket pattern prevents rapid-fire service calls from climate setpoints, alarm PIN attempts, and irrigation zone toggles
+
 ## [4.10.3] — 2026-04-12
 
 ### Fixed

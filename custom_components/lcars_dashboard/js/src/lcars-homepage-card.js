@@ -5,61 +5,34 @@
  *   light/switch/fan/lock → LCARS toggle pill
  *   sensor/binary_sensor → data readout bar
  *   climate → thermostat panel
+ *   alarm → alarm panel with PIN keypad
+ *   media_player → media panel
+ *   pool/spa → aquatics panel
+ *   weather → weather panel
+ *   irrigation → irrigation panel
  *   cover → position controls
- *   media_player → media strip
  *   default → LCARS button
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getHass, showMoreInfo, fireEvent, createCardElement, lcarsEventBus, lcarsLog, openEditPopup } from './lcars-helpers.js';
+import {
+  classifyDevice,
+  PANEL_TYPE_CAMERA, PANEL_TYPE_ALARM, PANEL_TYPE_AQUATICS,
+  PANEL_TYPE_CLIMATE, PANEL_TYPE_MEDIA, PANEL_TYPE_ENVIRONMENT,
+  PANEL_TYPE_IRRIGATION, PANEL_TYPE_WEATHER, PANEL_TYPE_BATTERY,
+  PANEL_TYPE_ORDER,
+  CAMERA_DOMAINS, CLIMATE_DOMAINS, MEDIA_DOMAINS, ALARM_DOMAINS, WEATHER_DOMAINS,
+  TOGGLE_DOMAINS, SENSOR_DOMAINS, COVER_DOMAINS,
+  AQ_DEVICE_CLASSES, AQ_ENTITY_SUFFIX_RE,
+  DOMAIN_LABELS, DOMAIN_ORDER,
+} from './lcars-entity-utils.js';
+import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor } from './lcars-color-utils.js';
+import { clampSetpoint, clampValue, createRateLimiter, createDebouncer } from './lcars-service-utils.js';
+import { renderSparkline, fetchSparklineData } from './lcars-sparkline.js';
+import { fetchForecasts } from './lcars-weather-utils.js';
 
 const TAG = 'Homepage';
-
-/* Domain rendering categories */
-const TOGGLE_DOMAINS = new Set(['light', 'switch', 'fan', 'input_boolean', 'lock', 'automation', 'script']);
-const SENSOR_DOMAINS = new Set(['sensor', 'binary_sensor']);
-const CAMERA_DOMAINS = new Set(['camera']);
-const CLIMATE_DOMAINS = new Set(['climate']);
-const COVER_DOMAINS = new Set(['cover']);
-const MEDIA_DOMAINS = new Set(['media_player']);
-
-/* Display-friendly domain labels */
-const DOMAIN_LABELS = {
-  light: 'Lights', switch: 'Switches', fan: 'Fans', lock: 'Locks',
-  input_boolean: 'Toggles', automation: 'Automations', script: 'Scripts',
-  sensor: 'Sensors', binary_sensor: 'Binary Sensors',
-  camera: 'Cameras', climate: 'Climate', cover: 'Covers',
-  media_player: 'Media', button: 'Buttons', number: 'Numbers',
-  select: 'Selects', input_number: 'Inputs', input_select: 'Selectors',
-  input_text: 'Text Inputs', input_button: 'Buttons',
-  input_datetime: 'Date/Time', scene: 'Scenes',
-  device_tracker: 'Trackers', person: 'People',
-  update: 'Updates', event: 'Events', conversation: 'Conversation',
-};
-
-/* Device panel type constants */
-const PANEL_TYPE_CAMERA = 'camera';
-const PANEL_TYPE_ENVIRONMENT = 'environment';
-const PANEL_TYPE_BATTERY = 'battery';
-
-/* Panel sort priority (lower = rendered first) */
-const PANEL_TYPE_ORDER = { camera: 0, environment: 1, battery: 2 };
-
-/* Air quality device_classes for environment panel detection */
-const AQ_DEVICE_CLASSES = new Set([
-  'carbon_dioxide', 'carbon_monoxide',
-  'volatile_organic_compounds', 'volatile_organic_compounds_parts',
-  'pm25', 'pm10', 'pm1', 'aqi',
-]);
-
-/* Entity ID suffix fallback for sensors with null device_class */
-const AQ_ENTITY_SUFFIX_RE = /_(air_quality|score)$/;
-
-/* Domain sort priority (lower = shown first) */
-const DOMAIN_ORDER = {
-  camera: 0, light: 1, switch: 2, climate: 3, cover: 4,
-  media_player: 5, fan: 6, lock: 7, sensor: 8, binary_sensor: 9,
-};
 
 /* Build a cache-busted camera image URL using last_updated timestamp */
 function cameraImageUrl(state) {
@@ -1897,7 +1870,636 @@ class LcarsHomepageCard extends LitElement {
             .sensor-readout[data-off],
             .toggle-pill[data-off],
             .lcars-device-panel:has(.device-panel-media[data-offline]) { animation: none; }
+            .alarm-triggered .alarm-shield,
+            .alarm-triggered .alarm-viewscreen { animation: none; }
           }
+
+          /* ═══════ CLIMATE PANEL ═══════ */
+          .climate-panel {
+            display: grid;
+            grid-template-areas:
+              "header   header"
+              "sensors  media"
+              "modes    modes"
+              "auxctrl  auxctrl";
+            grid-template-columns: minmax(10rem, 1fr) minmax(14rem, 2fr);
+            grid-template-rows: auto 1fr auto auto;
+            gap: var(--lcars-gap);
+            border-left: 4px solid var(--panel-frame-color);
+            border-bottom: 4px solid var(--panel-frame-color);
+            border-top: 2px solid var(--panel-frame-color);
+            border-right: 2px solid var(--panel-frame-color);
+            transition: border-color 600ms;
+          }
+          .climate-header { grid-area: header; display: flex; align-items: center; gap: 0.5rem; }
+          .climate-action-badge {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+          }
+          .climate-sensors { grid-area: sensors; overflow-y: auto; }
+          .climate-viewscreen {
+            grid-area: media;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            border: 2px solid var(--panel-frame-color);
+            border-radius: 4px;
+            padding: 0.5rem;
+            transition: border-color 600ms;
+          }
+          .climate-viewscreen::before,
+          .climate-viewscreen::after {
+            content: '';
+            position: absolute;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid var(--panel-frame-color);
+          }
+          .climate-viewscreen::before { top: 4px; left: 4px; border-right: none; border-bottom: none; }
+          .climate-viewscreen::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
+          .climate-arc { width: 100%; max-width: 200px; }
+          .climate-setpoint-controls { display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.5rem; }
+          .climate-setpoint-row { display: flex; align-items: center; gap: 0.5rem; justify-content: center; }
+          .climate-sp-btn {
+            width: 2.5rem;
+            height: 2.5rem;
+            border: none;
+            border-radius: 50%;
+            background: var(--lcars-disabled);
+            color: var(--lcars-space-white);
+            font-size: 1.25rem;
+            font-family: var(--lcars-font);
+            cursor: pointer;
+            transition: background 200ms;
+          }
+          .climate-sp-btn:hover { background: var(--panel-frame-color); }
+          .climate-sp-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .climate-sp-label {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            min-width: 6rem;
+            text-align: center;
+          }
+          .climate-modes {
+            grid-area: modes;
+            display: flex;
+            gap: var(--lcars-gap);
+            flex-wrap: wrap;
+          }
+          .climate-mode-btn {
+            flex: 1;
+            min-width: 4rem;
+            height: var(--lcars-btn-height);
+            border: none;
+            border-radius: var(--lcars-btn-radius);
+            background: var(--lcars-disabled);
+            color: var(--lcars-black);
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 200ms;
+          }
+          .climate-mode-btn[data-active] { background: var(--panel-frame-color); }
+          .climate-mode-btn:hover:not([data-active]) { background: var(--lcars-gray); }
+          .climate-mode-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .climate-aux-controls {
+            grid-area: auxctrl;
+            display: flex;
+            flex-direction: column;
+            gap: var(--lcars-gap);
+          }
+          .climate-aux-strip { display: flex; gap: var(--lcars-gap); flex-wrap: wrap; }
+
+          /* ═══════ ALARM PANEL ═══════ */
+          .alarm-panel {
+            display: grid;
+            grid-template-areas:
+              "header  header"
+              "sensors media"
+              "keypad  keypad";
+            grid-template-columns: minmax(10rem, 1fr) minmax(14rem, 2fr);
+            grid-template-rows: auto 1fr auto;
+            gap: var(--lcars-gap);
+            border-left: 4px solid var(--panel-frame-color);
+            border-bottom: 4px solid var(--panel-frame-color);
+            border-top: 2px solid var(--panel-frame-color);
+            border-right: 2px solid var(--panel-frame-color);
+            transition: border-color 600ms;
+          }
+          .alarm-triggered {
+            border-width: 6px;
+            animation: alarm-pulse 1s ease-in-out infinite;
+          }
+          @keyframes alarm-pulse {
+            0%, 100% { border-color: var(--lcars-tomato); }
+            50% { border-color: transparent; }
+          }
+          .alarm-header { grid-area: header; display: flex; align-items: center; gap: 0.5rem; }
+          .alarm-state-badge {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+          }
+          .alarm-sensors { grid-area: sensors; overflow-y: auto; }
+          .alarm-viewscreen {
+            grid-area: media;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+          }
+          .alarm-shield { width: 100%; max-width: 140px; }
+          .alarm-countdown {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          .alarm-countdown-num {
+            font-family: var(--lcars-font);
+            font-size: 3rem;
+            font-weight: bold;
+          }
+          .alarm-countdown-label {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-data-accent);
+          }
+          .alarm-arm-strip {
+            display: flex;
+            gap: var(--lcars-gap);
+            width: 100%;
+          }
+          .alarm-arm-btn {
+            flex: 1;
+            height: var(--lcars-btn-height);
+            border: none;
+            border-radius: var(--lcars-btn-radius);
+            background: var(--lcars-disabled);
+            color: var(--lcars-black);
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 200ms;
+          }
+          .alarm-arm-btn[data-active] { background: var(--panel-frame-color); }
+          .alarm-arm-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .alarm-keypad {
+            grid-area: keypad;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+          }
+          .alarm-keypad:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .alarm-code-display {
+            display: flex;
+            gap: 0.5rem;
+          }
+          .alarm-code-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            transition: background 200ms;
+          }
+          .alarm-pin-error { animation: alarm-shake 400ms ease-out; }
+          @keyframes alarm-shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-6px); }
+            40% { transform: translateX(6px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+          }
+          .alarm-digit-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 3.5rem);
+            gap: var(--lcars-gap);
+          }
+          .alarm-digit-btn {
+            height: 3.5rem;
+            border: none;
+            border-radius: var(--lcars-btn-radius);
+            background: var(--lcars-sunflower);
+            color: var(--lcars-black);
+            font-family: var(--lcars-font);
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: background 200ms;
+          }
+          .alarm-digit-btn:hover { filter: brightness(1.1); }
+          .alarm-digit-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .alarm-action-btn { background: var(--lcars-disabled); }
+
+          /* ═══════ MEDIA PANEL ═══════ */
+          .media-panel {
+            display: grid;
+            grid-template-areas:
+              "header   header"
+              "metadata media"
+              "volume   volume";
+            grid-template-columns: minmax(8rem, 1fr) minmax(14rem, 2.5fr);
+            grid-template-rows: auto 1fr auto;
+            gap: var(--lcars-gap);
+            border-left: 4px solid var(--panel-frame-color);
+            border-bottom: 4px solid var(--panel-frame-color);
+            border-top: 2px solid var(--panel-frame-color);
+            border-right: 2px solid var(--panel-frame-color);
+            transition: border-color 600ms;
+          }
+          .media-idle { opacity: 0.7; }
+          .media-header { grid-area: header; display: flex; align-items: center; gap: 0.5rem; }
+          .media-state-badge {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+          }
+          .media-metadata { grid-area: metadata; overflow-y: auto; }
+          .media-viewscreen {
+            grid-area: media;
+            display: flex;
+            flex-direction: column;
+            border: 2px solid var(--panel-frame-color);
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+          }
+          .media-viewscreen::before,
+          .media-viewscreen::after {
+            content: '';
+            position: absolute;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid var(--panel-frame-color);
+            z-index: 1;
+          }
+          .media-viewscreen::before { top: 4px; left: 4px; border-right: none; border-bottom: none; }
+          .media-viewscreen::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
+          .media-art {
+            width: 100%;
+            aspect-ratio: 1/1;
+            max-height: 18rem;
+            object-fit: cover;
+          }
+          .media-idle-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1/1;
+            max-height: 12rem;
+            color: var(--lcars-gray);
+          }
+          .media-idle-glyph { font-size: 3rem; }
+          .media-idle-label { font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); }
+          .media-now-playing {
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.5);
+          }
+          .media-title {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-sub);
+            color: var(--lcars-sunflower);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .media-artist {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-african-violet);
+          }
+          .media-controls {
+            grid-area: volume;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0.5rem;
+          }
+          .media-transport {
+            display: flex;
+            justify-content: center;
+            gap: var(--lcars-gap);
+          }
+          .media-transport-btn {
+            width: 2.5rem;
+            height: 2.5rem;
+            border: none;
+            border-radius: 50%;
+            background: var(--lcars-disabled);
+            color: var(--lcars-space-white);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 200ms;
+          }
+          .media-transport-btn:hover { background: var(--lcars-gray); }
+          .media-transport-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .media-play-btn {
+            width: 3.5rem;
+            background: var(--lcars-african-violet);
+            color: var(--lcars-black);
+          }
+          .media-transport-btn[aria-pressed="true"] { background: var(--lcars-african-violet); color: var(--lcars-black); }
+          .media-volume {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+          .media-mute-btn {
+            border: none;
+            background: transparent;
+            font-size: 1.25rem;
+            cursor: pointer;
+          }
+          .media-volume-bar {
+            flex: 1;
+            height: 0.75rem;
+            background: var(--lcars-disabled);
+            border-radius: var(--lcars-btn-radius);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+          }
+          .media-volume-bar:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .media-volume-fill {
+            height: 100%;
+            background: var(--lcars-african-violet);
+            border-radius: inherit;
+            transition: width 200ms;
+          }
+          .media-volume-pct {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-data-accent);
+            min-width: 3rem;
+            text-align: right;
+          }
+
+          /* ═══════ POOL & SPA PANEL ═══════ */
+          .pool-panel {
+            display: grid;
+            grid-template-areas:
+              "header    header    header"
+              "chemistry aquatics  controls"
+              "lighting  lighting  lighting";
+            grid-template-columns: minmax(8rem, 1fr) minmax(20rem, 3fr) minmax(8rem, 1.2fr);
+            grid-template-rows: auto 1fr auto;
+            gap: var(--lcars-gap);
+            grid-column: 1 / -1;
+            border-left: 4px solid var(--panel-frame-color);
+            border-bottom: 4px solid var(--panel-frame-color);
+            border-top: 2px solid var(--panel-frame-color);
+            border-right: 2px solid var(--panel-frame-color);
+          }
+          .pool-no-chem {
+            grid-template-areas:
+              "header   header"
+              "aquatics controls"
+              "lighting lighting";
+            grid-template-columns: minmax(20rem, 3fr) minmax(8rem, 1.2fr);
+          }
+          .pool-header { grid-area: header; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+          .pool-temp-badge {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            margin-left: 0.5rem;
+          }
+          .pool-chemistry { grid-area: chemistry; overflow-y: auto; }
+          .pool-aquatics {
+            grid-area: aquatics;
+            display: flex;
+            gap: var(--lcars-gap);
+            justify-content: center;
+          }
+          .pool-body-frame {
+            flex: 1;
+            border: 2px solid var(--body-color);
+            border-radius: 4px;
+            padding: 0.5rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            position: relative;
+          }
+          .pool-body-frame::before,
+          .pool-body-frame::after {
+            content: '';
+            position: absolute;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid var(--body-color);
+          }
+          .pool-body-frame::before { top: 4px; left: 4px; border-right: none; border-bottom: none; }
+          .pool-body-frame::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
+          .pool-body-label {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+          }
+          .pool-body-temp {
+            font-family: var(--lcars-font);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--body-color);
+          }
+          .pool-setpoint-row { display: flex; align-items: center; gap: 0.5rem; }
+          .pool-target {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+          }
+          .pool-controls { grid-area: controls; display: flex; flex-direction: column; gap: var(--lcars-gap); }
+          .pool-lighting {
+            grid-area: lighting;
+            display: flex;
+            gap: var(--lcars-gap);
+            flex-wrap: wrap;
+          }
+
+          /* ═══════ WEATHER PANEL ═══════ */
+          .weather-panel {
+            display: grid;
+            grid-template-areas:
+              "header   header"
+              "sensors  media"
+              "forecast forecast";
+            grid-template-columns: minmax(10rem, 1fr) minmax(14rem, 2fr);
+            grid-template-rows: auto 1fr auto;
+            gap: var(--lcars-gap);
+            border-left: 4px solid var(--panel-frame-color);
+            border-bottom: 4px solid var(--panel-frame-color);
+            border-top: 2px solid var(--panel-frame-color);
+            border-right: 2px solid var(--panel-frame-color);
+            transition: border-color 600ms;
+          }
+          .weather-header { grid-area: header; display: flex; align-items: center; gap: 0.5rem; }
+          .weather-condition-badge {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+          }
+          .weather-sensors { grid-area: sensors; overflow-y: auto; }
+          .weather-viewscreen {
+            grid-area: media;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 2px solid var(--panel-frame-color);
+            border-radius: 4px;
+            padding: 0.5rem;
+            transition: border-color 600ms;
+          }
+          .weather-viewscreen::before,
+          .weather-viewscreen::after {
+            content: '';
+            position: absolute;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid var(--panel-frame-color);
+          }
+          .weather-viewscreen::before { top: 4px; left: 4px; border-right: none; border-bottom: none; }
+          .weather-viewscreen::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
+          .weather-display { width: 100%; max-width: 200px; }
+          .weather-wind-compass {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+          }
+          .wind-svg { width: 5rem; height: 5rem; }
+          .wind-reading {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-data-accent);
+          }
+          .weather-forecast {
+            grid-area: forecast;
+            display: flex;
+            gap: var(--lcars-gap);
+            overflow-x: auto;
+            padding: 0.25rem 0;
+          }
+          .forecast-tile {
+            flex: 1;
+            min-width: 5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.125rem;
+            padding: 0.25rem;
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+          }
+          .forecast-tile:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .forecast-day { color: var(--lcars-data-accent); }
+          .forecast-glyph { font-size: 1.25rem; }
+          .forecast-hi { color: var(--lcars-butterscotch); }
+          .forecast-lo { color: var(--lcars-ice); }
+          .forecast-range-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--lcars-disabled);
+            border-radius: 2px;
+            position: relative;
+          }
+          .forecast-range-fill {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, var(--lcars-ice), var(--lcars-butterscotch));
+            border-radius: 2px;
+          }
+          .forecast-precip { color: var(--lcars-gray); font-size: 0.75rem; }
+
+          /* ═══════ IRRIGATION PANEL ═══════ */
+          .irrigation-panel {
+            display: grid;
+            grid-template-areas:
+              "header   header"
+              "schedule zones"
+              "standby  standby";
+            grid-template-columns: minmax(8rem, 1fr) minmax(16rem, 3fr);
+            grid-template-rows: auto 1fr auto;
+            gap: var(--lcars-gap);
+            border-left: 4px solid var(--panel-frame-color);
+            border-bottom: 4px solid var(--panel-frame-color);
+            border-top: 2px solid var(--panel-frame-color);
+            border-right: 2px solid var(--panel-frame-color);
+          }
+          .irrigation-header { grid-area: header; display: flex; align-items: center; gap: 0.5rem; }
+          .irrigation-status-badge {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+          }
+          .irrigation-schedule { grid-area: schedule; overflow-y: auto; }
+          .irrigation-zones {
+            grid-area: zones;
+            display: flex;
+            flex-direction: column;
+            gap: var(--lcars-gap);
+            overflow-y: auto;
+          }
+          .irrigation-zone-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+          }
+          .irrigation-zone-row:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .irrigation-zone-btn {
+            min-width: 4.5rem;
+            height: var(--lcars-btn-height);
+            border: none;
+            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+            background: var(--lcars-sunflower);
+            color: var(--lcars-black);
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 200ms;
+          }
+          .irrigation-zone-btn[data-on] { background: var(--lcars-ice); }
+          .irrigation-zone-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+          .irrigation-zone-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .irrigation-zone-name {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-space-white);
+            flex: 1;
+          }
+          .irrigation-zone-status {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+          }
+          .irrigation-zone-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0.5rem;
+            border-radius: 0.25rem;
+            transition: width 1s linear;
+          }
+          .irrigation-standby {
+            grid-area: standby;
+            display: flex;
+            justify-content: center;
+            padding: 0.25rem;
+          }
+          .irrigation-standby-btn { min-width: 10rem; }
         `,
       ];
     }
@@ -1979,36 +2581,7 @@ class LcarsHomepageCard extends LitElement {
 
     /* ─── Detect if a device warrants a unified panel ─── */
     _getDevicePanelType(entries) {
-      if (entries.some(e => CAMERA_DOMAINS.has(e.domain))) return PANEL_TYPE_CAMERA;
-
-      let hasBattery = false;
-      let powerCount = 0;
-      let aqSignals = 0;
-      let hasFan = false;
-
-      for (const e of entries) {
-        const attrs = e.state?.attributes;
-        if (!attrs) continue;
-        const dc = attrs.device_class || '';
-        const unit = attrs.unit_of_measurement || '';
-
-        if (dc === 'battery' && unit === '%') hasBattery = true;
-        if (dc === 'power' && unit === 'W') powerCount++;
-
-        // Environment detection
-        if (AQ_DEVICE_CLASSES.has(dc)) aqSignals++;
-        if (e.domain === 'fan') hasFan = true;
-        // Fallback: entity_id pattern for sensors with null device_class (Score, Air Quality)
-        if (!dc && e.domain === 'sensor' && AQ_ENTITY_SUFFIX_RE.test(e.entity.entity_id)) {
-          aqSignals++;
-        }
-      }
-
-      // Environment: ≥2 AQ signals, OR ≥1 AQ signal + fan (purifier pattern)
-      if (aqSignals >= 2 || (aqSignals >= 1 && hasFan)) return PANEL_TYPE_ENVIRONMENT;
-
-      if (hasBattery && powerCount >= 2) return PANEL_TYPE_BATTERY;
-      return null;
+      return classifyDevice(entries);
     }
 
     /* ─── Single-pass partition of device entities for panel rendering ─── */
@@ -2027,33 +2600,22 @@ class LcarsHomepageCard extends LitElement {
     /* ─── Dispatch to the correct panel renderer ─── */
     _renderDevicePanel(panelType, group) {
       switch (panelType) {
-        case PANEL_TYPE_CAMERA: return this._renderCameraPanel(group);
+        case PANEL_TYPE_CAMERA:      return this._renderCameraPanel(group);
         case PANEL_TYPE_ENVIRONMENT: return this._renderEnvironmentPanel(group);
-        case PANEL_TYPE_BATTERY: return this._renderBatteryPanel(group);
+        case PANEL_TYPE_BATTERY:     return this._renderBatteryPanel(group);
+        case PANEL_TYPE_CLIMATE:     return this._renderClimatePanel(group);
+        case PANEL_TYPE_ALARM:       return this._renderAlarmPanel(group);
+        case PANEL_TYPE_MEDIA:       return this._renderMediaPanel(group);
+        case PANEL_TYPE_AQUATICS:    return this._renderPoolSpaPanel(group);
+        case PANEL_TYPE_WEATHER:     return this._renderWeatherPanel(group);
+        case PANEL_TYPE_IRRIGATION:  return this._renderIrrigationPanel(group);
         default: return '';
       }
     }
 
     /* ─── Sensor indicator color per state (Geordi spec) ─── */
     _getSensorIndicatorColor(state) {
-      if (!state || state.state === 'unavailable' || state.state === 'unknown')
-        return 'var(--lcars-tomato)';
-      const deviceClass = state.attributes?.device_class || '';
-      const val = state.state;
-      // Motion sensor
-      if (deviceClass === 'motion' || deviceClass === 'occupancy')
-        return val === 'on' ? 'var(--lcars-butterscotch)' : 'var(--lcars-gray)';
-      // Person or presence
-      if (deviceClass === 'presence')
-        return val === 'on' || val === 'home' ? 'var(--lcars-gold)' : 'var(--lcars-gray)';
-      // Doorbell / tamper / problem / safety
-      if (['problem', 'safety', 'tamper'].includes(deviceClass))
-        return val === 'on' ? 'var(--lcars-tomato)' : 'var(--lcars-gray)';
-      // Generic binary on/off
-      if (state.entity_id?.startsWith('binary_sensor.'))
-        return val === 'on' ? 'var(--lcars-ice)' : 'var(--lcars-gray)';
-      // Numeric sensor — always data accent
-      return 'var(--lcars-data-accent)';
+      return getStateColor(state?.entity_id || '', state);
     }
 
     /* ═══ CAMERA DEVICE PANEL RENDERER ═══ */
@@ -2294,57 +2856,12 @@ class LcarsHomepageCard extends LitElement {
     /* Fetch 24h statistics for sparklines (hourly means, cached 5 min) */
     _envHistoryCache = new Map();
     async _getSparklineData(deviceId, entityIds) {
-      const now = Date.now();
-      const cached = this._envHistoryCache.get(deviceId);
-      if (cached && now - cached.timestamp < 300000) return null; // cache hit — no new data
-      try {
-        const MAX_HISTORY_ENTITIES = 10;
-        const ENTITY_ID_RE = /^[a-z_]+\.[a-z0-9_]+$/;
-        const safeIds = entityIds.slice(0, MAX_HISTORY_ENTITIES).filter(id => ENTITY_ID_RE.test(id));
-        if (safeIds.length === 0) return null;
-        const end = new Date();
-        const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
-        const data = await this._hass.callWS({
-          type: 'recorder/statistics_during_period',
-          start_time: start.toISOString(),
-          end_time: end.toISOString(),
-          statistic_ids: safeIds,
-          period: 'hour',
-          types: ['mean'],
-        });
-        this._envHistoryCache.set(deviceId, { data, timestamp: now });
-        // Evict oldest entries if cache grows too large
-        if (this._envHistoryCache.size > 20) {
-          const oldest = this._envHistoryCache.keys().next().value;
-          this._envHistoryCache.delete(oldest);
-        }
-        return data;
-      } catch (err) {
-        lcarsLog.error(TAG, 'Sparkline history fetch failed:', err);
-        return null;
-      }
+      return fetchSparklineData(this._hass, deviceId, entityIds, this._envHistoryCache);
     }
 
     /* Render a tiny SVG sparkline from hourly statistics data */
     _renderSparkline(points, color, label) {
-      if (!points?.length) return '';
-      const vals = points.map(p => p.mean).filter(v => v != null && Number.isFinite(v));
-      if (vals.length < 2) return '';
-      const w = 120, h = 24;
-      const min = Math.min(...vals), max = Math.max(...vals);
-      const range = max - min || 1;
-      const d = vals.map((v, i) =>
-        `${((i / (vals.length - 1)) * w).toFixed(1)},${(h - ((v - min) / range) * h).toFixed(1)}`
-      ).join(' ');
-      return html`
-        <div class="env-sparkline-wrap" aria-label="${label}: ${vals[vals.length - 1]?.toFixed(0) || ''}">
-          <span class="env-sparkline-label">${label}</span>
-          <svg class="env-sparkline" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-            <polyline points="${d}" fill="none" stroke="${color}" stroke-width="1.5"
-              vector-effect="non-scaling-stroke" />
-          </svg>
-        </div>
-      `;
+      return renderSparkline(points, { color, label, className: 'env-sparkline' });
     }
 
     /* Render the environment panel */
@@ -2847,6 +3364,1305 @@ class LcarsHomepageCard extends LitElement {
               `;
             })}
           </div>
+        </div>
+      `;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════ */
+    /* ═══ CLIMATE PANEL — THERMOSTAT (Nest, Ecobee) ═══════════════════════ */
+    /* ═══════════════════════════════════════════════════════════════════════ */
+
+    _climateSetpointDebouncer = null;
+
+    _partitionClimateEntities(entries, categoryEntities) {
+      const climate = [];
+      const sensors = [];
+      const faults = [];
+      const diagnostics = [];
+
+      const FAULT_CLASSES = new Set(['problem', 'heat', 'cold', 'connectivity', 'battery', 'tamper', 'smoke', 'safety']);
+
+      for (const entry of entries) {
+        const domain = entry.domain;
+        if (domain === 'climate') { climate.push(entry); continue; }
+        if (domain === 'binary_sensor') {
+          const dc = entry.state?.attributes?.device_class || '';
+          if (FAULT_CLASSES.has(dc)) { faults.push(entry); continue; }
+        }
+        if (SENSOR_DOMAINS.has(domain)) { sensors.push(entry); continue; }
+        // Controls/other go to sensors for display
+        sensors.push(entry);
+      }
+
+      if (categoryEntities) {
+        for (const e of categoryEntities.diagnostic || []) {
+          const state = this._getEntityState(e.entity_id);
+          if (!state) continue;
+          diagnostics.push({ entity: e, domain: e.entity_id.split('.')[0], state });
+        }
+      }
+
+      return { climate, sensors, faults, diagnostics };
+    }
+
+    _isDualSetpoint(climateState) {
+      return climateState?.attributes?.hvac_mode === 'heat_cool'
+        || (climateState?.attributes?.target_temp_low != null
+            && climateState?.attributes?.target_temp_high != null);
+    }
+
+    _renderClimateArc(currentTemp, targetTemp, minTemp, maxTemp, actionColor) {
+      const w = 200, h = 130, cx = 100, cy = 120, r = 80;
+      const range = maxTemp - minTemp || 1;
+      const progress = Math.max(0, Math.min(1, (currentTemp - minTemp) / range));
+      // Arc from 180° (left) to 0° (right)
+      const startAngle = Math.PI;
+      const endAngle = 0;
+      const sweepAngle = startAngle - (startAngle - endAngle) * progress;
+      const sx = cx + r * Math.cos(startAngle);
+      const sy = cy - r * Math.sin(startAngle);
+      const ex = cx + r * Math.cos(sweepAngle);
+      const ey = cy - r * Math.sin(sweepAngle);
+      const largeArc = progress > 0.5 ? 1 : 0;
+      // Target tick on arc
+      const targetProgress = Math.max(0, Math.min(1, (targetTemp - minTemp) / range));
+      const tickAngle = startAngle - (startAngle - endAngle) * targetProgress;
+      const tx = cx + r * Math.cos(tickAngle);
+      const ty = cy - r * Math.sin(tickAngle);
+
+      return html`
+        <svg class="climate-arc" viewBox="0 0 ${w} ${h}" role="meter"
+          aria-valuemin="${minTemp}" aria-valuemax="${maxTemp}" aria-valuenow="${currentTemp}"
+          aria-label="Temperature: ${currentTemp}°, target ${targetTemp}°">
+          <!-- Background arc -->
+          <path d="M ${sx},${sy} A ${r},${r} 0 1,1 ${cx + r},${cy}"
+            fill="none" stroke="var(--lcars-disabled)" stroke-width="8" stroke-linecap="round" />
+          <!-- Progress arc -->
+          ${progress > 0 ? html`
+            <path d="M ${sx},${sy} A ${r},${r} 0 ${largeArc},1 ${ex},${ey}"
+              fill="none" stroke="${actionColor}" stroke-width="8" stroke-linecap="round" />
+          ` : ''}
+          <!-- Target tick -->
+          <circle cx="${tx}" cy="${ty}" r="5" fill="${actionColor}" stroke="var(--lcars-card-bg, #1a1a2e)" stroke-width="2" />
+          <!-- Current temp text -->
+          <text x="${cx}" y="${cy - 20}" text-anchor="middle" fill="${actionColor}"
+            font-family="var(--lcars-font)" font-size="42" font-weight="bold">
+            ${currentTemp != null && Number.isFinite(currentTemp) ? Math.round(currentTemp) : '—'}°
+          </text>
+        </svg>
+      `;
+    }
+
+    _handleClimateSetpoint(entityId, attrs, value, isDual, which) {
+      const clamped = clampSetpoint(value, attrs);
+      if (!this._climateSetpointDebouncer) {
+        this._climateSetpointDebouncer = createDebouncer((eid, data) => {
+          this._hass.callService('climate', 'set_temperature', { entity_id: eid, ...data });
+        }, 1500);
+      }
+      const data = isDual
+        ? { [which === 'low' ? 'target_temp_low' : 'target_temp_high']: clamped }
+        : { temperature: clamped };
+      this._climateSetpointDebouncer.call(entityId, data);
+    }
+
+    _handleClimateMode(entityId, mode) {
+      this._hass.callService('climate', 'set_hvac_mode', { entity_id: entityId, hvac_mode: mode });
+    }
+
+    _handleClimateFanMode(entityId, fanMode) {
+      this._hass.callService('climate', 'set_fan_mode', { entity_id: entityId, fan_mode: fanMode });
+    }
+
+    _handleClimatePreset(entityId, preset) {
+      this._hass.callService('climate', 'set_preset_mode', { entity_id: entityId, preset_mode: preset });
+    }
+
+    _renderClimatePanel(group) {
+      const categoryEntities = this._getDeviceCategoryEntities(group.device.id);
+      const { climate, sensors, faults, diagnostics } = this._partitionClimateEntities(group.entities, categoryEntities);
+      const deviceName = this._shortDeviceName(group.device) || 'Thermostat';
+
+      if (climate.length === 0) return '';
+      const primary = climate[0];
+      const cs = primary.state;
+      const attrs = cs?.attributes || {};
+      const currentTemp = attrs.current_temperature != null ? Number(attrs.current_temperature) : null;
+      const hvacAction = attrs.hvac_action || 'off';
+      const actionColor = getHvacActionColor(hvacAction);
+      const isDual = this._isDualSetpoint(cs);
+      const targetTemp = isDual ? null : (attrs.temperature != null ? Number(attrs.temperature) : null);
+      const targetLow = isDual ? Number(attrs.target_temp_low) : null;
+      const targetHigh = isDual ? Number(attrs.target_temp_high) : null;
+      const minTemp = attrs.min_temp != null ? Number(attrs.min_temp) : 45;
+      const maxTemp = attrs.max_temp != null ? Number(attrs.max_temp) : 95;
+      const hvacModes = attrs.hvac_modes || [];
+      const currentMode = attrs.hvac_mode || 'off';
+      const fanModes = attrs.fan_modes || [];
+      const currentFanMode = attrs.fan_mode || '';
+      const presetModes = attrs.preset_modes || [];
+      const currentPreset = attrs.preset_mode || '';
+      const humidity = sensors.find(e => (e.state?.attributes?.device_class || '') === 'humidity');
+      const step = attrs.target_temp_step || 1;
+
+      return html`
+        <div class="lcars-device-panel climate-panel" data-panel-type="climate"
+          style="--panel-frame-color:${actionColor}">
+          <!-- Header -->
+          <div class="climate-header">
+            <span class="device-panel-name">${deviceName}</span>
+            <div class="device-panel-header-line"></div>
+            <span class="climate-action-badge" style="color:${actionColor}">
+              ${hvacAction.toUpperCase()}
+            </span>
+          </div>
+
+          <!-- Sensors (left) -->
+          <div class="climate-sensors" role="list" aria-label="${deviceName} readings">
+            ${currentTemp != null ? html`
+              <div class="device-sensor-line" role="listitem" aria-label="Current temperature: ${currentTemp}°">
+                <div class="sensor-indicator" style="background:${actionColor}"></div>
+                <span class="sensor-label">Current</span>
+                <span class="sensor-state-value" style="color:${actionColor}">${Math.round(currentTemp)}°</span>
+              </div>
+            ` : ''}
+            ${isDual ? html`
+              <div class="device-sensor-line" role="listitem" aria-label="Heat target: ${targetLow}°">
+                <div class="sensor-indicator" style="background:var(--lcars-butterscotch)"></div>
+                <span class="sensor-label">Heat To</span>
+                <span class="sensor-state-value" style="color:var(--lcars-butterscotch)">${targetLow}°</span>
+              </div>
+              <div class="device-sensor-line" role="listitem" aria-label="Cool target: ${targetHigh}°">
+                <div class="sensor-indicator" style="background:var(--lcars-ice)"></div>
+                <span class="sensor-label">Cool To</span>
+                <span class="sensor-state-value" style="color:var(--lcars-ice)">${targetHigh}°</span>
+              </div>
+            ` : targetTemp != null ? html`
+              <div class="device-sensor-line" role="listitem" aria-label="Target temperature: ${targetTemp}°">
+                <div class="sensor-indicator" style="background:${actionColor}"></div>
+                <span class="sensor-label">Target</span>
+                <span class="sensor-state-value" style="color:${actionColor}">${targetTemp}°</span>
+              </div>
+            ` : ''}
+            ${humidity ? html`
+              <div class="device-sensor-line" role="listitem"
+                aria-label="Humidity: ${humidity.state.state}%"
+                @click=${() => this._handleEntityClick(humidity.entity.entity_id)}>
+                <div class="sensor-indicator" style="background:var(--lcars-ice)"></div>
+                <span class="sensor-label">Humidity</span>
+                <span class="sensor-state-value" style="color:var(--lcars-ice)">${humidity.state.state}%</span>
+              </div>
+            ` : ''}
+            <div class="battery-section-divider"></div>
+            <div class="device-sensor-line" role="listitem" aria-label="HVAC mode: ${currentMode}">
+              <div class="sensor-indicator" style="background:${actionColor}"></div>
+              <span class="sensor-label">Mode</span>
+              <span class="sensor-state-value">${currentMode}</span>
+            </div>
+            ${currentFanMode ? html`
+              <div class="device-sensor-line" role="listitem" aria-label="Fan mode: ${currentFanMode}">
+                <div class="sensor-indicator" style="background:var(--lcars-data-accent)"></div>
+                <span class="sensor-label">Fan</span>
+                <span class="sensor-state-value">${currentFanMode}</span>
+              </div>
+            ` : ''}
+            ${faults.length > 0 ? html`
+              <div class="battery-section-divider"></div>
+              <div class="battery-section-label">FAULTS</div>
+              ${faults.map(({ entity, state }) => {
+                const name = this._friendlyName(state, entity);
+                const color = state.state === 'on' ? 'var(--lcars-tomato)' : 'var(--lcars-gray)';
+                return html`
+                  <div class="device-sensor-line" tabindex="0" role="listitem"
+                    aria-label="${name}: ${state.state}"
+                    @click=${() => this._handleEntityClick(entity.entity_id)}
+                    @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
+                    <div class="sensor-indicator" style="background:${color}"></div>
+                    <span class="sensor-label">${name}</span>
+                    <span class="sensor-state-value" style="color:${color}">${state.state}</span>
+                  </div>
+                `;
+              })}
+            ` : ''}
+          </div>
+
+          <!-- Viewscreen (right) -->
+          <div class="climate-viewscreen" tabindex="0"
+            @click=${() => this._handleEntityClick(primary.entity.entity_id)}
+            @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(primary.entity.entity_id); } }}>
+            ${this._renderClimateArc(currentTemp, isDual ? (targetLow + targetHigh) / 2 : targetTemp, minTemp, maxTemp, actionColor)}
+            <!-- Setpoint controls -->
+            <div class="climate-setpoint-controls">
+              ${isDual ? html`
+                <div class="climate-setpoint-row">
+                  <button class="climate-sp-btn" aria-label="Decrease heat target"
+                    @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetLow - step, true, 'low'); }}>−</button>
+                  <span class="climate-sp-label" style="color:var(--lcars-butterscotch)">HEAT ${targetLow}°</span>
+                  <button class="climate-sp-btn" aria-label="Increase heat target"
+                    @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetLow + step, true, 'low'); }}>+</button>
+                </div>
+                <div class="climate-setpoint-row">
+                  <button class="climate-sp-btn" aria-label="Decrease cool target"
+                    @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetHigh - step, true, 'high'); }}>−</button>
+                  <span class="climate-sp-label" style="color:var(--lcars-ice)">COOL ${targetHigh}°</span>
+                  <button class="climate-sp-btn" aria-label="Increase cool target"
+                    @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetHigh + step, true, 'high'); }}>+</button>
+                </div>
+              ` : targetTemp != null ? html`
+                <div class="climate-setpoint-row">
+                  <button class="climate-sp-btn" aria-label="Decrease target temperature"
+                    @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetTemp - step, false); }}>−</button>
+                  <span class="climate-sp-label" style="color:${actionColor}">TARGET ${targetTemp}°</span>
+                  <button class="climate-sp-btn" aria-label="Increase target temperature"
+                    @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetTemp + step, false); }}>+</button>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- HVAC Mode Strip -->
+          ${hvacModes.length > 1 ? html`
+            <div class="climate-modes" role="radiogroup" aria-label="HVAC mode">
+              ${hvacModes.map(mode => html`
+                <button class="climate-mode-btn" role="radio"
+                  aria-checked="${mode === currentMode}"
+                  ?data-active=${mode === currentMode}
+                  @click=${() => this._handleClimateMode(primary.entity.entity_id, mode)}>
+                  ${mode.toUpperCase().replace('_', ' ')}
+                </button>
+              `)}
+            </div>
+          ` : ''}
+
+          <!-- Fan Mode + Preset Strips -->
+          <div class="climate-aux-controls">
+            ${fanModes.length > 1 ? html`
+              <div class="climate-aux-strip" role="radiogroup" aria-label="Fan mode">
+                ${fanModes.map(fm => html`
+                  <button class="climate-mode-btn" role="radio"
+                    aria-checked="${fm === currentFanMode}"
+                    ?data-active=${fm === currentFanMode}
+                    @click=${() => this._handleClimateFanMode(primary.entity.entity_id, fm)}>
+                    ${fm.toUpperCase().replace('_', ' ')}
+                  </button>
+                `)}
+              </div>
+            ` : ''}
+            ${presetModes.length > 0 ? html`
+              <div class="climate-aux-strip" role="radiogroup" aria-label="Preset mode">
+                ${presetModes.map(pm => html`
+                  <button class="climate-mode-btn" role="radio"
+                    aria-checked="${pm === currentPreset}"
+                    ?data-active=${pm === currentPreset}
+                    @click=${() => this._handleClimatePreset(primary.entity.entity_id, pm)}>
+                    ${pm.toUpperCase().replace('_', ' ')}
+                  </button>
+                `)}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════ */
+    /* ═══ ALARM PANEL — SimpliSafe, Honeywell, Ring ═══════════════════════ */
+    /* ═══════════════════════════════════════════════════════════════════════ */
+
+    _alarmPinCode = '';
+    _alarmPinLimiter = createRateLimiter(3, 60000);
+    _alarmCountdown = null;
+    _alarmCountdownTimer = null;
+    _alarmPinError = false;
+
+    _partitionAlarmEntities(entries, categoryEntities) {
+      const alarm = [];
+      const zones = [];
+      const auxiliary = [];
+      const diagnostics = [];
+
+      const ZONE_CLASSES = new Set([
+        'door', 'window', 'motion', 'vibration', 'moisture',
+        'cold', 'smoke', 'safety', 'opening', 'garage_door', 'lock', 'tamper', 'problem',
+      ]);
+
+      for (const entry of entries) {
+        if (entry.domain === 'alarm_control_panel') { alarm.push(entry); continue; }
+        if (entry.domain === 'binary_sensor') {
+          const dc = entry.state?.attributes?.device_class || '';
+          if (ZONE_CLASSES.has(dc)) { zones.push(entry); continue; }
+        }
+        auxiliary.push(entry);
+      }
+
+      if (categoryEntities) {
+        for (const e of categoryEntities.diagnostic || []) {
+          const state = this._getEntityState(e.entity_id);
+          if (!state) continue;
+          diagnostics.push({ entity: e, domain: e.entity_id.split('.')[0], state });
+        }
+      }
+
+      return { alarm, zones, auxiliary, diagnostics };
+    }
+
+    _handleAlarmPinDigit(digit) {
+      if (this._alarmPinCode.length >= 6) return;
+      this._alarmPinCode += String(digit).replace(/\D/g, '').charAt(0) || '';
+      this._alarmPinError = false;
+      this.requestUpdate();
+    }
+
+    _handleAlarmPinClear() {
+      this._alarmPinCode = '';
+      this._alarmPinError = false;
+      this.requestUpdate();
+    }
+
+    _handleAlarmArm(entityId, mode) {
+      const code = this._alarmPinCode || undefined;
+      const service = `alarm_arm_${mode}`;
+      this._hass.callService('alarm_control_panel', service, {
+        entity_id: entityId,
+        ...(code ? { code } : {}),
+      });
+      this._alarmPinCode = '';
+      this.requestUpdate();
+    }
+
+    _handleAlarmDisarm(entityId) {
+      if (!this._alarmPinLimiter.allow()) {
+        this._alarmPinError = true;
+        this.requestUpdate();
+        return;
+      }
+      const code = this._alarmPinCode || undefined;
+      this._hass.callService('alarm_control_panel', 'alarm_disarm', {
+        entity_id: entityId,
+        ...(code ? { code } : {}),
+      });
+      this._alarmPinCode = '';
+      this.requestUpdate();
+    }
+
+    _startAlarmCountdown(seconds) {
+      this._alarmCountdown = Math.max(0, seconds);
+      if (this._alarmCountdownTimer) clearInterval(this._alarmCountdownTimer);
+      this._alarmCountdownTimer = setInterval(() => {
+        this._alarmCountdown = Math.max(0, (this._alarmCountdown || 0) - 1);
+        this.requestUpdate();
+        if (this._alarmCountdown <= 0) {
+          clearInterval(this._alarmCountdownTimer);
+          this._alarmCountdownTimer = null;
+        }
+      }, 1000);
+    }
+
+    _stopAlarmCountdown() {
+      if (this._alarmCountdownTimer) {
+        clearInterval(this._alarmCountdownTimer);
+        this._alarmCountdownTimer = null;
+      }
+      this._alarmCountdown = null;
+    }
+
+    _getAlarmShieldSymbol(alarmState) {
+      switch (alarmState) {
+        case 'disarmed':       return '✓';
+        case 'armed_home':
+        case 'armed_night':    return '◉';
+        case 'armed_away':
+        case 'armed_vacation': return '▲';
+        case 'triggered':      return '✕';
+        case 'arming':
+        case 'pending':
+        case 'disarming':      return '⋯';
+        default:               return '?';
+      }
+    }
+
+    _getAlarmStateLabel(alarmState) {
+      return (alarmState || 'unknown').toUpperCase().replace(/_/g, ' ');
+    }
+
+    _handleAlarmKeydown(e, entityId) {
+      const key = e.key;
+      if (/^[0-9]$/.test(key)) { e.preventDefault(); this._handleAlarmPinDigit(key); }
+      else if (key === 'Backspace') { e.preventDefault(); this._alarmPinCode = this._alarmPinCode.slice(0, -1); this.requestUpdate(); }
+      else if (key === 'Enter') { e.preventDefault(); this._handleAlarmDisarm(entityId); }
+      else if (key === 'Escape') { e.preventDefault(); this._handleAlarmPinClear(); }
+    }
+
+    _renderAlarmPanel(group) {
+      const categoryEntities = this._getDeviceCategoryEntities(group.device.id);
+      const { alarm, zones, auxiliary, diagnostics } = this._partitionAlarmEntities(group.entities, categoryEntities);
+      const deviceName = this._shortDeviceName(group.device) || 'Alarm';
+
+      if (alarm.length === 0) return '';
+      const primary = alarm[0];
+      const as = primary.state;
+      const alarmState = as?.state || 'unavailable';
+      const stateColor = getAlarmStateColor(alarmState);
+      const isTransitional = ['arming', 'pending', 'disarming'].includes(alarmState);
+      const isTriggered = alarmState === 'triggered';
+      const symbol = this._getAlarmShieldSymbol(alarmState);
+      const stateLabel = this._getAlarmStateLabel(alarmState);
+      const armModes = ['home', 'away', 'night'];
+      const codeRequired = as?.attributes?.code_required !== false;
+      const pinDots = Array.from({ length: 6 }, (_, i) => i < this._alarmPinCode.length);
+
+      // Start countdown for transitional states
+      if (isTransitional && this._alarmCountdown == null) {
+        const delay = as?.attributes?.delay || 60;
+        this._startAlarmCountdown(delay);
+      } else if (!isTransitional && this._alarmCountdown != null) {
+        this._stopAlarmCountdown();
+      }
+
+      return html`
+        <div class="lcars-device-panel alarm-panel ${isTriggered ? 'alarm-triggered' : ''}" data-panel-type="alarm"
+          style="--panel-frame-color:${stateColor}">
+          <!-- Header -->
+          <div class="alarm-header">
+            <span class="device-panel-name">${deviceName}</span>
+            <div class="device-panel-header-line"></div>
+            <span class="alarm-state-badge" style="color:${stateColor}">${stateLabel}</span>
+          </div>
+
+          <!-- Zones (left) -->
+          <div class="alarm-sensors" role="list" aria-label="${deviceName} zones">
+            ${zones.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const isOpen = state.state === 'on';
+              const color = isOpen ? 'var(--lcars-butterscotch)' : 'var(--lcars-gray)';
+              return html`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  aria-label="${name}: ${isOpen ? 'open' : 'closed'}"
+                  @click=${() => this._handleEntityClick(entity.entity_id)}
+                  @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
+                  <div class="sensor-indicator" style="background:${color}"></div>
+                  <span class="sensor-label">${name}</span>
+                  <span class="sensor-state-value" style="color:${color}">${isOpen ? 'OPEN' : 'CLOSED'}</span>
+                </div>
+              `;
+            })}
+            ${auxiliary.length > 0 ? html`
+              <div class="battery-section-divider"></div>
+              ${auxiliary.map(({ entity, state }) => {
+                const name = this._friendlyName(state, entity);
+                const color = this._getSensorIndicatorColor(state);
+                return html`
+                  <div class="device-sensor-line" tabindex="0" role="listitem"
+                    @click=${() => this._handleEntityClick(entity.entity_id)}
+                    @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
+                    <div class="sensor-indicator" style="background:${color}"></div>
+                    <span class="sensor-label">${name}</span>
+                    <span class="sensor-state-value" style="color:${color}">${state.state}</span>
+                  </div>
+                `;
+              })}
+            ` : ''}
+          </div>
+
+          <!-- Viewscreen (right) -->
+          <div class="alarm-viewscreen">
+            ${isTransitional && this._alarmCountdown != null ? html`
+              <div class="alarm-countdown" aria-live="polite">
+                <span class="alarm-countdown-num" style="color:${stateColor}">${this._alarmCountdown}</span>
+                <span class="alarm-countdown-label">${stateLabel}</span>
+              </div>
+            ` : html`
+              <svg class="alarm-shield" viewBox="0 0 160 180" role="img"
+                aria-label="${deviceName}: ${stateLabel}">
+                <path d="M80,10 L145,45 L145,110 Q145,160 80,175 Q15,160 15,110 L15,45 Z"
+                  fill="none" stroke="${stateColor}" stroke-width="4" />
+                <text x="80" y="105" text-anchor="middle" fill="${stateColor}"
+                  font-family="var(--lcars-font)" font-size="48">${symbol}</text>
+                <text x="80" y="145" text-anchor="middle" fill="${stateColor}"
+                  font-family="var(--lcars-font)" font-size="14">${stateLabel}</text>
+              </svg>
+            `}
+            <!-- Arm mode strip -->
+            <div class="alarm-arm-strip" role="radiogroup" aria-label="Arm mode">
+              ${armModes.map(mode => {
+                const isActive = alarmState === `armed_${mode}`;
+                return html`
+                  <button class="alarm-arm-btn" role="radio"
+                    aria-checked="${isActive}"
+                    ?data-active=${isActive}
+                    @click=${() => this._handleAlarmArm(primary.entity.entity_id, mode)}>
+                    ${mode.toUpperCase()}
+                  </button>
+                `;
+              })}
+            </div>
+          </div>
+
+          <!-- PIN Keypad -->
+          ${codeRequired ? html`
+            <div class="alarm-keypad" tabindex="0" aria-label="PIN keypad"
+              @keydown=${(e) => this._handleAlarmKeydown(e, primary.entity.entity_id)}>
+              <div class="alarm-code-display ${this._alarmPinError ? 'alarm-pin-error' : ''}" role="status" aria-live="polite">
+                ${pinDots.map(filled => html`
+                  <div class="alarm-code-dot ${filled ? 'filled' : ''}"
+                    style="background:${filled ? (this._alarmPinError ? 'var(--lcars-tomato)' : stateColor) : 'var(--lcars-disabled)'}"></div>
+                `)}
+              </div>
+              <div class="alarm-digit-grid">
+                ${[1,2,3,4,5,6,7,8,9].map(d => html`
+                  <button class="alarm-digit-btn" aria-label="Digit ${d}"
+                    @click=${() => this._handleAlarmPinDigit(d)}>${d}</button>
+                `)}
+                <button class="alarm-digit-btn alarm-action-btn" aria-label="Clear code"
+                  @click=${() => this._handleAlarmPinClear()}>⌫</button>
+                <button class="alarm-digit-btn" aria-label="Digit 0"
+                  @click=${() => this._handleAlarmPinDigit(0)}>0</button>
+                <button class="alarm-digit-btn alarm-action-btn" aria-label="Disarm"
+                  @click=${() => this._handleAlarmDisarm(primary.entity.entity_id)}>⏎</button>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════ */
+    /* ═══ MEDIA PANEL — Apple TV, HomePod, Sonos ═════════════════════════ */
+    /* ═══════════════════════════════════════════════════════════════════════ */
+
+    _isValidArtworkUrl(url) {
+      if (!url) return false;
+      return url.startsWith('/api/') || url.startsWith('/local/');
+    }
+
+    _getMediaTransportSymbol(state) {
+      switch (state) {
+        case 'playing': return '▶';
+        case 'paused':  return '❚❚';
+        default:        return '■';
+      }
+    }
+
+    _partitionMediaEntities(entries) {
+      const player = [];
+      const sensors = [];
+      const controls = [];
+      const remotes = [];
+      for (const entry of entries) {
+        if (entry.domain === 'media_player') { player.push(entry); continue; }
+        if (entry.domain === 'remote') { remotes.push(entry); continue; }
+        if (SENSOR_DOMAINS.has(entry.domain)) { sensors.push(entry); continue; }
+        controls.push(entry);
+      }
+      return { player, sensors, controls, remotes };
+    }
+
+    _handleMediaService(entityId, service, data = {}) {
+      this._hass.callService('media_player', service, { entity_id: entityId, ...data });
+    }
+
+    _handleVolumeChange(entityId, e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      this._handleMediaService(entityId, 'volume_set', { volume_level: Math.round(pct * 100) / 100 });
+    }
+
+    _renderMediaPanel(group) {
+      const { player, sensors, controls, remotes } = this._partitionMediaEntities(group.entities);
+      const deviceName = this._shortDeviceName(group.device) || 'Media';
+
+      if (player.length === 0) return '';
+      const primary = player[0];
+      const ms = primary.state;
+      const attrs = ms?.attributes || {};
+      const playerState = ms?.state || 'unavailable';
+      const stateColor = getPlaybackStateColor(playerState);
+      const transportSymbol = this._getMediaTransportSymbol(playerState);
+      const isPlaying = playerState === 'playing';
+      const isPaused = playerState === 'paused';
+      const isIdle = !isPlaying && !isPaused;
+      const artUrl = attrs.entity_picture;
+      const validArt = this._isValidArtworkUrl(artUrl);
+      const title = attrs.media_title || '';
+      const artist = attrs.media_artist || '';
+      const source = attrs.source || '';
+      const volume = attrs.volume_level != null ? Number(attrs.volume_level) : 0;
+      const isMuted = attrs.is_volume_muted || false;
+      const sources = attrs.source_list || [];
+      const features = attrs.supported_features || 0;
+      // Feature flags from HA
+      const supportsPrev = (features & 16) !== 0;
+      const supportsNext = (features & 32) !== 0;
+      const supportsPause = (features & 1) !== 0;
+      const supportsVolume = (features & 4) !== 0;
+      const supportsShuffle = (features & 32768) !== 0;
+      const supportsRepeat = (features & 262144) !== 0;
+      const shuffle = attrs.shuffle || false;
+      const repeat = attrs.repeat || 'off';
+
+      return html`
+        <div class="lcars-device-panel media-panel ${isIdle ? 'media-idle' : ''}" data-panel-type="media"
+          style="--panel-frame-color:var(--lcars-african-violet)">
+          <!-- Header -->
+          <div class="media-header">
+            <span class="device-panel-name">${deviceName}</span>
+            <div class="device-panel-header-line"></div>
+            <span class="media-state-badge" style="color:${stateColor}">${transportSymbol} ${playerState.toUpperCase()}</span>
+          </div>
+
+          <!-- Metadata (left) -->
+          <div class="media-metadata" role="list" aria-label="${deviceName} info">
+            ${source ? html`
+              <div class="device-sensor-line" role="listitem">
+                <div class="sensor-indicator" style="background:var(--lcars-african-violet)"></div>
+                <span class="sensor-label">Source</span>
+                <span class="sensor-state-value">${source}</span>
+              </div>
+            ` : ''}
+            ${supportsShuffle ? html`
+              <div class="device-sensor-line" role="listitem">
+                <div class="sensor-indicator" style="background:${shuffle ? 'var(--lcars-african-violet)' : 'var(--lcars-gray)'}"></div>
+                <span class="sensor-label">Shuffle</span>
+                <span class="sensor-state-value">${shuffle ? 'ON' : 'OFF'}</span>
+              </div>
+            ` : ''}
+            ${supportsRepeat ? html`
+              <div class="device-sensor-line" role="listitem">
+                <div class="sensor-indicator" style="background:${repeat !== 'off' ? 'var(--lcars-african-violet)' : 'var(--lcars-gray)'}"></div>
+                <span class="sensor-label">Repeat</span>
+                <span class="sensor-state-value">${repeat.toUpperCase()}</span>
+              </div>
+            ` : ''}
+            ${sensors.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const color = this._getSensorIndicatorColor(state);
+              return html`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  @click=${() => this._handleEntityClick(entity.entity_id)}
+                  @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
+                  <div class="sensor-indicator" style="background:${color}"></div>
+                  <span class="sensor-label">${name}</span>
+                  <span class="sensor-state-value" style="color:${color}">${state.state}</span>
+                </div>
+              `;
+            })}
+          </div>
+
+          <!-- Viewscreen (right) -->
+          <div class="media-viewscreen" @click=${() => this._handleEntityClick(primary.entity.entity_id)}>
+            ${validArt && !isIdle ? html`
+              <img class="media-art" src="${artUrl}" alt="Album art"
+                crossorigin="anonymous" referrerpolicy="no-referrer" loading="lazy"
+                @error=${(e) => { e.target.style.display = 'none'; }} />
+            ` : html`
+              <div class="media-idle-display">
+                <span class="media-idle-glyph">♪</span>
+                <span class="media-idle-label">STANDBY</span>
+              </div>
+            `}
+            ${!isIdle ? html`
+              <div class="media-now-playing">
+                ${title ? html`<div class="media-title">${title}</div>` : ''}
+                ${artist ? html`<div class="media-artist">${artist}</div>` : ''}
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Transport + Volume (bottom) -->
+          <div class="media-controls">
+            <div class="media-transport" aria-label="Transport controls">
+              ${supportsShuffle ? html`
+                <button class="media-transport-btn" aria-pressed="${shuffle}" title="Shuffle"
+                  @click=${() => this._handleMediaService(primary.entity.entity_id, 'shuffle_set', { shuffle: !shuffle })}>⇄</button>
+              ` : ''}
+              ${supportsPrev ? html`
+                <button class="media-transport-btn" title="Previous"
+                  @click=${() => this._handleMediaService(primary.entity.entity_id, 'media_previous_track')}>⏮</button>
+              ` : ''}
+              <button class="media-transport-btn media-play-btn" title="${isPlaying ? 'Pause' : 'Play'}"
+                @click=${() => this._handleMediaService(primary.entity.entity_id, isPlaying ? 'media_pause' : 'media_play')}>
+                ${isPlaying ? '❚❚' : '▶'}
+              </button>
+              ${supportsNext ? html`
+                <button class="media-transport-btn" title="Next"
+                  @click=${() => this._handleMediaService(primary.entity.entity_id, 'media_next_track')}>⏭</button>
+              ` : ''}
+              ${supportsRepeat ? html`
+                <button class="media-transport-btn" aria-pressed="${repeat !== 'off'}" title="Repeat: ${repeat}"
+                  @click=${() => this._handleMediaService(primary.entity.entity_id, 'repeat_set', { repeat: repeat === 'off' ? 'all' : repeat === 'all' ? 'one' : 'off' })}>🔁</button>
+              ` : ''}
+            </div>
+            ${supportsVolume ? html`
+              <div class="media-volume" aria-label="Volume: ${Math.round(volume * 100)}%">
+                <button class="media-mute-btn" aria-pressed="${isMuted}" title="${isMuted ? 'Unmute' : 'Mute'}"
+                  @click=${() => this._handleMediaService(primary.entity.entity_id, 'volume_mute', { is_volume_muted: !isMuted })}>
+                  ${isMuted ? '🔇' : '🔊'}
+                </button>
+                <div class="media-volume-bar" tabindex="0" role="slider"
+                  aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(volume * 100)}"
+                  @click=${(e) => this._handleVolumeChange(primary.entity.entity_id, e)}
+                  @keydown=${(e) => {
+                    if (e.key === 'ArrowRight') { e.preventDefault(); this._handleMediaService(primary.entity.entity_id, 'volume_set', { volume_level: Math.min(1, volume + 0.05) }); }
+                    if (e.key === 'ArrowLeft') { e.preventDefault(); this._handleMediaService(primary.entity.entity_id, 'volume_set', { volume_level: Math.max(0, volume - 0.05) }); }
+                  }}>
+                  <div class="media-volume-fill" style="width:${Math.round(volume * 100)}%"></div>
+                </div>
+                <span class="media-volume-pct">${Math.round(volume * 100)}%</span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════ */
+    /* ═══ POOL & SPA PANEL — Pentair ScreenLogic ═════════════════════════ */
+    /* ═══════════════════════════════════════════════════════════════════════ */
+
+    _partitionPoolEntities(entries) {
+      const pool = [];
+      const spa = [];
+      const chemistry = [];
+      const pumps = [];
+      const circuits = [];
+      const lights = [];
+      const environmental = [];
+      const diagnostics = [];
+
+      const CHEM_KEYS = /orp|ph_|salt|tds|saturation|calcium|alkalinity|cyanuric/i;
+
+      for (const entry of entries) {
+        const eid = entry.entity.entity_id;
+        const domain = entry.domain;
+        const attrs = entry.state?.attributes || {};
+
+        // Pool vs spa climate entities
+        if (domain === 'climate') {
+          if (/spa/i.test(eid)) spa.push(entry);
+          else pool.push(entry);
+          continue;
+        }
+        // Lights
+        if (domain === 'light') { lights.push(entry); continue; }
+        // Chemistry sensors
+        if (domain === 'sensor' && CHEM_KEYS.test(eid)) { chemistry.push(entry); continue; }
+        // Pump/circuit switches
+        if (domain === 'switch') {
+          if (/pump/i.test(eid)) pumps.push(entry);
+          else circuits.push(entry);
+          continue;
+        }
+        // Environmental (air temp, etc.)
+        if (domain === 'sensor') {
+          const dc = attrs.device_class || '';
+          if (dc === 'temperature') { environmental.push(entry); continue; }
+        }
+        diagnostics.push(entry);
+      }
+
+      return { pool, spa, chemistry, pumps, circuits, lights, environmental, diagnostics };
+    }
+
+    _handlePoolSetpoint(entityId, attrs, value) {
+      const clamped = clampSetpoint(value, attrs, { min: 40, max: 104 });
+      if (!this._poolSetpointDebouncer) {
+        this._poolSetpointDebouncer = createDebouncer((eid, temp) => {
+          this._hass.callService('climate', 'set_temperature', { entity_id: eid, temperature: temp });
+        }, 1500);
+      }
+      this._poolSetpointDebouncer.call(entityId, clamped);
+    }
+
+    _renderPoolBody(bodyEntries, bodyType, step) {
+      if (bodyEntries.length === 0) return '';
+      const primary = bodyEntries[0];
+      const cs = primary.state;
+      const attrs = cs?.attributes || {};
+      const currentTemp = attrs.current_temperature != null ? Number(attrs.current_temperature) : null;
+      const targetTemp = attrs.temperature != null ? Number(attrs.temperature) : null;
+      const hvacAction = attrs.hvac_action || 'off';
+      const bodyColor = getPoolBodyColor(hvacAction, bodyType);
+      const label = bodyType === 'spa' ? 'SPA' : 'POOL';
+
+      return html`
+        <div class="pool-body-frame" style="--body-color:${bodyColor}" role="region"
+          aria-label="${label}: ${currentTemp != null ? currentTemp + '°' : 'N/A'}, target ${targetTemp || 'N/A'}°">
+          <div class="pool-body-label" style="color:${bodyColor}">${label}</div>
+          <div class="pool-body-temp">${currentTemp != null ? `${Math.round(currentTemp)}°` : '—'}</div>
+          ${targetTemp != null ? html`
+            <div class="pool-setpoint-row">
+              <button class="climate-sp-btn" aria-label="Decrease ${label} target"
+                @click=${() => this._handlePoolSetpoint(primary.entity.entity_id, attrs, targetTemp - (step || 1))}>−</button>
+              <span class="pool-target" style="color:${bodyColor}">${targetTemp}°</span>
+              <button class="climate-sp-btn" aria-label="Increase ${label} target"
+                @click=${() => this._handlePoolSetpoint(primary.entity.entity_id, attrs, targetTemp + (step || 1))}>+</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    _renderPoolSpaPanel(group) {
+      const { pool, spa, chemistry, pumps, circuits, lights, environmental, diagnostics } = this._partitionPoolEntities(group.entities);
+      const deviceName = this._shortDeviceName(group.device) || 'Pool & Spa';
+      const hasChem = chemistry.length > 0;
+
+      // Header temp badges
+      const poolTemp = pool[0]?.state?.attributes?.current_temperature;
+      const spaTemp = spa[0]?.state?.attributes?.current_temperature;
+      const airEntry = environmental.find(e => /air/i.test(e.entity.entity_id));
+      const airTemp = airEntry?.state?.state;
+
+      return html`
+        <div class="lcars-device-panel pool-panel ${hasChem ? '' : 'pool-no-chem'}" data-panel-type="aquatics"
+          style="--panel-frame-color:var(--lcars-bluey)">
+          <!-- Header -->
+          <div class="pool-header">
+            <span class="device-panel-name">${deviceName}</span>
+            <div class="device-panel-header-line"></div>
+            ${poolTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-ice)">POOL ${Math.round(poolTemp)}°</span>` : ''}
+            ${spaTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-butterscotch)">SPA ${Math.round(spaTemp)}°</span>` : ''}
+            ${airTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-space-white)">AIR ${Math.round(Number(airTemp))}°</span>` : ''}
+          </div>
+
+          <!-- Chemistry (left, conditional) -->
+          ${hasChem ? html`
+            <div class="pool-chemistry" role="list" aria-label="Water chemistry">
+              ${chemistry.map(({ entity, state }) => {
+                const name = this._friendlyName(state, entity);
+                const val = state.state;
+                const unit = state.attributes?.unit_of_measurement || '';
+                const color = this._getSensorIndicatorColor(state);
+                return html`
+                  <div class="device-sensor-line" tabindex="0" role="listitem"
+                    aria-label="${name}: ${val}${unit ? ' ' + unit : ''}"
+                    @click=${() => this._handleEntityClick(entity.entity_id)}
+                    @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
+                    <div class="sensor-indicator" style="background:${color}"></div>
+                    <span class="sensor-label">${name}</span>
+                    <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                  </div>
+                `;
+              })}
+            </div>
+          ` : ''}
+
+          <!-- Aquatics (center) -->
+          <div class="pool-aquatics">
+            ${this._renderPoolBody(pool, 'pool', 1)}
+            ${this._renderPoolBody(spa, 'spa', 1)}
+          </div>
+
+          <!-- Controls (right) -->
+          <div class="pool-controls" aria-label="Circuit controls">
+            ${[...pumps, ...circuits].map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const isOn = state.state === 'on';
+              return html`
+                <button class="device-control-btn" role="switch" aria-checked="${isOn}" ?data-on=${isOn}
+                  @click=${() => this._handleToggle(entity.entity_id)}
+                  title="${name}: ${state.state}">
+                  <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
+                  <span>${name}</span>
+                </button>
+              `;
+            })}
+            ${environmental.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const unit = state.attributes?.unit_of_measurement || '';
+              return html`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  @click=${() => this._handleEntityClick(entity.entity_id)}>
+                  <div class="sensor-indicator" style="background:var(--lcars-data-accent)"></div>
+                  <span class="sensor-label">${name}</span>
+                  <span class="sensor-state-value">${state.state}${unit ? ' ' + unit : ''}</span>
+                </div>
+              `;
+            })}
+          </div>
+
+          <!-- Lighting (bottom, full width) -->
+          ${lights.length > 0 ? html`
+            <div class="pool-lighting" aria-label="Pool lighting">
+              ${lights.map(({ entity, state }) => {
+                const name = this._friendlyName(state, entity);
+                const isOn = state.state === 'on';
+                return html`
+                  <button class="device-control-btn" role="switch" aria-checked="${isOn}" ?data-on=${isOn}
+                    @click=${() => this._handleToggle(entity.entity_id)}
+                    title="${name}: ${state.state}">
+                    <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
+                    <span>${name}</span>
+                  </button>
+                `;
+              })}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════ */
+    /* ═══ WEATHER PANEL — Davis Instruments, WeatherFlow ═════════════════ */
+    /* ═══════════════════════════════════════════════════════════════════════ */
+
+    _weatherForecastCache = {};
+
+    _getWeatherGlyph(condition) {
+      const glyphs = {
+        'sunny': '☀', 'clear-night': '●', 'partlycloudy': '◑',
+        'cloudy': '◔', 'fog': '≡', 'rainy': '▽', 'pouring': '▼',
+        'snowy': '✦', 'snowy-rainy': '◆', 'hail': '◆',
+        'windy': '〰', 'windy-variant': '〰',
+        'lightning': '⚡', 'lightning-rainy': '⚡', 'exceptional': '⚠',
+      };
+      return glyphs[condition] || '○';
+    }
+
+    _getWindCardinal(bearing) {
+      if (bearing == null) return '';
+      const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+      return dirs[Math.round(bearing / 22.5) % 16];
+    }
+
+    _partitionWeatherEntities(entries) {
+      const weather = [];
+      const sensors = [];
+      const lightning = [];
+      const precipitation = [];
+      const wind = [];
+      const diagnostics = [];
+
+      for (const entry of entries) {
+        if (entry.domain === 'weather') { weather.push(entry); continue; }
+        const eid = entry.entity.entity_id;
+        const dc = entry.state?.attributes?.device_class || '';
+        if (/lightning/i.test(eid)) { lightning.push(entry); continue; }
+        if (dc === 'precipitation' || dc === 'precipitation_intensity' || /rain/i.test(eid)) { precipitation.push(entry); continue; }
+        if (dc === 'wind_speed' || /wind/i.test(eid)) { wind.push(entry); continue; }
+        if (SENSOR_DOMAINS.has(entry.domain)) { sensors.push(entry); continue; }
+        diagnostics.push(entry);
+      }
+
+      return { weather, sensors, lightning, precipitation, wind, diagnostics };
+    }
+
+    _renderWindCompass(bearing, speed, unit) {
+      if (bearing == null) return '';
+      const cardinal = this._getWindCardinal(bearing);
+      const arrowAngle = bearing; // degrees clockwise from N
+      return html`
+        <div class="weather-wind-compass" role="img"
+          aria-label="Wind: ${speed || '?'} ${unit || 'mph'} from ${cardinal}">
+          <svg viewBox="0 0 80 80" class="wind-svg">
+            <circle cx="40" cy="40" r="28" fill="none" stroke="var(--lcars-disabled)" stroke-width="1" />
+            <text x="40" y="12" text-anchor="middle" fill="var(--lcars-data-accent)" font-size="7" font-family="var(--lcars-font)">N</text>
+            <text x="40" y="76" text-anchor="middle" fill="var(--lcars-data-accent)" font-size="7" font-family="var(--lcars-font)">S</text>
+            <text x="8" y="43" text-anchor="middle" fill="var(--lcars-data-accent)" font-size="7" font-family="var(--lcars-font)">W</text>
+            <text x="72" y="43" text-anchor="middle" fill="var(--lcars-data-accent)" font-size="7" font-family="var(--lcars-font)">E</text>
+            <g transform="rotate(${arrowAngle}, 40, 40)">
+              <line x1="40" y1="55" x2="40" y2="18" stroke="var(--lcars-ice)" stroke-width="2" />
+              <polygon points="40,15 36,24 44,24" fill="var(--lcars-ice)" />
+            </g>
+          </svg>
+          <div class="wind-reading">${speed || '—'} ${unit || ''} ${cardinal}</div>
+        </div>
+      `;
+    }
+
+    async _loadWeatherForecast(entityId) {
+      if (this._weatherForecastCache[entityId]) return;
+      const data = await fetchForecasts(this._hass, entityId, 'daily');
+      if (data.length > 0) {
+        this._weatherForecastCache[entityId] = data;
+        this.requestUpdate();
+      }
+    }
+
+    _renderForecastStrip(forecasts) {
+      if (!forecasts?.length) return '';
+      const days = forecasts.slice(0, 7);
+      const allHighs = days.map(d => d.temperature).filter(Number.isFinite);
+      const allLows = days.map(d => d.templow).filter(Number.isFinite);
+      const overallMin = Math.min(...allLows, ...allHighs);
+      const overallMax = Math.max(...allHighs, ...allLows);
+      const overallRange = overallMax - overallMin || 1;
+
+      return html`
+        <div class="weather-forecast" role="list" aria-label="7-day forecast">
+          ${days.map(day => {
+            const date = new Date(day.datetime);
+            const dayName = date.toLocaleDateString('en', { weekday: 'short' }).toUpperCase();
+            const hi = day.temperature;
+            const lo = day.templow;
+            const cond = day.condition;
+            const glyph = this._getWeatherGlyph(cond);
+            const glyphColor = getWeatherConditionColor(cond);
+            const precip = day.precipitation_probability;
+            const leftPct = ((lo - overallMin) / overallRange) * 100;
+            const widthPct = (((hi - lo) || 1) / overallRange) * 100;
+            return html`
+              <div class="forecast-tile" role="listitem" tabindex="0"
+                aria-label="${dayName}: ${cond}, high ${hi}°, low ${lo}°${precip != null ? `, ${precip}% precipitation` : ''}">
+                <span class="forecast-day">${dayName}</span>
+                <span class="forecast-glyph" style="color:${glyphColor}">${glyph}</span>
+                <span class="forecast-hi">${hi != null ? Math.round(hi) : '—'}°</span>
+                <div class="forecast-range-bar">
+                  <div class="forecast-range-fill" style="left:${leftPct.toFixed(1)}%;width:${widthPct.toFixed(1)}%"></div>
+                </div>
+                <span class="forecast-lo">${lo != null ? Math.round(lo) : '—'}°</span>
+                ${precip != null ? html`<span class="forecast-precip" style="color:${precip > 50 ? 'var(--lcars-sky)' : 'var(--lcars-gray)'}">${precip}%</span>` : ''}
+              </div>
+            `;
+          })}
+        </div>
+      `;
+    }
+
+    _renderWeatherPanel(group) {
+      const { weather, sensors, lightning, precipitation, wind, diagnostics } = this._partitionWeatherEntities(group.entities);
+      const deviceName = this._shortDeviceName(group.device) || 'Weather';
+
+      if (weather.length === 0) return '';
+      const primary = weather[0];
+      const ws = primary.state;
+      const attrs = ws?.attributes || {};
+      const condition = ws?.state || 'unavailable';
+      const condColor = getWeatherConditionColor(condition);
+      const glyph = this._getWeatherGlyph(condition);
+      const currentTemp = attrs.temperature;
+      const humidity = attrs.humidity;
+      const pressure = attrs.pressure;
+      const windSpeed = attrs.wind_speed;
+      const windBearing = attrs.wind_bearing;
+      const windUnit = attrs.wind_speed_unit || 'mph';
+
+      // Trigger async forecast load
+      this._loadWeatherForecast(primary.entity.entity_id);
+      const forecasts = this._weatherForecastCache[primary.entity.entity_id];
+
+      return html`
+        <div class="lcars-device-panel weather-panel" data-panel-type="weather"
+          style="--panel-frame-color:${condColor}">
+          <!-- Header -->
+          <div class="weather-header">
+            <span class="device-panel-name">${deviceName}</span>
+            <div class="device-panel-header-line"></div>
+            <span class="weather-condition-badge" style="color:${condColor}">
+              ${glyph} ${condition.toUpperCase().replace(/[_-]/g, ' ')}
+            </span>
+          </div>
+
+          <!-- Sensors (left) -->
+          <div class="weather-sensors" role="list" aria-label="${deviceName} readings">
+            ${humidity != null ? html`
+              <div class="device-sensor-line" role="listitem" aria-label="Humidity: ${humidity}%">
+                <div class="sensor-indicator" style="background:var(--lcars-ice)"></div>
+                <span class="sensor-label">Humidity</span>
+                <span class="sensor-state-value" style="color:var(--lcars-ice)">${humidity}%</span>
+              </div>
+            ` : ''}
+            ${pressure != null ? html`
+              <div class="device-sensor-line" role="listitem" aria-label="Pressure: ${pressure}">
+                <div class="sensor-indicator" style="background:var(--lcars-data-accent)"></div>
+                <span class="sensor-label">Pressure</span>
+                <span class="sensor-state-value">${pressure}</span>
+              </div>
+            ` : ''}
+            ${lightning.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const unit = state.attributes?.unit_of_measurement || '';
+              return html`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  aria-label="${name}: ${state.state}${unit ? ' ' + unit : ''}"
+                  @click=${() => this._handleEntityClick(entity.entity_id)}>
+                  <div class="sensor-indicator" style="background:var(--lcars-gold)"></div>
+                  <span class="sensor-label">${name}</span>
+                  <span class="sensor-state-value" style="color:var(--lcars-gold)">${state.state}${unit ? ' ' + unit : ''}</span>
+                </div>
+              `;
+            })}
+            ${precipitation.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const unit = state.attributes?.unit_of_measurement || '';
+              return html`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  aria-label="${name}: ${state.state}${unit ? ' ' + unit : ''}"
+                  @click=${() => this._handleEntityClick(entity.entity_id)}>
+                  <div class="sensor-indicator" style="background:var(--lcars-sky)"></div>
+                  <span class="sensor-label">${name}</span>
+                  <span class="sensor-state-value" style="color:var(--lcars-sky)">${state.state}${unit ? ' ' + unit : ''}</span>
+                </div>
+              `;
+            })}
+            ${sensors.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const unit = state.attributes?.unit_of_measurement || '';
+              const color = this._getSensorIndicatorColor(state);
+              return html`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  aria-label="${name}: ${state.state}${unit ? ' ' + unit : ''}"
+                  @click=${() => this._handleEntityClick(entity.entity_id)}
+                  @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
+                  <div class="sensor-indicator" style="background:${color}"></div>
+                  <span class="sensor-label">${name}</span>
+                  <span class="sensor-state-value" style="color:${color}">${state.state}${unit ? ' ' + unit : ''}</span>
+                </div>
+              `;
+            })}
+          </div>
+
+          <!-- Viewscreen (right) -->
+          <div class="weather-viewscreen" role="img"
+            aria-label="${condition}: ${currentTemp != null ? currentTemp + '°' : 'N/A'}">
+            <svg class="weather-display" viewBox="0 0 200 160">
+              <text x="100" y="35" text-anchor="middle" fill="${condColor}"
+                font-family="var(--lcars-font)" font-size="28">${glyph}</text>
+              <text x="100" y="85" text-anchor="middle" fill="${condColor}"
+                font-family="var(--lcars-font)" font-size="48" font-weight="bold">
+                ${currentTemp != null ? `${Math.round(currentTemp)}°` : '—'}
+              </text>
+              <text x="100" y="108" text-anchor="middle" fill="var(--lcars-data-accent)"
+                font-family="var(--lcars-font)" font-size="12">
+                ${condition.toUpperCase().replace(/[_-]/g, ' ')}
+              </text>
+            </svg>
+            ${this._renderWindCompass(windBearing, windSpeed, windUnit)}
+          </div>
+
+          <!-- Forecast (bottom) -->
+          ${this._renderForecastStrip(forecasts)}
+        </div>
+      `;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════ */
+    /* ═══ IRRIGATION PANEL — Rachio ══════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════════════════════ */
+
+    _irrigationLimiter = createRateLimiter(5, 10000);
+
+    _partitionIrrigationEntities(entries) {
+      const zones = [];
+      const sensors = [];
+      const controller = [];
+
+      for (const entry of entries) {
+        const domain = entry.domain;
+        const eid = entry.entity.entity_id;
+        const attrs = entry.state?.attributes || {};
+
+        if (domain === 'switch') {
+          if (attrs.zone_number != null || /zone/i.test(eid)) {
+            zones.push(entry);
+          } else {
+            controller.push(entry);
+          }
+          continue;
+        }
+        if (domain === 'binary_sensor' && !controller.some(c => true)) {
+          controller.push(entry);
+          continue;
+        }
+        sensors.push(entry);
+      }
+
+      // Sort zones by zone_number if available
+      zones.sort((a, b) => {
+        const za = a.state?.attributes?.zone_number ?? 999;
+        const zb = b.state?.attributes?.zone_number ?? 999;
+        return za - zb;
+      });
+
+      return { zones, sensors, controller };
+    }
+
+    _handleIrrigationZone(entityId, turnOn) {
+      if (!this._irrigationLimiter.allow()) return;
+      this._hass.callService('switch', turnOn ? 'turn_on' : 'turn_off', { entity_id: entityId });
+    }
+
+    _renderIrrigationPanel(group) {
+      const { zones, sensors, controller } = this._partitionIrrigationEntities(group.entities);
+      const deviceName = this._shortDeviceName(group.device) || 'Irrigation';
+      const activeZone = zones.find(z => z.state?.state === 'on');
+      const isStandby = controller.some(c => c.domain === 'switch' && c.state?.state === 'off');
+
+      return html`
+        <div class="lcars-device-panel irrigation-panel" data-panel-type="irrigation"
+          style="--panel-frame-color:var(--lcars-ice)">
+          <!-- Header -->
+          <div class="irrigation-header">
+            <span class="device-panel-name">${deviceName}</span>
+            <div class="device-panel-header-line"></div>
+            <span class="irrigation-status-badge" style="color:${activeZone ? 'var(--lcars-ice)' : isStandby ? 'var(--lcars-gray)' : 'var(--lcars-sunflower)'}">
+              ${activeZone ? `WATERING ${this._friendlyName(activeZone.state, activeZone.entity)}` : isStandby ? 'STANDBY' : 'IDLE'}
+            </span>
+          </div>
+
+          <!-- Schedule (left) -->
+          <div class="irrigation-schedule" role="list" aria-label="Schedule info">
+            ${sensors.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const unit = state.attributes?.unit_of_measurement || '';
+              const color = this._getSensorIndicatorColor(state);
+              return html`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  aria-label="${name}: ${state.state}${unit ? ' ' + unit : ''}"
+                  @click=${() => this._handleEntityClick(entity.entity_id)}>
+                  <div class="sensor-indicator" style="background:${color}"></div>
+                  <span class="sensor-label">${name}</span>
+                  <span class="sensor-state-value" style="color:${color}">${state.state}${unit ? ' ' + unit : ''}</span>
+                </div>
+              `;
+            })}
+          </div>
+
+          <!-- Zones (right) -->
+          <div class="irrigation-zones" role="list" aria-label="Irrigation zones">
+            ${zones.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const isOn = state.state === 'on';
+              const zoneColor = getIrrigationZoneColor(state.state, isStandby);
+              return html`
+                <div class="irrigation-zone-row" role="listitem" tabindex="0"
+                  aria-label="${name}: ${isOn ? 'watering' : 'idle'}">
+                  <button class="irrigation-zone-btn" ?data-on=${isOn}
+                    style="--zone-color:${zoneColor}"
+                    ?disabled=${isStandby}
+                    aria-label="${isOn ? 'Stop' : 'Start'} watering ${name}"
+                    @click=${() => this._handleIrrigationZone(entity.entity_id, !isOn)}>
+                    ${isOn ? 'STOP' : 'START'}
+                  </button>
+                  <span class="irrigation-zone-name">${name}</span>
+                  <span class="irrigation-zone-status" style="color:${zoneColor}">
+                    ${isStandby ? 'STANDBY' : isOn ? 'WATERING' : 'IDLE'}
+                  </span>
+                  ${isOn ? html`
+                    <div class="irrigation-zone-fill" role="progressbar"
+                      aria-label="Zone active" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"
+                      style="background:var(--lcars-ice)"></div>
+                  ` : ''}
+                </div>
+              `;
+            })}
+          </div>
+
+          <!-- Standby Toggle (bottom) -->
+          ${controller.filter(c => c.domain === 'switch').map(({ entity, state }) => {
+            const isOff = state.state === 'off';
+            return html`
+              <div class="irrigation-standby">
+                <button class="device-control-btn irrigation-standby-btn" role="switch"
+                  aria-checked="${isOff}" ?data-on=${!isOff}
+                  @click=${() => this._handleToggle(entity.entity_id)}
+                  title="Standby mode: ${isOff ? 'ON' : 'OFF'}">
+                  <ha-icon icon="mdi:water-off"></ha-icon>
+                  <span>STANDBY ${isOff ? 'ON' : 'OFF'}</span>
+                </button>
+              </div>
+            `;
+          })}
         </div>
       `;
     }

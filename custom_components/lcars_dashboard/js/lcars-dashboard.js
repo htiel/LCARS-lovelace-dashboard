@@ -1,5 +1,5 @@
 /*! For license information please see lcars-dashboard.js.LICENSE.txt */
-(()=>{"use strict";var e={851(e,t,a){a.d(t,{Bo:()=>d,Hv:()=>l,g0:()=>r,o6:()=>s,oo:()=>o,rC:()=>n,te:()=>c});const r={_prefix:e=>`%c[LCARS ${e}]`,_style:"color: #f1b864; font-weight: bold",debug:(e,...t)=>{window.__LCARS_DEBUG&&console.debug(r._prefix(e),r._style,...t)},info:(e,...t)=>console.info(r._prefix(e),r._style,...t),warn:(e,...t)=>console.warn(r._prefix(e),r._style,...t),error:(e,...t)=>console.error(r._prefix(e),r._style,...t)},s=new EventTarget;function i(){const e=document.querySelector("hc-main");if(e)return e.hass;const t=document.querySelector("home-assistant");return t?t.hass:void 0}function n(e,t={},a=null){const r=new Event(e,{bubbles:!0,cancelable:!1,composed:!0});if(r.detail=t,a)a.dispatchEvent(r);else{const e=function(){let e=document.querySelector("hc-main");return e?(e=e?.shadowRoot?.querySelector("hc-lovelace")?.shadowRoot,e?.querySelector("hui-view")||e?.querySelector("hui-panel-view")):(e=document.querySelector("home-assistant"),e=e?.shadowRoot?.querySelector("home-assistant-main")?.shadowRoot,e=e?.querySelector("app-drawer-layout partial-panel-resolver"),e=e?.shadowRoot||e,e=e?.querySelector("ha-panel-lovelace")?.shadowRoot,e=e?.querySelector("hui-root")?.shadowRoot,e=e?.querySelector("ha-app-layout")?.querySelector("#view"),e?.firstElementChild)}();e&&e.dispatchEvent(r)}}function o(e,t=!1){t?history.replaceState(null,"",e):history.pushState(null,"",e),n("location-changed",{replace:t},window)}function l(e){n("hass-more-info",{entityId:e},document.querySelector("hc-main")||document.querySelector("home-assistant"))}async function c(e){const t=e.type?.startsWith("custom:")?e.type.slice(7):`hui-${e.type}-card`;if(customElements.get(t)||(await async function(){if(customElements.get("hui-view"))return!0;await customElements.whenDefined("partial-panel-resolver");const e=document.createElement("partial-panel-resolver");if(e.hass={panels:[{url_path:"tmp",component_name:"lovelace"}]},e._updateRoutes(),await e.routerOptions.routes.tmp.load(),!customElements.get("ha-panel-lovelace"))return!1;const t=document.createElement("ha-panel-lovelace");return t.hass=i(),void 0===t.hass&&(await new Promise(e=>{window.addEventListener("connection-status",()=>e(),{once:!0})}),t.hass=i()),t.panel={config:{mode:null}},t._fetchConfig(),!0}(),await new Promise(e=>setTimeout(e,100))),"function"==typeof window.loadCardHelpers)try{const t=await window.loadCardHelpers();return await t.createCardElement(e)}catch(e){}const a=document.createElement(t);return a.setConfig&&a.setConfig(e),a}function d(e,t,a,r="Configure"){const s=document.createElement("lcars-popup");s.hass=e,s.setConfig({title:r,card:{type:`custom:${t}`,...a}});const i=new MutationObserver(()=>{const e=s.shadowRoot?.querySelector(".popup-backdrop");e&&!e.hasAttribute("data-open")&&setTimeout(()=>{s.remove(),i.disconnect()},300)});document.body.appendChild(s),i.observe(s.shadowRoot||s,{attributes:!0,subtree:!0}),setTimeout(()=>{i.disconnect()},3e5),requestAnimationFrame(()=>s.open())}},622(e,t,a){a.d(t,{B:()=>i});var r=a(845);const s=r.AH`
+(()=>{"use strict";var e={851(e,t,a){a.d(t,{Bo:()=>d,Hv:()=>l,g0:()=>r,o6:()=>i,oo:()=>o,rC:()=>n,te:()=>c});const r={_prefix:e=>`%c[LCARS ${e}]`,_style:"color: #f1b864; font-weight: bold",debug:(e,...t)=>{window.__LCARS_DEBUG&&console.debug(r._prefix(e),r._style,...t)},info:(e,...t)=>console.info(r._prefix(e),r._style,...t),warn:(e,...t)=>console.warn(r._prefix(e),r._style,...t),error:(e,...t)=>console.error(r._prefix(e),r._style,...t)},i=new EventTarget;function s(){const e=document.querySelector("hc-main");if(e)return e.hass;const t=document.querySelector("home-assistant");return t?t.hass:void 0}function n(e,t={},a=null){const r=new Event(e,{bubbles:!0,cancelable:!1,composed:!0});if(r.detail=t,a)a.dispatchEvent(r);else{const e=function(){let e=document.querySelector("hc-main");return e?(e=e?.shadowRoot?.querySelector("hc-lovelace")?.shadowRoot,e?.querySelector("hui-view")||e?.querySelector("hui-panel-view")):(e=document.querySelector("home-assistant"),e=e?.shadowRoot?.querySelector("home-assistant-main")?.shadowRoot,e=e?.querySelector("app-drawer-layout partial-panel-resolver"),e=e?.shadowRoot||e,e=e?.querySelector("ha-panel-lovelace")?.shadowRoot,e=e?.querySelector("hui-root")?.shadowRoot,e=e?.querySelector("ha-app-layout")?.querySelector("#view"),e?.firstElementChild)}();e&&e.dispatchEvent(r)}}function o(e,t=!1){t?history.replaceState(null,"",e):history.pushState(null,"",e),n("location-changed",{replace:t},window)}function l(e){n("hass-more-info",{entityId:e},document.querySelector("hc-main")||document.querySelector("home-assistant"))}async function c(e){const t=e.type?.startsWith("custom:")?e.type.slice(7):`hui-${e.type}-card`;if(customElements.get(t)||(await async function(){if(customElements.get("hui-view"))return!0;await customElements.whenDefined("partial-panel-resolver");const e=document.createElement("partial-panel-resolver");if(e.hass={panels:[{url_path:"tmp",component_name:"lovelace"}]},e._updateRoutes(),await e.routerOptions.routes.tmp.load(),!customElements.get("ha-panel-lovelace"))return!1;const t=document.createElement("ha-panel-lovelace");return t.hass=s(),void 0===t.hass&&(await new Promise(e=>{window.addEventListener("connection-status",()=>e(),{once:!0})}),t.hass=s()),t.panel={config:{mode:null}},t._fetchConfig(),!0}(),await new Promise(e=>setTimeout(e,100))),"function"==typeof window.loadCardHelpers)try{const t=await window.loadCardHelpers();return await t.createCardElement(e)}catch(e){}const a=document.createElement(t);return a.setConfig&&a.setConfig(e),a}function d(e,t,a,r="Configure"){const i=document.createElement("lcars-popup");i.hass=e,i.setConfig({title:r,card:{type:`custom:${t}`,...a}});const s=new MutationObserver(()=>{const e=i.shadowRoot?.querySelector(".popup-backdrop");e&&!e.hasAttribute("data-open")&&setTimeout(()=>{i.remove(),s.disconnect()},300)});document.body.appendChild(i),s.observe(i.shadowRoot||i,{attributes:!0,subtree:!0}),setTimeout(()=>{s.disconnect()},3e5),requestAnimationFrame(()=>i.open())}},622(e,t,a){a.d(t,{B:()=>s});var r=a(845);const i=r.AH`
   /* ─── LCARS Color Palette ─── */
   --lcars-african-violet: #cc99ff;
   --lcars-almond: #ffaa90;
@@ -60,9 +60,9 @@
   /* ─── Animation ─── */
   --lcars-transition: 200ms ease-out;
   --lcars-transition-slow: 400ms ease-out;
-`,i=r.AH`
+`,s=r.AH`
   :host {
-    ${s}
+    ${i}
     font-family: var(--lcars-font);
     color: var(--lcars-text);
     background: var(--lcars-bg);
@@ -176,7 +176,7 @@
       animation-duration: 0.01ms !important;
     }
   }
-`},845(e,t,a){a.d(t,{WF:()=>re,AH:()=>te,qy:()=>L});const r="undefined"!=typeof window&&null!=window.customElements&&void 0!==window.customElements.polyfillWrapFlushCallback,s=(e,t,a=null)=>{for(;t!==a;){const a=t.nextSibling;e.removeChild(t),t=a}},i=`{{lit-${String(Math.random()).slice(2)}}}`,n=`\x3c!--${i}--\x3e`,o=new RegExp(`${i}|${n}`),l="$lit$";class c{constructor(e,t){this.parts=[],this.element=t;const a=[],r=[],s=document.createTreeWalker(t.content,133,null,!1);let n=0,c=-1,p=0;const{strings:m,values:{length:f}}=e;for(;p<f;){const e=s.nextNode();if(null!==e){if(c++,1===e.nodeType){if(e.hasAttributes()){const t=e.attributes,{length:a}=t;let r=0;for(let e=0;e<a;e++)d(t[e].name,l)&&r++;for(;r-- >0;){const t=m[p],a=u.exec(t)[2],r=a.toLowerCase()+l,s=e.getAttribute(r);e.removeAttribute(r);const i=s.split(o);this.parts.push({type:"attribute",index:c,name:a,strings:i}),p+=i.length-1}}"TEMPLATE"===e.tagName&&(r.push(e),s.currentNode=e.content)}else if(3===e.nodeType){const t=e.data;if(t.indexOf(i)>=0){const r=e.parentNode,s=t.split(o),i=s.length-1;for(let t=0;t<i;t++){let a,i=s[t];if(""===i)a=h();else{const e=u.exec(i);null!==e&&d(e[2],l)&&(i=i.slice(0,e.index)+e[1]+e[2].slice(0,-5)+e[3]),a=document.createTextNode(i)}r.insertBefore(a,e),this.parts.push({type:"node",index:++c})}""===s[i]?(r.insertBefore(h(),e),a.push(e)):e.data=s[i],p+=i}}else if(8===e.nodeType)if(e.data===i){const t=e.parentNode;null!==e.previousSibling&&c!==n||(c++,t.insertBefore(h(),e)),n=c,this.parts.push({type:"node",index:c}),null===e.nextSibling?e.data="":(a.push(e),c--),p++}else{let t=-1;for(;-1!==(t=e.data.indexOf(i,t+1));)this.parts.push({type:"node",index:-1}),p++}}else s.currentNode=r.pop()}for(const e of a)e.parentNode.removeChild(e)}}const d=(e,t)=>{const a=e.length-t.length;return a>=0&&e.slice(a)===t},p=e=>-1!==e.index,h=()=>document.createComment(""),u=/([ \x09\x0a\x0c\x0d])([^\0-\x1F\x7F-\x9F "'>=/]+)([ \x09\x0a\x0c\x0d]*=[ \x09\x0a\x0c\x0d]*(?:[^ \x09\x0a\x0c\x0d"'`<>=]*|"[^"]*|'[^']*))$/;function m(e,t){const{element:{content:a},parts:r}=e,s=document.createTreeWalker(a,133,null,!1);let i=v(r),n=r[i],o=-1,l=0;const c=[];let d=null;for(;s.nextNode();){o++;const e=s.currentNode;for(e.previousSibling===d&&(d=null),t.has(e)&&(c.push(e),null===d&&(d=e)),null!==d&&l++;void 0!==n&&n.index===o;)n.index=null!==d?-1:n.index-l,i=v(r,i),n=r[i]}c.forEach(e=>e.parentNode.removeChild(e))}const f=e=>{let t=11===e.nodeType?0:1;const a=document.createTreeWalker(e,133,null,!1);for(;a.nextNode();)t++;return t},v=(e,t=-1)=>{for(let a=t+1;a<e.length;a++){const t=e[a];if(p(t))return a}return-1},g=new WeakMap,b=e=>"function"==typeof e&&g.has(e),y={},_={};class w{constructor(e,t,a){this.__parts=[],this.template=e,this.processor=t,this.options=a}update(e){let t=0;for(const a of this.__parts)void 0!==a&&a.setValue(e[t]),t++;for(const e of this.__parts)void 0!==e&&e.commit()}_clone(){const e=r?this.template.element.content.cloneNode(!0):document.importNode(this.template.element.content,!0),t=[],a=this.template.parts,s=document.createTreeWalker(e,133,null,!1);let i,n=0,o=0,l=s.nextNode();for(;n<a.length;)if(i=a[n],p(i)){for(;o<i.index;)o++,"TEMPLATE"===l.nodeName&&(t.push(l),s.currentNode=l.content),null===(l=s.nextNode())&&(s.currentNode=t.pop(),l=s.nextNode());if("node"===i.type){const e=this.processor.handleTextExpression(this.options);e.insertAfterNode(l.previousSibling),this.__parts.push(e)}else this.__parts.push(...this.processor.handleAttributeExpressions(l,i.name,i.strings,this.options));n++}else this.__parts.push(void 0),n++;return r&&(document.adoptNode(e),customElements.upgrade(e)),e}}const x=window.trustedTypes&&trustedTypes.createPolicy("lit-html",{createHTML:e=>e}),k=` ${i} `;class ${constructor(e,t,a,r){this.strings=e,this.values=t,this.type=a,this.processor=r}getHTML(){const e=this.strings.length-1;let t="",a=!1;for(let r=0;r<e;r++){const e=this.strings[r],s=e.lastIndexOf("\x3c!--");a=(s>-1||a)&&-1===e.indexOf("--\x3e",s+1);const o=u.exec(e);t+=null===o?e+(a?k:n):e.substr(0,o.index)+o[1]+o[2]+l+o[3]+i}return t+=this.strings[e],t}getTemplateElement(){const e=document.createElement("template");let t=this.getHTML();return void 0!==x&&(t=x.createHTML(t)),e.innerHTML=t,e}}const S=e=>null===e||!("object"==typeof e||"function"==typeof e),C=e=>Array.isArray(e)||!(!e||!e[Symbol.iterator]);class E{constructor(e,t,a){this.dirty=!0,this.element=e,this.name=t,this.strings=a,this.parts=[];for(let e=0;e<a.length-1;e++)this.parts[e]=this._createPart()}_createPart(){return new z(this)}_getValue(){const e=this.strings,t=e.length-1,a=this.parts;if(1===t&&""===e[0]&&""===e[1]){const e=a[0].value;if("symbol"==typeof e)return String(e);if("string"==typeof e||!C(e))return e}let r="";for(let s=0;s<t;s++){r+=e[s];const t=a[s];if(void 0!==t){const e=t.value;if(S(e)||!C(e))r+="string"==typeof e?e:String(e);else for(const t of e)r+="string"==typeof t?t:String(t)}}return r+=e[t],r}commit(){this.dirty&&(this.dirty=!1,this.element.setAttribute(this.name,this._getValue()))}}class z{constructor(e){this.value=void 0,this.committer=e}setValue(e){e===y||S(e)&&e===this.value||(this.value=e,b(e)||(this.committer.dirty=!0))}commit(){for(;b(this.value);){const e=this.value;this.value=y,e(this)}this.value!==y&&this.committer.commit()}}class A{constructor(e){this.value=void 0,this.__pendingValue=void 0,this.options=e}appendInto(e){this.startNode=e.appendChild(h()),this.endNode=e.appendChild(h())}insertAfterNode(e){this.startNode=e,this.endNode=e.nextSibling}appendIntoPart(e){e.__insert(this.startNode=h()),e.__insert(this.endNode=h())}insertAfterPart(e){e.__insert(this.startNode=h()),this.endNode=e.endNode,e.endNode=this.startNode}setValue(e){this.__pendingValue=e}commit(){if(null===this.startNode.parentNode)return;for(;b(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=y,e(this)}const e=this.__pendingValue;e!==y&&(S(e)?e!==this.value&&this.__commitText(e):e instanceof $?this.__commitTemplateResult(e):e instanceof Node?this.__commitNode(e):C(e)?this.__commitIterable(e):e===_?(this.value=_,this.clear()):this.__commitText(e))}__insert(e){this.endNode.parentNode.insertBefore(e,this.endNode)}__commitNode(e){this.value!==e&&(this.clear(),this.__insert(e),this.value=e)}__commitText(e){const t=this.startNode.nextSibling,a="string"==typeof(e=null==e?"":e)?e:String(e);t===this.endNode.previousSibling&&3===t.nodeType?t.data=a:this.__commitNode(document.createTextNode(a)),this.value=e}__commitTemplateResult(e){const t=this.options.templateFactory(e);if(this.value instanceof w&&this.value.template===t)this.value.update(e.values);else{const a=new w(t,e.processor,this.options),r=a._clone();a.update(e.values),this.__commitNode(r),this.value=a}}__commitIterable(e){Array.isArray(this.value)||(this.value=[],this.clear());const t=this.value;let a,r=0;for(const s of e)a=t[r],void 0===a&&(a=new A(this.options),t.push(a),0===r?a.appendIntoPart(this):a.insertAfterPart(t[r-1])),a.setValue(s),a.commit(),r++;r<t.length&&(t.length=r,this.clear(a&&a.endNode))}clear(e=this.startNode){s(this.startNode.parentNode,e.nextSibling,this.endNode)}}class q{constructor(e,t,a){if(this.value=void 0,this.__pendingValue=void 0,2!==a.length||""!==a[0]||""!==a[1])throw new Error("Boolean attributes can only contain a single expression");this.element=e,this.name=t,this.strings=a}setValue(e){this.__pendingValue=e}commit(){for(;b(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=y,e(this)}if(this.__pendingValue===y)return;const e=!!this.__pendingValue;this.value!==e&&(e?this.element.setAttribute(this.name,""):this.element.removeAttribute(this.name),this.value=e),this.__pendingValue=y}}class P extends E{constructor(e,t,a){super(e,t,a),this.single=2===a.length&&""===a[0]&&""===a[1]}_createPart(){return new O(this)}_getValue(){return this.single?this.parts[0].value:super._getValue()}commit(){this.dirty&&(this.dirty=!1,this.element[this.name]=this._getValue())}}class O extends z{}let N=!1;(()=>{try{const e={get capture(){return N=!0,!1}};window.addEventListener("test",e,e),window.removeEventListener("test",e,e)}catch(e){}})();class D{constructor(e,t,a){this.value=void 0,this.__pendingValue=void 0,this.element=e,this.eventName=t,this.eventContext=a,this.__boundHandleEvent=e=>this.handleEvent(e)}setValue(e){this.__pendingValue=e}commit(){for(;b(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=y,e(this)}if(this.__pendingValue===y)return;const e=this.__pendingValue,t=this.value,a=null==e||null!=t&&(e.capture!==t.capture||e.once!==t.once||e.passive!==t.passive),r=null!=e&&(null==t||a);a&&this.element.removeEventListener(this.eventName,this.__boundHandleEvent,this.__options),r&&(this.__options=T(e),this.element.addEventListener(this.eventName,this.__boundHandleEvent,this.__options)),this.value=e,this.__pendingValue=y}handleEvent(e){"function"==typeof this.value?this.value.call(this.eventContext||this.element,e):this.value.handleEvent(e)}}const T=e=>e&&(N?{capture:e.capture,passive:e.passive,once:e.once}:e.capture);function F(e){let t=R.get(e.type);void 0===t&&(t={stringsArray:new WeakMap,keyString:new Map},R.set(e.type,t));let a=t.stringsArray.get(e.strings);if(void 0!==a)return a;const r=e.strings.join(i);return a=t.keyString.get(r),void 0===a&&(a=new c(e,e.getTemplateElement()),t.keyString.set(r,a)),t.stringsArray.set(e.strings,a),a}const R=new Map,M=new WeakMap,I=new class{handleAttributeExpressions(e,t,a,r){const s=t[0];return"."===s?new P(e,t.slice(1),a).parts:"@"===s?[new D(e,t.slice(1),r.eventContext)]:"?"===s?[new q(e,t.slice(1),a)]:new E(e,t,a).parts}handleTextExpression(e){return new A(e)}};"undefined"!=typeof window&&(window.litHtmlVersions||(window.litHtmlVersions=[])).push("1.4.1");const L=(e,...t)=>new $(e,t,"html",I),j=(e,t)=>`${e}--${t}`;let B=!0;void 0===window.ShadyCSS?B=!1:void 0===window.ShadyCSS.prepareTemplateDom&&(console.warn("Incompatible ShadyCSS version detected. Please update to at least @webcomponents/webcomponentsjs@2.0.2 and @webcomponents/shadycss@1.3.1."),B=!1);const H=e=>t=>{const a=j(t.type,e);let r=R.get(a);void 0===r&&(r={stringsArray:new WeakMap,keyString:new Map},R.set(a,r));let s=r.stringsArray.get(t.strings);if(void 0!==s)return s;const n=t.strings.join(i);if(s=r.keyString.get(n),void 0===s){const a=t.getTemplateElement();B&&window.ShadyCSS.prepareTemplateDom(a,e),s=new c(t,a),r.keyString.set(n,s)}return r.stringsArray.set(t.strings,s),s},W=["html","svg"],U=new Set;window.JSCompiler_renameProperty=(e,t)=>e;const V={toAttribute(e,t){switch(t){case Boolean:return e?"":null;case Object:case Array:return null==e?e:JSON.stringify(e)}return e},fromAttribute(e,t){switch(t){case Boolean:return null!==e;case Number:return null===e?null:Number(e);case Object:case Array:return JSON.parse(e)}return e}},G=(e,t)=>t!==e&&(t==t||e==e),J={attribute:!0,type:String,converter:V,reflect:!1,hasChanged:G},X="finalized";class Q extends HTMLElement{constructor(){super(),this.initialize()}static get observedAttributes(){this.finalize();const e=[];return this._classProperties.forEach((t,a)=>{const r=this._attributeNameForProperty(a,t);void 0!==r&&(this._attributeToPropertyMap.set(r,a),e.push(r))}),e}static _ensureClassProperties(){if(!this.hasOwnProperty(JSCompiler_renameProperty("_classProperties",this))){this._classProperties=new Map;const e=Object.getPrototypeOf(this)._classProperties;void 0!==e&&e.forEach((e,t)=>this._classProperties.set(t,e))}}static createProperty(e,t=J){if(this._ensureClassProperties(),this._classProperties.set(e,t),t.noAccessor||this.prototype.hasOwnProperty(e))return;const a="symbol"==typeof e?Symbol():`__${e}`,r=this.getPropertyDescriptor(e,a,t);void 0!==r&&Object.defineProperty(this.prototype,e,r)}static getPropertyDescriptor(e,t,a){return{get(){return this[t]},set(r){const s=this[e];this[t]=r,this.requestUpdateInternal(e,s,a)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this._classProperties&&this._classProperties.get(e)||J}static finalize(){const e=Object.getPrototypeOf(this);if(e.hasOwnProperty(X)||e.finalize(),this[X]=!0,this._ensureClassProperties(),this._attributeToPropertyMap=new Map,this.hasOwnProperty(JSCompiler_renameProperty("properties",this))){const e=this.properties,t=[...Object.getOwnPropertyNames(e),..."function"==typeof Object.getOwnPropertySymbols?Object.getOwnPropertySymbols(e):[]];for(const a of t)this.createProperty(a,e[a])}}static _attributeNameForProperty(e,t){const a=t.attribute;return!1===a?void 0:"string"==typeof a?a:"string"==typeof e?e.toLowerCase():void 0}static _valueHasChanged(e,t,a=G){return a(e,t)}static _propertyValueFromAttribute(e,t){const a=t.type,r=t.converter||V,s="function"==typeof r?r:r.fromAttribute;return s?s(e,a):e}static _propertyValueToAttribute(e,t){if(void 0===t.reflect)return;const a=t.type,r=t.converter;return(r&&r.toAttribute||V.toAttribute)(e,a)}initialize(){this._updateState=0,this._updatePromise=new Promise(e=>this._enableUpdatingResolver=e),this._changedProperties=new Map,this._saveInstanceProperties(),this.requestUpdateInternal()}_saveInstanceProperties(){this.constructor._classProperties.forEach((e,t)=>{if(this.hasOwnProperty(t)){const e=this[t];delete this[t],this._instanceProperties||(this._instanceProperties=new Map),this._instanceProperties.set(t,e)}})}_applyInstanceProperties(){this._instanceProperties.forEach((e,t)=>this[t]=e),this._instanceProperties=void 0}connectedCallback(){this.enableUpdating()}enableUpdating(){void 0!==this._enableUpdatingResolver&&(this._enableUpdatingResolver(),this._enableUpdatingResolver=void 0)}disconnectedCallback(){}attributeChangedCallback(e,t,a){t!==a&&this._attributeToProperty(e,a)}_propertyToAttribute(e,t,a=J){const r=this.constructor,s=r._attributeNameForProperty(e,a);if(void 0!==s){const e=r._propertyValueToAttribute(t,a);if(void 0===e)return;this._updateState=8|this._updateState,null==e?this.removeAttribute(s):this.setAttribute(s,e),this._updateState=-9&this._updateState}}_attributeToProperty(e,t){if(8&this._updateState)return;const a=this.constructor,r=a._attributeToPropertyMap.get(e);if(void 0!==r){const e=a.getPropertyOptions(r);this._updateState=16|this._updateState,this[r]=a._propertyValueFromAttribute(t,e),this._updateState=-17&this._updateState}}requestUpdateInternal(e,t,a){let r=!0;if(void 0!==e){const s=this.constructor;a=a||s.getPropertyOptions(e),s._valueHasChanged(this[e],t,a.hasChanged)?(this._changedProperties.has(e)||this._changedProperties.set(e,t),!0!==a.reflect||16&this._updateState||(void 0===this._reflectingProperties&&(this._reflectingProperties=new Map),this._reflectingProperties.set(e,a))):r=!1}!this._hasRequestedUpdate&&r&&(this._updatePromise=this._enqueueUpdate())}requestUpdate(e,t){return this.requestUpdateInternal(e,t),this.updateComplete}async _enqueueUpdate(){this._updateState=4|this._updateState;try{await this._updatePromise}catch(e){}const e=this.performUpdate();return null!=e&&await e,!this._hasRequestedUpdate}get _hasRequestedUpdate(){return 4&this._updateState}get hasUpdated(){return 1&this._updateState}performUpdate(){if(!this._hasRequestedUpdate)return;this._instanceProperties&&this._applyInstanceProperties();let e=!1;const t=this._changedProperties;try{e=this.shouldUpdate(t),e?this.update(t):this._markUpdated()}catch(t){throw e=!1,this._markUpdated(),t}e&&(1&this._updateState||(this._updateState=1|this._updateState,this.firstUpdated(t)),this.updated(t))}_markUpdated(){this._changedProperties=new Map,this._updateState=-5&this._updateState}get updateComplete(){return this._getUpdateComplete()}_getUpdateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._updatePromise}shouldUpdate(e){return!0}update(e){void 0!==this._reflectingProperties&&this._reflectingProperties.size>0&&(this._reflectingProperties.forEach((e,t)=>this._propertyToAttribute(t,this[t],e)),this._reflectingProperties=void 0),this._markUpdated()}updated(e){}firstUpdated(e){}}Q[X]=!0;const Y=Element.prototype;Y.msMatchesSelector||Y.webkitMatchesSelector;const K=window.ShadowRoot&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,Z=Symbol();class ee{constructor(e,t){if(t!==Z)throw new Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e}get styleSheet(){return void 0===this._styleSheet&&(K?(this._styleSheet=new CSSStyleSheet,this._styleSheet.replaceSync(this.cssText)):this._styleSheet=null),this._styleSheet}toString(){return this.cssText}}const te=(e,...t)=>{const a=t.reduce((t,a,r)=>t+(e=>{if(e instanceof ee)return e.cssText;if("number"==typeof e)return e;throw new Error(`Value passed to 'css' function must be a 'css' function result: ${e}. Use 'unsafeCSS' to pass non-literal values, but\n            take care to ensure page security.`)})(a)+e[r+1],e[0]);return new ee(a,Z)};(window.litElementVersions||(window.litElementVersions=[])).push("2.5.1");const ae={};class re extends Q{static getStyles(){return this.styles}static _getUniqueStyles(){if(this.hasOwnProperty(JSCompiler_renameProperty("_styles",this)))return;const e=this.getStyles();if(Array.isArray(e)){const t=(e,a)=>e.reduceRight((e,a)=>Array.isArray(a)?t(a,e):(e.add(a),e),a),a=t(e,new Set),r=[];a.forEach(e=>r.unshift(e)),this._styles=r}else this._styles=void 0===e?[]:[e];this._styles=this._styles.map(e=>{if(e instanceof CSSStyleSheet&&!K){const t=Array.prototype.slice.call(e.cssRules).reduce((e,t)=>e+t.cssText,"");return new ee(String(t),Z)}return e})}initialize(){super.initialize(),this.constructor._getUniqueStyles(),this.renderRoot=this.createRenderRoot(),window.ShadowRoot&&this.renderRoot instanceof window.ShadowRoot&&this.adoptStyles()}createRenderRoot(){return this.attachShadow(this.constructor.shadowRootOptions)}adoptStyles(){const e=this.constructor._styles;0!==e.length&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow?K?this.renderRoot.adoptedStyleSheets=e.map(e=>e instanceof CSSStyleSheet?e:e.styleSheet):this._needsShimAdoptedStyleSheets=!0:window.ShadyCSS.ScopingShim.prepareAdoptedCssText(e.map(e=>e.cssText),this.localName))}connectedCallback(){super.connectedCallback(),this.hasUpdated&&void 0!==window.ShadyCSS&&window.ShadyCSS.styleElement(this)}update(e){const t=this.render();super.update(e),t!==ae&&this.constructor.render(t,this.renderRoot,{scopeName:this.localName,eventContext:this}),this._needsShimAdoptedStyleSheets&&(this._needsShimAdoptedStyleSheets=!1,this.constructor._styles.forEach(e=>{const t=document.createElement("style");t.textContent=e.cssText,this.renderRoot.appendChild(t)}))}render(){return ae}}re.finalized=!0,re.render=(e,t,a)=>{if(!a||"object"!=typeof a||!a.scopeName)throw new Error("The `scopeName` option is required.");const r=a.scopeName,i=M.has(t),n=B&&11===t.nodeType&&!!t.host,o=n&&!U.has(r),l=o?document.createDocumentFragment():t;if(((e,t,a)=>{let r=M.get(t);void 0===r&&(s(t,t.firstChild),M.set(t,r=new A(Object.assign({templateFactory:F},a))),r.appendInto(t)),r.setValue(e),r.commit()})(e,l,Object.assign({templateFactory:H(r)},a)),o){const e=M.get(l);M.delete(l);((e,t,a)=>{U.add(e);const r=a?a.element:document.createElement("template"),s=t.querySelectorAll("style"),{length:i}=s;if(0===i)return void window.ShadyCSS.prepareTemplateStyles(r,e);const n=document.createElement("style");for(let e=0;e<i;e++){const t=s[e];t.parentNode.removeChild(t),n.textContent+=t.textContent}(e=>{W.forEach(t=>{const a=R.get(j(t,e));void 0!==a&&a.keyString.forEach(e=>{const{element:{content:t}}=e,a=new Set;Array.from(t.querySelectorAll("style")).forEach(e=>{a.add(e)}),m(e,a)})})})(e);const o=r.content;a?function(e,t,a=null){const{element:{content:r},parts:s}=e;if(null==a)return void r.appendChild(t);const i=document.createTreeWalker(r,133,null,!1);let n=v(s),o=0,l=-1;for(;i.nextNode();)for(l++,i.currentNode===a&&(o=f(t),a.parentNode.insertBefore(t,a));-1!==n&&s[n].index===l;){if(o>0){for(;-1!==n;)s[n].index+=o,n=v(s,n);return}n=v(s,n)}}(a,n,o.firstChild):o.insertBefore(n,o.firstChild),window.ShadyCSS.prepareTemplateStyles(r,e);const l=o.querySelector("style");if(window.ShadyCSS.nativeShadow&&null!==l)t.insertBefore(l.cloneNode(!0),t.firstChild);else if(a){o.insertBefore(n,o.firstChild);const e=new Set;e.add(n),m(a,e)}})(r,l,e.value instanceof w?e.value.template:void 0),s(t,t.firstChild),t.appendChild(l),M.set(t,e)}!i&&n&&window.ShadyCSS.styleElement(t.host)},re.shadowRootOptions={mode:"open"}},330(e){e.exports=JSON.parse('{"name":"lcars-dashboard","private":true,"version":"4.10.2","description":"LCARS Dashboard — Home Assistant Lovelace dashboard with Star Trek LCARS UI. Based on Dwains Dashboard by Dwain Scheeren.","scripts":{"build":"webpack --mode=production","watch":"webpack --watch --mode=development"},"keywords":["lcars","home-assistant","lovelace","dashboard","hacs"],"author":"htiel (based on Dwains Dashboard by Dwain Scheeren)","license":"MIT","devDependencies":{"autoprefixer":"^10.2.5","css-loader":"^5.1.3","html-webpack-plugin":"^5.3.1","postcss":"^8.2.8","postcss-cli":"^8.3.1","postcss-loader":"^5.2.0","style-loader":"^2.0.0","tailwindcss":"^2.0.3","webpack":"^5.26.0","webpack-cli":"^4.5.0","webpack-dev-server":"^5.2.3","webpack-merge":"^5.7.3"},"dependencies":{"@mdi/js":"^6.5.95","card-tools":"github:thomasloven/lovelace-card-tools","custom-card-helpers":"^1.8.0","js-cookie":"^3.0.1","lit-element":"^2.2.1","lit-html":"^1.1.2","sortablejs":"^1.14.0"}}')}},t={};function a(r){var s=t[r];if(void 0!==s)return s.exports;var i=t[r]={exports:{}};return e[r](i,i.exports,a),i.exports}a.d=(e,t)=>{for(var r in t)a.o(t,r)&&!a.o(e,r)&&Object.defineProperty(e,r,{enumerable:!0,get:t[r]})},a.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),(()=>{var e=a(845),t=a(622),r=a(851);class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_activePath:{type:String}}}constructor(){super(),this._activePath="home"}set hass(e){this._hass=e}setConfig(e){this._config=e}_handleNav(e){this._activePath=e,(0,r.oo)(`/lcars-dashboard/${e}`),this.requestUpdate()}static get styles(){return[t.B,e.AH`
+`},845(e,t,a){a.d(t,{WF:()=>re,AH:()=>te,qy:()=>L});const r="undefined"!=typeof window&&null!=window.customElements&&void 0!==window.customElements.polyfillWrapFlushCallback,i=(e,t,a=null)=>{for(;t!==a;){const a=t.nextSibling;e.removeChild(t),t=a}},s=`{{lit-${String(Math.random()).slice(2)}}}`,n=`\x3c!--${s}--\x3e`,o=new RegExp(`${s}|${n}`),l="$lit$";class c{constructor(e,t){this.parts=[],this.element=t;const a=[],r=[],i=document.createTreeWalker(t.content,133,null,!1);let n=0,c=-1,p=0;const{strings:m,values:{length:v}}=e;for(;p<v;){const e=i.nextNode();if(null!==e){if(c++,1===e.nodeType){if(e.hasAttributes()){const t=e.attributes,{length:a}=t;let r=0;for(let e=0;e<a;e++)d(t[e].name,l)&&r++;for(;r-- >0;){const t=m[p],a=h.exec(t)[2],r=a.toLowerCase()+l,i=e.getAttribute(r);e.removeAttribute(r);const s=i.split(o);this.parts.push({type:"attribute",index:c,name:a,strings:s}),p+=s.length-1}}"TEMPLATE"===e.tagName&&(r.push(e),i.currentNode=e.content)}else if(3===e.nodeType){const t=e.data;if(t.indexOf(s)>=0){const r=e.parentNode,i=t.split(o),s=i.length-1;for(let t=0;t<s;t++){let a,s=i[t];if(""===s)a=u();else{const e=h.exec(s);null!==e&&d(e[2],l)&&(s=s.slice(0,e.index)+e[1]+e[2].slice(0,-5)+e[3]),a=document.createTextNode(s)}r.insertBefore(a,e),this.parts.push({type:"node",index:++c})}""===i[s]?(r.insertBefore(u(),e),a.push(e)):e.data=i[s],p+=s}}else if(8===e.nodeType)if(e.data===s){const t=e.parentNode;null!==e.previousSibling&&c!==n||(c++,t.insertBefore(u(),e)),n=c,this.parts.push({type:"node",index:c}),null===e.nextSibling?e.data="":(a.push(e),c--),p++}else{let t=-1;for(;-1!==(t=e.data.indexOf(s,t+1));)this.parts.push({type:"node",index:-1}),p++}}else i.currentNode=r.pop()}for(const e of a)e.parentNode.removeChild(e)}}const d=(e,t)=>{const a=e.length-t.length;return a>=0&&e.slice(a)===t},p=e=>-1!==e.index,u=()=>document.createComment(""),h=/([ \x09\x0a\x0c\x0d])([^\0-\x1F\x7F-\x9F "'>=/]+)([ \x09\x0a\x0c\x0d]*=[ \x09\x0a\x0c\x0d]*(?:[^ \x09\x0a\x0c\x0d"'`<>=]*|"[^"]*|'[^']*))$/;function m(e,t){const{element:{content:a},parts:r}=e,i=document.createTreeWalker(a,133,null,!1);let s=f(r),n=r[s],o=-1,l=0;const c=[];let d=null;for(;i.nextNode();){o++;const e=i.currentNode;for(e.previousSibling===d&&(d=null),t.has(e)&&(c.push(e),null===d&&(d=e)),null!==d&&l++;void 0!==n&&n.index===o;)n.index=null!==d?-1:n.index-l,s=f(r,s),n=r[s]}c.forEach(e=>e.parentNode.removeChild(e))}const v=e=>{let t=11===e.nodeType?0:1;const a=document.createTreeWalker(e,133,null,!1);for(;a.nextNode();)t++;return t},f=(e,t=-1)=>{for(let a=t+1;a<e.length;a++){const t=e[a];if(p(t))return a}return-1},g=new WeakMap,b=e=>"function"==typeof e&&g.has(e),y={},_={};class w{constructor(e,t,a){this.__parts=[],this.template=e,this.processor=t,this.options=a}update(e){let t=0;for(const a of this.__parts)void 0!==a&&a.setValue(e[t]),t++;for(const e of this.__parts)void 0!==e&&e.commit()}_clone(){const e=r?this.template.element.content.cloneNode(!0):document.importNode(this.template.element.content,!0),t=[],a=this.template.parts,i=document.createTreeWalker(e,133,null,!1);let s,n=0,o=0,l=i.nextNode();for(;n<a.length;)if(s=a[n],p(s)){for(;o<s.index;)o++,"TEMPLATE"===l.nodeName&&(t.push(l),i.currentNode=l.content),null===(l=i.nextNode())&&(i.currentNode=t.pop(),l=i.nextNode());if("node"===s.type){const e=this.processor.handleTextExpression(this.options);e.insertAfterNode(l.previousSibling),this.__parts.push(e)}else this.__parts.push(...this.processor.handleAttributeExpressions(l,s.name,s.strings,this.options));n++}else this.__parts.push(void 0),n++;return r&&(document.adoptNode(e),customElements.upgrade(e)),e}}const x=window.trustedTypes&&trustedTypes.createPolicy("lit-html",{createHTML:e=>e}),$=` ${s} `;class k{constructor(e,t,a,r){this.strings=e,this.values=t,this.type=a,this.processor=r}getHTML(){const e=this.strings.length-1;let t="",a=!1;for(let r=0;r<e;r++){const e=this.strings[r],i=e.lastIndexOf("\x3c!--");a=(i>-1||a)&&-1===e.indexOf("--\x3e",i+1);const o=h.exec(e);t+=null===o?e+(a?$:n):e.substr(0,o.index)+o[1]+o[2]+l+o[3]+s}return t+=this.strings[e],t}getTemplateElement(){const e=document.createElement("template");let t=this.getHTML();return void 0!==x&&(t=x.createHTML(t)),e.innerHTML=t,e}}const S=e=>null===e||!("object"==typeof e||"function"==typeof e),C=e=>Array.isArray(e)||!(!e||!e[Symbol.iterator]);class E{constructor(e,t,a){this.dirty=!0,this.element=e,this.name=t,this.strings=a,this.parts=[];for(let e=0;e<a.length-1;e++)this.parts[e]=this._createPart()}_createPart(){return new z(this)}_getValue(){const e=this.strings,t=e.length-1,a=this.parts;if(1===t&&""===e[0]&&""===e[1]){const e=a[0].value;if("symbol"==typeof e)return String(e);if("string"==typeof e||!C(e))return e}let r="";for(let i=0;i<t;i++){r+=e[i];const t=a[i];if(void 0!==t){const e=t.value;if(S(e)||!C(e))r+="string"==typeof e?e:String(e);else for(const t of e)r+="string"==typeof t?t:String(t)}}return r+=e[t],r}commit(){this.dirty&&(this.dirty=!1,this.element.setAttribute(this.name,this._getValue()))}}class z{constructor(e){this.value=void 0,this.committer=e}setValue(e){e===y||S(e)&&e===this.value||(this.value=e,b(e)||(this.committer.dirty=!0))}commit(){for(;b(this.value);){const e=this.value;this.value=y,e(this)}this.value!==y&&this.committer.commit()}}class A{constructor(e){this.value=void 0,this.__pendingValue=void 0,this.options=e}appendInto(e){this.startNode=e.appendChild(u()),this.endNode=e.appendChild(u())}insertAfterNode(e){this.startNode=e,this.endNode=e.nextSibling}appendIntoPart(e){e.__insert(this.startNode=u()),e.__insert(this.endNode=u())}insertAfterPart(e){e.__insert(this.startNode=u()),this.endNode=e.endNode,e.endNode=this.startNode}setValue(e){this.__pendingValue=e}commit(){if(null===this.startNode.parentNode)return;for(;b(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=y,e(this)}const e=this.__pendingValue;e!==y&&(S(e)?e!==this.value&&this.__commitText(e):e instanceof k?this.__commitTemplateResult(e):e instanceof Node?this.__commitNode(e):C(e)?this.__commitIterable(e):e===_?(this.value=_,this.clear()):this.__commitText(e))}__insert(e){this.endNode.parentNode.insertBefore(e,this.endNode)}__commitNode(e){this.value!==e&&(this.clear(),this.__insert(e),this.value=e)}__commitText(e){const t=this.startNode.nextSibling,a="string"==typeof(e=null==e?"":e)?e:String(e);t===this.endNode.previousSibling&&3===t.nodeType?t.data=a:this.__commitNode(document.createTextNode(a)),this.value=e}__commitTemplateResult(e){const t=this.options.templateFactory(e);if(this.value instanceof w&&this.value.template===t)this.value.update(e.values);else{const a=new w(t,e.processor,this.options),r=a._clone();a.update(e.values),this.__commitNode(r),this.value=a}}__commitIterable(e){Array.isArray(this.value)||(this.value=[],this.clear());const t=this.value;let a,r=0;for(const i of e)a=t[r],void 0===a&&(a=new A(this.options),t.push(a),0===r?a.appendIntoPart(this):a.insertAfterPart(t[r-1])),a.setValue(i),a.commit(),r++;r<t.length&&(t.length=r,this.clear(a&&a.endNode))}clear(e=this.startNode){i(this.startNode.parentNode,e.nextSibling,this.endNode)}}class q{constructor(e,t,a){if(this.value=void 0,this.__pendingValue=void 0,2!==a.length||""!==a[0]||""!==a[1])throw new Error("Boolean attributes can only contain a single expression");this.element=e,this.name=t,this.strings=a}setValue(e){this.__pendingValue=e}commit(){for(;b(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=y,e(this)}if(this.__pendingValue===y)return;const e=!!this.__pendingValue;this.value!==e&&(e?this.element.setAttribute(this.name,""):this.element.removeAttribute(this.name),this.value=e),this.__pendingValue=y}}class P extends E{constructor(e,t,a){super(e,t,a),this.single=2===a.length&&""===a[0]&&""===a[1]}_createPart(){return new N(this)}_getValue(){return this.single?this.parts[0].value:super._getValue()}commit(){this.dirty&&(this.dirty=!1,this.element[this.name]=this._getValue())}}class N extends z{}let D=!1;(()=>{try{const e={get capture(){return D=!0,!1}};window.addEventListener("test",e,e),window.removeEventListener("test",e,e)}catch(e){}})();class M{constructor(e,t,a){this.value=void 0,this.__pendingValue=void 0,this.element=e,this.eventName=t,this.eventContext=a,this.__boundHandleEvent=e=>this.handleEvent(e)}setValue(e){this.__pendingValue=e}commit(){for(;b(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=y,e(this)}if(this.__pendingValue===y)return;const e=this.__pendingValue,t=this.value,a=null==e||null!=t&&(e.capture!==t.capture||e.once!==t.once||e.passive!==t.passive),r=null!=e&&(null==t||a);a&&this.element.removeEventListener(this.eventName,this.__boundHandleEvent,this.__options),r&&(this.__options=T(e),this.element.addEventListener(this.eventName,this.__boundHandleEvent,this.__options)),this.value=e,this.__pendingValue=y}handleEvent(e){"function"==typeof this.value?this.value.call(this.eventContext||this.element,e):this.value.handleEvent(e)}}const T=e=>e&&(D?{capture:e.capture,passive:e.passive,once:e.once}:e.capture);function F(e){let t=O.get(e.type);void 0===t&&(t={stringsArray:new WeakMap,keyString:new Map},O.set(e.type,t));let a=t.stringsArray.get(e.strings);if(void 0!==a)return a;const r=e.strings.join(s);return a=t.keyString.get(r),void 0===a&&(a=new c(e,e.getTemplateElement()),t.keyString.set(r,a)),t.stringsArray.set(e.strings,a),a}const O=new Map,I=new WeakMap,R=new class{handleAttributeExpressions(e,t,a,r){const i=t[0];return"."===i?new P(e,t.slice(1),a).parts:"@"===i?[new M(e,t.slice(1),r.eventContext)]:"?"===i?[new q(e,t.slice(1),a)]:new E(e,t,a).parts}handleTextExpression(e){return new A(e)}};"undefined"!=typeof window&&(window.litHtmlVersions||(window.litHtmlVersions=[])).push("1.4.1");const L=(e,...t)=>new k(e,t,"html",R),B=(e,t)=>`${e}--${t}`;let W=!0;void 0===window.ShadyCSS?W=!1:void 0===window.ShadyCSS.prepareTemplateDom&&(console.warn("Incompatible ShadyCSS version detected. Please update to at least @webcomponents/webcomponentsjs@2.0.2 and @webcomponents/shadycss@1.3.1."),W=!1);const j=e=>t=>{const a=B(t.type,e);let r=O.get(a);void 0===r&&(r={stringsArray:new WeakMap,keyString:new Map},O.set(a,r));let i=r.stringsArray.get(t.strings);if(void 0!==i)return i;const n=t.strings.join(s);if(i=r.keyString.get(n),void 0===i){const a=t.getTemplateElement();W&&window.ShadyCSS.prepareTemplateDom(a,e),i=new c(t,a),r.keyString.set(n,i)}return r.stringsArray.set(t.strings,i),i},H=["html","svg"],U=new Set;window.JSCompiler_renameProperty=(e,t)=>e;const V={toAttribute(e,t){switch(t){case Boolean:return e?"":null;case Object:case Array:return null==e?e:JSON.stringify(e)}return e},fromAttribute(e,t){switch(t){case Boolean:return null!==e;case Number:return null===e?null:Number(e);case Object:case Array:return JSON.parse(e)}return e}},G=(e,t)=>t!==e&&(t==t||e==e),X={attribute:!0,type:String,converter:V,reflect:!1,hasChanged:G},J="finalized";class Y extends HTMLElement{constructor(){super(),this.initialize()}static get observedAttributes(){this.finalize();const e=[];return this._classProperties.forEach((t,a)=>{const r=this._attributeNameForProperty(a,t);void 0!==r&&(this._attributeToPropertyMap.set(r,a),e.push(r))}),e}static _ensureClassProperties(){if(!this.hasOwnProperty(JSCompiler_renameProperty("_classProperties",this))){this._classProperties=new Map;const e=Object.getPrototypeOf(this)._classProperties;void 0!==e&&e.forEach((e,t)=>this._classProperties.set(t,e))}}static createProperty(e,t=X){if(this._ensureClassProperties(),this._classProperties.set(e,t),t.noAccessor||this.prototype.hasOwnProperty(e))return;const a="symbol"==typeof e?Symbol():`__${e}`,r=this.getPropertyDescriptor(e,a,t);void 0!==r&&Object.defineProperty(this.prototype,e,r)}static getPropertyDescriptor(e,t,a){return{get(){return this[t]},set(r){const i=this[e];this[t]=r,this.requestUpdateInternal(e,i,a)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this._classProperties&&this._classProperties.get(e)||X}static finalize(){const e=Object.getPrototypeOf(this);if(e.hasOwnProperty(J)||e.finalize(),this[J]=!0,this._ensureClassProperties(),this._attributeToPropertyMap=new Map,this.hasOwnProperty(JSCompiler_renameProperty("properties",this))){const e=this.properties,t=[...Object.getOwnPropertyNames(e),..."function"==typeof Object.getOwnPropertySymbols?Object.getOwnPropertySymbols(e):[]];for(const a of t)this.createProperty(a,e[a])}}static _attributeNameForProperty(e,t){const a=t.attribute;return!1===a?void 0:"string"==typeof a?a:"string"==typeof e?e.toLowerCase():void 0}static _valueHasChanged(e,t,a=G){return a(e,t)}static _propertyValueFromAttribute(e,t){const a=t.type,r=t.converter||V,i="function"==typeof r?r:r.fromAttribute;return i?i(e,a):e}static _propertyValueToAttribute(e,t){if(void 0===t.reflect)return;const a=t.type,r=t.converter;return(r&&r.toAttribute||V.toAttribute)(e,a)}initialize(){this._updateState=0,this._updatePromise=new Promise(e=>this._enableUpdatingResolver=e),this._changedProperties=new Map,this._saveInstanceProperties(),this.requestUpdateInternal()}_saveInstanceProperties(){this.constructor._classProperties.forEach((e,t)=>{if(this.hasOwnProperty(t)){const e=this[t];delete this[t],this._instanceProperties||(this._instanceProperties=new Map),this._instanceProperties.set(t,e)}})}_applyInstanceProperties(){this._instanceProperties.forEach((e,t)=>this[t]=e),this._instanceProperties=void 0}connectedCallback(){this.enableUpdating()}enableUpdating(){void 0!==this._enableUpdatingResolver&&(this._enableUpdatingResolver(),this._enableUpdatingResolver=void 0)}disconnectedCallback(){}attributeChangedCallback(e,t,a){t!==a&&this._attributeToProperty(e,a)}_propertyToAttribute(e,t,a=X){const r=this.constructor,i=r._attributeNameForProperty(e,a);if(void 0!==i){const e=r._propertyValueToAttribute(t,a);if(void 0===e)return;this._updateState=8|this._updateState,null==e?this.removeAttribute(i):this.setAttribute(i,e),this._updateState=-9&this._updateState}}_attributeToProperty(e,t){if(8&this._updateState)return;const a=this.constructor,r=a._attributeToPropertyMap.get(e);if(void 0!==r){const e=a.getPropertyOptions(r);this._updateState=16|this._updateState,this[r]=a._propertyValueFromAttribute(t,e),this._updateState=-17&this._updateState}}requestUpdateInternal(e,t,a){let r=!0;if(void 0!==e){const i=this.constructor;a=a||i.getPropertyOptions(e),i._valueHasChanged(this[e],t,a.hasChanged)?(this._changedProperties.has(e)||this._changedProperties.set(e,t),!0!==a.reflect||16&this._updateState||(void 0===this._reflectingProperties&&(this._reflectingProperties=new Map),this._reflectingProperties.set(e,a))):r=!1}!this._hasRequestedUpdate&&r&&(this._updatePromise=this._enqueueUpdate())}requestUpdate(e,t){return this.requestUpdateInternal(e,t),this.updateComplete}async _enqueueUpdate(){this._updateState=4|this._updateState;try{await this._updatePromise}catch(e){}const e=this.performUpdate();return null!=e&&await e,!this._hasRequestedUpdate}get _hasRequestedUpdate(){return 4&this._updateState}get hasUpdated(){return 1&this._updateState}performUpdate(){if(!this._hasRequestedUpdate)return;this._instanceProperties&&this._applyInstanceProperties();let e=!1;const t=this._changedProperties;try{e=this.shouldUpdate(t),e?this.update(t):this._markUpdated()}catch(t){throw e=!1,this._markUpdated(),t}e&&(1&this._updateState||(this._updateState=1|this._updateState,this.firstUpdated(t)),this.updated(t))}_markUpdated(){this._changedProperties=new Map,this._updateState=-5&this._updateState}get updateComplete(){return this._getUpdateComplete()}_getUpdateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._updatePromise}shouldUpdate(e){return!0}update(e){void 0!==this._reflectingProperties&&this._reflectingProperties.size>0&&(this._reflectingProperties.forEach((e,t)=>this._propertyToAttribute(t,this[t],e)),this._reflectingProperties=void 0),this._markUpdated()}updated(e){}firstUpdated(e){}}Y[J]=!0;const Q=Element.prototype;Q.msMatchesSelector||Q.webkitMatchesSelector;const Z=window.ShadowRoot&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,K=Symbol();class ee{constructor(e,t){if(t!==K)throw new Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e}get styleSheet(){return void 0===this._styleSheet&&(Z?(this._styleSheet=new CSSStyleSheet,this._styleSheet.replaceSync(this.cssText)):this._styleSheet=null),this._styleSheet}toString(){return this.cssText}}const te=(e,...t)=>{const a=t.reduce((t,a,r)=>t+(e=>{if(e instanceof ee)return e.cssText;if("number"==typeof e)return e;throw new Error(`Value passed to 'css' function must be a 'css' function result: ${e}. Use 'unsafeCSS' to pass non-literal values, but\n            take care to ensure page security.`)})(a)+e[r+1],e[0]);return new ee(a,K)};(window.litElementVersions||(window.litElementVersions=[])).push("2.5.1");const ae={};class re extends Y{static getStyles(){return this.styles}static _getUniqueStyles(){if(this.hasOwnProperty(JSCompiler_renameProperty("_styles",this)))return;const e=this.getStyles();if(Array.isArray(e)){const t=(e,a)=>e.reduceRight((e,a)=>Array.isArray(a)?t(a,e):(e.add(a),e),a),a=t(e,new Set),r=[];a.forEach(e=>r.unshift(e)),this._styles=r}else this._styles=void 0===e?[]:[e];this._styles=this._styles.map(e=>{if(e instanceof CSSStyleSheet&&!Z){const t=Array.prototype.slice.call(e.cssRules).reduce((e,t)=>e+t.cssText,"");return new ee(String(t),K)}return e})}initialize(){super.initialize(),this.constructor._getUniqueStyles(),this.renderRoot=this.createRenderRoot(),window.ShadowRoot&&this.renderRoot instanceof window.ShadowRoot&&this.adoptStyles()}createRenderRoot(){return this.attachShadow(this.constructor.shadowRootOptions)}adoptStyles(){const e=this.constructor._styles;0!==e.length&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow?Z?this.renderRoot.adoptedStyleSheets=e.map(e=>e instanceof CSSStyleSheet?e:e.styleSheet):this._needsShimAdoptedStyleSheets=!0:window.ShadyCSS.ScopingShim.prepareAdoptedCssText(e.map(e=>e.cssText),this.localName))}connectedCallback(){super.connectedCallback(),this.hasUpdated&&void 0!==window.ShadyCSS&&window.ShadyCSS.styleElement(this)}update(e){const t=this.render();super.update(e),t!==ae&&this.constructor.render(t,this.renderRoot,{scopeName:this.localName,eventContext:this}),this._needsShimAdoptedStyleSheets&&(this._needsShimAdoptedStyleSheets=!1,this.constructor._styles.forEach(e=>{const t=document.createElement("style");t.textContent=e.cssText,this.renderRoot.appendChild(t)}))}render(){return ae}}re.finalized=!0,re.render=(e,t,a)=>{if(!a||"object"!=typeof a||!a.scopeName)throw new Error("The `scopeName` option is required.");const r=a.scopeName,s=I.has(t),n=W&&11===t.nodeType&&!!t.host,o=n&&!U.has(r),l=o?document.createDocumentFragment():t;if(((e,t,a)=>{let r=I.get(t);void 0===r&&(i(t,t.firstChild),I.set(t,r=new A(Object.assign({templateFactory:F},a))),r.appendInto(t)),r.setValue(e),r.commit()})(e,l,Object.assign({templateFactory:j(r)},a)),o){const e=I.get(l);I.delete(l);((e,t,a)=>{U.add(e);const r=a?a.element:document.createElement("template"),i=t.querySelectorAll("style"),{length:s}=i;if(0===s)return void window.ShadyCSS.prepareTemplateStyles(r,e);const n=document.createElement("style");for(let e=0;e<s;e++){const t=i[e];t.parentNode.removeChild(t),n.textContent+=t.textContent}(e=>{H.forEach(t=>{const a=O.get(B(t,e));void 0!==a&&a.keyString.forEach(e=>{const{element:{content:t}}=e,a=new Set;Array.from(t.querySelectorAll("style")).forEach(e=>{a.add(e)}),m(e,a)})})})(e);const o=r.content;a?function(e,t,a=null){const{element:{content:r},parts:i}=e;if(null==a)return void r.appendChild(t);const s=document.createTreeWalker(r,133,null,!1);let n=f(i),o=0,l=-1;for(;s.nextNode();)for(l++,s.currentNode===a&&(o=v(t),a.parentNode.insertBefore(t,a));-1!==n&&i[n].index===l;){if(o>0){for(;-1!==n;)i[n].index+=o,n=f(i,n);return}n=f(i,n)}}(a,n,o.firstChild):o.insertBefore(n,o.firstChild),window.ShadyCSS.prepareTemplateStyles(r,e);const l=o.querySelector("style");if(window.ShadyCSS.nativeShadow&&null!==l)t.insertBefore(l.cloneNode(!0),t.firstChild);else if(a){o.insertBefore(n,o.firstChild);const e=new Set;e.add(n),m(a,e)}})(r,l,e.value instanceof w?e.value.template:void 0),i(t,t.firstChild),t.appendChild(l),I.set(t,e)}!s&&n&&window.ShadyCSS.styleElement(t.host)},re.shadowRootOptions={mode:"open"}},330(e){e.exports=JSON.parse('{"name":"lcars-dashboard","private":true,"version":"4.11.0","description":"LCARS Dashboard — Home Assistant Lovelace dashboard with Star Trek LCARS UI. Based on Dwains Dashboard by Dwain Scheeren.","scripts":{"build":"webpack --mode=production","watch":"webpack --watch --mode=development"},"keywords":["lcars","home-assistant","lovelace","dashboard","hacs"],"author":"htiel (based on Dwains Dashboard by Dwain Scheeren)","license":"MIT","devDependencies":{"autoprefixer":"^10.2.5","css-loader":"^5.1.3","html-webpack-plugin":"^5.3.1","postcss":"^8.2.8","postcss-cli":"^8.3.1","postcss-loader":"^5.2.0","style-loader":"^2.0.0","tailwindcss":"^2.0.3","webpack":"^5.26.0","webpack-cli":"^4.5.0","webpack-dev-server":"^5.2.3","webpack-merge":"^5.7.3"},"dependencies":{"@mdi/js":"^6.5.95","card-tools":"github:thomasloven/lovelace-card-tools#477f3d4eeb5c70cab047d418d19afb6b0f07bf49","custom-card-helpers":"^1.8.0","js-cookie":"^3.0.1","lit-element":"^2.2.1","lit-html":"^1.1.2","sortablejs":"^1.14.0"}}')}},t={};function a(r){var i=t[r];if(void 0!==i)return i.exports;var s=t[r]={exports:{}};return e[r](s,s.exports,a),s.exports}a.d=(e,t)=>{for(var r in t)a.o(t,r)&&!a.o(e,r)&&Object.defineProperty(e,r,{enumerable:!0,get:t[r]})},a.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),(()=>{var e=a(845),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_activePath:{type:String}}}constructor(){super(),this._activePath="home"}set hass(e){this._hass=e}setConfig(e){this._config=e}_handleNav(e){this._activePath=e,(0,r.oo)(`/lcars-dashboard/${e}`),this.requestUpdate()}static get styles(){return[t.B,e.AH`
           :host {
             display: block;
           }
@@ -249,7 +249,7 @@
               </button>
             `)}
         </div>
-      `}getCardSize(){return 3}}customElements.get("lcars-navigation-card")||customElements.define("lcars-navigation-card",s)})(),a(851).g0.info("Bundle","JS bundle loaded at",(new Date).toISOString()),(()=>{var e=a(845),t=a(622),r=a(851);const s="Layout";class i extends e.WF{static get properties(){return{cards:{type:Array},_hass:{type:Object},_narrow:{type:Boolean},_selectedArea:{type:String},_selectedFloor:{type:String},_editMode:{type:Boolean}}}constructor(){super(),this.cards=[],this._narrow=window.innerWidth<768,this._selectedArea=null,this._selectedFloor=null,this._editMode=!1,this._elbowPressTimer=null,this._resizeHandler=()=>{this._narrow=window.innerWidth<768}}connectedCallback(){super.connectedCallback(),window.addEventListener("resize",this._resizeHandler),r.g0.debug(s,"connectedCallback — layout mounted")}disconnectedCallback(){super.disconnectedCallback(),window.removeEventListener("resize",this._resizeHandler),this._elbowPressTimer&&(clearTimeout(this._elbowPressTimer),this._elbowPressTimer=null),r.g0.debug(s,"disconnectedCallback — layout unmounted")}updated(e){super.updated(e),e.has("_editMode")&&(this._editMode?this.setAttribute("edit-mode",""):this.removeAttribute("edit-mode"))}setConfig(e){try{this._config=e,r.g0.debug(s,"setConfig",e)}catch(e){throw r.g0.error(s,"setConfig FAILED — this causes CONFIGURATION ERROR:",e),e}}set hass(e){const t=this._hass;this._hass=e,t||r.g0.debug(s,"First hass received — cards:",this.cards?.length||0),t&&t.areas!==e.areas&&this._selectedArea&&(e.areas?.[this._selectedArea]||(r.g0.debug(s,"Auto-deselecting deleted area:",this._selectedArea),this._selectedArea=null,r.o6.dispatchEvent(new CustomEvent("lcars-area-selected",{detail:{areaId:null}})))),t&&t.floors!==e.floors&&this._selectedFloor&&(e.floors?.[this._selectedFloor]||(r.g0.debug(s,"Auto-deselecting deleted floor:",this._selectedFloor),this._selectedFloor=null,r.o6.dispatchEvent(new CustomEvent("lcars-floor-selected",{detail:{floorId:null}})))),this.cards&&this.cards.forEach(t=>{t&&(t.hass=e)})}_selectArea(e){this._selectedFloor&&(this._selectedFloor=null,r.o6.dispatchEvent(new CustomEvent("lcars-floor-selected",{detail:{floorId:null}}))),this._selectedArea=this._selectedArea===e?null:e,r.g0.debug(s,"Area selected:",this._selectedArea||"(deselected)"),r.o6.dispatchEvent(new CustomEvent("lcars-area-selected",{detail:{areaId:this._selectedArea}}))}_selectFloor(e){this._selectedArea&&(this._selectedArea=null,r.o6.dispatchEvent(new CustomEvent("lcars-area-selected",{detail:{areaId:null}}))),this._selectedFloor=this._selectedFloor===e?null:e,r.g0.debug(s,"Floor selected:",this._selectedFloor||"(deselected)"),r.o6.dispatchEvent(new CustomEvent("lcars-floor-selected",{detail:{floorId:this._selectedFloor}}))}_toggleEditMode(){this._hass?.user?.is_admin&&(this._editMode=!this._editMode,r.g0.info(s,"Edit mode:",this._editMode?"ENABLED":"DISABLED"),r.o6.dispatchEvent(new CustomEvent("lcars-edit-mode",{detail:{enabled:this._editMode}})))}_handleElbowPointerDown(e){this._hass?.user?.is_admin&&(this._elbowPressTimer=setTimeout(()=>{this._toggleEditMode(),this._elbowPressTimer=null},800))}_handleElbowPointerUp(){this._elbowPressTimer&&(clearTimeout(this._elbowPressTimer),this._elbowPressTimer=null)}_editHeaderTitle(){this._editMode&&this._hass&&(0,r.Bo)(this._hass,"lcars-edit-homepage-header-card",{},"Edit Header")}_getAreas(){return this._hass&&this._hass.areas?Object.values(this._hass.areas):[]}_getAreasGroupedByFloor(){const e=this._getAreas(),t=this._hass?.floors?Object.values(this._hass.floors):[],a=new Map;for(const e of t)a.set(e.floor_id,{...e,areas:[]});const r=[];for(const t of e){const e=t.floor_id;e&&a.has(e)?a.get(e).areas.push(t):r.push(t)}const s=[...a.values()].filter(e=>e.areas.length>0).sort((e,t)=>(e.level??99)-(t.level??99)||e.name.localeCompare(t.name)).map(e=>({floor:{floor_id:e.floor_id,name:e.name,icon:e.icon,level:e.level},areas:e.areas}));return r.length>0&&s.push({floor:null,areas:r}),s}static get styles(){return[t.B,e.AH`
+      `}getCardSize(){return 3}}customElements.get("lcars-navigation-card")||customElements.define("lcars-navigation-card",i)})(),a(851).g0.info("Bundle","JS bundle loaded at",(new Date).toISOString()),(()=>{var e=a(845),t=a(622),r=a(851);const i="Layout";class s extends e.WF{static get properties(){return{cards:{type:Array},_hass:{type:Object},_narrow:{type:Boolean},_selectedArea:{type:String},_selectedFloor:{type:String},_editMode:{type:Boolean}}}constructor(){super(),this.cards=[],this._narrow=window.innerWidth<768,this._selectedArea=null,this._selectedFloor=null,this._editMode=!1,this._elbowPressTimer=null,this._resizeHandler=()=>{this._narrow=window.innerWidth<768}}connectedCallback(){super.connectedCallback(),window.addEventListener("resize",this._resizeHandler),r.g0.debug(i,"connectedCallback — layout mounted")}disconnectedCallback(){super.disconnectedCallback(),window.removeEventListener("resize",this._resizeHandler),this._elbowPressTimer&&(clearTimeout(this._elbowPressTimer),this._elbowPressTimer=null),r.g0.debug(i,"disconnectedCallback — layout unmounted")}updated(e){super.updated(e),e.has("_editMode")&&(this._editMode?this.setAttribute("edit-mode",""):this.removeAttribute("edit-mode"))}setConfig(e){try{this._config=e,r.g0.debug(i,"setConfig",e)}catch(e){throw r.g0.error(i,"setConfig FAILED — this causes CONFIGURATION ERROR:",e),e}}set hass(e){const t=this._hass;this._hass=e,t||r.g0.debug(i,"First hass received — cards:",this.cards?.length||0),t&&t.areas!==e.areas&&this._selectedArea&&(e.areas?.[this._selectedArea]||(r.g0.debug(i,"Auto-deselecting deleted area:",this._selectedArea),this._selectedArea=null,r.o6.dispatchEvent(new CustomEvent("lcars-area-selected",{detail:{areaId:null}})))),t&&t.floors!==e.floors&&this._selectedFloor&&(e.floors?.[this._selectedFloor]||(r.g0.debug(i,"Auto-deselecting deleted floor:",this._selectedFloor),this._selectedFloor=null,r.o6.dispatchEvent(new CustomEvent("lcars-floor-selected",{detail:{floorId:null}})))),this.cards&&this.cards.forEach(t=>{t&&(t.hass=e)})}_selectArea(e){this._selectedFloor&&(this._selectedFloor=null,r.o6.dispatchEvent(new CustomEvent("lcars-floor-selected",{detail:{floorId:null}}))),this._selectedArea=this._selectedArea===e?null:e,r.g0.debug(i,"Area selected:",this._selectedArea||"(deselected)"),r.o6.dispatchEvent(new CustomEvent("lcars-area-selected",{detail:{areaId:this._selectedArea}}))}_selectFloor(e){this._selectedArea&&(this._selectedArea=null,r.o6.dispatchEvent(new CustomEvent("lcars-area-selected",{detail:{areaId:null}}))),this._selectedFloor=this._selectedFloor===e?null:e,r.g0.debug(i,"Floor selected:",this._selectedFloor||"(deselected)"),r.o6.dispatchEvent(new CustomEvent("lcars-floor-selected",{detail:{floorId:this._selectedFloor}}))}_toggleEditMode(){this._hass?.user?.is_admin&&(this._editMode=!this._editMode,r.g0.info(i,"Edit mode:",this._editMode?"ENABLED":"DISABLED"),r.o6.dispatchEvent(new CustomEvent("lcars-edit-mode",{detail:{enabled:this._editMode}})))}_handleElbowPointerDown(e){this._hass?.user?.is_admin&&(this._elbowPressTimer=setTimeout(()=>{this._toggleEditMode(),this._elbowPressTimer=null},800))}_handleElbowPointerUp(){this._elbowPressTimer&&(clearTimeout(this._elbowPressTimer),this._elbowPressTimer=null)}_editHeaderTitle(){this._editMode&&this._hass&&(0,r.Bo)(this._hass,"lcars-edit-homepage-header-card",{},"Edit Header")}_getAreas(){return this._hass&&this._hass.areas?Object.values(this._hass.areas):[]}_getAreasGroupedByFloor(){const e=this._getAreas(),t=this._hass?.floors?Object.values(this._hass.floors):[],a=new Map;for(const e of t)a.set(e.floor_id,{...e,areas:[]});const r=[];for(const t of e){const e=t.floor_id;e&&a.has(e)?a.get(e).areas.push(t):r.push(t)}const i=[...a.values()].filter(e=>e.areas.length>0).sort((e,t)=>(e.level??99)-(t.level??99)||e.name.localeCompare(t.name)).map(e=>({floor:{floor_id:e.floor_id,name:e.name,icon:e.icon,level:e.level},areas:e.areas}));return r.length>0&&i.push({floor:null,areas:r}),i}static get styles(){return[t.B,e.AH`
         :host {
           display: block;
           min-height: 100vh;
@@ -679,14 +679,14 @@
           <div class="lcars-footer-endcap" aria-hidden="true"></div>
         </div>
       </div>
-    `}}const n=Promise.race([customElements.whenDefined("hui-masonry-view"),new Promise(e=>setTimeout(e,5e3))]);r.g0.debug(s,"Waiting for hui-masonry-view (5s timeout)..."),n.then(()=>{if(customElements.get("lcars-dashboard-layout"))r.g0.warn(s,"lcars-dashboard-layout already registered — skipping");else{customElements.define("lcars-dashboard-layout",i);const e=a(330);r.g0.info(s,`v${e.version} registered`),console.info(`%c LCARS-DASHBOARD \n%c Version ${e.version}`,"color: #ff9966; font-weight: bold; background: black","color: #f5f6fa; font-weight: bold; background: #333")}}).catch(e=>{r.g0.error(s,"Failed to register lcars-dashboard-layout:",e)})})(),(()=>{var e=a(845),t=a(622),r=a(851);const s="Homepage",i=new Set(["light","switch","fan","input_boolean","lock","automation","script"]),n=new Set(["sensor","binary_sensor"]),o=new Set(["camera"]),l=new Set(["climate"]),c=new Set(["cover"]),d=new Set(["media_player"]),p={light:"Lights",switch:"Switches",fan:"Fans",lock:"Locks",input_boolean:"Toggles",automation:"Automations",script:"Scripts",sensor:"Sensors",binary_sensor:"Binary Sensors",camera:"Cameras",climate:"Climate",cover:"Covers",media_player:"Media",button:"Buttons",number:"Numbers",select:"Selects",input_number:"Inputs",input_select:"Selectors",input_text:"Text Inputs",input_button:"Buttons",input_datetime:"Date/Time",scene:"Scenes",device_tracker:"Trackers",person:"People",update:"Updates",event:"Events",conversation:"Conversation"},h="camera",u="environment",m="battery",f={camera:0,environment:1,battery:2},v=new Set(["carbon_dioxide","carbon_monoxide","volatile_organic_compounds","volatile_organic_compounds_parts","pm25","pm10","pm1","aqi"]),g=/_(air_quality|score)$/,b={camera:0,light:1,switch:2,climate:3,cover:4,media_player:5,fan:6,lock:7,sensor:8,binary_sensor:9};function y(e){const t=e?.attributes?.entity_picture;if(!t)return"";const a=e.last_updated||e.last_changed||"",r=t.includes("?")?"&":"?";return`${t}${r}_cb=${encodeURIComponent(a)}`}class _ extends e.WF{static get properties(){return{data:{type:Object},selectedArea:{type:String},selectedFloor:{type:String},_hass:{type:Object},_editMode:{type:Boolean}}}constructor(){super(),this.data=null,this.selectedArea=null,this.selectedFloor=null,this._editMode=!1,this._configLoading=!1,this._entityCache=new Map,this._cameraRefreshInterval=null,this._cameraObserver=null,this._visibleCameras=new Set,this._loadingCameras=new Set,this._onAreaSelected=e=>{r.g0.debug(s,"Area selected event:",e.detail.areaId),this.selectedArea=e.detail.areaId,this.selectedFloor=null,this._entityCache.clear()},this._onFloorSelected=e=>{r.g0.debug(s,"Floor selected event:",e.detail.floorId),this.selectedFloor=e.detail.floorId,this.selectedArea=null,this._entityCache.clear()},this._onEditMode=e=>{this._editMode=e.detail.enabled,r.g0.debug(s,"Edit mode:",this._editMode)}}connectedCallback(){super.connectedCallback(),r.o6.addEventListener("lcars-area-selected",this._onAreaSelected),r.o6.addEventListener("lcars-floor-selected",this._onFloorSelected),r.o6.addEventListener("lcars-edit-mode",this._onEditMode),this._startCameraRefresh(),document.addEventListener("visibilitychange",this._onVisibilityChange)}disconnectedCallback(){super.disconnectedCallback(),r.o6.removeEventListener("lcars-area-selected",this._onAreaSelected),r.o6.removeEventListener("lcars-floor-selected",this._onFloorSelected),r.o6.removeEventListener("lcars-edit-mode",this._onEditMode),this._stopCameraRefresh(),document.removeEventListener("visibilitychange",this._onVisibilityChange)}_onVisibilityChange=()=>{document.hidden?this._stopCameraTimer():(this._startCameraTimer(),this._refreshVisibleCameras())};_startCameraRefresh(){this._cameraObserver=new IntersectionObserver(e=>{for(const t of e){const e=t.target.dataset.entity;e&&(t.isIntersecting?this._visibleCameras.add(e):this._visibleCameras.delete(e))}},{rootMargin:"50px"}),this._startCameraTimer()}_startCameraTimer(){this._cameraRefreshInterval||(this._cameraRefreshInterval=setInterval(()=>{this._refreshVisibleCameras()},1e4))}_stopCameraTimer(){this._cameraRefreshInterval&&(clearInterval(this._cameraRefreshInterval),this._cameraRefreshInterval=null)}_stopCameraRefresh(){this._stopCameraTimer(),this._cameraObserver&&(this._cameraObserver.disconnect(),this._cameraObserver=null),this._visibleCameras.clear(),this._loadingCameras.clear()}_refreshVisibleCameras(){if(document.hidden||!this._hass)return;const e=Date.now();for(const t of this._visibleCameras){if(this._loadingCameras.has(t))continue;const a=this._hass.states[t];if(!a||"unavailable"===a.state)continue;const r=a.attributes?.entity_picture;if(!r)continue;const s=this.shadowRoot?.querySelector(`img[data-entity="${CSS.escape(t)}"]`);if(!s)continue;const i=r.includes("?")?"&":"?",n=`${r}${i}_cb=${e}`;this._loadingCameras.add(t),s.addEventListener("load",()=>this._loadingCameras.delete(t),{once:!0}),s.addEventListener("error",()=>this._loadingCameras.delete(t),{once:!0}),s.src=n}}updated(e){if(super.updated(e),this._cameraObserver){const e=this.shadowRoot?.querySelectorAll("img[data-entity]")||[],t=new Set;for(const a of e)t.add(a.dataset.entity),this._cameraObserver.observe(a);for(const e of this._visibleCameras)t.has(e)||(this._visibleCameras.delete(e),this._loadingCameras.delete(e))}}setConfig(e){try{this._config=e,r.g0.debug(s,"setConfig:",e)}catch(e){throw r.g0.error(s,"setConfig FAILED — this causes CONFIGURATION ERROR:",e),e}}set hass(e){const t=this._hass;this._hass=e,t||r.g0.debug(s,"First hass received — areas:",Object.keys(e.areas||{}).length,"entities:",Object.keys(e.entities||{}).length),!t||t.entities===e.entities&&t.devices===e.devices||(r.g0.debug(s,"Entity/device registry changed — busting cache"),this._entityCache.clear()),t&&t.areas!==e.areas&&this.selectedArea&&(e.areas?.[this.selectedArea]||(this.selectedArea=null,this._entityCache.clear())),this.data||this._configLoading||this._loadConfiguration()}async _loadConfiguration(){if(this._hass){this._configLoading=!0,r.g0.debug(s,"Loading configuration via WS...");try{const e=await this._hass.callWS({type:"lcars_dashboard/configuration/get"});this.data=e,void 0!==e.debug&&(window.__LCARS_DEBUG=e.debug,e.debug&&r.g0.info(s,"Debug logging auto-enabled from HA backend")),r.g0.debug(s,"Configuration loaded:",Object.keys(e),"version:",e.installed_version)}catch(e){r.g0.error(s,"Failed to load configuration — WS call failed:",e),this.data={}}finally{this._configLoading=!1}}}_handleEntityClick(e){r.g0.debug(s,"Entity click:",e),(0,r.Hv)(e)}_handleEditEntity(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._getEntityState(t),s=a?.attributes?.friendly_name||t;(0,r.Bo)(this._hass,"lcars-edit-entity-card",{entity:t,icon:a?.attributes?.icon||"",name:s},`Edit: ${s}`)}_handleEditDevice(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._hass.devices?.[t],s=a?.name_by_user||a?.name||t;(0,r.Bo)(this._hass,"lcars-edit-device-button-card",{device:t,name:s,icon:""},`Edit: ${s}`)}_handleToggle(e){const t=e.split(".")[0];if(r.g0.debug(s,"Toggle:",e,"domain:",t),"lock"===t){const t=this._getEntityState(e);this._hass.callService("lock","locked"===t?.state?"unlock":"lock",{entity_id:e})}else"script"===t?this._hass.callService("script","turn_on",{entity_id:e}):this._hass.callService("homeassistant","toggle",{entity_id:e})}_getAreaEntities(e){if(!this._hass)return[];if(this._entityCache.has(e))return this._entityCache.get(e);r.g0.debug(s,"Entity cache MISS — resolving area:",e);const t=Object.values(this._hass.entities||{}),a=this._hass.devices||{},i=new Set;Object.values(a).forEach(t=>{t.area_id===e&&i.add(t.id)});const n=t.filter(t=>!(t.hidden_by||t.hidden||t.disabled_by||t.entity_category||t.area_id!==e&&(t.area_id||!t.device_id||!i.has(t.device_id))));return this._entityCache.set(e,n),r.g0.debug(s,"Resolved",n.length,"entities for area:",e),n}_getFloorAreaIds(e){return this._hass?.areas?Object.values(this._hass.areas).filter(t=>t.floor_id===e).map(e=>e.area_id):[]}_getDeviceCategoryEntities(e){if(!this._hass||!e)return{config:[],diagnostic:[]};const t=Object.values(this._hass.entities||{}),a=[],r=[];for(const s of t)s.device_id===e&&(s.disabled_by||"user"===s.hidden_by||s.hidden||("config"===s.entity_category?a.push(s):"diagnostic"===s.entity_category&&r.push(s)));return{config:a,diagnostic:r}}_groupEntities(e){const t=this._hass.devices||{},a=new Map,r=[];e.forEach(e=>{const s=e.entity_id.split(".")[0],i={entity:e,domain:s,state:this._getEntityState(e.entity_id)};i.state&&(e.device_id&&t[e.device_id]?(a.has(e.device_id)||a.set(e.device_id,{device:t[e.device_id],entities:[]}),a.get(e.device_id).entities.push(i)):r.push(i))});const s=(e,t)=>{const a=b[e.domain]??50,r=b[t.domain]??50;return a!==r?a-r:(e.state?.attributes?.friendly_name||"").localeCompare(t.state?.attributes?.friendly_name||"")};return a.forEach(e=>e.entities.sort(s)),r.sort(s),{byDevice:a,noDevice:r}}_groupByDomain(e){const t=new Map;return e.forEach(e=>{t.has(e.domain)||t.set(e.domain,[]),t.get(e.domain).push(e)}),[...t.entries()].sort((e,t)=>(b[e[0]]??50)-(b[t[0]]??50))}_getEntityState(e){return this._hass&&this._hass.states[e]?this._hass.states[e]:null}_getEntityIcon(e){return e?e.attributes?.icon?e.attributes.icon:{light:"mdi:lightbulb",switch:"mdi:toggle-switch",sensor:"mdi:eye",binary_sensor:"mdi:radiobox-blank",climate:"mdi:thermostat",cover:"mdi:window-shutter",fan:"mdi:fan",lock:"mdi:lock",camera:"mdi:video",media_player:"mdi:cast",automation:"mdi:robot",script:"mdi:script-text",update:"mdi:package-up"}[e.entity_id.split(".")[0]]||"mdi:information-outline":"mdi:help-circle-outline"}_withEditPip(t,a){return this._editMode?e.qy`
+    `}}const n=Promise.race([customElements.whenDefined("hui-masonry-view"),new Promise(e=>setTimeout(e,5e3))]);r.g0.debug(i,"Waiting for hui-masonry-view (5s timeout)..."),n.then(()=>{if(customElements.get("lcars-dashboard-layout"))r.g0.warn(i,"lcars-dashboard-layout already registered — skipping");else{customElements.define("lcars-dashboard-layout",s);const e=a(330);r.g0.info(i,`v${e.version} registered`),console.info(`%c LCARS-DASHBOARD \n%c Version ${e.version}`,"color: #ff9966; font-weight: bold; background: black","color: #f5f6fa; font-weight: bold; background: #333")}}).catch(e=>{r.g0.error(i,"Failed to register lcars-dashboard-layout:",e)})})(),(()=>{var e=a(845),t=a(622),r=a(851);const i="camera",s="alarm",n="aquatics",o="climate",l="media",c="environment",d="irrigation",p="weather",u="battery",h={[i]:0,[s]:1,[n]:2,[o]:3,[l]:4,[c]:5,[d]:6,[p]:7,[u]:8},m=new Set(["camera"]),v=new Set(["climate"]),f=new Set(["media_player"]),g=new Set(["alarm_control_panel"]),b=new Set(["weather"]),y=new Set(["light","switch","fan","input_boolean","lock","automation","script"]),_=new Set(["sensor","binary_sensor"]),w=new Set(["cover"]),x=new Set(["carbon_dioxide","carbon_monoxide","volatile_organic_compounds","volatile_organic_compounds_parts","pm25","pm10","pm1","aqi"]),$=/_(air_quality|score)$/,k=/pool|spa/i,S=new Set(["heater","solar","solar_preferred"]);function C(e){const t=e?.preset_modes;return!!Array.isArray(t)&&t.some(e=>S.has(e))}const E=[e=>e.some(e=>m.has(e.domain))?i:null,e=>e.some(e=>g.has(e.domain))?s:null,e=>{for(const t of e)if("climate"===t.domain){if(k.test(t.entity.entity_id))return n;if(C(t.state?.attributes))return n}return null},e=>e.some(e=>v.has(e.domain))?o:null,e=>e.some(e=>f.has(e.domain))?l:null,e=>{let t=0,a=!1;for(const r of e){const e=r.state?.attributes?.device_class||"";x.has(e)&&t++,"fan"===r.domain&&(a=!0),!e&&"sensor"===r.domain&&$.test(r.entity.entity_id)&&t++}return t>=2||t>=1&&a?c:null},e=>function(e){let t=0;for(const a of e){if("switch"!==a.domain)continue;const e=a.state?.attributes;null==e?.zone_number?"outlet"===e?.device_class&&/zone/i.test(a.entity.entity_id)&&t++:t++}return t>=2}(e)?d:null,e=>e.some(e=>b.has(e.domain))?p:null,e=>{let t=!1,a=0;for(const r of e){const e=r.state?.attributes;if(!e)continue;const i=e.device_class||"",s=e.unit_of_measurement||"";"battery"===i&&"%"===s&&(t=!0),"power"===i&&"W"===s&&a++}return t&&a>=2?u:null}],z={light:"Lights",switch:"Switches",fan:"Fans",lock:"Locks",input_boolean:"Toggles",automation:"Automations",script:"Scripts",sensor:"Sensors",binary_sensor:"Binary Sensors",camera:"Cameras",climate:"Climate",cover:"Covers",media_player:"Media",button:"Buttons",number:"Numbers",select:"Selects",input_number:"Inputs",input_select:"Selectors",input_text:"Text Inputs",input_button:"Buttons",input_datetime:"Date/Time",scene:"Scenes",device_tracker:"Trackers",person:"People",update:"Updates",event:"Events",conversation:"Conversation",alarm_control_panel:"Alarm",weather:"Weather",remote:"Remotes",vacuum:"Vacuums"},A={camera:0,light:1,switch:2,climate:3,cover:4,media_player:5,fan:6,lock:7,alarm_control_panel:8,weather:9,sensor:10,binary_sensor:11};function q(e){switch(e){case"sunny":return"var(--lcars-sunflower)";case"clear-night":return"var(--lcars-bluey)";case"partlycloudy":case"snowy-rainy":case"hail":return"var(--lcars-ice)";case"cloudy":case"fog":return"var(--lcars-gray)";case"rainy":case"pouring":default:return"var(--lcars-sky)";case"snowy":return"var(--lcars-space-white)";case"windy":case"windy-variant":return"var(--lcars-almond)";case"lightning":case"lightning-rainy":return"var(--lcars-gold)";case"exceptional":case"unavailable":return"var(--lcars-tomato)"}}function P(e,t={},a={}){const r=a.min??35,i=a.max??95,s=null!=t.min_temp?Number(t.min_temp):r,n=null!=t.max_temp?Number(t.max_temp):i,o=Math.max(r,s),l=Math.min(i,n);return Math.min(l,Math.max(o,Number(e)||o))}function N(e,t){const a=[];function r(){const e=Date.now()-t;for(;a.length>0&&a[0]<e;)a.shift()}return{allow:()=>(r(),!(a.length>=e||(a.push(Date.now()),0))),remaining:()=>(r(),Math.max(0,e-a.length)),resetTime:()=>(r(),a.length<e?0:a[0]+t),reset(){a.length=0}}}function D(e,t=1500){let a=null;return{call(...r){a&&clearTimeout(a),a=setTimeout(()=>{a=null,e(...r)},t)},cancel(){a&&(clearTimeout(a),a=null)}}}const M=new Map,T="Homepage";function F(e){const t=e?.attributes?.entity_picture;if(!t)return"";const a=e.last_updated||e.last_changed||"",r=t.includes("?")?"&":"?";return`${t}${r}_cb=${encodeURIComponent(a)}`}class O extends e.WF{static get properties(){return{data:{type:Object},selectedArea:{type:String},selectedFloor:{type:String},_hass:{type:Object},_editMode:{type:Boolean}}}constructor(){super(),this.data=null,this.selectedArea=null,this.selectedFloor=null,this._editMode=!1,this._configLoading=!1,this._entityCache=new Map,this._cameraRefreshInterval=null,this._cameraObserver=null,this._visibleCameras=new Set,this._loadingCameras=new Set,this._onAreaSelected=e=>{r.g0.debug(T,"Area selected event:",e.detail.areaId),this.selectedArea=e.detail.areaId,this.selectedFloor=null,this._entityCache.clear()},this._onFloorSelected=e=>{r.g0.debug(T,"Floor selected event:",e.detail.floorId),this.selectedFloor=e.detail.floorId,this.selectedArea=null,this._entityCache.clear()},this._onEditMode=e=>{this._editMode=e.detail.enabled,r.g0.debug(T,"Edit mode:",this._editMode)}}connectedCallback(){super.connectedCallback(),r.o6.addEventListener("lcars-area-selected",this._onAreaSelected),r.o6.addEventListener("lcars-floor-selected",this._onFloorSelected),r.o6.addEventListener("lcars-edit-mode",this._onEditMode),this._startCameraRefresh(),document.addEventListener("visibilitychange",this._onVisibilityChange)}disconnectedCallback(){super.disconnectedCallback(),r.o6.removeEventListener("lcars-area-selected",this._onAreaSelected),r.o6.removeEventListener("lcars-floor-selected",this._onFloorSelected),r.o6.removeEventListener("lcars-edit-mode",this._onEditMode),this._stopCameraRefresh(),document.removeEventListener("visibilitychange",this._onVisibilityChange)}_onVisibilityChange=()=>{document.hidden?this._stopCameraTimer():(this._startCameraTimer(),this._refreshVisibleCameras())};_startCameraRefresh(){this._cameraObserver=new IntersectionObserver(e=>{for(const t of e){const e=t.target.dataset.entity;e&&(t.isIntersecting?this._visibleCameras.add(e):this._visibleCameras.delete(e))}},{rootMargin:"50px"}),this._startCameraTimer()}_startCameraTimer(){this._cameraRefreshInterval||(this._cameraRefreshInterval=setInterval(()=>{this._refreshVisibleCameras()},1e4))}_stopCameraTimer(){this._cameraRefreshInterval&&(clearInterval(this._cameraRefreshInterval),this._cameraRefreshInterval=null)}_stopCameraRefresh(){this._stopCameraTimer(),this._cameraObserver&&(this._cameraObserver.disconnect(),this._cameraObserver=null),this._visibleCameras.clear(),this._loadingCameras.clear()}_refreshVisibleCameras(){if(document.hidden||!this._hass)return;const e=Date.now();for(const t of this._visibleCameras){if(this._loadingCameras.has(t))continue;const a=this._hass.states[t];if(!a||"unavailable"===a.state)continue;const r=a.attributes?.entity_picture;if(!r)continue;const i=this.shadowRoot?.querySelector(`img[data-entity="${CSS.escape(t)}"]`);if(!i)continue;const s=r.includes("?")?"&":"?",n=`${r}${s}_cb=${e}`;this._loadingCameras.add(t),i.addEventListener("load",()=>this._loadingCameras.delete(t),{once:!0}),i.addEventListener("error",()=>this._loadingCameras.delete(t),{once:!0}),i.src=n}}updated(e){if(super.updated(e),this._cameraObserver){const e=this.shadowRoot?.querySelectorAll("img[data-entity]")||[],t=new Set;for(const a of e)t.add(a.dataset.entity),this._cameraObserver.observe(a);for(const e of this._visibleCameras)t.has(e)||(this._visibleCameras.delete(e),this._loadingCameras.delete(e))}}setConfig(e){try{this._config=e,r.g0.debug(T,"setConfig:",e)}catch(e){throw r.g0.error(T,"setConfig FAILED — this causes CONFIGURATION ERROR:",e),e}}set hass(e){const t=this._hass;this._hass=e,t||r.g0.debug(T,"First hass received — areas:",Object.keys(e.areas||{}).length,"entities:",Object.keys(e.entities||{}).length),!t||t.entities===e.entities&&t.devices===e.devices||(r.g0.debug(T,"Entity/device registry changed — busting cache"),this._entityCache.clear()),t&&t.areas!==e.areas&&this.selectedArea&&(e.areas?.[this.selectedArea]||(this.selectedArea=null,this._entityCache.clear())),this.data||this._configLoading||this._loadConfiguration()}async _loadConfiguration(){if(this._hass){this._configLoading=!0,r.g0.debug(T,"Loading configuration via WS...");try{const e=await this._hass.callWS({type:"lcars_dashboard/configuration/get"});this.data=e,void 0!==e.debug&&(window.__LCARS_DEBUG=e.debug,e.debug&&r.g0.info(T,"Debug logging auto-enabled from HA backend")),r.g0.debug(T,"Configuration loaded:",Object.keys(e),"version:",e.installed_version)}catch(e){r.g0.error(T,"Failed to load configuration — WS call failed:",e),this.data={}}finally{this._configLoading=!1}}}_handleEntityClick(e){r.g0.debug(T,"Entity click:",e),(0,r.Hv)(e)}_handleEditEntity(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._getEntityState(t),i=a?.attributes?.friendly_name||t;(0,r.Bo)(this._hass,"lcars-edit-entity-card",{entity:t,icon:a?.attributes?.icon||"",name:i},`Edit: ${i}`)}_handleEditDevice(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._hass.devices?.[t],i=a?.name_by_user||a?.name||t;(0,r.Bo)(this._hass,"lcars-edit-device-button-card",{device:t,name:i,icon:""},`Edit: ${i}`)}_handleToggle(e){const t=e.split(".")[0];if(r.g0.debug(T,"Toggle:",e,"domain:",t),"lock"===t){const t=this._getEntityState(e);this._hass.callService("lock","locked"===t?.state?"unlock":"lock",{entity_id:e})}else"script"===t?this._hass.callService("script","turn_on",{entity_id:e}):this._hass.callService("homeassistant","toggle",{entity_id:e})}_getAreaEntities(e){if(!this._hass)return[];if(this._entityCache.has(e))return this._entityCache.get(e);r.g0.debug(T,"Entity cache MISS — resolving area:",e);const t=Object.values(this._hass.entities||{}),a=this._hass.devices||{},i=new Set;Object.values(a).forEach(t=>{t.area_id===e&&i.add(t.id)});const s=t.filter(t=>!(t.hidden_by||t.hidden||t.disabled_by||t.entity_category||t.area_id!==e&&(t.area_id||!t.device_id||!i.has(t.device_id))));return this._entityCache.set(e,s),r.g0.debug(T,"Resolved",s.length,"entities for area:",e),s}_getFloorAreaIds(e){return this._hass?.areas?Object.values(this._hass.areas).filter(t=>t.floor_id===e).map(e=>e.area_id):[]}_getDeviceCategoryEntities(e){if(!this._hass||!e)return{config:[],diagnostic:[]};const t=Object.values(this._hass.entities||{}),a=[],r=[];for(const i of t)i.device_id===e&&(i.disabled_by||"user"===i.hidden_by||i.hidden||("config"===i.entity_category?a.push(i):"diagnostic"===i.entity_category&&r.push(i)));return{config:a,diagnostic:r}}_groupEntities(e){const t=this._hass.devices||{},a=new Map,r=[];e.forEach(e=>{const i=e.entity_id.split(".")[0],s={entity:e,domain:i,state:this._getEntityState(e.entity_id)};s.state&&(e.device_id&&t[e.device_id]?(a.has(e.device_id)||a.set(e.device_id,{device:t[e.device_id],entities:[]}),a.get(e.device_id).entities.push(s)):r.push(s))});const i=(e,t)=>{const a=A[e.domain]??50,r=A[t.domain]??50;return a!==r?a-r:(e.state?.attributes?.friendly_name||"").localeCompare(t.state?.attributes?.friendly_name||"")};return a.forEach(e=>e.entities.sort(i)),r.sort(i),{byDevice:a,noDevice:r}}_groupByDomain(e){const t=new Map;return e.forEach(e=>{t.has(e.domain)||t.set(e.domain,[]),t.get(e.domain).push(e)}),[...t.entries()].sort((e,t)=>(A[e[0]]??50)-(A[t[0]]??50))}_getEntityState(e){return this._hass&&this._hass.states[e]?this._hass.states[e]:null}_getEntityIcon(e){return e?e.attributes?.icon?e.attributes.icon:{light:"mdi:lightbulb",switch:"mdi:toggle-switch",sensor:"mdi:eye",binary_sensor:"mdi:radiobox-blank",climate:"mdi:thermostat",cover:"mdi:window-shutter",fan:"mdi:fan",lock:"mdi:lock",camera:"mdi:video",media_player:"mdi:cast",automation:"mdi:robot",script:"mdi:script-text",update:"mdi:package-up"}[e.entity_id.split(".")[0]]||"mdi:information-outline":"mdi:help-circle-outline"}_withEditPip(t,a){return this._editMode?e.qy`
         <div class="edit-pip-wrap">
           ${a}
           <div class="edit-pip" tabindex="0" role="button" aria-label="Edit entity"
             @click=${e=>this._handleEditEntity(e,t)}
             @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEditEntity(e,t))}}></div>
         </div>
-      `:a}_shortenName(e,t){if(!e)return e;const a=[],r=this._hass?.areas?.[this.selectedArea];if(r?.name&&a.push(r.name),t?.device_id){const e=this._hass?.devices?.[t.device_id],r=e?.name_by_user||e?.name;r&&a.push(r)}a.sort((e,t)=>t.length-e.length);let s=e,i=!0;for(;i;){i=!1;for(const e of a)s.toLowerCase().startsWith(e.toLowerCase())&&(s=s.slice(e.length).trim().replace(/^[-–:]\s*/,""),i=!0)}return s||e}_friendlyName(e,t){const a=e?.attributes?.friendly_name||t.entity_id.split(".").pop().replace(/_/g," ");return this._shortenName(a,t)}_shortDeviceName(e){const t=e?.name_by_user||e?.name||"";if(!t)return"Device";const a=this._hass?.areas?.[this.selectedArea];return a?.name&&t.toLowerCase().startsWith(a.name.toLowerCase())&&t.slice(a.name.length).trim().replace(/^[-–:]\s*/,"")||t}_isOff(e){return["off","unavailable","unknown","idle","standby","locked"].includes(e?.state)}_renderSensorBar(t){const a=parseFloat(t.state);if(isNaN(a))return"";const r=t.attributes?.device_class||"";let s=0,i=100;if("temperature"===r)s=10,i=40;else if("humidity"===r)s=0,i=100;else if("battery"===r)s=0,i=100;else if("illuminance"===r)s=0,i=1e3;else if("power"===r)s=0,i=3e3;else{if(null==t.attributes?.min)return"";s=t.attributes.min,i=t.attributes.max}if(s===i)return"";const n=Math.max(0,Math.min(100,(a-s)/(i-s)*100)),o=Math.round(n/100*10);return e.qy`
+      `:a}_shortenName(e,t){if(!e)return e;const a=[],r=this._hass?.areas?.[this.selectedArea];if(r?.name&&a.push(r.name),t?.device_id){const e=this._hass?.devices?.[t.device_id],r=e?.name_by_user||e?.name;r&&a.push(r)}a.sort((e,t)=>t.length-e.length);let i=e,s=!0;for(;s;){s=!1;for(const e of a)i.toLowerCase().startsWith(e.toLowerCase())&&(i=i.slice(e.length).trim().replace(/^[-–:]\s*/,""),s=!0)}return i||e}_friendlyName(e,t){const a=e?.attributes?.friendly_name||t.entity_id.split(".").pop().replace(/_/g," ");return this._shortenName(a,t)}_shortDeviceName(e){const t=e?.name_by_user||e?.name||"";if(!t)return"Device";const a=this._hass?.areas?.[this.selectedArea];return a?.name&&t.toLowerCase().startsWith(a.name.toLowerCase())&&t.slice(a.name.length).trim().replace(/^[-–:]\s*/,"")||t}_isOff(e){return["off","unavailable","unknown","idle","standby","locked"].includes(e?.state)}_renderSensorBar(t){const a=parseFloat(t.state);if(isNaN(a))return"";const r=t.attributes?.device_class||"";let i=0,s=100;if("temperature"===r)i=10,s=40;else if("humidity"===r)i=0,s=100;else if("battery"===r)i=0,s=100;else if("illuminance"===r)i=0,s=1e3;else if("power"===r)i=0,s=3e3;else{if(null==t.attributes?.min)return"";i=t.attributes.min,s=t.attributes.max}if(i===s)return"";const n=Math.max(0,Math.min(100,(a-i)/(s-i)*100)),o=Math.round(n/100*10);return e.qy`
         <div class="sensor-bar" title="${Math.round(n)}%">
           ${Array.from({length:10},(t,a)=>e.qy`
             <div class="sensor-seg ${a<o?"filled":""}"
@@ -2056,13 +2056,642 @@
             .sensor-readout[data-off],
             .toggle-pill[data-off],
             .lcars-device-panel:has(.device-panel-media[data-offline]) { animation: none; }
+            .alarm-triggered .alarm-shield,
+            .alarm-triggered .alarm-viewscreen { animation: none; }
           }
-        `]}_renderFloorView(t){const a=this._hass.floors?.[t];if(!a)return r.g0.debug(s,"Render: floor not found:",t),e.qy`<div class="lcars-empty">Floor not found</div>`;const i=this._getFloorAreaIds(t);return 0===i.length?e.qy`
+
+          /* ═══════ CLIMATE PANEL ═══════ */
+          .climate-panel {
+            display: grid;
+            grid-template-areas:
+              "header   header"
+              "sensors  media"
+              "modes    modes"
+              "auxctrl  auxctrl";
+            grid-template-columns: minmax(10rem, 1fr) minmax(14rem, 2fr);
+            grid-template-rows: auto 1fr auto auto;
+            gap: var(--lcars-gap);
+            border-left: 4px solid var(--panel-frame-color);
+            border-bottom: 4px solid var(--panel-frame-color);
+            border-top: 2px solid var(--panel-frame-color);
+            border-right: 2px solid var(--panel-frame-color);
+            transition: border-color 600ms;
+          }
+          .climate-header { grid-area: header; display: flex; align-items: center; gap: 0.5rem; }
+          .climate-action-badge {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+          }
+          .climate-sensors { grid-area: sensors; overflow-y: auto; }
+          .climate-viewscreen {
+            grid-area: media;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            border: 2px solid var(--panel-frame-color);
+            border-radius: 4px;
+            padding: 0.5rem;
+            transition: border-color 600ms;
+          }
+          .climate-viewscreen::before,
+          .climate-viewscreen::after {
+            content: '';
+            position: absolute;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid var(--panel-frame-color);
+          }
+          .climate-viewscreen::before { top: 4px; left: 4px; border-right: none; border-bottom: none; }
+          .climate-viewscreen::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
+          .climate-arc { width: 100%; max-width: 200px; }
+          .climate-setpoint-controls { display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.5rem; }
+          .climate-setpoint-row { display: flex; align-items: center; gap: 0.5rem; justify-content: center; }
+          .climate-sp-btn {
+            width: 2.5rem;
+            height: 2.5rem;
+            border: none;
+            border-radius: 50%;
+            background: var(--lcars-disabled);
+            color: var(--lcars-space-white);
+            font-size: 1.25rem;
+            font-family: var(--lcars-font);
+            cursor: pointer;
+            transition: background 200ms;
+          }
+          .climate-sp-btn:hover { background: var(--panel-frame-color); }
+          .climate-sp-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .climate-sp-label {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            min-width: 6rem;
+            text-align: center;
+          }
+          .climate-modes {
+            grid-area: modes;
+            display: flex;
+            gap: var(--lcars-gap);
+            flex-wrap: wrap;
+          }
+          .climate-mode-btn {
+            flex: 1;
+            min-width: 4rem;
+            height: var(--lcars-btn-height);
+            border: none;
+            border-radius: var(--lcars-btn-radius);
+            background: var(--lcars-disabled);
+            color: var(--lcars-black);
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 200ms;
+          }
+          .climate-mode-btn[data-active] { background: var(--panel-frame-color); }
+          .climate-mode-btn:hover:not([data-active]) { background: var(--lcars-gray); }
+          .climate-mode-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .climate-aux-controls {
+            grid-area: auxctrl;
+            display: flex;
+            flex-direction: column;
+            gap: var(--lcars-gap);
+          }
+          .climate-aux-strip { display: flex; gap: var(--lcars-gap); flex-wrap: wrap; }
+
+          /* ═══════ ALARM PANEL ═══════ */
+          .alarm-panel {
+            display: grid;
+            grid-template-areas:
+              "header  header"
+              "sensors media"
+              "keypad  keypad";
+            grid-template-columns: minmax(10rem, 1fr) minmax(14rem, 2fr);
+            grid-template-rows: auto 1fr auto;
+            gap: var(--lcars-gap);
+            border-left: 4px solid var(--panel-frame-color);
+            border-bottom: 4px solid var(--panel-frame-color);
+            border-top: 2px solid var(--panel-frame-color);
+            border-right: 2px solid var(--panel-frame-color);
+            transition: border-color 600ms;
+          }
+          .alarm-triggered {
+            border-width: 6px;
+            animation: alarm-pulse 1s ease-in-out infinite;
+          }
+          @keyframes alarm-pulse {
+            0%, 100% { border-color: var(--lcars-tomato); }
+            50% { border-color: transparent; }
+          }
+          .alarm-header { grid-area: header; display: flex; align-items: center; gap: 0.5rem; }
+          .alarm-state-badge {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+          }
+          .alarm-sensors { grid-area: sensors; overflow-y: auto; }
+          .alarm-viewscreen {
+            grid-area: media;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+          }
+          .alarm-shield { width: 100%; max-width: 140px; }
+          .alarm-countdown {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          .alarm-countdown-num {
+            font-family: var(--lcars-font);
+            font-size: 3rem;
+            font-weight: bold;
+          }
+          .alarm-countdown-label {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-data-accent);
+          }
+          .alarm-arm-strip {
+            display: flex;
+            gap: var(--lcars-gap);
+            width: 100%;
+          }
+          .alarm-arm-btn {
+            flex: 1;
+            height: var(--lcars-btn-height);
+            border: none;
+            border-radius: var(--lcars-btn-radius);
+            background: var(--lcars-disabled);
+            color: var(--lcars-black);
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 200ms;
+          }
+          .alarm-arm-btn[data-active] { background: var(--panel-frame-color); }
+          .alarm-arm-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .alarm-keypad {
+            grid-area: keypad;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+          }
+          .alarm-keypad:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .alarm-code-display {
+            display: flex;
+            gap: 0.5rem;
+          }
+          .alarm-code-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            transition: background 200ms;
+          }
+          .alarm-pin-error { animation: alarm-shake 400ms ease-out; }
+          @keyframes alarm-shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-6px); }
+            40% { transform: translateX(6px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+          }
+          .alarm-digit-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 3.5rem);
+            gap: var(--lcars-gap);
+          }
+          .alarm-digit-btn {
+            height: 3.5rem;
+            border: none;
+            border-radius: var(--lcars-btn-radius);
+            background: var(--lcars-sunflower);
+            color: var(--lcars-black);
+            font-family: var(--lcars-font);
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: background 200ms;
+          }
+          .alarm-digit-btn:hover { filter: brightness(1.1); }
+          .alarm-digit-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .alarm-action-btn { background: var(--lcars-disabled); }
+
+          /* ═══════ MEDIA PANEL ═══════ */
+          .media-panel {
+            display: grid;
+            grid-template-areas:
+              "header   header"
+              "metadata media"
+              "volume   volume";
+            grid-template-columns: minmax(8rem, 1fr) minmax(14rem, 2.5fr);
+            grid-template-rows: auto 1fr auto;
+            gap: var(--lcars-gap);
+            border-left: 4px solid var(--panel-frame-color);
+            border-bottom: 4px solid var(--panel-frame-color);
+            border-top: 2px solid var(--panel-frame-color);
+            border-right: 2px solid var(--panel-frame-color);
+            transition: border-color 600ms;
+          }
+          .media-idle { opacity: 0.7; }
+          .media-header { grid-area: header; display: flex; align-items: center; gap: 0.5rem; }
+          .media-state-badge {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+          }
+          .media-metadata { grid-area: metadata; overflow-y: auto; }
+          .media-viewscreen {
+            grid-area: media;
+            display: flex;
+            flex-direction: column;
+            border: 2px solid var(--panel-frame-color);
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+          }
+          .media-viewscreen::before,
+          .media-viewscreen::after {
+            content: '';
+            position: absolute;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid var(--panel-frame-color);
+            z-index: 1;
+          }
+          .media-viewscreen::before { top: 4px; left: 4px; border-right: none; border-bottom: none; }
+          .media-viewscreen::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
+          .media-art {
+            width: 100%;
+            aspect-ratio: 1/1;
+            max-height: 18rem;
+            object-fit: cover;
+          }
+          .media-idle-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1/1;
+            max-height: 12rem;
+            color: var(--lcars-gray);
+          }
+          .media-idle-glyph { font-size: 3rem; }
+          .media-idle-label { font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); }
+          .media-now-playing {
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.5);
+          }
+          .media-title {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-sub);
+            color: var(--lcars-sunflower);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .media-artist {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-african-violet);
+          }
+          .media-controls {
+            grid-area: volume;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0.5rem;
+          }
+          .media-transport {
+            display: flex;
+            justify-content: center;
+            gap: var(--lcars-gap);
+          }
+          .media-transport-btn {
+            width: 2.5rem;
+            height: 2.5rem;
+            border: none;
+            border-radius: 50%;
+            background: var(--lcars-disabled);
+            color: var(--lcars-space-white);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 200ms;
+          }
+          .media-transport-btn:hover { background: var(--lcars-gray); }
+          .media-transport-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .media-play-btn {
+            width: 3.5rem;
+            background: var(--lcars-african-violet);
+            color: var(--lcars-black);
+          }
+          .media-transport-btn[aria-pressed="true"] { background: var(--lcars-african-violet); color: var(--lcars-black); }
+          .media-volume {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+          .media-mute-btn {
+            border: none;
+            background: transparent;
+            font-size: 1.25rem;
+            cursor: pointer;
+          }
+          .media-volume-bar {
+            flex: 1;
+            height: 0.75rem;
+            background: var(--lcars-disabled);
+            border-radius: var(--lcars-btn-radius);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+          }
+          .media-volume-bar:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .media-volume-fill {
+            height: 100%;
+            background: var(--lcars-african-violet);
+            border-radius: inherit;
+            transition: width 200ms;
+          }
+          .media-volume-pct {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-data-accent);
+            min-width: 3rem;
+            text-align: right;
+          }
+
+          /* ═══════ POOL & SPA PANEL ═══════ */
+          .pool-panel {
+            display: grid;
+            grid-template-areas:
+              "header    header    header"
+              "chemistry aquatics  controls"
+              "lighting  lighting  lighting";
+            grid-template-columns: minmax(8rem, 1fr) minmax(20rem, 3fr) minmax(8rem, 1.2fr);
+            grid-template-rows: auto 1fr auto;
+            gap: var(--lcars-gap);
+            grid-column: 1 / -1;
+            border-left: 4px solid var(--panel-frame-color);
+            border-bottom: 4px solid var(--panel-frame-color);
+            border-top: 2px solid var(--panel-frame-color);
+            border-right: 2px solid var(--panel-frame-color);
+          }
+          .pool-no-chem {
+            grid-template-areas:
+              "header   header"
+              "aquatics controls"
+              "lighting lighting";
+            grid-template-columns: minmax(20rem, 3fr) minmax(8rem, 1.2fr);
+          }
+          .pool-header { grid-area: header; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+          .pool-temp-badge {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            margin-left: 0.5rem;
+          }
+          .pool-chemistry { grid-area: chemistry; overflow-y: auto; }
+          .pool-aquatics {
+            grid-area: aquatics;
+            display: flex;
+            gap: var(--lcars-gap);
+            justify-content: center;
+          }
+          .pool-body-frame {
+            flex: 1;
+            border: 2px solid var(--body-color);
+            border-radius: 4px;
+            padding: 0.5rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            position: relative;
+          }
+          .pool-body-frame::before,
+          .pool-body-frame::after {
+            content: '';
+            position: absolute;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid var(--body-color);
+          }
+          .pool-body-frame::before { top: 4px; left: 4px; border-right: none; border-bottom: none; }
+          .pool-body-frame::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
+          .pool-body-label {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+          }
+          .pool-body-temp {
+            font-family: var(--lcars-font);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--body-color);
+          }
+          .pool-setpoint-row { display: flex; align-items: center; gap: 0.5rem; }
+          .pool-target {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+          }
+          .pool-controls { grid-area: controls; display: flex; flex-direction: column; gap: var(--lcars-gap); }
+          .pool-lighting {
+            grid-area: lighting;
+            display: flex;
+            gap: var(--lcars-gap);
+            flex-wrap: wrap;
+          }
+
+          /* ═══════ WEATHER PANEL ═══════ */
+          .weather-panel {
+            display: grid;
+            grid-template-areas:
+              "header   header"
+              "sensors  media"
+              "forecast forecast";
+            grid-template-columns: minmax(10rem, 1fr) minmax(14rem, 2fr);
+            grid-template-rows: auto 1fr auto;
+            gap: var(--lcars-gap);
+            border-left: 4px solid var(--panel-frame-color);
+            border-bottom: 4px solid var(--panel-frame-color);
+            border-top: 2px solid var(--panel-frame-color);
+            border-right: 2px solid var(--panel-frame-color);
+            transition: border-color 600ms;
+          }
+          .weather-header { grid-area: header; display: flex; align-items: center; gap: 0.5rem; }
+          .weather-condition-badge {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+          }
+          .weather-sensors { grid-area: sensors; overflow-y: auto; }
+          .weather-viewscreen {
+            grid-area: media;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 2px solid var(--panel-frame-color);
+            border-radius: 4px;
+            padding: 0.5rem;
+            transition: border-color 600ms;
+          }
+          .weather-viewscreen::before,
+          .weather-viewscreen::after {
+            content: '';
+            position: absolute;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid var(--panel-frame-color);
+          }
+          .weather-viewscreen::before { top: 4px; left: 4px; border-right: none; border-bottom: none; }
+          .weather-viewscreen::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
+          .weather-display { width: 100%; max-width: 200px; }
+          .weather-wind-compass {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+          }
+          .wind-svg { width: 5rem; height: 5rem; }
+          .wind-reading {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-data-accent);
+          }
+          .weather-forecast {
+            grid-area: forecast;
+            display: flex;
+            gap: var(--lcars-gap);
+            overflow-x: auto;
+            padding: 0.25rem 0;
+          }
+          .forecast-tile {
+            flex: 1;
+            min-width: 5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.125rem;
+            padding: 0.25rem;
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+          }
+          .forecast-tile:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .forecast-day { color: var(--lcars-data-accent); }
+          .forecast-glyph { font-size: 1.25rem; }
+          .forecast-hi { color: var(--lcars-butterscotch); }
+          .forecast-lo { color: var(--lcars-ice); }
+          .forecast-range-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--lcars-disabled);
+            border-radius: 2px;
+            position: relative;
+          }
+          .forecast-range-fill {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, var(--lcars-ice), var(--lcars-butterscotch));
+            border-radius: 2px;
+          }
+          .forecast-precip { color: var(--lcars-gray); font-size: 0.75rem; }
+
+          /* ═══════ IRRIGATION PANEL ═══════ */
+          .irrigation-panel {
+            display: grid;
+            grid-template-areas:
+              "header   header"
+              "schedule zones"
+              "standby  standby";
+            grid-template-columns: minmax(8rem, 1fr) minmax(16rem, 3fr);
+            grid-template-rows: auto 1fr auto;
+            gap: var(--lcars-gap);
+            border-left: 4px solid var(--panel-frame-color);
+            border-bottom: 4px solid var(--panel-frame-color);
+            border-top: 2px solid var(--panel-frame-color);
+            border-right: 2px solid var(--panel-frame-color);
+          }
+          .irrigation-header { grid-area: header; display: flex; align-items: center; gap: 0.5rem; }
+          .irrigation-status-badge {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+          }
+          .irrigation-schedule { grid-area: schedule; overflow-y: auto; }
+          .irrigation-zones {
+            grid-area: zones;
+            display: flex;
+            flex-direction: column;
+            gap: var(--lcars-gap);
+            overflow-y: auto;
+          }
+          .irrigation-zone-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+          }
+          .irrigation-zone-row:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .irrigation-zone-btn {
+            min-width: 4.5rem;
+            height: var(--lcars-btn-height);
+            border: none;
+            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+            background: var(--lcars-sunflower);
+            color: var(--lcars-black);
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 200ms;
+          }
+          .irrigation-zone-btn[data-on] { background: var(--lcars-ice); }
+          .irrigation-zone-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+          .irrigation-zone-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .irrigation-zone-name {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-space-white);
+            flex: 1;
+          }
+          .irrigation-zone-status {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+          }
+          .irrigation-zone-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0.5rem;
+            border-radius: 0.25rem;
+            transition: width 1s linear;
+          }
+          .irrigation-standby {
+            grid-area: standby;
+            display: flex;
+            justify-content: center;
+            padding: 0.25rem;
+          }
+          .irrigation-standby-btn { min-width: 10rem; }
+        `]}_renderFloorView(t){const a=this._hass.floors?.[t];if(!a)return r.g0.debug(T,"Render: floor not found:",t),e.qy`<div class="lcars-empty">Floor not found</div>`;const i=this._getFloorAreaIds(t);return 0===i.length?e.qy`
           <div class="content-area-panel">
             <h2 class="content-area-header">${a.name}</h2>
             <div class="lcars-empty">No areas on this floor</div>
           </div>
-        `:(r.g0.debug(s,"Render: floor=%s areas=%d",a.name,i.length),e.qy`
+        `:(r.g0.debug(T,"Render: floor=%s areas=%d",a.name,i.length),e.qy`
         <div class="content-floor-panel">
           <h2 class="content-floor-header">${a.name}</h2>
           ${i.map(t=>{const a=this._hass.areas?.[t];if(!a)return"";const r=this._getAreaEntities(t);return 0===r.length?"":e.qy`
@@ -2072,35 +2701,35 @@
               </div>
             `})}
         </div>
-      `)}render(){if(!this._hass)return r.g0.debug(s,"Render: waiting for hass"),e.qy`<div class="lcars-empty">Initializing...</div>`;if(this.selectedFloor)return this._renderFloorView(this.selectedFloor);if(!this.selectedArea)return r.g0.debug(s,"Render: no area selected"),e.qy`<div class="lcars-empty">Select an area</div>`;const t=this._hass.areas?.[this.selectedArea];if(!t)return r.g0.debug(s,"Render: area not found:",this.selectedArea),e.qy`<div class="lcars-empty">Area not found</div>`;const a=this._getAreaEntities(this.selectedArea);return r.g0.debug(s,"Render: area=%s entities=%d",t.name,a.length),e.qy`
+      `)}render(){if(!this._hass)return r.g0.debug(T,"Render: waiting for hass"),e.qy`<div class="lcars-empty">Initializing...</div>`;if(this.selectedFloor)return this._renderFloorView(this.selectedFloor);if(!this.selectedArea)return r.g0.debug(T,"Render: no area selected"),e.qy`<div class="lcars-empty">Select an area</div>`;const t=this._hass.areas?.[this.selectedArea];if(!t)return r.g0.debug(T,"Render: area not found:",this.selectedArea),e.qy`<div class="lcars-empty">Area not found</div>`;const a=this._getAreaEntities(this.selectedArea);return r.g0.debug(T,"Render: area=%s entities=%d",t.name,a.length),e.qy`
         <div class="content-area-panel">
           <h2 class="content-area-header">${t.name}</h2>
           ${this._renderAreaContent(a)}
         </div>
-      `}_getDevicePanelType(e){if(e.some(e=>o.has(e.domain)))return h;let t=!1,a=0,r=0,s=!1;for(const i of e){const e=i.state?.attributes;if(!e)continue;const n=e.device_class||"",o=e.unit_of_measurement||"";"battery"===n&&"%"===o&&(t=!0),"power"===n&&"W"===o&&a++,v.has(n)&&r++,"fan"===i.domain&&(s=!0),!n&&"sensor"===i.domain&&g.test(i.entity.entity_id)&&r++}return r>=2||r>=1&&s?u:t&&a>=2?m:null}_partitionDeviceEntities(e){const t=[],a=[],r=[];for(const s of e)o.has(s.domain)?t.push(s):n.has(s.domain)?a.push(s):r.push(s);return{cameras:t,sensors:a,controls:r}}_renderDevicePanel(e,t){switch(e){case h:return this._renderCameraPanel(t);case u:return this._renderEnvironmentPanel(t);case m:return this._renderBatteryPanel(t);default:return""}}_getSensorIndicatorColor(e){if(!e||"unavailable"===e.state||"unknown"===e.state)return"var(--lcars-tomato)";const t=e.attributes?.device_class||"",a=e.state;return"motion"===t||"occupancy"===t?"on"===a?"var(--lcars-butterscotch)":"var(--lcars-gray)":"presence"===t?"on"===a||"home"===a?"var(--lcars-gold)":"var(--lcars-gray)":["problem","safety","tamper"].includes(t)?"on"===a?"var(--lcars-tomato)":"var(--lcars-gray)":e.entity_id?.startsWith("binary_sensor.")?"on"===a?"var(--lcars-ice)":"var(--lcars-gray)":"var(--lcars-data-accent)"}_renderCameraPanel(t){const{cameras:a,sensors:r,controls:s}=this._partitionDeviceEntities(t.entities),n=this._shortDeviceName(t.device);return e.qy`
+      `}_getDevicePanelType(e){return function(e){for(const t of E){const a=t(e);if(a)return a}return null}(e)}_partitionDeviceEntities(e){const t=[],a=[],r=[];for(const i of e)m.has(i.domain)?t.push(i):_.has(i.domain)?a.push(i):r.push(i);return{cameras:t,sensors:a,controls:r}}_renderDevicePanel(e,t){switch(e){case i:return this._renderCameraPanel(t);case c:return this._renderEnvironmentPanel(t);case u:return this._renderBatteryPanel(t);case o:return this._renderClimatePanel(t);case s:return this._renderAlarmPanel(t);case l:return this._renderMediaPanel(t);case n:return this._renderPoolSpaPanel(t);case p:return this._renderWeatherPanel(t);case d:return this._renderIrrigationPanel(t);default:return""}}_getSensorIndicatorColor(e){return function(e,t){const a=t?.state;if("unavailable"===a||"unknown"===a)return"var(--lcars-alert)";const r=t?.attributes?.device_class||"",i=e.split(".")[0];if("binary_sensor"===i){if("off"===a)return"var(--lcars-disabled)";switch(r){case"motion":case"moving":return"var(--lcars-butterscotch)";case"occupancy":case"presence":return"var(--lcars-gold)";case"sound":return"var(--lcars-alert)";default:return"var(--lcars-data-accent)"}}if("sensor"===i){if("battery"===r){const e=parseFloat(a);if(!isNaN(e)&&e<20)return"var(--lcars-alert)"}return"var(--lcars-data-accent)"}return"event"===i?"var(--lcars-alert)":"var(--lcars-data-accent)"}(e?.entity_id||"",e)}_renderCameraPanel(t){const{cameras:a,sensors:r,controls:i}=this._partitionDeviceEntities(t.entities),s=this._shortDeviceName(t.device);return e.qy`
         <div class="lcars-device-panel" data-panel-type="camera">
           <div class="device-panel-header">
-            <span class="device-panel-name">${n}</span>
+            <span class="device-panel-name">${s}</span>
             <div class="device-panel-header-line"></div>
           </div>
 
-          <div class="device-panel-sensors" role="list" aria-label="${n} sensors">
-            ${r.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),s=a.state,i=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
+          <div class="device-panel-sensors" role="list" aria-label="${s} sensors">
+            ${r.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.state,s=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
-                  aria-label="${r}: ${s}${i?" "+i:""}"
+                  aria-label="${r}: ${i}${s?" "+s:""}"
                   @click=${()=>this._handleEntityClick(t.entity_id)}
                   @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t.entity_id))}}>
                   <div class="sensor-indicator" style="background:${n}"></div>
                   <span class="sensor-label">${r}</span>
-                  <span class="sensor-state-value" style="color:${n}">${s}${i?" "+i:""}</span>
+                  <span class="sensor-state-value" style="color:${n}">${i}${s?" "+s:""}</span>
                 </div>
               `})}
           </div>
 
           <div class="device-panel-media"
             ?data-offline=${a.length>0&&this._isOff(a[0].state)}>
-            ${a.map(({entity:t,state:a},r)=>{const s=y(a),i=0===r?n:this._friendlyName(a,t);return s?e.qy`<img src="${s}"
-                            alt="${i} camera feed" loading="lazy"
+            ${a.map(({entity:t,state:a},r)=>{const i=F(a),n=0===r?s:this._friendlyName(a,t);return i?e.qy`<img src="${i}"
+                            alt="${n} camera feed" loading="lazy"
                             data-entity="${t.entity_id}"
                             style="${r>0?"margin-top:var(--lcars-gap);border-top:2px solid var(--panel-frame-color)":""}"
                             @error=${e=>{e.target.style.display="none",e.target.nextElementSibling&&(e.target.nextElementSibling.style.display="")}}
@@ -2114,10 +2743,10 @@
                   </div>`})}
           </div>
 
-          <div class="device-panel-controls" aria-label="${n} controls">
-            ${s.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),s="on"===a.state,n=this._isOff(a),o=t.entity_id.split(".")[0];return e.qy`
-                <button class="device-control-btn" ?data-on=${s} ?data-off=${n}
-                  @click=${()=>i.has(o)?this._handleToggle(t.entity_id):this._handleEntityClick(t.entity_id)}
+          <div class="device-panel-controls" aria-label="${s} controls">
+            ${i.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i="on"===a.state,s=this._isOff(a),n=t.entity_id.split(".")[0];return e.qy`
+                <button class="device-control-btn" ?data-on=${i} ?data-off=${s}
+                  @click=${()=>y.has(n)?this._handleToggle(t.entity_id):this._handleEntityClick(t.entity_id)}
                   title="${r}: ${a.state}">
                   <ha-icon .icon=${this._getEntityIcon(a)}></ha-icon>
                   <span>${r}</span>
@@ -2125,22 +2754,22 @@
               `})}
           </div>
         </div>
-      `}_classifyPowerEntity(e){const t=(e||"").toLowerCase();return/total\s*in\s*power/.test(t)?{side:"in",type:"total"}:/total\s*out\s*power/.test(t)?{side:"out",type:"total"}:/solar.*in.*power/.test(t)?{side:"in",type:"solar"}:/ac.*in.*power/.test(t)?{side:"in",type:"ac"}:/ac.*out.*power/.test(t)?{side:"out",type:"ac"}:/dc.*out.*power/.test(t)?{side:"out",type:"dc"}:/usb.*out.*power/.test(t)?{side:"out",type:"usb"}:/type.*c.*out.*power/.test(t)?{side:"out",type:"usbc"}:/power.*i.*o.*input.*power/.test(t)?{side:"in",type:"pio"}:/power.*i.*o.*output.*power/.test(t)?{side:"out",type:"pio"}:/anderson.*out.*power/.test(t)?{side:"out",type:"dc"}:/alternator.*in.*power/.test(t)?{side:"in",type:"alt"}:/station.*power/.test(t)?{side:"out",type:"station"}:/\bin\b/.test(t)?{side:"in",type:"other"}:/\bout\b/.test(t)?{side:"out",type:"other"}:null}_partitionBatteryEntities(e,t){const a=[],r=[],s=[],i=[],n=[],o=[],l=[];for(const t of e){const e=t.state?.attributes||{},o=e.device_class||"",l=e.unit_of_measurement||"",c=t.domain,d=e.friendly_name||t.entity.entity_id;if(["switch","number","button","select"].includes(c))n.push(t);else if("battery"!==o||"%"!==l){if("power"===o&&"W"===l){const e=this._classifyPowerEntity(d);e?"in"===e.side?r.push({...t,ioType:e.type}):s.push({...t,ioType:e.type}):i.push(t);continue}i.push(t)}else a.push(t)}if(t){for(const e of t.config){const t=this._getEntityState(e.entity_id);if(!t)continue;const a=e.entity_id.split(".")[0];o.push({entity:e,domain:a,state:t})}for(const e of t.diagnostic){const t=this._getEntityState(e.entity_id);if(!t)continue;const a=e.entity_id.split(".")[0];l.push({entity:e,domain:a,state:t})}}return{soc:a,powerIn:r,powerOut:s,telemetry:i,controls:n,configControls:o,diagnostics:l}}_partitionEnvironmentEntities(e,t){const a=[],r=[],s=[],i=[],n=[];for(const t of e){const e=t.state?.attributes?.device_class||"",n=t.domain;["fan","switch","button","number","select"].includes(n)?i.push(t):v.has(e)?r.push(t):e||"sensor"!==n||!g.test(t.entity.entity_id)?s.push(t):a.push(t)}if(t)for(const e of[...t.diagnostic,...t.config]){const t=this._getEntityState(e.entity_id);t&&n.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{score:a,airQuality:r,telemetry:s,controls:i,diagnostics:n}}_getScrubberHue(e){return null==e||e<=50?120:e<=100?120-(e-50)/50*70:e<=150?50-(e-100)/50*35:Math.max(0,15-(e-150)/100*15)}_getAQColor(e){return null==e||e<=50?"var(--lcars-ice)":e<=100?"var(--lcars-sunflower)":e<=150?"var(--lcars-butterscotch)":e<=200?"var(--lcars-peach)":"var(--lcars-tomato)"}_getScrubberSpeed(e){return null==e||0===e?20:2+18*Math.pow(1-e/100,1.5)}_envHistoryCache=new Map;async _getSparklineData(e,t){const a=Date.now(),i=this._envHistoryCache.get(e);if(i&&a-i.timestamp<3e5)return null;try{const r=10,s=/^[a-z_]+\.[a-z0-9_]+$/,i=t.slice(0,r).filter(e=>s.test(e));if(0===i.length)return null;const n=new Date,o=new Date(n.getTime()-864e5),l=await this._hass.callWS({type:"recorder/statistics_during_period",start_time:o.toISOString(),end_time:n.toISOString(),statistic_ids:i,period:"hour",types:["mean"]});if(this._envHistoryCache.set(e,{data:l,timestamp:a}),this._envHistoryCache.size>20){const e=this._envHistoryCache.keys().next().value;this._envHistoryCache.delete(e)}return l}catch(e){return r.g0.error(s,"Sparkline history fetch failed:",e),null}}_renderSparkline(t,a,r){if(!t?.length)return"";const s=t.map(e=>e.mean).filter(e=>null!=e&&Number.isFinite(e));if(s.length<2)return"";const i=Math.min(...s),n=Math.max(...s)-i||1,o=s.map((e,t)=>`${(t/(s.length-1)*120).toFixed(1)},${(24-(e-i)/n*24).toFixed(1)}`).join(" ");return e.qy`
-        <div class="env-sparkline-wrap" aria-label="${r}: ${s[s.length-1]?.toFixed(0)||""}">
-          <span class="env-sparkline-label">${r}</span>
-          <svg class="env-sparkline" viewBox="0 0 ${120} ${24}" preserveAspectRatio="none">
-            <polyline points="${o}" fill="none" stroke="${a}" stroke-width="1.5"
-              vector-effect="non-scaling-stroke" />
-          </svg>
-        </div>
-      `}_renderEnvironmentPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{score:r,airQuality:s,telemetry:i,controls:n,diagnostics:o}=this._partitionEnvironmentEntities(t.entities,a),l=this._shortDeviceName(t.device)||"Environment",c=r[0],d=c?parseFloat(c.state.state):null,p=s.find(e=>"pm25"===(e.state?.attributes?.device_class||"")),h=p?parseFloat(p.state.state):null,u=null!=d&&Number.isFinite(d)?d:null!=h&&Number.isFinite(h)?Math.min(300,4*h):null,m=this._getScrubberHue(u),f=this._getAQColor(u),v=n.find(e=>"fan"===e.domain),g=v?.state,b=g?.attributes?.percentage??null,y=g?.attributes?.preset_modes||[],_=g?.attributes?.preset_mode||"",w=!v||"off"===g?.state||0===b,x=this._getScrubberSpeed(w?0:b),k=!v,$=n.filter(e=>"fan"!==e.domain),S=[...r,...s].map(e=>e.entity.entity_id);S.length>0&&this._getSparklineData(t.device.id,S).then(e=>{e&&this.requestUpdate()});const C=this._envHistoryCache.get(t.device.id)?.data||{};return e.qy`
-        <div class="lcars-device-panel env-panel ${k?"sensor-only":""}" data-panel-type="environment">
+      `}_classifyPowerEntity(e){const t=(e||"").toLowerCase();return/total\s*in\s*power/.test(t)?{side:"in",type:"total"}:/total\s*out\s*power/.test(t)?{side:"out",type:"total"}:/solar.*in.*power/.test(t)?{side:"in",type:"solar"}:/ac.*in.*power/.test(t)?{side:"in",type:"ac"}:/ac.*out.*power/.test(t)?{side:"out",type:"ac"}:/dc.*out.*power/.test(t)?{side:"out",type:"dc"}:/usb.*out.*power/.test(t)?{side:"out",type:"usb"}:/type.*c.*out.*power/.test(t)?{side:"out",type:"usbc"}:/power.*i.*o.*input.*power/.test(t)?{side:"in",type:"pio"}:/power.*i.*o.*output.*power/.test(t)?{side:"out",type:"pio"}:/anderson.*out.*power/.test(t)?{side:"out",type:"dc"}:/alternator.*in.*power/.test(t)?{side:"in",type:"alt"}:/station.*power/.test(t)?{side:"out",type:"station"}:/\bin\b/.test(t)?{side:"in",type:"other"}:/\bout\b/.test(t)?{side:"out",type:"other"}:null}_partitionBatteryEntities(e,t){const a=[],r=[],i=[],s=[],n=[],o=[],l=[];for(const t of e){const e=t.state?.attributes||{},o=e.device_class||"",l=e.unit_of_measurement||"",c=t.domain,d=e.friendly_name||t.entity.entity_id;if(["switch","number","button","select"].includes(c))n.push(t);else if("battery"!==o||"%"!==l){if("power"===o&&"W"===l){const e=this._classifyPowerEntity(d);e?"in"===e.side?r.push({...t,ioType:e.type}):i.push({...t,ioType:e.type}):s.push(t);continue}s.push(t)}else a.push(t)}if(t){for(const e of t.config){const t=this._getEntityState(e.entity_id);if(!t)continue;const a=e.entity_id.split(".")[0];o.push({entity:e,domain:a,state:t})}for(const e of t.diagnostic){const t=this._getEntityState(e.entity_id);if(!t)continue;const a=e.entity_id.split(".")[0];l.push({entity:e,domain:a,state:t})}}return{soc:a,powerIn:r,powerOut:i,telemetry:s,controls:n,configControls:o,diagnostics:l}}_partitionEnvironmentEntities(e,t){const a=[],r=[],i=[],s=[],n=[];for(const t of e){const e=t.state?.attributes?.device_class||"",n=t.domain;["fan","switch","button","number","select"].includes(n)?s.push(t):x.has(e)?r.push(t):e||"sensor"!==n||!$.test(t.entity.entity_id)?i.push(t):a.push(t)}if(t)for(const e of[...t.diagnostic,...t.config]){const t=this._getEntityState(e.entity_id);t&&n.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{score:a,airQuality:r,telemetry:i,controls:s,diagnostics:n}}_getScrubberHue(e){return null==e||e<=50?120:e<=100?120-(e-50)/50*70:e<=150?50-(e-100)/50*35:Math.max(0,15-(e-150)/100*15)}_getAQColor(e){return null==e||e<=50?"var(--lcars-ice)":e<=100?"var(--lcars-sunflower)":e<=150?"var(--lcars-butterscotch)":e<=200?"var(--lcars-peach)":"var(--lcars-tomato)"}_getScrubberSpeed(e){return null==e||0===e?20:2+18*Math.pow(1-e/100,1.5)}_envHistoryCache=new Map;async _getSparklineData(e,t){return async function(e,t,a,r,i={}){const{ttlMs:s=3e5,maxEntities:n=10,maxCacheSize:o=30}=i,l=/^[a-z_]+\.[a-z0-9_]+$/,c=Date.now(),d=r.get(t);if(d&&c-d.timestamp<s)return null;try{const i=a.slice(0,n).filter(e=>l.test(e));if(0===i.length)return null;const s=new Date,d=new Date(s.getTime()-864e5),p=await e.callWS({type:"recorder/statistics_during_period",start_time:d.toISOString(),end_time:s.toISOString(),statistic_ids:i,period:"hour",types:["mean"]});if(r.set(t,{data:p,timestamp:c}),r.size>o){const e=r.keys().next().value;r.delete(e)}return p}catch(e){return null}}(this._hass,e,t,this._envHistoryCache)}_renderSparkline(t,a,r){return function(t,{color:a,label:r="",width:i=120,height:s=24,className:n="lcars-sparkline"}={}){const o=function(e){return Array.isArray(e)?e.map(e=>e.mean).filter(e=>null!=e&&Number.isFinite(e)):[]}(t);if(o.length<2)return"";const l=function(e,t,a){const r=Math.min(...e),i=Math.max(...e)-r||1;return e.map((s,n)=>`${(n/(e.length-1)*t).toFixed(1)},${(a-(s-r)/i*a).toFixed(1)}`).join(" ")}(o,i,s),c=o[o.length-1],d=r?`${r}: ${c?.toFixed(0)||""}`:`Sparkline: ${c?.toFixed(0)||""}`;return e.qy`
+    <div class="${n}-wrap" aria-label="${d}">
+      ${r?e.qy`<span class="${n}-label">${r}</span>`:""}
+      <svg class="${n}" viewBox="0 0 ${i} ${s}" preserveAspectRatio="none">
+        <polyline points="${l}" fill="none" stroke="${a}" stroke-width="1.5"
+          vector-effect="non-scaling-stroke" />
+      </svg>
+    </div>
+  `}(t,{color:a,label:r,className:"env-sparkline"})}_renderEnvironmentPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{score:r,airQuality:i,telemetry:s,controls:n,diagnostics:o}=this._partitionEnvironmentEntities(t.entities,a),l=this._shortDeviceName(t.device)||"Environment",c=r[0],d=c?parseFloat(c.state.state):null,p=i.find(e=>"pm25"===(e.state?.attributes?.device_class||"")),u=p?parseFloat(p.state.state):null,h=null!=d&&Number.isFinite(d)?d:null!=u&&Number.isFinite(u)?Math.min(300,4*u):null,m=this._getScrubberHue(h),v=this._getAQColor(h),f=n.find(e=>"fan"===e.domain),g=f?.state,b=g?.attributes?.percentage??null,y=g?.attributes?.preset_modes||[],_=g?.attributes?.preset_mode||"",w=!f||"off"===g?.state||0===b,x=this._getScrubberSpeed(w?0:b),$=!f,k=n.filter(e=>"fan"!==e.domain),S=[...r,...i].map(e=>e.entity.entity_id);S.length>0&&this._getSparklineData(t.device.id,S).then(e=>{e&&this.requestUpdate()});const C=this._envHistoryCache.get(t.device.id)?.data||{};return e.qy`
+        <div class="lcars-device-panel env-panel ${$?"sensor-only":""}" data-panel-type="environment">
           <!-- Header -->
           <div class="env-header">
             <span class="device-panel-name">${l}</span>
             <div class="device-panel-header-line"></div>
             ${c?e.qy`
-              <span class="env-score-label" style="color:${f}">
+              <span class="env-score-label" style="color:${v}">
                 ${null!=d&&Number.isFinite(d)?Math.round(d):"—"}
               </span>
             `:""}
@@ -2148,36 +2777,36 @@
 
           <!-- Sensors (left) -->
           <div class="env-sensors" role="list" aria-label="${l} sensors">
-            ${s.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),s=a.state,i=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
+            ${i.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.state,s=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
-                  aria-label="${r}: ${s}${i?" "+i:""}"
+                  aria-label="${r}: ${i}${s?" "+s:""}"
                   @click=${()=>this._handleEntityClick(t.entity_id)}
                   @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t.entity_id))}}>
                   <div class="sensor-indicator" style="background:${n}"></div>
                   <span class="sensor-label">${r}</span>
-                  <span class="sensor-state-value" style="color:${n}">${s}${i?" "+i:""}</span>
+                  <span class="sensor-state-value" style="color:${n}">${i}${s?" "+s:""}</span>
                 </div>
               `})}
-            ${i.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),s=a.state,i=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
+            ${s.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.state,s=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
-                  aria-label="${r}: ${s}${i?" "+i:""}"
+                  aria-label="${r}: ${i}${s?" "+s:""}"
                   @click=${()=>this._handleEntityClick(t.entity_id)}
                   @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t.entity_id))}}>
                   <div class="sensor-indicator" style="background:${n}"></div>
                   <span class="sensor-label">${r}</span>
-                  <span class="sensor-state-value" style="color:${n}">${s}${i?" "+i:""}</span>
+                  <span class="sensor-state-value" style="color:${n}">${i}${s?" "+s:""}</span>
                 </div>
               `})}
             ${o.length>0?e.qy`
               <div class="battery-section-divider"></div>
               <div class="battery-section-label">DIAGNOSTICS</div>
-              ${o.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),s=a.state,i=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
+              ${o.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.state,s=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
                   <div class="device-sensor-line" tabindex="0" role="listitem"
                     @click=${()=>this._handleEntityClick(t.entity_id)}
                     @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t.entity_id))}}>
                     <div class="sensor-indicator" style="background:${n}"></div>
                     <span class="sensor-label">${r}</span>
-                    <span class="sensor-state-value" style="color:${n}">${s}${i?" "+i:""}</span>
+                    <span class="sensor-state-value" style="color:${n}">${i}${s?" "+s:""}</span>
                   </div>
                 `})}
             `:""}
@@ -2185,27 +2814,27 @@
 
           <!-- Atmoscrubber Cylinder (center) -->
           <div class="atmoscrubber-container" role="meter"
-            aria-valuenow="${null!=u?Math.round(u):""}"
+            aria-valuenow="${null!=h?Math.round(h):""}"
             aria-valuemin="0" aria-valuemax="300"
-            aria-label="Air quality: ${null!=u?Math.round(u):"unknown"}">
+            aria-label="Air quality: ${null!=h?Math.round(h):"unknown"}">
             <div class="atmoscrubber ${w?"scrubber-idle":""}"
               style="--scrubber-hue:${Math.round(m)};--scrubber-speed:${x.toFixed(1)}s">
               ${c?e.qy`
                 <div class="scrubber-score">${null!=d&&Number.isFinite(d)?Math.round(d):"—"}</div>
               `:p?e.qy`
-                <div class="scrubber-score">${null!=h&&Number.isFinite(h)?Math.round(h):"—"}</div>
+                <div class="scrubber-score">${null!=u&&Number.isFinite(u)?Math.round(u):"—"}</div>
               `:""}
             </div>
           </div>
 
           <!-- Controls (right) — only for purifiers -->
-          ${k?"":e.qy`
+          ${$?"":e.qy`
             <div class="env-controls" aria-label="${l} controls">
-              ${v?e.qy`
+              ${f?e.qy`
                 <button class="device-control-btn"
                   ?data-on=${"on"===g?.state}
                   ?data-off=${this._isOff(g)}
-                  @click=${()=>this._handleToggle(v.entity.entity_id)}
+                  @click=${()=>this._handleToggle(f.entity.entity_id)}
                   title="Fan: ${g?.state}">
                   <ha-icon .icon=${"mdi:fan"}></ha-icon>
                   <span>${"on"===g?.state?`${b||""}%`:"Off"}</span>
@@ -2219,7 +2848,7 @@
                           role="radio"
                           aria-checked="${t===_}"
                           ?data-selected=${t===_}
-                          @click=${()=>{(this._hass.states[v.entity.entity_id]?.attributes?.preset_modes||[]).includes(t)&&this._hass.callService("fan","set_preset_mode",{entity_id:v.entity.entity_id,preset_mode:t})}}>
+                          @click=${()=>{(this._hass.states[f.entity.entity_id]?.attributes?.preset_modes||[]).includes(t)&&this._hass.callService("fan","set_preset_mode",{entity_id:f.entity.entity_id,preset_mode:t})}}>
                           ${t}
                         </button>
                       `)}
@@ -2227,8 +2856,8 @@
                   </div>
                 `:""}
               `:""}
-              ${$.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),s="on"===a.state,i=this._isOff(a);return e.qy`
-                  <button class="device-control-btn" ?data-on=${s} ?data-off=${i}
+              ${k.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i="on"===a.state,s=this._isOff(a);return e.qy`
+                  <button class="device-control-btn" ?data-on=${i} ?data-off=${s}
                     @click=${()=>this._handleToggle(t.entity_id)}
                     title="${r}: ${a.state}">
                     <ha-icon .icon=${this._getEntityIcon(a)}></ha-icon>
@@ -2240,22 +2869,22 @@
 
           <!-- Sparklines (bottom) -->
           <div class="env-sparklines" aria-label="24-hour history">
-            ${[...r,...s].map(({entity:e,state:t})=>{const a=this._friendlyName(t,e),r=C[e.entity_id],s=t.attributes?.device_class||"",i="pm25"===s?"var(--lcars-peach)":"carbon_dioxide"===s?"var(--lcars-sunflower)":"volatile_organic_compounds_parts"===s||"volatile_organic_compounds"===s?"var(--lcars-african-violet)":"var(--lcars-ice)";return this._renderSparkline(r,i,a)})}
+            ${[...r,...i].map(({entity:e,state:t})=>{const a=this._friendlyName(t,e),r=C[e.entity_id],i=t.attributes?.device_class||"",s="pm25"===i?"var(--lcars-peach)":"carbon_dioxide"===i?"var(--lcars-sunflower)":"volatile_organic_compounds_parts"===i||"volatile_organic_compounds"===i?"var(--lcars-african-violet)":"var(--lcars-ice)";return this._renderSparkline(r,s,a)})}
           </div>
         </div>
-      `}_getCoreColor(e){return e>=80?"var(--lcars-ice)":e>=60?"var(--lcars-sky)":e>=40?"var(--lcars-bluey)":e>=20?"var(--lcars-butterscotch)":e>=10?"var(--lcars-peach)":"var(--lcars-tomato)"}_getFlowSpeed(e){const t=Math.abs(parseFloat(e)||0);return 0===t?"flow-stopped":t>1e3?"flow-fast":t>100?"flow-medium":"flow-slow"}_renderBatteryPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{soc:r,powerIn:s,powerOut:n,telemetry:o,controls:l,configControls:c,diagnostics:d}=this._partitionBatteryEntities(t.entities,a),p=this._shortDeviceName(t.device)||"Battery",h=r[0],u=h&&parseFloat(h.state.state)||0,m=h&&"unavailable"!==h.state.state&&"unknown"!==h.state.state,f=m?this._getCoreColor(u):"var(--lcars-gray)",v=s.find(e=>"total"===e.ioType),g=n.find(e=>"total"===e.ioType),b=v&&parseFloat(v.state.state)||0,y=g&&parseFloat(g.state.state)||0,_=b>5,w=!(_||y>5),x=new Set;s.filter(e=>"total"!==e.ioType).forEach(e=>x.add(e.ioType)),n.filter(e=>"total"!==e.ioType).forEach(e=>x.add(e.ioType));const k=[...x].map(e=>({type:e,label:e.toUpperCase(),inEntry:s.find(t=>t.ioType===e),outEntry:n.find(t=>t.ioType===e)})),$=o.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||"duration"===t||/state.*health|cycles|remain.*time|status|error.*code|battery.*count/.test(a)}).slice(0,8),S=d.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||/cycles|status|error|battery.*count|charging.*state|power.*diff/.test(a)}).slice(0,8);return e.qy`
+      `}_getCoreColor(e){return e>=80?"var(--lcars-ice)":e>=60?"var(--lcars-sky)":e>=40?"var(--lcars-bluey)":e>=20?"var(--lcars-butterscotch)":e>=10?"var(--lcars-peach)":"var(--lcars-tomato)"}_getFlowSpeed(e){const t=Math.abs(parseFloat(e)||0);return 0===t?"flow-stopped":t>1e3?"flow-fast":t>100?"flow-medium":"flow-slow"}_renderBatteryPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{soc:r,powerIn:i,powerOut:s,telemetry:n,controls:o,configControls:l,diagnostics:c}=this._partitionBatteryEntities(t.entities,a),d=this._shortDeviceName(t.device)||"Battery",p=r[0],u=p&&parseFloat(p.state.state)||0,h=p&&"unavailable"!==p.state.state&&"unknown"!==p.state.state,m=h?this._getCoreColor(u):"var(--lcars-gray)",v=i.find(e=>"total"===e.ioType),f=s.find(e=>"total"===e.ioType),g=v&&parseFloat(v.state.state)||0,b=f&&parseFloat(f.state.state)||0,_=g>5,w=!(_||b>5),x=new Set;i.filter(e=>"total"!==e.ioType).forEach(e=>x.add(e.ioType)),s.filter(e=>"total"!==e.ioType).forEach(e=>x.add(e.ioType));const $=[...x].map(e=>({type:e,label:e.toUpperCase(),inEntry:i.find(t=>t.ioType===e),outEntry:s.find(t=>t.ioType===e)})),k=n.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||"duration"===t||/state.*health|cycles|remain.*time|status|error.*code|battery.*count/.test(a)}).slice(0,8),S=c.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||/cycles|status|error|battery.*count|charging.*state|power.*diff/.test(a)}).slice(0,8);return e.qy`
         <div class="lcars-device-panel battery-panel" data-panel-type="battery">
           <!-- Header -->
           <div class="battery-header">
-            <span class="device-panel-name">${p}</span>
+            <span class="device-panel-name">${d}</span>
             <div class="device-panel-header-line"></div>
-            <span class="battery-charge-label" style="color:${f}">
-              ${m?`${Math.round(u)}%`:"N/A"}
+            <span class="battery-charge-label" style="color:${m}">
+              ${h?`${Math.round(u)}%`:"N/A"}
             </span>
           </div>
 
           <!-- Telemetry (left) -->
-          <div class="battery-telemetry" role="list" aria-label="${p} telemetry">
+          <div class="battery-telemetry" role="list" aria-label="${d} telemetry">
             ${v?e.qy`
               <div class="battery-total-line" tabindex="0" role="button"
                 @click=${()=>this._handleEntityClick(v.entity.entity_id)}
@@ -2265,34 +2894,34 @@
                 <span class="sensor-state-value" style="color:var(--lcars-ice)">${v.state.state} W</span>
               </div>
             `:""}
-            ${g?e.qy`
+            ${f?e.qy`
               <div class="battery-total-line" tabindex="0" role="button"
-                @click=${()=>this._handleEntityClick(g.entity.entity_id)}
-                @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(g.entity.entity_id))}}>
+                @click=${()=>this._handleEntityClick(f.entity.entity_id)}
+                @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(f.entity.entity_id))}}>
                 <ha-icon icon="mdi:transmission-tower-export" style="--mdc-icon-size:14px;color:var(--lcars-butterscotch)"></ha-icon>
                 <span class="sensor-label">Total Out</span>
-                <span class="sensor-state-value" style="color:var(--lcars-butterscotch)">${g.state.state} W</span>
+                <span class="sensor-state-value" style="color:var(--lcars-butterscotch)">${f.state.state} W</span>
               </div>
             `:""}
-            ${$.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),s=a.state,i=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
+            ${k.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.state,s=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
                   @click=${()=>this._handleEntityClick(t.entity_id)}
                   @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t.entity_id))}}>
                   <div class="sensor-indicator" style="background:${n}"></div>
                   <span class="sensor-label">${r}</span>
-                  <span class="sensor-state-value" style="color:${n}">${s}${i?" "+i:""}</span>
+                  <span class="sensor-state-value" style="color:${n}">${i}${s?" "+s:""}</span>
                 </div>
               `})}
             ${S.length>0?e.qy`
               <div class="battery-section-divider"></div>
               <div class="battery-section-label">DIAGNOSTICS</div>
-              ${S.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),s=a.state,i=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
+              ${S.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.state,s=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
                   <div class="device-sensor-line" tabindex="0" role="listitem"
                     @click=${()=>this._handleEntityClick(t.entity_id)}
                     @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t.entity_id))}}>
                     <div class="sensor-indicator" style="background:${n}"></div>
                     <span class="sensor-label">${r}</span>
-                    <span class="sensor-state-value" style="color:${n}">${s}${i?" "+i:""}</span>
+                    <span class="sensor-state-value" style="color:${n}">${i}${s?" "+s:""}</span>
                   </div>
                 `})}
             `:""}
@@ -2302,7 +2931,7 @@
           <div class="warp-core-container" role="meter"
             aria-valuenow="${u}" aria-valuemin="0" aria-valuemax="100"
             aria-label="Battery charge level: ${Math.round(u)} percent">
-            <div class="warp-core" style="--core-color:${f};--core-charge:${m?u:0}">
+            <div class="warp-core" style="--core-color:${m};--core-charge:${h?u:0}">
               <div class="warp-core-fill ${w?"core-idle":""} ${_?"core-charging":""}">
                 <div class="warp-core-stream"></div>
               </div>
@@ -2313,64 +2942,64 @@
           </div>
 
           <!-- Controls (right) -->
-          <div class="battery-controls" aria-label="${p} controls">
-            ${l.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),s=t.entity_id.split(".")[0];if("number"===s){const s=a.attributes?.min||0,i=a.attributes?.max||100,n=parseFloat(a.state)||0,o=a.attributes?.unit_of_measurement||"",l=i>s?(n-s)/(i-s)*100:0;return e.qy`
+          <div class="battery-controls" aria-label="${d} controls">
+            ${o.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=t.entity_id.split(".")[0];if("number"===i){const i=a.attributes?.min||0,s=a.attributes?.max||100,n=parseFloat(a.state)||0,o=a.attributes?.unit_of_measurement||"",l=s>i?(n-i)/(s-i)*100:0;return e.qy`
                   <div class="battery-slider-control">
                     <span class="battery-slider-label" id="slider-${t.entity_id}">${r}</span>
                     <div class="battery-slider-track"
                       tabindex="0" role="slider"
                       aria-labelledby="slider-${t.entity_id}"
-                      aria-valuemin="${s}" aria-valuemax="${i}" aria-valuenow="${n}"
-                      @click=${e=>{const a=e.currentTarget.getBoundingClientRect(),r=Math.max(0,Math.min(1,(e.clientX-a.left)/a.width)),n=Math.round(s+r*(i-s));this._hass.callService("number","set_value",{entity_id:t.entity_id,value:n})}}
-                      @keydown=${e=>{let a=n;if("ArrowRight"===e.key||"ArrowUp"===e.key)a=Math.min(i,n+1);else if("ArrowLeft"===e.key||"ArrowDown"===e.key)a=Math.max(s,n-1);else if("Home"===e.key)a=s;else{if("End"!==e.key)return;a=i}e.preventDefault(),this._hass.callService("number","set_value",{entity_id:t.entity_id,value:a})}}>
+                      aria-valuemin="${i}" aria-valuemax="${s}" aria-valuenow="${n}"
+                      @click=${e=>{const a=e.currentTarget.getBoundingClientRect(),r=Math.max(0,Math.min(1,(e.clientX-a.left)/a.width)),n=Math.round(i+r*(s-i));this._hass.callService("number","set_value",{entity_id:t.entity_id,value:n})}}
+                      @keydown=${e=>{let a=n;if("ArrowRight"===e.key||"ArrowUp"===e.key)a=Math.min(s,n+1);else if("ArrowLeft"===e.key||"ArrowDown"===e.key)a=Math.max(i,n-1);else if("Home"===e.key)a=i;else{if("End"!==e.key)return;a=s}e.preventDefault(),this._hass.callService("number","set_value",{entity_id:t.entity_id,value:a})}}>
                       <div class="battery-slider-fill" style="width:${l}%"></div>
                       <div class="battery-slider-thumb" style="left:${l}%"></div>
                     </div>
                     <span class="battery-slider-value">${n}${o?" "+o:""}</span>
                   </div>
-                `}const n="on"===a.state,o=this._isOff(a);return e.qy`
-                <button class="device-control-btn" ?data-on=${n} ?data-off=${o}
-                  @click=${()=>i.has(s)?this._handleToggle(t.entity_id):this._handleEntityClick(t.entity_id)}
+                `}const s="on"===a.state,n=this._isOff(a);return e.qy`
+                <button class="device-control-btn" ?data-on=${s} ?data-off=${n}
+                  @click=${()=>y.has(i)?this._handleToggle(t.entity_id):this._handleEntityClick(t.entity_id)}
                   title="${r}: ${a.state}">
                   <ha-icon .icon=${this._getEntityIcon(a)}></ha-icon>
                   <span>${r}</span>
                 </button>
               `})}
-            ${c.length>0?e.qy`
+            ${l.length>0?e.qy`
               <div class="battery-section-divider"></div>
               <div class="battery-section-label">CONFIG</div>
-              ${c.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),s=t.entity_id.split(".")[0];if("number"===s){const s=a.attributes?.min||0,i=a.attributes?.max||100,n=a.attributes?.step||1,o=parseFloat(a.state)||0,l=a.attributes?.unit_of_measurement||"",c=i>s?(o-s)/(i-s)*100:0;return e.qy`
+              ${l.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=t.entity_id.split(".")[0];if("number"===i){const i=a.attributes?.min||0,s=a.attributes?.max||100,n=a.attributes?.step||1,o=parseFloat(a.state)||0,l=a.attributes?.unit_of_measurement||"",c=s>i?(o-i)/(s-i)*100:0;return e.qy`
                     <div class="battery-slider-control">
                       <span class="battery-slider-label" id="slider-${t.entity_id}">${r}</span>
                       <div class="battery-slider-track"
                         tabindex="0" role="slider"
                         aria-labelledby="slider-${t.entity_id}"
-                        aria-valuemin="${s}" aria-valuemax="${i}" aria-valuenow="${o}"
-                        @click=${e=>{const a=e.currentTarget.getBoundingClientRect(),r=Math.max(0,Math.min(1,(e.clientX-a.left)/a.width));let o=s+r*(i-s);o=Math.round(o/n)*n,o=Math.max(s,Math.min(i,o)),this._hass.callService("number","set_value",{entity_id:t.entity_id,value:o})}}
-                        @keydown=${e=>{let a=o;if("ArrowRight"===e.key||"ArrowUp"===e.key)a=Math.min(i,o+n);else if("ArrowLeft"===e.key||"ArrowDown"===e.key)a=Math.max(s,o-n);else if("Home"===e.key)a=s;else{if("End"!==e.key)return;a=i}e.preventDefault(),this._hass.callService("number","set_value",{entity_id:t.entity_id,value:a})}}>
+                        aria-valuemin="${i}" aria-valuemax="${s}" aria-valuenow="${o}"
+                        @click=${e=>{const a=e.currentTarget.getBoundingClientRect(),r=Math.max(0,Math.min(1,(e.clientX-a.left)/a.width));let o=i+r*(s-i);o=Math.round(o/n)*n,o=Math.max(i,Math.min(s,o)),this._hass.callService("number","set_value",{entity_id:t.entity_id,value:o})}}
+                        @keydown=${e=>{let a=o;if("ArrowRight"===e.key||"ArrowUp"===e.key)a=Math.min(s,o+n);else if("ArrowLeft"===e.key||"ArrowDown"===e.key)a=Math.max(i,o-n);else if("Home"===e.key)a=i;else{if("End"!==e.key)return;a=s}e.preventDefault(),this._hass.callService("number","set_value",{entity_id:t.entity_id,value:a})}}>
                         <div class="battery-slider-fill" style="width:${c}%"></div>
                         <div class="battery-slider-thumb" style="left:${c}%"></div>
                       </div>
                       <span class="battery-slider-value">${o}${l?" "+l:""}</span>
                     </div>
-                  `}if("select"===s){const s=a.attributes?.options||[],i=a.state;return e.qy`
+                  `}if("select"===i){const i=a.attributes?.options||[],s=a.state;return e.qy`
                     <div class="lcars-option-strip" role="radiogroup" aria-label="${r}">
                       <span class="lcars-option-strip-label">${r}</span>
                       <div class="lcars-option-strip-btns">
-                        ${s.map(a=>e.qy`
+                        ${i.map(a=>e.qy`
                           <button class="lcars-option-btn"
                             role="radio"
-                            aria-checked="${a===i}"
-                            ?data-selected=${a===i}
+                            aria-checked="${a===s}"
+                            ?data-selected=${a===s}
                             @click=${()=>this._hass.callService("select","select_option",{entity_id:t.entity_id,option:a})}>
                             ${a}
                           </button>
                         `)}
                       </div>
                     </div>
-                  `}const n="on"===a.state,o=this._isOff(a);return e.qy`
-                  <button class="device-control-btn" ?data-on=${n} ?data-off=${o}
-                    @click=${()=>i.has(s)?this._handleToggle(t.entity_id):this._handleEntityClick(t.entity_id)}
+                  `}const s="on"===a.state,n=this._isOff(a);return e.qy`
+                  <button class="device-control-btn" ?data-on=${s} ?data-off=${n}
+                    @click=${()=>y.has(i)?this._handleToggle(t.entity_id):this._handleEntityClick(t.entity_id)}
                     title="${r}: ${a.state}">
                     <ha-icon .icon=${this._getEntityIcon(a)}></ha-icon>
                     <span>${r}</span>
@@ -2381,15 +3010,15 @@
 
           <!-- Power I/O Flow (bottom) -->
           <div class="battery-io-flow" aria-label="Power flow">
-            ${k.map(t=>{const a=t.inEntry&&parseFloat(t.inEntry.state.state)||0,r=t.outEntry&&parseFloat(t.outEntry.state.state)||0,s=this._getFlowSpeed(a),i=this._getFlowSpeed(r);return e.qy`
+            ${$.map(t=>{const a=t.inEntry&&parseFloat(t.inEntry.state.state)||0,r=t.outEntry&&parseFloat(t.outEntry.state.state)||0,i=this._getFlowSpeed(a),s=this._getFlowSpeed(r);return e.qy`
                 <div class="io-pair-row">
                   <div class="io-port io-in" aria-label="${t.label} input: ${a} watts">
                     <span class="io-label">${t.label} IN</span>
                     <span class="io-watts" style="color:var(--lcars-ice)">${a>0?`${Math.round(a)}W`:"—"}</span>
                   </div>
-                  <div class="io-conduit io-conduit-in ${s}"></div>
+                  <div class="io-conduit io-conduit-in ${i}"></div>
                   <div class="io-core-gap"></div>
-                  <div class="io-conduit io-conduit-out ${i}"></div>
+                  <div class="io-conduit io-conduit-out ${s}"></div>
                   <div class="io-port io-out" aria-label="${t.label} output: ${r} watts">
                     <span class="io-label">${t.label} OUT</span>
                     <span class="io-watts" style="color:var(--lcars-butterscotch)">${r>0?`${Math.round(r)}W`:"—"}</span>
@@ -2398,8 +3027,635 @@
               `})}
           </div>
         </div>
-      `}_renderAreaContent(t){if(0===t.length)return e.qy`<div class="lcars-empty">No entities in this area</div>`;const{byDevice:a,noDevice:r}=this._groupEntities(t),s=[],i=[];for(const e of a.values()){const t=this._getDevicePanelType(e.entities);t?s.push({...e,panelType:t}):i.push(e)}const n=e.qy`
-        ${i.map(t=>e.qy`
+      `}_climateSetpointDebouncer=null;_partitionClimateEntities(e,t){const a=[],r=[],i=[],s=[],n=new Set(["problem","heat","cold","connectivity","battery","tamper","smoke","safety"]);for(const t of e){const e=t.domain;if("climate"!==e){if("binary_sensor"===e){const e=t.state?.attributes?.device_class||"";if(n.has(e)){i.push(t);continue}}_.has(e),r.push(t)}else a.push(t)}if(t)for(const e of t.diagnostic||[]){const t=this._getEntityState(e.entity_id);t&&s.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{climate:a,sensors:r,faults:i,diagnostics:s}}_isDualSetpoint(e){return"heat_cool"===e?.attributes?.hvac_mode||null!=e?.attributes?.target_temp_low&&null!=e?.attributes?.target_temp_high}_renderClimateArc(t,a,r,i,s){const n=100,o=120,l=80,c=i-r||1,d=Math.max(0,Math.min(1,(t-r)/c)),p=Math.PI,u=p-(p-0)*d,h=n+l*Math.cos(p),m=o-l*Math.sin(p),v=n+l*Math.cos(u),f=o-l*Math.sin(u),g=d>.5?1:0,b=p-(p-0)*Math.max(0,Math.min(1,(a-r)/c)),y=n+l*Math.cos(b),_=o-l*Math.sin(b);return e.qy`
+        <svg class="climate-arc" viewBox="0 0 ${200} ${130}" role="meter"
+          aria-valuemin="${r}" aria-valuemax="${i}" aria-valuenow="${t}"
+          aria-label="Temperature: ${t}°, target ${a}°">
+          <!-- Background arc -->
+          <path d="M ${h},${m} A ${l},${l} 0 1,1 ${180},${o}"
+            fill="none" stroke="var(--lcars-disabled)" stroke-width="8" stroke-linecap="round" />
+          <!-- Progress arc -->
+          ${d>0?e.qy`
+            <path d="M ${h},${m} A ${l},${l} 0 ${g},1 ${v},${f}"
+              fill="none" stroke="${s}" stroke-width="8" stroke-linecap="round" />
+          `:""}
+          <!-- Target tick -->
+          <circle cx="${y}" cy="${_}" r="5" fill="${s}" stroke="var(--lcars-card-bg, #1a1a2e)" stroke-width="2" />
+          <!-- Current temp text -->
+          <text x="${n}" y="${100}" text-anchor="middle" fill="${s}"
+            font-family="var(--lcars-font)" font-size="42" font-weight="bold">
+            ${null!=t&&Number.isFinite(t)?Math.round(t):"—"}°
+          </text>
+        </svg>
+      `}_handleClimateSetpoint(e,t,a,r,i){const s=P(a,t);this._climateSetpointDebouncer||(this._climateSetpointDebouncer=D((e,t)=>{this._hass.callService("climate","set_temperature",{entity_id:e,...t})},1500));const n=r?{["low"===i?"target_temp_low":"target_temp_high"]:s}:{temperature:s};this._climateSetpointDebouncer.call(e,n)}_handleClimateMode(e,t){this._hass.callService("climate","set_hvac_mode",{entity_id:e,hvac_mode:t})}_handleClimateFanMode(e,t){this._hass.callService("climate","set_fan_mode",{entity_id:e,fan_mode:t})}_handleClimatePreset(e,t){this._hass.callService("climate","set_preset_mode",{entity_id:e,preset_mode:t})}_renderClimatePanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{climate:r,sensors:i,faults:s,diagnostics:n}=this._partitionClimateEntities(t.entities,a),o=this._shortDeviceName(t.device)||"Thermostat";if(0===r.length)return"";const l=r[0],c=l.state,d=c?.attributes||{},p=null!=d.current_temperature?Number(d.current_temperature):null,u=d.hvac_action||"off",h=function(e){switch(e){case"heating":return"var(--lcars-butterscotch)";case"cooling":return"var(--lcars-ice)";case"idle":return"var(--lcars-sunflower)";case"drying":return"var(--lcars-almond)";case"fan":return"var(--lcars-african-violet)";default:return"var(--lcars-disabled)"}}(u),m=this._isDualSetpoint(c),v=m?null:null!=d.temperature?Number(d.temperature):null,f=m?Number(d.target_temp_low):null,g=m?Number(d.target_temp_high):null,b=null!=d.min_temp?Number(d.min_temp):45,y=null!=d.max_temp?Number(d.max_temp):95,_=d.hvac_modes||[],w=d.hvac_mode||"off",x=d.fan_modes||[],$=d.fan_mode||"",k=d.preset_modes||[],S=d.preset_mode||"",C=i.find(e=>"humidity"===(e.state?.attributes?.device_class||"")),E=d.target_temp_step||1;return e.qy`
+        <div class="lcars-device-panel climate-panel" data-panel-type="climate"
+          style="--panel-frame-color:${h}">
+          <!-- Header -->
+          <div class="climate-header">
+            <span class="device-panel-name">${o}</span>
+            <div class="device-panel-header-line"></div>
+            <span class="climate-action-badge" style="color:${h}">
+              ${u.toUpperCase()}
+            </span>
+          </div>
+
+          <!-- Sensors (left) -->
+          <div class="climate-sensors" role="list" aria-label="${o} readings">
+            ${null!=p?e.qy`
+              <div class="device-sensor-line" role="listitem" aria-label="Current temperature: ${p}°">
+                <div class="sensor-indicator" style="background:${h}"></div>
+                <span class="sensor-label">Current</span>
+                <span class="sensor-state-value" style="color:${h}">${Math.round(p)}°</span>
+              </div>
+            `:""}
+            ${m?e.qy`
+              <div class="device-sensor-line" role="listitem" aria-label="Heat target: ${f}°">
+                <div class="sensor-indicator" style="background:var(--lcars-butterscotch)"></div>
+                <span class="sensor-label">Heat To</span>
+                <span class="sensor-state-value" style="color:var(--lcars-butterscotch)">${f}°</span>
+              </div>
+              <div class="device-sensor-line" role="listitem" aria-label="Cool target: ${g}°">
+                <div class="sensor-indicator" style="background:var(--lcars-ice)"></div>
+                <span class="sensor-label">Cool To</span>
+                <span class="sensor-state-value" style="color:var(--lcars-ice)">${g}°</span>
+              </div>
+            `:null!=v?e.qy`
+              <div class="device-sensor-line" role="listitem" aria-label="Target temperature: ${v}°">
+                <div class="sensor-indicator" style="background:${h}"></div>
+                <span class="sensor-label">Target</span>
+                <span class="sensor-state-value" style="color:${h}">${v}°</span>
+              </div>
+            `:""}
+            ${C?e.qy`
+              <div class="device-sensor-line" role="listitem"
+                aria-label="Humidity: ${C.state.state}%"
+                @click=${()=>this._handleEntityClick(C.entity.entity_id)}>
+                <div class="sensor-indicator" style="background:var(--lcars-ice)"></div>
+                <span class="sensor-label">Humidity</span>
+                <span class="sensor-state-value" style="color:var(--lcars-ice)">${C.state.state}%</span>
+              </div>
+            `:""}
+            <div class="battery-section-divider"></div>
+            <div class="device-sensor-line" role="listitem" aria-label="HVAC mode: ${w}">
+              <div class="sensor-indicator" style="background:${h}"></div>
+              <span class="sensor-label">Mode</span>
+              <span class="sensor-state-value">${w}</span>
+            </div>
+            ${$?e.qy`
+              <div class="device-sensor-line" role="listitem" aria-label="Fan mode: ${$}">
+                <div class="sensor-indicator" style="background:var(--lcars-data-accent)"></div>
+                <span class="sensor-label">Fan</span>
+                <span class="sensor-state-value">${$}</span>
+              </div>
+            `:""}
+            ${s.length>0?e.qy`
+              <div class="battery-section-divider"></div>
+              <div class="battery-section-label">FAULTS</div>
+              ${s.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i="on"===a.state?"var(--lcars-tomato)":"var(--lcars-gray)";return e.qy`
+                  <div class="device-sensor-line" tabindex="0" role="listitem"
+                    aria-label="${r}: ${a.state}"
+                    @click=${()=>this._handleEntityClick(t.entity_id)}
+                    @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t.entity_id))}}>
+                    <div class="sensor-indicator" style="background:${i}"></div>
+                    <span class="sensor-label">${r}</span>
+                    <span class="sensor-state-value" style="color:${i}">${a.state}</span>
+                  </div>
+                `})}
+            `:""}
+          </div>
+
+          <!-- Viewscreen (right) -->
+          <div class="climate-viewscreen" tabindex="0"
+            @click=${()=>this._handleEntityClick(l.entity.entity_id)}
+            @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(l.entity.entity_id))}}>
+            ${this._renderClimateArc(p,m?(f+g)/2:v,b,y,h)}
+            <!-- Setpoint controls -->
+            <div class="climate-setpoint-controls">
+              ${m?e.qy`
+                <div class="climate-setpoint-row">
+                  <button class="climate-sp-btn" aria-label="Decrease heat target"
+                    @click=${e=>{e.stopPropagation(),this._handleClimateSetpoint(l.entity.entity_id,d,f-E,!0,"low")}}>−</button>
+                  <span class="climate-sp-label" style="color:var(--lcars-butterscotch)">HEAT ${f}°</span>
+                  <button class="climate-sp-btn" aria-label="Increase heat target"
+                    @click=${e=>{e.stopPropagation(),this._handleClimateSetpoint(l.entity.entity_id,d,f+E,!0,"low")}}>+</button>
+                </div>
+                <div class="climate-setpoint-row">
+                  <button class="climate-sp-btn" aria-label="Decrease cool target"
+                    @click=${e=>{e.stopPropagation(),this._handleClimateSetpoint(l.entity.entity_id,d,g-E,!0,"high")}}>−</button>
+                  <span class="climate-sp-label" style="color:var(--lcars-ice)">COOL ${g}°</span>
+                  <button class="climate-sp-btn" aria-label="Increase cool target"
+                    @click=${e=>{e.stopPropagation(),this._handleClimateSetpoint(l.entity.entity_id,d,g+E,!0,"high")}}>+</button>
+                </div>
+              `:null!=v?e.qy`
+                <div class="climate-setpoint-row">
+                  <button class="climate-sp-btn" aria-label="Decrease target temperature"
+                    @click=${e=>{e.stopPropagation(),this._handleClimateSetpoint(l.entity.entity_id,d,v-E,!1)}}>−</button>
+                  <span class="climate-sp-label" style="color:${h}">TARGET ${v}°</span>
+                  <button class="climate-sp-btn" aria-label="Increase target temperature"
+                    @click=${e=>{e.stopPropagation(),this._handleClimateSetpoint(l.entity.entity_id,d,v+E,!1)}}>+</button>
+                </div>
+              `:""}
+            </div>
+          </div>
+
+          <!-- HVAC Mode Strip -->
+          ${_.length>1?e.qy`
+            <div class="climate-modes" role="radiogroup" aria-label="HVAC mode">
+              ${_.map(t=>e.qy`
+                <button class="climate-mode-btn" role="radio"
+                  aria-checked="${t===w}"
+                  ?data-active=${t===w}
+                  @click=${()=>this._handleClimateMode(l.entity.entity_id,t)}>
+                  ${t.toUpperCase().replace("_"," ")}
+                </button>
+              `)}
+            </div>
+          `:""}
+
+          <!-- Fan Mode + Preset Strips -->
+          <div class="climate-aux-controls">
+            ${x.length>1?e.qy`
+              <div class="climate-aux-strip" role="radiogroup" aria-label="Fan mode">
+                ${x.map(t=>e.qy`
+                  <button class="climate-mode-btn" role="radio"
+                    aria-checked="${t===$}"
+                    ?data-active=${t===$}
+                    @click=${()=>this._handleClimateFanMode(l.entity.entity_id,t)}>
+                    ${t.toUpperCase().replace("_"," ")}
+                  </button>
+                `)}
+              </div>
+            `:""}
+            ${k.length>0?e.qy`
+              <div class="climate-aux-strip" role="radiogroup" aria-label="Preset mode">
+                ${k.map(t=>e.qy`
+                  <button class="climate-mode-btn" role="radio"
+                    aria-checked="${t===S}"
+                    ?data-active=${t===S}
+                    @click=${()=>this._handleClimatePreset(l.entity.entity_id,t)}>
+                    ${t.toUpperCase().replace("_"," ")}
+                  </button>
+                `)}
+              </div>
+            `:""}
+          </div>
+        </div>
+      `}_alarmPinCode="";_alarmPinLimiter=N(3,6e4);_alarmCountdown=null;_alarmCountdownTimer=null;_alarmPinError=!1;_partitionAlarmEntities(e,t){const a=[],r=[],i=[],s=[],n=new Set(["door","window","motion","vibration","moisture","cold","smoke","safety","opening","garage_door","lock","tamper","problem"]);for(const t of e)if("alarm_control_panel"!==t.domain){if("binary_sensor"===t.domain){const e=t.state?.attributes?.device_class||"";if(n.has(e)){r.push(t);continue}}i.push(t)}else a.push(t);if(t)for(const e of t.diagnostic||[]){const t=this._getEntityState(e.entity_id);t&&s.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{alarm:a,zones:r,auxiliary:i,diagnostics:s}}_handleAlarmPinDigit(e){this._alarmPinCode.length>=6||(this._alarmPinCode+=String(e).replace(/\D/g,"").charAt(0)||"",this._alarmPinError=!1,this.requestUpdate())}_handleAlarmPinClear(){this._alarmPinCode="",this._alarmPinError=!1,this.requestUpdate()}_handleAlarmArm(e,t){const a=this._alarmPinCode||void 0,r=`alarm_arm_${t}`;this._hass.callService("alarm_control_panel",r,{entity_id:e,...a?{code:a}:{}}),this._alarmPinCode="",this.requestUpdate()}_handleAlarmDisarm(e){if(!this._alarmPinLimiter.allow())return this._alarmPinError=!0,void this.requestUpdate();const t=this._alarmPinCode||void 0;this._hass.callService("alarm_control_panel","alarm_disarm",{entity_id:e,...t?{code:t}:{}}),this._alarmPinCode="",this.requestUpdate()}_startAlarmCountdown(e){this._alarmCountdown=Math.max(0,e),this._alarmCountdownTimer&&clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=setInterval(()=>{this._alarmCountdown=Math.max(0,(this._alarmCountdown||0)-1),this.requestUpdate(),this._alarmCountdown<=0&&(clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=null)},1e3)}_stopAlarmCountdown(){this._alarmCountdownTimer&&(clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=null),this._alarmCountdown=null}_getAlarmShieldSymbol(e){switch(e){case"disarmed":return"✓";case"armed_home":case"armed_night":return"◉";case"armed_away":case"armed_vacation":return"▲";case"triggered":return"✕";case"arming":case"pending":case"disarming":return"⋯";default:return"?"}}_getAlarmStateLabel(e){return(e||"unknown").toUpperCase().replace(/_/g," ")}_handleAlarmKeydown(e,t){const a=e.key;/^[0-9]$/.test(a)?(e.preventDefault(),this._handleAlarmPinDigit(a)):"Backspace"===a?(e.preventDefault(),this._alarmPinCode=this._alarmPinCode.slice(0,-1),this.requestUpdate()):"Enter"===a?(e.preventDefault(),this._handleAlarmDisarm(t)):"Escape"===a&&(e.preventDefault(),this._handleAlarmPinClear())}_renderAlarmPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{alarm:r,zones:i,auxiliary:s,diagnostics:n}=this._partitionAlarmEntities(t.entities,a),o=this._shortDeviceName(t.device)||"Alarm";if(0===r.length)return"";const l=r[0],c=l.state,d=c?.state||"unavailable",p=function(e){switch(e){case"disarmed":return"var(--lcars-ice)";case"armed_home":case"armed_night":return"var(--lcars-sunflower)";case"armed_away":case"armed_vacation":return"var(--lcars-butterscotch)";case"armed_custom_bypass":return"var(--lcars-african-violet)";case"arming":case"pending":case"disarming":return"var(--lcars-gold)";case"triggered":return"var(--lcars-alert)";default:return"var(--lcars-disabled)"}}(d),u=["arming","pending","disarming"].includes(d),h="triggered"===d,m=this._getAlarmShieldSymbol(d),v=this._getAlarmStateLabel(d),f=!1!==c?.attributes?.code_required,g=Array.from({length:6},(e,t)=>t<this._alarmPinCode.length);if(u&&null==this._alarmCountdown){const e=c?.attributes?.delay||60;this._startAlarmCountdown(e)}else u||null==this._alarmCountdown||this._stopAlarmCountdown();return e.qy`
+        <div class="lcars-device-panel alarm-panel ${h?"alarm-triggered":""}" data-panel-type="alarm"
+          style="--panel-frame-color:${p}">
+          <!-- Header -->
+          <div class="alarm-header">
+            <span class="device-panel-name">${o}</span>
+            <div class="device-panel-header-line"></div>
+            <span class="alarm-state-badge" style="color:${p}">${v}</span>
+          </div>
+
+          <!-- Zones (left) -->
+          <div class="alarm-sensors" role="list" aria-label="${o} zones">
+            ${i.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i="on"===a.state,s=i?"var(--lcars-butterscotch)":"var(--lcars-gray)";return e.qy`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  aria-label="${r}: ${i?"open":"closed"}"
+                  @click=${()=>this._handleEntityClick(t.entity_id)}
+                  @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t.entity_id))}}>
+                  <div class="sensor-indicator" style="background:${s}"></div>
+                  <span class="sensor-label">${r}</span>
+                  <span class="sensor-state-value" style="color:${s}">${i?"OPEN":"CLOSED"}</span>
+                </div>
+              `})}
+            ${s.length>0?e.qy`
+              <div class="battery-section-divider"></div>
+              ${s.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=this._getSensorIndicatorColor(a);return e.qy`
+                  <div class="device-sensor-line" tabindex="0" role="listitem"
+                    @click=${()=>this._handleEntityClick(t.entity_id)}
+                    @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t.entity_id))}}>
+                    <div class="sensor-indicator" style="background:${i}"></div>
+                    <span class="sensor-label">${r}</span>
+                    <span class="sensor-state-value" style="color:${i}">${a.state}</span>
+                  </div>
+                `})}
+            `:""}
+          </div>
+
+          <!-- Viewscreen (right) -->
+          <div class="alarm-viewscreen">
+            ${u&&null!=this._alarmCountdown?e.qy`
+              <div class="alarm-countdown" aria-live="polite">
+                <span class="alarm-countdown-num" style="color:${p}">${this._alarmCountdown}</span>
+                <span class="alarm-countdown-label">${v}</span>
+              </div>
+            `:e.qy`
+              <svg class="alarm-shield" viewBox="0 0 160 180" role="img"
+                aria-label="${o}: ${v}">
+                <path d="M80,10 L145,45 L145,110 Q145,160 80,175 Q15,160 15,110 L15,45 Z"
+                  fill="none" stroke="${p}" stroke-width="4" />
+                <text x="80" y="105" text-anchor="middle" fill="${p}"
+                  font-family="var(--lcars-font)" font-size="48">${m}</text>
+                <text x="80" y="145" text-anchor="middle" fill="${p}"
+                  font-family="var(--lcars-font)" font-size="14">${v}</text>
+              </svg>
+            `}
+            <!-- Arm mode strip -->
+            <div class="alarm-arm-strip" role="radiogroup" aria-label="Arm mode">
+              ${["home","away","night"].map(t=>{const a=d===`armed_${t}`;return e.qy`
+                  <button class="alarm-arm-btn" role="radio"
+                    aria-checked="${a}"
+                    ?data-active=${a}
+                    @click=${()=>this._handleAlarmArm(l.entity.entity_id,t)}>
+                    ${t.toUpperCase()}
+                  </button>
+                `})}
+            </div>
+          </div>
+
+          <!-- PIN Keypad -->
+          ${f?e.qy`
+            <div class="alarm-keypad" tabindex="0" aria-label="PIN keypad"
+              @keydown=${e=>this._handleAlarmKeydown(e,l.entity.entity_id)}>
+              <div class="alarm-code-display ${this._alarmPinError?"alarm-pin-error":""}" role="status" aria-live="polite">
+                ${g.map(t=>e.qy`
+                  <div class="alarm-code-dot ${t?"filled":""}"
+                    style="background:${t?this._alarmPinError?"var(--lcars-tomato)":p:"var(--lcars-disabled)"}"></div>
+                `)}
+              </div>
+              <div class="alarm-digit-grid">
+                ${[1,2,3,4,5,6,7,8,9].map(t=>e.qy`
+                  <button class="alarm-digit-btn" aria-label="Digit ${t}"
+                    @click=${()=>this._handleAlarmPinDigit(t)}>${t}</button>
+                `)}
+                <button class="alarm-digit-btn alarm-action-btn" aria-label="Clear code"
+                  @click=${()=>this._handleAlarmPinClear()}>⌫</button>
+                <button class="alarm-digit-btn" aria-label="Digit 0"
+                  @click=${()=>this._handleAlarmPinDigit(0)}>0</button>
+                <button class="alarm-digit-btn alarm-action-btn" aria-label="Disarm"
+                  @click=${()=>this._handleAlarmDisarm(l.entity.entity_id)}>⏎</button>
+              </div>
+            </div>
+          `:""}
+        </div>
+      `}_isValidArtworkUrl(e){return!!e&&(e.startsWith("/api/")||e.startsWith("/local/"))}_getMediaTransportSymbol(e){switch(e){case"playing":return"▶";case"paused":return"❚❚";default:return"■"}}_partitionMediaEntities(e){const t=[],a=[],r=[],i=[];for(const s of e)"media_player"!==s.domain?"remote"!==s.domain?_.has(s.domain)?a.push(s):r.push(s):i.push(s):t.push(s);return{player:t,sensors:a,controls:r,remotes:i}}_handleMediaService(e,t,a={}){this._hass.callService("media_player",t,{entity_id:e,...a})}_handleVolumeChange(e,t){const a=t.currentTarget.getBoundingClientRect(),r=Math.max(0,Math.min(1,(t.clientX-a.left)/a.width));this._handleMediaService(e,"volume_set",{volume_level:Math.round(100*r)/100})}_renderMediaPanel(t){const{player:a,sensors:r,controls:i,remotes:s}=this._partitionMediaEntities(t.entities),n=this._shortDeviceName(t.device)||"Media";if(0===a.length)return"";const o=a[0],l=o.state,c=l?.attributes||{},d=l?.state||"unavailable",p=function(e){if(null==e)return"var(--lcars-disabled)";switch(e){case"playing":return"var(--lcars-african-violet)";case"paused":case"buffering":return"var(--lcars-sunflower)";case"on":return"var(--lcars-data-accent)";case"idle":case"standby":case"off":default:return"var(--lcars-disabled)";case"unavailable":case"unknown":return"var(--lcars-alert)"}}(d),u=this._getMediaTransportSymbol(d),h="playing"===d,m=!(h||"paused"===d),v=c.entity_picture,f=this._isValidArtworkUrl(v),g=c.media_title||"",b=c.media_artist||"",y=c.source||"",_=null!=c.volume_level?Number(c.volume_level):0,w=c.is_volume_muted||!1,x=(c.source_list,c.supported_features||0),$=!!(16&x),k=!!(32&x),S=!!(4&x),C=!!(32768&x),E=!!(262144&x),z=c.shuffle||!1,A=c.repeat||"off";return e.qy`
+        <div class="lcars-device-panel media-panel ${m?"media-idle":""}" data-panel-type="media"
+          style="--panel-frame-color:var(--lcars-african-violet)">
+          <!-- Header -->
+          <div class="media-header">
+            <span class="device-panel-name">${n}</span>
+            <div class="device-panel-header-line"></div>
+            <span class="media-state-badge" style="color:${p}">${u} ${d.toUpperCase()}</span>
+          </div>
+
+          <!-- Metadata (left) -->
+          <div class="media-metadata" role="list" aria-label="${n} info">
+            ${y?e.qy`
+              <div class="device-sensor-line" role="listitem">
+                <div class="sensor-indicator" style="background:var(--lcars-african-violet)"></div>
+                <span class="sensor-label">Source</span>
+                <span class="sensor-state-value">${y}</span>
+              </div>
+            `:""}
+            ${C?e.qy`
+              <div class="device-sensor-line" role="listitem">
+                <div class="sensor-indicator" style="background:${z?"var(--lcars-african-violet)":"var(--lcars-gray)"}"></div>
+                <span class="sensor-label">Shuffle</span>
+                <span class="sensor-state-value">${z?"ON":"OFF"}</span>
+              </div>
+            `:""}
+            ${E?e.qy`
+              <div class="device-sensor-line" role="listitem">
+                <div class="sensor-indicator" style="background:${"off"!==A?"var(--lcars-african-violet)":"var(--lcars-gray)"}"></div>
+                <span class="sensor-label">Repeat</span>
+                <span class="sensor-state-value">${A.toUpperCase()}</span>
+              </div>
+            `:""}
+            ${r.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=this._getSensorIndicatorColor(a);return e.qy`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  @click=${()=>this._handleEntityClick(t.entity_id)}
+                  @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t.entity_id))}}>
+                  <div class="sensor-indicator" style="background:${i}"></div>
+                  <span class="sensor-label">${r}</span>
+                  <span class="sensor-state-value" style="color:${i}">${a.state}</span>
+                </div>
+              `})}
+          </div>
+
+          <!-- Viewscreen (right) -->
+          <div class="media-viewscreen" @click=${()=>this._handleEntityClick(o.entity.entity_id)}>
+            ${f&&!m?e.qy`
+              <img class="media-art" src="${v}" alt="Album art"
+                crossorigin="anonymous" referrerpolicy="no-referrer" loading="lazy"
+                @error=${e=>{e.target.style.display="none"}} />
+            `:e.qy`
+              <div class="media-idle-display">
+                <span class="media-idle-glyph">♪</span>
+                <span class="media-idle-label">STANDBY</span>
+              </div>
+            `}
+            ${m?"":e.qy`
+              <div class="media-now-playing">
+                ${g?e.qy`<div class="media-title">${g}</div>`:""}
+                ${b?e.qy`<div class="media-artist">${b}</div>`:""}
+              </div>
+            `}
+          </div>
+
+          <!-- Transport + Volume (bottom) -->
+          <div class="media-controls">
+            <div class="media-transport" aria-label="Transport controls">
+              ${C?e.qy`
+                <button class="media-transport-btn" aria-pressed="${z}" title="Shuffle"
+                  @click=${()=>this._handleMediaService(o.entity.entity_id,"shuffle_set",{shuffle:!z})}>⇄</button>
+              `:""}
+              ${$?e.qy`
+                <button class="media-transport-btn" title="Previous"
+                  @click=${()=>this._handleMediaService(o.entity.entity_id,"media_previous_track")}>⏮</button>
+              `:""}
+              <button class="media-transport-btn media-play-btn" title="${h?"Pause":"Play"}"
+                @click=${()=>this._handleMediaService(o.entity.entity_id,h?"media_pause":"media_play")}>
+                ${h?"❚❚":"▶"}
+              </button>
+              ${k?e.qy`
+                <button class="media-transport-btn" title="Next"
+                  @click=${()=>this._handleMediaService(o.entity.entity_id,"media_next_track")}>⏭</button>
+              `:""}
+              ${E?e.qy`
+                <button class="media-transport-btn" aria-pressed="${"off"!==A}" title="Repeat: ${A}"
+                  @click=${()=>this._handleMediaService(o.entity.entity_id,"repeat_set",{repeat:"off"===A?"all":"all"===A?"one":"off"})}>🔁</button>
+              `:""}
+            </div>
+            ${S?e.qy`
+              <div class="media-volume" aria-label="Volume: ${Math.round(100*_)}%">
+                <button class="media-mute-btn" aria-pressed="${w}" title="${w?"Unmute":"Mute"}"
+                  @click=${()=>this._handleMediaService(o.entity.entity_id,"volume_mute",{is_volume_muted:!w})}>
+                  ${w?"🔇":"🔊"}
+                </button>
+                <div class="media-volume-bar" tabindex="0" role="slider"
+                  aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*_)}"
+                  @click=${e=>this._handleVolumeChange(o.entity.entity_id,e)}
+                  @keydown=${e=>{"ArrowRight"===e.key&&(e.preventDefault(),this._handleMediaService(o.entity.entity_id,"volume_set",{volume_level:Math.min(1,_+.05)})),"ArrowLeft"===e.key&&(e.preventDefault(),this._handleMediaService(o.entity.entity_id,"volume_set",{volume_level:Math.max(0,_-.05)}))}}>
+                  <div class="media-volume-fill" style="width:${Math.round(100*_)}%"></div>
+                </div>
+                <span class="media-volume-pct">${Math.round(100*_)}%</span>
+              </div>
+            `:""}
+          </div>
+        </div>
+      `}_partitionPoolEntities(e){const t=[],a=[],r=[],i=[],s=[],n=[],o=[],l=[],c=/orp|ph_|salt|tds|saturation|calcium|alkalinity|cyanuric/i;for(const d of e){const e=d.entity.entity_id,p=d.domain,u=d.state?.attributes||{};if("climate"!==p)if("light"!==p)if("sensor"===p&&c.test(e))r.push(d);else if("switch"!==p){if("sensor"===p&&"temperature"===(u.device_class||"")){o.push(d);continue}l.push(d)}else/pump/i.test(e)?i.push(d):s.push(d);else n.push(d);else/spa/i.test(e)?a.push(d):t.push(d)}return{pool:t,spa:a,chemistry:r,pumps:i,circuits:s,lights:n,environmental:o,diagnostics:l}}_handlePoolSetpoint(e,t,a){const r=P(a,t,{min:40,max:104});this._poolSetpointDebouncer||(this._poolSetpointDebouncer=D((e,t)=>{this._hass.callService("climate","set_temperature",{entity_id:e,temperature:t})},1500)),this._poolSetpointDebouncer.call(e,r)}_renderPoolBody(t,a,r){if(0===t.length)return"";const i=t[0],s=i.state,n=s?.attributes||{},o=null!=n.current_temperature?Number(n.current_temperature):null,l=null!=n.temperature?Number(n.temperature):null,c=function(e,t="pool"){switch(e){case"heating":return"var(--lcars-butterscotch)";case"idle":return"spa"===t?"var(--lcars-sunflower)":"var(--lcars-ice)";default:return"var(--lcars-disabled)"}}(n.hvac_action||"off",a),d="spa"===a?"SPA":"POOL";return e.qy`
+        <div class="pool-body-frame" style="--body-color:${c}" role="region"
+          aria-label="${d}: ${null!=o?o+"°":"N/A"}, target ${l||"N/A"}°">
+          <div class="pool-body-label" style="color:${c}">${d}</div>
+          <div class="pool-body-temp">${null!=o?`${Math.round(o)}°`:"—"}</div>
+          ${null!=l?e.qy`
+            <div class="pool-setpoint-row">
+              <button class="climate-sp-btn" aria-label="Decrease ${d} target"
+                @click=${()=>this._handlePoolSetpoint(i.entity.entity_id,n,l-(r||1))}>−</button>
+              <span class="pool-target" style="color:${c}">${l}°</span>
+              <button class="climate-sp-btn" aria-label="Increase ${d} target"
+                @click=${()=>this._handlePoolSetpoint(i.entity.entity_id,n,l+(r||1))}>+</button>
+            </div>
+          `:""}
+        </div>
+      `}_renderPoolSpaPanel(t){const{pool:a,spa:r,chemistry:i,pumps:s,circuits:n,lights:o,environmental:l,diagnostics:c}=this._partitionPoolEntities(t.entities),d=this._shortDeviceName(t.device)||"Pool & Spa",p=i.length>0,u=a[0]?.state?.attributes?.current_temperature,h=r[0]?.state?.attributes?.current_temperature,m=l.find(e=>/air/i.test(e.entity.entity_id)),v=m?.state?.state;return e.qy`
+        <div class="lcars-device-panel pool-panel ${p?"":"pool-no-chem"}" data-panel-type="aquatics"
+          style="--panel-frame-color:var(--lcars-bluey)">
+          <!-- Header -->
+          <div class="pool-header">
+            <span class="device-panel-name">${d}</span>
+            <div class="device-panel-header-line"></div>
+            ${null!=u?e.qy`<span class="pool-temp-badge" style="color:var(--lcars-ice)">POOL ${Math.round(u)}°</span>`:""}
+            ${null!=h?e.qy`<span class="pool-temp-badge" style="color:var(--lcars-butterscotch)">SPA ${Math.round(h)}°</span>`:""}
+            ${null!=v?e.qy`<span class="pool-temp-badge" style="color:var(--lcars-space-white)">AIR ${Math.round(Number(v))}°</span>`:""}
+          </div>
+
+          <!-- Chemistry (left, conditional) -->
+          ${p?e.qy`
+            <div class="pool-chemistry" role="list" aria-label="Water chemistry">
+              ${i.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.state,s=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
+                  <div class="device-sensor-line" tabindex="0" role="listitem"
+                    aria-label="${r}: ${i}${s?" "+s:""}"
+                    @click=${()=>this._handleEntityClick(t.entity_id)}
+                    @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t.entity_id))}}>
+                    <div class="sensor-indicator" style="background:${n}"></div>
+                    <span class="sensor-label">${r}</span>
+                    <span class="sensor-state-value" style="color:${n}">${i}${s?" "+s:""}</span>
+                  </div>
+                `})}
+            </div>
+          `:""}
+
+          <!-- Aquatics (center) -->
+          <div class="pool-aquatics">
+            ${this._renderPoolBody(a,"pool",1)}
+            ${this._renderPoolBody(r,"spa",1)}
+          </div>
+
+          <!-- Controls (right) -->
+          <div class="pool-controls" aria-label="Circuit controls">
+            ${[...s,...n].map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i="on"===a.state;return e.qy`
+                <button class="device-control-btn" role="switch" aria-checked="${i}" ?data-on=${i}
+                  @click=${()=>this._handleToggle(t.entity_id)}
+                  title="${r}: ${a.state}">
+                  <ha-icon .icon=${this._getEntityIcon(a)}></ha-icon>
+                  <span>${r}</span>
+                </button>
+              `})}
+            ${l.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.attributes?.unit_of_measurement||"";return e.qy`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  @click=${()=>this._handleEntityClick(t.entity_id)}>
+                  <div class="sensor-indicator" style="background:var(--lcars-data-accent)"></div>
+                  <span class="sensor-label">${r}</span>
+                  <span class="sensor-state-value">${a.state}${i?" "+i:""}</span>
+                </div>
+              `})}
+          </div>
+
+          <!-- Lighting (bottom, full width) -->
+          ${o.length>0?e.qy`
+            <div class="pool-lighting" aria-label="Pool lighting">
+              ${o.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i="on"===a.state;return e.qy`
+                  <button class="device-control-btn" role="switch" aria-checked="${i}" ?data-on=${i}
+                    @click=${()=>this._handleToggle(t.entity_id)}
+                    title="${r}: ${a.state}">
+                    <ha-icon .icon=${this._getEntityIcon(a)}></ha-icon>
+                    <span>${r}</span>
+                  </button>
+                `})}
+            </div>
+          `:""}
+        </div>
+      `}_weatherForecastCache={};_getWeatherGlyph(e){return{sunny:"☀","clear-night":"●",partlycloudy:"◑",cloudy:"◔",fog:"≡",rainy:"▽",pouring:"▼",snowy:"✦","snowy-rainy":"◆",hail:"◆",windy:"〰","windy-variant":"〰",lightning:"⚡","lightning-rainy":"⚡",exceptional:"⚠"}[e]||"○"}_getWindCardinal(e){return null==e?"":["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"][Math.round(e/22.5)%16]}_partitionWeatherEntities(e){const t=[],a=[],r=[],i=[],s=[],n=[];for(const o of e){if("weather"===o.domain){t.push(o);continue}const e=o.entity.entity_id,l=o.state?.attributes?.device_class||"";/lightning/i.test(e)?r.push(o):"precipitation"===l||"precipitation_intensity"===l||/rain/i.test(e)?i.push(o):"wind_speed"===l||/wind/i.test(e)?s.push(o):_.has(o.domain)?a.push(o):n.push(o)}return{weather:t,sensors:a,lightning:r,precipitation:i,wind:s,diagnostics:n}}_renderWindCompass(t,a,r){if(null==t)return"";const i=this._getWindCardinal(t),s=t;return e.qy`
+        <div class="weather-wind-compass" role="img"
+          aria-label="Wind: ${a||"?"} ${r||"mph"} from ${i}">
+          <svg viewBox="0 0 80 80" class="wind-svg">
+            <circle cx="40" cy="40" r="28" fill="none" stroke="var(--lcars-disabled)" stroke-width="1" />
+            <text x="40" y="12" text-anchor="middle" fill="var(--lcars-data-accent)" font-size="7" font-family="var(--lcars-font)">N</text>
+            <text x="40" y="76" text-anchor="middle" fill="var(--lcars-data-accent)" font-size="7" font-family="var(--lcars-font)">S</text>
+            <text x="8" y="43" text-anchor="middle" fill="var(--lcars-data-accent)" font-size="7" font-family="var(--lcars-font)">W</text>
+            <text x="72" y="43" text-anchor="middle" fill="var(--lcars-data-accent)" font-size="7" font-family="var(--lcars-font)">E</text>
+            <g transform="rotate(${s}, 40, 40)">
+              <line x1="40" y1="55" x2="40" y2="18" stroke="var(--lcars-ice)" stroke-width="2" />
+              <polygon points="40,15 36,24 44,24" fill="var(--lcars-ice)" />
+            </g>
+          </svg>
+          <div class="wind-reading">${a||"—"} ${r||""} ${i}</div>
+        </div>
+      `}async _loadWeatherForecast(e){if(this._weatherForecastCache[e])return;const t=await async function(e,t,a="daily",r={}){const{ttlMs:i=6e5}=r,s=`${t}:${a}`,n=Date.now(),o=M.get(s);if(o&&n-o.timestamp<i)return o.data;try{const r=await e.callWS({type:"weather/subscribe_forecast",entity_id:t,forecast_type:a}),i=r?.forecast||r||[],o=Array.isArray(i)?i:[];if(M.set(s,{data:o,timestamp:n}),M.size>10){const e=M.keys().next().value;M.delete(e)}return o}catch(r){try{const r=await e.callService("weather","get_forecasts",{type:a},{entity_id:t}),i=r?.[t]?.forecast||[];return M.set(s,{data:i,timestamp:n}),i}catch(e){return[]}}}(this._hass,e,"daily");t.length>0&&(this._weatherForecastCache[e]=t,this.requestUpdate())}_renderForecastStrip(t){if(!t?.length)return"";const a=t.slice(0,7),r=a.map(e=>e.temperature).filter(Number.isFinite),i=a.map(e=>e.templow).filter(Number.isFinite),s=Math.min(...i,...r),n=Math.max(...r,...i)-s||1;return e.qy`
+        <div class="weather-forecast" role="list" aria-label="7-day forecast">
+          ${a.map(t=>{const a=new Date(t.datetime).toLocaleDateString("en",{weekday:"short"}).toUpperCase(),r=t.temperature,i=t.templow,o=t.condition,l=this._getWeatherGlyph(o),c=q(o),d=t.precipitation_probability,p=(i-s)/n*100,u=(r-i||1)/n*100;return e.qy`
+              <div class="forecast-tile" role="listitem" tabindex="0"
+                aria-label="${a}: ${o}, high ${r}°, low ${i}°${null!=d?`, ${d}% precipitation`:""}">
+                <span class="forecast-day">${a}</span>
+                <span class="forecast-glyph" style="color:${c}">${l}</span>
+                <span class="forecast-hi">${null!=r?Math.round(r):"—"}°</span>
+                <div class="forecast-range-bar">
+                  <div class="forecast-range-fill" style="left:${p.toFixed(1)}%;width:${u.toFixed(1)}%"></div>
+                </div>
+                <span class="forecast-lo">${null!=i?Math.round(i):"—"}°</span>
+                ${null!=d?e.qy`<span class="forecast-precip" style="color:${d>50?"var(--lcars-sky)":"var(--lcars-gray)"}">${d}%</span>`:""}
+              </div>
+            `})}
+        </div>
+      `}_renderWeatherPanel(t){const{weather:a,sensors:r,lightning:i,precipitation:s,wind:n,diagnostics:o}=this._partitionWeatherEntities(t.entities),l=this._shortDeviceName(t.device)||"Weather";if(0===a.length)return"";const c=a[0],d=c.state,p=d?.attributes||{},u=d?.state||"unavailable",h=q(u),m=this._getWeatherGlyph(u),v=p.temperature,f=p.humidity,g=p.pressure,b=p.wind_speed,y=p.wind_bearing,_=p.wind_speed_unit||"mph";this._loadWeatherForecast(c.entity.entity_id);const w=this._weatherForecastCache[c.entity.entity_id];return e.qy`
+        <div class="lcars-device-panel weather-panel" data-panel-type="weather"
+          style="--panel-frame-color:${h}">
+          <!-- Header -->
+          <div class="weather-header">
+            <span class="device-panel-name">${l}</span>
+            <div class="device-panel-header-line"></div>
+            <span class="weather-condition-badge" style="color:${h}">
+              ${m} ${u.toUpperCase().replace(/[_-]/g," ")}
+            </span>
+          </div>
+
+          <!-- Sensors (left) -->
+          <div class="weather-sensors" role="list" aria-label="${l} readings">
+            ${null!=f?e.qy`
+              <div class="device-sensor-line" role="listitem" aria-label="Humidity: ${f}%">
+                <div class="sensor-indicator" style="background:var(--lcars-ice)"></div>
+                <span class="sensor-label">Humidity</span>
+                <span class="sensor-state-value" style="color:var(--lcars-ice)">${f}%</span>
+              </div>
+            `:""}
+            ${null!=g?e.qy`
+              <div class="device-sensor-line" role="listitem" aria-label="Pressure: ${g}">
+                <div class="sensor-indicator" style="background:var(--lcars-data-accent)"></div>
+                <span class="sensor-label">Pressure</span>
+                <span class="sensor-state-value">${g}</span>
+              </div>
+            `:""}
+            ${i.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.attributes?.unit_of_measurement||"";return e.qy`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  aria-label="${r}: ${a.state}${i?" "+i:""}"
+                  @click=${()=>this._handleEntityClick(t.entity_id)}>
+                  <div class="sensor-indicator" style="background:var(--lcars-gold)"></div>
+                  <span class="sensor-label">${r}</span>
+                  <span class="sensor-state-value" style="color:var(--lcars-gold)">${a.state}${i?" "+i:""}</span>
+                </div>
+              `})}
+            ${s.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.attributes?.unit_of_measurement||"";return e.qy`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  aria-label="${r}: ${a.state}${i?" "+i:""}"
+                  @click=${()=>this._handleEntityClick(t.entity_id)}>
+                  <div class="sensor-indicator" style="background:var(--lcars-sky)"></div>
+                  <span class="sensor-label">${r}</span>
+                  <span class="sensor-state-value" style="color:var(--lcars-sky)">${a.state}${i?" "+i:""}</span>
+                </div>
+              `})}
+            ${r.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.attributes?.unit_of_measurement||"",s=this._getSensorIndicatorColor(a);return e.qy`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  aria-label="${r}: ${a.state}${i?" "+i:""}"
+                  @click=${()=>this._handleEntityClick(t.entity_id)}
+                  @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t.entity_id))}}>
+                  <div class="sensor-indicator" style="background:${s}"></div>
+                  <span class="sensor-label">${r}</span>
+                  <span class="sensor-state-value" style="color:${s}">${a.state}${i?" "+i:""}</span>
+                </div>
+              `})}
+          </div>
+
+          <!-- Viewscreen (right) -->
+          <div class="weather-viewscreen" role="img"
+            aria-label="${u}: ${null!=v?v+"°":"N/A"}">
+            <svg class="weather-display" viewBox="0 0 200 160">
+              <text x="100" y="35" text-anchor="middle" fill="${h}"
+                font-family="var(--lcars-font)" font-size="28">${m}</text>
+              <text x="100" y="85" text-anchor="middle" fill="${h}"
+                font-family="var(--lcars-font)" font-size="48" font-weight="bold">
+                ${null!=v?`${Math.round(v)}°`:"—"}
+              </text>
+              <text x="100" y="108" text-anchor="middle" fill="var(--lcars-data-accent)"
+                font-family="var(--lcars-font)" font-size="12">
+                ${u.toUpperCase().replace(/[_-]/g," ")}
+              </text>
+            </svg>
+            ${this._renderWindCompass(y,b,_)}
+          </div>
+
+          <!-- Forecast (bottom) -->
+          ${this._renderForecastStrip(w)}
+        </div>
+      `}_irrigationLimiter=N(5,1e4);_partitionIrrigationEntities(e){const t=[],a=[],r=[];for(const i of e){const e=i.domain,s=i.entity.entity_id,n=i.state?.attributes||{};"switch"!==e?"binary_sensor"!==e||r.some(e=>!0)?a.push(i):r.push(i):null!=n.zone_number||/zone/i.test(s)?t.push(i):r.push(i)}return t.sort((e,t)=>(e.state?.attributes?.zone_number??999)-(t.state?.attributes?.zone_number??999)),{zones:t,sensors:a,controller:r}}_handleIrrigationZone(e,t){this._irrigationLimiter.allow()&&this._hass.callService("switch",t?"turn_on":"turn_off",{entity_id:e})}_renderIrrigationPanel(t){const{zones:a,sensors:r,controller:i}=this._partitionIrrigationEntities(t.entities),s=this._shortDeviceName(t.device)||"Irrigation",n=a.find(e=>"on"===e.state?.state),o=i.some(e=>"switch"===e.domain&&"off"===e.state?.state);return e.qy`
+        <div class="lcars-device-panel irrigation-panel" data-panel-type="irrigation"
+          style="--panel-frame-color:var(--lcars-ice)">
+          <!-- Header -->
+          <div class="irrigation-header">
+            <span class="device-panel-name">${s}</span>
+            <div class="device-panel-header-line"></div>
+            <span class="irrigation-status-badge" style="color:${n?"var(--lcars-ice)":o?"var(--lcars-gray)":"var(--lcars-sunflower)"}">
+              ${n?`WATERING ${this._friendlyName(n.state,n.entity)}`:o?"STANDBY":"IDLE"}
+            </span>
+          </div>
+
+          <!-- Schedule (left) -->
+          <div class="irrigation-schedule" role="list" aria-label="Schedule info">
+            ${r.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.attributes?.unit_of_measurement||"",s=this._getSensorIndicatorColor(a);return e.qy`
+                <div class="device-sensor-line" tabindex="0" role="listitem"
+                  aria-label="${r}: ${a.state}${i?" "+i:""}"
+                  @click=${()=>this._handleEntityClick(t.entity_id)}>
+                  <div class="sensor-indicator" style="background:${s}"></div>
+                  <span class="sensor-label">${r}</span>
+                  <span class="sensor-state-value" style="color:${s}">${a.state}${i?" "+i:""}</span>
+                </div>
+              `})}
+          </div>
+
+          <!-- Zones (right) -->
+          <div class="irrigation-zones" role="list" aria-label="Irrigation zones">
+            ${a.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i="on"===a.state,s=function(e,t=!1){if(t)return"var(--lcars-disabled)";switch(e){case"on":return"var(--lcars-ice)";case"off":return"var(--lcars-sunflower)";case"unavailable":return"var(--lcars-tomato)";default:return"var(--lcars-disabled)"}}(a.state,o);return e.qy`
+                <div class="irrigation-zone-row" role="listitem" tabindex="0"
+                  aria-label="${r}: ${i?"watering":"idle"}">
+                  <button class="irrigation-zone-btn" ?data-on=${i}
+                    style="--zone-color:${s}"
+                    ?disabled=${o}
+                    aria-label="${i?"Stop":"Start"} watering ${r}"
+                    @click=${()=>this._handleIrrigationZone(t.entity_id,!i)}>
+                    ${i?"STOP":"START"}
+                  </button>
+                  <span class="irrigation-zone-name">${r}</span>
+                  <span class="irrigation-zone-status" style="color:${s}">
+                    ${o?"STANDBY":i?"WATERING":"IDLE"}
+                  </span>
+                  ${i?e.qy`
+                    <div class="irrigation-zone-fill" role="progressbar"
+                      aria-label="Zone active" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"
+                      style="background:var(--lcars-ice)"></div>
+                  `:""}
+                </div>
+              `})}
+          </div>
+
+          <!-- Standby Toggle (bottom) -->
+          ${i.filter(e=>"switch"===e.domain).map(({entity:t,state:a})=>{const r="off"===a.state;return e.qy`
+              <div class="irrigation-standby">
+                <button class="device-control-btn irrigation-standby-btn" role="switch"
+                  aria-checked="${r}" ?data-on=${!r}
+                  @click=${()=>this._handleToggle(t.entity_id)}
+                  title="Standby mode: ${r?"ON":"OFF"}">
+                  <ha-icon icon="mdi:water-off"></ha-icon>
+                  <span>STANDBY ${r?"ON":"OFF"}</span>
+                </button>
+              </div>
+            `})}
+        </div>
+      `}_renderAreaContent(t){if(0===t.length)return e.qy`<div class="lcars-empty">No entities in this area</div>`;const{byDevice:a,noDevice:r}=this._groupEntities(t),i=[],s=[];for(const e of a.values()){const t=this._getDevicePanelType(e.entities);t?i.push({...e,panelType:t}):s.push(e)}const n=e.qy`
+        ${s.map(t=>e.qy`
           <div class="device-group">
             <div class="device-header">
               <h3 class="device-name">${this._shortDeviceName(t.device)}</h3>
@@ -2422,25 +3678,25 @@
             ${this._renderDomainGroups(r)}
           </div>
         `:""}
-      `;return 0===s.length?n:(s.sort((e,t)=>(f[e.panelType]??99)-(f[t.panelType]??99)),e.qy`
+      `;return 0===i.length?n:(i.sort((e,t)=>(h[e.panelType]??99)-(h[t.panelType]??99)),e.qy`
         <div class="area-split-layout">
           <div class="area-split-main">${n}</div>
           <div class="area-split-panels" aria-live="polite">
-            ${s.map(e=>this._renderDevicePanel(e.panelType,e))}
+            ${i.map(e=>this._renderDevicePanel(e.panelType,e))}
           </div>
         </div>
       `)}_renderDomainGroups(t){const a=this._groupByDomain(t);return e.qy`${a.map(([t,a])=>e.qy`
-        <div class="domain-label" role="heading" aria-level="4">${p[t]||t}</div>
+        <div class="domain-label" role="heading" aria-level="4">${z[t]||t}</div>
         ${this._renderDomainEntities(t,a)}
-      `)}`}_renderDomainEntities(e,t){return o.has(e)?this._renderCameras(t):i.has(e)?this._renderToggles(t):l.has(e)?this._renderClimates(t):c.has(e)?this._renderCovers(t):d.has(e)?this._renderMedia(t):n.has(e)?this._renderSensors(t):this._renderGeneric(t)}_renderCameras(t){return e.qy`<div class="camera-grid">
-        ${t.map(({entity:t,state:a},r)=>{const s=this._friendlyName(a,t),i=this._isOff(a),n=y(a);return e.qy`
-            <div class="camera-frame" ?data-off=${i} style="--i:${r}"
+      `)}`}_renderDomainEntities(e,t){return m.has(e)?this._renderCameras(t):y.has(e)?this._renderToggles(t):v.has(e)?this._renderClimates(t):w.has(e)?this._renderCovers(t):f.has(e)?this._renderMedia(t):_.has(e)?this._renderSensors(t):this._renderGeneric(t)}_renderCameras(t){return e.qy`<div class="camera-grid">
+        ${t.map(({entity:t,state:a},r)=>{const i=this._friendlyName(a,t),s=this._isOff(a),n=F(a);return e.qy`
+            <div class="camera-frame" ?data-off=${s} style="--i:${r}"
               role="button"
               tabindex="0"
-              aria-label="${s} camera: ${a.state}"
+              aria-label="${i} camera: ${a.state}"
               @click=${()=>this._handleEntityClick(t.entity_id)}
               @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t.entity_id))}}>
-              ${n?e.qy`<img src="${n}" alt="${s}" loading="lazy"
+              ${n?e.qy`<img src="${n}" alt="${i}" loading="lazy"
                             data-entity="${t.entity_id}"
                             @error=${e=>{e.target.style.display="none",e.target.nextElementSibling&&(e.target.nextElementSibling.style.display="flex")}}
                             @load=${e=>{e.target.style.display="";const t=e.target.nextElementSibling;t?.classList.contains("camera-error-fallback")&&(t.style.display="none")}} /><div class="camera-error-fallback" style="display:none;aspect-ratio:16/9;align-items:center;justify-content:center;">
@@ -2450,23 +3706,23 @@
                   </div>`}
               <div class="camera-label">
                 <ha-icon icon="mdi:video"></ha-icon>
-                <span>${s}</span>
+                <span>${i}</span>
                 <span class="cam-state">${a.state}</span>
               </div>
             </div>
           `})}
       </div>`}_renderToggles(t){return e.qy`<div class="toggle-grid">
-        ${t.map(({entity:t,state:a},r)=>{const s=this._friendlyName(a,t),i="on"===a.state||"unlocked"===a.state||"playing"===a.state,n=this._isOff(a),o=t.entity_id.split(".")[0],l=a.attributes?.brightness,c=l?Math.round(l/255*100):0;return this._withEditPip(t.entity_id,e.qy`
-            <button class="toggle-pill" ?data-on=${i} ?data-off=${n} style="--i:${r}"
+        ${t.map(({entity:t,state:a},r)=>{const i=this._friendlyName(a,t),s="on"===a.state||"unlocked"===a.state||"playing"===a.state,n=this._isOff(a),o=t.entity_id.split(".")[0],l=a.attributes?.brightness,c=l?Math.round(l/255*100):0;return this._withEditPip(t.entity_id,e.qy`
+            <button class="toggle-pill" ?data-on=${s} ?data-off=${n} style="--i:${r}"
               role="switch"
-              aria-checked=${i}
-              aria-label="${s}: ${a.state}${l?` (${c}%)`:""}"
+              aria-checked=${s}
+              aria-label="${i}: ${a.state}${l?` (${c}%)`:""}"
               @click=${e=>{e.stopPropagation(),this._handleToggle(t.entity_id)}}
               @dblclick=${()=>this._handleEntityClick(t.entity_id)}
-              title="${s}: ${a.state}${l?` (${c}%)`:""}">
+              title="${i}: ${a.state}${l?` (${c}%)`:""}">
               <ha-icon .icon=${this._getEntityIcon(a)}></ha-icon>
-              <span class="toggle-name">${s}</span>
-              ${"light"===o&&l&&i?e.qy`
+              <span class="toggle-name">${i}</span>
+              ${"light"===o&&l&&s?e.qy`
                 <div class="brightness-bar">
                   <div class="brightness-fill" style="width:${c}%"></div>
                 </div>
@@ -2476,67 +3732,67 @@
             </button>
           `)})}
       </div>`}_renderSensors(t){return e.qy`<div class="sensor-grid">
-        ${t.map(({entity:t,state:a},r)=>{const s=this._friendlyName(a,t),i=this._isOff(a),n=a.attributes?.unit_of_measurement||"",o=a.state,l=parseFloat(o),c=(t.entity_id.includes("battery")||"battery"===a.attributes?.device_class)&&!isNaN(l)&&l<20;return this._withEditPip(t.entity_id,e.qy`
-            <button class="sensor-readout" ?data-off=${i} ?data-warn=${c} style="--i:${r}"
+        ${t.map(({entity:t,state:a},r)=>{const i=this._friendlyName(a,t),s=this._isOff(a),n=a.attributes?.unit_of_measurement||"",o=a.state,l=parseFloat(o),c=(t.entity_id.includes("battery")||"battery"===a.attributes?.device_class)&&!isNaN(l)&&l<20;return this._withEditPip(t.entity_id,e.qy`
+            <button class="sensor-readout" ?data-off=${s} ?data-warn=${c} style="--i:${r}"
               @click=${()=>this._handleEntityClick(t.entity_id)}
-              title="${s}: ${o} ${n}">
+              title="${i}: ${o} ${n}">
               <ha-icon .icon=${this._getEntityIcon(a)}></ha-icon>
-              <span class="sensor-name">${s}</span>
+              <span class="sensor-name">${i}</span>
               ${this._renderSensorBar(a)}
               <span class="sensor-value">${o}</span>
               ${n?e.qy`<span class="sensor-unit">${n}</span>`:""}
             </button>
           `)})}
       </div>`}_renderClimates(t){return e.qy`<div class="climate-grid">
-        ${t.map(({entity:t,state:a},r)=>{const s=this._friendlyName(a,t),i=a.state,n=a.attributes?.current_temperature,o=a.attributes?.temperature,l=a.attributes?.temperature_unit||"°",c="heat"===i||"heat_cool"===i,d="cool"===i,p="off"===i;return this._withEditPip(t.entity_id,e.qy`
+        ${t.map(({entity:t,state:a},r)=>{const i=this._friendlyName(a,t),s=a.state,n=a.attributes?.current_temperature,o=a.attributes?.temperature,l=a.attributes?.temperature_unit||"°",c="heat"===s||"heat_cool"===s,d="cool"===s,p="off"===s;return this._withEditPip(t.entity_id,e.qy`
             <button class="climate-panel" ?data-heat=${c} ?data-cool=${d} ?data-off=${p} style="--i:${r}"
               @click=${()=>this._handleEntityClick(t.entity_id)}
-              title="${s}: ${i}">
+              title="${i}: ${s}">
               <ha-icon .icon=${this._getEntityIcon(a)}></ha-icon>
               <div class="climate-info">
-                <span class="climate-name">${s}</span>
+                <span class="climate-name">${i}</span>
                 <div class="climate-temps">
                   ${null!=n?e.qy`<span class="climate-current">${n}${l}</span>`:""}
                   ${null!=o?e.qy`<span class="climate-target">→ ${o}${l}</span>`:""}
                 </div>
               </div>
-              <span class="climate-mode">${i}</span>
+              <span class="climate-mode">${s}</span>
             </button>
           `)})}
       </div>`}_renderCovers(t){return e.qy`<div class="cover-grid">
-        ${t.map(({entity:t,state:a},r)=>{const s=this._friendlyName(a,t),i="closed"===a.state,n=a.attributes?.current_position;return this._withEditPip(t.entity_id,e.qy`
-            <button class="cover-panel" ?data-off=${i} style="--i:${r}"
+        ${t.map(({entity:t,state:a},r)=>{const i=this._friendlyName(a,t),s="closed"===a.state,n=a.attributes?.current_position;return this._withEditPip(t.entity_id,e.qy`
+            <button class="cover-panel" ?data-off=${s} style="--i:${r}"
               @click=${()=>this._handleEntityClick(t.entity_id)}
-              title="${s}: ${a.state}">
+              title="${i}: ${a.state}">
               <ha-icon .icon=${this._getEntityIcon(a)}></ha-icon>
-              <span class="cover-name">${s}</span>
+              <span class="cover-name">${i}</span>
               ${null!=n?e.qy`<span class="cover-position">${n}%</span>`:""}
             </button>
           `)})}
       </div>`}_renderMedia(t){return e.qy`<div class="media-grid">
-        ${t.map(({entity:t,state:a},r)=>{const s=this._friendlyName(a,t),i=this._isOff(a),n=[a.attributes?.media_title||"",a.attributes?.media_artist||""].filter(Boolean).join(" — ");return this._withEditPip(t.entity_id,e.qy`
-            <button class="media-strip" ?data-off=${i} style="--i:${r}"
+        ${t.map(({entity:t,state:a},r)=>{const i=this._friendlyName(a,t),s=this._isOff(a),n=[a.attributes?.media_title||"",a.attributes?.media_artist||""].filter(Boolean).join(" — ");return this._withEditPip(t.entity_id,e.qy`
+            <button class="media-strip" ?data-off=${s} style="--i:${r}"
               @click=${()=>this._handleEntityClick(t.entity_id)}
-              title="${s}: ${a.state}">
+              title="${i}: ${a.state}">
               <ha-icon .icon=${this._getEntityIcon(a)}></ha-icon>
               <div class="media-info">
-                <div class="media-name">${s}</div>
+                <div class="media-name">${i}</div>
                 ${n?e.qy`<div class="media-title">${n}</div>`:""}
               </div>
               <span class="media-state">${a.state}</span>
             </button>
           `)})}
       </div>`}_renderGeneric(t){return e.qy`<div class="entity-grid">
-        ${t.map(({entity:t,state:a},r)=>{const s=this._friendlyName(a,t),i=this._isOff(a);return this._withEditPip(t.entity_id,e.qy`
-            <button class="entity-btn" ?data-off=${i} style="--i:${r}"
+        ${t.map(({entity:t,state:a},r)=>{const i=this._friendlyName(a,t),s=this._isOff(a);return this._withEditPip(t.entity_id,e.qy`
+            <button class="entity-btn" ?data-off=${s} style="--i:${r}"
               @click=${()=>this._handleEntityClick(t.entity_id)}
-              title="${s}: ${a.state}">
+              title="${i}: ${a.state}">
               <ha-icon .icon=${this._getEntityIcon(a)}></ha-icon>
-              <span class="entity-name">${s}</span>
+              <span class="entity-name">${i}</span>
               <span class="entity-state">${a.state}</span>
             </button>
           `)})}
-      </div>`}getCardSize(){return 6}}customElements.get("homepage-card")?r.g0.warn(s,"Custom element homepage-card already registered — skipping"):(customElements.define("homepage-card",_),r.g0.debug(s,"Custom element registered: homepage-card"))})(),(()=>{var e=a(845),t=a(622),r=a(851);class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_pages:{type:Array}}}constructor(){super(),this._pages=[]}set hass(e){this._hass=e,0===this._pages.length&&this._loadPages()}setConfig(e){this._config=e}async _loadPages(){if(this._hass)try{const e=await this._hass.callWS({type:"lcars_dashboard/configuration/get"});e&&e.more_pages&&(this._pages=Object.entries(e.more_pages).map(([e,t])=>({id:e,...t})))}catch(e){console.warn("LCARS: Could not load more-pages",e)}}_openPage(e){(0,r.oo)(`/lcars-dashboard/more/${e}`)}static get styles(){return[t.B,e.AH`
+      </div>`}getCardSize(){return 6}}customElements.get("homepage-card")?r.g0.warn(T,"Custom element homepage-card already registered — skipping"):(customElements.define("homepage-card",O),r.g0.debug(T,"Custom element registered: homepage-card"))})(),(()=>{var e=a(845),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_pages:{type:Array}}}constructor(){super(),this._pages=[]}set hass(e){this._hass=e,0===this._pages.length&&this._loadPages()}setConfig(e){this._config=e}async _loadPages(){if(this._hass)try{const e=await this._hass.callWS({type:"lcars_dashboard/configuration/get"});e&&e.more_pages&&(this._pages=Object.entries(e.more_pages).map(([e,t])=>({id:e,...t})))}catch(e){console.warn("LCARS: Could not load more-pages",e)}}_openPage(e){(0,r.oo)(`/lcars-dashboard/more/${e}`)}static get styles(){return[t.B,e.AH`
           :host { display: block; }
 
           .divider {
@@ -2611,7 +3867,7 @@
                   `)}
               </div>
             `:e.qy`<div class="lcars-empty">No additional pages configured</div>`}
-      `}getCardSize(){return 4}}customElements.get("lcars-more-pages-card")||customElements.define("lcars-more-pages-card",s)})(),(()=>{var e=a(845),t=a(622),r=a(851);class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_cards:{type:Array}}}constructor(){super(),this._cards=[]}set hass(e){this._hass=e,this._cards.forEach(t=>{t&&(t.hass=e)})}setConfig(e){this._config=e,this._createCards()}async _createCards(){this._config&&this._config.cards&&(this._cards=await Promise.all(this._config.cards.map(async e=>{try{const t=await(0,r.te)(e);return this._hass&&(t.hass=this._hass),t}catch(t){return console.error("LCARS: Failed to create card",e,t),null}})),this._cards=this._cards.filter(Boolean),this.requestUpdate())}static get styles(){return[t.B,e.AH`
+      `}getCardSize(){return 4}}customElements.get("lcars-more-pages-card")||customElements.define("lcars-more-pages-card",i)})(),(()=>{var e=a(845),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_cards:{type:Array}}}constructor(){super(),this._cards=[]}set hass(e){this._hass=e,this._cards.forEach(t=>{t&&(t.hass=e)})}setConfig(e){this._config=e,this._createCards()}async _createCards(){this._config&&this._config.cards&&(this._cards=await Promise.all(this._config.cards.map(async e=>{try{const t=await(0,r.te)(e);return this._hass&&(t.hass=this._hass),t}catch(t){return console.error("LCARS: Failed to create card",e,t),null}})),this._cards=this._cards.filter(Boolean),this.requestUpdate())}static get styles(){return[t.B,e.AH`
           :host { display: block; }
 
           .divider {
@@ -2651,7 +3907,7 @@
         <div class="cards-container">
           ${this._cards.length>0?this._cards.map(t=>e.qy`${t}`):e.qy`<div class="lcars-empty">No cards configured</div>`}
         </div>
-      `}getCardSize(){return this._cards.length||1}}customElements.get("lcars-more-page-card")||customElements.define("lcars-more-page-card",s)})(),(()=>{var e=a(845),t=a(622),r=a(851);class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(e){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/more_page/set",...e}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Failed to save more-page",e)}}static get styles(){return[t.B,e.AH`
+      `}getCardSize(){return this._cards.length||1}}customElements.get("lcars-more-page-card")||customElements.define("lcars-more-page-card",i)})(),(()=>{var e=a(845),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(e){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/more_page/set",...e}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Failed to save more-page",e)}}static get styles(){return[t.B,e.AH`
           :host { display: block; }
 
           .edit-container {
@@ -2732,7 +3988,7 @@
             <button class="action-btn danger">Delete</button>
           </div>
         </div>
-      `}getCardSize(){return 3}}customElements.get("lcars-edit-more-page-card")||customElements.define("lcars-edit-more-page-card",s)})(),(()=>{var e=a(845),t=a(622);class r extends e.WF{static get properties(){return{_hass:{type:Object},_notifications:{type:Array}}}constructor(){super(),this._notifications=[]}set hass(e){this._hass=e,this._loadNotifications()}setConfig(e){this._config=e}async _loadNotifications(){if(this._hass)try{const e=await this._hass.callWS({type:"lcars_dashboard/notification/get"});Array.isArray(e)&&(this._notifications=e)}catch(e){}}_dismissNotification(e){this._hass&&this._hass.callWS({type:"lcars_dashboard/notification/dismiss",notification_id:e}).then(()=>{this._notifications=this._notifications.filter(t=>t.id!==e)}).catch(()=>{})}static get styles(){return[t.B,e.AH`
+      `}getCardSize(){return 3}}customElements.get("lcars-edit-more-page-card")||customElements.define("lcars-edit-more-page-card",i)})(),(()=>{var e=a(845),t=a(622);class r extends e.WF{static get properties(){return{_hass:{type:Object},_notifications:{type:Array}}}constructor(){super(),this._notifications=[]}set hass(e){this._hass=e,this._loadNotifications()}setConfig(e){this._config=e}async _loadNotifications(){if(this._hass)try{const e=await this._hass.callWS({type:"lcars_dashboard/notification/get"});Array.isArray(e)&&(this._notifications=e)}catch(e){}}_dismissNotification(e){this._hass&&this._hass.callWS({type:"lcars_dashboard/notification/dismiss",notification_id:e}).then(()=>{this._notifications=this._notifications.filter(t=>t.id!==e)}).catch(()=>{})}static get styles(){return[t.B,e.AH`
           :host { display: block; }
 
           .notification-list {
@@ -2805,7 +4061,7 @@
               </div>
             `)}
         </div>
-      `}getCardSize(){return this._notifications.length||0}}customElements.get("lcars-notification-card")||customElements.define("lcars-notification-card",r)})(),(()=>{var e=a(845),t=a(622),r=a(851);class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_expanded:{type:Boolean}}}constructor(){super(),this._expanded=!1}set hass(e){this._hass=e}setConfig(e){this._config=e}_toggle(){this._expanded=!this._expanded}_getWeatherEntity(){if(!this._hass)return null;const e=Object.keys(this._hass.states).filter(e=>e.startsWith("weather."));return e.length>0?this._hass.states[e[0]]:null}_getPersonEntities(){return this._hass?Object.keys(this._hass.states).filter(e=>e.startsWith("person.")).map(e=>this._hass.states[e]):[]}static get styles(){return[t.B,e.AH`
+      `}getCardSize(){return this._notifications.length||0}}customElements.get("lcars-notification-card")||customElements.define("lcars-notification-card",r)})(),(()=>{var e=a(845),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_expanded:{type:Boolean}}}constructor(){super(),this._expanded=!1}set hass(e){this._hass=e}setConfig(e){this._config=e}_toggle(){this._expanded=!this._expanded}_getWeatherEntity(){if(!this._hass)return null;const e=Object.keys(this._hass.states).filter(e=>e.startsWith("weather."));return e.length>0?this._hass.states[e[0]]:null}_getPersonEntities(){return this._hass?Object.keys(this._hass.states).filter(e=>e.startsWith("person.")).map(e=>this._hass.states[e]):[]}static get styles(){return[t.B,e.AH`
           :host { display: block; }
 
           .info-header {
@@ -2924,7 +4180,7 @@
               `)}
           </div>
         </div>
-      `}getCardSize(){return this._expanded?4:1}}customElements.get("lcars-house-information-card")||customElements.define("lcars-house-information-card",s)})(),(()=>{var e=a(845),t=a(622),r=a(851);class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}static get styles(){return[t.B,e.AH`
+      `}getCardSize(){return this._expanded?4:1}}customElements.get("lcars-house-information-card")||customElements.define("lcars-house-information-card",i)})(),(()=>{var e=a(845),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}static get styles(){return[t.B,e.AH`
           :host { display: block; }
 
           .detail-grid {
@@ -2975,7 +4231,7 @@
               </button>
             `)}
         </div>
-      `}getCardSize(){return 4}}customElements.get("lcars-house-information-more-info-card")||customElements.define("lcars-house-information-more-info-card",s)})(),(()=>{var e=a(845),t=a(622),r=a(851);class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_card:{type:Object}}}constructor(){super(),this._card=null}set hass(e){this._hass=e,this._card&&(this._card.hass=e)}setConfig(e){this._config=e,e.card&&this._createCard(e.card)}async _createCard(e){try{this._card=await(0,r.te)(e),this._hass&&(this._card.hass=this._hass),this.requestUpdate()}catch(e){console.error("LCARS Blueprint: Failed to create card",e)}}static get styles(){return[t.B,e.AH`
+      `}getCardSize(){return 4}}customElements.get("lcars-house-information-more-info-card")||customElements.define("lcars-house-information-more-info-card",i)})(),(()=>{var e=a(845),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_card:{type:Object}}}constructor(){super(),this._card=null}set hass(e){this._hass=e,this._card&&(this._card.hass=e)}setConfig(e){this._config=e,e.card&&this._createCard(e.card)}async _createCard(e){try{this._card=await(0,r.te)(e),this._hass&&(this._card.hass=this._hass),this.requestUpdate()}catch(e){console.error("LCARS Blueprint: Failed to create card",e)}}static get styles(){return[t.B,e.AH`
           :host { display: block; }
 
           .blueprint-wrapper {
@@ -2995,7 +4251,7 @@
           ${this._config?.name?e.qy`<div class="blueprint-label">${this._config.name}</div>`:""}
           ${this._card?e.qy`${this._card}`:""}
         </div>
-      `}getCardSize(){return this._card?2:1}}customElements.get("lcars-blueprint-card")||customElements.define("lcars-blueprint-card",s)})(),(()=>{var e=a(845),t=a(622),r=a(851);class s extends e.WF{static get properties(){return{_hass:{type:Object},_selectedDomain:{type:String}}}constructor(){super(),this._selectedDomain=null}set hass(e){this._hass=e}setConfig(e){this._config=e}_getDomainGroups(){if(!this._hass||!this._hass.states)return{};const e={};Object.keys(this._hass.states).forEach(t=>{const a=t.split(".")[0];e[a]||(e[a]=[]),e[a].push(t)});const t={};return Object.keys(e).sort().forEach(a=>{t[a]=e[a]}),t}_getDomainIcon(e){return{light:"mdi:lightbulb-group",switch:"mdi:toggle-switch-outline",sensor:"mdi:eye",binary_sensor:"mdi:radiobox-blank",climate:"mdi:thermostat",cover:"mdi:window-shutter",fan:"mdi:fan",lock:"mdi:lock",camera:"mdi:video",media_player:"mdi:cast",automation:"mdi:robot",script:"mdi:script-text",person:"mdi:account",input_boolean:"mdi:toggle-switch",input_number:"mdi:ray-vertex",input_select:"mdi:format-list-bulleted",input_text:"mdi:form-textbox",scene:"mdi:palette",group:"mdi:google-circles-communities",timer:"mdi:timer-outline",counter:"mdi:counter",weather:"mdi:weather-partly-cloudy",vacuum:"mdi:robot-vacuum",water_heater:"mdi:water-boiler"}[e]||"mdi:devices"}_toggleDomain(e){this._selectedDomain=this._selectedDomain===e?null:e}_handleEntityClick(e){(0,r.Hv)(e)}static get styles(){return[t.B,e.AH`
+      `}getCardSize(){return this._card?2:1}}customElements.get("lcars-blueprint-card")||customElements.define("lcars-blueprint-card",i)})(),(()=>{var e=a(845),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_selectedDomain:{type:String}}}constructor(){super(),this._selectedDomain=null}set hass(e){this._hass=e}setConfig(e){this._config=e}_getDomainGroups(){if(!this._hass||!this._hass.states)return{};const e={};Object.keys(this._hass.states).forEach(t=>{const a=t.split(".")[0];e[a]||(e[a]=[]),e[a].push(t)});const t={};return Object.keys(e).sort().forEach(a=>{t[a]=e[a]}),t}_getDomainIcon(e){return{light:"mdi:lightbulb-group",switch:"mdi:toggle-switch-outline",sensor:"mdi:eye",binary_sensor:"mdi:radiobox-blank",climate:"mdi:thermostat",cover:"mdi:window-shutter",fan:"mdi:fan",lock:"mdi:lock",camera:"mdi:video",media_player:"mdi:cast",automation:"mdi:robot",script:"mdi:script-text",person:"mdi:account",input_boolean:"mdi:toggle-switch",input_number:"mdi:ray-vertex",input_select:"mdi:format-list-bulleted",input_text:"mdi:form-textbox",scene:"mdi:palette",group:"mdi:google-circles-communities",timer:"mdi:timer-outline",counter:"mdi:counter",weather:"mdi:weather-partly-cloudy",vacuum:"mdi:robot-vacuum",water_heater:"mdi:water-boiler"}[e]||"mdi:devices"}_toggleDomain(e){this._selectedDomain=this._selectedDomain===e?null:e}_handleEntityClick(e){(0,r.Hv)(e)}static get styles(){return[t.B,e.AH`
           :host { display: block; }
 
           .domain-list {
@@ -3119,15 +4375,15 @@
             <div class="domain-entities" ?data-open=${this._selectedDomain===a}>
               ${this._selectedDomain===a?e.qy`
                     <div class="entity-list">
-                      ${t[a].map(t=>{const r=this._hass.states[t];if(!r)return"";const s="off"===r.state||"unavailable"===r.state||"unknown"===r.state,i=r.attributes?.friendly_name||t.split(".").pop().replace(/_/g," ");return e.qy`
+                      ${t[a].map(t=>{const r=this._hass.states[t];if(!r)return"";const i="off"===r.state||"unavailable"===r.state||"unknown"===r.state,s=r.attributes?.friendly_name||t.split(".").pop().replace(/_/g," ");return e.qy`
                           <button
                             class="entity-item"
-                            ?data-off=${s}
+                            ?data-off=${i}
                             @click=${()=>this._handleEntityClick(t)}
-                            title="${i}: ${r.state}"
+                            title="${s}: ${r.state}"
                           >
                             <ha-icon .icon=${r.attributes?.icon||this._getDomainIcon(a)}></ha-icon>
-                            <span class="entity-item-name">${i}</span>
+                            <span class="entity-item-name">${s}</span>
                             <span class="entity-item-state">${r.state}</span>
                           </button>
                         `})}
@@ -3136,7 +4392,7 @@
             </div>
           `)}
         </div>
-      `}getCardSize(){return 8}}customElements.get("devices-card")||customElements.define("devices-card",s)})(),(()=>{var e=a(845),t=a(622),r=a(851);class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_cards:{type:Array}}}constructor(){super(),this._cards=[]}set hass(e){this._hass=e,this._cards.forEach(t=>{t&&(t.hass=e)})}setConfig(e){this._config=e,this._createCards()}async _createCards(){this._config&&this._config.cards&&(this._cards=await Promise.all(this._config.cards.map(async e=>{try{const t=await(0,r.te)(e);return this._hass&&(t.hass=this._hass),t}catch(t){return console.error("LCARS Flexbox: Failed to create card",e,t),null}})),this._cards=this._cards.filter(Boolean),this.requestUpdate())}static get styles(){return[t.B,e.AH`
+      `}getCardSize(){return 8}}customElements.get("devices-card")||customElements.define("devices-card",i)})(),(()=>{var e=a(845),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_cards:{type:Array}}}constructor(){super(),this._cards=[]}set hass(e){this._hass=e,this._cards.forEach(t=>{t&&(t.hass=e)})}setConfig(e){this._config=e,this._createCards()}async _createCards(){this._config&&this._config.cards&&(this._cards=await Promise.all(this._config.cards.map(async e=>{try{const t=await(0,r.te)(e);return this._hass&&(t.hass=this._hass),t}catch(t){return console.error("LCARS Flexbox: Failed to create card",e,t),null}})),this._cards=this._cards.filter(Boolean),this.requestUpdate())}static get styles(){return[t.B,e.AH`
           :host { display: block; }
 
           .flexbox {
@@ -3153,7 +4409,7 @@
         <div class="flexbox">
           ${this._cards.map(t=>e.qy`${t}`)}
         </div>
-      `}getCardSize(){return 1}}customElements.get("lcars-flexbox-card")||customElements.define("lcars-flexbox-card",s)})(),(()=>{var e=a(845),t=a(622);class r extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){if(!e.heading)throw new Error("Please define heading");this._config=e}static get styles(){return[t.B,e.AH`
+      `}getCardSize(){return 1}}customElements.get("lcars-flexbox-card")||customElements.define("lcars-flexbox-card",i)})(),(()=>{var e=a(845),t=a(622);class r extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){if(!e.heading)throw new Error("Please define heading");this._config=e}static get styles(){return[t.B,e.AH`
           :host { display: block; }
 
           .heading-row {
@@ -3229,7 +4485,7 @@
           <ha-icon icon="mdi:plus"></ha-icon>
           Add Custom Card
         </button>
-      `}getCardSize(){return 1}}customElements.get("lcars-create-custom-card-card")||customElements.define("lcars-create-custom-card-card",r)})(),(()=>{var e=a(845),t=a(622),r=a(851);const s=e.AH`
+      `}getCardSize(){return 1}}customElements.get("lcars-create-custom-card-card")||customElements.define("lcars-create-custom-card-card",r)})(),(()=>{var e=a(845),t=a(622),r=a(851);const i=e.AH`
   :host { display: block; }
   .edit-container { display: flex; flex-direction: column; gap: var(--lcars-gap); padding: 0.5rem 0; }
   .edit-field { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -3240,7 +4496,7 @@
   .action-btn { flex: 1; height: var(--lcars-btn-height); background: var(--lcars-butterscotch); color: var(--lcars-black); border: none; border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0; font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); text-transform: uppercase; cursor: pointer; transition: filter var(--lcars-transition); user-select: none; }
   .action-btn:hover { filter: brightness(1.2); }
   .action-btn.danger { background: var(--lcars-red-alert); color: var(--lcars-space-white); }
-`;class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/area_button/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelectorAll(".edit-input");return{name:e[0]?.value,icon:e[1]?.value}}static get styles(){return[t.B,s]}render(){return e.qy`
+`;class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/area_button/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelectorAll(".edit-input");return{name:e[0]?.value,icon:e[1]?.value}}static get styles(){return[t.B,i]}render(){return e.qy`
         <div class="edit-container">
           <div class="edit-field">
             <span class="edit-label">Button Label</span>
@@ -3254,7 +4510,7 @@
             <button class="action-btn" @click=${this._save}>Save</button>
           </div>
         </div>
-      `}getCardSize(){return 3}}customElements.get("lcars-edit-area-button-card")||customElements.define("lcars-edit-area-button-card",i)})(),(()=>{var e=a(845),t=a(622),r=a(851);const s=e.AH`
+      `}getCardSize(){return 3}}customElements.get("lcars-edit-area-button-card")||customElements.define("lcars-edit-area-button-card",s)})(),(()=>{var e=a(845),t=a(622),r=a(851);const i=e.AH`
   :host { display: block; }
   .edit-container { display: flex; flex-direction: column; gap: var(--lcars-gap); padding: 0.5rem 0; }
   .edit-field { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -3264,7 +4520,7 @@
   .edit-actions { display: flex; gap: var(--lcars-gap); padding-top: 0.5rem; }
   .action-btn { flex: 1; height: var(--lcars-btn-height); background: var(--lcars-butterscotch); color: var(--lcars-black); border: none; border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0; font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); text-transform: uppercase; cursor: pointer; transition: filter var(--lcars-transition); user-select: none; }
   .action-btn:hover { filter: brightness(1.2); }
-`;class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/entity_card/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelectorAll(".edit-input");return{entity:e[0]?.value,name:e[1]?.value}}static get styles(){return[t.B,s]}render(){return e.qy`
+`;class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/entity_card/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelectorAll(".edit-input");return{entity:e[0]?.value,name:e[1]?.value}}static get styles(){return[t.B,i]}render(){return e.qy`
         <div class="edit-container">
           <div class="edit-field">
             <span class="edit-label">Entity ID</span>
@@ -3278,7 +4534,7 @@
             <button class="action-btn" @click=${this._save}>Save</button>
           </div>
         </div>
-      `}getCardSize(){return 3}}customElements.get("lcars-edit-entity-card-card")||customElements.define("lcars-edit-entity-card-card",i)})(),(()=>{var e=a(845),t=a(622),r=a(851);const s=e.AH`
+      `}getCardSize(){return 3}}customElements.get("lcars-edit-entity-card-card")||customElements.define("lcars-edit-entity-card-card",s)})(),(()=>{var e=a(845),t=a(622),r=a(851);const i=e.AH`
   :host { display: block; }
   .edit-container { display: flex; flex-direction: column; gap: var(--lcars-gap); padding: 0.5rem 0; }
   .edit-field { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -3288,7 +4544,7 @@
   .edit-actions { display: flex; gap: var(--lcars-gap); padding-top: 0.5rem; }
   .action-btn { flex: 1; height: var(--lcars-btn-height); background: var(--lcars-butterscotch); color: var(--lcars-black); border: none; border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0; font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); text-transform: uppercase; cursor: pointer; transition: filter var(--lcars-transition); user-select: none; }
   .action-btn:hover { filter: brightness(1.2); }
-`;class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/entity/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelectorAll(".edit-input");return{entity:e[0]?.value,icon:e[1]?.value,name:e[2]?.value}}static get styles(){return[t.B,s]}render(){return e.qy`
+`;class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/entity/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelectorAll(".edit-input");return{entity:e[0]?.value,icon:e[1]?.value,name:e[2]?.value}}static get styles(){return[t.B,i]}render(){return e.qy`
         <div class="edit-container">
           <div class="edit-field">
             <span class="edit-label">Entity ID</span>
@@ -3306,7 +4562,7 @@
             <button class="action-btn" @click=${this._save}>Save</button>
           </div>
         </div>
-      `}getCardSize(){return 4}}customElements.get("lcars-edit-entity-card")||customElements.define("lcars-edit-entity-card",i)})(),(()=>{var e=a(845),t=a(622),r=a(851);const s=e.AH`
+      `}getCardSize(){return 4}}customElements.get("lcars-edit-entity-card")||customElements.define("lcars-edit-entity-card",s)})(),(()=>{var e=a(845),t=a(622),r=a(851);const i=e.AH`
   :host { display: block; }
   .edit-container { display: flex; flex-direction: column; gap: var(--lcars-gap); padding: 0.5rem 0; }
   .edit-field { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -3318,7 +4574,7 @@
   .edit-actions { display: flex; gap: var(--lcars-gap); padding-top: 0.5rem; }
   .action-btn { flex: 1; height: var(--lcars-btn-height); background: var(--lcars-butterscotch); color: var(--lcars-black); border: none; border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0; font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); text-transform: uppercase; cursor: pointer; transition: filter var(--lcars-transition); user-select: none; }
   .action-btn:hover { filter: brightness(1.2); }
-`;class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/entity_popup/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelector(".edit-input")?.value,t=this.shadowRoot.querySelector(".edit-textarea")?.value;return{entity:e,yaml_config:t}}static get styles(){return[t.B,s]}render(){return e.qy`
+`;class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/entity_popup/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelector(".edit-input")?.value,t=this.shadowRoot.querySelector(".edit-textarea")?.value;return{entity:e,yaml_config:t}}static get styles(){return[t.B,i]}render(){return e.qy`
         <div class="edit-container">
           <div class="edit-field">
             <span class="edit-label">Entity ID</span>
@@ -3332,7 +4588,7 @@
             <button class="action-btn" @click=${this._save}>Save</button>
           </div>
         </div>
-      `}getCardSize(){return 5}}customElements.get("lcars-edit-entity-popup-card")||customElements.define("lcars-edit-entity-popup-card",i)})(),(()=>{var e=a(845),t=a(622),r=a(851);const s=e.AH`
+      `}getCardSize(){return 5}}customElements.get("lcars-edit-entity-popup-card")||customElements.define("lcars-edit-entity-popup-card",s)})(),(()=>{var e=a(845),t=a(622),r=a(851);const i=e.AH`
   :host { display: block; }
   .edit-container { display: flex; flex-direction: column; gap: var(--lcars-gap); padding: 0.5rem 0; }
   .edit-field { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -3342,7 +4598,7 @@
   .edit-actions { display: flex; gap: var(--lcars-gap); padding-top: 0.5rem; }
   .action-btn { flex: 1; height: var(--lcars-btn-height); background: var(--lcars-butterscotch); color: var(--lcars-black); border: none; border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0; font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); text-transform: uppercase; cursor: pointer; transition: filter var(--lcars-transition); user-select: none; }
   .action-btn:hover { filter: brightness(1.2); }
-`;class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/homepage_header/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelectorAll(".edit-input");return{title:e[0]?.value,subtitle:e[1]?.value}}static get styles(){return[t.B,s]}render(){return e.qy`
+`;class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/homepage_header/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelectorAll(".edit-input");return{title:e[0]?.value,subtitle:e[1]?.value}}static get styles(){return[t.B,i]}render(){return e.qy`
         <div class="edit-container">
           <div class="edit-field">
             <span class="edit-label">Header Title</span>
@@ -3356,7 +4612,7 @@
             <button class="action-btn" @click=${this._save}>Save</button>
           </div>
         </div>
-      `}getCardSize(){return 3}}customElements.get("lcars-edit-homepage-header-card")||customElements.define("lcars-edit-homepage-header-card",i)})(),(()=>{var e=a(845),t=a(622),r=a(851);const s=e.AH`
+      `}getCardSize(){return 3}}customElements.get("lcars-edit-homepage-header-card")||customElements.define("lcars-edit-homepage-header-card",s)})(),(()=>{var e=a(845),t=a(622),r=a(851);const i=e.AH`
   :host { display: block; }
   .edit-container { display: flex; flex-direction: column; gap: var(--lcars-gap); padding: 0.5rem 0; }
   .edit-field { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -3366,7 +4622,7 @@
   .edit-actions { display: flex; gap: var(--lcars-gap); padding-top: 0.5rem; }
   .action-btn { flex: 1; height: var(--lcars-btn-height); background: var(--lcars-butterscotch); color: var(--lcars-black); border: none; border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0; font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); text-transform: uppercase; cursor: pointer; transition: filter var(--lcars-transition); user-select: none; }
   .action-btn:hover { filter: brightness(1.2); }
-`;class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/device_card/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelectorAll(".edit-input");return{device:e[0]?.value,name:e[1]?.value}}static get styles(){return[t.B,s]}render(){return e.qy`
+`;class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/device_card/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelectorAll(".edit-input");return{device:e[0]?.value,name:e[1]?.value}}static get styles(){return[t.B,i]}render(){return e.qy`
         <div class="edit-container">
           <div class="edit-field">
             <span class="edit-label">Device ID</span>
@@ -3380,7 +4636,7 @@
             <button class="action-btn" @click=${this._save}>Save</button>
           </div>
         </div>
-      `}getCardSize(){return 3}}customElements.get("lcars-edit-device-card-card")||customElements.define("lcars-edit-device-card-card",i)})(),(()=>{var e=a(845),t=a(622),r=a(851);const s=e.AH`
+      `}getCardSize(){return 3}}customElements.get("lcars-edit-device-card-card")||customElements.define("lcars-edit-device-card-card",s)})(),(()=>{var e=a(845),t=a(622),r=a(851);const i=e.AH`
   :host { display: block; }
   .edit-container { display: flex; flex-direction: column; gap: var(--lcars-gap); padding: 0.5rem 0; }
   .edit-field { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -3392,7 +4648,7 @@
   .edit-actions { display: flex; gap: var(--lcars-gap); padding-top: 0.5rem; }
   .action-btn { flex: 1; height: var(--lcars-btn-height); background: var(--lcars-butterscotch); color: var(--lcars-black); border: none; border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0; font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); text-transform: uppercase; cursor: pointer; transition: filter var(--lcars-transition); user-select: none; }
   .action-btn:hover { filter: brightness(1.2); }
-`;class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/device_popup/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelector(".edit-input")?.value,t=this.shadowRoot.querySelector(".edit-textarea")?.value;return{device:e,yaml_config:t}}static get styles(){return[t.B,s]}render(){return e.qy`
+`;class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/device_popup/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelector(".edit-input")?.value,t=this.shadowRoot.querySelector(".edit-textarea")?.value;return{device:e,yaml_config:t}}static get styles(){return[t.B,i]}render(){return e.qy`
         <div class="edit-container">
           <div class="edit-field">
             <span class="edit-label">Device ID</span>
@@ -3406,7 +4662,7 @@
             <button class="action-btn" @click=${this._save}>Save</button>
           </div>
         </div>
-      `}getCardSize(){return 5}}customElements.get("lcars-edit-device-popup-card")||customElements.define("lcars-edit-device-popup-card",i)})(),(()=>{var e=a(845),t=a(622),r=a(851);const s=e.AH`
+      `}getCardSize(){return 5}}customElements.get("lcars-edit-device-popup-card")||customElements.define("lcars-edit-device-popup-card",s)})(),(()=>{var e=a(845),t=a(622),r=a(851);const i=e.AH`
   :host { display: block; }
   .edit-container { display: flex; flex-direction: column; gap: var(--lcars-gap); padding: 0.5rem 0; }
   .edit-field { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -3416,7 +4672,7 @@
   .edit-actions { display: flex; gap: var(--lcars-gap); padding-top: 0.5rem; }
   .action-btn { flex: 1; height: var(--lcars-btn-height); background: var(--lcars-butterscotch); color: var(--lcars-black); border: none; border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0; font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); text-transform: uppercase; cursor: pointer; transition: filter var(--lcars-transition); user-select: none; }
   .action-btn:hover { filter: brightness(1.2); }
-`;class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/device_button/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelectorAll(".edit-input");return{device:e[0]?.value,name:e[1]?.value,icon:e[2]?.value}}static get styles(){return[t.B,s]}render(){return e.qy`
+`;class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object}}}set hass(e){this._hass=e}setConfig(e){this._config=e}async _save(){if(this._hass)try{await this._hass.callWS({type:"lcars_dashboard/device_button/set",...this._getFormData()}),(0,r.rC)("lcars_dashboard_reload")}catch(e){console.error("LCARS Edit: Save failed",e)}}_getFormData(){const e=this.shadowRoot.querySelectorAll(".edit-input");return{device:e[0]?.value,name:e[1]?.value,icon:e[2]?.value}}static get styles(){return[t.B,i]}render(){return e.qy`
         <div class="edit-container">
           <div class="edit-field">
             <span class="edit-label">Device ID</span>
@@ -3434,7 +4690,7 @@
             <button class="action-btn" @click=${this._save}>Save</button>
           </div>
         </div>
-      `}getCardSize(){return 4}}customElements.get("lcars-edit-device-button-card")||customElements.define("lcars-edit-device-button-card",i)})(),(()=>{var e=a(845),t=a(622),r=a(851);class s extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_open:{type:Boolean},_card:{type:Object}}}constructor(){super(),this._open=!1,this._card=null}set hass(e){this._hass=e,this._card&&(this._card.hass=e)}setConfig(e){this._config=e,e.card&&this._createCard(e.card)}async _createCard(e){try{this._card=await(0,r.te)(e),this._hass&&(this._card.hass=this._hass),this.requestUpdate()}catch(e){console.error("LCARS Popup: Failed to create card",e)}}open(){this._open=!0}close(){this._open=!1}_handleBackdropClick(e){e.target===e.currentTarget&&this.close()}_handleKeydown(e){"Escape"===e.key&&this.close()}static get styles(){return[t.B,e.AH`
+      `}getCardSize(){return 4}}customElements.get("lcars-edit-device-button-card")||customElements.define("lcars-edit-device-button-card",s)})(),(()=>{var e=a(845),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_open:{type:Boolean},_card:{type:Object}}}constructor(){super(),this._open=!1,this._card=null}set hass(e){this._hass=e,this._card&&(this._card.hass=e)}setConfig(e){this._config=e,e.card&&this._createCard(e.card)}async _createCard(e){try{this._card=await(0,r.te)(e),this._hass&&(this._card.hass=this._hass),this.requestUpdate()}catch(e){console.error("LCARS Popup: Failed to create card",e)}}open(){this._open=!0}close(){this._open=!1}_handleBackdropClick(e){e.target===e.currentTarget&&this.close()}_handleKeydown(e){"Escape"===e.key&&this.close()}static get styles(){return[t.B,e.AH`
           :host { display: block; }
 
           .popup-backdrop {
@@ -3533,4 +4789,4 @@
             </div>
           </div>
         </div>
-      `}getCardSize(){return 0}}customElements.get("lcars-popup")||customElements.define("lcars-popup",s)})()})();
+      `}getCardSize(){return 0}}customElements.get("lcars-popup")||customElements.define("lcars-popup",i)})()})();

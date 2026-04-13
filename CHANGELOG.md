@@ -2,6 +2,19 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.0.0-beta.1] — 2026-04-13
+
+### Changed
+- **Branch created**: 5.0 beta branch forked from 4.11.0
+- **Version bumped**: 5.0.0-beta.1 across const.py, manifest.json, package.json
+
+### Planned (5.x Breaking Changes)
+- Multi-dashboard architecture: break monolithic dashboard into separate HA navigation dashboards (Devices, Climate, Security, Media, etc.)
+- Config flow UI: user-selectable dashboard picker during integration setup
+- Dashboard registration refactor in `load_dashboard.py`
+
+> **Beta**: Install via HACS with "Show beta versions" enabled.
+
 ## [4.11.0] — 2026-04-13
 
 ### Added — New Device Panels & Shared Utilities

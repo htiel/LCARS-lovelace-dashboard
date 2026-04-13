@@ -1112,7 +1112,8 @@ function transformForecastHour(forecast) {
   /* NOTE: This is the ONE exception to "no gradients" — this is a data
      visualization heatmap, not a decorative gradient. The gradient maps
      cold (left/blue) to warm (right/amber) as a temperature range.
-     Geordi: please confirm this exception is acceptable. */
+     APPROVED by Geordi as data-viz exception. RESTRICTED to this 3px
+     range bar only — never applied to buttons, frames, or panels. */
 }
 
 .forecast-precip {
@@ -1939,11 +1940,11 @@ import './lcars-weather-panel.js';
 
 | Rule                                              | Source           | Compliant? | Notes                                          |
 |---------------------------------------------------|------------------|------------|--------------------------------------------------|
-| No gradients, shadows, or 3D effects              | Bracer Jack #1   | ⚠          | Range bar uses cold→warm gradient — flagged for Geordi review. This is data-viz, not decoration. |
+| No gradients, shadows, or 3D effects              | Bracer Jack #1   | ✅*         | Forecast range bar uses cold→warm gradient — APPROVED by Geordi as a data-visualization exception. This gradient is RESTRICTED to the 3px forecast range bars only; never applied to buttons, frames, or panels. |
 | Frame goes thick→thin (4px→2px border)            | Bracer Jack #2   | ✅          | Left/bottom 4px, top/right 2px                   |
 | Pill buttons with flat left, rounded right         | Bracer Jack #4   | N/A        | No control buttons in this panel (read-only)     |
 | Exactly 3 font sizes (title, sub, data)           | Bracer Jack #6   | ✅          | SVG 48 (title), sub (location name), data (rest) |
-| ≤5 hue families                                   | Bracer Jack      | ✅          | Blue (frame/sky), warm (sunny/sunflower), gold (lightning), gray (overcast), white (text), red (severe) — technically 6 but red is alert-only, same pattern as other panels |
+| ≤5 hue families                                   | Bracer Jack      | ✅          | Blue (frame/sky), warm (sunny/sunflower), gold (lightning), gray (overcast), white (text) = 5 functional families. `--lcars-tomato` is a system-wide alert color exempt from per-panel hue budgets (same exemption as all other panels). |
 | All text uppercase                                 | TheLCARS.com     | ✅          | Every text element uppercase                      |
 | Antonio font only                                  | TheLCARS.com     | ✅          | `var(--lcars-font)` throughout                    |
 | CSS custom properties, no hardcoded hex            | Project rule     | ✅          | All colors via `var(--lcars-*)` tokens            |
@@ -1970,3 +1971,178 @@ import './lcars-weather-panel.js';
 
 *"What if we used the Web Audio API to play a subtle low-frequency rumble when lightning is detected nearby? Just a brief audio cue — 200ms of bass at 60Hz — to give the panel a visceral quality. The weather station data already has the lightning strike timestamp from the Tempest... we could sync it to the flash animation on the sensor indicator. It would feel like a real planetary survey console responding to atmospheric discharge! ...But I should run the accessibility implications by Geordi first. And Worf would want to make sure we're not accidentally broadcasting the amplitude data to any listeners on the local network."*  
 — Wesley Crusher, Stellar Cartography Lab
+
+---
+
+## Data — Architecture Review
+
+**Reviewer**: Data (Project Architect & Performance Engineer)  
+**Date**: Stardate 2026.04.13  
+**Assessment**: SOUND WITH ADVISORIES
+
+### Component Architecture
+- This is a **read-only display panel** — no service calls, no user input, no state mutations. This is the simplest integration pattern from a security and state-management perspective. I am... appreciative of this simplicity.
+- The panel extends `LcarsDevicePanelBase` with the standard 2-column layout (sensors + viewscreen | controls). The "controls" column contains forecast and sun data rather than interactive controls, which is an acceptable adaptation of the layout pattern. The column is better described as "data" but renaming would require a base class change.
+- The entity classification (`classifyWeatherEntities()`) is more complex than other panels because weather data spans 3 distinct integration sources: `weather.*` (Met.no), `sensor.tempest_*` (WeatherFlow Tempest), and `sensor.davis_*` (Davis Vantage). The cascading discovery pattern (primary weather entity → supplemental sensor entities) is well-designed. The priority system (`tempest > davis > weather.*`) for overlapping measurements (e.g., temperature available from all 3) is explicitly documented. Good.
+- The **condition→glyph mapping** (§5.6) uses a `CONDITION_GLYPHS` object with Unicode geometric shapes instead of SVG icons. This is architecturally sound — it avoids SVG asset management, renders with the system font stack, and is CSS-stylable. The 17 condition types map to 7 distinct glyphs. The fallback glyph (`◇`) handles unknown conditions.
+- The **forecast strip** (§8) renders 7 day-forecast tiles with temperature range bars. The range bar uses a `background: linear-gradient()` with cold-to-warm coloring sized by `(high - low) / (max_high - min_low) * 100%`. This is a pure CSS data visualization — no canvas, no SVG. Efficient.
+
+### Performance Considerations
+- **`weather.get_forecasts` caching**: The `_fetchForecast()` method calls `hass.callWS({ type: 'weather/subscribe_forecasts' })` or `hass.callService('weather', 'get_forecasts', ...)` each time the panel updates. Forecast data changes at most every 30-60 minutes for Met.no. **Advisory**: Cache the forecast response and only re-fetch when `this._lastForecastFetch` is older than 15 minutes. This avoids redundant API calls on every `hass` property update (which fires on any entity state change in HA — potentially hundreds per minute).
+- **`getDayProgress()` recomputation**: The sun arc position (§6) computes `(Date.now() - sunrise) / (sunset - sunrise)` to position the sun dot on the arc path. This value changes every second, but `updated()` fires on hass changes (not on a timer). The spec does NOT implement a 1-second interval for smooth sun arc animation — it only recalculates when hass updates. This is correct. Implementing a timer for cosmetic smoothness would be wasteful for a value that changes by ~0.001% per HA update cycle.
+- **SVG wind compass** (§5.3): A single `<circle>`, `<line>`, and `<polygon>` rotated by `transform: rotate(${windDir}deg)`. Minimal SVG complexity — 4 elements total. CSS `transition: transform 0.6s ease` on direction changes is GPU-compositable. No concern.
+- **Condition-reactive frame color**: `--panel-frame-color` is set via `getConditionColor(state)`. This triggers a CSS custom property update on the panel root, which causes a repaint of the frame border and header elements. This happens only on condition changes (typically 1-4 times per day). Negligible.
+- **Bundle impact estimate**: ~4.5 KiB minified/gzipped. The condition mapping tables (~0.8 KiB), SVG arc/compass templates, and forecast strip rendering are the main contributors. No external dependencies. Roughly 2.2% of the 203 KiB bundle.
+
+### HA Integration Patterns
+- `weather.get_forecasts` (introduced HA 2024.3) is the correct action for forecast data. The spec declares HA 2024.3+ as a minimum requirement for this specific feature. Since the project minimum is HA 2025.4.0, this is already satisfied.
+- The `sun.sun` entity is a core HA integration, always available. Using `state_attr('sun.sun', 'next_rising')` / `next_setting` for arc computation is correct. These attributes update once per day at sunrise/sunset. Stable data source.
+- The WeatherFlow Tempest and Davis Vantage entities use standard `sensor` domain with `device_class: temperature`, `humidity`, `pressure`, etc. These follow the standard HA sensor pattern and require no integration-specific service calls. The Tempest lightning entities (`lightning_count`, `lightning_distance`) use non-standard `device_class` values — the spec correctly handles these by entity ID matching rather than device class.
+- **No service calls at all**. Zero write operations. This panel is purely reactive to entity state changes. This is the ideal pattern for a monitoring-only display.
+
+### Code Quality & Reusability
+- **DRY concern**: The `getConditionColor()`, `getConditionGlyph()`, and `getConditionLabel()` functions are 3 separate switch statements, each with 17 cases mapping the same condition string to different outputs. These should be consolidated into a single `WEATHER_CONDITIONS` lookup table:
+  ```javascript
+  const WEATHER_CONDITIONS = {
+    'clear-night': { color: 'var(--lcars-delta)', glyph: '◆', label: 'Clear' },
+    'cloudy':      { color: 'var(--lcars-gray)',  glyph: '●', label: 'Cloudy' },
+    // ... 15 more
+  };
+  function getConditionProp(condition, prop) {
+    return WEATHER_CONDITIONS[condition]?.[prop] ?? WEATHER_CONDITIONS._default[prop];
+  }
+  ```
+  This replaces 3 × 17-case switches (~75 lines) with 1 object + 1 accessor (~25 lines). 67% reduction. More maintainable — adding a new condition is 1 line instead of 3.
+- **DRY**: The SVG arc path computation in `getDayArcPath()` (§6) uses the standard parametric arc formula. This is identical in structure to the climate panel's circular gauge arc. Extract to a shared `svgArc(cx, cy, r, startAngle, endAngle)` utility.
+- **KISS compliance**: High. The panel is read-only, uses no timers (except implicit hass updates), and has no user interaction beyond tapping an entity to open its more-info dialog. The forecast strip is pure CSS. The wind compass is 4 SVG elements. This is lean engineering.
+- **YAGNI**: Wesley's audio cue idea (concluding quote) is firmly in YAGNI territory. Web Audio API for weather sounds would add complexity, accessibility concerns, and bundle weight for minimal functional value. Do not implement.
+
+### Recommendations
+1. **P1**: Cache forecast response. Add `_lastForecastFetch` timestamp and `_cachedForecast` data. Only re-fetch when stale (>15 min). This prevents redundant `weather.get_forecasts` calls on every hass property update.
+2. **P1**: Consolidate `getConditionColor()` + `getConditionGlyph()` + `getConditionLabel()` into a single `WEATHER_CONDITIONS` lookup object. 67% fewer lines, easier to maintain, eliminates 3 parallel switch statements that must be kept in sync.
+3. **P2**: Extract `svgArc()` path computation to shared utility — reusable by climate panel's circular gauge.
+4. **P3**: The forecast strip hardcodes 7 `forecast-day-tile` elements. If Met.no returns fewer than 7 days (it does not currently, but WeatherFlow hourly forecasts return 24 hours, not 7 days), the strip will render empty tiles. Add a guard: `forecast.slice(0, 7).map(...)`.
+5. **SKIP**: Wesley's Web Audio API idea. Fascinating, but firmly YAGNI. The audio context initialization alone would add ~0.5 KiB to the bundle.
+
+---
+
+## Geordi La Forge — Design Review
+
+**Reviewer**: Geordi La Forge (LCARS UI Design Authority)  
+**Date**: Stardate 2026.04.13  
+**Status**: APPROVED WITH NOTES
+
+### LCARS Compliance
+- §1 Grid Layout: Correct 3-row grid (header, sensors+media, forecast). Thick→thin border (4px left/bottom, 2px top/right) — satisfies Bracer Jack Rule 2.
+- §2 Condition glyphs: The Unicode geometric shapes (☀, ●, ◑, ◔, ≡, ▽, ✦, ◆, ⚡, ⚠) are flat, abstract, and geometric — this is exactly the LCARS approach to iconography. They resemble classified sensor readout symbols, not illustrative weather art. **Strongly approved** — this is one of the best design decisions in the spec.
+- §5 Temperature viewscreen: Large temperature floating in black space with no arc, no dial, no gauge. Just a number and a condition label. "Empty space is beautiful." Perfect.
+- §5.2 Wind compass: A compact directional indicator, not a decorative compass rose. The minimal circle with cardinal markers and a single directional line is appropriately abstract. It reads as a "wind vector sensor readout."
+- §6 Day-arc indicator: A horizontal bar showing sun position between rise/set — clean, minimal, informational. No sun illustration, no gradient sky — just a fill bar with a marker dot. Good.
+- §8 Severe weather animation: The 2s frame pulse for `exceptional` condition is appropriate for a genuine alert state. The lightning flash animation (§8, 0.8s) is brief and purposeful.
+
+### Color & Typography
+- Dynamic `--panel-frame-color` based on weather condition is an excellent parallel to the Climate Panel's HVAC-action-driven coloring. Sunflower for sunny, bluey for clear night, sky for rain, tomato for severe — all semantically correct.
+- **ISSUE**: The compliance table (§19) self-reports ≤5 hue families but then lists 6: blue (frame/sky), warm (sunny/sunflower), gold (lightning), gray (overcast), white (text), red (severe). The note says "red is alert-only, same pattern as other panels." I'll accept this — red/tomato is a reserved alert color across ALL panels and shouldn't count against the per-panel hue budget. We're at 5 functional hue families. Approved.
+- **CONTRAST NOTE**: `--lcars-bluey` is listed at 6.4:1 in this spec but 7.1:1 in the Temp-Humidity Grid spec. The actual computed contrast of #8899ff on #000000 is approximately **6.44:1** (per WCAG contrast algorithm). Both values round differently but the actual value passes AA (≥4.5:1). Use the accurate 6.4:1 going forward for consistency.
+- Typography: Three sizes — SVG `48` (title), sub-header (location name), data (everything else). Clean, no violations.
+
+### Layout & Visual Balance
+- The forecast strip at the bottom is a compact, scannable data row — like a long-range sensor scan. Each tile with day/glyph/high/low/range-bar/precip is information-dense but well-structured.
+- **GRADIENT EXCEPTION** (§7): Wesley flagged the `forecast-range-fill` gradient (`linear-gradient(to right, var(--lcars-ice), var(--lcars-sunflower))`) and asked for my confirmation. **APPROVED as a data-visualization exception.** This gradient maps cold→warm as a temperature range indicator — it's a heatmap, not a decorative gradient. The same logic applies as with the Climate Panel's SVG arc: data visualizations may use visual techniques that would be prohibited on structural UI elements. **However**, ensure this gradient is applied ONLY to the tiny 3px range bar, never to buttons, frames, or panels.
+- The viewscreen at `4/3` aspect ratio (wider than the standard `1/1`) accommodates the wind compass below the temperature. This is justified by the content — approved.
+- The sensor telemetry column with dividers between logical groups (atmospheric / pressure / UV / lightning / rain) provides clear visual sectioning without overcrowding.
+
+### Accessibility
+- Unicode glyphs are `aria-hidden="true"` with text labels providing the semantic information — good. Screen readers get "SUNNY" not "sun-with-rays-symbol."
+- Wind compass SVG has `role="img"` with descriptive `aria-label` including speed, unit, and cardinal direction — excellent.
+- Forecast tiles are individually focusable with comprehensive `aria-label` per tile (day, condition, high, low, precip %).
+- The Beaufort scale wind description function (`getWindDescription()`) is a nice accessibility enhancement — screen readers get "moderate breeze" instead of just "15 mph."
+- `prefers-reduced-motion` covers all animations including the severe weather pulse and lightning flash — confirmed.
+
+### Recommendations
+1. **APPROVED**: Weather condition glyph system — flat geometric Unicode symbols are the most LCARS-authentic icon approach in any spec.
+2. **APPROVED WITH EXCEPTION**: Forecast range bar gradient — data visualization exception. Document clearly that this gradient pattern is restricted to the 3px forecast range bars only.
+3. **APPROVED**: `--lcars-sky` (#aaaaff) as the default weather frame color.
+4. **APPROVED**: 4:3 viewscreen aspect ratio for the wider temperature+compass layout.
+5. **NOTE**: Standardize `--lcars-bluey` contrast reporting to 6.4:1 across all specs.
+6. **NOTE**: Wesley's lightning audio idea — interesting but **do not implement**. Unsolicited audio violates WCAG 1.4.2 (Audio Control) unless the user explicitly opts in. Additionally, the LCARS audio grammar (Source 3) defines specific semantic sounds (TactileInputAcknowledge, Alert, etc.). A low-frequency rumble isn't in the grammar. If we ever add audio cues, they must follow the established LCARS audio language, not improvised sound effects.
+7. **APPROVED**: Severe weather alert state design — appropriate for genuine emergency conditions.
+8. **NOTE** (§19 compliance table): Fix the hue family count annotation. Document that `--lcars-tomato` is a system-wide alert color exempted from per-panel hue budgets.
+
+---
+
+## Worf — Security Review
+
+**Reviewer**: Worf (Integration Security Expert)  
+**Date**: Stardate 2026.04.13  
+**Threat Level**: GREEN
+
+*"A read-only planetary survey console. No service calls, no user input, no external resources. The attack surface is minimal. I approve this panel with minor advisories."*
+
+### Input Validation
+
+- **Weather entity state values**: Temperature, humidity, pressure, wind speed, UV index — all numeric values from the `weather.*` entity attributes. Rendered via Lit templates with `Number()` coercion where needed. Helper functions (`getUVRisk()`, `bearingToCardinal()`, `getPressureTrendArrow()`) all guard against `null`/`NaN`/missing input. Sound.
+- **Forecast data**: `fetchDailyForecast()` and `fetchHourlyForecast()` use `weather.get_forecasts` service action (a read-only action that returns data). Response arrays are sliced to limit length (`forecasts.slice(0, days)`). No unbounded data rendering.
+- **`sun.sun` entity**: `getDayProgress()` reads `next_rising` and `next_setting` attributes. These are ISO 8601 date strings parsed via `new Date(iso)`. Invalid dates would produce `NaN` timestamps, which the `Math.max(0, Math.min(100, ...))` clamping handles. Defensive.
+
+### XSS & DOM Safety
+
+- **All rendering via Lit templates**: Weather condition labels, glyph characters, temperature values, forecast data — all rendered via Lit tagged template literals. **No `innerHTML` or `unsafeHTML()` detected.** Secure.
+- **SVG content**: Temperature display and wind compass use SVG `<text>` elements and geometric shapes. All values are hardcoded glyphs or numeric outputs. No user-controlled strings reach SVG content.
+- **Forecast condition labels**: `getWeatherLabel()` returns hardcoded strings from a switch statement. The `default` case uses `(condition || 'UNKNOWN').toUpperCase().replace(/-/g, ' ')` — this processes the entity state string with safe string operations (toUpperCase, replace). No injection risk.
+- **Wind bearing SVG transform**: `transform="rotate(${windBearing}, 40, 40)"` — `windBearing` is a numeric value from entity attributes. A non-numeric value would produce an invalid SVG transform (rendering nothing) but no security impact.
+
+### Service Call Security
+
+- **No state-changing service calls**: This panel is purely observational. The `weather.get_forecasts` action is categorized as a read-only "response" action in HA — it does not modify any entity state. No `callService` with side effects.
+- **No user-triggered actions**: No buttons, no toggles, no input fields. The only interaction is tile focus for keyboard accessibility. Zero service call attack surface.
+
+### Secrets & Sensitive Data
+
+- **No credentials.** Weather data comes from local integrations (WeatherFlow Tempest, Davis Vantage, NWS). No API keys surface in entity attributes. The weather integration's API key is stored in HA config entries, invisible to the dashboard.
+- **Location data**: Weather entity attributes may include latitude/longitude (e.g., the NWS integration uses location for forecasts). This data is present in `hass.states` but is **not rendered by this panel**. The panel shows city/location name from `friendly_name` only. No GPS coordinates exposed in the UI.
+
+### Recommendations
+
+**ADVISORY:**
+
+1. **Wesley's Web Audio proposal**: The lightning audio cue idea (Team Review Flags) would require Web Audio API access. This does NOT introduce network security concerns (Web Audio processes local audio), but it has **accessibility implications** (unexpected audio for screen reader users) and **CSP implications** (may need `media-src 'self'`). If implemented, it must be opt-in via config with `audio_alerts: false` as default, and respect `prefers-reduced-motion`.
+
+2. **`weather.get_forecasts` error handling**: The `try/catch` blocks in `fetchDailyForecast()` and `fetchHourlyForecast()` log warnings to console. The logged message includes no sensitive data (just the error object). Ensure the `catch(e)` does not log the full error stack in production, which could reveal internal HA paths or entity IDs to shoulder-surfers viewing console output.
+
+3. **OWASP compliance note**: This panel has the smallest attack surface of any reviewed spec. No injection vectors, no access control concerns, no user input. It is a pure data display. Compliant with all OWASP Top 10 categories by virtue of minimal functionality.
+
+---
+
+## Wesley Crusher — Final Review Pass
+
+**Author**: Wesley Crusher (Creative Technologist)  
+**Date**: Stardate 2026.04.13  
+**Status**: REVISED — Ready for Implementation
+
+### Changes Made
+- **§19 Compliance Table — "No gradients" row**: Changed status from `⚠` (flagged) to `✅*` (approved with exception). Documented Geordi's explicit approval of the forecast range bar gradient as a data-visualization exception. Added restriction: gradient is ONLY permitted on the 3px forecast range bars, never on buttons, frames, or panels.
+- **§19 Compliance Table — "≤5 hue families" row**: Clarified annotation. 5 functional hue families in use. `--lcars-tomato` is a system-wide alert color exempt from per-panel hue budgets (same exemption as all other panels). Removed ambiguous "technically 6 but..." phrasing.
+- **§7 `.forecast-range-fill` CSS comment**: Updated Geordi review flag comment to reflect his approval and restriction scope.
+- **§2 `--lcars-bluey` contrast**: Already correctly reported as 6.4:1 (AA) in this spec. Per Geordi's NOTE #5, this is the accurate WCAG-computed value (~6.44:1) and is now the standardized figure across all specs. The Temp-Humidity Grid spec was corrected from 7.1:1 → 6.4:1 to match.
+
+### Accepted Recommendations
+- **Geordi Rec #2** (gradient exception): Accepted. Forecast range bar gradient approved as data-visualization exception. Clearly documented restriction scope in both compliance table and CSS comment.
+- **Geordi Rec #5** (`--lcars-bluey` contrast standardization): Accepted. 6.4:1 is the canonical value going forward.
+- **Geordi NOTE #6** (Wesley's lightning audio): Accepted — **will not implement**. Unsolicited audio violates WCAG 1.4.2 (Audio Control). Additionally, a low-frequency rumble is not in the established LCARS audio grammar. If audio cues are ever added, they must follow LCARS semantic sounds and be opt-in only. The idea was fun to think about, but Geordi's right — it doesn't belong here.
+- **Geordi Rec #8** (hue family count annotation): Accepted and corrected in §19.
+- **Data P1** (cache forecast response): Accepted. Implementation will add `_lastForecastFetch` timestamp and `_cachedForecast` data. Re-fetch only when stale (>15 min). Prevents redundant `weather.get_forecasts` calls on every hass property update.
+- **Data P1** (consolidate condition switch statements): Accepted. Three parallel 17-case switch statements (`getConditionColor()`, `getConditionGlyph()`, `getConditionLabel()`) will be consolidated into a single `WEATHER_CONDITIONS` lookup object during implementation. 67% fewer lines, single source of truth for condition→display mappings.
+- **Data P2** (extract `svgArc()` to shared utility): Accepted. Reusable by climate panel's circular gauge.
+- **Data P3** (guard forecast strip against < 7 days): Accepted. `forecasts.slice(0, days)` already handles this, but implementation will add explicit empty-state handling for 0-length forecast arrays.
+- **Worf Advisory #1** (Web Audio CSP): Moot — lightning audio not being implemented.
+- **Worf Advisory #2** (console error logging): Accepted. `catch(e)` blocks will log generic messages without full stack traces in production builds. No sensitive paths or entity IDs in console output.
+
+### Deferred Items
+- **Data P1 forecast caching**: Implementation-phase optimization. The caching strategy (`_lastForecastFetch` + 15-min TTL) is clear and will be implemented in the component's `updated()` lifecycle.
+- **Data P1 WEATHER_CONDITIONS consolidation**: Implementation-phase refactor. Spec retains the 3 separate functions for readability — implementation merges them into a single lookup.
+- **Data P2 shared `svgArc()` module**: Extraction happens at implementation time alongside the climate panel's arc utility.
+- **Data P5** (YAGNI on Web Audio): Confirmed — not implemented. Wesley acknowledges this was a brainstorm, not a proposal. *"Sometimes the best idea is the one you don't build."*
+
+### Disagreements
+- None. All reviewer feedback is either accepted or reasonably deferred. This panel received a GREEN threat level from Worf, full approval from Geordi (with one gradient exception noted), and SOUND WITH ADVISORIES from Data. Clean bill of health.

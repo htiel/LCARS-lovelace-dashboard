@@ -697,7 +697,7 @@ Each body (pool/spa) is rendered as a framed rectangle with:
 
 .pool-setpoint-label {
   font-family: var(--lcars-font);
-  font-size: 0.6rem;
+  font-size: var(--lcars-font-size-data);  /* 0.875rem — corrected per Geordi: 0.6rem violated Rule 6 */
   color: var(--lcars-space-white);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -860,6 +860,8 @@ function generateWaterParticles(bodyType) {
 /**
  * Adjust pool or spa target temperature.
  * ScreenLogic climate entities support standard climate.set_temperature.
+ * Applies absolute sane bounds for aquatic bodies.
+ * (⚠ Worf Security Requirement: absolute bounds for aquatic setpoints)
  * @param {object} hass - Home Assistant instance
  * @param {string} entityId - climate.pool_heat or climate.spa_heat
  * @param {number} delta - increment (+step) or decrement (-step)
@@ -870,8 +872,12 @@ function adjustPoolSetpoint(hass, entityId, delta) {
 
   const attrs = stateObj.attributes;
   const step = attrs.target_temp_step || 1;
-  const min = attrs.min_temp || 40;
-  const max = attrs.max_temp || 104;
+
+  // Absolute sane bounds for aquatic bodies
+  const ABSOLUTE_MIN = 32;   // °F (0°C) — never below freezing
+  const ABSOLUTE_MAX = 120;  // °F (49°C) — never above scald risk
+  const min = Math.max(attrs.min_temp || 40, ABSOLUTE_MIN);
+  const max = Math.min(attrs.max_temp || 104, ABSOLUTE_MAX);
 
   const current = attrs.temperature;
   if (current == null) return;
@@ -1248,18 +1254,20 @@ The bottom row contains the IntelliBrite color mode selector. 22 color modes nee
   }
 }
 
-/* Swatch label */
+/* Swatch label — REMOVED per Geordi: 0.55rem violates Bracer Jack Rule 6.
+ * Color identification via swatch color alone + aria-label for accessibility.
+ * Optional tooltip on hover/long-press provides the mode name. */
 .pool-swatch-label {
-  font-family: var(--lcars-font);
-  font-size: 0.55rem;
-  color: var(--lcars-space-white);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  text-align: center;
-  white-space: nowrap;
+  /* Visually hidden but accessible to screen readers */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 3.5rem;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 ```
 
@@ -1325,6 +1333,10 @@ Super chlorination is triggered via dedicated ScreenLogic actions. This gets a s
 ```javascript
 /**
  * Start super chlorination with runtime hours.
+ * ⚠ Worf Security Requirement: This is an irreversible chemical action.
+ * The UI must require a 2-second press-and-hold before executing.
+ * Implementation: use a press-and-hold interaction pattern on the
+ * super chlorination button, not a simple click.
  */
 function startSuperChlor(hass, configEntryId, hours = 24) {
   hass.callService('screenlogic', 'start_super_chlorination', {
@@ -2122,3 +2134,198 @@ const POOL_SPA_SCHEMA = {
 
 *"On Deck 13, there's a dedicated facility for the ship's cetacean crew — dolphins and whales who assist with navigational research. The water must be maintained at precise temperature and chemical balance at all times. If you can monitor a dolphin tank in deep space, you can certainly manage a pool in your backyard."*  
 — Crusher, W., Personal Log
+
+---
+
+## Geordi La Forge — Design Review
+
+**Reviewer**: Geordi La Forge (LCARS UI Design Authority)  
+**Date**: Stardate 2026.04.13  
+**Status**: APPROVED WITH NOTES
+
+### LCARS Compliance
+- §1 Grid Layout: The full-width 3-column layout (chemistry | aquatics | controls) is justified. Two climate entities, chemistry sensors, circuit switches, AND a lighting selector cannot fit in a standard 2-column panel. The `grid-column: 1 / -1` approach is correct for wide panels — same pattern as Ops console data displays.
+- Thick→thin border (4px left/bottom, 2px top/right) — correct per Bracer Jack Rule 2.
+- §5 Dual viewscreens: Two side-by-side viewscreens is unprecedented but defensible. Pool and spa are two distinct water bodies requiring simultaneous monitoring — this is the Cetacean Ops display showing two tanks. **Approved** as a multi-body monitoring exception.
+- §5.3 Water particle animations: Decorative but appropriate. The slow drift (6–10s) conveys "living water" without demanding attention. Convection animation when heating switches to vertical drift — nice physical metaphor. `prefers-reduced-motion` makes particles static at 20% opacity — good fallback.
+- §6 Circuit toggles: Flat pill toggles with `--lcars-gold` active / `--lcars-disabled` inactive — correct LCARS toggle pattern. No iOS-style sliders — good.
+- §7 IntelliBrite lighting strip: The horizontally scrollable swatch grid is a practical solution for 22+ color modes.
+
+### Color & Typography
+- `--lcars-bluey` (#8899ff) for the panel frame is correct — aquatic/water systems use the blue family, distinct from the deeper `--lcars-blue` or lighter `--lcars-ice`.
+- Thermal color coding: Pool (ice/cool blue) vs Spa (butterscotch/warm) gives instant body identification. This is the right approach.
+- Chemistry threshold coloring (§2): Three-tier system (optimal→acceptable→alert) using ice→sunflower→tomato is semantically clear and consistent with other panel alert patterns.
+- **ISSUE** (§7.2, §11): The swatch labels at `font-size: 0.55rem` and the setpoint label at `font-size: 0.6rem` introduce font sizes below the data tier. This **violates Bracer Jack Rule 6** (exactly 3 font sizes). I understand the constraint — 22 swatches need compact labels — but the rule exists for a reason.
+- **MITIGATION**: Either (a) remove visible swatch labels entirely and rely on `aria-label` + tooltip for identification, or (b) use `--lcars-font-size-data` (0.875rem) and accept that swatch labels may truncate. Option (a) is the more LCARS-authentic choice — the original Okuda displays used color alone without micro-labels.
+- The IntelliBrite swatch hex colors are **data values** representing physical light output, not UI chrome. These are not LCARS theme colors. **Exception approved** — they must reflect actual light colors to be useful.
+
+### Layout & Visual Balance
+- The three-column layout breathes well. Chemistry on the left is the "science station," aquatics in the center is the viewscreen, and controls on the right is the engineering station. This maps to TNG console layout conventions.
+- The compact "no-chem" variant (§1) that collapses to 2 columns when IntelliChem isn't present is a good adaptive design.
+- The water particle visualization in the lower 40% of each viewscreen keeps the temperature readouts and setpoint controls above the "water line" — clear visual hierarchy.
+
+### Accessibility
+- WCAG 2.5.8: Setpoint buttons at 2.25rem (36px) — passes. Circuit toggles at 1.75rem × 3rem — the 1.75rem (28px) height passes but is on the lower end. Consider bumping to 2rem.
+- Swatch buttons at 3.5rem wide with 1.75rem height fill circle — the tap target includes the padding, bringing effective size above 24px. Passes.
+- Focus indicators: 2px solid `--lcars-ice` with 2px offset — consistent and approved.
+- Chemistry readings use dynamic color + numeric value + status label (OPTIMAL/ACCEPTABLE/ALERT) — triple encoding satisfies WCAG 1.4.1 thoroughly.
+- `prefers-reduced-motion` covers all water particles, heating pulses, and swatch animations — confirmed.
+
+### Recommendations
+1. **APPROVED**: Full-width 3-column layout for pool/spa monitoring.
+2. **APPROVED**: Dual viewscreen pattern for simultaneous body monitoring.
+3. **APPROVED**: IntelliBrite swatch hex colors as data-value exception.
+4. **NEEDS REVISION** (§7.2): Swatch labels at 0.55rem violate Bracer Jack Rule 6. Remove visible labels and use `aria-label` + optional tooltip. The 3-letter abbreviations (PAR, ROM, BLU) can be replaced by the colored circle alone — users will learn the colors quickly, and the `aria-label` serves accessibility.
+5. **NEEDS REVISION** (§5.2): The `.pool-setpoint-label` at `font-size: 0.6rem` also violates Rule 6. Increase to `--lcars-font-size-data` (0.875rem) or, if space is tight, use letter-spacing and weight differentiation to distinguish it from sibling text at the same size.
+6. **NOTE**: The swatch `hue-rotate` animation (§7.2) for dynamic modes is a color-shifting effect. It technically modifies the swatch appearance beyond flat color — however, it's confined to decorative swatch previews and properly disabled under `prefers-reduced-motion`. Approved with that caveat.
+7. **APPROVED**: Water particle animations — decorative, appropriate, and properly gated behind reduced-motion.
+8. **NOTE**: The circuit toggle height at 1.75rem is functional but could feel cramped on touch devices. If layout permits, increase to 2.25rem for comfort.
+
+---
+
+## Data — Architecture Review
+
+**Reviewer**: Data (Project Architect & Performance Engineer)  
+**Date**: Stardate 2026.04.13  
+**Assessment**: SOUND WITH ADVISORIES
+
+### Component Architecture
+- This is the most complex panel in the spec suite. The 3-column full-width layout (`chemistry | aquatics | controls`) is a justified departure from the standard 2-column device panel. The pool/spa domain genuinely requires three data zones: input sensors (chemistry), visual feedback (dual viewscreens), and output controls (circuits + lights). I concur with this architectural decision.
+- **Dual climate entities**: The `classifyPoolEntities()` function (§10) correctly identifies pool and spa climate entities by checking `eid.includes('pool')` and `eid.includes('spa')`. This is a name-based heuristic, not device-class-based. **Advisory**: This will break if the entity naming convention differs (e.g., `climate.pentair_body_1` instead of `climate.pentair_pool_heat`). Consider adding a fallback that examines `preset_modes` — pool entities typically have `['heater', 'solar', 'solar_preferred']` which is distinctive.
+- The `no-chem` variant that collapses to 2 columns when IntelliChem is absent is well-designed — it avoids an empty column. The CSS `grid-template-areas` override is the correct approach.
+- The chemistry threshold functions (`getPhColor()`, `getOrpColor()`, `getSaltColor()`, `getSaturationColor()`) are clean, bounded-range evaluators. The threshold values match EPA and pool industry standards. No concerns.
+- The IntelliBrite color mode system (§7) handles 22 modes via a static array (`INTELLIBRITE_MODES`) rendered as a horizontally scrollable strip. The `scroll-snap-type: x proximity` is good UX for swatch navigation.
+
+### Performance Considerations
+- **Water particle animation** (§5.3): Each viewscreen renders 6 CSS-animated particles. Total: 12 animated elements. These use CSS `animation` with `transform` and `opacity` — both GPU-compositable properties. The performance cost is minimal. The `@media (prefers-reduced-motion: reduce)` handler correctly disables these.
+- **Full-width panel DOM footprint**: This panel renders significantly more DOM than a standard panel. Estimated node count: ~80-100 nodes for the full panel (2 viewscreens × 6 particles each, ~9 chemistry lines, ~6 circuit toggles, 22 light swatches, headers, dividers). This is acceptable for a single instance. However, if a user has multiple pool/spa systems (unusual but possible), rendering 2+ instances simultaneously would create 200+ animated nodes. **Advisory**: Add a guard that caps pool/spa panels at 1 per dashboard view, or disable particle animations on the second instance.
+- **IntelliBrite service call**: `setColorMode()` uses `hass.callService('screenlogic', 'set_color_mode', ...)`, which is a ScreenLogic integration-specific action. This requires `config_entry` as a parameter. The spec correctly passes this. However, the `configEntryId` must be discovered at panel initialization. The spec's `classifyPoolEntities()` sets `result.configEntryId = null` but never populates it. **Advisory**: Add config entry discovery via the entity's `config_entry_id` attribute from the entity registry.
+- **Bundle impact estimate**: ~8-10 KiB minified/gzipped. This is the heaviest individual panel — the INTELLIBRITE_MODES array (~1 KiB), dual viewscreen templates, water particle generation, chemistry threshold functions, and circuit toggle logic all add up. Roughly 4.5% of the 203 KiB bundle. This is the largest single-component addition.
+
+### HA Integration Patterns
+- Climate service calls (`climate.set_temperature`, `climate.set_preset_mode`, `climate.set_hvac_mode`) are correctly specified for both pool and spa entities (§5.5). The `adjustPoolSetpoint()` function mirrors the climate panel's `adjustSetpoint()` — consider sharing this function.
+- `screenlogic.set_color_mode` and super chlorination actions (§7.4-7.5) are integration-specific services that bypass the standard HA entity service API. These require the `config_entry` parameter. This is the correct pattern for ScreenLogic — confirmed against the integration's source code.
+- Circuit toggles use standard `switch.turn_on` / `switch.turn_off` via `toggleCircuit()` (§6). Correct and straightforward.
+- The IntelliChem detection (`result.intellichem = true` when `orp_now` or `ph_now` entities exist) is a reasonable heuristic for distinguishing between basic SCG chemistry (which has `orp` and `ph`) and full IntelliChem (which adds `_now` variants).
+
+### Code Quality & Reusability
+- **DRY concern**: `adjustPoolSetpoint()` (§5.5) is nearly identical to the climate panel's `adjustSetpoint()` (§5.2 of climate spec). The only differences are default `step` (1 vs 0.5) and the absence of dual-setpoint logic (pool entities use single setpoint only). These should share a common implementation with config parameters.
+- **Chemistry threshold functions**: `getPhColor()`, `getOrpColor()`, `getSaltColor()`, `getSaturationColor()` are pool-specific and not reusable. They should remain in the pool panel file. However, they follow an identical 3-tier threshold pattern (optimal/acceptable/alert). A generic `thresholdColor(value, ranges)` helper could replace all four:
+  ```javascript
+  function thresholdColor(v, optimal, acceptable) {
+    if (v >= optimal[0] && v <= optimal[1]) return 'var(--lcars-ice)';
+    if (v >= acceptable[0] && v <= acceptable[1]) return 'var(--lcars-sunflower)';
+    return 'var(--lcars-alert)';
+  }
+  ```
+  This would reduce 4 functions (~28 lines) to 1 function + 4 config objects (~12 lines). Net savings: ~16 lines.
+- **YAGNI**: The super chlorination controls (§7.5) are correctly included — users with IntelliChem frequently use this feature. Not over-engineering.
+- **Configuration schema**: No custom YAML config beyond auto-discovery. The panel is triggered by the presence of ScreenLogic climate entities. Correct approach — pool systems are device-specific enough that manual config would be burdensome.
+
+### Recommendations
+1. **P1**: Populate `configEntryId` in `classifyPoolEntities()`. Fetch from the entity registry entry's `config_entry_id` field. Without this, `setColorMode()` and super chlorination actions will fail.
+2. **P1**: Share `adjustSetpoint()` between climate and pool panels. Extract to a common utility that accepts `step`, `min_temp`, `max_temp`, and target key as parameters.
+3. **P2**: Replace the 4 chemistry threshold functions with a generic `thresholdColor(value, optimalRange, acceptableRange)` utility. Reduces code and makes ranges configurable.
+4. **P2**: Strengthen pool/spa entity identification in `classifyPoolEntities()`. In addition to `eid.includes('pool')`, check `preset_modes` for `['heater', 'solar', 'solar_preferred']` as a disambiguation signal.
+5. **P3**: Add a MAX_POOL_PANELS constant (suggest: 1) and log a console warning if multiple instances are detected on the same dashboard view. Multiple full-width pool panels with 12+ animated particles each will impact frame rates on lower-end devices (e.g., wall-mounted tablets).
+6. **P3**: The 0.55rem swatch label font size (§7.2) is below the standard `--lcars-font-size-data`. This is flagged for Geordi but architecturally acceptable — 22 swatches at standard font size would not fit without excessive horizontal scrolling.
+
+---
+
+## Worf — Security Review
+
+**Reviewer**: Worf (Integration Security Expert)  
+**Date**: Stardate 2026.04.13  
+**Threat Level**: YELLOW
+
+*"Pool equipment operates high-voltage pumps and gas heaters. A compromised panel that sends rogue service calls can damage physical infrastructure. I review this with the gravity it deserves."*
+
+### Input Validation
+
+- **Pool/Spa setpoint clamping (§5.5)**: `adjustPoolSetpoint()` correctly clamps to `[min_temp, max_temp]` from entity attributes and rounds to `target_temp_step`. Same pattern as the climate panel — **apply the same absolute sane bounds recommendation** (40°F–120°F / 4°C–49°C for aquatic bodies, not the HVAC bounds).
+- **Chemistry value rendering**: `getPhColor()`, `getOrpColor()`, `getSaltColor()`, `getSaturationColor()` all guard against `null`/`NaN` input with explicit checks. `Number(ph)` coercion is safe for numeric sensor values. Well-defended.
+- **IntelliBrite color mode selection**: The `set_color_mode` service call (referenced in the Team Review Flags) passes a mode string from a hardcoded swatch map. No user-typed input reaches the service call. Secure.
+
+### XSS & DOM Safety
+
+- **All text rendering via Lit templates**: Temperature values, chemistry readings, zone labels, pump names — all rendered via Lit tagged template literals. **No `innerHTML` or `unsafeHTML()` detected.** Secure.
+- **IntelliBrite swatch colors**: The swatch grid uses inline `background` styles with hardcoded hex values from the color mode table (§2). These are compile-time constants, not user input. Secure.
+- **Water particle animation**: CSS-only animation with no user-controlled parameters. `generateWaterParticles()` uses `Math.random()` for positioning — no security concern.
+
+### Service Call Security
+
+- **Five service call categories identified**:
+  1. `climate.set_temperature` — pool/spa setpoint adjustment
+  2. `climate.set_hvac_mode` — heater on/off toggle
+  3. `climate.set_preset_mode` — heat mode selection (heater/solar/off)
+  4. `switch.turn_on` / `switch.turn_off` — pump circuit toggles
+  5. ScreenLogic-specific actions (`set_color_mode`, `start_super_chlorination`, `stop_super_chlorination`)
+- **Circuit switch toggles are safety-sensitive**: Turning pump circuits on/off affects physical equipment. The `switch.turn_on/off` calls are properly scoped with `entity_id`. However, there is **no confirmation for destructive actions** like stopping the pool pump (which could damage the filter/heater if water stops flowing while the heater is on). Consider: require press-and-hold for STOP actions on pump circuits.
+- **`config_entry` parameter exposure**: The ScreenLogic-specific service calls require a `config_entry` ID parameter. The Team Review Flags correctly note this is standard practice. The config entry ID is a UUID that identifies the integration instance — it is not a secret, but it should not be logged or displayed in the UI. Verify it is only passed as a service call parameter, never rendered to DOM.
+- **Super chlorination**: `start_super_chlorination` triggers a chemical treatment cycle. This is an **irreversible physical action** that adds chlorine to the water. It SHOULD require a confirmation dialog or press-and-hold interaction to prevent accidental activation.
+
+### Secrets & Sensitive Data
+
+- **No credentials or API keys.** ScreenLogic uses local push communication through the HA integration. The config_entry ID is a UUID, not a secret. No sensitive data surfaces in entity attributes or service call parameters.
+
+### Recommendations
+
+**MUST FIX:**
+
+1. **Add absolute sane bounds for aquatic setpoints**: Pool/spa temperatures have different valid ranges than HVAC:
+   ```javascript
+   const safeMin = Math.max(attrs.min_temp || 40, 32);   // Never below freezing
+   const safeMax = Math.min(attrs.max_temp || 104, 120);  // Never above scald risk
+   ```
+
+2. **Confirmation for super chlorination**: `start_super_chlorination` is an irreversible chemical action. Require either a confirmation dialog or 2-second press-and-hold before executing.
+
+**SHOULD FIX:**
+
+3. **Rate-limit setpoint changes**: Same debouncing recommendation as the climate panel (300ms) for pool/spa +/- buttons.
+
+4. **Validate `config_entry` is never rendered to DOM**: Ensure the ScreenLogic config entry UUID is only used in `hass.callService()` data payloads, never interpolated into template HTML or logged.
+
+5. **Pump safety interlock warning**: If the user attempts to turn off the pool pump while the heater's `hvac_action` is `heating`, display a warning: "HEATER ACTIVE — stopping pump may cause equipment damage." This is not strictly a security concern but prevents physical infrastructure damage from UI actions.
+
+**ADVISORY:**
+
+6. **Chemistry alert escalation**: As noted in the Team Review Flags, chemistry alerts (pH/ORP out of range) warrant HA notification automation outside the dashboard. The panel should document recommended HA automation triggers for critical chemistry thresholds.
+
+7. **OWASP compliance note**: No injection vectors. Service calls are authenticated through HA WebSocket. The `config_entry` parameter is the most unusual data flow — verified as a standard integration pattern, not a credential.
+
+---
+
+## Wesley Crusher — Final Review Pass
+
+**Author**: Wesley Crusher (Creative Technologist)  
+**Date**: Stardate 2026.04.13  
+**Status**: REVISED — Ready for Implementation
+
+### Changes Made
+- **§7.2 `.pool-swatch-label`**: Replaced visible 0.55rem labels with visually-hidden/sr-only pattern. Swatch identification now via color alone + `aria-label` + optional tooltip. Per Geordi's NEEDS REVISION #4 (Bracer Jack Rule 6 violation).
+- **§5.2 `.pool-setpoint-label`**: Changed `font-size: 0.6rem` to `var(--lcars-font-size-data)` (0.875rem). Per Geordi's NEEDS REVISION #5 (Bracer Jack Rule 6 violation).
+- **§5.5 `adjustPoolSetpoint()`**: Added `ABSOLUTE_MIN = 32` and `ABSOLUTE_MAX = 120` safety bounds for aquatic bodies. Per Worf's MUST FIX #1.
+- **§7.5 `startSuperChlor()`**: Added press-and-hold requirement documentation. Per Worf's MUST FIX #2.
+
+### Accepted Recommendations
+- **Worf MUST FIX #1** (absolute aquatic bounds): Implemented. 32°F–120°F range prevents freeze and scald scenarios.
+- **Worf MUST FIX #2** (super chlor confirmation): Documented as press-and-hold requirement. LCARS doesn't do modal dialogs — press-and-hold is the appropriate interaction pattern.
+- **Worf SHOULD FIX #3** (rate-limit setpoints): Accepted. 300ms debounce during implementation.
+- **Worf SHOULD FIX #4** (config_entry not in DOM): Accepted. UUID used only in service call payloads.
+- **Worf SHOULD FIX #5** (pump safety interlock): Accepted — excellent idea. Will show inline warning if pump stop attempted while heater `hvac_action === 'heating'`.
+- **Geordi NEEDS REVISION #4** (swatch labels): Implemented. Swatches are now color-only with sr-only text.
+- **Geordi NEEDS REVISION #5** (setpoint label font): Implemented. Changed to `--lcars-font-size-data`.
+- **Geordi NOTE #8** (circuit toggle height bump): Accepted. Will increase to 2.25rem during implementation if layout permits.
+- **Data P1** (populate configEntryId): Accepted — critical. Will discover via entity registry entry's `config_entry_id`.
+- **Data P1** (share adjustSetpoint): Accepted. Will extract shared `adjustSetpoint()` parameterized by step, min, max.
+- **Data P2** (generic thresholdColor): Accepted. Will replace 4 chemistry functions with `thresholdColor(value, optimalRange, acceptableRange)`.
+- **Data P2** (strengthen pool/spa entity identification): Accepted. Will add `preset_modes` check as disambiguation.
+- **Data P3** (MAX_POOL_PANELS guard): Noted. Will add console warning if >1 instance detected.
+
+### Deferred Items
+- **Worf Advisory #6** (chemistry alert automation): Documentation note — not a panel feature. Will add a note in the spec about recommended HA automation triggers.
+- **Data P3** (swatch font size): Resolved by removing visible labels entirely — moot point.
+
+### Disagreements
+- None. Both Geordi's font-size findings and Worf's safety concerns are valid and addressed.

@@ -303,7 +303,8 @@ The zone grid is the primary content area — a vertical list of all irrigation 
      @click="${() => toggleExpand(zoneId)}">
   <button class="irrigation-zone-btn start"
           aria-label="Start watering ${zoneName}"
-          @click="${(e) => { e.stopPropagation(); startZone(zoneId); }}">
+          ?disabled="${isStandby}"
+          @click="${(e) => { e.stopPropagation(); startZone(hass, zoneId, validZoneIds, isStandby); }}">
     <span aria-hidden="true">●</span> START
   </button>
   <span class="irrigation-zone-name">${zoneName}</span>
@@ -324,7 +325,7 @@ When a zone is actively running, the row changes: the button becomes STOP, and a
      aria-label="${zoneName}: watering, ${timeRemaining} remaining">
   <button class="irrigation-zone-btn stop"
           aria-label="Stop watering ${zoneName}"
-          @click="${(e) => { e.stopPropagation(); stopZone(zoneId); }}">
+          @click="${(e) => { e.stopPropagation(); stopZone(hass, zoneId, validZoneIds); }}">
     <span aria-hidden="true">■</span> STOP
   </button>
   <span class="irrigation-zone-name">${zoneName}</span>
@@ -422,6 +423,15 @@ Tapping a zone row reveals secondary attributes (soil, nozzle, shade, slope) as 
 
 .irrigation-zone-btn:active {
   filter: brightness(0.85);
+}
+
+/* Disabled state — controller in standby */
+.irrigation-zone-btn:disabled {
+  background: var(--lcars-gray);
+  color: var(--lcars-disabled);
+  cursor: not-allowed;
+  filter: none;
+  opacity: 0.5;
 }
 
 /* Zone name */
@@ -689,20 +699,50 @@ function classifyIrrigationEntities(entities) {
 
 ```javascript
 /**
+ * Validate that an entity_id belongs to the classified zone list.
+ * Prevents stale UI state from calling services on unrelated entities.
+ * @param {string} entityId - entity_id to validate
+ * @param {string[]} validZoneIds - list of valid zone entity_ids
+ * @returns {boolean}
+ */
+function isValidZoneEntity(entityId, validZoneIds) {
+  return validZoneIds.includes(entityId);
+}
+
+/** Rate-limit timestamp — prevents rapid toggle cycling (protects solenoid valves). */
+let _lastZoneActionTime = 0;
+const ZONE_ACTION_COOLDOWN_MS = 2000;
+
+/**
  * Start watering a specific zone.
+ * Guards: entity must be in valid zone list, controller must not be in standby,
+ * and a 2-second cooldown prevents rapid toggling.
  * @param {object} hass - Home Assistant connection
  * @param {string} entityId - zone switch entity_id
+ * @param {string[]} validZoneIds - classified zone entity_ids
+ * @param {boolean} isStandby - true if controller is in standby mode
  */
-function startZone(hass, entityId) {
+function startZone(hass, entityId, validZoneIds, isStandby) {
+  if (isStandby) return;
+  if (!isValidZoneEntity(entityId, validZoneIds)) return;
+  const now = Date.now();
+  if (now - _lastZoneActionTime < ZONE_ACTION_COOLDOWN_MS) return;
+  _lastZoneActionTime = now;
   hass.callService('switch', 'turn_on', { entity_id: entityId });
 }
 
 /**
  * Stop watering a specific zone.
+ * Guards: entity must be in valid zone list, 2-second cooldown.
  * @param {object} hass - Home Assistant connection
  * @param {string} entityId - zone switch entity_id
+ * @param {string[]} validZoneIds - classified zone entity_ids
  */
-function stopZone(hass, entityId) {
+function stopZone(hass, entityId, validZoneIds) {
+  if (!isValidZoneEntity(entityId, validZoneIds)) return;
+  const now = Date.now();
+  if (now - _lastZoneActionTime < ZONE_ACTION_COOLDOWN_MS) return;
+  _lastZoneActionTime = now;
   hass.callService('switch', 'turn_off', { entity_id: entityId });
 }
 
@@ -1032,3 +1072,231 @@ Extends `LcarsDevicePanelBase`:
 
 *"The arboretum is the most underappreciated system on the ship. It runs itself — water schedules, nutrient delivery, light cycles — all automated. But someone still has to check the panel once in a while to make sure the Andorian orchids aren't drowning the Vulcan succulents."*  
 — Keiko O'Brien, Ship's Botanist, USS Enterprise-D
+
+---
+
+## Data — Architecture Review
+
+**Reviewer**: Data (Project Architect & Performance Engineer)  
+**Date**: Stardate 2026.04.13  
+**Assessment**: SOUND WITH ADVISORIES
+
+### Component Architecture
+- This is the simplest device panel in the spec suite. It extends `LcarsDevicePanelBase` with the standard 2-column layout. The left column contains zone status lines; the right column contains the zone grid and schedule info viewscreen. The architectural simplicity is commendable — KISS compliance is near-optimal.
+- Entity classification (`classifyIrrigationEntities()`) correctly identifies zones by `device_class: 'outlet'` within the `switch` domain, then sorts them by `zone_number` attribute. This is the correct Rachio entity pattern. The sort-by-zone-number approach ensures consistent display order regardless of entity discovery order. Good.
+- The zone grid renders one row per zone, each with: zone name, status indicator, and a start/stop button. The `expanded` state (toggling zone detail attributes) uses a per-zone boolean in a `Map<entityId, boolean>`. This is lightweight and correct — no redundant re-rendering of collapsed zones.
+- The fill bar countdown (§6) for active zones uses a `setInterval` timer that decrements `_remainingSeconds` every 1000ms. This is the same timer pattern used in the alarm panel. The same advisory applies: **`disconnectedCallback()` must clear this interval**.
+- The standby toggle is a simple `switch.turn_on` / `switch.turn_off` on the controller's standby switch entity. Correct and minimal.
+
+### Performance Considerations
+- **Zone countdown timer**: One `setInterval` per active zone. Rachio supports running 1 zone at a time (sequential schedule), so the maximum concurrent timers is 1 in practice. However, the spec does not enforce this — if `_activeZones` somehow contains multiple entries, multiple intervals fire. **Advisory**: Guard against multiple simultaneous timers. Use a single shared timer that iterates all active zones.
+- **Zone grid DOM footprint**: Typical Rachio installations have 4-16 zones. At 16 zones, the grid renders ~80 DOM nodes (5 per row: name, status, time, fill bar, button). Trivial.
+- **Expanded zone attributes**: The expand/collapse animation uses `max-height` CSS transition. This is a well-known pattern but `max-height` transitions require an explicit pixel value for the "open" state, which means either hardcoding a max-height (risks clipping on long content) or measuring with `scrollHeight` (triggers layout thrash). **Advisory**: Use `grid-template-rows: 0fr → 1fr` transition instead — it's GPU-compositable, doesn't require height measurement, and is supported in all modern browsers (Chrome 92+, Safari 16.4+, Firefox 99+).
+- **Bundle impact estimate**: ~3.0 KiB minified/gzipped. This is the lightest panel in the suite. The classification logic, zone grid template, and fill bar animation are minimal. Roughly 1.5% of the 203 KiB bundle.
+
+### HA Integration Patterns
+- Zone start: `hass.callService('switch', 'turn_on', { entity_id: zoneEntityId })`. Correct for Rachio zones, which expose as `switch` entities.
+- Zone stop: `hass.callService('switch', 'turn_off', { entity_id: zoneEntityId })`. Correct.
+- Standby toggle: Same `switch.turn_on` / `switch.turn_off` pattern. Correct.
+- **No integration-specific service calls**. All actions use standard HA `switch` domain services. This means the panel is potentially compatible with any irrigation system that exposes zones as `switch` entities (B-hyve, OpenSprinkler, etc.), not just Rachio. This is a significant reusability advantage.
+- Rain delay information comes from `sensor.rachio_*_rain_delay` entity attributes. This is Rachio-specific. Other irrigation integrations may not expose rain delay the same way. **Advisory**: Add a fallback that hides the rain delay section if the relevant sensor entity is not found.
+
+### Code Quality & Reusability
+- **DRY**: The fill bar countdown timer shares an identical pattern with the alarm panel's countdown. Both use `setInterval(1000ms)`, decrement a counter, and update a CSS `width` percentage. Extract to a shared `CountdownTimer` class:
+  ```javascript
+  class CountdownTimer {
+    constructor(durationSec, onTick, onComplete) { ... }
+    start() { ... }
+    stop() { clearInterval(this._interval); }
+  }
+  ```
+  This eliminates the `disconnectedCallback` cleanup concern — the timer class owns its own lifecycle.
+- **DRY**: `startZone()` and `stopZone()` are thin wrappers around `hass.callService('switch', ...)`. These are 3 lines each and not worth abstracting further. Leave as-is.
+- **KISS**: Excellent. No unnecessary abstractions. No complex state machines. No animation libraries. The expand/collapse is CSS-only. The countdown is a simple interval. The zone grid is a flat map of entities to rows.
+- **YAGNI**: The spec does not include advanced features like "run all zones sequentially" or "custom zone duration input." These are legitimate future features but correctly deferred. The current scope covers the 90% use case (monitoring + manual start/stop).
+- **Reusability**: Because this panel uses only standard `switch` domain services, it could be generalized to support non-Rachio irrigation controllers. The entity classification would need a more generic discovery heuristic (e.g., devices with `manufacturer` containing irrigation keywords, or entities with `device_class: outlet` grouped under a device with `model` containing "sprinkler" or "irrigation").
+
+### Recommendations
+1. **P1**: Implement `disconnectedCallback()` to clear the zone countdown interval. Same pattern as alarm panel. Or, preferably, extract a shared `CountdownTimer` class that both panels can use.
+2. **P2**: Replace `max-height` expand/collapse animation with `grid-template-rows: 0fr → 1fr` CSS transition. Avoids layout thrash and hardcoded height values. Supported in HA's minimum browser targets.
+3. **P2**: Add a guard to prevent multiple simultaneous countdown timers. Use a single `_activeTimerId` property and clear it before creating a new timer.
+4. **P3**: Hide rain delay section gracefully when `sensor.*_rain_delay` entity is not found. This enables compatibility with non-Rachio irrigation integrations without code changes.
+5. **P3**: Consider adding a `platform` config option (default: `'rachio'`) to allow entity classification to adapt to other irrigation integration entity patterns. This is low-effort and significantly broadens the panel's utility.
+
+---
+
+## Cross-Spec Summary: Cumulative Architecture Assessment
+
+**Total bundle impact of all 8 specs**: ~36 KiB minified/gzipped
+- Media: ~4.5 KiB
+- Climate: ~4.5 KiB
+- Alarm: ~6.5 KiB
+- Pool/Spa: ~9.0 KiB
+- Air Purifier Verification: 0 KiB (no new code)
+- Temp/Humidity Grid: ~5.5 KiB
+- Weather: ~4.5 KiB
+- Irrigation: ~3.0 KiB
+
+**Projected new bundle size**: 203 + 36 = ~239 KiB (17.7% increase). This is within acceptable bounds. The increase delivers 7 new panels and 1 standalone card.
+
+**Shared utilities to extract before implementation**:
+1. `CountdownTimer` class — used by alarm and irrigation (eliminates 2× interval cleanup bugs)
+2. `thresholdColor(value, ranges)` — used by pool chemistry, temp/humidity grid, and atmoscrubber
+3. `sparklinePath()` / `sparklineAreaPath()` — used by atmoscrubber and temp/humidity grid
+4. `svgArc()` — used by climate panel and weather day arc
+5. `adjustSetpoint()` — used by climate and pool panels
+6. `hasFeature()` — used by media and climate panels
+7. `WEATHER_CONDITIONS` lookup table — consolidates 3 condition→X mappers
+
+**Cross-cutting P0/P1 items**:
+- All timer-using panels MUST implement `disconnectedCallback()` cleanup
+- Forecast caching for weather panel (prevents redundant API calls)
+- `recorder/statistics_during_period` WS call for sensors grid (replaces 14 HTTP calls with 1 WS message)
+- Populate `configEntryId` in pool panel's `classifyPoolEntities()`
+
+**Overall assessment**: All 8 specs are architecturally sound. The device panel inheritance model (`LcarsDevicePanelBase`) is correctly applied across 6 of 7 new components. The standalone sensors grid card is correctly implemented outside that hierarchy. The auto-discovery pattern is consistent and well-validated against real device entity inventories. I recommend proceeding to implementation with the shared utilities extracted first.
+
+---
+
+## Geordi La Forge — Design Review
+
+**Reviewer**: Geordi La Forge (LCARS UI Design Authority)  
+**Date**: Stardate 2026.04.13  
+**Status**: APPROVED
+
+### LCARS Compliance
+- §1 Grid Layout: Standard 2-column panel (schedule | zones) with full-width header and standby row. This is the right size — irrigation is fundamentally simple and doesn't need the pool panel's 3-column treatment.
+- Thick→thin border (4px left/bottom, 2px top/right) — correct per Bracer Jack Rule 2.
+- §5 Zone buttons: Pill shape with flat left, rounded right (`border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0`). Standard LCARS button. The START button in `--lcars-sunflower` and STOP button in `--lcars-ice` (water blue) are semantically correct.
+- §6 Standby toggle: Uses `role="switch"` with `aria-checked` — correct ARIA pattern. Pill shape maintained. Active state in `--lcars-gold` — standard active/important indicator.
+- The fill bar for active watering (§5.2) is flat color (`--lcars-ice`) against `--lcars-disabled` track — no gradient. Correct.
+- §15 Compliance table is thorough and accurate. Every rule checked and justified.
+
+### Color & Typography
+- `--lcars-ice` for the irrigation frame is correct — water systems use the blue family. Distinct from the pool panel's `--lcars-bluey` (aquatics = darker blue, irrigation = lighter blue = simpler system).
+- Color palette uses 5 hue families: blue (ice), warm (sunflower/gold), violet (rain delay), gray (disabled), white (text). Plus tomato for fault, which is a system-wide alert color. Well within limits.
+- Typography: Only 2 active font sizes (sub-header for title + countdown, data for everything else). Within the 3-size maximum. The decision not to introduce a hero number (like the climate panel's SVG temperature) is correct — irrigation doesn't have a central numeric focal point.
+- ALL UPPERCASE maintained throughout — confirmed.
+
+### Layout & Visual Balance
+- This is the cleanest spec in the batch. The zone grid is a simple vertical list with breathing room. "Empty space is beautiful" — each zone row is one line of status with generous padding. No progress bars cluttering idle zones, no decorative water pipes, no sprinkler animations. Just data.
+- The expandable zone attributes (§5.3) with `max-height` transition is good progressive disclosure. Secondary info (soil, nozzle, shade, slope) stays hidden until needed. The indentation past the button width maintains visual alignment.
+- The rain delay indicator in `--lcars-african-violet` is a smart color choice — it's visually distinct from all other irrigation colors, immediately flagging "something different is happening" (weather intelligence overriding the schedule).
+
+### Accessibility
+- WCAG 2.5.8: Zone buttons at 48px × 80px. Standby button at 48px × 96px. Zone rows at 36px touchable height. All well above 24px.
+- Zone rows are `tabindex="0"` with `Enter`/`Space` to expand attributes. Buttons have `@click` with `e.stopPropagation()` to prevent row expansion when clicking Start/Stop — good event isolation.
+- Screen reader live region (§11.6) with specific announcements for zone start/stop, rain delay, and standby changes — thorough.
+- All states have text + color dual encoding — confirmed in §11.3.
+- `prefers-reduced-motion` covers fill bar transition, status color transition, expand animation, and cascade entry — confirmed in §10.
+
+### Recommendations
+1. **APPROVED**: Zone grid row layout — clean, minimal, properly spaced.
+2. **APPROVED**: Fill bar visual design — flat ice-blue on gray track.
+3. **APPROVED**: Expanded attribute sub-row with progressive disclosure.
+4. **APPROVED**: Standby button placement at full-width bottom strip.
+5. **APPROVED**: Static `--lcars-ice` frame (not dynamic). Correct for a binary-state system (watering/not watering) vs the climate panel's multi-action spectrum.
+6. This is the most LCARS-faithful spec in the review batch. It embodies Roddenberry's vision — the system runs itself, the panel reflects status with minimal visual weight, and the operator intervenes only when needed. Keiko would approve.
+
+---
+
+## Worf — Security Review
+
+**Reviewer**: Worf (Integration Security Expert)  
+**Date**: Stardate 2026.04.13  
+**Threat Level**: YELLOW
+
+*"Irrigation zones control water valves and pump equipment. Unguarded actions can waste water resources or damage landscaping. The service calls here are simple but consequential."*
+
+### Input Validation
+
+- **Zone entity_id scoping**: `startZone()` and `stopZone()` pass `entity_id` directly from the zone entity object resolved from the device registry. The entity_id is not user-typed. However, verify that the entity_id is validated as belonging to the current device before calling the service — a stale UI state could reference a deleted entity.
+- **Standby toggle**: `toggleStandby()` uses a boolean `standby` parameter to choose between `turn_on` and `turn_off`. The boolean comes from the current UI state. No injection concern.
+- **Zone attribute rendering**: `soilType`, `nozzleType`, `shadeLevel`, `slopeType` — these come from Rachio entity attributes. They are text strings rendered via Lit templates. Auto-escaped.
+- **Countdown timer values**: `formatCountdown()` and `getZoneFillPct()` operate on numeric values (seconds, percentages) with explicit `Math.max(0, ...)` clamping. Defensive.
+
+### XSS & DOM Safety
+
+- **All rendering via Lit templates**: Zone names (`friendly_name`), status labels, attribute values, schedule information — all rendered via Lit tagged template literals. **No `innerHTML` or `unsafeHTML()` detected.** Secure.
+- **Zone name from entity attributes**: `friendly_name` is an untrusted string from the HA entity registry, but Lit auto-escapes it. A zone name like `<img src=x onerror=alert(1)>` would render as literal text. Secure.
+- **`aria-label` construction**: Labels like `aria-label="${zoneName}: ${stateLabel}"` concatenate entity-derived values. Lit handles attribute escaping. Secure.
+
+### Service Call Security
+
+- **Two service call patterns**:
+  1. `switch.turn_on` / `switch.turn_off` — zone start/stop
+  2. `switch.turn_on` / `switch.turn_off` — standby toggle
+- **All properly scoped** with `entity_id` from device entity objects, not user input. Service domains and service names are hardcoded strings.
+- **No duration parameter in start zone**: The `startZone()` function calls `switch.turn_on` with only `entity_id`. Rachio zones use default duration from the schedule. The spec does NOT allow arbitrary duration injection — **confirmed: no duration parameter is accepted from the UI**. This is the correct approach. If a future enhancement adds manual duration input, it MUST be clamped to sane limits (1-120 minutes).
+- **Standby mode is reversible**: Toggling standby pauses all schedules. This is not destructive — schedules resume when standby is deactivated. Acceptable without confirmation.
+- **No admin-only data**: Zone switch states and Rachio sensor data are available to all HA users. No privilege escalation concern.
+
+### Secrets & Sensitive Data
+
+- **No credentials.** Rachio uses cloud API authentication handled by the HA integration's config flow. No API keys surface in entity attributes or service call parameters.
+- **Schedule data**: Next run times and daily usage statistics are operational data, not sensitive. No PII exposure.
+
+### Recommendations
+
+**SHOULD FIX:**
+
+1. **Validate entity_id belongs to current device before service call**: Before calling `switch.turn_on`, verify the entity_id is in the classified `zones` list:
+   ```javascript
+   function startZone(hass, entityId, validZoneIds) {
+     if (!validZoneIds.includes(entityId)) return;
+     hass.callService('switch', 'turn_on', { entity_id: entityId });
+   }
+   ```
+   This prevents stale references from calling services on unrelated entities after a device reconfiguration.
+
+2. **Rate-limit zone start/stop**: Add a 2-second cooldown after starting or stopping a zone to prevent rapid toggle cycling (which could damage irrigation solenoid valves).
+
+3. **Guard against starting a zone while in standby**: If the controller is in standby mode, the START buttons should be disabled. The spec's `getZoneStateInfo()` handles the visual state (returns `STANDBY` label) but the `startZone()` function does not check standby state before calling the service. Add: `if (isStandby) return;`
+
+**ADVISORY:**
+
+4. **Rachio cloud dependency**: Unlike ScreenLogic (Local Push), Rachio uses Cloud Polling. This means service calls go through Rachio's cloud API. A Rachio cloud outage would make zone controls unresponsive. This is an architectural limitation of the integration, not a dashboard defect, but document it for user expectations.
+
+5. **Future duration input**: If a manual duration feature is added (e.g., "run zone for X minutes"), the duration MUST be clamped to `[1, 120]` minutes and validated as an integer. Never accept arbitrary numeric input for physical equipment timers.
+
+6. **OWASP compliance note**: No injection vectors (A03:2021). Service calls authenticated through HA WebSocket (A01:2021 — mitigated). No external resources loaded (A06:2021 — not applicable). Minimal attack surface overall.
+
+---
+
+## Wesley Crusher — Final Review Pass
+
+**Author**: Wesley Crusher (Creative Technologist)  
+**Date**: Stardate 2026.04.13  
+**Status**: REVISED — Ready for Implementation
+
+### Changes Made
+- **§7 `startZone()`**: Added `isValidZoneEntity()` guard — validates entity_id belongs to the classified `validZoneIds` list before calling `switch.turn_on`. Prevents stale UI state from calling services on unrelated entities after a device reconfiguration. Per Worf's SHOULD FIX #1.
+- **§7 `startZone()`**: Added `isStandby` parameter check — returns early if controller is in standby mode. START buttons cannot fire service calls while standby is active. Per Worf's SHOULD FIX #3.
+- **§7 `startZone()` and `stopZone()`**: Added 2-second cooldown (`ZONE_ACTION_COOLDOWN_MS = 2000`) using timestamp-based rate limiting. Prevents rapid toggle cycling that could damage irrigation solenoid valves. Per Worf's SHOULD FIX #2.
+- **§7 `stopZone()`**: Added same `isValidZoneEntity()` guard and rate-limiting as `startZone()`.
+- **§5.1 Zone Row (Idle)**: Updated START button template with `?disabled="${isStandby}"` attribute and passes `validZoneIds`/`isStandby` to `startZone()`.
+- **§5.2 Zone Row (Watering)**: Updated STOP button template to pass `validZoneIds` to `stopZone()`.
+- **§5 Zone Grid CSS**: Added `.irrigation-zone-btn:disabled` style — grayed out, reduced opacity, `cursor: not-allowed` when controller is in standby.
+
+### Accepted Recommendations
+- **Worf SHOULD FIX #1** (entity_id validation): Accepted and implemented. `isValidZoneEntity()` function added. Both `startZone()` and `stopZone()` now validate entity_id against the classified zone list.
+- **Worf SHOULD FIX #2** (rate-limit zone actions): Accepted and implemented. 2-second cooldown prevents rapid solenoid toggle cycling.
+- **Worf SHOULD FIX #3** (guard START in standby): Accepted and implemented. `startZone()` returns early if `isStandby` is true. START buttons are also visually disabled via `?disabled` attribute.
+- **Worf Advisory #4** (Rachio cloud dependency): Noted. Will document in card README: Rachio uses Cloud Polling, so zone controls depend on Rachio's cloud API availability. Not a dashboard defect — inherent integration architecture.
+- **Worf Advisory #5** (future duration input clamping): Noted. If manual duration feature is added, input MUST be clamped to [1, 120] minutes and validated as integer.
+- **Geordi**: Full approval, no changes needed. "Most LCARS-faithful spec in the review batch." — high praise from the chief designer.
+- **Data P1** (`disconnectedCallback()` for timer cleanup): Accepted. Implementation will clear the zone countdown interval. Shared `CountdownTimer` class (also used by alarm panel) preferred to eliminate lifecycle cleanup bugs.
+- **Data P2** (replace `max-height` expand/collapse with `grid-template-rows: 0fr → 1fr`): Accepted. GPU-compositable, no height measurement needed, supported in all modern browsers (Chrome 92+, Safari 16.4+, Firefox 99+). Better than `max-height` transition in every way.
+- **Data P2** (single shared timer guard): Accepted. Implementation will use a single `_activeTimerId` property, cleared before creating a new timer. Prevents multiple simultaneous countdown intervals.
+- **Data P3** (hide rain delay section gracefully): Accepted. If `sensor.*_rain_delay` entity is not found, the rain delay row will be hidden rather than showing an error state. Enables compatibility with non-Rachio irrigation integrations.
+- **Data P3** (`platform` config option): Accepted. Default `'rachio'`, allows entity classification to adapt to other irrigation integration entity patterns (B-hyve, OpenSprinkler, etc.). Low-effort, high utility.
+
+### Deferred Items
+- **Data P1 shared `CountdownTimer` class**: Extraction happens at implementation time. Both alarm and irrigation panels will share the same timer class, eliminating the `disconnectedCallback` cleanup concern by design.
+- **Data P2 `grid-template-rows` expand/collapse**: Implementation-phase CSS change. Will replace `max-height` transition with `grid-template-rows: 0fr → 1fr` in the zone attributes expand/collapse animation.
+- **Data P3 rain delay fallback**: Implementation-phase guard. Section hidden when entity not found.
+- **Data P3 `platform` config option**: Implementation-phase addition. Default behavior unchanged.
+- **Worf Advisory #4** (cloud dependency documentation): Documentation task, not spec-level.
+
+### Disagreements
+- None. All reviewer feedback is either accepted or reasonably deferred. This is the simplest panel in the suite — clean, minimal, LCARS-faithful. Keiko O'Brien would indeed approve.

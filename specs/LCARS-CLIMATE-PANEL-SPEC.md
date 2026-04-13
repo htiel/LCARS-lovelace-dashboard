@@ -694,6 +694,8 @@ Below the arc, inline setpoint controls with LCARS pill buttons for increment/de
 /**
  * Adjust the thermostat target temperature.
  * Respects min_temp, max_temp, and target_temp_step from the entity.
+ * Applies absolute sane bounds regardless of entity-reported values.
+ * (⚠ Worf Security Requirement: absolute bounds prevent malicious/buggy integrations)
  * @param {object} hass - Home Assistant instance
  * @param {string} entityId - climate entity ID
  * @param {number} delta - increment (+step) or decrement (-step)
@@ -705,8 +707,12 @@ function adjustSetpoint(hass, entityId, delta, target = 'temperature') {
 
   const attrs = stateObj.attributes;
   const step = attrs.target_temp_step || 0.5;
-  const min = attrs.min_temp || 45;
-  const max = attrs.max_temp || 95;
+
+  // Absolute sane bounds — never trust entity min/max alone
+  const ABSOLUTE_MIN = -50;  // °F (-45°C) — no HVAC goes below this
+  const ABSOLUTE_MAX = 200;  // °F (93°C) — no HVAC should go above this
+  const min = Math.max(attrs.min_temp || 45, ABSOLUTE_MIN);
+  const max = Math.min(attrs.max_temp || 95, ABSOLUTE_MAX);
 
   const current = attrs[target];
   if (current == null) return;
@@ -1739,3 +1745,170 @@ Extends `LcarsDevicePanelBase`:
 
 *"Environmental Control is one of those systems you never think about — until it stops working. A good panel is the same way. It gives you what you need, instantly, and gets out of the way."*  
 — La Forge, Environmental Substations, Deck 12
+
+---
+
+## Geordi La Forge — Design Review
+
+**Reviewer**: Geordi La Forge (LCARS UI Design Authority)  
+**Date**: Stardate 2026.04.13  
+**Status**: APPROVED WITH NOTES
+
+### LCARS Compliance
+- §1 Grid Layout: Correct 4-row grid (header, sensors+media, modes, auxctrl). Thick→thin border (4px left/bottom, 2px top/right) satisfies Bracer Jack Rule 2.
+- §5 Temperature arc (SVG): This is a **data visualization**, not a decorative gradient or 3D effect. The semicircular arc with `stroke` and `stroke-linecap: round` is acceptable — it's a sensor gauge, the kind you'd see on an actual LCARS Engineering substation. Approved.
+- §5.2 Setpoint buttons: The decrement button uses `border-radius: var(--lcars-btn-radius) 0 0 var(--lcars-btn-radius)` — rounded LEFT, flat RIGHT. This is the **reverse** of standard LCARS pill direction (flat left, rounded right). However, this creates a symmetrical ±/bracket pair around the temperature value, which reads as a contained control group. I'm approving this as an intentional design choice for setpoint controls specifically. **Do not extend this reversed pill pattern elsewhere.**
+- §6 Mode selector strip: Correct pill buttons with proper `radiogroup` ARIA pattern. Active mode uses dynamic `--mode-color` which is semantically correct (heat=butterscotch, cool=ice, etc.).
+- §8 HVAC action animation: The heating pulse (2s) and cooling pulse (3s) are ambient, non-critical animations that exceed the 1s guideline but are opacity-only. These are acceptable as background status indicators — they don't carry information that isn't also conveyed by color and text. `prefers-reduced-motion` properly cancels them.
+- §9 Fault indicators: The pulsing dot with `prefers-reduced-motion` fallback to a static larger dot (10px vs 8px) is a good reduced-motion pattern.
+
+### Color & Typography
+- Dynamic `--panel-frame-color` based on `hvac_action` is excellent design. Butterscotch for heating, ice for cooling — instant peripheral feedback. This is exactly how Environmental Control works on the bridge.
+- Color table (§2) is complete and well-justified. All pass WCAG AA. `--lcars-gray` at 4.6:1 is the lowest — intentionally dim for disabled state.
+- Typography: Three font sizes — SVG `42` (title tier), `--lcars-font-size-sub` (1.25rem), `--lcars-font-size-data` (0.875rem). Clean hierarchy, no violations.
+- ALL UPPERCASE maintained throughout — confirmed.
+
+### Layout & Visual Balance
+- The viewscreen temperature arc floating in black space is perfect LCARS aesthetic. "Empty space is beautiful" — the arc breathes.
+- Dual setpoint layout (§1 and §5.2) for `heat_cool` mode is well-structured. Low (butterscotch) and High (ice) targets with color-coded labels provide clear differentiation.
+- The aux controls row (§7) with FAN and PRESET as inline pill strips is compact but clear. The `calc(var(--lcars-gap) * 4)` spacing between groups provides visual separation.
+
+### Accessibility
+- WCAG 2.5.8: Mode buttons at 48px height × 80px min-width. Setpoint buttons at 40px × 40px. Aux buttons at 36px height. All exceed 24px minimum.
+- Temperature arc SVG uses `role="meter"` with `aria-valuemin`, `aria-valuemax`, `aria-valuenow` — excellent semantic markup. Screen readers can report "Current temperature: 72 degrees, range 45 to 95."
+- Focus indicators: 2px solid `--lcars-ice` with 2px offset throughout — 10.3:1 contrast. Approved.
+- Setpoint controls properly grouped with `role="group"` and descriptive `aria-label` on each ± button pair.
+- `prefers-reduced-motion` covers all animations — confirmed in §8.
+
+### Recommendations
+1. **APPROVED**: Temperature arc SVG design — sensor gauge visualization, not a decorative element.
+2. **APPROVED**: Dynamic frame color shifting across HVAC actions.
+3. **APPROVED**: Dual setpoint layout for heat_cool mode.
+4. **APPROVED**: Mode button strip layout and coloring.
+5. **NOTE** (§5.2): The reversed pill direction on the decrement setpoint button is approved for this specific use case only. Document this as a "paired control exception" in the implementation to prevent cargo-cult usage elsewhere.
+6. **NOTE** (§7): Aux buttons at 2.25rem (36px) height are smaller than the standard 3rem (48px) LCARS button. They pass WCAG 2.5.8 (≥24px) but feel slightly undersized. Consider bumping to `var(--lcars-bar-h)` (3rem) if horizontal space allows.
+7. **APPROVED**: The heating/cooling ambient pulse animations are tasteful and non-distracting.
+
+---
+
+## Worf — Security Review
+
+**Reviewer**: Worf (Integration Security Expert)  
+**Date**: Stardate 2026.04.13  
+**Threat Level**: YELLOW
+
+*"The Environmental Control station adjusts conditions the crew depends on for survival. A tampered thermostat can freeze pipes or overheat a vessel. I do not treat this lightly."*
+
+### Input Validation
+
+- **Setpoint clamping (§5.2)**: `adjustSetpoint()` correctly clamps the new temperature to `[min_temp, max_temp]` from entity attributes and rounds to the nearest `target_temp_step`. The dual-setpoint guard (`clamped >= target_temp_high` check) prevents low from crossing high. **Sound implementation.**
+- **Entity attribute trust**: `min_temp`, `max_temp`, and `target_temp_step` values come from the HA backend entity attributes. These should be treated as semi-trusted — a compromised integration could report `min_temp: -1000`, which the clamping logic would honor. **Add a safety floor**: clamp `min_temp` to no lower than -50°F/-45°C and `max_temp` to no higher than 200°F/95°C as absolute sane bounds, regardless of entity-reported values.
+- **HVAC mode validation**: `setHvacMode()` passes the `mode` parameter from a button click where the mode string comes from the entity's `hvac_modes` attribute (rendered dynamically). The value is not typed by the user. However, validate that the mode value is in the entity's `hvac_modes` list before calling `set_hvac_mode` — a race condition where the entity updates its supported modes while the user clicks could send an unsupported mode.
+- **Fan mode / Preset mode validation**: Same pattern — values come from entity attributes. Consider a guard: `if (!fanModes.includes(fanMode)) return;`
+
+### XSS & DOM Safety
+
+- **All text rendering via Lit templates**: Device name (`friendly_name`), action labels, mode labels, fan mode names, preset mode names — all rendered via Lit tagged template literals. **No `innerHTML` or `unsafeHTML()` detected.** Secure.
+- **SVG text elements (§5.1)**: Temperature values and labels in the SVG arc are set via template literal interpolation into SVG `<text>` elements. SVG `<text>` content is text-only — no HTML parsing. However, if `currentTemp` contained markup (impossible from a numeric attribute, but defense in depth), SVG would render it as literal text. Secure.
+- **Dynamic CSS variable injection**: `style="color: ${stateColor}"` — the `stateColor` values come from `getClimateActionColor()` which returns hardcoded CSS variable references. No user input reaches inline style values. Secure.
+
+### Service Call Security
+
+- **Four service call patterns**: `climate.set_temperature`, `climate.set_hvac_mode`, `climate.set_fan_mode`, `climate.set_preset_mode`. All use `hass.callService()` with `entity_id` from card config. Service names are hardcoded. No arbitrary service injection possible.
+- **Thermostat control is a sensitive action**: Setting temperature to extremes (even within entity min/max) could cause physical consequences (pipes freezing, excessive energy use). The spec correctly clamps values but provides no confirmation dialog for extreme changes. Consider: if the delta between current and new setpoint exceeds 10°F/5°C, show a brief confirmation toast or require a press-and-hold interaction.
+- **No admin-only data exposed**: Climate entity state and attributes are available to all HA users with dashboard access. The `require_admin: False` panel registration means any HA user can adjust the thermostat. This is **by design** for a home dashboard but should be documented as a conscious decision.
+
+### Secrets & Sensitive Data
+
+- **No credentials or tokens.** Climate entities are standard HA entities with no sensitive attributes exposed through the WebSocket API. No secrets surface.
+
+### Recommendations
+
+**MUST FIX:**
+
+1. **Add absolute sane bounds on min/max temperature**: Before using entity-reported `min_temp`/`max_temp`, clamp them to physically reasonable ranges:
+   ```javascript
+   const safeMin = Math.max(attrs.min_temp || 45, -50);
+   const safeMax = Math.min(attrs.max_temp || 95, 200);
+   ```
+   This prevents a malicious or buggy integration from allowing extreme setpoints.
+
+**SHOULD FIX:**
+
+2. **Validate mode values against entity's supported list**: Before calling `set_hvac_mode`, `set_fan_mode`, or `set_preset_mode`, verify the value is in the entity's current list of supported modes. This guards against race conditions and stale UI state.
+
+3. **Rate-limit setpoint changes**: The +/- buttons can be clicked rapidly. Add debouncing (300ms) to prevent flooding the HA WebSocket with `set_temperature` calls. This protects both the HA backend and the physical HVAC equipment from rapid cycling.
+
+**ADVISORY:**
+
+4. **Large setpoint delta warning**: Consider a UX guard for setpoint changes exceeding 10°F/5°C from current temperature — not a security block, but a "are you sure?" pattern that prevents accidental extreme adjustments.
+
+5. **OWASP compliance note**: No injection vectors (A03:2021). Broken access control (A01:2021) is mitigated by HA's authentication layer — all `callService` calls go through the authenticated WebSocket. Security misconfiguration (A05:2021) — the `require_admin: False` panel setting is documented and intentional.
+
+---
+
+## Data — Architecture Review
+
+**Reviewer**: Data (Project Architect & Performance Engineer)  
+**Date**: Stardate 2026.04.13  
+**Assessment**: SOUND WITH ADVISORIES
+
+### Component Architecture
+- The `LcarsDevicePanelBase` extension is correctly specified. The 4-row grid (`header | sensors+media | modes | auxctrl`) is a clean evolution of the 3-row device panel, adding the mode strip and aux controls as separate grid areas. This is architecturally justified — climate controls require more action surface than camera or media panels.
+- The SVG temperature arc (§5.1) is well-designed. The `arcPath()` generator is a pure function producing a static path string — no runtime SVG manipulation overhead. The `getProgressAngle()` and `getArcTickPosition()` functions are efficient mathematical transformations. However, the arc SVG is regenerated on every `render()` call even when temperature hasn't changed. **Advisory**: Memoize the arc path and tick positions — recalculate only when `current_temperature`, `min_temp`, `max_temp`, or setpoint values change.
+- The dual-setpoint layout (§4, `isDualSetpoint()`) correctly checks for `heat_cool` or `auto` mode AND the presence of both `target_temp_low` and `target_temp_high`. The guard against null attributes is proper defensive coding.
+- The `getFaultEntities()` filter (§9) uses an appropriate set of `FAULT_CLASSES`. The inclusion of `safety` and `smoke` is forward-thinking but currently unused by any known thermostat integration — this is acceptable as low-risk future-proofing.
+
+### Performance Considerations
+- **Arc re-render frequency**: The SVG arc contains 6 elements (2 paths, 3 circles, 2 texts). On every `hass` update, Lit will diff the template output. Since SVG attribute values change only when climate state changes (~1/min typical), the diff cost is minimal. However, the `getProgressAngle()` and `getArcTickPosition()` math runs on every diff pass. At O(1) complexity per call, this is ~50 µs total. Negligible.
+- **Mode strip rendering**: `supportedModes.map()` in the template generates buttons dynamically from `hvac_modes`. Typical thermostat has 4-7 modes. Lit handles this efficiently with its DOM recycling. No virtualization needed.
+- **Dynamic CSS variable updates**: `--panel-frame-color` and `--climate-action-color` are set via `style` attribute on the host element and cascade to all children via CSS inheritance. This is the correct pattern — a single style mutation triggers one browser reflow rather than per-element color changes. Efficient.
+- **Bundle impact estimate**: ~4.5 KiB minified/gzipped. The SVG arc code adds ~0.8 KiB. CSS is standard. Helper functions are small. Roughly 2.2% of the 203 KiB bundle.
+
+### HA Integration Patterns
+- `hass.callService('climate', 'set_temperature', ...)` (§5.2) is the correct API for setpoint adjustment. The spec correctly uses `entity_id` and the specific temperature key (`temperature`, `target_temp_low`, or `target_temp_high`).
+- `hass.callService('climate', 'set_hvac_mode', ...)` (§6) and `set_fan_mode` / `set_preset_mode` (§7) are correct.
+- The setpoint clamping logic in `adjustSetpoint()` (§5.2) correctly reads `min_temp`, `max_temp`, and `target_temp_step` from entity attributes and enforces the `low < high` constraint for dual setpoints. This is robust.
+- The conditional rendering of fan mode and preset mode strips based on entity attributes (`fan_modes`, `preset_modes`) is correct — these arrays are only populated on devices that support them.
+
+### Code Quality & Reusability
+- **DRY**: `getClimateActionColor()`, `getClimateModeColor()`, and `getClimateActionLabel()` follow the same switch-statement pattern as the media panel's `getMediaStateColor()`. Extract to shared module as recommended in the media review.
+- **Arc path generation**: The `arcPath()`, `getProgressAngle()`, and `getArcTickPosition()` functions are climate-specific and not reusable by other panels. They should remain in the climate panel file. Good separation of concerns.
+- **Setpoint adjustment**: `adjustSetpoint()` is a clean, reusable function. The rounding to `step` increments prevents floating-point precision issues. The clamping and constraint logic is correct and defensive.
+- **Configuration schema**: No custom YAML config — the climate panel is auto-discovered via `climate` domain entities. Correct approach.
+
+### Recommendations
+1. **P1**: Extract `getClimateActionColor()` and similar state→color mappers to a shared utility module. This is the same recommendation as the media review — implement once across all panels.
+2. **P2**: Memoize SVG arc path computation. Store the last computed values of `currentTemp`, `minTemp`, `maxTemp`, and setpoints. Only recompute `arcPath()` and tick positions when these input values change. Use a simple equality check in `render()` or `updated()`.
+3. **P2**: The `adjustSetpoint()` `step` default of `0.5` should be documented as matching the HA default for climate entities. Some integrations (Nest) use `1.0` as the step — the function already reads from `attrs.target_temp_step`, so this is handled. No code change needed, but add a comment for clarity.
+4. **P3**: Consider debouncing rapid setpoint button taps. Currently, each tap immediately fires `hass.callService()`. If a user taps +/- rapidly (5 taps in 1 second), 5 service calls fire. A 300ms debounce would coalesce these into 1-2 calls. Low priority — thermostats are resilient to rapid commands.
+
+---
+
+## Wesley Crusher — Final Review Pass
+
+**Author**: Wesley Crusher (Creative Technologist)  
+**Date**: Stardate 2026.04.13  
+**Status**: REVISED — Ready for Implementation
+
+### Changes Made
+- **§5.2 `adjustSetpoint()`**: Added `ABSOLUTE_MIN = -50` and `ABSOLUTE_MAX = 200` safety bounds that clamp entity-reported `min_temp`/`max_temp`. Entity values are no longer blindly trusted. Per Worf's MUST FIX #1.
+
+### Accepted Recommendations
+- **Worf MUST FIX #1** (absolute sane bounds): Accepted and implemented in §5.2. A compromised integration reporting `min_temp: -1000` will be clamped to -50°F.
+- **Worf SHOULD FIX #2** (mode validation): Accepted. Implementation must verify `hvac_modes.includes(mode)` before calling `set_hvac_mode`, and similarly for `fan_modes`/`preset_modes`. Defensive guard, not spec-level — will add during implementation.
+- **Worf SHOULD FIX #3** (rate-limit setpoint changes): Accepted. Implementation will use 300ms debounce on `adjustSetpoint()` calls.
+- **Worf Advisory #4** (large delta warning): Noted. Won't implement a confirmation dialog — it would break the fast interaction model. The absolute bounds provide the safety net.
+- **Geordi Rec #5** (reversed pill = paired-control exception): Accepted. Will document in implementation comments.
+- **Geordi Rec #6** (aux buttons to 3rem): Accepted. Will bump aux control buttons to `var(--lcars-bar-h)` during implementation if horizontal space permits.
+- **Data P1** (shared state→color utilities): Accepted. `getClimateActionColor()` and `getClimateModeColor()` move to shared module.
+- **Data P2** (memoize arc): Accepted. Will use `willUpdate()` diffing to recompute arc only when input values change.
+- **Data P3** (step default comment): Already addressed — the function reads from `attrs.target_temp_step`, with `0.5` as fallback matching HA's default.
+- **Data P4** (debounce setpoint): Accepted. Aligns with Worf's rate-limiting recommendation.
+
+### Deferred Items
+- **Mode validation guards**: Implementation-phase detail, not spec-level. The pattern is clear.
+- **Memoization strategy**: Implementation-phase optimization, `willUpdate()` vs `updated()` is a Lit lifecycle choice.
+
+### Disagreements
+- **Worf Advisory #4** (confirmation dialog for large delta): Respectfully declining the confirmation dialog. LCARS consoles don't ask "are you sure?" — they execute commands. The absolute bounds prevent dangerous values, and a 10°F adjustment is a normal thermostat interaction. Adding friction to a frequently-used control is anti-LCARS.

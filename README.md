@@ -8,7 +8,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-4.10.3-blue)
+![Version](https://img.shields.io/badge/version-4.11.0-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 [![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 
@@ -20,12 +20,20 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
   - Camera → LCARS-framed live feed with viewscreen activation animation
   - Light / Switch / Fan / Lock → Toggle pills with heartbeat pulse
   - Sensor / Binary Sensor → Data readout bars with segmented fill
-  - Climate → Thermostat panel | Cover → Position controls | Media Player → Media strip
+  - Climate → Thermostat arc with setpoint controls, HVAC mode strips, dual setpoint for heat_cool (Nest, Ecobee)
+  - Alarm → Shield viewscreen with PIN keypad, arm mode selector, zone roster, countdown timer (SimpliSafe, Honeywell, Ring)
+  - Media Player → Album art viewscreen with transport controls, volume bar, source metadata (Apple TV, HomePod, Sonos)
+  - Pool & Spa → Dual body viewscreens with chemistry readouts, circuit toggles, pool lighting (Pentair ScreenLogic)
+  - Weather → Condition display with wind compass, 7-day forecast strip, lightning/precipitation sensors (Davis, WeatherFlow)
+  - Irrigation → Zone list with START/STOP controls, active fill bar, standby toggle (Rachio)
+  - Cover → Position controls
 - **Warp Core Battery Panel** — Auto-detects battery devices (EcoFlow, etc.), renders CSS reactor core with charge-level color, SOC gauge, power flow I/O arrows, telemetry sensors, and integrated config/diagnostic entity controls with LCARS option strips
 - **Atmoscrubber Environment Panel** — Auto-detects air quality devices (Awair, VeSync purifiers, etc.), renders animated particle cylinder with AQI-mapped colors, 24h SVG sparklines, fan/preset controls, and sensor-only mode for monitor-only devices
 - **Smart Name Shortening** — Automatically strips area and device name prefixes from entity names for cleaner display
 - **Device-Grouped Layout** — Entities organized by device, then sorted by domain (cameras first, sensors last)
 - **6 LCARS Animations** — Cascade reveal, scan sweep, viewscreen activation, heartbeat pulse, distress pulse, segmented sensor bars
+- **9-Panel Auto-Detection** — Priority-ordered device classifier routes entities to the correct panel: camera → alarm → pool/spa → climate → media → environment → irrigation → weather → battery
+- **Security Hardened** — Alarm PIN rate-limiting (3 attempts/60s), media artwork URL validation, temperature setpoint clamping, service call throttling
 - **Self-Contained** — All fonts (Antonio) and dependencies vendored locally, no external CDN calls
 - **Responsive** — Mobile-friendly layout with horizontal area scroll on narrow viewports
 - **Accessible** — ARIA landmarks, keyboard navigation, `prefers-reduced-motion` support
@@ -62,7 +70,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 |-------|-----------|
 | HA Integration | Python custom component (`lcars_dashboard`) |
 | Frontend | Lit Element v2 web components |
-| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~200 KiB) |
+| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~277 KiB) |
 | Styling | 40+ LCARS CSS custom properties in shared `lcars-styles.js` |
 | Communication | WebSocket API + window custom events |
 

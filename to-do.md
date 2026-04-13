@@ -42,7 +42,7 @@ Level 1 Changes for 4.x.x
 
     4. ✅ **DONE (v4.11.0)** — Media panel for Apple TV, HomePod, Sonos. Album art viewscreen, transport controls, volume bar, source selector. Worf-mandated artwork URL validation.
 
-    5. ✅ **DONE (v4.11.0)** — Climate panel for Nest, Ecobee thermostats. SVG temperature arc, setpoint controls with debouncing/clamping, HVAC mode strips, dual setpoint for heat_cool. Display current temperature, target temperature, HVAC mode (heat/cool/auto/off), fan mode, and humidity per zone. Eric's setup has 3 Nest thermostats (1st/2nd/3rd floor) — this is the biggest gap for environment card adoption. Detect via `domain === "climate"` and render inline with existing air quality sensors. Consult Geordi for LCARS-styled thermostat controls.
+    5. ✅ **DONE (v4.11.0)** — Climate panel for Nest, Ecobee thermostats. SVG temperature arc, setpoint controls with debouncing/clamping, HVAC mode strips, dual setpoint for heat_cool. Display current temperature, target temperature, HVAC mode (heat/cool/auto/off), fan mode, and humidity per zone. The Admiral's setup has 3 Nest thermostats (1st/2nd/3rd floor) — this is the biggest gap for environment card adoption. Detect via `domain === "climate"` and render inline with existing air quality sensors. Consult Geordi for LCARS-styled thermostat controls.
 
     **IMPLEMENTATION NOTES:**
     - **Detection**: In `_getDevicePanelType()`, add `climate` domain as a trigger for `PANEL_TYPE_ENVIRONMENT`. Currently triggers on AQ sensors + fans. Thermostats are the other half of the "environmental" picture.
@@ -60,7 +60,7 @@ Level 1 Changes for 4.x.x
     - **Service calls**: `alarm_control_panel.alarm_arm_home`, `alarm_control_panel.alarm_arm_away`, `alarm_control_panel.alarm_disarm`. Disarm requires `code` parameter — render a numeric PIN pad in LCARS style.
     - **Worf**: Disarm action MUST require a PIN. Arm actions should have a confirmation dialog ("COMMAND AUTHORIZATION REQUIRED"). Never send PIN in URL or log it.
 
-    7. ✅ **DONE (v4.11.0)** — Pool/spa panel for Pentair ScreenLogic. Dual viewscreens, chemistry readouts, circuit toggles, pool lighting controls. Eric has a Pentair EasyTouch2 with pool heater, spa heater, waterfall, bubblers, spillway, air blower, cleaner, pool/spa lights, and temperature sensors. This is a complex subsystem with 10+ entities that doesn't fit neatly into existing panels.
+    7. ✅ **DONE (v4.11.0)** — Pool/spa panel for Pentair ScreenLogic. Dual viewscreens, chemistry readouts, circuit toggles, pool lighting controls. The Admiral has a Pentair EasyTouch2 with pool heater, spa heater, waterfall, bubblers, spillway, air blower, cleaner, pool/spa lights, and temperature sensors. This is a complex subsystem with 10+ entities that doesn't fit neatly into existing panels.
 
     **IMPLEMENTATION NOTES:**
     - **Detection**: New `PANEL_TYPE_POOL` or group by `platform === "screenlogic"` or `identifiers` containing `screenlogic`.
@@ -70,18 +70,18 @@ Level 1 Changes for 4.x.x
     - **Temperature**: Air temperature sensor, plus current water temp from climate entity attributes.
     - **Layout idea**: A "pool schematic" panel with equipment status indicators, similar to the warp core but for pool operations.
 
-    8. Add BlueAir air purifier support to the environment panel. Eric has a Blue Pure 311i Max (via `ha_blueair` integration). Verify the environment panel's auto-detection heuristic picks up BlueAir devices — they may expose `fan` domain entities with speed control and possibly `sensor` entities for filter life. Similar to VeSync purifier handling.
+    8. Add BlueAir air purifier support to the environment panel. The Admiral has a Blue Pure 311i Max (via `ha_blueair` integration). Verify the environment panel's auto-detection heuristic picks up BlueAir devices — they may expose `fan` domain entities with speed control and possibly `sensor` entities for filter life. Similar to VeSync purifier handling.
 
-    9. Add standalone room temperature/humidity sensor grid support to the environment panel. Eric has 14+ SwitchBot meters (WoTHP) providing per-room temperature and humidity, plus a SwitchBot CO2 meter (WoTHPc). These are sensor-only devices (no controls) that should render as compact readout rows in the environment panel, similar to the existing sensor-only mode for monitor-only air quality devices.
+    9. Add standalone room temperature/humidity sensor grid support to the environment panel. The Admiral has 14+ SwitchBot meters (WoTHP) providing per-room temperature and humidity, plus a SwitchBot CO2 meter (WoTHPc). These are sensor-only devices (no controls) that should render as compact readout rows in the environment panel, similar to the existing sensor-only mode for monitor-only air quality devices.
 
     **IMPLEMENTATION NOTES:**
     - **Detection**: Devices with ≥2 of `device_class` in {`temperature`, `humidity`} but no `fan`/`air_quality` domain entities → render in sensor-only environment mode (no atmoscrubber cylinder, just the readout grid).
     - **CO2 meter**: If a SwitchBot device has `co2` or `carbon_dioxide` device_class, include it in the AQ sensor list — it should trigger the full atmoscrubber visualization.
     - **Multi-sensor rooms**: If a room has both a SwitchBot meter AND an Awair, group them under the same environment panel rather than creating duplicate panels.
 
-    10. ✅ **DONE (v4.11.0)** — Weather panel for Davis Instruments, WeatherFlow. SVG display, wind compass, 7-day forecast strip, lightning/precipitation sensors. Eric has Davis Instruments WLL 6100 + Vantage Pro2 Plus with UV/solar radiation, plus WeatherFlow Tempest, plus AirLink indoor/outdoor air quality monitors. The `weather` domain entities provide forecast data. Consider a compact weather summary strip for the environment panel or a dedicated weather card.
+    10. ✅ **DONE (v4.11.0)** — Weather panel for Davis Instruments, WeatherFlow. SVG display, wind compass, 7-day forecast strip, lightning/precipitation sensors. The Admiral has Davis Instruments WLL 6100 + Vantage Pro2 Plus with UV/solar radiation, plus WeatherFlow Tempest, plus AirLink indoor/outdoor air quality monitors. The `weather` domain entities provide forecast data. Consider a compact weather summary strip for the environment panel or a dedicated weather card.
 
-    11. ✅ **DONE (v4.11.0)** — Irrigation panel for Rachio. Zone list with START/STOP, active fill bar, standby toggle, rate-limited zone switching. Eric has a Rachio 3 with 8 zones, multiple schedules, rain delay, and a rain sensor. Consider an "irrigation" or "grounds" grouping that shows zone status, active schedules, rain delay, and rain sensor state. Detect via `platform === "rachio"` or `identifiers` containing `rachio`.
+    11. ✅ **DONE (v4.11.0)** — Irrigation panel for Rachio. Zone list with START/STOP, active fill bar, standby toggle, rate-limited zone switching. The Admiral has a Rachio 3 with 8 zones, multiple schedules, rain delay, and a rain sensor. Consider an "irrigation" or "grounds" grouping that shows zone status, active schedules, rain delay, and rain sensor state. Detect via `platform === "rachio"` or `identifiers` containing `rachio`.
 
 Breaking Changes and Rev to Versions 5.x.x
     1. Set up a new 5.0 branch with GitHub pre-release tags so users can opt in to the beta via HACS.

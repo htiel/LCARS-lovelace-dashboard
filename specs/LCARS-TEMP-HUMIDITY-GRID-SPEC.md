@@ -23,7 +23,7 @@ Per Bracer Jack: **empty space is beautiful**. Each tile is minimal — room nam
 
 ## 1. Target Entity Inventory
 
-### Eric's SwitchBot Meter Fleet (from `core.device_registry`)
+### The Admiral's SwitchBot Meter Fleet (from `core.device_registry`)
 
 All devices use model `WoTHP` (SwitchBot Meter / Meter Plus), platform `switchbot`, connected via Bluetooth.
 
@@ -32,17 +32,17 @@ All devices use model `WoTHP` (SwitchBot Meter / Meter Plus), platform `switchbo
 | Device Name         | Device ID      | Area ID          | Entity Prefix        |
 |---------------------|----------------|------------------|----------------------|
 | Meter - Network Closet | `fe2a7f45...` | `utility`        | `sensor.meter_502c_` |
-| Meter - Boys Bath   | `2489c248...`  | `t_e`            | `sensor.meter_3888_` |
+| Meter - Cadets Bath  | `2489c248...`  | `t_e`            | `sensor.meter_3888_` |
 | Meter - Garage      | `80e60a2b...`  | `garage`         | `sensor.meter_1eda_` |
 | Meter - Office      | `171b51b0...`  | `the_office`     | `sensor.meter_e06d_` |
-| Meter - Kyler       | `dd1c449f...`  | `kyler`          | `sensor.meter_d3ab_` |
-| Meter - E&R         | `c7b132ae...`  | `ashlyn`         | `sensor.meter_c4c8_` |
+| Meter - Alexander   | `dd1c449f...`  | `alexander`      | `sensor.meter_d3ab_` |
+| Meter - Cmd Quarters| `c7b132ae...`  | `keiko`          | `sensor.meter_c4c8_` |
 | Meter - Living Room | `22491c77...`  | `shared_spaces`  | `sensor.meter_d487_` |
 | Meter - Master Bed  | `ddf7900d...`  | `master_bed`     | `sensor.meter_2790_` |
-| Meter - Elysia      | `61194ccd...`  | `elysia`         | `sensor.meter_3380_` |
+| Meter - Molly       | `61194ccd...`  | `molly`          | `sensor.meter_3380_` |
 | Meter - Master Bath | `bece20cb...`  | `master_bath`    | `sensor.meter_cc32_` |
 | Meter - South Bath  | `0087a47d...`  | `south_bath`     | `sensor.meter_450a_` |
-| Meter - Alex Bath   | `97eb75e3...`  | `alex`           | `sensor.meter_ab6e_` |
+| Meter - Naomi Bath  | `97eb75e3...`  | `naomi`          | `sensor.meter_ab6e_` |
 | Meter - Attic       | `83874841...`  | `attic`          | `sensor.meter_5e03_` |
 | Meter - Crawl Space | `020f0733...`  | `outside`        | `sensor.meter_4cb8_` |
 
@@ -129,12 +129,12 @@ When no `rooms` config is provided, the card auto-discovers all SwitchBot Meter 
 ├──────────────────────────────────────────────────────────────────┤
 │  ■ DECK 2 — UPSTAIRS                                            │  ← floor label
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌────────────┐│
-│  │ OFFICE      │ │ KYLER       │ │ E&R         │ │ ELYSIA     ││
+│  │ OFFICE      │ │ ALEXANDER   │ │ CMD QTRS    │ │ MOLLY      ││
 │  │  72.1°  48% │ │  73.4°  51% │ │  71.8°  45% │ │  74.0°  52%││
 │  │  ╱╲╱╲╱╲    │ │  ╱╲─╱╲     │ │  ╱╲╱╲╱╲    │ │  ╱╲╱╲╱╲   ││
 │  └─────────────┘ └─────────────┘ └─────────────┘ └────────────┘│
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐               │
-│  │ BOYS BATH   │ │ ALEX BATH   │ │ ATTIC    ●  │               │
+│  │ CADETS BATH │ │ NAOMI BATH  │ │ ATTIC    ●  │               │
 │  │  75.2°  68% │ │  70.9°  44% │ │  88.3°  32% │               │
 │  │  ╱╲╱╲╱╲    │ │  ╱╲╱╲╱╲    │ │  ╱╲╱╲╱╲    │               │
 │  └─────────────┘ └─────────────┘ └─────────────┘               │
@@ -168,7 +168,7 @@ When no `rooms` config is provided, the card auto-discovers all SwitchBot Meter 
 │ │            48%   │ │
 │ └──────────────────┘ │
 │ ┌──────────────────┐ │
-│ │ KYLER      73.4° │ │
+│ │ ALEXANDER  73.4° │ │
 │ │            51%   │ │
 │ └──────────────────┘ │
 │ ...                  │
@@ -502,7 +502,7 @@ Each tile is a compact, self-contained readout cell — the equivalent of one de
 
 Temperature drives the **tile border** and **temperature text** color. Thresholds are configurable but defaults are based on standard HVAC comfort zones.
 
-#### Fahrenheit (Default — Eric's units)
+#### Fahrenheit (Default — the Admiral's units)
 
 | Range        | Comfort Zone       | LCARS Variable         | Hex       | Rationale                                     |
 |--------------|--------------------|------------------------|-----------|-----------------------------------------------|
@@ -1526,7 +1526,7 @@ async _refreshHistory() {
 
 ### Rendering Optimization
 
-- **Tile count**: Maximum ~14 room meters in Eric's setup. No virtualization needed.
+- **Tile count**: Maximum ~14 room meters in the Admiral's setup. No virtualization needed.
 - **History fetches**: Parallelized with `Promise.all()`, 15-minute refresh interval.
 - **SVG sparklines**: Pure SVG path strings — no canvas, no third-party charting library.
 - **Lit-element**: Only re-renders tiles whose entity state actually changed (Lit diffing).
@@ -1624,7 +1624,7 @@ custom_components/lcars_dashboard/js/src/lcars-internal-sensors-grid.js
 
 ---
 
-## Appendix B: Eric's Area → Floor Mapping
+## Appendix B: The Admiral's Area → Floor Mapping
 
 From `core.area_registry` and `core.floor_registry`:
 
@@ -1649,11 +1649,11 @@ From `core.area_registry` and `core.floor_registry`:
 |---------------------|--------------------|---------------------|
 | `game_room`         | Game Room          | No                  |
 | `office`            | Office             | Yes                 |
-| `duncan_s_room`     | Duncan's Room      | No                  |
-| `quinn_s_room`      | Quinn's Room       | No                  |
+| `alexander_s_room`  | Alexander's Room   | No                  |
+| `molly_s_room`      | Molly's Room       | No                  |
 | `upstairs_bathroom` | Upstairs Bathroom  | No                  |
 
-> **Note**: Eric's device registry uses different area_id values than the static reference registry (e.g., `the_office` vs `office`, `kyler` vs a child's room, `ashlyn` vs E&R bedroom). The auto-discovery algorithm resolves names from whichever area registry is live, so these mappings are always current.
+> **Note**: The Admiral's device registry uses different area_id values than the static reference registry (e.g., `the_office` vs `office`, `alexander` vs a child's room, `keiko` vs command quarters). The auto-discovery algorithm resolves names from whichever area registry is live, so these mappings are always current.
 
 ---
 

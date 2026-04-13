@@ -84,6 +84,7 @@ The original Dwains Dashboard provided the Home Assistant integration architectu
 | Antonio font | Vernon Adams | OFL-1.1 | [Google Fonts](https://fonts.google.com/specimen/Antonio) |
 | lit-element / lit-html | Google | BSD-3-Clause | [Lit](https://lit.dev) |
 | sortablejs | RubaXa | MIT | [SortableJS](https://github.com/SortableJS/Sortable) |
+| js-cookie | js-cookie | MIT | [js-cookie](https://github.com/js-cookie/js-cookie) |
 | @mdi/js | Pictogrammers | Apache-2.0 | [MDI](https://materialdesignicons.com) |
 
 ## License

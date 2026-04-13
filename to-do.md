@@ -30,12 +30,15 @@ Level 1 changes for 4.x.x
     - **CSS**: Floor header buttons get distinct styling — taller, different color, maybe small floor icon. Area buttons remain as-is but indented or smaller under their floor.
     - **Bundle impact**: ~2-3 KiB. Mostly logic changes in nav card + minor CSS.
 
-    3. full pass for each agent, Worf should make sure there is no code injection risk of people naming devices and causes security issues.  Geordi, should do afull accessiblity pass making sure tab orders are corect and headding levels guide the screen reader from area, device, entities, etc.
+    3. ✅ **DONE (v4.10.1–4.10.3)** — Full agent audit pass: Data logic fixes, Worf security hardening, Geordi accessibility pass, elbow alignment fix, brand/ images for HACS.
 
-    **IMPLEMENTATION NOTES:**
-    - **Worf (Security)**: Audit all places where `friendly_name`, `device.name`, `area.name`, `state.state`, and `attributes` values are rendered into templates. Lit's `html` tagged template literals auto-escape by default (no innerHTML), but check for: (a) any `unsafeHTML` usage, (b) CSS injection via `style=` bindings with user data (e.g., `coreColor` computed from entity names), (c) service call parameters built from user strings. Also audit `@click` handlers that pass entity IDs — ensure no prototype pollution.
-    - **Geordi (Accessibility)**: Full WCAG 2.2 AA pass: (a) heading hierarchy — area name should be `<h2>`, device name `<h3>`, domain label `<h4>`, (b) all interactive elements need visible focus indicators (`:focus-visible` audit), (c) verify `role` and `aria-label` on all custom widgets (sliders, option strips, toggle pills), (d) color contrast check on all text-on-background combinations (especially gray labels on black), (e) keyboard navigation — tab order should flow: nav → area header → device → entities left-to-right/top-to-bottom, (f) screen reader announcements for live regions (battery charge changes, entity state toggling).
-    - **Execution**: Run each agent separately with the full source as context. Collect findings into a punch list, then fix in a single commit.
+    **COMPLETED FIXES:**
+    - **v4.10.1 (HIGH/CRITICAL)**: D1 config loading guard, D5 env cache cap, D7 timer cleanup, D8 div-by-zero guard, D9 dead property removal, D10 MutationObserver timeout, W-H1 path validation on 21 schemas + safe_path for rmtree, W-H2 SandboxedEnvironment scoped to config dir, W-M1 require_admin on read endpoints
+    - **v4.10.2 (MEDIUM/LOW)**: P1 semantic headings (h2/h3/h4), P2 main element landmark, P6 aria-hidden decorative bars, P8/P9 contrast fixes (gray→sky), O1/R2 keyboard on total-lines, O2/R1 slider ARIA + keyboard, O3 sensor-line keyboard, O4 edit pip keyboard + focus-visible, W-L1 debug log level
+    - **v4.10.3**: Elbow stem alignment with area buttons (elbow-w 9.5→10.5rem, removed +2rem cutout offset, inner curve 1.5rem)
+    - **Brand images**: Created `brand/` directory with icon.png, icon@2x.png, logo.png, logo@2x.png for HA 2026.3+ integration branding
+
+    full pass for each agent, Worf should make sure there is no code injection risk of people naming devices and causes security issues.  Geordi, should do afull accessiblity pass making sure tab orders are corect and headding levels guide the screen reader from area, device, entities, etc.
 
 
 

@@ -10,6 +10,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
 ![Version](https://img.shields.io/badge/version-4.10.3-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
+[![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 
 ## Features
 
@@ -68,6 +69,16 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+## Issues & Feature Requests
+
+Found a bug or have an idea? File it on GitHub:
+
+- [**Report a Bug**](https://github.com/htiel/LCARS-lovelace-dashboard/issues/new?template=bug_report.yml) — something broken or unexpected
+- [**Request a Feature**](https://github.com/htiel/LCARS-lovelace-dashboard/issues/new?template=feature_request.yml) — suggest a new capability or enhancement
+- [**Browse Open Issues**](https://github.com/htiel/LCARS-lovelace-dashboard/issues) — see what's already reported
+
+When reporting a bug, please include your LCARS Dashboard version, HA version, and steps to reproduce.
 
 ## Attribution
 

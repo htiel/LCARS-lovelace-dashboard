@@ -42,6 +42,47 @@ Level 1 Changes for 4.x.x
 
     4. Make a media card like the others that combines Apple TVs, HomePods, Sonos, etc. in the same room.
 
+    5. Add `climate` domain rendering to the environment panel for thermostats (Nest, Ecobee, Honeywell, etc.). Display current temperature, target temperature, HVAC mode (heat/cool/auto/off), fan mode, and humidity per zone. Eric's setup has 3 Nest thermostats (1st/2nd/3rd floor) — this is the biggest gap for environment card adoption. Detect via `domain === "climate"` and render inline with existing air quality sensors. Consult Geordi for LCARS-styled thermostat controls.
+
+    **IMPLEMENTATION NOTES:**
+    - **Detection**: In `_getDevicePanelType()`, add `climate` domain as a trigger for `PANEL_TYPE_ENVIRONMENT`. Currently triggers on AQ sensors + fans. Thermostats are the other half of the "environmental" picture.
+    - **Partition**: Extend `_partitionEnvironmentEntities()` to include a `climate[]` bucket for `domain === "climate"` entities. Exclude `climate` entities where `device_class` implies non-HVAC use (e.g., fridge/freezer from `smartthinq_sensors` — filter by checking `capabilities.min_temp > 32` or presence of `hvac_modes` including `heat_cool`).
+    - **Rendering**: Climate entities need: (a) current temp readout, (b) target temp ±0.5° adjustment buttons, (c) HVAC mode selector (pill buttons: heat/cool/auto/off), (d) fan mode toggle if supported. Use `climate.set_temperature`, `climate.set_hvac_mode`, `climate.set_fan_mode` service calls.
+    - **Paired sensors**: Nest thermostats expose separate `sensor.Xth_floor_thermostat_temperature` and `sensor.Xth_floor_thermostat_humidity` entities. These should be grouped visually with their `climate` entity rather than rendered as standalone sensors.
+    - **Multi-zone display**: If an area has multiple climate entities (rare), stack them. If floor view shows 3 zones, render a compact multi-zone comparison strip.
+    - **Reference**: SwitchBot meters (WoTHP) provide per-room temperature/humidity as standalone sensors — these don't need climate controls, just readout bars in the environment panel alongside AQ sensors.
+
+    6. Add `alarm_control_panel` domain rendering to the security panel. Eric has SimpliSafe with 30+ door/window entry sensors. Render alarm status (armed_away/armed_home/disarmed/triggered) with arm/disarm controls. Flag for Worf: PIN protection at the UI level for alarm control actions.
+
+    **IMPLEMENTATION NOTES:**
+    - **Detection**: `alarm_control_panel` domain entities should auto-route to the security panel or render prominently at the top of any area that contains one.
+    - **States**: `disarmed`, `armed_home`, `armed_away`, `armed_night`, `triggered`, `arming`, `pending`. Map to LCARS alert colors: disarmed=green, armed_home=gold, armed_away=blue, triggered=tomato+pulse.
+    - **Service calls**: `alarm_control_panel.alarm_arm_home`, `alarm_control_panel.alarm_arm_away`, `alarm_control_panel.alarm_disarm`. Disarm requires `code` parameter — render a numeric PIN pad in LCARS style.
+    - **Worf**: Disarm action MUST require a PIN. Arm actions should have a confirmation dialog ("COMMAND AUTHORIZATION REQUIRED"). Never send PIN in URL or log it.
+
+    7. Add Pentair ScreenLogic pool/spa support as a new panel type or dedicated device grouping. Eric has a Pentair EasyTouch2 with pool heater, spa heater, waterfall, bubblers, spillway, air blower, cleaner, pool/spa lights, and temperature sensors. This is a complex subsystem with 10+ entities that doesn't fit neatly into existing panels.
+
+    **IMPLEMENTATION NOTES:**
+    - **Detection**: New `PANEL_TYPE_POOL` or group by `platform === "screenlogic"` or `identifiers` containing `screenlogic`.
+    - **Climate entities**: `climate.pentair_*_pool_heat` and `climate.pentair_*_spa_heat` — off/heat modes, solar/heater presets, 40-104°F range. Render with temperature setpoint + mode selector.
+    - **Switches**: Pool pump, spa mode, waterfall, bubblers, spillway, air blower, cleaner — render as LCARS toggle pills in a feature grid.
+    - **Lights**: Pool light, spa light — on/off toggle pills.
+    - **Temperature**: Air temperature sensor, plus current water temp from climate entity attributes.
+    - **Layout idea**: A "pool schematic" panel with equipment status indicators, similar to the warp core but for pool operations.
+
+    8. Add BlueAir air purifier support to the environment panel. Eric has a Blue Pure 311i Max (via `ha_blueair` integration). Verify the environment panel's auto-detection heuristic picks up BlueAir devices — they may expose `fan` domain entities with speed control and possibly `sensor` entities for filter life. Similar to VeSync purifier handling.
+
+    9. Add standalone room temperature/humidity sensor grid support to the environment panel. Eric has 14+ SwitchBot meters (WoTHP) providing per-room temperature and humidity, plus a SwitchBot CO2 meter (WoTHPc). These are sensor-only devices (no controls) that should render as compact readout rows in the environment panel, similar to the existing sensor-only mode for monitor-only air quality devices.
+
+    **IMPLEMENTATION NOTES:**
+    - **Detection**: Devices with ≥2 of `device_class` in {`temperature`, `humidity`} but no `fan`/`air_quality` domain entities → render in sensor-only environment mode (no atmoscrubber cylinder, just the readout grid).
+    - **CO2 meter**: If a SwitchBot device has `co2` or `carbon_dioxide` device_class, include it in the AQ sensor list — it should trigger the full atmoscrubber visualization.
+    - **Multi-sensor rooms**: If a room has both a SwitchBot meter AND an Awair, group them under the same environment panel rather than creating duplicate panels.
+
+    10. Add weather entity rendering. Eric has Davis Instruments WLL 6100 + Vantage Pro2 Plus with UV/solar radiation, plus WeatherFlow Tempest, plus AirLink indoor/outdoor air quality monitors. The `weather` domain entities provide forecast data. Consider a compact weather summary strip for the environment panel or a dedicated weather card.
+
+    11. Add Rachio irrigation zone/schedule status rendering. Eric has a Rachio 3 with 8 zones, multiple schedules, rain delay, and a rain sensor. Consider an "irrigation" or "grounds" grouping that shows zone status, active schedules, rain delay, and rain sensor state. Detect via `platform === "rachio"` or `identifiers` containing `rachio`.
+
 Breaking Changes and Rev to Versions 5.x.x
     1. Set up a new 5.0 branch with GitHub pre-release tags so users can opt in to the beta via HACS.
 

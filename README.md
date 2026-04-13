@@ -31,7 +31,20 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 ## Screenshots
 
-*Coming soon*
+### Area View — Environment Panels
+<p align="center">
+  <img src="screenshots/Bedroom.png" alt="Master Bedroom with Awair and Air Purifier environment panels" width="100%">
+</p>
+
+### Area View — Battery Panel
+<p align="center">
+  <img src="screenshots/Office.png" alt="Office with EcoFlow River 3+ warp core battery panel" width="100%">
+</p>
+
+### Floor Navigation
+<p align="center">
+  <img src="screenshots/Entrance.png" alt="Entrance area view with floor-grouped sidebar navigation" width="100%">
+</p>
 
 ## Installation (HACS)
 

@@ -275,7 +275,7 @@ The dominant visual — album art displayed in a bordered frame with LCARS corne
   width: 100%;
 }
 
-/* Album art image */
+/* Album art image — crossorigin + referrerpolicy set in HTML (see §3.2.1) */
 .media-viewscreen img {
   width: 100%;
   height: 100%;
@@ -386,6 +386,37 @@ Track title, artist, and album displayed below the artwork within the media grid
 }
 ```
 
+### 3.2.1 Album Art URL Validation (⚠ Worf Security Requirement)
+
+Before rendering the `entity_picture` URL in the `<img>` tag, validate it against an allowlist of safe URL prefixes. The `<img>` element MUST include `crossorigin="anonymous"` and `referrerpolicy="no-referrer"` as defense-in-depth.
+
+```javascript
+/**
+ * Validate entity_picture URL before rendering.
+ * Only allow HA-proxied paths — reject external, javascript:, and data: URLs.
+ */
+function isValidArtworkUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  // Only allow HA-proxied paths
+  return url.startsWith('/api/') || url.startsWith('/local/');
+}
+```
+
+```html
+<!-- Album art with security attributes -->
+<img
+  src="${isValidArtworkUrl(artworkUrl) ? artworkUrl : ''}"
+  alt="${mediaTitle} album artwork"
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+  class="${isTransitioning ? 'transitioning' : ''}"
+/>
+```
+
+If the URL fails validation, render the idle placeholder instead. This guards against a compromised HA integration injecting `javascript:`, `data:text/html`, or external origin URLs into `entity_picture`.
+
+### 3.3 Now Playing Info (Below Viewscreen)
+
 The track title uses the sub-header font size — it's the most important text in the panel after the device name. Artist/album uses data size in the panel's accent color (`--lcars-african-violet`), creating a clear visual hierarchy without introducing a fourth font size.
 
 ### 3.4 Progress Bar
@@ -485,6 +516,16 @@ function getMediaProgress(stateObj) {
 
   const pct = Math.min(100, (position / duration) * 100);
   return { pct, elapsed: position, duration };
+}
+
+/**
+ * Clamp seek position before calling media_player.media_seek.
+ * Prevents seeking beyond track bounds.
+ * (⚠ Worf Security Requirement)
+ */
+function clampSeekPosition(seekSeconds, duration) {
+  if (duration <= 0) return 0;
+  return Math.max(0, Math.min(duration, seekSeconds));
 }
 ```
 
@@ -1822,3 +1863,181 @@ Extends `LcarsDevicePanelBase`:
 
 *"What if we piped the audio visualization data from the media player into the viewscreen border? Imagine the frame pulsing gently with the beat — like the warp core thrumming with power. I could prototype it with the Web Audio API and CSS custom properties... but I should probably check with Geordi first."*  
 — Wesley Crusher, Deck 10
+
+---
+
+## Geordi La Forge — Design Review
+
+**Reviewer**: Geordi La Forge (LCARS UI Design Authority)  
+**Date**: Stardate 2026.04.13  
+**Status**: APPROVED WITH NOTES
+
+### LCARS Compliance
+- §1 Grid Layout: Correct. The 2-column asymmetric grid (metadata | media) with full-width header and volume rows follows the Device Panel Spec §2 pattern precisely. Thick→thin border (4px left/bottom, 2px top/right) satisfies Bracer Jack Rule 2.
+- §3.2 Viewscreen corner brackets using `::before` / `::after` pseudo-elements are a clean LCARS touch — approved.
+- §3.5 Transport buttons correctly use pill shape (`border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0`) — flat left, rounded right. The primary play/pause button uses `--lcars-african-violet` which distinguishes it from the standard `--lcars-sunflower` buttons — this is a defensible exception for the "main action" button within an entertainment context.
+- §5 Idle state behavior is excellent. The panel dims to `--lcars-gray` frame and hides transport/progress/now-playing. "Empty space is beautiful" — Bracer Jack would approve. The transition from idle→active with a 600ms border-color shift is the right tempo.
+- §10 Viewscreen activation animation (`viewscreen-activate`) reuses the Device Panel §7 pattern — good consistency.
+- The `media-art-crossfade` animation (§3.2) uses `filter: brightness(1.3)` as a transitional effect, not a persistent visual treatment — this is acceptable and does not violate the flat-design rule.
+
+### Color & Typography
+- `--lcars-african-violet` (#cc99ff) for the media/entertainment frame is an excellent choice. It's distinct from butterscotch (cameras/security), ice (environmental), bluey (aquatic), and sky (weather). The "recreation deck" identity mapping is correct per TNG color conventions.
+- Contrast table (§2) is thorough and all colors pass WCAG AA. The `--lcars-lilac` at 4.9:1 is noted as accent-only with inverted text — acceptable.
+- Typography: Exactly 2 active font sizes (sub-header for device name + track title, data for everything else). Within the 3-size maximum. Track title at sub-header tier is the right call — it's the most important text after the device name.
+- ALL UPPERCASE maintained throughout — confirmed.
+
+### Layout & Visual Balance
+- The album art viewscreen with `aspect-ratio: 1/1` (music) and `16/9` (video) adaptive aspect is smart. The `max-height: 18rem` cap prevents oversized artwork from dominating — good restraint.
+- The volume bar at the bottom as a full-width power-level indicator is a canonical LCARS pattern. The pill-shaped right end (`border-radius: 0 var(--lcars-btn-radius)`) is correct.
+- The metadata column (§3.6) with source, grouping, media type provides good context without overcrowding. The idle state collapses this to source-only — proper progressive disclosure.
+- Speaker grouping display (§4) with hierarchically indented member names is clean.
+
+### Accessibility
+- WCAG 2.5.8 target sizes: Transport buttons at 48px (primary 80px) — well above 24px minimum. Volume bar uses container height plus hover expansion. Approved.
+- Focus indicators: 2px solid `--lcars-ice` outline with 2px offset throughout — 10.3:1 contrast vs black. Exceeds WCAG 2.4.13 AAA requirements.
+- Progress bar is keyboard-accessible (§3.4) with `focus-visible` styling and arrow-key volume adjustments (§3.7) — good keyboard operability.
+- Album art has proper `alt` text (§11.7). Idle state has `aria-label` on the placeholder. Screen reader live region announces track changes (§11.6).
+- `prefers-reduced-motion` is respected for all animations — confirmed in §10.
+
+### Recommendations
+1. **APPROVED**: Frame color `--lcars-african-violet` for media panels — no clash with existing panel color map confirmed.
+2. **APPROVED**: Viewscreen corner bracket reuse from Device Panel §3.2.
+3. **APPROVED**: Idle state design meets LCARS aesthetic standards.
+4. **NOTE** (§3.4): The progress bar hover expanding from 4px→6px is fine but consider ensuring the expansion doesn't shift adjacent content. Use `position: relative` with a transparent hit area if needed.
+5. **NOTE**: Wesley's closing idea about audio-reactive frame pulsing — creative, but **do not implement**. This would violate Bracer Jack Rule 1 (LCARS is inherently flat/static in its frame elements) and could trigger WCAG 2.3.1 (Three Flashes) for rhythmic content. The frame border is structural, not decorative. Keep it clean.
+6. **NOTE** (§8 device adaptations): The Apple TV video aspect ratio override (`16/9`) is a good data-driven decision. Ensure the transition between `1/1` and `16/9` when content type changes uses a smooth CSS transition, not a jarring reflow.
+7. **APPROVED**: The `getMediaProgress()` interpolation approach is correct but heed the performance advisory about gating behind a 1-second timer.
+
+---
+
+## Worf — Security Review
+
+**Reviewer**: Worf (Integration Security Expert)  
+**Date**: Stardate 2026.04.13  
+**Threat Level**: YELLOW
+
+*"The recreation deck may seem harmless, but a media panel renders external artwork, displays untrusted metadata strings, and accepts volume input. Every data channel is an attack surface."*
+
+### Input Validation
+
+- **Volume level clamping**: `handleVolumeInteraction()` (§3.7) correctly clamps the calculated volume to `0.0–1.0` via `Math.max(0, Math.min(...))`. `handleVolumeKeyboard()` also properly clamps with explicit `Math.min(1, ...)` and `Math.max(0, ...)` bounds. Secure.
+- **Progress bar seek position**: The progress bar is clickable (`cursor: pointer`) suggesting seek functionality. The `getMediaProgress()` function calculates position from entity attributes — but if a click handler sends `media_player.media_seek`, the position value MUST be clamped to `[0, media_duration]` before calling `hass.callService()`. **Not currently specified in the spec — add clamping.**
+- **`supported_features` bitmask**: `hasFeature()` uses bitwise AND on a numeric bitmask from entity attributes. The bitmask value comes from HA backend and is an integer — no injection vector here.
+- **Source selection**: `source_list` values from entity attributes are rendered as button text. The `select_source` service call passes the source name from `source_list` — this is user-selectable but values originate from the HA backend, not typed by the user. Acceptable.
+
+### XSS & DOM Safety
+
+- **Album art URL (`entity_picture`)**: This is the primary XSS concern. The `entity_picture` attribute contains a URL path that is loaded into an `<img>` tag's `src` attribute. HA proxies media artwork through `/api/media_player_proxy/` — the URL should always be a relative path starting with `/api/`. **MUST validate**: before rendering, confirm the URL starts with `/api/` or `/local/` — reject any URL containing `javascript:`, `data:`, or external `http://`/`https://` origins. A compromised HA integration could inject a malicious URL.
+- **Track title / artist / album**: `media_title`, `media_artist`, `media_album_name` attributes are rendered via Lit template literals (auto-escaped). **No `innerHTML` usage.** Secure.
+- **Source list rendering** (§3.8): Source names are rendered as `textContent` in Lit templates via `${sourceName}`. The spec correctly notes "all values must be text-only, rendered as textContent not innerHTML." Verified.
+- **Group member names**: `getGroupMemberName()` (§4) falls back to `friendly_name` or entity_id string manipulation. Both are rendered via Lit template escaping. No injection risk.
+- **`app_name` attribute**: Rendered in metadata column as text. Auto-escaped by Lit. Secure.
+
+### Service Call Security
+
+- **Transport controls properly scoped**: All service calls in `MEDIA_ACTIONS` (§8) use a hardcoded allowlist of `media_player.*` services with `entity_id` from card config. No arbitrary service injection.
+- **`callMediaService()` wrapper**: The `data` spread (`...data`) in `callMediaService()` could theoretically allow extra parameters if the `data` object is attacker-controlled. In practice, it's constructed from validated UI interactions (volume, shuffle boolean, etc.). Low risk but be disciplined about not passing unvalidated objects through this function.
+- **No destructive actions**: Media transport (play, pause, next) and volume changes are all reversible. `turn_off` is the most impactful — it powers off the device but doesn't cause data loss. Acceptable without confirmation dialogs.
+
+### Secrets & Sensitive Data
+
+- **No credentials or tokens in this panel.** Media authentication is handled by the HA integration backend. The panel only receives proxied URLs and entity state data. No secrets surface.
+
+### Recommendations
+
+**MUST FIX:**
+
+1. **Validate `entity_picture` URL before rendering**: Add a guard before setting the `<img src>`:
+   ```javascript
+   function isValidArtworkUrl(url) {
+     if (!url || typeof url !== 'string') return false;
+     // Only allow HA-proxied paths
+     return url.startsWith('/api/') || url.startsWith('/local/');
+   }
+   ```
+   Reject URLs with `javascript:`, `data:text/html`, or external origins. A malicious integration could set `entity_picture` to a crafted URL.
+
+2. **Clamp seek position on progress bar click**: If implementing seek-on-click, validate: `const clampedPosition = Math.max(0, Math.min(duration, seekPosition));` before calling `media_player.media_seek`.
+
+**SHOULD FIX:**
+
+3. **Set `crossorigin="anonymous"` on album art `<img>` tags**: This prevents the image from sending credentials to external origins if the URL validation is somehow bypassed. Defense in depth.
+
+4. **Set `referrerpolicy="no-referrer"` on artwork images**: Prevents leaking the dashboard URL to external image servers.
+
+**ADVISORY:**
+
+5. **Wesley's Web Audio API idea (Team Review Flags)**: If the Web Audio API is used for beat visualization, it would require `connect()` to an audio context — this has CSP implications (`media-src` directive) and could be a fingerprinting vector. Defer to proof-of-concept review.
+
+6. **`sound_mode_list` / `source_list` length**: No maximum length is enforced on these lists. A malicious integration with 1000 source entries could cause rendering performance issues. Consider truncating to a reasonable max (e.g., 50 items) and showing "more..." overflow.
+
+---
+
+## Data — Architecture Review
+
+**Reviewer**: Data (Project Architect & Performance Engineer)  
+**Date**: Stardate 2026.04.13  
+**Assessment**: SOUND WITH ADVISORIES
+
+### Component Architecture
+- The extension of `LcarsDevicePanelBase` is correctly specified. The 2-column asymmetric grid (metadata | media+transport) follows the Device Panel Spec §2 pattern precisely. The idle-vs-active state split via CSS class toggling (`.idle`) is efficient — it avoids conditional DOM construction and leverages Lit's attribute-based rendering.
+- The `classifyMediaEntities()` function (§8) correctly separates `media_player`, `remote`, `sensor`, and control domains. The early `continue` pattern is efficient. However, the function accepts raw entities but does not specify whether these are entity registry entries or `hass.states` objects — this ambiguity should be clarified during implementation.
+- The `MEDIA_FEATURES` bitmask approach (§3.5) is correct and matches the HA `MediaPlayerEntityFeature` enum. The `hasFeature()` utility is a clean pattern that should be extracted to a shared utility module — it will be needed by future panels.
+
+### Performance Considerations
+- **Progress bar interpolation** (§3.4, `getMediaProgress()`): The `Date.now()` call in `getMediaProgress()` is invoked on every render when state is `playing`. Lit will call `render()` whenever `hass` updates (which occurs on every state change globally). This creates unnecessary recomputation. **Advisory**: Gate progress interpolation behind a 1-second `setInterval` timer that triggers `requestUpdate()`, rather than recomputing on every `hass` property change. This reduces interpolation calls from ~50/sec (HA state churn) to 1/sec.
+- **Album art image loading**: The `entity_picture` attribute provides a URL proxied through HA at `/api/media_player_proxy/`. Image decoding is the browser's responsibility. The crossfade animation (400ms) is lightweight. No concern.
+- **Volume bar drag interaction** (§3.7): `handleVolumeInteraction()` is called on every `mousemove` during drag. Each call triggers `hass.callService('media_player', 'volume_set')`. **Advisory**: Throttle volume service calls to max 1 per 100ms using a simple timestamp guard. HA WebSocket can handle rapid calls, but the media player device (HomePod, Sonos) may not.
+- **Bundle impact estimate**: ~4.5 KiB minified/gzipped. The CSS is declarative (no runtime generation), helpers are pure functions, and the `MEDIA_FEATURES` bitmask is a static const. The `MEDIA_ACTIONS` map (§8) avoids string concatenation at runtime. Acceptable addition to the 203 KiB bundle — roughly 2.2% increase.
+
+### HA Integration Patterns
+- All service calls (§8) correctly use `hass.callService(domain, service, data)` format. The `MEDIA_ACTIONS` map is a clean pattern for dispatching transport commands.
+- The `supported_features` bitmask check before rendering transport buttons is correct — this prevents rendering buttons for unsupported features, reducing DOM nodes.
+- Speaker grouping via `group_members` attribute is correctly read from state attributes. The `supportsGrouping()` check uses the proper feature flag. No WebSocket subscription beyond the standard `hass` property is needed — grouping data flows through entity state.
+- The source selector uses `source_list` from entity attributes — no separate API call required. This is correct and efficient.
+
+### Code Quality & Reusability
+- **DRY compliance**: `getMediaStateColor()`, `getMediaStateLabel()`, `isActivePlayback()` follow the same switch-statement pattern as other panel specs. These utility functions should be extracted to a shared `lcars-state-colors.js` module rather than duplicated per panel file. I count 6 specs that each define a `get*Color()` function with identical structure.
+- **KISS compliance**: The track info display (§3.3) is clean — text overflow handled by CSS `text-overflow: ellipsis`. No JavaScript truncation needed.
+- **YAGNI flag**: The sound mode selector for Sonos (§9) adds conditional complexity for a single device type. Consider deferring this to a future iteration unless Eric has Sonos devices.
+- **Configuration schema**: No custom YAML config beyond what `LcarsDevicePanelBase` provides. The panel is auto-discovered via `media_player` domain. This is correct — the media panel should not require manual configuration.
+
+### Recommendations
+1. **P1**: Extract `hasFeature()`, `getMediaStateColor()`, and time formatting utilities to a shared `lcars-helpers.js` or `lcars-state-utils.js` module. These patterns recur across media, climate, alarm, weather, and irrigation panels. Estimated dedup savings: ~1.2 KiB across all panels.
+2. **P1**: Throttle volume service calls during drag to max 10/sec (100ms debounce). Use `this._lastVolumeCall` timestamp comparison — no external deps needed.
+3. **P2**: Gate progress interpolation behind a dedicated 1-second timer rather than recomputing on every `hass` update. Start the timer when state transitions to `playing`, stop on any other state. Clean up in `disconnectedCallback()`.
+4. **P2**: Clarify in the spec whether `classifyMediaEntities()` expects entity registry entries (from `config/entity_registry/list`) or `hass.states` objects. The property access patterns differ (`original_device_class` vs `attributes.device_class`).
+5. **P3**: Defer Sonos sound mode selector (§9) unless validated against Eric's device inventory. Apply YAGNI.
+
+---
+
+## Wesley Crusher — Final Review Pass
+
+**Author**: Wesley Crusher (Creative Technologist)  
+**Date**: Stardate 2026.04.13  
+**Status**: REVISED — Ready for Implementation
+
+### Changes Made
+- **§3.2**: Added `crossorigin="anonymous"` and `referrerpolicy="no-referrer"` note to album art img CSS comment
+- **§3.2.1 (NEW)**: Added `isValidArtworkUrl()` guard function and secure `<img>` template with `crossorigin`/`referrerpolicy` attributes per Worf's MUST FIX #1
+- **§3.4**: Added `clampSeekPosition()` function for progress bar seek validation per Worf's MUST FIX #2
+
+### Accepted Recommendations
+- **Worf MUST FIX #1** (entity_picture URL validation): Accepted. Added `isValidArtworkUrl()` allowlist guard — only `/api/` and `/local/` prefixes permitted. Defense-in-depth with `crossorigin="anonymous"` and `referrerpolicy="no-referrer"` on img element.
+- **Worf MUST FIX #2** (seek position clamping): Accepted. Added `clampSeekPosition()` function; implementation must call this before `media_player.media_seek`.
+- **Worf SHOULD FIX #3-4** (crossorigin, referrerpolicy): Accepted — folded into §3.2.1.
+- **Geordi Rec #5** (no audio-reactive frame pulsing): Accepted. It was just a closing brainstorm. Frame borders are structural, not decorative.
+- **Geordi Rec #4** (progress bar hover): Accepted as a note — will use transparent hit area if needed during implementation.
+- **Data P1** (shared utilities): Accepted. `hasFeature()`, `getMediaStateColor()`, `formatMediaTime()` will be extracted to shared `lcars-state-utils.js` during implementation.
+- **Data P2** (throttle volume drag): Accepted. Will implement 100ms timestamp guard in `handleVolumeInteraction()`.
+- **Data P3** (progress interpolation timer): Accepted. 1-second `setInterval` when `playing`, cleaned up in `disconnectedCallback()`.
+- **Data P4** (classifyMediaEntities input type): Clarification deferred to implementation — function will accept entity registry entries with `original_device_class`.
+- **Worf Advisory #6** (source_list length): Accepted. Will cap rendered source list at 50 items.
+
+### Deferred Items
+- **Data P5** (Sonos sound mode selector): Deferred per YAGNI. Eric doesn't have Sonos — will add if needed.
+- **Worf Advisory #5** (Web Audio API CSP): Deferred to proof-of-concept phase — not part of initial implementation.
+- **Geordi Rec #6** (aspect ratio transition): Implementation detail — CSS `transition: aspect-ratio 300ms` will be tested during build.
+
+### Disagreements
+- None. All reviewer feedback is either accepted or reasonably deferred.

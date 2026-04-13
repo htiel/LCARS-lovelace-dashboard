@@ -1,7 +1,7 @@
 # LCARS Dashboard
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/htiel/LCARS-lovelace-dashboard/3.0/custom_components/lcars_dashboard/logo@2x.png" alt="LCARS Dashboard Logo" width="512">
+  <img src="https://raw.githubusercontent.com/htiel/LCARS-lovelace-dashboard/4.0/custom_components/lcars_dashboard/logo@2x.png" alt="LCARS Dashboard Logo" width="512">
 </p>
 
 A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer Access/Retrieval System) interface.
@@ -34,17 +34,17 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 ### Area View — Environment Panels
 <p align="center">
-  <img src="https://raw.githubusercontent.com/htiel/LCARS-lovelace-dashboard/3.0/screenshots/Bedroom.png" alt="Master Bedroom with Awair and Air Purifier environment panels" width="100%">
+  <img src="https://raw.githubusercontent.com/htiel/LCARS-lovelace-dashboard/4.0/screenshots/Bedroom.png" alt="Master Bedroom with Awair and Air Purifier environment panels" width="100%">
 </p>
 
 ### Area View — Battery Panel
 <p align="center">
-  <img src="https://raw.githubusercontent.com/htiel/LCARS-lovelace-dashboard/3.0/screenshots/Office.png" alt="Office with EcoFlow River 3+ warp core battery panel" width="100%">
+  <img src="https://raw.githubusercontent.com/htiel/LCARS-lovelace-dashboard/4.0/screenshots/Office.png" alt="Office with EcoFlow River 3+ warp core battery panel" width="100%">
 </p>
 
 ### Floor Navigation
 <p align="center">
-  <img src="https://raw.githubusercontent.com/htiel/LCARS-lovelace-dashboard/3.0/screenshots/Entrance.png" alt="Entrance area view with floor-grouped sidebar navigation" width="100%">
+  <img src="https://raw.githubusercontent.com/htiel/LCARS-lovelace-dashboard/4.0/screenshots/Entrance.png" alt="Entrance area view with floor-grouped sidebar navigation" width="100%">
 </p>
 
 ## Installation (HACS)

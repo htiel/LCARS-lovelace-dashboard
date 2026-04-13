@@ -1294,7 +1294,7 @@ On mobile, the viewscreen goes full-width above metadata (which flows horizontal
 
 ## 8. HA Entity Mapping
 
-### Target Devices (from Eric's HA Instance)
+### Target Devices (from the Admiral's HA Instance)
 
 | Device             | Integration    | Key Features                             | Entity Pattern                           |
 |--------------------|----------------|------------------------------------------|------------------------------------------|
@@ -1999,7 +1999,7 @@ Extends `LcarsDevicePanelBase`:
 ### Code Quality & Reusability
 - **DRY compliance**: `getMediaStateColor()`, `getMediaStateLabel()`, `isActivePlayback()` follow the same switch-statement pattern as other panel specs. These utility functions should be extracted to a shared `lcars-state-colors.js` module rather than duplicated per panel file. I count 6 specs that each define a `get*Color()` function with identical structure.
 - **KISS compliance**: The track info display (§3.3) is clean — text overflow handled by CSS `text-overflow: ellipsis`. No JavaScript truncation needed.
-- **YAGNI flag**: The sound mode selector for Sonos (§9) adds conditional complexity for a single device type. Consider deferring this to a future iteration unless Eric has Sonos devices.
+- **YAGNI flag**: The sound mode selector for Sonos (§9) adds conditional complexity for a single device type. Consider deferring this to a future iteration unless the Admiral has Sonos devices.
 - **Configuration schema**: No custom YAML config beyond what `LcarsDevicePanelBase` provides. The panel is auto-discovered via `media_player` domain. This is correct — the media panel should not require manual configuration.
 
 ### Recommendations
@@ -2007,7 +2007,7 @@ Extends `LcarsDevicePanelBase`:
 2. **P1**: Throttle volume service calls during drag to max 10/sec (100ms debounce). Use `this._lastVolumeCall` timestamp comparison — no external deps needed.
 3. **P2**: Gate progress interpolation behind a dedicated 1-second timer rather than recomputing on every `hass` update. Start the timer when state transitions to `playing`, stop on any other state. Clean up in `disconnectedCallback()`.
 4. **P2**: Clarify in the spec whether `classifyMediaEntities()` expects entity registry entries (from `config/entity_registry/list`) or `hass.states` objects. The property access patterns differ (`original_device_class` vs `attributes.device_class`).
-5. **P3**: Defer Sonos sound mode selector (§9) unless validated against Eric's device inventory. Apply YAGNI.
+5. **P3**: Defer Sonos sound mode selector (§9) unless validated against the Admiral's device inventory. Apply YAGNI.
 
 ---
 
@@ -2035,7 +2035,7 @@ Extends `LcarsDevicePanelBase`:
 - **Worf Advisory #6** (source_list length): Accepted. Will cap rendered source list at 50 items.
 
 ### Deferred Items
-- **Data P5** (Sonos sound mode selector): Deferred per YAGNI. Eric doesn't have Sonos — will add if needed.
+- **Data P5** (Sonos sound mode selector): Deferred per YAGNI. The Admiral doesn't have Sonos — will add if needed.
 - **Worf Advisory #5** (Web Audio API CSP): Deferred to proof-of-concept phase — not part of initial implementation.
 - **Geordi Rec #6** (aspect ratio transition): Implementation detail — CSS `transition: aspect-ratio 300ms` will be tested during build.
 

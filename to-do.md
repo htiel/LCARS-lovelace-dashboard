@@ -43,13 +43,15 @@ Level 1 Changes for 4.x.x
     4. Make a media card like the others that combines Apple TVs, HomePods, Sonos, etc. in the same room.
 
 Breaking Changes and Rev to Versions 5.x.x
-    1. Set up a new 5.0 branch, so users could stay on 4.0 or select version 5.0 in HACS.
+    1. Set up a new 5.0 branch with GitHub pre-release tags so users can opt in to the beta via HACS.
 
     **IMPLEMENTATION NOTES:**
-    - Create `5.0` branch from current `3.0` HEAD. The `3.0` branch name is legacy from the Dwains fork — consider renaming to `main` or `stable` at this point.
-    - HACS uses the `hacs.json` `"homeassistant"` field and GitHub release tags for version selection. To let users pick v4 vs v5: (a) tag the last 4.x commit (e.g., `v4.7.x`), (b) set up GitHub Releases with separate release tracks, (c) update `hacs.json` on the 5.0 branch with the new version.
-    - Consider: HACS "default" branch in `hacs.json` controls which branch users get. You could set `"default_branch": "5.0"` while keeping `3.0` as a selectable alternative, or use HACS version constraints.
-    - Document migration path in README — what breaks, what to back up, how to switch branches.
+    - Create `5.0` branch from current `4.0` HEAD.
+    - Tag the last stable 4.x commit as a GitHub Release (e.g., `v4.10.3`) — **not** marked as pre-release. This anchors stable users.
+    - Publish 5.0 work as GitHub Releases with pre-release tags (e.g., `v5.0.0-beta.1`, `v5.0.0-beta.2`) — **marked as pre-release**. Users enable "Show beta versions" in HACS to see these.
+    - `4.0` stays the default branch and the stable HACS track. No changes to `hacs.json` needed on either branch.
+    - When 5.0 is stable, publish a full release (`v5.0.0`), merge `5.0` into `4.0` (or rename `5.0` to default), and tag it as the new stable.
+    - Document migration path in README on the `5.0` branch — what breaks, what to back up, how to switch.
 
     2. I want to change the way dashboards are created and be able to add more than just the one.
     2.1 Clean up the existing dashboard and remove the list view, make it just the area view, and rename the dashboard name from LCARS Dashboard to "Habitat."

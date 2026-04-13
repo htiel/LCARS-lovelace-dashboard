@@ -1,5 +1,5 @@
-Level 1 changes for 4.x.x
-    1. ✅ **DONE (v4.7.0, a56c748)** — Environment panel with atmoscrubber cylinder, AQ detection heuristic, entity partitioning, 24h sparklines, fan preset controls, panel ordering. Using the card framework make a "environment" card that bring togther the areas air quality, tempature, humiditiy, air purifier type sensors, controls, and fans.  Modeled like the battery card where the display is a cylendar with air flowing through it tied to the fan spped of the airpurifier if there is one, sensors or diagnostics to the left, controls and switeched to the right, graphed 24 hour history of the quality sensors under, where the power graphs are in the battery card.  Make sure this card sits under the security card but above the battery card. consult all agents.
+Level 1 Changes for 4.x.x
+    1. ✅ **DONE (v4.7.0, a56c748)** — Environment panel with atmoscrubber cylinder, AQ detection heuristic, entity partitioning, 24h sparklines, fan preset controls, panel ordering. Using the card framework, make an "environment" card that brings together the area's air quality, temperature, humidity, air purifier type sensors, controls, and fans. Modeled like the battery card where the display is a cylinder with air flowing through it tied to the fan speed of the air purifier if there is one, sensors or diagnostics to the left, controls and switches to the right, graphed 24-hour history of the quality sensors under where the power graphs are in the battery card. Make sure this card sits under the security card but above the battery card. Consult all agents.
 
     **IMPLEMENTATION NOTES:**
     - **Detection**: New `PANEL_TYPE_ENVIRONMENT` in `_getDevicePanelType()`. Trigger: device has ≥2 of: `device_class` in {`temperature`, `humidity`, `pm25`, `pm10`, `volatile_organic_compounds`, `carbon_dioxide`, `aqi`} OR domain is `fan`/`air_quality`. Covers Awair Elements, ecobee, standalone fans.
@@ -19,7 +19,7 @@ Level 1 changes for 4.x.x
     - **State-dependent image swap**: They swap `purifier-working.gif` / `purifier-standby.png` based on `state === 'on'`. Our cylinder animation should similarly pause/dim when fan is off — use CSS `animation-play-state: paused` tied to entity state rather than swapping images.
     - **What NOT to borrow**: Their round card layout, `ha-card` wrapper (we render inside our panel grid), `custom-card-helpers` dependency (we use direct hass API), GIF-based animation (we'll use CSS/SVG), `ha-template` for Jinja2 eval (unnecessary complexity for our auto-discovered entities).
 
-    2. ✅ **DONE (v4.9.0)** — Floor-grouped area navigation with combined floor view, drill-down to area, Map-based entity cache. arange the area dashboard by floor in the navbar using the area configuraion, so each floor gets it sections and the areas are below the floor, if I click on the floor it should combine all the devices in that floor in a singel view, and then I can drill down by selecting the actual room/area.
+    2. ✅ **DONE (v4.9.0)** — Floor-grouped area navigation with combined floor view, drill-down to area, map-based entity cache. Arrange the area dashboard by floor in the navbar using the area configuration, so each floor gets its sections and the areas are below the floor. If I click on the floor it should combine all the devices in that floor in a single view, and then I can drill down by selecting the actual room/area.
 
     **IMPLEMENTATION NOTES:**
     - **Data source**: `this._hass.floors` (HA floor registry, available since HA 2024.2+). Each floor has `floor_id`, `name`, `level` (integer sort order), and `icon`. Areas have `floor_id` linking to their floor.
@@ -38,12 +38,12 @@ Level 1 changes for 4.x.x
     - **v4.10.3**: Elbow stem alignment with area buttons (elbow-w 9.5→10.5rem, removed +2rem cutout offset, inner curve 1.5rem)
     - **Brand images**: Created `brand/` directory with icon.png, icon@2x.png, logo.png, logo@2x.png for HA 2026.3+ integration branding
 
-    full pass for each agent, Worf should make sure there is no code injection risk of people naming devices and causes security issues.  Geordi, should do afull accessiblity pass making sure tab orders are corect and headding levels guide the screen reader from area, device, entities, etc.
+    Full pass for each agent. Worf should make sure there is no code injection risk of people naming devices and causing security issues. Geordi should do a full accessibility pass making sure tab orders are correct and heading levels guide the screen reader from area, device, entities, etc.
 
 
 
-Breaking changes and rev to versions 5.x.x
-    1. set up a new 5.0 branch, so users could stay on 4.0 or select verion 5.0 in HACS
+Breaking Changes and Rev to Versions 5.x.x
+    1. Set up a new 5.0 branch, so users could stay on 4.0 or select version 5.0 in HACS.
 
     **IMPLEMENTATION NOTES:**
     - Create `5.0` branch from current `3.0` HEAD. The `3.0` branch name is legacy from the Dwains fork — consider renaming to `main` or `stable` at this point.
@@ -52,14 +52,14 @@ Breaking changes and rev to versions 5.x.x
     - Document migration path in README — what breaks, what to back up, how to switch branches.
 
     2. I want to change the way dashboards are created and be able to add more than just the one.
-    2.1 Clean up the exisitng dashbaord and remove the list view, make it just the area view and rename the dashboard name from LCARS dashboard to "habitat"
+    2.1 Clean up the existing dashboard and remove the list view, make it just the area view, and rename the dashboard name from LCARS Dashboard to "Habitat."
 
     **IMPLEMENTATION NOTES:**
     - In `load_dashboard.py`, the dashboard is registered via `hass.data["lovelace"]["dashboards"]`. Change the `title` from "LCARS Dashboard" to "Habitat". Update `url_path` from `lcars-dashboard` to `habitat` (will break existing bookmarks — document as breaking change).
     - Remove the "list view" — this is likely `02.devices.yaml` or the more-pages views. Delete the view YAML and remove the corresponding entry from `ui-lovelace.yaml` views array.
     - Update `lcars-navigation-card.js` to remove any view-switching logic for the list view.
 
-    2.2 create a new root leval dashboard calles "security" and pull all of the lock, cameras, and other security type snesors on to that dashboard keeping the cards as desigind but bringing a single security view.
+    2.2 Create a new root-level dashboard called "Security" and pull all of the locks, cameras, and other security-type sensors onto that dashboard, keeping the cards as designed but bringing a single security view.
 
     **IMPLEMENTATION NOTES:**
     - **Python side**: In `load_dashboard.py`, register a second Lovelace dashboard with `url_path: "security"`, `title: "Security"`. Each dashboard needs its own `ui-lovelace-security.yaml` template.
@@ -67,7 +67,7 @@ Breaking changes and rev to versions 5.x.x
     - **Layout**: Group by area (floor > area > entities). Cameras get their existing panel treatment. Locks/sensors get toggle/sensor renderers. Top-level summary bar: "3 doors open, 2 cameras active, all locks secured" type status.
     - **Card reuse**: The existing camera panel, sensor renderers, and toggle renderers can be shared. The new dashboard just uses a different entity selection filter.
 
-    2.3 create a new root level dashboard called "power" that brings togther all the battery cards, other electrical sensors, like power consumption etc.
+    2.3 Create a new root-level dashboard called "Power" that brings together all the battery cards, other electrical sensors, power consumption, etc.
 
     **IMPLEMENTATION NOTES:**
     - Same pattern as security: new `ui-lovelace-power.yaml`, registered in `load_dashboard.py`.
@@ -75,14 +75,14 @@ Breaking changes and rev to versions 5.x.x
     - Layout: Battery panels at top (existing warp core cards). Below: energy consumption sensors grouped by area/circuit. Could add a whole-home power summary bar at the top showing total consumption, solar generation, grid import/export.
     - Future: integrate with HA Energy dashboard data (`/api/energy/solar_forecast`, etc.).
 
-    2.4 create a new root level dashboard called "environmental" that pulls togther all the are quality, termostatats, etc. cards to a single view
+    2.4 Create a new root-level dashboard called "Environmental" that pulls together all the air quality, thermostats, etc. cards into a single view.
 
     **IMPLEMENTATION NOTES:**
     - Entity filter: `device_class` in {`temperature`, `humidity`, `pm25`, `pm10`, `carbon_dioxide`, `volatile_organic_compounds`, `aqi`} OR `domain` in {`climate`, `fan`, `air_quality`, `humidifier`}.
     - Reuses the environment panel cards from 4.x item #1. Plus climate/thermostat panels.
     - Layout: Floor-grouped view. Each area shows its environment panel (if it has one) + standalone temp/humidity sensors. Top summary: indoor vs outdoor temp, worst AQI reading, any HVAC alerts.
 
-    2.5 Add a lighting dashboard to see and control all lighting and switches in the house
+    2.5 Add a lighting dashboard to see and control all lighting and switches in the house.
 
     **IMPLEMENTATION NOTES:**
     - **Entity filter**: `domain` in {`light`, `switch`}, plus `cover` entities with `device_class` in {`blind`, `curtain`, `shade`} since they affect lighting. Exclude `switch` entities that are already exposed as `light` via switch_as_x (check `hidden_by` on the switch side — same pattern as the v4.6.2 fix).

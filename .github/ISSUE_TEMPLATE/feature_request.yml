@@ -1,0 +1,55 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea for LCARS Dashboard? We'd love to hear it. Bonus points for Star Trek naming conventions.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the use case or frustration that led to this idea.
+      placeholder: "I want to see all my security cameras in one place because..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the feature
+      description: What should it do? How should it look/behave?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area does this affect?
+      options:
+        - Dashboard layout / frame
+        - Sidebar navigation
+        - Entity rendering (lights, sensors, switches, etc.)
+        - Battery / warp core panel
+        - Environment / atmoscrubber panel
+        - Camera panel
+        - Edit / configuration mode
+        - Python backend / integration
+        - New dashboard idea
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any other approaches you've thought about?
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Mockups or references
+      description: Screenshots, sketches, or links to similar features in other projects.

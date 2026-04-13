@@ -40,9 +40,9 @@ Level 1 Changes for 4.x.x
 
     Full pass for each agent. Worf should make sure there is no code injection risk of people naming devices and causing security issues. Geordi should do a full accessibility pass making sure tab orders are correct and heading levels guide the screen reader from area, device, entities, etc.
 
-    4. Make a media card like the others that combines Apple TVs, HomePods, Sonos, etc. in the same room.
+    4. ✅ **DONE (v4.11.0)** — Media panel for Apple TV, HomePod, Sonos. Album art viewscreen, transport controls, volume bar, source selector. Worf-mandated artwork URL validation.
 
-    5. Add `climate` domain rendering to the environment panel for thermostats (Nest, Ecobee, Honeywell, etc.). Display current temperature, target temperature, HVAC mode (heat/cool/auto/off), fan mode, and humidity per zone. Eric's setup has 3 Nest thermostats (1st/2nd/3rd floor) — this is the biggest gap for environment card adoption. Detect via `domain === "climate"` and render inline with existing air quality sensors. Consult Geordi for LCARS-styled thermostat controls.
+    5. ✅ **DONE (v4.11.0)** — Climate panel for Nest, Ecobee thermostats. SVG temperature arc, setpoint controls with debouncing/clamping, HVAC mode strips, dual setpoint for heat_cool. Display current temperature, target temperature, HVAC mode (heat/cool/auto/off), fan mode, and humidity per zone. Eric's setup has 3 Nest thermostats (1st/2nd/3rd floor) — this is the biggest gap for environment card adoption. Detect via `domain === "climate"` and render inline with existing air quality sensors. Consult Geordi for LCARS-styled thermostat controls.
 
     **IMPLEMENTATION NOTES:**
     - **Detection**: In `_getDevicePanelType()`, add `climate` domain as a trigger for `PANEL_TYPE_ENVIRONMENT`. Currently triggers on AQ sensors + fans. Thermostats are the other half of the "environmental" picture.
@@ -52,7 +52,7 @@ Level 1 Changes for 4.x.x
     - **Multi-zone display**: If an area has multiple climate entities (rare), stack them. If floor view shows 3 zones, render a compact multi-zone comparison strip.
     - **Reference**: SwitchBot meters (WoTHP) provide per-room temperature/humidity as standalone sensors — these don't need climate controls, just readout bars in the environment panel alongside AQ sensors.
 
-    6. Add `alarm_control_panel` domain rendering to the security panel. Eric has SimpliSafe with 30+ door/window entry sensors. Render alarm status (armed_away/armed_home/disarmed/triggered) with arm/disarm controls. Flag for Worf: PIN protection at the UI level for alarm control actions.
+    6. ✅ **DONE (v4.11.0)** — Alarm panel for SimpliSafe, Honeywell, Ring. SVG shield, PIN keypad with rate limiter, arm mode strip, zone roster, countdown timer, triggered pulse animation.
 
     **IMPLEMENTATION NOTES:**
     - **Detection**: `alarm_control_panel` domain entities should auto-route to the security panel or render prominently at the top of any area that contains one.
@@ -60,7 +60,7 @@ Level 1 Changes for 4.x.x
     - **Service calls**: `alarm_control_panel.alarm_arm_home`, `alarm_control_panel.alarm_arm_away`, `alarm_control_panel.alarm_disarm`. Disarm requires `code` parameter — render a numeric PIN pad in LCARS style.
     - **Worf**: Disarm action MUST require a PIN. Arm actions should have a confirmation dialog ("COMMAND AUTHORIZATION REQUIRED"). Never send PIN in URL or log it.
 
-    7. Add Pentair ScreenLogic pool/spa support as a new panel type or dedicated device grouping. Eric has a Pentair EasyTouch2 with pool heater, spa heater, waterfall, bubblers, spillway, air blower, cleaner, pool/spa lights, and temperature sensors. This is a complex subsystem with 10+ entities that doesn't fit neatly into existing panels.
+    7. ✅ **DONE (v4.11.0)** — Pool/spa panel for Pentair ScreenLogic. Dual viewscreens, chemistry readouts, circuit toggles, pool lighting controls. Eric has a Pentair EasyTouch2 with pool heater, spa heater, waterfall, bubblers, spillway, air blower, cleaner, pool/spa lights, and temperature sensors. This is a complex subsystem with 10+ entities that doesn't fit neatly into existing panels.
 
     **IMPLEMENTATION NOTES:**
     - **Detection**: New `PANEL_TYPE_POOL` or group by `platform === "screenlogic"` or `identifiers` containing `screenlogic`.
@@ -79,9 +79,9 @@ Level 1 Changes for 4.x.x
     - **CO2 meter**: If a SwitchBot device has `co2` or `carbon_dioxide` device_class, include it in the AQ sensor list — it should trigger the full atmoscrubber visualization.
     - **Multi-sensor rooms**: If a room has both a SwitchBot meter AND an Awair, group them under the same environment panel rather than creating duplicate panels.
 
-    10. Add weather entity rendering. Eric has Davis Instruments WLL 6100 + Vantage Pro2 Plus with UV/solar radiation, plus WeatherFlow Tempest, plus AirLink indoor/outdoor air quality monitors. The `weather` domain entities provide forecast data. Consider a compact weather summary strip for the environment panel or a dedicated weather card.
+    10. ✅ **DONE (v4.11.0)** — Weather panel for Davis Instruments, WeatherFlow. SVG display, wind compass, 7-day forecast strip, lightning/precipitation sensors. Eric has Davis Instruments WLL 6100 + Vantage Pro2 Plus with UV/solar radiation, plus WeatherFlow Tempest, plus AirLink indoor/outdoor air quality monitors. The `weather` domain entities provide forecast data. Consider a compact weather summary strip for the environment panel or a dedicated weather card.
 
-    11. Add Rachio irrigation zone/schedule status rendering. Eric has a Rachio 3 with 8 zones, multiple schedules, rain delay, and a rain sensor. Consider an "irrigation" or "grounds" grouping that shows zone status, active schedules, rain delay, and rain sensor state. Detect via `platform === "rachio"` or `identifiers` containing `rachio`.
+    11. ✅ **DONE (v4.11.0)** — Irrigation panel for Rachio. Zone list with START/STOP, active fill bar, standby toggle, rate-limited zone switching. Eric has a Rachio 3 with 8 zones, multiple schedules, rain delay, and a rain sensor. Consider an "irrigation" or "grounds" grouping that shows zone status, active schedules, rain delay, and rain sensor state. Detect via `platform === "rachio"` or `identifiers` containing `rachio`.
 
 Breaking Changes and Rev to Versions 5.x.x
     1. Set up a new 5.0 branch with GitHub pre-release tags so users can opt in to the beta via HACS.

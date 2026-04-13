@@ -40,7 +40,7 @@ Level 1 Changes for 4.x.x
 
     Full pass for each agent. Worf should make sure there is no code injection risk of people naming devices and causing security issues. Geordi should do a full accessibility pass making sure tab orders are correct and heading levels guide the screen reader from area, device, entities, etc.
 
-
+    4. Make a media card like the others that combines Apple TVs, HomePods, Sonos, etc. in the same room.
 
 Breaking Changes and Rev to Versions 5.x.x
     1. Set up a new 5.0 branch, so users could stay on 4.0 or select version 5.0 in HACS.

@@ -237,7 +237,7 @@ The internal sensors grid is an **environmental monitoring display** — the sam
   width: 0.5rem;
   height: 0.5rem;
   background: var(--lcars-ice);
-  border-radius: 50%;
+  /* G-F1: Square indicator — LCARS uses rectangles, not circles */
   flex-shrink: 0;
 }
 ```
@@ -277,7 +277,11 @@ Each tile is a compact, self-contained readout cell — the equivalent of one de
 ```html
 <div class="sensor-tile ${comfortClass}"
      role="listitem"
-     aria-label="${areaName}: ${temperature} degrees, ${humidity} percent humidity">
+     tabindex="0"
+     aria-label="${areaName}: ${temperature} degrees, ${humidity} percent humidity"
+     @click="${(e) => handleTileTap(e, temperatureEntityId)}"
+     @keydown="${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTileTap(e, temperatureEntityId); } }}">
+  <!-- G-F3: tabindex + keydown added for WCAG 2.1.1 keyboard accessibility -->
 
   <!-- Room Name -->
   <div class="tile-name">${areaName}</div>
@@ -366,13 +370,19 @@ Each tile is a compact, self-contained readout cell — the equivalent of one de
   border-color: var(--lcars-blue);
 }
 
-.sensor-tile.humidity-warn {
-  border-right-color: var(--lcars-sunflower);
-}
+/* G-F2: .humidity-warn removed — border is temperature-only.
+   Humidity state is encoded via text color only (WCAG 1.4.1 — avoid
+   conflicting dual-encoding on border). See §5 design notes. */
 
 .sensor-tile.unavailable {
   border-color: var(--lcars-gray);
   opacity: 0.5;
+}
+
+/* G-F3: Focus styles for keyboard navigation (WCAG 2.1.1, 2.4.7) */
+.sensor-tile:focus-visible {
+  outline: 2px solid var(--lcars-sunflower);
+  outline-offset: 2px;
 }
 ```
 
@@ -767,50 +777,60 @@ The card uses the HA WebSocket API to discover SwitchBot Meter devices without r
  * Discover all SwitchBot Meter temperature/humidity sensor groups.
  * Returns an array of room objects with entity IDs and area info.
  *
- * Strategy:
- *   1. Fetch all entities via `config/entity_registry/list`
- *   2. Filter for platform: 'switchbot', device_class: 'temperature'
- *   3. For each temperature entity, find the sibling humidity and battery
- *      entities via shared device_id
- *   4. Fetch device info via `config/device_registry/list` to get area_id
- *   5. Fetch area info via `config/area_registry/list` to get area name and floor_id
- *   6. Fetch floor info via `config/floor_registry/list` for floor names
- *   7. Optionally exclude "appliance" meters (by name_by_user or device name
+ * Strategy (D-C1: use hass object properties — NO WebSocket calls for discovery):
+ *   1. Read registries from hass.entities, hass.devices, hass.areas, hass.floors
+ *   2. Filter for device_class: 'temperature' (generalized — not platform-specific)
+ *   3. Exclude devices that also have fan/climate/air_quality entities (those are
+ *      air purifiers, HVAC, or air quality monitors — handled by other panels)
+ *   4. For each temperature entity, find sibling humidity and battery entities
+ *      via shared device_id
+ *   5. Resolve area and floor from device → area → floor chain
+ *   6. Optionally exclude "appliance" meters (by name_by_user or device name
  *      containing "fridge", "freezer", etc.)
+ *   7. Validate all entity IDs with ENTITY_ID_RE at extraction time (W-R1)
  *
- * @param {Object} hass - Home Assistant connection object
+ * @param {Object} hass - Home Assistant connection object (with .entities, .devices, .areas, .floors)
  * @param {Object} config - Card configuration
- * @returns {Promise<Array<RoomSensorGroup>>}
+ * @returns {Array<RoomSensorGroup>}
  */
-async function discoverSensorGroups(hass, config) {
-  // Step 1: Fetch registries
-  const [entities, devices, areas, floors] = await Promise.all([
-    hass.callWS({ type: 'config/entity_registry/list' }),
-    hass.callWS({ type: 'config/device_registry/list' }),
-    hass.callWS({ type: 'config/area_registry/list' }),
-    hass.callWS({ type: 'config/floor_registry/list' }),
-  ]);
+function discoverSensorGroups(hass, config) {
+  const ENTITY_ID_RE = /^[a-z_]+\.[a-z0-9_]+$/; // W-R1: validate at extraction
 
-  // Step 2: Build lookup maps
-  const deviceMap = new Map(devices.map(d => [d.id, d]));
-  const areaMap = new Map(areas.map(a => [a.id, a]));
-  const floorMap = new Map(floors.map(f => [f.floor_id, f]));
+  // D-C1: Use hass object properties — NO WebSocket calls for registry discovery.
+  // These are already loaded and reactive on the hass object.
+  const entities = Object.values(hass.entities || {});
+  const devices  = hass.devices || {};
+  const areas    = hass.areas || {};
+  const floors   = hass.floors || {};  // HA 2024.2+, fallback to empty
 
-  // Step 3: Find SwitchBot temperature entities
+  // Build device → entities lookup
+  const deviceMap = new Map();
+
+  // Step 2: Find temperature entities (generalized — not platform-specific)
+  // Exclude devices that also have fan/climate/air_quality entities
+  const EXCLUDE_DOMAINS = new Set(['fan', 'climate']);
+  const AQ_CLASSES = new Set(['aqi', 'pm25', 'pm10', 'volatile_organic_compounds']);
+
   const tempEntities = entities.filter(e =>
-    e.platform === 'switchbot' &&
     e.original_device_class === 'temperature' &&
-    !e.disabled_by
+    !e.disabled_by &&
+    ENTITY_ID_RE.test(e.entity_id)  // W-R1: validate at extraction
   );
 
-  // Step 4: Group by device_id and resolve siblings + area
+  // Step 3: Group by device_id, exclude environment panel devices, resolve siblings + area
   const groups = [];
-  const appliancePattern = /fridge|freezer|wine\s*cooler/i;
+  const appliancePattern = /fridge|freezer|wine\s*cooler|kegerator|deep\s*freeze/i;
 
   for (const tempEntity of tempEntities) {
     const deviceId = tempEntity.device_id;
-    const device = deviceMap.get(deviceId);
+    const device = devices[deviceId];
     if (!device) continue;
+
+    // Exclude devices that belong to other panels (air purifiers, HVAC, etc.)
+    const siblings = entities.filter(e => e.device_id === deviceId && !e.disabled_by);
+    const hasExcludedDomain = siblings.some(e => EXCLUDE_DOMAINS.has(e.entity_id?.split('.')[0]));
+    const hasAqSensor = siblings.some(e => AQ_CLASSES.has(e.original_device_class));
+    if (hasExcludedDomain || hasAqSensor) continue;
 
     // Optional: exclude appliance monitors
     const deviceName = device.name_by_user || device.name || '';
@@ -819,15 +839,18 @@ async function discoverSensorGroups(hass, config) {
     }
 
     // Find sibling entities on the same device
-    const siblings = entities.filter(e => e.device_id === deviceId && !e.disabled_by);
-    const humidityEntity = siblings.find(e => e.original_device_class === 'humidity');
-    const batteryEntity = siblings.find(e => e.original_device_class === 'battery');
+    const humidityEntity = siblings.find(e =>
+      e.original_device_class === 'humidity' && ENTITY_ID_RE.test(e.entity_id)
+    );
+    const batteryEntity = siblings.find(e =>
+      e.original_device_class === 'battery' && ENTITY_ID_RE.test(e.entity_id)
+    );
 
     // Resolve area and floor
     const areaId = device.area_id;
-    const area = areaId ? areaMap.get(areaId) : null;
+    const area = areaId ? areas[areaId] : null;
     const floorId = area ? area.floor_id : null;
-    const floor = floorId ? floorMap.get(floorId) : null;
+    const floor = floorId ? floors[floorId] : null;
 
     groups.push({
       deviceId,
@@ -879,40 +902,34 @@ function groupByFloor(sensorGroups) {
 
 ```javascript
 /**
- * Fetch 24h history for a sensor entity.
- * Uses HA REST API `/api/history/period`.
- * Returns an array of numeric values at ~15-minute intervals.
+ * v4.14.0 UPDATE (W-R2): The original fetchSensorHistory() using REST API
+ * (hass.callApi('GET', 'history/period/...')) has been replaced.
  *
- * @param {Object} hass - Home Assistant connection object
- * @param {string} entityId - Entity ID to fetch history for
- * @returns {Promise<number[]>} Array of ~96 numeric data points
+ * Use the shared fetchSparklineData() from lcars-sparkline.js which uses
+ * hass.callWS({ type: 'recorder/statistics_during_period' }) — WebSocket only.
  */
-async function fetchSensorHistory(hass, entityId) {
-  const now = new Date();
-  const start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const startISO = start.toISOString();
-
-  const url = `history/period/${startISO}?filter_entity_id=${encodeURIComponent(entityId)}&minimal_response&no_attributes`;
-
-  try {
-    const result = await hass.callApi('GET', url);
-    if (!result || !result[0]) return [];
-
-    // Downsample to ~96 points (every 15 minutes)
-    const states = result[0];
-    const interval = Math.max(1, Math.floor(states.length / 96));
-    return states
-      .filter((_, i) => i % interval === 0)
-      .map(s => {
-        const v = parseFloat(s.state);
-        return isNaN(v) ? null : v;
-      })
-      .filter(v => v !== null);
-  } catch (e) {
-    console.warn(`LCARS Sensors Grid: Failed to fetch history for ${entityId}`, e);
-    return [];
-  }
-}
+// W-R2: DO NOT use REST API (hass.callApi) for history data.
+// Reuse the shared fetchSparklineData() from lcars-sparkline.js which uses
+// hass.callWS({ type: 'recorder/statistics_during_period' }) — WebSocket only.
+//
+// import { fetchSparklineData, renderSparkline } from './lcars-sparkline.js';
+//
+// Usage in the grid card:
+//   const entityIds = this._sensorGroups.map(g => g.temperatureEntityId);
+//   const data = await fetchSparklineData(this._hass, entityIds, {
+//     cacheKey: 'sensors-grid',
+//     cache: this._gridHistoryCache,
+//     maxEntities: 14,  // matches typical fleet size
+//   });
+//
+// Render per tile:
+//   renderSparkline(data[group.temperatureEntityId], { width: 100, height: 16 })
+//
+// The shared function already handles:
+//   - ENTITY_ID_RE validation on all entity IDs
+//   - 5-minute TTL cache to prevent redundant fetches
+//   - Pre-aggregated 5-minute statistics (no client-side downsampling needed)
+//   - Single WebSocket call for ALL entities (vs 14 HTTP round-trips)
 ```
 
 ---

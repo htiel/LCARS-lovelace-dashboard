@@ -3464,6 +3464,11 @@ class LcarsHomepageCard extends LitElement {
 
     /* ─── Sensor indicator color per state (Geordi spec) ─── */
     _getSensorIndicatorColor(state) {
+      // 4X-1: CO₂-specific 3-tier coloring (D-C2 — wire getCo2Color into rendering)
+      const dc = state?.attributes?.device_class || '';
+      if (dc === 'carbon_dioxide') {
+        return getCo2Color(state?.state);
+      }
       return getStateColor(state?.entity_id || '', state);
     }
 
@@ -3647,8 +3652,8 @@ class LcarsHomepageCard extends LitElement {
         const dc = entry.state?.attributes?.device_class || '';
         const domain = entry.domain;
 
-        // Controls: fan, switch, button, number, select
-        if (['fan', 'switch', 'button', 'number', 'select'].includes(domain)) {
+        // Controls: fan, switch, button, number, select, light (4X-1: BlueAir LED)
+        if (['fan', 'switch', 'button', 'number', 'select', 'light'].includes(domain)) {
           controls.push(entry);
           continue;
         }

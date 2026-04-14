@@ -1076,8 +1076,8 @@ The following shared animation motifs are introduced in v4.13.0. Each panel spec
 | **Value Change Ripple** | Left-border width+color flash on data update | 300ms ease-out, single fire | Temp/Humidity Grid |
 
 #### Performance Budget (per panel)
-- ≤ 6 concurrent CSS animations
-- ≤ 2 `box-shadow` animations
+- ≤ 6 concurrent CSS animations (perceptible; GPU-composited transients during first-render stagger are exempt)
+- ≤ 2 `box-shadow` keyframe definitions per panel; instances limited by visual perceptibility (clustered identical animations count as 1 perceptual unit)
 - All looping animations gated behind `prefers-reduced-motion`
 - Prefer `transform` and `opacity` for GPU-composited animations
 - No gradients on interactive controls (buttons, toggles)

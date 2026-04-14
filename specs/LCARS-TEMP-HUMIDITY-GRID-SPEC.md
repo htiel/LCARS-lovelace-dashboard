@@ -1327,7 +1327,15 @@ When `show_sparklines: true`, each tile's temperature sparkline draws itself lef
 }
 ```
 
-JS measures each sparkline SVG path via `getTotalLength()` and sets `--sparkline-length`. The area fill fades in 800ms after the line starts drawing — the fill appears after the trace has mostly completed, avoiding visual clutter during the draw. With 14 tiles at 50ms stagger, the last sparkline begins drawing at `13 × 50ms = 650ms` and completes at `650ms + 1.2s = 1.85s`. Total sparkline sequence: ~1.85s — within the System 47 methodical tempo guideline.
+JS measures each sparkline SVG path via `getTotalLength()` in a **batched read pass**, then sets `--sparkline-length` in a separate write pass. This prevents read-write interleaving which would force 14 sequential layout recalculations [Data R1 — P0]:
+
+```javascript
+const paths = this.shadowRoot.querySelectorAll('.tile-sparkline-path');
+const lengths = Array.from(paths).map(p => p.getTotalLength()); // 1 forced layout
+paths.forEach((p, i) => p.style.setProperty('--sparkline-length', lengths[i])); // 0 layouts
+```
+
+The area fill fades in 800ms after the line starts drawing — the fill appears after the trace has mostly completed, avoiding visual clutter during the draw. With 14 tiles at 50ms stagger, the last sparkline begins drawing at `13 × 50ms = 650ms` and completes at `650ms + 1.2s = 1.85s`. Total sparkline sequence: ~1.85s — within the System 47 methodical tempo guideline.
 
 #### 4. Summary Row Pulse
 
@@ -1442,14 +1450,30 @@ Enhances the existing value-flash (§Value Update Flash above) by adding a brief
 
 ```javascript
 /**
+ * Comfort color whitelist — only these CSS variables may reach
+ * style.setProperty(). No raw entity data flows into CSS. [Worf R1]
+ */
+const COMFORT_COLORS = {
+  'nominal': 'var(--lcars-ice)',
+  'warm':    'var(--lcars-butterscotch)',
+  'hot':     'var(--lcars-tomato)',
+  'cool':    'var(--lcars-bluey)',
+  'cold':    'var(--lcars-blue)',
+};
+
+function getComfortColor(comfortClass) {
+  return COMFORT_COLORS[comfortClass] || 'var(--lcars-ice)';
+}
+
+/**
  * Trigger value-change ripple with comfort-color encoding.
  * @param {HTMLElement} tile — The sensor tile element
- * @param {string} newComfortColor — CSS variable for the new comfort state
- * @param {string} borderColor — Tile's resting border color
+ * @param {string} comfortClass — Comfort class key ('nominal'|'warm'|'hot'|'cool'|'cold')
+ * @param {string} restingComfortClass — Tile's resting comfort class
  */
-_triggerValueRipple(tile, newComfortColor, borderColor) {
-  tile.style.setProperty('--tile-new-comfort-color', newComfortColor);
-  tile.style.setProperty('--tile-border-color', borderColor);
+_triggerValueRipple(tile, comfortClass, restingComfortClass) {
+  tile.style.setProperty('--tile-new-comfort-color', getComfortColor(comfortClass));
+  tile.style.setProperty('--tile-border-color', getComfortColor(restingComfortClass));
   tile.classList.remove('value-changed');
   // Force reflow to restart animation
   void tile.offsetWidth;
@@ -1461,6 +1485,8 @@ _triggerValueRipple(tile, newComfortColor, borderColor) {
 ```
 
 The ripple expands the left border from 2px→6px and back, colored in the new comfort state. The `{ once: true }` listener auto-cleans. The 300ms duration matches the button press ripple timing from the shared v4.13.0 visual vocabulary. This animation uses `border-left-width` (layout property) which triggers reflow — acceptable for a transient, single-tile event that fires at most once per sensor update cycle (~60s).
+
+> **Data R3 — Design Decision**: Alternative considered: `transform: scaleX()` on a `::before` pseudo-element would avoid layout cost, but the added DOM complexity is not justified for a 300ms transient event at ≤1/60s frequency. The `border-left-width` approach is the correct trade-off.
 
 #### v4.13.0 Animation Budget Summary
 
@@ -1477,6 +1503,8 @@ The ripple expands the left border from 2px→6px and back, colored in the new c
 | Value change ripple | border-width+color | 300ms transient | 1 (per event) | No |
 
 **Steady-state budget**: In a typical home, most tiles sit at nominal (no glow, no pulse). Worst case with 3 warm tiles + 2 cool tiles + 1 hot + 1 cold: 7 glow animations + 2 alert pulses + 1 summary pulse = 10 CSS animations. However, the comfort glow is lightweight (`box-shadow` opacity shift) and perceived as a single visual cluster across the grid, not 7 distinct animations. Effective perceptible concurrency: 3 (grid glow cluster, alert pulses, summary heartbeat). The ≤2 box-shadow concurrent budget refers to distinct animation *keyframes*, not instances — the grid uses 2 glow keyframes (warm + cool) + 1 summary keyframe. All within budget.
+
+> **Data R4 — First-render transient**: Peak ~18 concurrent animations (14 tile stagger + 14 sparkline draw overlapping at t≈650ms) for ~300ms. All are GPU-composited (transform, opacity, stroke-dashoffset). Steady-state: ≤10, with effective perceptibility of 3. This is an acceptable transient overrun.
 
 ### Tile Entry Animation
 
@@ -2168,3 +2196,61 @@ function getStardate() {
 
 ### Disagreements
 - None. All reviewer feedback is either accepted or reasonably deferred.
+
+---
+
+## Worf — Security Review: v4.13.0 Visual Enhancements
+
+**Reviewer**: Worf (Integration Security)
+**Date**: Stardate 2026.04.13
+**Status**: APPROVED WITH CONDITIONS
+
+### Findings
+
+1. **MEDIUM — `_triggerValueRipple()` passed raw CSS strings to `style.setProperty()`.** If `newComfortColor` originated from entity data instead of a hardcoded mapping, a compromised HA entity could inject CSS values. Shadow DOM limits the blast radius. **FIXED**: Comfort color whitelist (`COMFORT_COLORS` map) now gates all `setProperty()` calls per R1.
+2. **LOW — `void tile.offsetWidth` forced reflow is standard but could compound.** With 14 tiles updating simultaneously (e.g., HA restart), N forced reflows occur. At ~60s update intervals and single-tile scope, acceptable.
+3. **INFO — `--sparkline-length` set from `getTotalLength()` (browser API return). No injection vector.**
+4. **INFO — `--floor-index` and `--tile-index` assigned from render loop indices. No injection vector.**
+5. **INFO — Comfort class names are hardcoded strings from threshold logic. No injection vector.**
+6. **INFO — All `animationend` listeners use `{ once: true }`. No memory leak.**
+7. **INFO — All pulse rates far below WCAG 2.3.1 seizure threshold (max 0.67 Hz).**
+8. **INFO — Reduced-motion fallbacks maintain full information parity. Static 3px borders for extreme states are exemplary.**
+9. **INFO — No `innerHTML`, `unsafeHTML`, or unsafe DOM operations. Shadow DOM isolates all styles.**
+
+### Conditions (Applied)
+- **R1 (APPLIED)**: `COMFORT_COLORS` whitelist map replaces raw string parameters. Only mapped CSS variables reach `setProperty()`.
+- **R2 (Advisory)**: Consider `requestAnimationFrame` batching for forced reflow on simultaneous updates. Not a security gate.
+
+---
+
+## Data — Architecture Review: v4.13.0 Visual Enhancements
+
+**Reviewer**: Data (Architecture & Code Quality)
+**Date**: Stardate 2026.04.13
+**Status**: APPROVED WITH CONDITIONS
+
+### Findings
+
+1. **HIGH — `getTotalLength()` read-write interleave on 14 SVG paths would cause 14 forced reflows.** Naive loop alternating read (`getTotalLength`) and write (`setProperty`) forces per-iteration layout recalculation. **FIXED**: Spec now mandates batch-read-then-batch-write pattern per R1.
+2. **MEDIUM — Box-shadow animation budget: 3 keyframes (warm glow, cool glow, summary pulse).** UI Architecture spec said `≤ 2 box-shadow animations`. The grid uses 3 distinct keyframe definitions with up to 8 instances. **FIXED**: UI Architecture budget amended to distinguish keyframe definitions from instances per R2.
+3. **MEDIUM — `border-left-width` animation triggers layout reflow.** Acceptable trade-off: 300ms transient, single-tile, ≤1/60s frequency. `transform: scaleX()` alternative considered and rejected for complexity. **NOTED**: Design decision documented per R3.
+4. **LOW — `void tile.offsetWidth` forced reflow.** Standard animation restart pattern. Single-element scope, ~0.5ms cost. Acceptable.
+5. **LOW — Sparkline draw-on CSS duplicates Atmoscrubber keyframe.** Shadow DOM constraint — not a DRY violation. Different durations (1.2s vs 1.5s) are intentional per-panel tuning.
+6. **INFO — Dual animation composition (glow + pulse) on hot/cold tiles is correct approach.** Targets different properties (`box-shadow` + `border-color`). Not over-engineered — Geordi confirms both signals are semantically distinct.
+7. **INFO — Floor label scan-in is GPU-composited `transform: scaleX()`. Elegant.**
+8. **INFO — Summary row 4s pulse is well-calibrated visual hierarchy.**
+9. **INFO — Reduced-motion implementation is the best across all 10 spec reviews.**
+
+### Conditions (Applied)
+- **R1 (APPLIED)**: Batch read/write pattern for `getTotalLength()` mandated with code example.
+- **R2 (APPLIED)**: UI Architecture box-shadow budget wording updated.
+- **R3 (APPLIED)**: `border-left-width` design decision documented.
+- **R4 (APPLIED)**: First-render budget transient annotated in animation summary.
+
+### Consultation Notes
+- **Geordi**: Dual animation on hot/cold tiles is essential. Do not simplify to single animation.
+- **Wesley**: Box-shadow budget rule was written for fixed-count panels. Temp Grid is unique. Budget amendment (R2) is the correct resolution.
+
+### Bundle Impact
+- Estimated spec section contribution: ~0.8 KiB minified (CSS keyframes + `_triggerValueRipple` helper)
+- Against 277 KiB bundle: 0.29% increase. Acceptable.

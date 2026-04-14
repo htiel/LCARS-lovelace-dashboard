@@ -1545,6 +1545,12 @@ JS updates `--indicator-left` and `--indicator-width` based on `offsetLeft` and 
 #### Pump Status Running Indicator
 Three dots chasing in a circle when pump is ON — conveying mechanical rotation at a glance. (Source: System 47 — animation tempo is slow and methodical.)
 
+> **[Data C-4 / R-6] Animation budget cap**: Only the **primary pump** gets the
+> spinner animation. Secondary pumps show a static lit-dot indicator when ON.
+> Chemistry pulse fires only on the **worst-threshold** sensor, not all 4.
+> Freeze pulse and heating border pulse are mutually exclusive.
+> Worst-case concurrent: frame breathe + caustic + heat flow + 1 pump spinner + 1 chem pulse = **5** (within budget).
+
 ```css
 .lcars-pump-spinner {
   display: inline-flex;
@@ -2600,3 +2606,21 @@ const POOL_SPA_SCHEMA = {
 
 ### Disagreements
 - None. Both Geordi's font-size findings and Worf's safety concerns are valid and addressed.
+
+---
+
+## Worf + Data — v4.13.0 Visual Enhancements Review
+
+**Date**: Stardate 2026.04.13
+
+### Worf (Security)
+**Verdict**: APPROVED
+
+- Chemistry thresholds properly guarded. No new vectors.
+- All CSS custom properties set from computed values or controlled vocabularies.
+
+### Data (Architecture)
+**Verdict**: APPROVED WITH CONDITIONS
+
+- **[C-4 / R-6 — APPLIED]** Animation budget violation fixed: capped pump spinner to primary pump only (1 not 4), chemistry pulse to worst-threshold sensor only, freeze/heating pulses mutually exclusive. Worst-case concurrent: 5 (within budget).
+- Water caustic shimmer (`mix-blend-mode: screen`) is GPU-friendly. Approved.

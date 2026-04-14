@@ -1479,7 +1479,7 @@ function hasSoundModes(stateObj) {
 ### v4.13.0 Visual Enhancements
 
 #### Audio Waveform Visualiser
-32 thin vertical bars below album art oscillating at randomised heights when playing — cyan with red accent at peaks. Inspired by `pool panel.png` Communications waveform. Paused when idle/paused.
+**12 bars** (not 32 — [Data C-2] at 2px bar width + gap, 12 vs 32 is indistinguishable at dashboard viewing distance; reduces concurrent animations from 32 to 12). Use **4 shared animation timing groups** (3 bars per group × 4 `--bar-dur`/`--bar-delay` variants) instead of per-bar randomization. Total concurrent: 4 variant keyframes + glow + progress + breathe = **7** (at budget boundary). Thin vertical bars below album art oscillating at varied heights when playing — cyan with red accent at peaks. Inspired by `pool panel.png` Communications waveform. Paused when idle/paused.
 
 ```css
 .lcars-audio-waveform {
@@ -1495,9 +1495,13 @@ function hasSoundModes(stateObj) {
   width: 2px;
   border-radius: 1px 1px 0 0;
   background: var(--lcars-ice);
+  /* Use scaleY instead of height to avoid layout thrashing on 12 bars [Data C-1] */
+  height: var(--bar-max, 60%);
+  transform-origin: bottom;
+  transform: scaleY(var(--bar-min-ratio, 0.17));
+  will-change: transform;
   animation: lcars-waveform var(--bar-dur, 400ms) ease-in-out alternate infinite;
   animation-delay: var(--bar-delay, 0ms);
-  height: var(--bar-min, 10%);
 }
 
 .lcars-audio-waveform .bar.peak {
@@ -1506,13 +1510,13 @@ function hasSoundModes(stateObj) {
 
 .lcars-media-card:not([data-state="playing"]) .lcars-audio-waveform .bar {
   animation-play-state: paused;
-  height: 2px;
+  transform: scaleY(0.03);
   opacity: 0.3;
 }
 
 @keyframes lcars-waveform {
-  0%   { height: var(--bar-min, 10%); }
-  100% { height: var(--bar-max, 60%); }
+  0%   { transform: scaleY(var(--bar-min-ratio, 0.17)); }
+  100% { transform: scaleY(1); }
 }
 ```
 
@@ -2171,3 +2175,23 @@ Extends `LcarsDevicePanelBase`:
 
 ### Disagreements
 - None. All reviewer feedback is either accepted or reasonably deferred.
+
+---
+
+## Worf + Data — v4.13.0 Visual Enhancements Review
+
+**Date**: Stardate 2026.04.13
+
+### Worf (Security)
+**Verdict**: APPROVED
+
+- URL validation (`isValidArtworkUrl()`), `crossorigin="anonymous"`, `referrerpolicy="no-referrer"` all present.
+- No new vectors. No `innerHTML`/`unsafeHTML`. Clean.
+
+### Data (Architecture)
+**Verdict**: APPROVED WITH CONDITIONS
+
+- **[C-1 — APPLIED]** Waveform bars: replaced `height` animation with `transform: scaleY()` to avoid layout thrashing (50–100 layout recalcs/sec on RPi4).
+- **[C-2 — APPLIED]** Reduced bars from 32 to 12 with 4 shared animation timing groups. Concurrent animations: 7 (at budget boundary).
+- **[L-1]** Added `will-change: transform` to bar CSS.
+- **[L-2]** Ensure confirmation animations still play at half duration in reduced-motion (not `animation: none`).

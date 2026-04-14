@@ -32,7 +32,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 - **Smart Name Shortening** — Automatically strips area and device name prefixes from entity names for cleaner display
 - **Device-Grouped Layout** — Entities organized by device, then sorted by domain (cameras first, sensors last)
 - **LCARS Visual Vocabulary** — Panel scan lines, CRT viewscreen overlays, segmented bar meters, data pip header patterns, viewscreen inner glow, targeting ring SVG overlays, sensor indicator bars — all inspired by TNG Engineering panels
-- **6 LCARS Animations** — Cascade reveal, scan sweep, viewscreen activation, heartbeat pulse, distress pulse, segmented sensor bars (plus panel scan line, warp core charging cascade, irrigation flow)
+- **15+ LCARS Animations** — Cascade reveal, scan sweep, viewscreen activation, heartbeat pulse, distress pulse, segmented sensor bars, panel scan line, viewscreen breathing glow, warp core charging cascade, audio waveform visualizer, camera REC blink, pool water shimmer, irrigation flow, atmoscrubber breathing glow, alarm triggered flash
 - **9-Panel Auto-Detection** — Priority-ordered device classifier routes entities to the correct panel: camera → alarm → pool/spa → climate → media → environment → irrigation → weather → battery
 - **Security Hardened** — Alarm PIN rate-limiting (3 attempts/60s), media artwork URL validation, temperature setpoint clamping, service call throttling
 - **Self-Contained** — All fonts (Antonio) and dependencies vendored locally, no external CDN calls

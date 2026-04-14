@@ -2,6 +2,36 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.16.0] — 2025-07-25
+
+### Added — Consolidated Power Panel (4X-6)
+
+#### Routing & Aggregation
+- **Consolidated power routing** — Power devices are intercepted from the per-device panel flow in `_renderAreaContent()` and collected into a single unified panel rendered at the bottom of the area's left column
+- **`_buildPowerCollection()`** — New aggregation method classifies power groups (vue/plug/strip), groups strip children by `via_device_id`, detects 240V pairs, sorts circuits power-descending, and computes area-wide `totalWatts`/`totalEnergy`
+
+#### Consolidated Panel Renderer
+- **`_renderConsolidatedPowerPanel()`** — Single unified "POWER SYSTEMS" panel with badge (e.g. "6 CIRCUITS · 1 DEVICE · 2 STRIPS"), summary card, optional SVG arc (≥3 sources), and sectioned sub-renderers for circuits, monitored devices, and power strips
+- **`_renderConsolidatedPowerArc()`** — Arc adapter that feeds all sources (circuits + plugs + strips) into the existing `_renderPowerArc()` half-arc chart
+
+#### Clickable Values (Geordi G-4)
+- **`_renderClickableValue()`** — Wraps sensor values in accessible `role="button"` spans with click-to-more-info, keyboard handlers, and specific `aria-label` text (e.g. "View Kitchen power: 42 watts")
+- Applied to circuit tiles, device rows, and strip children for both watts and energy values
+
+#### CSS & Visual Design
+- **Panel frame** — Asymmetric border-radius (`0.75rem` left, `0.25rem` right) with corner bracket pseudo-elements (Geordi G-2)
+- **Transition separator** — Margin + border between device groups and consolidated panel (Geordi G-1)
+- **Section accent bars** — Color-coded left borders: butterscotch (circuits), ice (devices), african-violet (strips) (Geordi G-6)
+- **Tile minimum height** — `min-height: 3rem` for circuit tiles (Geordi G-3)
+- **Focus-visible outlines** — Sunflower outline on circuit tiles and clickable values (Geordi G-5)
+- **Responsive grid** — 4 breakpoints: ≥1024px (11rem), 768–1023px (9rem), 480–767px (2-col), <480px (1-col)
+- **Truncation pill** — LCARS-styled "SHOW ALL (N)" pill for sections with >12 items (Geordi G-7)
+- **Reduced motion** — Consolidated panel critical pulse disabled under `prefers-reduced-motion: reduce`
+
+### Changed
+- **`_renderDevicePanel()`** — Removed standalone `PANEL_TYPE_POWER` case (now handled by consolidated panel)
+- **`_renderPowerPanel()`** — Marked `@deprecated` in favor of consolidated renderer
+
 ## [4.15.0] — 2026-04-14
 
 ### Added — Power Panel: Energy Monitoring (4X-3)

@@ -52,9 +52,9 @@ Verify the environment panel's auto-detection heuristic picks up BlueAir devices
 
 ---
 
-### 4X-3 · Power Panel (Energy Monitoring) — `TODO` · Priority: HIGH · Size: XL
+### 4X-3 · Power Panel (Energy Monitoring) — `DONE` · Priority: HIGH · Size: XL
 
-**Target version**: 4.15.0
+**Shipped in**: v4.15.0 (2026-04-14), hotfix v4.15.1
 **Spec**: `specs/LCARS-POWER-PANEL-SPEC.md` (Phase 3 — Reconciled, Implementation-Ready)
 **Addendum**: `specs/LCARS-POWER-PANEL-WESLEY-ADDENDUM.md` (Phase 3 — Reconciled)
 **Plan**: `plans/v4.15.0-implementation-plan.md` (Phase 4 — Awaiting Admiral Review)
@@ -150,6 +150,42 @@ Camera viewscreens currently show a blank or broken state while loading or when 
 - Failed/offline cameras show "CAMERA OFFLINE" with LCARS styling
 - No flash of broken image icon at any point
 - Works with both snapshot and stream camera entities
+
+---
+
+### 4X-6 · Consolidated Power Panel (Area Grouping) — `TODO` · Priority: HIGH · Size: L
+
+**Target version**: 4.16.0
+**Spec**: `specs/LCARS-CONSOLIDATED-POWER-PANEL-SPEC.md` (Wesley draft + Geordi review)
+
+Currently each power device gets its own separate panel in the right column — extremely wasteful when an area has multiple power strips, Vue circuits, and monitored plugs. Consolidate ALL power devices in an area into a SINGLE "POWER SYSTEMS" panel in the left content flow (bottom of normal device stack).
+
+**Key changes**:
+- New `_buildPowerCollection()` aggregates all power device groups per area
+- Single consolidated panel replaces N individual panels → ~80% vertical space reduction
+- Three sections: CIRCUITS (tile grid), MONITORED DEVICES (rows), POWER STRIPS (parent→child blocks)
+- Every metric (watts, energy, voltage) clickable → opens HA more-info dialog
+- Sparklines removed from tiles (popover-only) to save space
+- Panel renders in left column (normal content flow), not right panel column
+
+**Geordi amendments (APPROVED WITH CONDITIONS)**:
+1. Transition separator between normal devices and power panel
+2. Corner brackets (`::before`/`::after`) + asymmetric border-radius on frame
+3. Min tile height `3rem` (WCAG touch target compliance)
+4. Specific `aria-label` per clickable value (not generic "View details")
+5. `:focus-visible` outline on circuit tiles
+6. Section accent bars (butterscotch/ice/african-violet) for visual grouping
+7. Truncation pattern for sections with 12+ items ("SHOW ALL" pill)
+
+**Acceptance criteria**:
+- All power devices in an area render in a single consolidated panel
+- Panel positioned at bottom of left content column
+- Strips show parent header → indented child outlets with individual toggles
+- Vue circuits displayed as compact tile grid
+- Plugs displayed as compact device rows with toggle + watts
+- All wattage/energy values clickable for more-info
+- Keyboard accessible with proper ARIA structure
+- Responsive: 4-col → 3-col → 2-col → 1-col tile grid
 
 ---
 

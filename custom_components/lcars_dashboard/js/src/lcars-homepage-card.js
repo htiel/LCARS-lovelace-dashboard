@@ -530,8 +530,15 @@ class LcarsHomepageCard extends LitElement {
             content: '';
             display: block;
             height: 2px;
-            background: var(--lcars-data-accent);
+            background:
+              repeating-linear-gradient(90deg,
+                var(--lcars-data-accent) 0px, var(--lcars-data-accent) 12px,
+                transparent 12px, transparent 16px,
+                var(--lcars-data-accent) 16px, var(--lcars-data-accent) 18px,
+                transparent 18px, transparent 22px
+              );
             margin-top: 0.5rem;
+            opacity: 0.6;
           }
 
           /* ─── Floor View ─── */
@@ -772,7 +779,7 @@ class LcarsHomepageCard extends LitElement {
             align-items: center;
             gap: 0.5rem;
             height: 2.25rem;
-            padding: 0 0.75rem;
+            padding: 0 0.75rem 0 0;
             background: var(--lcars-ice);
             color: var(--lcars-black);
             border: none;
@@ -783,13 +790,14 @@ class LcarsHomepageCard extends LitElement {
             cursor: pointer;
             overflow: hidden;
             transition: filter var(--lcars-transition);
+            border-left: 4px solid rgba(0,0,0,0.2);
           }
           .sensor-readout:hover { filter: brightness(1.1); }
           .sensor-readout:focus-visible {
             outline: 2px solid var(--lcars-ice);
             outline-offset: 2px;
           }
-          .sensor-readout ha-icon { --mdc-icon-size: 14px; flex-shrink: 0; }
+          .sensor-readout ha-icon { --mdc-icon-size: 14px; flex-shrink: 0; margin-left: 0.5rem; }
           .sensor-readout .sensor-name { overflow: hidden; text-overflow: ellipsis; flex: 1; font-size: 0.75rem; }
           .sensor-readout .sensor-value {
             font-size: var(--lcars-font-size-data);
@@ -822,6 +830,7 @@ class LcarsHomepageCard extends LitElement {
             background: var(--lcars-black);
             cursor: pointer;
             transition: border-color var(--lcars-transition);
+            box-shadow: inset 0 0 20px rgba(100,200,255,0.04);
           }
           .camera-frame:hover { border-color: var(--lcars-gold); }
           .camera-frame:focus-visible {
@@ -834,6 +843,18 @@ class LcarsHomepageCard extends LitElement {
             aspect-ratio: 16/9;
             object-fit: cover;
             background: #111;
+          }
+          /* Subtle CRT scanline overlay */
+          .camera-frame::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(0deg,
+              transparent 0px, transparent 2px,
+              rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
+            );
+            pointer-events: none;
+            border-radius: inherit;
           }
           .camera-label {
             position: absolute;
@@ -910,8 +931,19 @@ class LcarsHomepageCard extends LitElement {
             border-right: 2px solid var(--panel-frame-color);
             border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
             padding: var(--lcars-gap);
-            background: var(--lcars-black);
+            background:
+              linear-gradient(180deg, transparent, transparent 49%, rgba(100,200,255,0.03) 50%, transparent 51%, transparent) center / 100% 300% no-repeat,
+              var(--lcars-black);
+            animation: panel-scanline 10s ease-in-out infinite;
             position: relative;
+          }
+          @keyframes panel-scanline {
+            0%, 100% { background-position: center 100%; }
+            50% { background-position: center 0%; }
+          }
+          /* Reduced motion: no scan */
+          @media (prefers-reduced-motion: reduce) {
+            .lcars-device-panel { animation: none; background: var(--lcars-black); }
           }
           /* Corner bracket — top-left */
           .lcars-device-panel::before {
@@ -957,8 +989,14 @@ class LcarsHomepageCard extends LitElement {
           .device-panel-header-line {
             flex: 1;
             height: 2px;
-            background: var(--panel-frame-color);
-            opacity: 0.5;
+            background:
+              repeating-linear-gradient(90deg,
+                var(--panel-frame-color) 0px, var(--panel-frame-color) 8px,
+                transparent 8px, transparent 12px,
+                var(--panel-frame-color) 12px, var(--panel-frame-color) 14px,
+                transparent 14px, transparent 18px
+              );
+            opacity: 0.4;
           }
 
           /* Sensor telemetry readouts — left column */
@@ -990,9 +1028,9 @@ class LcarsHomepageCard extends LitElement {
             outline-offset: 2px;
           }
           .sensor-indicator {
-            width: 0.5rem;
-            height: 0.5rem;
-            border-radius: 50%;
+            width: 0.25rem;
+            height: 1rem;
+            border-radius: 0.125rem;
             flex-shrink: 0;
           }
           .sensor-label {
@@ -1018,12 +1056,24 @@ class LcarsHomepageCard extends LitElement {
             overflow: hidden;
             background: var(--lcars-black);
             aspect-ratio: var(--media-aspect);
+            box-shadow: inset 0 0 20px rgba(100,200,255,0.05);
           }
           .device-panel-media img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
+          }
+          /* Subtle scan line overlay on viewscreens */
+          .device-panel-media::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(0deg,
+              transparent 0px, transparent 2px,
+              rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
+            );
+            pointer-events: none;
           }
           .device-panel-media[data-offline] {
             border-color: var(--lcars-gray);
@@ -1119,7 +1169,7 @@ class LcarsHomepageCard extends LitElement {
             max-height: 22rem;
           }
 
-          /* Warp Core */
+          /* Warp Core — Segmented Containment Vessel */
           .warp-core-container {
             grid-area: core;
             display: flex;
@@ -1130,67 +1180,154 @@ class LcarsHomepageCard extends LitElement {
           }
           .warp-core {
             position: relative;
-            width: 4rem;
-            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            width: 5rem;
             min-height: 10rem;
-            border-radius: 2rem;
-            border: 2px solid var(--core-color);
-            background: var(--lcars-black);
-            overflow: hidden;
-            box-shadow: 0 0 calc(var(--core-charge, 0) * 0.2px) var(--core-color);
-            transition: border-color 1s ease, box-shadow 1s ease;
+            transition: filter 1s ease;
           }
-          .warp-core-fill {
+
+          /* ── Decorative numeric codes ── */
+          .warp-core-code {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: calc(var(--core-charge, 0) * 1%);
-            background: var(--core-color);
-            opacity: 0.8;
-            transition: height 1s ease, background 1s ease;
-          }
-          .warp-core-fill.core-idle {
-            animation: core-idle-pulse 3s ease-in-out infinite;
-          }
-          .warp-core-fill.core-charging {
-            animation: core-charge-flow 2s linear infinite;
-          }
-          .warp-core-stream {
-            position: absolute;
-            left: 50%;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            transform: translateX(-50%);
-            background: rgba(255,255,255,0.35);
-          }
-          .warp-core-tick {
-            position: absolute;
-            left: 10%;
-            right: 10%;
-            height: 1px;
-            background: var(--core-color);
-            opacity: 0.3;
+            font-family: var(--lcars-font);
+            font-size: 0.6rem;
+            color: var(--core-color);
+            opacity: 0.5;
+            letter-spacing: 0.05em;
             pointer-events: none;
           }
+          .warp-core-code.top { top: -0.25rem; right: -0.5rem; }
+          .warp-core-code.bottom { bottom: -0.25rem; right: -0.5rem; }
+
+          /* ── Top/bottom endcaps ── */
+          .warp-core-cap {
+            width: 1.5rem;
+            height: 0.375rem;
+            background: var(--core-color);
+            opacity: 0.5;
+            border-radius: 0.5rem 0.5rem 0 0;
+            flex-shrink: 0;
+          }
+          .warp-core-cap.bottom {
+            border-radius: 0 0 0.5rem 0.5rem;
+          }
+
+          /* ── Tapered funnels ── */
+          .warp-core-funnel {
+            width: 0;
+            height: 0;
+            flex-shrink: 0;
+          }
+          .warp-core-funnel.top {
+            border-left: 1.75rem solid transparent;
+            border-right: 1.75rem solid transparent;
+            border-bottom: 0.75rem solid var(--core-color);
+            opacity: 0.35;
+          }
+          .warp-core-funnel.bottom {
+            border-left: 1.75rem solid transparent;
+            border-right: 1.75rem solid transparent;
+            border-top: 0.75rem solid var(--core-color);
+            opacity: 0.35;
+          }
+
+          /* ── Pill column sections ── */
+          .warp-core-pills {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            width: 100%;
+            padding: 2px 0;
+          }
+
+          /* ── Individual pill segment ── */
+          .warp-core-pill {
+            width: 70%;
+            height: 0.625rem;
+            border-radius: 0.3125rem;
+            background: rgba(100, 180, 255, 0.08);
+            border: 1px solid rgba(100, 180, 255, 0.12);
+            transition: background 0.8s ease, box-shadow 0.8s ease, border-color 0.8s ease, width 0.3s ease;
+            flex-shrink: 0;
+          }
+          .warp-core-pill.wide {
+            width: 90%;
+            height: 0.75rem;
+            border-radius: 0.375rem;
+          }
+          .warp-core-pill.charged {
+            background: var(--core-color);
+            border-color: var(--core-color);
+            box-shadow: 0 0 6px var(--core-color), inset 0 1px 2px rgba(255,255,255,0.35);
+            opacity: 0.9;
+          }
+          .warp-core-pill.charged.wide {
+            background: var(--core-color);
+            box-shadow: 0 0 10px var(--core-color), inset 0 1px 3px rgba(255,255,255,0.5);
+            opacity: 1;
+            filter: brightness(1.3);
+          }
+
+          /* ── Charging flow animation ── */
+          @keyframes pill-charge-flow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.4); }
+          }
+          .warp-core-pill.charging {
+            animation: pill-charge-flow 1.5s ease-in-out infinite;
+            animation-delay: calc(var(--pill-i, 0) * 100ms);
+          }
+          .warp-core-pills.upper .warp-core-pill:nth-child(1).charging { --pill-i: 6; }
+          .warp-core-pills.upper .warp-core-pill:nth-child(2).charging { --pill-i: 5; }
+          .warp-core-pills.upper .warp-core-pill:nth-child(3).charging { --pill-i: 4; }
+          .warp-core-pills.upper .warp-core-pill:nth-child(4).charging { --pill-i: 3; }
+          .warp-core-pills.upper .warp-core-pill:nth-child(5).charging { --pill-i: 2; }
+          .warp-core-pills.upper .warp-core-pill:nth-child(6).charging { --pill-i: 1; }
+          .warp-core-pills.upper .warp-core-pill:nth-child(7).charging { --pill-i: 0; }
+          .warp-core-pills.lower .warp-core-pill:nth-child(1).charging { --pill-i: 0; }
+          .warp-core-pills.lower .warp-core-pill:nth-child(2).charging { --pill-i: 1; }
+          .warp-core-pills.lower .warp-core-pill:nth-child(3).charging { --pill-i: 2; }
+          .warp-core-pills.lower .warp-core-pill:nth-child(4).charging { --pill-i: 3; }
+          .warp-core-pills.lower .warp-core-pill:nth-child(5).charging { --pill-i: 4; }
+          .warp-core-pills.lower .warp-core-pill:nth-child(6).charging { --pill-i: 5; }
+          .warp-core-pills.lower .warp-core-pill:nth-child(7).charging { --pill-i: 6; }
+
+          /* ── Idle pulse for uncharged core ── */
           @keyframes core-idle-pulse {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 0.55; }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
           }
-          @keyframes core-charge-flow {
-            0% { background-position-y: 0; }
-            100% { background-position-y: -2rem; }
+
+          /* ── Center junction ring ── */
+          .warp-core-junction {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 3px 0;
+            flex-shrink: 0;
           }
-          .warp-core-fill.core-charging {
-            background-image: repeating-linear-gradient(
-              0deg,
-              transparent 0px,
-              transparent 0.75rem,
-              rgba(255,255,255,0.15) 0.75rem,
-              rgba(255,255,255,0.15) 1rem
-            );
-            background-size: 100% 2rem;
+          .warp-core-junction-ring {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            border: 3px solid var(--core-color);
+            background: radial-gradient(circle, rgba(100,180,255,0.15) 0%, transparent 70%);
+            box-shadow: 0 0 8px var(--core-color), inset 0 0 6px rgba(100,180,255,0.1);
+            transition: border-color 1s ease, box-shadow 1s ease;
+            position: relative;
+          }
+          .warp-core-junction-ring::after {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            border-radius: 50%;
+            border: 2px solid var(--core-color);
+            opacity: 0.4;
           }
 
           /* Number slider controls */
@@ -1208,16 +1345,25 @@ class LcarsHomepageCard extends LitElement {
           .battery-slider-track {
             position: relative;
             height: 1.25rem;
-            background: var(--lcars-gray);
+            background:
+              repeating-linear-gradient(90deg,
+                var(--lcars-gray) 0px, var(--lcars-gray) 5px,
+                transparent 5px, transparent 7px
+              );
             border-radius: 0.625rem;
             cursor: pointer;
             overflow: visible;
           }
           .battery-slider-fill {
             height: 100%;
-            background: var(--lcars-ice);
+            background:
+              repeating-linear-gradient(90deg,
+                var(--lcars-ice) 0px, var(--lcars-ice) 5px,
+                rgba(0,0,0,0.3) 5px, rgba(0,0,0,0.3) 7px
+              );
             border-radius: 0.625rem 0 0 0.625rem;
             transition: width 0.3s ease;
+            box-shadow: 0 0 4px rgba(153,204,255,0.3);
           }
           .battery-slider-thumb {
             position: absolute;
@@ -1833,20 +1979,21 @@ class LcarsHomepageCard extends LitElement {
             display: flex;
             gap: 2px;
             align-items: center;
-            height: 0.625rem;
+            height: 0.75rem;
             flex-shrink: 0;
             margin-left: 0.25rem;
           }
           .sensor-seg {
-            width: 3px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 1px;
-            transition: background var(--lcars-transition), height var(--lcars-transition);
+            width: 4px;
+            background: rgba(0,0,0,0.15);
+            border-radius: 2px;
+            transition: background var(--lcars-transition), height var(--lcars-transition), box-shadow var(--lcars-transition);
             height: 40%;
           }
           .sensor-seg.filled {
             background: var(--lcars-black);
             height: calc(40% + var(--seg-i, 0) * 6%);
+            box-shadow: 0 0 2px rgba(0,0,0,0.3);
           }
           .sensor-readout[data-warn] .sensor-seg.filled { background: var(--lcars-space-white); }
 
@@ -1872,6 +2019,8 @@ class LcarsHomepageCard extends LitElement {
             .lcars-device-panel:has(.device-panel-media[data-offline]) { animation: none; }
             .alarm-triggered .alarm-shield,
             .alarm-triggered .alarm-viewscreen { animation: none; }
+            .warp-core-pill.charging { animation: none; }
+            .irrigation-zone-fill { animation: none; }
           }
 
           /* ═══════ CLIMATE PANEL ═══════ */
@@ -1911,6 +2060,7 @@ class LcarsHomepageCard extends LitElement {
             border-radius: 4px;
             padding: 0.5rem;
             transition: border-color 600ms;
+            box-shadow: inset 0 0 15px rgba(100,200,255,0.06);
           }
           .climate-viewscreen::before,
           .climate-viewscreen::after {
@@ -2015,7 +2165,22 @@ class LcarsHomepageCard extends LitElement {
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
+            position: relative;
+            border: 2px solid var(--panel-frame-color);
+            border-radius: 4px;
+            padding: 0.5rem;
+            box-shadow: inset 0 0 15px rgba(100,200,255,0.06);
           }
+          .alarm-viewscreen::before,
+          .alarm-viewscreen::after {
+            content: '';
+            position: absolute;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid var(--panel-frame-color);
+          }
+          .alarm-viewscreen::before { top: 4px; left: 4px; border-right: none; border-bottom: none; }
+          .alarm-viewscreen::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
           .alarm-shield { width: 100%; max-width: 140px; }
           .alarm-countdown {
             display: flex;
@@ -2132,6 +2297,7 @@ class LcarsHomepageCard extends LitElement {
             overflow: hidden;
             cursor: pointer;
             position: relative;
+            box-shadow: inset 0 0 15px rgba(100,200,255,0.06);
           }
           .media-viewscreen::before,
           .media-viewscreen::after {
@@ -2158,6 +2324,12 @@ class LcarsHomepageCard extends LitElement {
             aspect-ratio: 1/1;
             max-height: 12rem;
             color: var(--lcars-gray);
+            background:
+              radial-gradient(circle, rgba(100,200,255,0.04) 0%, transparent 60%),
+              repeating-linear-gradient(0deg,
+                transparent 0px, transparent 3px,
+                rgba(100,200,255,0.015) 3px, rgba(100,200,255,0.015) 4px
+              );
           }
           .media-idle-glyph { font-size: 3rem; }
           .media-idle-label { font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); }
@@ -2223,7 +2395,11 @@ class LcarsHomepageCard extends LitElement {
           .media-volume-bar {
             flex: 1;
             height: 0.75rem;
-            background: var(--lcars-disabled);
+            background:
+              repeating-linear-gradient(90deg,
+                var(--lcars-disabled) 0px, var(--lcars-disabled) 5px,
+                transparent 5px, transparent 7px
+              );
             border-radius: var(--lcars-btn-radius);
             cursor: pointer;
             position: relative;
@@ -2232,9 +2408,14 @@ class LcarsHomepageCard extends LitElement {
           .media-volume-bar:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
           .media-volume-fill {
             height: 100%;
-            background: var(--lcars-african-violet);
+            background:
+              repeating-linear-gradient(90deg,
+                var(--lcars-african-violet) 0px, var(--lcars-african-violet) 5px,
+                rgba(0,0,0,0.3) 5px, rgba(0,0,0,0.3) 7px
+              );
             border-radius: inherit;
             transition: width 200ms;
+            box-shadow: 0 0 6px rgba(204,153,255,0.3);
           }
           .media-volume-pct {
             font-family: var(--lcars-font);
@@ -2291,6 +2472,8 @@ class LcarsHomepageCard extends LitElement {
             align-items: center;
             gap: 0.25rem;
             position: relative;
+            box-shadow: inset 0 0 20px rgba(100,200,255,0.06);
+            transition: box-shadow 600ms;
           }
           .pool-body-frame::before,
           .pool-body-frame::after {
@@ -2359,6 +2542,8 @@ class LcarsHomepageCard extends LitElement {
             border-radius: 4px;
             padding: 0.5rem;
             transition: border-color 600ms;
+            box-shadow: inset 0 0 15px rgba(100,200,255,0.06);
+            position: relative;
           }
           .weather-viewscreen::before,
           .weather-viewscreen::after {
@@ -2397,10 +2582,14 @@ class LcarsHomepageCard extends LitElement {
             flex-direction: column;
             align-items: center;
             gap: 0.125rem;
-            padding: 0.25rem;
+            padding: 0.375rem 0.25rem;
             font-family: var(--lcars-font);
             font-size: var(--lcars-font-size-data);
+            border-left: 2px solid rgba(100,200,255,0.08);
+            transition: background 200ms;
           }
+          .forecast-tile:first-child { border-left: none; }
+          .forecast-tile:hover { background: rgba(100,200,255,0.04); }
           .forecast-tile:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
           .forecast-day { color: var(--lcars-data-accent); }
           .forecast-glyph { font-size: 1.25rem; }
@@ -2409,14 +2598,22 @@ class LcarsHomepageCard extends LitElement {
           .forecast-range-bar {
             width: 100%;
             height: 4px;
-            background: var(--lcars-disabled);
+            background:
+              repeating-linear-gradient(90deg,
+                var(--lcars-disabled) 0px, var(--lcars-disabled) 3px,
+                transparent 3px, transparent 5px
+              );
             border-radius: 2px;
             position: relative;
           }
           .forecast-range-fill {
             position: absolute;
             height: 100%;
-            background: linear-gradient(90deg, var(--lcars-ice), var(--lcars-butterscotch));
+            background:
+              repeating-linear-gradient(90deg,
+                var(--lcars-ice) 0px, var(--lcars-ice) 3px,
+                rgba(0,0,0,0.2) 3px, rgba(0,0,0,0.2) 5px
+              );
             border-radius: 2px;
           }
           .forecast-precip { color: var(--lcars-gray); font-size: 0.75rem; }
@@ -2492,6 +2689,16 @@ class LcarsHomepageCard extends LitElement {
             height: 0.5rem;
             border-radius: 0.25rem;
             transition: width 1s linear;
+            background-image: repeating-linear-gradient(90deg,
+              transparent 0px, transparent 4px,
+              rgba(255,255,255,0.15) 4px, rgba(255,255,255,0.15) 6px
+            );
+            background-size: 10px 100%;
+            animation: zone-flow 1s linear infinite;
+          }
+          @keyframes zone-flow {
+            from { background-position-x: 0; }
+            to { background-position-x: -10px; }
           }
           .irrigation-standby {
             grid-area: standby;
@@ -3188,17 +3395,46 @@ class LcarsHomepageCard extends LitElement {
             ` : ''}
           </div>
 
-          <!-- Warp Core (center) -->
+          <!-- Warp Core (center) — segmented containment vessel -->
           <div class="warp-core-container" role="meter"
             aria-valuenow="${charge}" aria-valuemin="0" aria-valuemax="100"
             aria-label="Battery charge level: ${Math.round(charge)} percent">
             <div class="warp-core" style="--core-color:${coreColor};--core-charge:${chargeAvailable ? charge : 0}">
-              <div class="warp-core-fill ${isIdle ? 'core-idle' : ''} ${isCharging ? 'core-charging' : ''}">
-                <div class="warp-core-stream"></div>
+              <div class="warp-core-cap top"></div>
+              <div class="warp-core-funnel top"></div>
+              <div class="warp-core-pills upper">
+                ${(() => {
+                  const totalPills = 14;
+                  const half = 7;
+                  const filled = Math.round((charge / 100) * totalPills);
+                  return Array.from({length: half}, (_, i) => {
+                    const pillFromBottom = totalPills - i;
+                    const lit = pillFromBottom <= filled;
+                    const nearCenter = i >= half - 2;
+                    return html`<div class="warp-core-pill ${lit ? 'charged' : ''} ${lit && isCharging ? 'charging' : ''} ${nearCenter ? 'wide' : ''}"></div>`;
+                  });
+                })()}
               </div>
-              <div class="warp-core-tick" style="bottom:25%"></div>
-              <div class="warp-core-tick" style="bottom:50%"></div>
-              <div class="warp-core-tick" style="bottom:75%"></div>
+              <div class="warp-core-junction">
+                <div class="warp-core-junction-ring"></div>
+              </div>
+              <div class="warp-core-pills lower">
+                ${(() => {
+                  const totalPills = 14;
+                  const half = 7;
+                  const filled = Math.round((charge / 100) * totalPills);
+                  return Array.from({length: half}, (_, i) => {
+                    const pillFromBottom = half - i;
+                    const lit = pillFromBottom <= filled;
+                    const nearCenter = i <= 1;
+                    return html`<div class="warp-core-pill ${lit ? 'charged' : ''} ${lit && isCharging ? 'charging' : ''} ${nearCenter ? 'wide' : ''}"></div>`;
+                  });
+                })()}
+              </div>
+              <div class="warp-core-funnel bottom"></div>
+              <div class="warp-core-cap bottom"></div>
+              <span class="warp-core-code top">${Math.round(charge * 3864.56).toString().slice(0, 6)}</span>
+              <span class="warp-core-code bottom">${(1436 + Math.round(charge * 0.78)).toString()}-${(78 + Math.round(charge * 0.22)).toString()}</span>
             </div>
           </div>
 
@@ -3434,6 +3670,11 @@ class LcarsHomepageCard extends LitElement {
         <svg class="climate-arc" viewBox="0 0 ${w} ${h}" role="meter"
           aria-valuemin="${minTemp}" aria-valuemax="${maxTemp}" aria-valuenow="${currentTemp}"
           aria-label="Temperature: ${currentTemp}°, target ${targetTemp}°">
+          <!-- Concentric reference rings -->
+          <path d="M ${cx - r + 20},${cy} A ${r - 20},${r - 20} 0 1,1 ${cx + r - 20},${cy}"
+            fill="none" stroke="var(--lcars-disabled)" stroke-width="0.5" opacity="0.2" />
+          <path d="M ${cx - r + 40},${cy} A ${r - 40},${r - 40} 0 1,1 ${cx + r - 40},${cy}"
+            fill="none" stroke="var(--lcars-disabled)" stroke-width="0.5" opacity="0.15" />
           <!-- Background arc -->
           <path d="M ${sx},${sy} A ${r},${r} 0 1,1 ${cx + r},${cy}"
             fill="none" stroke="var(--lcars-disabled)" stroke-width="8" stroke-linecap="round" />
@@ -3874,6 +4115,14 @@ class LcarsHomepageCard extends LitElement {
             ` : html`
               <svg class="alarm-shield" viewBox="0 0 160 180" role="img"
                 aria-label="${deviceName}: ${stateLabel}">
+                <!-- Concentric targeting rings -->
+                <circle cx="80" cy="95" r="70" fill="none" stroke="${stateColor}" stroke-width="1" opacity="0.1" />
+                <circle cx="80" cy="95" r="50" fill="none" stroke="${stateColor}" stroke-width="1" opacity="0.15" />
+                <circle cx="80" cy="95" r="30" fill="none" stroke="${stateColor}" stroke-width="1" opacity="0.1" />
+                <!-- Crosshair lines -->
+                <line x1="80" y1="20" x2="80" y2="170" stroke="${stateColor}" stroke-width="0.5" opacity="0.08" />
+                <line x1="15" y1="95" x2="145" y2="95" stroke="${stateColor}" stroke-width="0.5" opacity="0.08" />
+                <!-- Shield outline -->
                 <path d="M80,10 L145,45 L145,110 Q145,160 80,175 Q15,160 15,110 L15,45 Z"
                   fill="none" stroke="${stateColor}" stroke-width="4" />
                 <text x="80" y="105" text-anchor="middle" fill="${stateColor}"
@@ -4355,7 +4604,13 @@ class LcarsHomepageCard extends LitElement {
         <div class="weather-wind-compass" role="img"
           aria-label="Wind: ${speed || '?'} ${unit || 'mph'} from ${cardinal}">
           <svg viewBox="0 0 80 80" class="wind-svg">
+            <!-- Concentric targeting rings -->
+            <circle cx="40" cy="40" r="36" fill="none" stroke="var(--lcars-disabled)" stroke-width="0.5" opacity="0.15" />
             <circle cx="40" cy="40" r="28" fill="none" stroke="var(--lcars-disabled)" stroke-width="1" />
+            <circle cx="40" cy="40" r="20" fill="none" stroke="var(--lcars-disabled)" stroke-width="0.5" opacity="0.15" />
+            <!-- Crosshair guides -->
+            <line x1="40" y1="4" x2="40" y2="76" stroke="var(--lcars-disabled)" stroke-width="0.3" opacity="0.1" />
+            <line x1="4" y1="40" x2="76" y2="40" stroke="var(--lcars-disabled)" stroke-width="0.3" opacity="0.1" />
             <text x="40" y="12" text-anchor="middle" fill="var(--lcars-data-accent)" font-size="7" font-family="var(--lcars-font)">N</text>
             <text x="40" y="76" text-anchor="middle" fill="var(--lcars-data-accent)" font-size="7" font-family="var(--lcars-font)">S</text>
             <text x="8" y="43" text-anchor="middle" fill="var(--lcars-data-accent)" font-size="7" font-family="var(--lcars-font)">W</text>

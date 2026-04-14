@@ -9,4 +9,5 @@ Related plans:
 - **[plans/IMPLEMENTATION-PLAN.md](plans/IMPLEMENTATION-PLAN.md)** — Phase 0–3 panel implementation (complete)
 - **[plans/v4.13.0-implementation-plan.md](plans/v4.13.0-implementation-plan.md)** — v4.13.0 visual enhancements (complete)
 - **[plans/v4.13.0-task-checklist.md](plans/v4.13.0-task-checklist.md)** — 61/61 tasks shipped
+- **[plans/v4.14.0-implementation-plan.md](plans/v4.14.0-implementation-plan.md)** — v4.14.0 BlueAir + Sensors Grid (complete)
 

@@ -97,17 +97,18 @@ export function getAqiLabel(aqi) {
 
 /**
  * Resolve CO₂ ppm to LCARS color CSS variable.
- * 0–800 normal, 801–1200 elevated, 1201–2000 high, 2001+ danger.
+ * 3-tier model per Air Purifier v4.13.0 reconciliation (Data R1):
+ *   ≤800 nominal, 801–1200 elevated, >1200 high.
+ * Bad/invalid data returns alert color (Worf R1 — fail visible).
  * @param {number|string|null} co2 - CO₂ in ppm
  * @returns {string} CSS variable string
  */
 export function getCo2Color(co2) {
-  if (co2 == null || isNaN(co2)) return 'var(--lcars-disabled)';
   const v = Number(co2);
-  if (v <= 800)  return 'var(--lcars-data-accent)';
+  if (!Number.isFinite(v)) return 'var(--lcars-tomato)';
+  if (v <= 800)  return 'var(--lcars-ice)';
   if (v <= 1200) return 'var(--lcars-sunflower)';
-  if (v <= 2000) return 'var(--lcars-butterscotch)';
-  return 'var(--lcars-alert)';
+  return 'var(--lcars-tomato)';
 }
 
 // ─── Temp/Humidity Grid: Comfort Colors ─────────────────────────────────────
@@ -314,4 +315,119 @@ export function getIrrigationZoneColor(zoneState, isStandby = false) {
     case 'unavailable': return 'var(--lcars-tomato)';
     default:            return 'var(--lcars-disabled)';
   }
+}
+
+// ─── Consolidated STATE_COLOR_MAP (Data R-2, v4.13.0) ──────────────────────
+
+/**
+ * Centralized state-to-color map for all panel domains.
+ * Use getStateColorForDomain() for lookup.
+ */
+export const STATE_COLOR_MAP = {
+  alarm: {
+    disarmed: '--lcars-ice',
+    armed_home: '--lcars-sunflower',
+    armed_night: '--lcars-sunflower',
+    armed_away: '--lcars-butterscotch',
+    armed_vacation: '--lcars-butterscotch',
+    armed_custom_bypass: '--lcars-african-violet',
+    arming: '--lcars-gold',
+    pending: '--lcars-gold',
+    disarming: '--lcars-gold',
+    triggered: '--lcars-tomato',
+  },
+  climate: {
+    heating: '--lcars-butterscotch',
+    cooling: '--lcars-ice',
+    idle: '--lcars-sunflower',
+    drying: '--lcars-almond',
+    fan: '--lcars-african-violet',
+    off: '--lcars-gray',
+  },
+  media: {
+    playing: '--lcars-african-violet',
+    paused: '--lcars-sunflower',
+    buffering: '--lcars-sunflower',
+    on: '--lcars-ice',
+    idle: '--lcars-gray',
+    standby: '--lcars-gray',
+    off: '--lcars-gray',
+    unavailable: '--lcars-tomato',
+  },
+  pool: {
+    heating: '--lcars-butterscotch',
+    idle_pool: '--lcars-ice',
+    idle_spa: '--lcars-sunflower',
+    off: '--lcars-gray',
+  },
+  irrigation: {
+    on: '--lcars-ice',
+    off: '--lcars-sunflower',
+    unavailable: '--lcars-tomato',
+  },
+};
+
+/**
+ * Get color for a domain + state combo from the centralized map.
+ * @param {string} domain – 'alarm'|'climate'|'media'|'pool'|'irrigation'
+ * @param {string} state – entity state value
+ * @returns {string} CSS variable string or disabled fallback
+ */
+export function getStateColorForDomain(domain, state) {
+  const varName = STATE_COLOR_MAP[domain]?.[state];
+  return varName ? `var(${varName})` : 'var(--lcars-disabled)';
+}
+
+// ─── COMFORT_COLORS Whitelist (Worf R1 — Temp Grid) ────────────────────────
+
+/**
+ * Whitelist map of comfort class names → CSS variable strings.
+ * Only these values may reach style.setProperty() for tile colors.
+ * Prevents raw entity data from flowing into CSS.
+ */
+export const COMFORT_COLORS = {
+  cold:    'var(--lcars-blue)',
+  cool:    'var(--lcars-bluey)',
+  nominal: 'var(--lcars-ice)',
+  warm:    'var(--lcars-butterscotch)',
+  hot:     'var(--lcars-peach)',
+  dry:     'var(--lcars-sunflower)',
+  humid:   'var(--lcars-tomato)',
+};
+
+/**
+ * Get comfort class for a temperature value (°F).
+ * @param {number|string|null} tempF – temperature in Fahrenheit
+ * @returns {string} comfort class name: cold|cool|nominal|warm|hot
+ */
+export function getTempComfortClass(tempF) {
+  const v = Number(tempF);
+  if (!Number.isFinite(v)) return 'nominal';
+  if (v < 55)  return 'cold';
+  if (v <= 67) return 'cool';
+  if (v <= 76) return 'nominal';
+  if (v <= 84) return 'warm';
+  return 'hot';
+}
+
+/**
+ * Safe comfort color resolver — only returns whitelisted CSS variables.
+ * @param {string} comfortClass – from getTempComfortClass or similar
+ * @returns {string} CSS variable string
+ */
+export function getSafeComfortColor(comfortClass) {
+  return COMFORT_COLORS[comfortClass] || COMFORT_COLORS.nominal;
+}
+
+/**
+ * Resolve rain delay info with explicit numeric guard (Worf M4).
+ * @param {Object} attrs – entity attributes
+ * @returns {{ label: string, color: string }}
+ */
+export function getRainDelayInfo(attrs) {
+  const delay = Number(attrs?.rain_delay);
+  if (!isNaN(delay) && delay > 0) {
+    return { label: `${delay} HR DELAY`, color: 'var(--lcars-african-violet)' };
+  }
+  return { label: 'NONE', color: 'var(--lcars-disabled)' };
 }

@@ -70,9 +70,9 @@ Level 1 Changes for 4.x.x
     - **Temperature**: Air temperature sensor, plus current water temp from climate entity attributes.
     - **Layout idea**: A "pool schematic" panel with equipment status indicators, similar to the warp core but for pool operations.
 
-    8. Add BlueAir air purifier support to the environment panel. The Admiral has a Blue Pure 311i Max (via `ha_blueair` integration). Verify the environment panel's auto-detection heuristic picks up BlueAir devices — they may expose `fan` domain entities with speed control and possibly `sensor` entities for filter life. Similar to VeSync purifier handling.
+    8. **TODO** — Add BlueAir air purifier support to the environment panel. The Admiral has a Blue Pure 311i Max (via `ha_blueair` integration). Verify the environment panel's auto-detection heuristic picks up BlueAir devices — they may expose `fan` domain entities with speed control and possibly `sensor` entities for filter life. Similar to VeSync purifier handling.
 
-    9. Add standalone room temperature/humidity sensor grid support to the environment panel. The Admiral has 14+ SwitchBot meters (WoTHP) providing per-room temperature and humidity, plus a SwitchBot CO2 meter (WoTHPc). These are sensor-only devices (no controls) that should render as compact readout rows in the environment panel, similar to the existing sensor-only mode for monitor-only air quality devices.
+    9. **IN PROGRESS** — Spec + CSS + color utilities done (v4.13.0). Renderer not yet implemented. Add standalone room temperature/humidity sensor grid support to the environment panel. The Admiral has 14+ SwitchBot meters (WoTHP) providing per-room temperature and humidity, plus a SwitchBot CO2 meter (WoTHPc). These are sensor-only devices (no controls) that should render as compact readout rows in the environment panel, similar to the existing sensor-only mode for monitor-only air quality devices.
 
     **IMPLEMENTATION NOTES:**
     - **Detection**: Devices with ≥2 of `device_class` in {`temperature`, `humidity`} but no `fan`/`air_quality` domain entities → render in sensor-only environment mode (no atmoscrubber cylinder, just the readout grid).
@@ -82,6 +82,10 @@ Level 1 Changes for 4.x.x
     10. ✅ **DONE (v4.11.0)** — Weather panel for Davis Instruments, WeatherFlow. SVG display, wind compass, 7-day forecast strip, lightning/precipitation sensors. The Admiral has Davis Instruments WLL 6100 + Vantage Pro2 Plus with UV/solar radiation, plus WeatherFlow Tempest, plus AirLink indoor/outdoor air quality monitors. The `weather` domain entities provide forecast data. Consider a compact weather summary strip for the environment panel or a dedicated weather card.
 
     11. ✅ **DONE (v4.11.0)** — Irrigation panel for Rachio. Zone list with START/STOP, active fill bar, standby toggle, rate-limited zone switching. The Admiral has a Rachio 3 with 8 zones, multiple schedules, rain delay, and a rain sensor. Consider an "irrigation" or "grounds" grouping that shows zone status, active schedules, rain delay, and rain sensor state. Detect via `platform === "rachio"` or `identifiers` containing `rachio`.
+
+    12. ✅ **DONE (v4.13.0)** — Dynamic visual enhancements across all 9 device panels. Breathing frames, pip strips, numeric code watermarks, button ripple, HVAC pulse, audio waveform, alarm strobe, weather glow, caustic shimmer, barberpole flow, particle system, comfort glow tiles. Shared animation framework (lcars-shared-animations.js), 8 timing tokens, COMFORT_COLORS whitelist, prefers-reduced-motion overrides. Crew reviewed: Worf (security), Data (code quality), Geordi (UI/a11y).
+
+    13. ✅ **DONE (v4.13.1)** — Pip strip fix: solid bars instead of dashed/scalloped pattern.
 
 Breaking Changes and Rev to Versions 5.x.x
     1. Set up a new 5.0 branch with GitHub pre-release tags so users can opt in to the beta via HACS.

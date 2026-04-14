@@ -1009,47 +1009,6 @@ Total hue families in active use:
 
 ## 7. Interaction Design & Animation
 
-### v4.12.0 Universal Visual Vocabulary (LCARS Visual Overhaul)
-
-Applied across all device panels and standalone entity renderers:
-
-| Enhancement | Selector | Description |
-|---|---|---|
-| Panel scan line | `.lcars-device-panel` | Subtle horizontal gradient sweep on 10s loop via `background-position` animation |
-| Header data pips | `.device-panel-header-line`, `.content-area-header::after` | Dash-dot `repeating-linear-gradient` pattern replacing solid lines |
-| Viewscreen inner glow | All viewscreen containers | `box-shadow: inset 0 0 15px rgba(100,200,255,0.06)` for CRT depth |
-| CRT scan lines | `.device-panel-media::after`, `.camera-frame::after` | Horizontal line overlay at 3% opacity |
-| Sensor indicator bars | `.sensor-indicator` | Vertical bars (0.25rem × 1rem) replace circular dots |
-| Sensor readout left accent | `.sensor-readout` | `border-left: 4px solid rgba(0,0,0,0.2)` and icon margin fix |
-| Segmented bar meters | Volume, slider, forecast, sensor | `repeating-linear-gradient` patterns with segment gaps |
-| SVG targeting rings | Alarm shield, wind compass | Concentric circles + crosshair guide lines at low opacity |
-| SVG reference arcs | Climate arc | Inner semicircular arcs at reduced radii for depth |
-| Warp core segmented pills | Battery panel | 14 horizontal pills (7 upper + 7 lower) with junction ring, funnels, endcaps, decorative numeric codes |
-
-All respect `prefers-reduced-motion: reduce`.
-
-### v4.12.1 Visual Polish Addendum
-
-| Enhancement | Selector | Description |
-|---|---|---|
-| Viewscreen breathing glow | `.device-panel-media`, `.climate-viewscreen`, `.media-viewscreen`, `.weather-viewscreen`, `.alarm-viewscreen`, `.pool-body-frame`, `.camera-frame` | `@keyframes viewscreen-breathe` (6s cycle) — `box-shadow` 20px↔30px oscillation for living-display pulse |
-| Scan line intensity boost | `.lcars-device-panel` | Opacity 3%→8%, tighter band, 8s cycle |
-| Toggle pill active glow | `[data-on]` | `box-shadow: 0 0 8px/16px rgba(255,170,0)` on active toggles |
-| Audio waveform bars | `.media-waveform-bar` | 16 staggered bars via `@keyframes waveform-dance` (60ms delays) |
-| Water shimmer overlay | `.pool-body-frame` | `repeating-linear-gradient` + `@keyframes pool-shimmer` (4s shift) |
-| Alarm concentric rings | `.alarm-viewscreen` | Three `radial-gradient` rings at 30%/45%/60% radii |
-| Triggered flash overlay | `.alarm-viewscreen::before` | `@keyframes alarm-flash` (8% peak) during triggered state |
-| Dashed targeting reticle | Weather wind compass | Outer circle `stroke-dasharray="3 2"` + 45° crosshairs |
-| Dashed outer arc | Climate SVG | Reference arc at `r+8` with `stroke-dasharray="4 3"` |
-| Pill-shaped buttons | Transport, setpoint, keypad | Flat-left/rounded-right replacing circular `border-radius: 50%` |
-| Warp core redesign | Battery panel | Graduated taper (nth-child), side rails, junction flanges, larger pills/ring |
-| Camera REC indicator | `.camera-rec-pip` | "REC" text + blinking dot (`@keyframes rec-blink`, 2s steps) |
-| Atmoscrubber active glow | `.atmoscrubber` | `@keyframes scrubber-active-glow` (4s, 8px↔16px+30px) |
-| Boosted flow bar | Irrigation zones | Height 0.5rem→0.625rem, stripes 15%→25%, speed 1s→0.8s |
-| CRT overlay boost | `.device-panel-media::after`, `.camera-frame::after` | Scan line opacity 3%→6% |
-| Sensor sweep boost | `.sensor-indicator` | Brightness 15%→25% |
-| Condition badge glow | Weather condition label | `text-shadow: 0 0 8px currentColor` |
-
 ### Core Timing Constants
 
 ```css

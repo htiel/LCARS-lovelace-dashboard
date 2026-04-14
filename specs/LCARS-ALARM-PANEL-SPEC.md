@@ -615,14 +615,6 @@ An SVG shield shape with a central status symbol and label. The shield uses the 
        role="img"
        aria-hidden="true">
 
-    <!-- Concentric targeting rings (v4.12.0 visual enhancement) -->
-    <circle cx="80" cy="95" r="70" fill="none" stroke="var(--alarm-state-color)" stroke-width="1" opacity="0.1" />
-    <circle cx="80" cy="95" r="50" fill="none" stroke="var(--alarm-state-color)" stroke-width="1" opacity="0.15" />
-    <circle cx="80" cy="95" r="30" fill="none" stroke="var(--alarm-state-color)" stroke-width="1" opacity="0.1" />
-    <!-- Crosshair guides -->
-    <line x1="80" y1="20" x2="80" y2="170" stroke="var(--alarm-state-color)" stroke-width="0.5" opacity="0.08" />
-    <line x1="15" y1="95" x2="145" y2="95" stroke="var(--alarm-state-color)" stroke-width="0.5" opacity="0.08" />
-
     <!-- Shield outline -->
     <path class="alarm-shield-path"
           d="M80 10 L145 45 L145 100 Q145 155 80 170 Q15 155 15 100 L15 45 Z"
@@ -700,7 +692,6 @@ During `arming`, `pending`, or `disarming` states, the shield icon is replaced w
   overflow: hidden;
   background: var(--lcars-bg);
   aspect-ratio: var(--media-aspect, 1 / 1);
-  box-shadow: inset 0 0 15px rgba(100,200,255,0.06);
 
   display: flex;
   flex-direction: column;
@@ -1488,14 +1479,6 @@ function isKeypadVisible(state, codeRequired) {
 ## 8. Red Alert Animation System
 
 The triggered state is the most visually intense state in the entire LCARS Dashboard. This is **Red Alert** — the ship is under attack.
-
-### v4.12.1 Visual Polish
-
-- **Concentric ring background**: Alarm viewscreen gains three `radial-gradient` rings at 30%, 45%, and 60% radii — subtle LCARS sensor/targeting scope backdrop behind the shield SVG
-- **Triggered flash overlay**: `.alarm-viewscreen::before` repurposed for a red flash (`@keyframes alarm-flash`, 8% peak opacity) during **triggered** state — adds urgency layered on top of the existing red alert pulse
-- **Pill-shaped keypad buttons**: Digit buttons changed from circular to pill-shaped (flat-left/rounded-right) to match LCARS button vocabulary across all panels
-- **Viewscreen breathing glow**: `@keyframes viewscreen-breathe` (6s cycle) applied to `.alarm-viewscreen` — `box-shadow` oscillates between 20px and 30px spread
-- **Reduced motion updated**: Added `.alarm-viewscreen` and `.alarm-triggered .alarm-viewscreen::before` to the `prefers-reduced-motion` disable list
 
 ### 8.1 Frame Pulse (Triggered)
 

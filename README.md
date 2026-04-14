@@ -27,12 +27,11 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
   - Weather → Condition display with wind compass, 7-day forecast strip, lightning/precipitation sensors (Davis, WeatherFlow)
   - Irrigation → Zone list with START/STOP controls, active fill bar, standby toggle (Rachio)
   - Cover → Position controls
-- **Warp Core Battery Panel** — Auto-detects battery devices (EcoFlow, etc.), renders segmented containment vessel with 14 horizontal pill capsules, center junction ring, tapered funnels, charge-level color, SOC decorative numeric codes, staggered charging animation, power flow I/O arrows, telemetry sensors, and integrated config/diagnostic entity controls with LCARS option strips
+- **Warp Core Battery Panel** — Auto-detects battery devices (EcoFlow, etc.), renders CSS reactor core with charge-level color, SOC gauge, power flow I/O arrows, telemetry sensors, and integrated config/diagnostic entity controls with LCARS option strips
 - **Atmoscrubber Environment Panel** — Auto-detects air quality devices (Awair, VeSync purifiers, etc.), renders animated particle cylinder with AQI-mapped colors, 24h SVG sparklines, fan/preset controls, and sensor-only mode for monitor-only devices
 - **Smart Name Shortening** — Automatically strips area and device name prefixes from entity names for cleaner display
 - **Device-Grouped Layout** — Entities organized by device, then sorted by domain (cameras first, sensors last)
-- **LCARS Visual Vocabulary** — Panel scan lines, CRT viewscreen overlays, segmented bar meters, data pip header patterns, viewscreen inner glow, targeting ring SVG overlays, sensor indicator bars — all inspired by TNG Engineering panels
-- **15+ LCARS Animations** — Cascade reveal, scan sweep, viewscreen activation, heartbeat pulse, distress pulse, segmented sensor bars, panel scan line, viewscreen breathing glow, warp core charging cascade, audio waveform visualizer, camera REC blink, pool water shimmer, irrigation flow, atmoscrubber breathing glow, alarm triggered flash
+- **6 LCARS Animations** — Cascade reveal, scan sweep, viewscreen activation, heartbeat pulse, distress pulse, segmented sensor bars
 - **9-Panel Auto-Detection** — Priority-ordered device classifier routes entities to the correct panel: camera → alarm → pool/spa → climate → media → environment → irrigation → weather → battery
 - **Security Hardened** — Alarm PIN rate-limiting (3 attempts/60s), media artwork URL validation, temperature setpoint clamping, service call throttling
 - **Self-Contained** — All fonts (Antonio) and dependencies vendored locally, no external CDN calls

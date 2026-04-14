@@ -1476,21 +1476,6 @@ function hasSoundModes(stateObj) {
 
 ## 10. Animation
 
-### v4.12.0 Visual Enhancements
-
-- **Viewscreen inner glow**: `box-shadow: inset 0 0 15px rgba(100,200,255,0.06)` on `.media-viewscreen`
-- **Segmented volume bar**: Volume track and fill now use `repeating-linear-gradient(90deg, ...)` with 5px segments separated by 2px gaps — evokes LCARS bar-meter displays from the TNG engineering panels. Filled segments glow with `box-shadow: 0 0 6px rgba(204,153,255,0.3)`
-- **CRT idle display**: `.media-idle-display` background uses radial center glow + horizontal scan lines for an inactive viewscreen feel
-- **Panel scan line**: Inherited from `.lcars-device-panel` base
-
-### v4.12.1 Visual Polish
-
-- **Audio waveform visualiser**: 16 vertical bars (`.media-waveform-bar`) rendered inside the media viewscreen via `@keyframes waveform-dance` with staggered 60ms delays per bar — bars bounce to random heights when playing; collapse flat when idle/paused
-- **Pill-shaped transport buttons**: Play/pause/skip buttons changed from circular (`border-radius: 50%`) to pill-shaped (`border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0`) — flat left edge, rounded right, consistent with LCARS button vocabulary
-- **Boosted idle CRT**: `.media-idle-display` radial center glow increased from 4% to 6%, horizontal scan line opacity from 1.5% to 2.5% — idle viewscreen feels more alive
-- **Viewscreen breathing glow**: `@keyframes viewscreen-breathe` (6s cycle) applied to `.media-viewscreen` — `box-shadow` oscillates between 20px and 30px spread
-- **Reduced motion updated**: Added `.media-viewscreen` and `.media-waveform-bar` to the `prefers-reduced-motion` disable list
-
 ### Viewscreen Activation (Reuse from Device Panel §7)
 
 ```css

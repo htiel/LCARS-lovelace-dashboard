@@ -107,13 +107,7 @@ The Device Panel uses a **2-column asymmetric grid** within a bordered frame. Th
 .device-panel-header-line {
   flex: 1;
   height: 2px;
-  background: repeating-linear-gradient(90deg,
-    var(--panel-frame-color) 0px, var(--panel-frame-color) 8px,
-    transparent 8px, transparent 12px,
-    var(--panel-frame-color) 12px, var(--panel-frame-color) 14px,
-    transparent 14px, transparent 18px
-  );
-  opacity: 0.4;
+  background: var(--panel-frame-color, var(--lcars-butterscotch));
 }
 
 .device-panel-badge {
@@ -137,7 +131,6 @@ The header bar uses the existing `device-header` pattern from `lcars-homepage-ca
   border-radius: 0.5rem;
   overflow: hidden;
   background: var(--lcars-black);
-  box-shadow: inset 0 0 20px rgba(100,200,255,0.05);
   
   /* Viewscreen aspect ratio — 16:9 is standard, override per device type */
   aspect-ratio: var(--media-aspect, 16 / 9);
@@ -150,18 +143,6 @@ The header bar uses the existing `device-header` pattern from `lcars-homepage-ca
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-/* CRT scan line overlay — subtle horizontal lines for LCARS viewscreen feel */
-.device-panel-media::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(0deg,
-    transparent 0px, transparent 2px,
-    rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
-  );
-  pointer-events: none;
 }
 
 /* Viewscreen activation animation (reuse existing) */
@@ -248,11 +229,11 @@ The media frame reuses the existing `.camera-frame` styling from the homepage ca
   outline-offset: 2px;
 }
 
-/* Status indicator bar — vertical bar instead of dot for LCARS authenticity */
+/* Status indicator dot */
 .sensor-indicator {
-  width: 0.25rem;
-  height: 1rem;
-  border-radius: 0.125rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   flex-shrink: 0;
   transition: background var(--lcars-transition);
 }
@@ -374,7 +355,7 @@ Color assignments follow Bracer Jack's color theory: **3 core hue families** (wa
 
 ### Indicator Dot Colors
 
-The `.sensor-indicator` vertical bar uses the **same color as the state value text**. This provides redundant encoding (color + text), critical for accessibility (WCAG 1.4.1 — Use of Color: color is not the sole means of conveying information).
+The `.sensor-indicator` dot uses the **same color as the state value text**. This provides redundant encoding (color + text), critical for accessibility (WCAG 1.4.1 — Use of Color: color is not the sole means of conveying information).
 
 ### Implementation Helper
 
@@ -530,41 +511,6 @@ When an area has multiple camera devices, they stack vertically in a column layo
 ---
 
 ## 7. Animation
-
-### Panel Scan Line (v4.12.0)
-
-All device panels feature a subtle horizontal scan line that sweeps vertically through the panel background on a 10-second loop, evoking the scan-refresh of a real LCARS display:
-
-```css
-.lcars-device-panel {
-  background:
-    linear-gradient(180deg, transparent, transparent 49%, rgba(100,200,255,0.03) 50%, transparent 51%, transparent) center / 100% 300% no-repeat,
-    var(--lcars-black);
-  animation: panel-scanline 10s ease-in-out infinite;
-}
-@keyframes panel-scanline {
-  0%, 100% { background-position: center 100%; }
-  50% { background-position: center 0%; }
-}
-```
-
-The scan line is barely perceptible (3% opacity) — it reads as "active display" rather than "flickering screen."
-
-### v4.12.1 Visual Polish
-
-- **Scan line intensity boost**: Opacity increased from 3% to 8%, tighter band (49.5%–50.5%), faster 8-second cycle — more visible sweep without becoming distracting
-- **Viewscreen breathing glow**: `@keyframes viewscreen-breathe` (6s ease-in-out infinite) applied to `.device-panel-media` — `box-shadow` oscillates between 20px and 30px spread, giving viewscreens a gentle living-display pulse
-- **Sensor scan sweep boost**: Sensor indicator brightness increased from 15% to 25%
-- **Toggle pill active glow**: `[data-on]` state gets `box-shadow: 0 0 8px rgba(255,170,0,0.3), 0 0 16px rgba(255,170,0,0.1)` — active toggles now pop against the dark background
-- **CRT scanline overlay boost**: Opacity on `.device-panel-media::after` and `.camera-frame::after` increased from 3% to 6%
-- **Battery warp core redesign**:
-  - Side rails: `::before`/`::after` vertical bars with gradient fade (opacity 0.3)
-  - Graduated taper via CSS `nth-child`: Upper pills 40%→50%→60%→68%→76%→85%→94%, lower half mirrors
-  - Junction flanges: `::before`/`::after` on `.warp-core-junction` with `repeating-linear-gradient` striped horizontal bars
-  - Larger pills (0.625rem→0.9rem base, 1.1rem junction-adjacent), larger junction ring (2rem→2.25rem)
-  - New `pill-charge-wave` keyframe with 14px+24px compound glow, 80ms cascade delay
-  - Container min-height 10rem→14rem, width 5rem→6rem; larger endcaps (1.75rem) and funnels (2rem)
-- **Reduced motion updated**: Added `.device-panel-media` to the `prefers-reduced-motion` disable list
 
 ### Viewscreen Activation (Existing)
 
@@ -874,7 +820,7 @@ These are set per-device-type on the `.lcars-device-panel` element, keeping the 
 
 | Rule                                              | Source           | Compliant? |
 |---------------------------------------------------|------------------|------------|
-| No gradients, shadows, or 3D effects              | Bracer Jack #1   | ✅ (inset glow and scan lines exempt — purely atmospheric, not skeuomorphic) |
+| No gradients, shadows, or 3D effects              | Bracer Jack #1   | ✅          |
 | Frame goes thick→thin (4px→2px border)            | Bracer Jack #2   | ✅          |
 | Pill buttons with flat left, rounded right         | Bracer Jack #4   | ✅          |
 | Exactly 3 font sizes (title, sub, data)            | Bracer Jack #6   | ✅          |

@@ -1359,18 +1359,6 @@ function stopSuperChlor(hass, configEntryId) {
 
 ## 8. Heating State Animations
 
-### v4.12.0 Visual Enhancements
-
-- **Body frame inner glow**: `box-shadow: inset 0 0 20px rgba(100,200,255,0.06)` on `.pool-body-frame` for atmospheric LCARS viewscreen depth
-- **Panel scan line**: Inherited from `.lcars-device-panel` base
-- **Header data pips**: Inherited from device panel base — dash-dot header line pattern
-
-### v4.12.1 Visual Polish
-
-- **Water shimmer overlay**: `.pool-body-frame` gains a `repeating-linear-gradient` of vertical bars combined with `@keyframes pool-shimmer` (4s horizontal shift) — creates a gentle water shimmer effect across the viewscreen surface
-- **Viewscreen breathing glow**: `@keyframes viewscreen-breathe` (6s cycle) applied to `.pool-body-frame` via `animation: viewscreen-breathe 6s ..., pool-shimmer 4s ...` — compound animation: breathing glow plus water shimmer
-- **Reduced motion updated**: Added `.pool-body-frame` to the `prefers-reduced-motion` disable list
-
 The water body viewscreens communicate heating state through subtle ambient animations on the frame border, matching the Climate Panel Spec §8 pattern.
 
 ### Heating Active — Border Pulse

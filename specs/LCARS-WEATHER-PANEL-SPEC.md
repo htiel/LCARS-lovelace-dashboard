@@ -1199,22 +1199,6 @@ When lightning strikes are detected within a threshold distance (configurable, d
 
 ## 9. Animation
 
-### v4.12.0 Visual Enhancements
-
-- **Viewscreen inner glow**: `box-shadow: inset 0 0 15px rgba(100,200,255,0.06)` on `.weather-viewscreen` with `position: relative` fix for corner bracket pseudo-elements
-- **Wind compass concentric rings**: Three concentric circles at radii 36, 28, 20 with fading opacity (0.15, 1.0, 0.15) plus crosshair guide lines at 0.1 opacity — evokes LCARS targeting/sensor displays
-- **Segmented forecast range bars**: `.forecast-range-bar` and `.forecast-range-fill` now use `repeating-linear-gradient` with 3px segments and 2px gaps in `--lcars-ice` for a data-readout feel
-- **Forecast tile separators**: Tiles separated by `border-left: 2px solid rgba(100,200,255,0.08)` with hover highlight
-- **Panel scan line**: Inherited from `.lcars-device-panel` base
-
-### v4.12.1 Visual Polish
-
-- **Dashed targeting reticle**: Wind compass SVG gains an outer circle at `r=39` with `stroke-dasharray="3 2"` — evokes LCARS long-range sensor scanning overlay
-- **Diagonal crosshairs**: Two 45-degree lines added to the wind compass at 7% opacity for enhanced targeting display feel
-- **Condition badge glow**: Weather condition label gets `text-shadow: 0 0 8px currentColor` — text subtly glows with its state colour
-- **Viewscreen breathing glow**: `@keyframes viewscreen-breathe` (6s cycle) applied to `.weather-viewscreen` — `box-shadow` oscillates between 20px and 30px spread
-- **Reduced motion updated**: Added `.weather-viewscreen` to the `prefers-reduced-motion` disable list
-
 ### Viewscreen Activation
 
 Reuse the existing `viewscreen-activate` keyframes from the Device Panel Spec §7:

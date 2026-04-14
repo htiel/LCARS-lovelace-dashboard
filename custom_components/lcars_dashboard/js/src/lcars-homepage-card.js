@@ -6670,7 +6670,7 @@ class LcarsHomepageCard extends LitElement {
 
       return html`
         <div class="lcars-device-panel power-panel" data-panel-type="power"
-          ${hasCritical ? 'data-alert="critical"' : ''}
+          data-alert="${hasCritical ? 'critical' : ''}"
           role="region" aria-label="${deviceName} Power Systems">
 
           <!-- Header -->

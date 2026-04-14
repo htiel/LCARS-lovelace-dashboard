@@ -20,6 +20,7 @@ export const PANEL_TYPE_ENVIRONMENT = 'environment';
 export const PANEL_TYPE_IRRIGATION  = 'irrigation';
 export const PANEL_TYPE_WEATHER     = 'weather';
 export const PANEL_TYPE_BATTERY     = 'battery';
+export const PANEL_TYPE_POWER       = 'power';
 
 // ─── Panel Render Priority (lower = rendered first in layout) ───────────────
 
@@ -33,6 +34,7 @@ export const PANEL_TYPE_ORDER = {
   [PANEL_TYPE_IRRIGATION]:  6,
   [PANEL_TYPE_WEATHER]:     7,
   [PANEL_TYPE_BATTERY]:     8,
+  [PANEL_TYPE_POWER]:       9,
 };
 
 // ─── Domain Sets ────────────────────────────────────────────────────────────
@@ -152,6 +154,25 @@ const DETECTORS = [
       if (dc === 'power' && unit === 'W') powerCount++;
     }
     return (hasBattery && powerCount >= 2) ? PANEL_TYPE_BATTERY : null;
+  },
+
+  // Power monitoring: ≥1 power/energy/voltage/current sensor, NO battery (4X-3)
+  // MUST be last — lowest specificity. hasBattery gate prevents overlap with battery.
+  (entries) => {
+    let hasBattery = false;
+    let powerSignals = 0;
+    for (const e of entries) {
+      const attrs = e.state?.attributes;
+      if (!attrs) continue;
+      const dc = attrs.device_class || '';
+      const unit = attrs.unit_of_measurement || '';
+      if (dc === 'battery' && unit === '%') { hasBattery = true; break; }
+      if (dc === 'power' && (unit === 'W' || unit === 'kW')) powerSignals++;
+      if (dc === 'energy' && (unit === 'kWh' || unit === 'Wh')) powerSignals++;
+      if (dc === 'current' && unit === 'A') powerSignals++;
+      if (dc === 'voltage' && unit === 'V') powerSignals++;
+    }
+    return (!hasBattery && powerSignals >= 1) ? PANEL_TYPE_POWER : null;
   },
 ];
 

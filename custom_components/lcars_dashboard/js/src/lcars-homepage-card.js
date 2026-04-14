@@ -21,13 +21,14 @@ import {
   PANEL_TYPE_CAMERA, PANEL_TYPE_ALARM, PANEL_TYPE_AQUATICS,
   PANEL_TYPE_CLIMATE, PANEL_TYPE_MEDIA, PANEL_TYPE_ENVIRONMENT,
   PANEL_TYPE_IRRIGATION, PANEL_TYPE_WEATHER, PANEL_TYPE_BATTERY,
+  PANEL_TYPE_POWER,
   PANEL_TYPE_ORDER,
   CAMERA_DOMAINS, CLIMATE_DOMAINS, MEDIA_DOMAINS, ALARM_DOMAINS, WEATHER_DOMAINS,
   TOGGLE_DOMAINS, SENSOR_DOMAINS, COVER_DOMAINS,
   AQ_DEVICE_CLASSES, AQ_ENTITY_SUFFIX_RE,
   DOMAIN_LABELS, DOMAIN_ORDER,
 } from './lcars-entity-utils.js';
-import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor, getCo2Color, getTempColor, getTempComfortClass, getSafeComfortColor, COMFORT_COLORS, getRainDelayInfo } from './lcars-color-utils.js';
+import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor, getCo2Color, getTempColor, getTempComfortClass, getSafeComfortColor, COMFORT_COLORS, getRainDelayInfo, getPowerColor, getPowerLabel, getGridBalanceColor } from './lcars-color-utils.js';
 import { clampSetpoint, clampValue, createRateLimiter, createDebouncer } from './lcars-service-utils.js';
 import { renderSparkline, fetchSparklineData } from './lcars-sparkline.js';
 import { fetchForecasts } from './lcars-weather-utils.js';
@@ -2566,6 +2567,507 @@ class LcarsHomepageCard extends LitElement {
           }
           .irrigation-standby-btn { min-width: 10rem; }
 
+          /* ═══════ POWER PANEL (4X-3) ═══════ */
+          .power-panel {
+            --panel-frame-color: var(--lcars-butterscotch);
+            display: grid;
+            grid-template-areas:
+              "header"
+              "arc"
+              "summary"
+              "circuits"
+              "devices"
+              "strips";
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto auto auto auto auto;
+            gap: var(--lcars-gap);
+          }
+          .power-panel[data-alert="critical"] {
+            --panel-frame-color: var(--lcars-tomato);
+            animation: lcars-distress-pulse var(--lcars-anim-pulse-urgent, 1s) ease-in-out infinite;
+            --pulse-color-a: var(--lcars-tomato);
+            --pulse-color-b: rgba(255, 85, 85, 0.3);
+          }
+          /* Header */
+          .power-panel-header {
+            grid-area: header;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            min-height: var(--lcars-bar-h);
+          }
+          .power-panel-header ha-icon {
+            --mdc-icon-size: 20px;
+            color: var(--panel-frame-color);
+            flex-shrink: 0;
+          }
+          .power-panel-name {
+            font-size: var(--lcars-font-size-sub);
+            color: var(--lcars-text-heading);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .power-panel-header-line {
+            flex: 1;
+            height: 2px;
+            background: var(--panel-frame-color);
+          }
+          .power-panel-badge {
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-data-accent, var(--lcars-ice));
+            text-transform: uppercase;
+            white-space: nowrap;
+          }
+          /* SVG Arc */
+          .power-arc-area { grid-area: arc; display: flex; justify-content: center; }
+          .power-distribution-arc {
+            width: 100%;
+            max-width: 15rem;
+            height: auto;
+          }
+          /* Summary */
+          .power-summary {
+            grid-area: summary;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+            gap: var(--lcars-gap);
+          }
+          .power-summary-card {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding: 0.5rem 0.75rem;
+            border-left: 3px solid var(--card-accent, var(--lcars-butterscotch));
+            border-radius: 0 0.25rem 0.25rem 0;
+            background: rgba(255, 255, 255, 0.03);
+            min-width: 8rem;
+          }
+          .power-summary-label {
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-ice);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+          }
+          .power-summary-value {
+            font-size: var(--lcars-font-size-title);
+            font-weight: 700;
+            text-transform: uppercase;
+          }
+          .power-summary-secondary {
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-space-white);
+            opacity: 0.8;
+          }
+          /* Section labels */
+          .power-section-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0;
+            margin-top: 0.25rem;
+          }
+          .power-section-label-text {
+            font-size: var(--lcars-font-size-sub);
+            color: var(--lcars-text-heading);
+            text-transform: uppercase;
+            white-space: nowrap;
+            flex-shrink: 0;
+            text-wrap: balance;
+          }
+          .power-section-label-rule {
+            flex: 1;
+            height: 2px;
+            background: var(--panel-frame-color);
+            opacity: 0.5;
+          }
+          .power-section-label-count {
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-ice);
+            white-space: nowrap;
+            flex-shrink: 0;
+          }
+          /* Circuit tile grid */
+          .power-circuits {
+            grid-area: circuits;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+            gap: var(--lcars-gap);
+            max-height: 24rem;
+            overflow-y: auto;
+            mask-image: linear-gradient(to bottom, black calc(100% - 2rem), transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 2rem), transparent 100%);
+          }
+          .power-circuit-tile {
+            display: flex;
+            flex-direction: column;
+            gap: 0.125rem;
+            padding: 0.375rem 0.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid var(--circuit-color, var(--lcars-ice));
+            border-radius: 0 0.25rem 0.25rem 0;
+            cursor: pointer;
+            transition: background var(--lcars-transition);
+            min-height: 3rem;
+          }
+          .power-circuit-tile:hover { background: rgba(255, 255, 255, 0.06); }
+          .power-circuit-tile:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
+          .power-circuit-name {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-space-white);
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .power-circuit-indicator {
+            flex-shrink: 0;
+            font-size: 0.625rem;
+            color: var(--circuit-color, var(--lcars-ice));
+          }
+          .power-circuit-value-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+          .power-circuit-watts {
+            font-size: var(--lcars-font-size-data);
+            font-weight: 700;
+            color: var(--circuit-color, var(--lcars-ice));
+            white-space: nowrap;
+          }
+          .power-circuit-energy {
+            font-size: 0.75rem;
+            color: var(--lcars-space-white);
+            opacity: 0.6;
+            text-transform: uppercase;
+          }
+          /* Device rows (switch + monitor) */
+          .power-devices {
+            grid-area: devices;
+            display: flex;
+            flex-direction: column;
+            gap: var(--lcars-gap);
+          }
+          .power-device-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+            transition: background var(--lcars-transition);
+            cursor: pointer;
+            min-height: 2.5rem;
+          }
+          .power-device-row:hover { background: rgba(255, 255, 255, 0.05); }
+          .power-device-row:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
+          .power-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 1.5rem;
+            border-radius: 0.75rem;
+            font-family: var(--lcars-font);
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            border: none;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background var(--lcars-transition);
+          }
+          .power-toggle[data-state="on"] {
+            background: var(--lcars-gold);
+            color: var(--lcars-black);
+          }
+          .power-toggle[data-state="off"] {
+            background: var(--lcars-gray);
+            color: var(--lcars-space-white);
+          }
+          .power-toggle:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
+          .power-device-name {
+            flex: 1;
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-space-white);
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .power-device-stats {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-shrink: 0;
+          }
+          .power-device-watts {
+            font-size: var(--lcars-font-size-data);
+            font-weight: 700;
+            color: var(--circuit-color, var(--lcars-ice));
+            white-space: nowrap;
+            min-width: 4rem;
+            text-align: right;
+          }
+          .power-device-energy {
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-space-white);
+            opacity: 0.7;
+            white-space: nowrap;
+            min-width: 4rem;
+            text-align: right;
+          }
+          /* Power strip blocks */
+          .power-strips {
+            grid-area: strips;
+            display: flex;
+            flex-direction: column;
+            gap: calc(var(--lcars-gap) * 2);
+          }
+          .power-strip-block {
+            border: 1px solid var(--lcars-butterscotch);
+            border-left-width: 3px;
+            border-radius: 0.5rem;
+            padding: var(--lcars-gap);
+          }
+          .power-strip-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            margin-bottom: var(--lcars-gap);
+          }
+          .power-strip-name {
+            font-size: var(--lcars-font-size-sub);
+            color: var(--lcars-text-heading);
+            text-transform: uppercase;
+            text-wrap: balance;
+            flex: 1;
+          }
+          .power-strip-master-toggle {
+            height: 2rem;
+            min-width: 3rem;
+            font-family: var(--lcars-font);
+            font-size: 0.7rem;
+            padding: 0 0.5rem;
+            border: 1px solid var(--lcars-gray);
+            border-radius: var(--lcars-btn-radius);
+            background: transparent;
+            color: var(--lcars-disabled);
+            cursor: pointer;
+            text-transform: uppercase;
+          }
+          .power-strip-master-toggle[data-on] {
+            border-color: var(--lcars-ice);
+            color: var(--lcars-ice);
+            background: rgba(153, 204, 255, 0.1);
+          }
+          .power-strip-total {
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-butterscotch);
+            font-weight: 700;
+            white-space: nowrap;
+          }
+          .power-strip-divider {
+            height: 1px;
+            background: var(--panel-frame-color);
+            opacity: 0.3;
+            margin-bottom: var(--lcars-gap);
+          }
+          .power-strip-children {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+            gap: var(--lcars-gap);
+          }
+          .power-strip-child-tile {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding: 0.375rem 0.5rem;
+            border-left: 3px solid var(--tile-power-color, var(--lcars-gray));
+            min-height: 3.5rem;
+          }
+          .strip-child-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.25rem;
+          }
+          .strip-child-toggle {
+            font-family: var(--lcars-font);
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            padding: 0.125rem 0.375rem;
+            border: 1px solid var(--lcars-gray);
+            border-radius: var(--lcars-btn-radius);
+            background: transparent;
+            color: var(--lcars-disabled);
+            cursor: pointer;
+            transition: all var(--lcars-transition);
+          }
+          .strip-child-toggle[data-on] {
+            border-color: var(--lcars-ice);
+            color: var(--lcars-ice);
+            background: rgba(153, 204, 255, 0.1);
+          }
+          /* Popover (singleton) */
+          .power-detail-popover {
+            margin: auto;
+            padding: 0;
+            border: none;
+            background: transparent;
+            overflow: visible;
+            max-width: min(26rem, 90vw);
+            min-width: 18rem;
+            opacity: 0;
+            transform: translateY(0.5rem) scale(0.98);
+            transition:
+              opacity var(--lcars-transition-slow, 300ms) ease-out,
+              transform var(--lcars-transition-slow, 300ms) ease-out,
+              overlay var(--lcars-transition-slow, 300ms) allow-discrete,
+              display var(--lcars-transition-slow, 300ms) allow-discrete;
+          }
+          .power-detail-popover:popover-open {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+          .power-detail-popover::backdrop {
+            background: rgba(0, 0, 0, 0.5);
+          }
+          .popover-content {
+            background: var(--lcars-black);
+            border: 2px solid var(--lcars-butterscotch);
+            border-left-width: 4px;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            font-family: var(--lcars-font);
+            color: var(--lcars-text);
+            text-transform: uppercase;
+          }
+          .popover-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--lcars-gray);
+            margin-bottom: 0.5rem;
+          }
+          .popover-title {
+            font-size: var(--lcars-font-size-sub);
+            color: var(--lcars-text-heading);
+          }
+          .popover-status {
+            font-size: var(--lcars-font-size-data);
+            font-weight: 700;
+          }
+          .popover-hero-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 0.5rem 0;
+          }
+          .popover-sparkline { padding: 0.5rem 0; }
+          .popover-sparkline-label {
+            display: block;
+            font-size: 0.6rem;
+            color: var(--lcars-gray);
+            text-align: center;
+            margin-top: 0.25rem;
+          }
+          .popover-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding: 0.5rem 0;
+          }
+          .popover-stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: var(--lcars-font-size-data);
+          }
+          .popover-stat-label { color: var(--lcars-space-white); opacity: 0.7; }
+          .popover-stat-value { color: var(--lcars-ice); font-weight: 700; }
+          .popover-history-btn {
+            width: 100%;
+            margin-top: 0.5rem;
+            display: flex;
+            justify-content: center;
+            background: var(--lcars-butterscotch);
+            color: var(--lcars-black);
+            border: none;
+            border-radius: var(--lcars-btn-radius);
+            padding: 0.375rem 0.75rem;
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            cursor: pointer;
+          }
+          /* Scroll-driven tile animations */
+          @supports (animation-timeline: view()) {
+            .power-circuit-tile {
+              animation: circuit-energize linear both;
+              animation-timeline: view();
+              animation-range: entry 0% entry 40%;
+            }
+            @keyframes circuit-energize {
+              from {
+                opacity: 0;
+                border-left-color: var(--lcars-disabled);
+                transform: translateX(-0.25rem);
+              }
+              to {
+                opacity: 1;
+                border-left-color: var(--circuit-color, var(--lcars-ice));
+                transform: translateX(0);
+              }
+            }
+          }
+          @supports not (animation-timeline: view()) {
+            .power-circuit-tile { opacity: 1; }
+          }
+          /* Responsive */
+          @media (max-width: 1023px) {
+            .power-circuits {
+              grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+            }
+            .power-summary {
+              grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+            }
+          }
+          @media (max-width: 767px) {
+            .power-circuits {
+              grid-template-columns: 1fr 1fr;
+              max-height: 16rem;
+            }
+            .power-summary {
+              grid-template-columns: 1fr;
+            }
+            .power-device-row {
+              flex-direction: column;
+              align-items: stretch;
+            }
+          }
+          @media (max-width: 479px) {
+            .power-circuits {
+              grid-template-columns: 1fr;
+            }
+          }
+
           /* ═══════════════════════════════════════════════════════════
              v4.13.0 — VISUAL ENHANCEMENTS (All Panels)
              Phase 1: Device Panel Base (cascades to all)
@@ -3396,6 +3898,10 @@ class LcarsHomepageCard extends LitElement {
             .media-viewscreen-glow { animation: none; }
             .media-idle-glyph { animation: none; opacity: 0.4; }
             .media-progress-fill::after { animation: none; }
+            /* Power panel reduced motion */
+            .power-panel[data-alert="critical"] { animation: none; border-color: var(--lcars-tomato); }
+            .power-circuit-tile { animation: none !important; opacity: 1; }
+            .power-circuit-tile, .power-device-row, .power-toggle { transition-duration: 0.01ms !important; }
             /* Confirmations: halved, still play */
             .device-control-btn:active::after { animation-duration: 100ms !important; }
             .alarm-key:active::before { animation-duration: 100ms !important; }
@@ -3520,6 +4026,7 @@ class LcarsHomepageCard extends LitElement {
         case PANEL_TYPE_AQUATICS:    return this._renderPoolSpaPanel(group);
         case PANEL_TYPE_WEATHER:     return this._renderWeatherPanel(group);
         case PANEL_TYPE_IRRIGATION:  return this._renderIrrigationPanel(group);
+        case PANEL_TYPE_POWER:       return this._renderPowerPanel(group);
         default: return '';
       }
     }
@@ -5619,6 +6126,620 @@ class LcarsHomepageCard extends LitElement {
               </div>
             `;
           })}
+          <div class="panel-pip-strip" aria-hidden="true"></div>
+        </div>
+      `;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════ */
+    /* ═══ POWER PANEL — Energy Monitoring (4X-3) ═════════════════════════ */
+    /* ═══════════════════════════════════════════════════════════════════════ */
+
+    _powerToggleLimiter = createRateLimiter(10, 10000);
+
+    /* ── Format helpers (Wesley §7) ── */
+
+    _formatWatts(watts) {
+      if (watts == null) return '—';
+      const w = Number(watts);
+      if (!Number.isFinite(w)) return '—';
+      if (Math.abs(w) >= 10000) return `${(w / 1000).toFixed(1)} kW`;
+      return `${Math.round(w)} W`;
+    }
+
+    _formatEnergy(kwh) {
+      if (kwh == null) return '—';
+      const v = Number(kwh);
+      if (!Number.isFinite(v)) return '—';
+      return `${v.toFixed(1)} kWh`;
+    }
+
+    /* ── Power shape indicator (Geordi §2.3 — color-blind safe) ── */
+
+    _getPowerIndicator(watts) {
+      if (watts == null || isNaN(watts)) return '✕';
+      const w = Math.abs(Number(watts));
+      if (w <= 0)    return '○';
+      if (w <= 500)  return '●';
+      if (w <= 1500) return '●━';
+      if (w <= 3000) return '●━━';
+      return '●━━━';
+    }
+
+    /* ── Partition power device entities (Data C-6) ── */
+
+    _partitionPowerEntities(entries) {
+      const switches = [];
+      const powerSensors = [];
+      const energySensors = [];
+      const voltageSensors = [];
+      const currentSensors = [];
+      const diagnostics = [];
+
+      for (const entry of entries) {
+        if (entry.disabled_by || entry.hidden_by) continue;
+        const domain = entry.entity?.entity_id?.split('.')[0] || entry.domain;
+        const dc = entry.state?.attributes?.device_class || '';
+        const unit = entry.state?.attributes?.unit_of_measurement || '';
+
+        if (domain === 'switch') {
+          switches.push(entry);
+        } else if (dc === 'power' && (unit === 'W' || unit === 'kW')) {
+          powerSensors.push(entry);
+        } else if (dc === 'energy' && (unit === 'kWh' || unit === 'Wh')) {
+          energySensors.push(entry);
+        } else if (dc === 'voltage' && unit === 'V') {
+          voltageSensors.push(entry);
+        } else if (dc === 'current' && unit === 'A') {
+          currentSensors.push(entry);
+        } else {
+          diagnostics.push(entry);
+        }
+      }
+
+      return { switches, powerSensors, energySensors, voltageSensors, currentSensors, diagnostics };
+    }
+
+    /* ── Device classification (Geordi §7.2) ── */
+
+    _classifyPowerDevice(entries, device) {
+      const hasPowerSensor = entries.some(e => {
+        const dc = e.state?.attributes?.device_class || '';
+        return e.domain === 'sensor' && (dc === 'power' || dc === 'energy' || dc === 'voltage' || dc === 'current');
+      });
+      if (!hasPowerSensor) return null;
+
+      const hasSwitch = entries.some(e => e.domain === 'switch');
+      const manufacturer = (device?.manufacturer || '').toLowerCase();
+      const model = (device?.model || '').toLowerCase();
+
+      // Emporia Vue — monitoring only, no switches
+      if (manufacturer.includes('emporia') || model.includes('vue')) return 'vue';
+
+      // Power strip — HS300 or many switches
+      const switchCount = entries.filter(e => e.domain === 'switch').length;
+      if (switchCount >= 4 || model.includes('hs300') || model.includes('power strip')) return 'strip';
+
+      // Smart plug with monitoring (KP115, KP125M, HS110, etc.)
+      if (hasSwitch) return 'plug';
+
+      // Sensor-only (non-Vue) — treat as circuit
+      return 'vue';
+    }
+
+    /* ── Extract primary power/energy sensors ── */
+
+    _getPrimaryPower(group) {
+      for (const entry of group.entries) {
+        const dc = entry.state?.attributes?.device_class || '';
+        const unit = entry.state?.attributes?.unit_of_measurement || '';
+        if (dc === 'power' && (unit === 'W' || unit === 'kW')) {
+          const val = parseFloat(entry.state?.state);
+          if (!isNaN(val)) return unit === 'kW' ? val * 1000 : val;
+        }
+      }
+      return null;
+    }
+
+    _getPrimaryEnergy(group) {
+      for (const entry of group.entries) {
+        const dc = entry.state?.attributes?.device_class || '';
+        const unit = entry.state?.attributes?.unit_of_measurement || '';
+        if (dc === 'energy' && (unit === 'kWh' || unit === 'Wh')) {
+          const val = parseFloat(entry.state?.state);
+          if (!isNaN(val)) return unit === 'Wh' ? val / 1000 : val;
+        }
+      }
+      return null;
+    }
+
+    /* ── 240V pair detection (Geordi §7.4) ── */
+
+    _detect240VPairs(circuits) {
+      const L1L2_PATTERN = /^(.+?)[\s_]*(l[12]|line[\s_]*[12])$/i;
+      const pairs = new Map();
+      const unpaired = [];
+
+      for (const c of circuits) {
+        const name = this._shortDeviceName(c.device) || '';
+        const match = name.match(L1L2_PATTERN);
+        if (match) {
+          const baseName = match[1].trim();
+          if (!pairs.has(baseName)) pairs.set(baseName, []);
+          pairs.get(baseName).push(c);
+        } else {
+          unpaired.push(c);
+        }
+      }
+
+      const result = [...unpaired];
+      for (const [name, pair] of pairs) {
+        if (pair.length === 2) {
+          const watts = pair.reduce((sum, p) => sum + (this._getPrimaryPower(p) || 0), 0);
+          const kwhToday = pair.reduce((sum, p) => sum + (this._getPrimaryEnergy(p) || 0), 0);
+          result.push({
+            device: { ...pair[0].device, name },
+            entries: pair.flatMap(p => p.entries),
+            is240V: true,
+            combinedWatts: watts,
+            combinedEnergy: kwhToday,
+          });
+        } else {
+          result.push(...pair);
+        }
+      }
+
+      return result;
+    }
+
+    /* ── Sort circuits power-descending (Wesley §6) ── */
+
+    _sortCircuits(circuits) {
+      return [...circuits].sort((a, b) => {
+        const wA = a.combinedWatts != null ? a.combinedWatts : (this._getPrimaryPower(a) || 0);
+        const wB = b.combinedWatts != null ? b.combinedWatts : (this._getPrimaryPower(b) || 0);
+        if (wB !== wA) return wB - wA;
+        const nA = (a.device?.name || '').toLowerCase();
+        const nB = (b.device?.name || '').toLowerCase();
+        return nA.localeCompare(nB);
+      });
+    }
+
+    /* ── Power strip grouping (Wesley §3.2) ── */
+
+    _groupPowerStrips(powerDevices) {
+      const strips = new Map();
+      const standalone = [];
+
+      // First pass: identify strip parents
+      for (const group of powerDevices) {
+        if (group.subType === 'strip') {
+          strips.set(group.device.id, { parent: group, children: [] });
+        }
+      }
+
+      // Second pass: assign children via via_device_id
+      for (const group of powerDevices) {
+        if (group.subType === 'strip') continue;
+        if (group.device?.via_device_id) {
+          const parentStrip = strips.get(group.device.via_device_id);
+          if (parentStrip) {
+            parentStrip.children.push(group);
+            continue;
+          }
+        }
+        standalone.push(group);
+      }
+
+      return { strips, standalone };
+    }
+
+    /* ── SVG half-arc power distribution (Wesley §1/Q1) ── */
+
+    _renderPowerArc(circuits, totalWatts) {
+      if (!circuits.length || !totalWatts || totalWatts <= 0) return '';
+
+      const thresholds = this._config?.power_thresholds || {};
+      const sorted = circuits
+        .map(c => ({
+          name: this._shortDeviceName(c.device) || 'Unknown',
+          watts: c.combinedWatts != null ? c.combinedWatts : (this._getPrimaryPower(c) || 0),
+        }))
+        .filter(c => c.watts > 0)
+        .sort((a, b) => b.watts - a.watts);
+
+      if (sorted.length === 0) return '';
+
+      const top5 = sorted.slice(0, 5);
+      const otherWatts = sorted.slice(5).reduce((sum, c) => sum + c.watts, 0);
+      if (otherWatts > 0) top5.push({ name: 'OTHER', watts: otherWatts });
+
+      const cx = 120, cy = 100, r = 80;
+      const startAngle = Math.PI;
+      const totalAngle = Math.PI;
+      const GAP = 0.02; // Small gap between segments
+
+      let currentAngle = startAngle;
+      const segments = top5.map(seg => {
+        const fraction = seg.watts / totalWatts;
+        const sweep = Math.max(fraction * totalAngle - GAP, 0.01);
+        const endAngle = currentAngle - sweep;
+        const color = getPowerColor(seg.watts, thresholds);
+
+        const x1 = cx + r * Math.cos(currentAngle);
+        const y1 = cy - r * Math.sin(currentAngle);
+        const x2 = cx + r * Math.cos(endAngle);
+        const y2 = cy - r * Math.sin(endAngle);
+        const largeArc = sweep > Math.PI ? 1 : 0;
+
+        const path = `M ${x1.toFixed(1)},${y1.toFixed(1)} A ${r},${r} 0 ${largeArc},1 ${x2.toFixed(1)},${y2.toFixed(1)}`;
+        currentAngle = endAngle - GAP;
+
+        return { path, color, name: seg.name, watts: seg.watts, fraction };
+      });
+
+      return html`
+        <div class="power-arc-area">
+          <svg class="power-distribution-arc" viewBox="0 0 240 120"
+            role="img" aria-label="Power distribution: ${this._formatWatts(totalWatts)} total">
+            <!-- Background arc -->
+            <path d="M ${cx - r},${cy} A ${r},${r} 0 1,1 ${cx + r},${cy}"
+              fill="none" stroke="var(--lcars-gray)" stroke-width="10"
+              stroke-linecap="butt" opacity="0.15" />
+            <!-- Segments -->
+            ${segments.map(seg => svg`
+              <path d="${seg.path}" fill="none" stroke="${seg.color}"
+                stroke-width="10" stroke-linecap="butt">
+                <title>${seg.name}: ${Math.round(seg.watts)}W (${Math.round(seg.fraction * 100)}%)</title>
+              </path>
+            `)}
+            <!-- Total text -->
+            <text x="${cx}" y="${cy - 15}" text-anchor="middle"
+              fill="var(--lcars-text-heading)" font-family="var(--lcars-font)"
+              font-size="28" font-weight="bold">
+              ${this._formatWatts(totalWatts)}
+            </text>
+            <text x="${cx}" y="${cy + 5}" text-anchor="middle"
+              fill="var(--lcars-space-white)" font-family="var(--lcars-font)"
+              font-size="10" opacity="0.7">
+              TOTAL
+            </text>
+          </svg>
+        </div>
+      `;
+    }
+
+    /* ── Singleton popover (Data C-5) ── */
+
+    _showCircuitPopover(circuit) {
+      const popover = this.shadowRoot?.querySelector('#power-detail-popover');
+      if (!popover) return;
+
+      const watts = circuit.combinedWatts != null ? circuit.combinedWatts : this._getPrimaryPower(circuit);
+      const energy = circuit.combinedEnergy != null ? circuit.combinedEnergy : this._getPrimaryEnergy(circuit);
+      const thresholds = this._config?.power_thresholds || {};
+      const color = getPowerColor(watts, thresholds);
+      const label = getPowerLabel(watts, thresholds);
+      const name = this._shortDeviceName(circuit.device) || 'Unknown';
+      const entityId = circuit.entries?.[0]?.entity?.entity_id;
+
+      const content = popover.querySelector('.popover-content');
+      if (content) {
+        content.innerHTML = '';
+        const tpl = document.createElement('div');
+        tpl.innerHTML = `
+          <div class="popover-header">
+            <span class="popover-title">${this._escapeHtml(name)}</span>
+            <span class="popover-status" style="color:${color}">${label}</span>
+          </div>
+          <div class="popover-hero-value" style="color:${color}">
+            ${watts != null ? this._formatWatts(watts) : 'UNAVAILABLE'}
+          </div>
+          <div class="popover-stats">
+            ${energy != null ? `
+              <div class="popover-stat-row">
+                <span class="popover-stat-label">TODAY</span>
+                <span class="popover-stat-value">${this._formatEnergy(energy)}</span>
+              </div>
+            ` : ''}
+            ${circuit.is240V ? `
+              <div class="popover-stat-row">
+                <span class="popover-stat-label">CIRCUIT TYPE</span>
+                <span class="popover-stat-value" style="color:var(--lcars-butterscotch)">240V PAIRED</span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+        content.appendChild(tpl);
+
+        if (entityId) {
+          const btn = document.createElement('button');
+          btn.className = 'popover-history-btn';
+          btn.textContent = 'VIEW FULL HISTORY';
+          btn.addEventListener('click', () => {
+            showMoreInfo(entityId);
+            try { popover.hidePopover(); } catch (_) {}
+          });
+          content.appendChild(btn);
+        }
+      }
+
+      try {
+        popover.showPopover();
+      } catch (_) {
+        // Fallback for browsers without Popover API
+        if (entityId) showMoreInfo(entityId);
+      }
+    }
+
+    _escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    /* ── Circuit tile renderer ── */
+
+    _renderCircuitTile(circuit) {
+      const watts = circuit.combinedWatts != null ? circuit.combinedWatts : this._getPrimaryPower(circuit);
+      const energy = circuit.combinedEnergy != null ? circuit.combinedEnergy : this._getPrimaryEnergy(circuit);
+      const thresholds = this._config?.power_thresholds || {};
+      const color = getPowerColor(watts, thresholds);
+      const tier = getPowerLabel(watts, thresholds);
+      const indicator = this._getPowerIndicator(watts);
+      const name = this._shortDeviceName(circuit.device) || 'Unknown';
+      const supportsPopover = typeof HTMLElement.prototype.showPopover === 'function';
+
+      return html`
+        <div class="power-circuit-tile"
+          style="--circuit-color:${color}"
+          role="listitem"
+          tabindex="0"
+          aria-label="${name}: ${watts != null ? Math.round(watts) + ' watts, ' + tier.toLowerCase() : 'unavailable'}${energy != null ? ', ' + energy.toFixed(1) + ' kilowatt hours today' : ''}"
+          @click=${() => supportsPopover ? this._showCircuitPopover(circuit) : showMoreInfo(circuit.entries?.[0]?.entity?.entity_id)}
+          @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); supportsPopover ? this._showCircuitPopover(circuit) : showMoreInfo(circuit.entries?.[0]?.entity?.entity_id); }}}>
+          <div class="power-circuit-name">
+            <span class="power-circuit-indicator" aria-hidden="true">${circuit.is240V ? '●●' : indicator}</span>
+            <span>${name}</span>
+          </div>
+          <div class="power-circuit-value-row">
+            <span class="power-circuit-watts">${this._formatWatts(watts)}</span>
+          </div>
+          ${energy != null ? html`
+            <span class="power-circuit-energy">${this._formatEnergy(energy)} TODAY</span>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    /* ── Switch + monitor device row renderer ── */
+
+    _renderPowerDeviceRow(group) {
+      const { switches, powerSensors, energySensors } = this._partitionPowerEntities(group.entries);
+      const sw = switches[0];
+      const watts = powerSensors[0] ? parseFloat(powerSensors[0].state?.state) || 0 : null;
+      const energy = energySensors[0] ? parseFloat(energySensors[0].state?.state) || null : null;
+      const thresholds = this._config?.power_thresholds || {};
+      const color = getPowerColor(watts, thresholds);
+      const name = this._shortDeviceName(group.device) || 'Unknown';
+      const isOn = sw?.state?.state === 'on';
+
+      return html`
+        <div class="power-device-row"
+          role="listitem" tabindex="0"
+          style="--circuit-color:${color}"
+          aria-label="${name}: ${sw ? (isOn ? 'on' : 'off') + ', ' : ''}${watts != null ? Math.round(watts) + ' watts' : 'unknown'}">
+          ${sw ? html`
+            <button class="power-toggle" data-state="${isOn ? 'on' : 'off'}"
+              role="switch" aria-checked="${isOn}"
+              aria-label="Toggle ${name}"
+              @click=${(e) => { e.stopPropagation(); if (this._powerToggleLimiter.allow()) this._handleToggle(sw.entity.entity_id); }}>
+              ${isOn ? 'ON' : 'OFF'}
+            </button>
+          ` : ''}
+          <span class="power-device-name">${name}</span>
+          <div class="power-device-stats">
+            <span class="power-device-watts" style="color:${color}">${this._formatWatts(watts)}</span>
+            ${energy != null ? html`<span class="power-device-energy">${this._formatEnergy(energy)}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    /* ── Power strip renderer (Wesley §3.3) ── */
+
+    _renderPowerStrip(parentGroup, children) {
+      const parentName = this._shortDeviceName(parentGroup.device) || 'Power Strip';
+      const { powerSensors: parentPower, switches: parentSwitches } = this._partitionPowerEntities(parentGroup.entries);
+      const totalWatts = parentPower.reduce((sum, e) => sum + (parseFloat(e.state?.state) || 0), 0);
+      const thresholds = this._config?.power_thresholds || {};
+      const totalColor = getPowerColor(totalWatts, thresholds);
+      const parentSwitch = parentSwitches[0];
+
+      return html`
+        <div class="power-strip-block" role="listitem">
+          <div class="power-strip-header" role="heading" aria-level="5">
+            <span class="power-strip-name">${parentName}</span>
+            ${parentSwitch ? html`
+              <button class="power-strip-master-toggle"
+                ?data-on=${parentSwitch.state?.state === 'on'}
+                role="switch" aria-checked="${parentSwitch.state?.state === 'on'}"
+                aria-label="Master toggle ${parentName}"
+                @click=${() => { if (this._powerToggleLimiter.allow()) this._handleToggle(parentSwitch.entity.entity_id); }}>
+                ${parentSwitch.state?.state === 'on' ? 'ON' : 'OFF'}
+              </button>
+            ` : ''}
+            <span class="power-strip-total" style="color:${totalColor}">TOTAL: ${this._formatWatts(totalWatts)}</span>
+          </div>
+          <div class="power-strip-divider" aria-hidden="true"></div>
+          <div class="power-strip-children" role="list" aria-label="${parentName} outlets">
+            ${children.map(child => this._renderStripChild(child))}
+          </div>
+        </div>
+      `;
+    }
+
+    _renderStripChild(childGroup) {
+      const name = this._shortDeviceName(childGroup.device) || 'Outlet';
+      const { switches, powerSensors } = this._partitionPowerEntities(childGroup.entries);
+      const watts = powerSensors[0] ? parseFloat(powerSensors[0].state?.state) || 0 : 0;
+      const thresholds = this._config?.power_thresholds || {};
+      const color = getPowerColor(watts, thresholds);
+      const childSwitch = switches[0];
+      const isOn = childSwitch?.state?.state === 'on';
+
+      return html`
+        <div class="power-strip-child-tile" style="--tile-power-color:${color}"
+          role="listitem" aria-label="${name}: ${isOn ? 'on' : 'off'}, ${Math.round(watts)} watts">
+          <span class="circuit-name">${name}</span>
+          <div class="strip-child-controls">
+            ${childSwitch ? html`
+              <button class="strip-child-toggle"
+                ?data-on=${isOn}
+                role="switch" aria-checked="${isOn}"
+                aria-label="Toggle ${name}"
+                @click=${(e) => { e.stopPropagation(); if (this._powerToggleLimiter.allow()) this._handleToggle(childSwitch.entity.entity_id); }}>
+                ${isOn ? 'ON' : 'OFF'}
+              </button>
+            ` : ''}
+            <span class="circuit-watts" style="color:${color}">
+              <span class="power-dot" ?data-zero=${watts === 0} aria-hidden="true"></span>
+              ${this._formatWatts(watts)}
+            </span>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ── Summary card renderer (Geordi §4.1) ── */
+
+    _renderPowerSummaryCard(label, watts, energy, accentColor, icon) {
+      const thresholds = this._config?.power_thresholds || {};
+      const color = label === 'TOTAL USAGE' ? getPowerColor(watts, thresholds) : accentColor;
+
+      return html`
+        <div class="power-summary-card" role="status"
+          style="--card-accent:${accentColor}"
+          aria-label="${label}: ${watts != null ? Math.round(watts) + ' watts' : 'unavailable'}${energy != null ? ', ' + energy.toFixed(1) + ' kilowatt hours today' : ''}"
+          aria-live="polite">
+          <span class="power-summary-label">
+            <ha-icon icon="${icon}" style="--mdc-icon-size:14px; vertical-align:middle; color:${accentColor}"></ha-icon>
+            ${label}
+          </span>
+          <span class="power-summary-value" style="color:${color}">
+            ${this._formatWatts(watts)}
+          </span>
+          ${energy != null ? html`
+            <span class="power-summary-secondary">${this._formatEnergy(energy)} TODAY</span>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    /* ═══ MAIN POWER PANEL RENDERER ═══ */
+
+    _renderPowerPanel(group) {
+      const allEntries = group.entities || [];
+      const deviceName = this._shortDeviceName(group.device) || 'Power';
+      const thresholds = this._config?.power_thresholds || {};
+
+      // Classify and partition all power devices in this area
+      const deviceType = this._classifyPowerDevice(allEntries, group.device);
+      const { powerSensors, energySensors, switches } = this._partitionPowerEntities(allEntries);
+
+      // For single-device panels, render based on device type
+      const watts = this._getPrimaryPower(group);
+      const energy = this._getPrimaryEnergy(group);
+      const panelColor = getPowerColor(watts, thresholds);
+
+      // Check for critical draw
+      const hasCritical = watts != null && Math.abs(watts) > (thresholds.highMax || 3000);
+
+      // Build circuit list for Vue-type devices
+      const circuits = deviceType === 'vue' ? [group] : [];
+      const processedCircuits = this._sortCircuits(this._detect240VPairs(circuits));
+
+      // Total watts for arc
+      const totalWatts = watts || 0;
+
+      // Determine sections to show
+      const hasCircuits = processedCircuits.length > 0;
+      const hasSwitch = switches.length > 0;
+      const isPlug = deviceType === 'plug';
+      const isStrip = deviceType === 'strip';
+
+      return html`
+        <div class="lcars-device-panel power-panel" data-panel-type="power"
+          ${hasCritical ? 'data-alert="critical"' : ''}
+          role="region" aria-label="${deviceName} Power Systems">
+
+          <!-- Header -->
+          <div class="power-panel-header" role="heading" aria-level="3">
+            <ha-icon icon="mdi:flash"></ha-icon>
+            <span class="power-panel-name">${deviceName}</span>
+            <div class="power-panel-header-line" aria-hidden="true"></div>
+            <span class="power-panel-badge">POWER SYSTEMS</span>
+            <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(allEntries[0]?.entity?.entity_id || group.device?.id || 'power')}</span>
+          </div>
+
+          <!-- SVG Arc (for multi-circuit devices) -->
+          ${hasCircuits && processedCircuits.length > 1 ? this._renderPowerArc(processedCircuits, totalWatts) : ''}
+
+          <!-- Summary -->
+          <div class="power-summary" role="group" aria-label="Power Summary">
+            ${this._renderPowerSummaryCard(
+              'TOTAL USAGE', totalWatts, energy,
+              panelColor, 'mdi:sigma'
+            )}
+          </div>
+
+          <!-- Circuits section (Vue-type) -->
+          ${hasCircuits ? html`
+            <div class="power-circuits-section">
+              <div class="power-section-label" role="heading" aria-level="4">
+                <span class="power-section-label-text">CIRCUITS</span>
+                <div class="power-section-label-rule" aria-hidden="true"></div>
+                <span class="power-section-label-count">${processedCircuits.length}/${processedCircuits.length}</span>
+              </div>
+              <div class="power-circuits" role="list" aria-label="Circuit Monitors">
+                ${processedCircuits.map(c => this._renderCircuitTile(c))}
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Device row (plug-type with switch) -->
+          ${isPlug ? html`
+            <div class="power-devices-section">
+              <div class="power-section-label" role="heading" aria-level="4">
+                <span class="power-section-label-text">MONITORED DEVICES</span>
+                <div class="power-section-label-rule" aria-hidden="true"></div>
+                <span class="power-section-label-count">1/1</span>
+              </div>
+              <div class="power-devices" role="list" aria-label="Monitored Devices">
+                ${this._renderPowerDeviceRow(group)}
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Strip rendering -->
+          ${isStrip ? html`
+            <div class="power-strips-section">
+              <div class="power-section-label" role="heading" aria-level="4">
+                <span class="power-section-label-text">POWER STRIPS</span>
+                <div class="power-section-label-rule" aria-hidden="true"></div>
+              </div>
+              <div class="power-strips" role="list" aria-label="Power Strips">
+                ${this._renderPowerStrip(group, [])}
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Singleton popover element (Data C-5) -->
+          <div popover id="power-detail-popover" class="power-detail-popover"
+            role="dialog" aria-label="Circuit detail">
+            <div class="popover-content"></div>
+          </div>
+
           <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
       `;

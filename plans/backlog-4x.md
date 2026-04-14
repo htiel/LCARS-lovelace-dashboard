@@ -55,7 +55,9 @@ Verify the environment panel's auto-detection heuristic picks up BlueAir devices
 ### 4X-3 · Power Panel (Energy Monitoring) — `TODO` · Priority: HIGH · Size: XL
 
 **Target version**: 4.15.0
-**Spec**: Needs spec — draft from to-do notes below.
+**Spec**: `specs/LCARS-POWER-PANEL-SPEC.md` (Phase 3 — Reconciled, Implementation-Ready)
+**Addendum**: `specs/LCARS-POWER-PANEL-WESLEY-ADDENDUM.md` (Phase 3 — Reconciled)
+**Plan**: `plans/v4.15.0-implementation-plan.md` (Phase 4 — Awaiting Admiral Review)
 
 Per-area power monitoring panel for Emporia Vue, Kasa energy monitors, and any device providing voltage, wattage, or amps. Devices with a switch show the toggle first, then stats. Devices without switches (Emporia Vue) show monitoring only.
 
@@ -161,7 +163,6 @@ These are creative enhancement ideas for existing panels. Not committed to a ver
 - Optional Web Audio API ambient hum tied to fan speed. *Worf: AudioContext requires user gesture.*
 
 ### Floor Navigation Enhancements
-- "Deck numbering" config option — display floor names as "DECK 1", "DECK 2". `level` from floor registry maps naturally.
 - View Transition API (`document.startViewTransition()`) — turbolift-style vertical slide between floors. Wrap in `prefers-reduced-motion`.
 
 ### Web API Adoption

@@ -2,6 +2,48 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.15.0] — 2026-04-14
+
+### Added — Power Panel: Energy Monitoring (4X-3)
+
+#### Power Color Utilities (`lcars-color-utils.js`)
+- **`getPowerColor(watts, thresholds)`** — 5-tier power draw color resolver: gray (0W standby), ice (1–500W low), sunflower (501–1500W moderate), butterscotch (1501–3000W high), tomato (3001W+ critical). Supports configurable thresholds via `power_thresholds` YAML config
+- **`getPowerLabel(watts, thresholds)`** — Semantic tier labels: STANDBY, LOW DRAW, MODERATE, HIGH DRAW, CRITICAL, UNAVAILABLE
+- **`getGridBalanceColor(watts, deadband)`** — Grid import/export balance color: butterscotch (importing), ice (exporting), sunflower (balanced within ±50W deadband)
+- **`STATE_COLOR_MAP.power`** — Centralized power state→color lookup entry
+
+#### Power Device Detection (`lcars-entity-utils.js`)
+- **`PANEL_TYPE_POWER`** — New panel type constant at position 9 in `PANEL_TYPE_ORDER`
+- **Power Detector** — Detects devices with ≥1 power/energy/voltage/current sensor and NO battery sensor. Runs after battery detector — `hasBattery` boolean provides mutual exclusion gate. Supports Emporia Vue circuits, TP-Link Kasa plugs (KP115, KP125M, HS110), and HS300 power strips
+
+#### Power Panel Renderer (`lcars-homepage-card.js`)
+- **Panel Frame** — Butterscotch (`--lcars-butterscotch`) EPS conduit frame, shifts to tomato with distress pulse on critical draw (≥3000W)
+- **Summary Cards** — Total Usage with dynamic power-level color, From Grid (butterscotch), To Grid (ice) summary cards with `aria-live="polite"` status announcements
+- **Circuit Tile Grid** — `repeat(auto-fill, minmax(10rem, 1fr))` responsive grid with `max-height: 24rem` scroll and bottom fade mask. Power-descending sort. Color-blind safe shape indicators (○, ●, ●━, ●━━, ●━━━)
+- **240V Pair Detection** — L1/L2 regex pattern combines paired circuits (dryer, oven, EV charger) into single tiles showing combined wattage with `●●` indicator
+- **Switch + Monitor Rows** — Toggle pill + power stats for smart plugs with rate-limited toggle calls (10/10s via `createRateLimiter`)
+- **Power Strip Blocks** — Parent/child hierarchy via `via_device_id` grouping. Strip header with master toggle and total wattage, child outlet tiles with individual toggles
+- **SVG Half-Arc Chart** — Inline SVG power distribution meter showing top 5 circuits by consumption with colored arc segments. Pure SVG, no libraries
+- **Singleton Popover** — Popover API circuit detail overlay (1 shared `<div popover>`, not per-tile). LCARS-styled with hero wattage, tier label, energy today, 240V badge, and "VIEW FULL HISTORY" button. Falls back to `showMoreInfo()` on unsupported browsers
+- **Scroll-Driven Animations** — `animation-timeline: view()` CSS scroll-driven tile entrance animation. Falls back to instant render on unsupported browsers
+- **`text-wrap: balance`** — Applied to section headers, strip names, circuit names
+- **Configurable Thresholds** — `power_thresholds: { low_max, moderate_max, high_max }` in card YAML config
+- **Format Utilities** — `_formatWatts()` (auto kW at ≥10kW), `_formatEnergy()` (kWh with 1 decimal)
+
+### Accessibility (WCAG 2.2 AA)
+- **ARIA Structure** — `role="region"` panel root, `role="heading"` (levels 3–5), `role="list"`/`role="listitem"` for circuits/devices/strips, `role="switch"` + `aria-checked` on all toggles, `role="status"` + `aria-live="polite"` on summary cards, `role="dialog"` on popover
+- **Keyboard Navigation** — All tiles/rows `tabindex="0"`, Enter/Space activation, standard tab order
+- **Focus Visible** — 2px `--lcars-ice` outline with 2px offset on all interactive elements (10.5:1 contrast ratio)
+- **Color-Blind Safety** — Shape indicators (§2.3) provide redundant non-color information for all 5 power tiers
+- **`prefers-reduced-motion`** — Critical pulse, scroll animations, and all transitions disabled; static rendering preserved
+- **Target Sizes** — All interactive elements exceed 24×24 CSS pixel minimum (§2.5.8)
+
+### Performance
+- **Bundle Delta** — +35.2 KB (+10.2%): 343,924 → 379,106 bytes — within 40KB budget guard
+- **Device Classification** — Three-tier device routing (vue/plug/strip) prevents unnecessary rendering paths
+
+---
+
 ## [4.14.1] — 2026-04-14
 
 ### Fixed — Camera Loading & Offline States (4X-5)

@@ -107,7 +107,13 @@ The Device Panel uses a **2-column asymmetric grid** within a bordered frame. Th
 .device-panel-header-line {
   flex: 1;
   height: 2px;
-  background: var(--panel-frame-color, var(--lcars-butterscotch));
+  background: repeating-linear-gradient(90deg,
+    var(--panel-frame-color) 0px, var(--panel-frame-color) 8px,
+    transparent 8px, transparent 12px,
+    var(--panel-frame-color) 12px, var(--panel-frame-color) 14px,
+    transparent 14px, transparent 18px
+  );
+  opacity: 0.4;
 }
 
 .device-panel-badge {
@@ -131,6 +137,7 @@ The header bar uses the existing `device-header` pattern from `lcars-homepage-ca
   border-radius: 0.5rem;
   overflow: hidden;
   background: var(--lcars-black);
+  box-shadow: inset 0 0 20px rgba(100,200,255,0.05);
   
   /* Viewscreen aspect ratio — 16:9 is standard, override per device type */
   aspect-ratio: var(--media-aspect, 16 / 9);
@@ -143,6 +150,18 @@ The header bar uses the existing `device-header` pattern from `lcars-homepage-ca
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* CRT scan line overlay — subtle horizontal lines for LCARS viewscreen feel */
+.device-panel-media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg,
+    transparent 0px, transparent 2px,
+    rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
 }
 
 /* Viewscreen activation animation (reuse existing) */
@@ -229,11 +248,11 @@ The media frame reuses the existing `.camera-frame` styling from the homepage ca
   outline-offset: 2px;
 }
 
-/* Status indicator dot */
+/* Status indicator bar — vertical bar instead of dot for LCARS authenticity */
 .sensor-indicator {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: 0.25rem;
+  height: 1rem;
+  border-radius: 0.125rem;
   flex-shrink: 0;
   transition: background var(--lcars-transition);
 }
@@ -355,7 +374,7 @@ Color assignments follow Bracer Jack's color theory: **3 core hue families** (wa
 
 ### Indicator Dot Colors
 
-The `.sensor-indicator` dot uses the **same color as the state value text**. This provides redundant encoding (color + text), critical for accessibility (WCAG 1.4.1 — Use of Color: color is not the sole means of conveying information).
+The `.sensor-indicator` vertical bar uses the **same color as the state value text**. This provides redundant encoding (color + text), critical for accessibility (WCAG 1.4.1 — Use of Color: color is not the sole means of conveying information).
 
 ### Implementation Helper
 
@@ -511,6 +530,25 @@ When an area has multiple camera devices, they stack vertically in a column layo
 ---
 
 ## 7. Animation
+
+### Panel Scan Line (v4.12.0)
+
+All device panels feature a subtle horizontal scan line that sweeps vertically through the panel background on a 10-second loop, evoking the scan-refresh of a real LCARS display:
+
+```css
+.lcars-device-panel {
+  background:
+    linear-gradient(180deg, transparent, transparent 49%, rgba(100,200,255,0.03) 50%, transparent 51%, transparent) center / 100% 300% no-repeat,
+    var(--lcars-black);
+  animation: panel-scanline 10s ease-in-out infinite;
+}
+@keyframes panel-scanline {
+  0%, 100% { background-position: center 100%; }
+  50% { background-position: center 0%; }
+}
+```
+
+The scan line is barely perceptible (3% opacity) — it reads as "active display" rather than "flickering screen."
 
 ### Viewscreen Activation (Existing)
 
@@ -820,7 +858,7 @@ These are set per-device-type on the `.lcars-device-panel` element, keeping the 
 
 | Rule                                              | Source           | Compliant? |
 |---------------------------------------------------|------------------|------------|
-| No gradients, shadows, or 3D effects              | Bracer Jack #1   | ✅          |
+| No gradients, shadows, or 3D effects              | Bracer Jack #1   | ✅ (inset glow and scan lines exempt — purely atmospheric, not skeuomorphic) |
 | Frame goes thick→thin (4px→2px border)            | Bracer Jack #2   | ✅          |
 | Pill buttons with flat left, rounded right         | Bracer Jack #4   | ✅          |
 | Exactly 3 font sizes (title, sub, data)            | Bracer Jack #6   | ✅          |

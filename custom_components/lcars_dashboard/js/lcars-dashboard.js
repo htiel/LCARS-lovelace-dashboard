@@ -176,7 +176,7 @@
       animation-duration: 0.01ms !important;
     }
   }
-`},845(e,t,a){a.d(t,{WF:()=>re,AH:()=>te,qy:()=>L});const r="undefined"!=typeof window&&null!=window.customElements&&void 0!==window.customElements.polyfillWrapFlushCallback,i=(e,t,a=null)=>{for(;t!==a;){const a=t.nextSibling;e.removeChild(t),t=a}},s=`{{lit-${String(Math.random()).slice(2)}}}`,n=`\x3c!--${s}--\x3e`,o=new RegExp(`${s}|${n}`),l="$lit$";class c{constructor(e,t){this.parts=[],this.element=t;const a=[],r=[],i=document.createTreeWalker(t.content,133,null,!1);let n=0,c=-1,p=0;const{strings:m,values:{length:v}}=e;for(;p<v;){const e=i.nextNode();if(null!==e){if(c++,1===e.nodeType){if(e.hasAttributes()){const t=e.attributes,{length:a}=t;let r=0;for(let e=0;e<a;e++)d(t[e].name,l)&&r++;for(;r-- >0;){const t=m[p],a=h.exec(t)[2],r=a.toLowerCase()+l,i=e.getAttribute(r);e.removeAttribute(r);const s=i.split(o);this.parts.push({type:"attribute",index:c,name:a,strings:s}),p+=s.length-1}}"TEMPLATE"===e.tagName&&(r.push(e),i.currentNode=e.content)}else if(3===e.nodeType){const t=e.data;if(t.indexOf(s)>=0){const r=e.parentNode,i=t.split(o),s=i.length-1;for(let t=0;t<s;t++){let a,s=i[t];if(""===s)a=u();else{const e=h.exec(s);null!==e&&d(e[2],l)&&(s=s.slice(0,e.index)+e[1]+e[2].slice(0,-5)+e[3]),a=document.createTextNode(s)}r.insertBefore(a,e),this.parts.push({type:"node",index:++c})}""===i[s]?(r.insertBefore(u(),e),a.push(e)):e.data=i[s],p+=s}}else if(8===e.nodeType)if(e.data===s){const t=e.parentNode;null!==e.previousSibling&&c!==n||(c++,t.insertBefore(u(),e)),n=c,this.parts.push({type:"node",index:c}),null===e.nextSibling?e.data="":(a.push(e),c--),p++}else{let t=-1;for(;-1!==(t=e.data.indexOf(s,t+1));)this.parts.push({type:"node",index:-1}),p++}}else i.currentNode=r.pop()}for(const e of a)e.parentNode.removeChild(e)}}const d=(e,t)=>{const a=e.length-t.length;return a>=0&&e.slice(a)===t},p=e=>-1!==e.index,u=()=>document.createComment(""),h=/([ \x09\x0a\x0c\x0d])([^\0-\x1F\x7F-\x9F "'>=/]+)([ \x09\x0a\x0c\x0d]*=[ \x09\x0a\x0c\x0d]*(?:[^ \x09\x0a\x0c\x0d"'`<>=]*|"[^"]*|'[^']*))$/;function m(e,t){const{element:{content:a},parts:r}=e,i=document.createTreeWalker(a,133,null,!1);let s=f(r),n=r[s],o=-1,l=0;const c=[];let d=null;for(;i.nextNode();){o++;const e=i.currentNode;for(e.previousSibling===d&&(d=null),t.has(e)&&(c.push(e),null===d&&(d=e)),null!==d&&l++;void 0!==n&&n.index===o;)n.index=null!==d?-1:n.index-l,s=f(r,s),n=r[s]}c.forEach(e=>e.parentNode.removeChild(e))}const v=e=>{let t=11===e.nodeType?0:1;const a=document.createTreeWalker(e,133,null,!1);for(;a.nextNode();)t++;return t},f=(e,t=-1)=>{for(let a=t+1;a<e.length;a++){const t=e[a];if(p(t))return a}return-1},g=new WeakMap,b=e=>"function"==typeof e&&g.has(e),y={},_={};class w{constructor(e,t,a){this.__parts=[],this.template=e,this.processor=t,this.options=a}update(e){let t=0;for(const a of this.__parts)void 0!==a&&a.setValue(e[t]),t++;for(const e of this.__parts)void 0!==e&&e.commit()}_clone(){const e=r?this.template.element.content.cloneNode(!0):document.importNode(this.template.element.content,!0),t=[],a=this.template.parts,i=document.createTreeWalker(e,133,null,!1);let s,n=0,o=0,l=i.nextNode();for(;n<a.length;)if(s=a[n],p(s)){for(;o<s.index;)o++,"TEMPLATE"===l.nodeName&&(t.push(l),i.currentNode=l.content),null===(l=i.nextNode())&&(i.currentNode=t.pop(),l=i.nextNode());if("node"===s.type){const e=this.processor.handleTextExpression(this.options);e.insertAfterNode(l.previousSibling),this.__parts.push(e)}else this.__parts.push(...this.processor.handleAttributeExpressions(l,s.name,s.strings,this.options));n++}else this.__parts.push(void 0),n++;return r&&(document.adoptNode(e),customElements.upgrade(e)),e}}const x=window.trustedTypes&&trustedTypes.createPolicy("lit-html",{createHTML:e=>e}),$=` ${s} `;class k{constructor(e,t,a,r){this.strings=e,this.values=t,this.type=a,this.processor=r}getHTML(){const e=this.strings.length-1;let t="",a=!1;for(let r=0;r<e;r++){const e=this.strings[r],i=e.lastIndexOf("\x3c!--");a=(i>-1||a)&&-1===e.indexOf("--\x3e",i+1);const o=h.exec(e);t+=null===o?e+(a?$:n):e.substr(0,o.index)+o[1]+o[2]+l+o[3]+s}return t+=this.strings[e],t}getTemplateElement(){const e=document.createElement("template");let t=this.getHTML();return void 0!==x&&(t=x.createHTML(t)),e.innerHTML=t,e}}const S=e=>null===e||!("object"==typeof e||"function"==typeof e),C=e=>Array.isArray(e)||!(!e||!e[Symbol.iterator]);class E{constructor(e,t,a){this.dirty=!0,this.element=e,this.name=t,this.strings=a,this.parts=[];for(let e=0;e<a.length-1;e++)this.parts[e]=this._createPart()}_createPart(){return new z(this)}_getValue(){const e=this.strings,t=e.length-1,a=this.parts;if(1===t&&""===e[0]&&""===e[1]){const e=a[0].value;if("symbol"==typeof e)return String(e);if("string"==typeof e||!C(e))return e}let r="";for(let i=0;i<t;i++){r+=e[i];const t=a[i];if(void 0!==t){const e=t.value;if(S(e)||!C(e))r+="string"==typeof e?e:String(e);else for(const t of e)r+="string"==typeof t?t:String(t)}}return r+=e[t],r}commit(){this.dirty&&(this.dirty=!1,this.element.setAttribute(this.name,this._getValue()))}}class z{constructor(e){this.value=void 0,this.committer=e}setValue(e){e===y||S(e)&&e===this.value||(this.value=e,b(e)||(this.committer.dirty=!0))}commit(){for(;b(this.value);){const e=this.value;this.value=y,e(this)}this.value!==y&&this.committer.commit()}}class A{constructor(e){this.value=void 0,this.__pendingValue=void 0,this.options=e}appendInto(e){this.startNode=e.appendChild(u()),this.endNode=e.appendChild(u())}insertAfterNode(e){this.startNode=e,this.endNode=e.nextSibling}appendIntoPart(e){e.__insert(this.startNode=u()),e.__insert(this.endNode=u())}insertAfterPart(e){e.__insert(this.startNode=u()),this.endNode=e.endNode,e.endNode=this.startNode}setValue(e){this.__pendingValue=e}commit(){if(null===this.startNode.parentNode)return;for(;b(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=y,e(this)}const e=this.__pendingValue;e!==y&&(S(e)?e!==this.value&&this.__commitText(e):e instanceof k?this.__commitTemplateResult(e):e instanceof Node?this.__commitNode(e):C(e)?this.__commitIterable(e):e===_?(this.value=_,this.clear()):this.__commitText(e))}__insert(e){this.endNode.parentNode.insertBefore(e,this.endNode)}__commitNode(e){this.value!==e&&(this.clear(),this.__insert(e),this.value=e)}__commitText(e){const t=this.startNode.nextSibling,a="string"==typeof(e=null==e?"":e)?e:String(e);t===this.endNode.previousSibling&&3===t.nodeType?t.data=a:this.__commitNode(document.createTextNode(a)),this.value=e}__commitTemplateResult(e){const t=this.options.templateFactory(e);if(this.value instanceof w&&this.value.template===t)this.value.update(e.values);else{const a=new w(t,e.processor,this.options),r=a._clone();a.update(e.values),this.__commitNode(r),this.value=a}}__commitIterable(e){Array.isArray(this.value)||(this.value=[],this.clear());const t=this.value;let a,r=0;for(const i of e)a=t[r],void 0===a&&(a=new A(this.options),t.push(a),0===r?a.appendIntoPart(this):a.insertAfterPart(t[r-1])),a.setValue(i),a.commit(),r++;r<t.length&&(t.length=r,this.clear(a&&a.endNode))}clear(e=this.startNode){i(this.startNode.parentNode,e.nextSibling,this.endNode)}}class q{constructor(e,t,a){if(this.value=void 0,this.__pendingValue=void 0,2!==a.length||""!==a[0]||""!==a[1])throw new Error("Boolean attributes can only contain a single expression");this.element=e,this.name=t,this.strings=a}setValue(e){this.__pendingValue=e}commit(){for(;b(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=y,e(this)}if(this.__pendingValue===y)return;const e=!!this.__pendingValue;this.value!==e&&(e?this.element.setAttribute(this.name,""):this.element.removeAttribute(this.name),this.value=e),this.__pendingValue=y}}class P extends E{constructor(e,t,a){super(e,t,a),this.single=2===a.length&&""===a[0]&&""===a[1]}_createPart(){return new N(this)}_getValue(){return this.single?this.parts[0].value:super._getValue()}commit(){this.dirty&&(this.dirty=!1,this.element[this.name]=this._getValue())}}class N extends z{}let D=!1;(()=>{try{const e={get capture(){return D=!0,!1}};window.addEventListener("test",e,e),window.removeEventListener("test",e,e)}catch(e){}})();class M{constructor(e,t,a){this.value=void 0,this.__pendingValue=void 0,this.element=e,this.eventName=t,this.eventContext=a,this.__boundHandleEvent=e=>this.handleEvent(e)}setValue(e){this.__pendingValue=e}commit(){for(;b(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=y,e(this)}if(this.__pendingValue===y)return;const e=this.__pendingValue,t=this.value,a=null==e||null!=t&&(e.capture!==t.capture||e.once!==t.once||e.passive!==t.passive),r=null!=e&&(null==t||a);a&&this.element.removeEventListener(this.eventName,this.__boundHandleEvent,this.__options),r&&(this.__options=T(e),this.element.addEventListener(this.eventName,this.__boundHandleEvent,this.__options)),this.value=e,this.__pendingValue=y}handleEvent(e){"function"==typeof this.value?this.value.call(this.eventContext||this.element,e):this.value.handleEvent(e)}}const T=e=>e&&(D?{capture:e.capture,passive:e.passive,once:e.once}:e.capture);function F(e){let t=O.get(e.type);void 0===t&&(t={stringsArray:new WeakMap,keyString:new Map},O.set(e.type,t));let a=t.stringsArray.get(e.strings);if(void 0!==a)return a;const r=e.strings.join(s);return a=t.keyString.get(r),void 0===a&&(a=new c(e,e.getTemplateElement()),t.keyString.set(r,a)),t.stringsArray.set(e.strings,a),a}const O=new Map,I=new WeakMap,R=new class{handleAttributeExpressions(e,t,a,r){const i=t[0];return"."===i?new P(e,t.slice(1),a).parts:"@"===i?[new M(e,t.slice(1),r.eventContext)]:"?"===i?[new q(e,t.slice(1),a)]:new E(e,t,a).parts}handleTextExpression(e){return new A(e)}};"undefined"!=typeof window&&(window.litHtmlVersions||(window.litHtmlVersions=[])).push("1.4.1");const L=(e,...t)=>new k(e,t,"html",R),B=(e,t)=>`${e}--${t}`;let W=!0;void 0===window.ShadyCSS?W=!1:void 0===window.ShadyCSS.prepareTemplateDom&&(console.warn("Incompatible ShadyCSS version detected. Please update to at least @webcomponents/webcomponentsjs@2.0.2 and @webcomponents/shadycss@1.3.1."),W=!1);const j=e=>t=>{const a=B(t.type,e);let r=O.get(a);void 0===r&&(r={stringsArray:new WeakMap,keyString:new Map},O.set(a,r));let i=r.stringsArray.get(t.strings);if(void 0!==i)return i;const n=t.strings.join(s);if(i=r.keyString.get(n),void 0===i){const a=t.getTemplateElement();W&&window.ShadyCSS.prepareTemplateDom(a,e),i=new c(t,a),r.keyString.set(n,i)}return r.stringsArray.set(t.strings,i),i},H=["html","svg"],U=new Set;window.JSCompiler_renameProperty=(e,t)=>e;const V={toAttribute(e,t){switch(t){case Boolean:return e?"":null;case Object:case Array:return null==e?e:JSON.stringify(e)}return e},fromAttribute(e,t){switch(t){case Boolean:return null!==e;case Number:return null===e?null:Number(e);case Object:case Array:return JSON.parse(e)}return e}},G=(e,t)=>t!==e&&(t==t||e==e),X={attribute:!0,type:String,converter:V,reflect:!1,hasChanged:G},J="finalized";class Y extends HTMLElement{constructor(){super(),this.initialize()}static get observedAttributes(){this.finalize();const e=[];return this._classProperties.forEach((t,a)=>{const r=this._attributeNameForProperty(a,t);void 0!==r&&(this._attributeToPropertyMap.set(r,a),e.push(r))}),e}static _ensureClassProperties(){if(!this.hasOwnProperty(JSCompiler_renameProperty("_classProperties",this))){this._classProperties=new Map;const e=Object.getPrototypeOf(this)._classProperties;void 0!==e&&e.forEach((e,t)=>this._classProperties.set(t,e))}}static createProperty(e,t=X){if(this._ensureClassProperties(),this._classProperties.set(e,t),t.noAccessor||this.prototype.hasOwnProperty(e))return;const a="symbol"==typeof e?Symbol():`__${e}`,r=this.getPropertyDescriptor(e,a,t);void 0!==r&&Object.defineProperty(this.prototype,e,r)}static getPropertyDescriptor(e,t,a){return{get(){return this[t]},set(r){const i=this[e];this[t]=r,this.requestUpdateInternal(e,i,a)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this._classProperties&&this._classProperties.get(e)||X}static finalize(){const e=Object.getPrototypeOf(this);if(e.hasOwnProperty(J)||e.finalize(),this[J]=!0,this._ensureClassProperties(),this._attributeToPropertyMap=new Map,this.hasOwnProperty(JSCompiler_renameProperty("properties",this))){const e=this.properties,t=[...Object.getOwnPropertyNames(e),..."function"==typeof Object.getOwnPropertySymbols?Object.getOwnPropertySymbols(e):[]];for(const a of t)this.createProperty(a,e[a])}}static _attributeNameForProperty(e,t){const a=t.attribute;return!1===a?void 0:"string"==typeof a?a:"string"==typeof e?e.toLowerCase():void 0}static _valueHasChanged(e,t,a=G){return a(e,t)}static _propertyValueFromAttribute(e,t){const a=t.type,r=t.converter||V,i="function"==typeof r?r:r.fromAttribute;return i?i(e,a):e}static _propertyValueToAttribute(e,t){if(void 0===t.reflect)return;const a=t.type,r=t.converter;return(r&&r.toAttribute||V.toAttribute)(e,a)}initialize(){this._updateState=0,this._updatePromise=new Promise(e=>this._enableUpdatingResolver=e),this._changedProperties=new Map,this._saveInstanceProperties(),this.requestUpdateInternal()}_saveInstanceProperties(){this.constructor._classProperties.forEach((e,t)=>{if(this.hasOwnProperty(t)){const e=this[t];delete this[t],this._instanceProperties||(this._instanceProperties=new Map),this._instanceProperties.set(t,e)}})}_applyInstanceProperties(){this._instanceProperties.forEach((e,t)=>this[t]=e),this._instanceProperties=void 0}connectedCallback(){this.enableUpdating()}enableUpdating(){void 0!==this._enableUpdatingResolver&&(this._enableUpdatingResolver(),this._enableUpdatingResolver=void 0)}disconnectedCallback(){}attributeChangedCallback(e,t,a){t!==a&&this._attributeToProperty(e,a)}_propertyToAttribute(e,t,a=X){const r=this.constructor,i=r._attributeNameForProperty(e,a);if(void 0!==i){const e=r._propertyValueToAttribute(t,a);if(void 0===e)return;this._updateState=8|this._updateState,null==e?this.removeAttribute(i):this.setAttribute(i,e),this._updateState=-9&this._updateState}}_attributeToProperty(e,t){if(8&this._updateState)return;const a=this.constructor,r=a._attributeToPropertyMap.get(e);if(void 0!==r){const e=a.getPropertyOptions(r);this._updateState=16|this._updateState,this[r]=a._propertyValueFromAttribute(t,e),this._updateState=-17&this._updateState}}requestUpdateInternal(e,t,a){let r=!0;if(void 0!==e){const i=this.constructor;a=a||i.getPropertyOptions(e),i._valueHasChanged(this[e],t,a.hasChanged)?(this._changedProperties.has(e)||this._changedProperties.set(e,t),!0!==a.reflect||16&this._updateState||(void 0===this._reflectingProperties&&(this._reflectingProperties=new Map),this._reflectingProperties.set(e,a))):r=!1}!this._hasRequestedUpdate&&r&&(this._updatePromise=this._enqueueUpdate())}requestUpdate(e,t){return this.requestUpdateInternal(e,t),this.updateComplete}async _enqueueUpdate(){this._updateState=4|this._updateState;try{await this._updatePromise}catch(e){}const e=this.performUpdate();return null!=e&&await e,!this._hasRequestedUpdate}get _hasRequestedUpdate(){return 4&this._updateState}get hasUpdated(){return 1&this._updateState}performUpdate(){if(!this._hasRequestedUpdate)return;this._instanceProperties&&this._applyInstanceProperties();let e=!1;const t=this._changedProperties;try{e=this.shouldUpdate(t),e?this.update(t):this._markUpdated()}catch(t){throw e=!1,this._markUpdated(),t}e&&(1&this._updateState||(this._updateState=1|this._updateState,this.firstUpdated(t)),this.updated(t))}_markUpdated(){this._changedProperties=new Map,this._updateState=-5&this._updateState}get updateComplete(){return this._getUpdateComplete()}_getUpdateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._updatePromise}shouldUpdate(e){return!0}update(e){void 0!==this._reflectingProperties&&this._reflectingProperties.size>0&&(this._reflectingProperties.forEach((e,t)=>this._propertyToAttribute(t,this[t],e)),this._reflectingProperties=void 0),this._markUpdated()}updated(e){}firstUpdated(e){}}Y[J]=!0;const Q=Element.prototype;Q.msMatchesSelector||Q.webkitMatchesSelector;const Z=window.ShadowRoot&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,K=Symbol();class ee{constructor(e,t){if(t!==K)throw new Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e}get styleSheet(){return void 0===this._styleSheet&&(Z?(this._styleSheet=new CSSStyleSheet,this._styleSheet.replaceSync(this.cssText)):this._styleSheet=null),this._styleSheet}toString(){return this.cssText}}const te=(e,...t)=>{const a=t.reduce((t,a,r)=>t+(e=>{if(e instanceof ee)return e.cssText;if("number"==typeof e)return e;throw new Error(`Value passed to 'css' function must be a 'css' function result: ${e}. Use 'unsafeCSS' to pass non-literal values, but\n            take care to ensure page security.`)})(a)+e[r+1],e[0]);return new ee(a,K)};(window.litElementVersions||(window.litElementVersions=[])).push("2.5.1");const ae={};class re extends Y{static getStyles(){return this.styles}static _getUniqueStyles(){if(this.hasOwnProperty(JSCompiler_renameProperty("_styles",this)))return;const e=this.getStyles();if(Array.isArray(e)){const t=(e,a)=>e.reduceRight((e,a)=>Array.isArray(a)?t(a,e):(e.add(a),e),a),a=t(e,new Set),r=[];a.forEach(e=>r.unshift(e)),this._styles=r}else this._styles=void 0===e?[]:[e];this._styles=this._styles.map(e=>{if(e instanceof CSSStyleSheet&&!Z){const t=Array.prototype.slice.call(e.cssRules).reduce((e,t)=>e+t.cssText,"");return new ee(String(t),K)}return e})}initialize(){super.initialize(),this.constructor._getUniqueStyles(),this.renderRoot=this.createRenderRoot(),window.ShadowRoot&&this.renderRoot instanceof window.ShadowRoot&&this.adoptStyles()}createRenderRoot(){return this.attachShadow(this.constructor.shadowRootOptions)}adoptStyles(){const e=this.constructor._styles;0!==e.length&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow?Z?this.renderRoot.adoptedStyleSheets=e.map(e=>e instanceof CSSStyleSheet?e:e.styleSheet):this._needsShimAdoptedStyleSheets=!0:window.ShadyCSS.ScopingShim.prepareAdoptedCssText(e.map(e=>e.cssText),this.localName))}connectedCallback(){super.connectedCallback(),this.hasUpdated&&void 0!==window.ShadyCSS&&window.ShadyCSS.styleElement(this)}update(e){const t=this.render();super.update(e),t!==ae&&this.constructor.render(t,this.renderRoot,{scopeName:this.localName,eventContext:this}),this._needsShimAdoptedStyleSheets&&(this._needsShimAdoptedStyleSheets=!1,this.constructor._styles.forEach(e=>{const t=document.createElement("style");t.textContent=e.cssText,this.renderRoot.appendChild(t)}))}render(){return ae}}re.finalized=!0,re.render=(e,t,a)=>{if(!a||"object"!=typeof a||!a.scopeName)throw new Error("The `scopeName` option is required.");const r=a.scopeName,s=I.has(t),n=W&&11===t.nodeType&&!!t.host,o=n&&!U.has(r),l=o?document.createDocumentFragment():t;if(((e,t,a)=>{let r=I.get(t);void 0===r&&(i(t,t.firstChild),I.set(t,r=new A(Object.assign({templateFactory:F},a))),r.appendInto(t)),r.setValue(e),r.commit()})(e,l,Object.assign({templateFactory:j(r)},a)),o){const e=I.get(l);I.delete(l);((e,t,a)=>{U.add(e);const r=a?a.element:document.createElement("template"),i=t.querySelectorAll("style"),{length:s}=i;if(0===s)return void window.ShadyCSS.prepareTemplateStyles(r,e);const n=document.createElement("style");for(let e=0;e<s;e++){const t=i[e];t.parentNode.removeChild(t),n.textContent+=t.textContent}(e=>{H.forEach(t=>{const a=O.get(B(t,e));void 0!==a&&a.keyString.forEach(e=>{const{element:{content:t}}=e,a=new Set;Array.from(t.querySelectorAll("style")).forEach(e=>{a.add(e)}),m(e,a)})})})(e);const o=r.content;a?function(e,t,a=null){const{element:{content:r},parts:i}=e;if(null==a)return void r.appendChild(t);const s=document.createTreeWalker(r,133,null,!1);let n=f(i),o=0,l=-1;for(;s.nextNode();)for(l++,s.currentNode===a&&(o=v(t),a.parentNode.insertBefore(t,a));-1!==n&&i[n].index===l;){if(o>0){for(;-1!==n;)i[n].index+=o,n=f(i,n);return}n=f(i,n)}}(a,n,o.firstChild):o.insertBefore(n,o.firstChild),window.ShadyCSS.prepareTemplateStyles(r,e);const l=o.querySelector("style");if(window.ShadyCSS.nativeShadow&&null!==l)t.insertBefore(l.cloneNode(!0),t.firstChild);else if(a){o.insertBefore(n,o.firstChild);const e=new Set;e.add(n),m(a,e)}})(r,l,e.value instanceof w?e.value.template:void 0),i(t,t.firstChild),t.appendChild(l),I.set(t,e)}!s&&n&&window.ShadyCSS.styleElement(t.host)},re.shadowRootOptions={mode:"open"}},330(e){e.exports=JSON.parse('{"name":"lcars-dashboard","private":true,"version":"4.11.0","description":"LCARS Dashboard — Home Assistant Lovelace dashboard with Star Trek LCARS UI. Based on Dwains Dashboard by Dwain Scheeren.","scripts":{"build":"webpack --mode=production","watch":"webpack --watch --mode=development"},"keywords":["lcars","home-assistant","lovelace","dashboard","hacs"],"author":"htiel (based on Dwains Dashboard by Dwain Scheeren)","license":"MIT","devDependencies":{"autoprefixer":"^10.2.5","css-loader":"^5.1.3","html-webpack-plugin":"^5.3.1","postcss":"^8.2.8","postcss-cli":"^8.3.1","postcss-loader":"^5.2.0","style-loader":"^2.0.0","tailwindcss":"^2.0.3","webpack":"^5.26.0","webpack-cli":"^4.5.0","webpack-dev-server":"^5.2.3","webpack-merge":"^5.7.3"},"dependencies":{"@mdi/js":"^6.5.95","card-tools":"github:thomasloven/lovelace-card-tools#477f3d4eeb5c70cab047d418d19afb6b0f07bf49","custom-card-helpers":"^1.8.0","js-cookie":"^3.0.1","lit-element":"^2.2.1","lit-html":"^1.1.2","sortablejs":"^1.14.0"}}')}},t={};function a(r){var i=t[r];if(void 0!==i)return i.exports;var s=t[r]={exports:{}};return e[r](s,s.exports,a),s.exports}a.d=(e,t)=>{for(var r in t)a.o(t,r)&&!a.o(e,r)&&Object.defineProperty(e,r,{enumerable:!0,get:t[r]})},a.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),(()=>{var e=a(845),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_activePath:{type:String}}}constructor(){super(),this._activePath="home"}set hass(e){this._hass=e}setConfig(e){this._config=e}_handleNav(e){this._activePath=e,(0,r.oo)(`/lcars-dashboard/${e}`),this.requestUpdate()}static get styles(){return[t.B,e.AH`
+`},845(e,t,a){a.d(t,{WF:()=>re,AH:()=>te,qy:()=>L});const r="undefined"!=typeof window&&null!=window.customElements&&void 0!==window.customElements.polyfillWrapFlushCallback,i=(e,t,a=null)=>{for(;t!==a;){const a=t.nextSibling;e.removeChild(t),t=a}},s=`{{lit-${String(Math.random()).slice(2)}}}`,n=`\x3c!--${s}--\x3e`,o=new RegExp(`${s}|${n}`),l="$lit$";class c{constructor(e,t){this.parts=[],this.element=t;const a=[],r=[],i=document.createTreeWalker(t.content,133,null,!1);let n=0,c=-1,p=0;const{strings:m,values:{length:v}}=e;for(;p<v;){const e=i.nextNode();if(null!==e){if(c++,1===e.nodeType){if(e.hasAttributes()){const t=e.attributes,{length:a}=t;let r=0;for(let e=0;e<a;e++)d(t[e].name,l)&&r++;for(;r-- >0;){const t=m[p],a=u.exec(t)[2],r=a.toLowerCase()+l,i=e.getAttribute(r);e.removeAttribute(r);const s=i.split(o);this.parts.push({type:"attribute",index:c,name:a,strings:s}),p+=s.length-1}}"TEMPLATE"===e.tagName&&(r.push(e),i.currentNode=e.content)}else if(3===e.nodeType){const t=e.data;if(t.indexOf(s)>=0){const r=e.parentNode,i=t.split(o),s=i.length-1;for(let t=0;t<s;t++){let a,s=i[t];if(""===s)a=h();else{const e=u.exec(s);null!==e&&d(e[2],l)&&(s=s.slice(0,e.index)+e[1]+e[2].slice(0,-5)+e[3]),a=document.createTextNode(s)}r.insertBefore(a,e),this.parts.push({type:"node",index:++c})}""===i[s]?(r.insertBefore(h(),e),a.push(e)):e.data=i[s],p+=s}}else if(8===e.nodeType)if(e.data===s){const t=e.parentNode;null!==e.previousSibling&&c!==n||(c++,t.insertBefore(h(),e)),n=c,this.parts.push({type:"node",index:c}),null===e.nextSibling?e.data="":(a.push(e),c--),p++}else{let t=-1;for(;-1!==(t=e.data.indexOf(s,t+1));)this.parts.push({type:"node",index:-1}),p++}}else i.currentNode=r.pop()}for(const e of a)e.parentNode.removeChild(e)}}const d=(e,t)=>{const a=e.length-t.length;return a>=0&&e.slice(a)===t},p=e=>-1!==e.index,h=()=>document.createComment(""),u=/([ \x09\x0a\x0c\x0d])([^\0-\x1F\x7F-\x9F "'>=/]+)([ \x09\x0a\x0c\x0d]*=[ \x09\x0a\x0c\x0d]*(?:[^ \x09\x0a\x0c\x0d"'`<>=]*|"[^"]*|'[^']*))$/;function m(e,t){const{element:{content:a},parts:r}=e,i=document.createTreeWalker(a,133,null,!1);let s=f(r),n=r[s],o=-1,l=0;const c=[];let d=null;for(;i.nextNode();){o++;const e=i.currentNode;for(e.previousSibling===d&&(d=null),t.has(e)&&(c.push(e),null===d&&(d=e)),null!==d&&l++;void 0!==n&&n.index===o;)n.index=null!==d?-1:n.index-l,s=f(r,s),n=r[s]}c.forEach(e=>e.parentNode.removeChild(e))}const v=e=>{let t=11===e.nodeType?0:1;const a=document.createTreeWalker(e,133,null,!1);for(;a.nextNode();)t++;return t},f=(e,t=-1)=>{for(let a=t+1;a<e.length;a++){const t=e[a];if(p(t))return a}return-1},g=new WeakMap,b=e=>"function"==typeof e&&g.has(e),y={},_={};class x{constructor(e,t,a){this.__parts=[],this.template=e,this.processor=t,this.options=a}update(e){let t=0;for(const a of this.__parts)void 0!==a&&a.setValue(e[t]),t++;for(const e of this.__parts)void 0!==e&&e.commit()}_clone(){const e=r?this.template.element.content.cloneNode(!0):document.importNode(this.template.element.content,!0),t=[],a=this.template.parts,i=document.createTreeWalker(e,133,null,!1);let s,n=0,o=0,l=i.nextNode();for(;n<a.length;)if(s=a[n],p(s)){for(;o<s.index;)o++,"TEMPLATE"===l.nodeName&&(t.push(l),i.currentNode=l.content),null===(l=i.nextNode())&&(i.currentNode=t.pop(),l=i.nextNode());if("node"===s.type){const e=this.processor.handleTextExpression(this.options);e.insertAfterNode(l.previousSibling),this.__parts.push(e)}else this.__parts.push(...this.processor.handleAttributeExpressions(l,s.name,s.strings,this.options));n++}else this.__parts.push(void 0),n++;return r&&(document.adoptNode(e),customElements.upgrade(e)),e}}const w=window.trustedTypes&&trustedTypes.createPolicy("lit-html",{createHTML:e=>e}),$=` ${s} `;class k{constructor(e,t,a,r){this.strings=e,this.values=t,this.type=a,this.processor=r}getHTML(){const e=this.strings.length-1;let t="",a=!1;for(let r=0;r<e;r++){const e=this.strings[r],i=e.lastIndexOf("\x3c!--");a=(i>-1||a)&&-1===e.indexOf("--\x3e",i+1);const o=u.exec(e);t+=null===o?e+(a?$:n):e.substr(0,o.index)+o[1]+o[2]+l+o[3]+s}return t+=this.strings[e],t}getTemplateElement(){const e=document.createElement("template");let t=this.getHTML();return void 0!==w&&(t=w.createHTML(t)),e.innerHTML=t,e}}const S=e=>null===e||!("object"==typeof e||"function"==typeof e),C=e=>Array.isArray(e)||!(!e||!e[Symbol.iterator]);class E{constructor(e,t,a){this.dirty=!0,this.element=e,this.name=t,this.strings=a,this.parts=[];for(let e=0;e<a.length-1;e++)this.parts[e]=this._createPart()}_createPart(){return new z(this)}_getValue(){const e=this.strings,t=e.length-1,a=this.parts;if(1===t&&""===e[0]&&""===e[1]){const e=a[0].value;if("symbol"==typeof e)return String(e);if("string"==typeof e||!C(e))return e}let r="";for(let i=0;i<t;i++){r+=e[i];const t=a[i];if(void 0!==t){const e=t.value;if(S(e)||!C(e))r+="string"==typeof e?e:String(e);else for(const t of e)r+="string"==typeof t?t:String(t)}}return r+=e[t],r}commit(){this.dirty&&(this.dirty=!1,this.element.setAttribute(this.name,this._getValue()))}}class z{constructor(e){this.value=void 0,this.committer=e}setValue(e){e===y||S(e)&&e===this.value||(this.value=e,b(e)||(this.committer.dirty=!0))}commit(){for(;b(this.value);){const e=this.value;this.value=y,e(this)}this.value!==y&&this.committer.commit()}}class A{constructor(e){this.value=void 0,this.__pendingValue=void 0,this.options=e}appendInto(e){this.startNode=e.appendChild(h()),this.endNode=e.appendChild(h())}insertAfterNode(e){this.startNode=e,this.endNode=e.nextSibling}appendIntoPart(e){e.__insert(this.startNode=h()),e.__insert(this.endNode=h())}insertAfterPart(e){e.__insert(this.startNode=h()),this.endNode=e.endNode,e.endNode=this.startNode}setValue(e){this.__pendingValue=e}commit(){if(null===this.startNode.parentNode)return;for(;b(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=y,e(this)}const e=this.__pendingValue;e!==y&&(S(e)?e!==this.value&&this.__commitText(e):e instanceof k?this.__commitTemplateResult(e):e instanceof Node?this.__commitNode(e):C(e)?this.__commitIterable(e):e===_?(this.value=_,this.clear()):this.__commitText(e))}__insert(e){this.endNode.parentNode.insertBefore(e,this.endNode)}__commitNode(e){this.value!==e&&(this.clear(),this.__insert(e),this.value=e)}__commitText(e){const t=this.startNode.nextSibling,a="string"==typeof(e=null==e?"":e)?e:String(e);t===this.endNode.previousSibling&&3===t.nodeType?t.data=a:this.__commitNode(document.createTextNode(a)),this.value=e}__commitTemplateResult(e){const t=this.options.templateFactory(e);if(this.value instanceof x&&this.value.template===t)this.value.update(e.values);else{const a=new x(t,e.processor,this.options),r=a._clone();a.update(e.values),this.__commitNode(r),this.value=a}}__commitIterable(e){Array.isArray(this.value)||(this.value=[],this.clear());const t=this.value;let a,r=0;for(const i of e)a=t[r],void 0===a&&(a=new A(this.options),t.push(a),0===r?a.appendIntoPart(this):a.insertAfterPart(t[r-1])),a.setValue(i),a.commit(),r++;r<t.length&&(t.length=r,this.clear(a&&a.endNode))}clear(e=this.startNode){i(this.startNode.parentNode,e.nextSibling,this.endNode)}}class q{constructor(e,t,a){if(this.value=void 0,this.__pendingValue=void 0,2!==a.length||""!==a[0]||""!==a[1])throw new Error("Boolean attributes can only contain a single expression");this.element=e,this.name=t,this.strings=a}setValue(e){this.__pendingValue=e}commit(){for(;b(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=y,e(this)}if(this.__pendingValue===y)return;const e=!!this.__pendingValue;this.value!==e&&(e?this.element.setAttribute(this.name,""):this.element.removeAttribute(this.name),this.value=e),this.__pendingValue=y}}class P extends E{constructor(e,t,a){super(e,t,a),this.single=2===a.length&&""===a[0]&&""===a[1]}_createPart(){return new N(this)}_getValue(){return this.single?this.parts[0].value:super._getValue()}commit(){this.dirty&&(this.dirty=!1,this.element[this.name]=this._getValue())}}class N extends z{}let D=!1;(()=>{try{const e={get capture(){return D=!0,!1}};window.addEventListener("test",e,e),window.removeEventListener("test",e,e)}catch(e){}})();class M{constructor(e,t,a){this.value=void 0,this.__pendingValue=void 0,this.element=e,this.eventName=t,this.eventContext=a,this.__boundHandleEvent=e=>this.handleEvent(e)}setValue(e){this.__pendingValue=e}commit(){for(;b(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=y,e(this)}if(this.__pendingValue===y)return;const e=this.__pendingValue,t=this.value,a=null==e||null!=t&&(e.capture!==t.capture||e.once!==t.once||e.passive!==t.passive),r=null!=e&&(null==t||a);a&&this.element.removeEventListener(this.eventName,this.__boundHandleEvent,this.__options),r&&(this.__options=T(e),this.element.addEventListener(this.eventName,this.__boundHandleEvent,this.__options)),this.value=e,this.__pendingValue=y}handleEvent(e){"function"==typeof this.value?this.value.call(this.eventContext||this.element,e):this.value.handleEvent(e)}}const T=e=>e&&(D?{capture:e.capture,passive:e.passive,once:e.once}:e.capture);function F(e){let t=O.get(e.type);void 0===t&&(t={stringsArray:new WeakMap,keyString:new Map},O.set(e.type,t));let a=t.stringsArray.get(e.strings);if(void 0!==a)return a;const r=e.strings.join(s);return a=t.keyString.get(r),void 0===a&&(a=new c(e,e.getTemplateElement()),t.keyString.set(r,a)),t.stringsArray.set(e.strings,a),a}const O=new Map,I=new WeakMap,R=new class{handleAttributeExpressions(e,t,a,r){const i=t[0];return"."===i?new P(e,t.slice(1),a).parts:"@"===i?[new M(e,t.slice(1),r.eventContext)]:"?"===i?[new q(e,t.slice(1),a)]:new E(e,t,a).parts}handleTextExpression(e){return new A(e)}};"undefined"!=typeof window&&(window.litHtmlVersions||(window.litHtmlVersions=[])).push("1.4.1");const L=(e,...t)=>new k(e,t,"html",R),j=(e,t)=>`${e}--${t}`;let B=!0;void 0===window.ShadyCSS?B=!1:void 0===window.ShadyCSS.prepareTemplateDom&&(console.warn("Incompatible ShadyCSS version detected. Please update to at least @webcomponents/webcomponentsjs@2.0.2 and @webcomponents/shadycss@1.3.1."),B=!1);const W=e=>t=>{const a=j(t.type,e);let r=O.get(a);void 0===r&&(r={stringsArray:new WeakMap,keyString:new Map},O.set(a,r));let i=r.stringsArray.get(t.strings);if(void 0!==i)return i;const n=t.strings.join(s);if(i=r.keyString.get(n),void 0===i){const a=t.getTemplateElement();B&&window.ShadyCSS.prepareTemplateDom(a,e),i=new c(t,a),r.keyString.set(n,i)}return r.stringsArray.set(t.strings,i),i},H=["html","svg"],U=new Set;window.JSCompiler_renameProperty=(e,t)=>e;const V={toAttribute(e,t){switch(t){case Boolean:return e?"":null;case Object:case Array:return null==e?e:JSON.stringify(e)}return e},fromAttribute(e,t){switch(t){case Boolean:return null!==e;case Number:return null===e?null:Number(e);case Object:case Array:return JSON.parse(e)}return e}},G=(e,t)=>t!==e&&(t==t||e==e),X={attribute:!0,type:String,converter:V,reflect:!1,hasChanged:G},J="finalized";class Y extends HTMLElement{constructor(){super(),this.initialize()}static get observedAttributes(){this.finalize();const e=[];return this._classProperties.forEach((t,a)=>{const r=this._attributeNameForProperty(a,t);void 0!==r&&(this._attributeToPropertyMap.set(r,a),e.push(r))}),e}static _ensureClassProperties(){if(!this.hasOwnProperty(JSCompiler_renameProperty("_classProperties",this))){this._classProperties=new Map;const e=Object.getPrototypeOf(this)._classProperties;void 0!==e&&e.forEach((e,t)=>this._classProperties.set(t,e))}}static createProperty(e,t=X){if(this._ensureClassProperties(),this._classProperties.set(e,t),t.noAccessor||this.prototype.hasOwnProperty(e))return;const a="symbol"==typeof e?Symbol():`__${e}`,r=this.getPropertyDescriptor(e,a,t);void 0!==r&&Object.defineProperty(this.prototype,e,r)}static getPropertyDescriptor(e,t,a){return{get(){return this[t]},set(r){const i=this[e];this[t]=r,this.requestUpdateInternal(e,i,a)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this._classProperties&&this._classProperties.get(e)||X}static finalize(){const e=Object.getPrototypeOf(this);if(e.hasOwnProperty(J)||e.finalize(),this[J]=!0,this._ensureClassProperties(),this._attributeToPropertyMap=new Map,this.hasOwnProperty(JSCompiler_renameProperty("properties",this))){const e=this.properties,t=[...Object.getOwnPropertyNames(e),..."function"==typeof Object.getOwnPropertySymbols?Object.getOwnPropertySymbols(e):[]];for(const a of t)this.createProperty(a,e[a])}}static _attributeNameForProperty(e,t){const a=t.attribute;return!1===a?void 0:"string"==typeof a?a:"string"==typeof e?e.toLowerCase():void 0}static _valueHasChanged(e,t,a=G){return a(e,t)}static _propertyValueFromAttribute(e,t){const a=t.type,r=t.converter||V,i="function"==typeof r?r:r.fromAttribute;return i?i(e,a):e}static _propertyValueToAttribute(e,t){if(void 0===t.reflect)return;const a=t.type,r=t.converter;return(r&&r.toAttribute||V.toAttribute)(e,a)}initialize(){this._updateState=0,this._updatePromise=new Promise(e=>this._enableUpdatingResolver=e),this._changedProperties=new Map,this._saveInstanceProperties(),this.requestUpdateInternal()}_saveInstanceProperties(){this.constructor._classProperties.forEach((e,t)=>{if(this.hasOwnProperty(t)){const e=this[t];delete this[t],this._instanceProperties||(this._instanceProperties=new Map),this._instanceProperties.set(t,e)}})}_applyInstanceProperties(){this._instanceProperties.forEach((e,t)=>this[t]=e),this._instanceProperties=void 0}connectedCallback(){this.enableUpdating()}enableUpdating(){void 0!==this._enableUpdatingResolver&&(this._enableUpdatingResolver(),this._enableUpdatingResolver=void 0)}disconnectedCallback(){}attributeChangedCallback(e,t,a){t!==a&&this._attributeToProperty(e,a)}_propertyToAttribute(e,t,a=X){const r=this.constructor,i=r._attributeNameForProperty(e,a);if(void 0!==i){const e=r._propertyValueToAttribute(t,a);if(void 0===e)return;this._updateState=8|this._updateState,null==e?this.removeAttribute(i):this.setAttribute(i,e),this._updateState=-9&this._updateState}}_attributeToProperty(e,t){if(8&this._updateState)return;const a=this.constructor,r=a._attributeToPropertyMap.get(e);if(void 0!==r){const e=a.getPropertyOptions(r);this._updateState=16|this._updateState,this[r]=a._propertyValueFromAttribute(t,e),this._updateState=-17&this._updateState}}requestUpdateInternal(e,t,a){let r=!0;if(void 0!==e){const i=this.constructor;a=a||i.getPropertyOptions(e),i._valueHasChanged(this[e],t,a.hasChanged)?(this._changedProperties.has(e)||this._changedProperties.set(e,t),!0!==a.reflect||16&this._updateState||(void 0===this._reflectingProperties&&(this._reflectingProperties=new Map),this._reflectingProperties.set(e,a))):r=!1}!this._hasRequestedUpdate&&r&&(this._updatePromise=this._enqueueUpdate())}requestUpdate(e,t){return this.requestUpdateInternal(e,t),this.updateComplete}async _enqueueUpdate(){this._updateState=4|this._updateState;try{await this._updatePromise}catch(e){}const e=this.performUpdate();return null!=e&&await e,!this._hasRequestedUpdate}get _hasRequestedUpdate(){return 4&this._updateState}get hasUpdated(){return 1&this._updateState}performUpdate(){if(!this._hasRequestedUpdate)return;this._instanceProperties&&this._applyInstanceProperties();let e=!1;const t=this._changedProperties;try{e=this.shouldUpdate(t),e?this.update(t):this._markUpdated()}catch(t){throw e=!1,this._markUpdated(),t}e&&(1&this._updateState||(this._updateState=1|this._updateState,this.firstUpdated(t)),this.updated(t))}_markUpdated(){this._changedProperties=new Map,this._updateState=-5&this._updateState}get updateComplete(){return this._getUpdateComplete()}_getUpdateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._updatePromise}shouldUpdate(e){return!0}update(e){void 0!==this._reflectingProperties&&this._reflectingProperties.size>0&&(this._reflectingProperties.forEach((e,t)=>this._propertyToAttribute(t,this[t],e)),this._reflectingProperties=void 0),this._markUpdated()}updated(e){}firstUpdated(e){}}Y[J]=!0;const Q=Element.prototype;Q.msMatchesSelector||Q.webkitMatchesSelector;const Z=window.ShadowRoot&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,K=Symbol();class ee{constructor(e,t){if(t!==K)throw new Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e}get styleSheet(){return void 0===this._styleSheet&&(Z?(this._styleSheet=new CSSStyleSheet,this._styleSheet.replaceSync(this.cssText)):this._styleSheet=null),this._styleSheet}toString(){return this.cssText}}const te=(e,...t)=>{const a=t.reduce((t,a,r)=>t+(e=>{if(e instanceof ee)return e.cssText;if("number"==typeof e)return e;throw new Error(`Value passed to 'css' function must be a 'css' function result: ${e}. Use 'unsafeCSS' to pass non-literal values, but\n            take care to ensure page security.`)})(a)+e[r+1],e[0]);return new ee(a,K)};(window.litElementVersions||(window.litElementVersions=[])).push("2.5.1");const ae={};class re extends Y{static getStyles(){return this.styles}static _getUniqueStyles(){if(this.hasOwnProperty(JSCompiler_renameProperty("_styles",this)))return;const e=this.getStyles();if(Array.isArray(e)){const t=(e,a)=>e.reduceRight((e,a)=>Array.isArray(a)?t(a,e):(e.add(a),e),a),a=t(e,new Set),r=[];a.forEach(e=>r.unshift(e)),this._styles=r}else this._styles=void 0===e?[]:[e];this._styles=this._styles.map(e=>{if(e instanceof CSSStyleSheet&&!Z){const t=Array.prototype.slice.call(e.cssRules).reduce((e,t)=>e+t.cssText,"");return new ee(String(t),K)}return e})}initialize(){super.initialize(),this.constructor._getUniqueStyles(),this.renderRoot=this.createRenderRoot(),window.ShadowRoot&&this.renderRoot instanceof window.ShadowRoot&&this.adoptStyles()}createRenderRoot(){return this.attachShadow(this.constructor.shadowRootOptions)}adoptStyles(){const e=this.constructor._styles;0!==e.length&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow?Z?this.renderRoot.adoptedStyleSheets=e.map(e=>e instanceof CSSStyleSheet?e:e.styleSheet):this._needsShimAdoptedStyleSheets=!0:window.ShadyCSS.ScopingShim.prepareAdoptedCssText(e.map(e=>e.cssText),this.localName))}connectedCallback(){super.connectedCallback(),this.hasUpdated&&void 0!==window.ShadyCSS&&window.ShadyCSS.styleElement(this)}update(e){const t=this.render();super.update(e),t!==ae&&this.constructor.render(t,this.renderRoot,{scopeName:this.localName,eventContext:this}),this._needsShimAdoptedStyleSheets&&(this._needsShimAdoptedStyleSheets=!1,this.constructor._styles.forEach(e=>{const t=document.createElement("style");t.textContent=e.cssText,this.renderRoot.appendChild(t)}))}render(){return ae}}re.finalized=!0,re.render=(e,t,a)=>{if(!a||"object"!=typeof a||!a.scopeName)throw new Error("The `scopeName` option is required.");const r=a.scopeName,s=I.has(t),n=B&&11===t.nodeType&&!!t.host,o=n&&!U.has(r),l=o?document.createDocumentFragment():t;if(((e,t,a)=>{let r=I.get(t);void 0===r&&(i(t,t.firstChild),I.set(t,r=new A(Object.assign({templateFactory:F},a))),r.appendInto(t)),r.setValue(e),r.commit()})(e,l,Object.assign({templateFactory:W(r)},a)),o){const e=I.get(l);I.delete(l);((e,t,a)=>{U.add(e);const r=a?a.element:document.createElement("template"),i=t.querySelectorAll("style"),{length:s}=i;if(0===s)return void window.ShadyCSS.prepareTemplateStyles(r,e);const n=document.createElement("style");for(let e=0;e<s;e++){const t=i[e];t.parentNode.removeChild(t),n.textContent+=t.textContent}(e=>{H.forEach(t=>{const a=O.get(j(t,e));void 0!==a&&a.keyString.forEach(e=>{const{element:{content:t}}=e,a=new Set;Array.from(t.querySelectorAll("style")).forEach(e=>{a.add(e)}),m(e,a)})})})(e);const o=r.content;a?function(e,t,a=null){const{element:{content:r},parts:i}=e;if(null==a)return void r.appendChild(t);const s=document.createTreeWalker(r,133,null,!1);let n=f(i),o=0,l=-1;for(;s.nextNode();)for(l++,s.currentNode===a&&(o=v(t),a.parentNode.insertBefore(t,a));-1!==n&&i[n].index===l;){if(o>0){for(;-1!==n;)i[n].index+=o,n=f(i,n);return}n=f(i,n)}}(a,n,o.firstChild):o.insertBefore(n,o.firstChild),window.ShadyCSS.prepareTemplateStyles(r,e);const l=o.querySelector("style");if(window.ShadyCSS.nativeShadow&&null!==l)t.insertBefore(l.cloneNode(!0),t.firstChild);else if(a){o.insertBefore(n,o.firstChild);const e=new Set;e.add(n),m(a,e)}})(r,l,e.value instanceof x?e.value.template:void 0),i(t,t.firstChild),t.appendChild(l),I.set(t,e)}!s&&n&&window.ShadyCSS.styleElement(t.host)},re.shadowRootOptions={mode:"open"}},330(e){e.exports=JSON.parse('{"name":"lcars-dashboard","private":true,"version":"4.11.0","description":"LCARS Dashboard — Home Assistant Lovelace dashboard with Star Trek LCARS UI. Based on Dwains Dashboard by Dwain Scheeren.","scripts":{"build":"webpack --mode=production","watch":"webpack --watch --mode=development"},"keywords":["lcars","home-assistant","lovelace","dashboard","hacs"],"author":"htiel (based on Dwains Dashboard by Dwain Scheeren)","license":"MIT","devDependencies":{"autoprefixer":"^10.2.5","css-loader":"^5.1.3","html-webpack-plugin":"^5.3.1","postcss":"^8.2.8","postcss-cli":"^8.3.1","postcss-loader":"^5.2.0","style-loader":"^2.0.0","tailwindcss":"^2.0.3","webpack":"^5.26.0","webpack-cli":"^4.5.0","webpack-dev-server":"^5.2.3","webpack-merge":"^5.7.3"},"dependencies":{"@mdi/js":"^6.5.95","card-tools":"github:thomasloven/lovelace-card-tools#477f3d4eeb5c70cab047d418d19afb6b0f07bf49","custom-card-helpers":"^1.8.0","js-cookie":"^3.0.1","lit-element":"^2.2.1","lit-html":"^1.1.2","sortablejs":"^1.14.0"}}')}},t={};function a(r){var i=t[r];if(void 0!==i)return i.exports;var s=t[r]={exports:{}};return e[r](s,s.exports,a),s.exports}a.d=(e,t)=>{for(var r in t)a.o(t,r)&&!a.o(e,r)&&Object.defineProperty(e,r,{enumerable:!0,get:t[r]})},a.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),(()=>{var e=a(845),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_activePath:{type:String}}}constructor(){super(),this._activePath="home"}set hass(e){this._hass=e}setConfig(e){this._config=e}_handleNav(e){this._activePath=e,(0,r.oo)(`/lcars-dashboard/${e}`),this.requestUpdate()}static get styles(){return[t.B,e.AH`
           :host {
             display: block;
           }
@@ -679,7 +679,7 @@
           <div class="lcars-footer-endcap" aria-hidden="true"></div>
         </div>
       </div>
-    `}}const n=Promise.race([customElements.whenDefined("hui-masonry-view"),new Promise(e=>setTimeout(e,5e3))]);r.g0.debug(i,"Waiting for hui-masonry-view (5s timeout)..."),n.then(()=>{if(customElements.get("lcars-dashboard-layout"))r.g0.warn(i,"lcars-dashboard-layout already registered — skipping");else{customElements.define("lcars-dashboard-layout",s);const e=a(330);r.g0.info(i,`v${e.version} registered`),console.info(`%c LCARS-DASHBOARD \n%c Version ${e.version}`,"color: #ff9966; font-weight: bold; background: black","color: #f5f6fa; font-weight: bold; background: #333")}}).catch(e=>{r.g0.error(i,"Failed to register lcars-dashboard-layout:",e)})})(),(()=>{var e=a(845),t=a(622),r=a(851);const i="camera",s="alarm",n="aquatics",o="climate",l="media",c="environment",d="irrigation",p="weather",u="battery",h={[i]:0,[s]:1,[n]:2,[o]:3,[l]:4,[c]:5,[d]:6,[p]:7,[u]:8},m=new Set(["camera"]),v=new Set(["climate"]),f=new Set(["media_player"]),g=new Set(["alarm_control_panel"]),b=new Set(["weather"]),y=new Set(["light","switch","fan","input_boolean","lock","automation","script"]),_=new Set(["sensor","binary_sensor"]),w=new Set(["cover"]),x=new Set(["carbon_dioxide","carbon_monoxide","volatile_organic_compounds","volatile_organic_compounds_parts","pm25","pm10","pm1","aqi"]),$=/_(air_quality|score)$/,k=/pool|spa/i,S=new Set(["heater","solar","solar_preferred"]);function C(e){const t=e?.preset_modes;return!!Array.isArray(t)&&t.some(e=>S.has(e))}const E=[e=>e.some(e=>m.has(e.domain))?i:null,e=>e.some(e=>g.has(e.domain))?s:null,e=>{for(const t of e)if("climate"===t.domain){if(k.test(t.entity.entity_id))return n;if(C(t.state?.attributes))return n}return null},e=>e.some(e=>v.has(e.domain))?o:null,e=>e.some(e=>f.has(e.domain))?l:null,e=>{let t=0,a=!1;for(const r of e){const e=r.state?.attributes?.device_class||"";x.has(e)&&t++,"fan"===r.domain&&(a=!0),!e&&"sensor"===r.domain&&$.test(r.entity.entity_id)&&t++}return t>=2||t>=1&&a?c:null},e=>function(e){let t=0;for(const a of e){if("switch"!==a.domain)continue;const e=a.state?.attributes;null==e?.zone_number?"outlet"===e?.device_class&&/zone/i.test(a.entity.entity_id)&&t++:t++}return t>=2}(e)?d:null,e=>e.some(e=>b.has(e.domain))?p:null,e=>{let t=!1,a=0;for(const r of e){const e=r.state?.attributes;if(!e)continue;const i=e.device_class||"",s=e.unit_of_measurement||"";"battery"===i&&"%"===s&&(t=!0),"power"===i&&"W"===s&&a++}return t&&a>=2?u:null}],z={light:"Lights",switch:"Switches",fan:"Fans",lock:"Locks",input_boolean:"Toggles",automation:"Automations",script:"Scripts",sensor:"Sensors",binary_sensor:"Binary Sensors",camera:"Cameras",climate:"Climate",cover:"Covers",media_player:"Media",button:"Buttons",number:"Numbers",select:"Selects",input_number:"Inputs",input_select:"Selectors",input_text:"Text Inputs",input_button:"Buttons",input_datetime:"Date/Time",scene:"Scenes",device_tracker:"Trackers",person:"People",update:"Updates",event:"Events",conversation:"Conversation",alarm_control_panel:"Alarm",weather:"Weather",remote:"Remotes",vacuum:"Vacuums"},A={camera:0,light:1,switch:2,climate:3,cover:4,media_player:5,fan:6,lock:7,alarm_control_panel:8,weather:9,sensor:10,binary_sensor:11};function q(e){switch(e){case"sunny":return"var(--lcars-sunflower)";case"clear-night":return"var(--lcars-bluey)";case"partlycloudy":case"snowy-rainy":case"hail":return"var(--lcars-ice)";case"cloudy":case"fog":return"var(--lcars-gray)";case"rainy":case"pouring":default:return"var(--lcars-sky)";case"snowy":return"var(--lcars-space-white)";case"windy":case"windy-variant":return"var(--lcars-almond)";case"lightning":case"lightning-rainy":return"var(--lcars-gold)";case"exceptional":case"unavailable":return"var(--lcars-tomato)"}}function P(e,t={},a={}){const r=a.min??35,i=a.max??95,s=null!=t.min_temp?Number(t.min_temp):r,n=null!=t.max_temp?Number(t.max_temp):i,o=Math.max(r,s),l=Math.min(i,n);return Math.min(l,Math.max(o,Number(e)||o))}function N(e,t){const a=[];function r(){const e=Date.now()-t;for(;a.length>0&&a[0]<e;)a.shift()}return{allow:()=>(r(),!(a.length>=e||(a.push(Date.now()),0))),remaining:()=>(r(),Math.max(0,e-a.length)),resetTime:()=>(r(),a.length<e?0:a[0]+t),reset(){a.length=0}}}function D(e,t=1500){let a=null;return{call(...r){a&&clearTimeout(a),a=setTimeout(()=>{a=null,e(...r)},t)},cancel(){a&&(clearTimeout(a),a=null)}}}const M=new Map,T="Homepage";function F(e){const t=e?.attributes?.entity_picture;if(!t)return"";const a=e.last_updated||e.last_changed||"",r=t.includes("?")?"&":"?";return`${t}${r}_cb=${encodeURIComponent(a)}`}class O extends e.WF{static get properties(){return{data:{type:Object},selectedArea:{type:String},selectedFloor:{type:String},_hass:{type:Object},_editMode:{type:Boolean}}}constructor(){super(),this.data=null,this.selectedArea=null,this.selectedFloor=null,this._editMode=!1,this._configLoading=!1,this._entityCache=new Map,this._cameraRefreshInterval=null,this._cameraObserver=null,this._visibleCameras=new Set,this._loadingCameras=new Set,this._onAreaSelected=e=>{r.g0.debug(T,"Area selected event:",e.detail.areaId),this.selectedArea=e.detail.areaId,this.selectedFloor=null,this._entityCache.clear()},this._onFloorSelected=e=>{r.g0.debug(T,"Floor selected event:",e.detail.floorId),this.selectedFloor=e.detail.floorId,this.selectedArea=null,this._entityCache.clear()},this._onEditMode=e=>{this._editMode=e.detail.enabled,r.g0.debug(T,"Edit mode:",this._editMode)}}connectedCallback(){super.connectedCallback(),r.o6.addEventListener("lcars-area-selected",this._onAreaSelected),r.o6.addEventListener("lcars-floor-selected",this._onFloorSelected),r.o6.addEventListener("lcars-edit-mode",this._onEditMode),this._startCameraRefresh(),document.addEventListener("visibilitychange",this._onVisibilityChange)}disconnectedCallback(){super.disconnectedCallback(),r.o6.removeEventListener("lcars-area-selected",this._onAreaSelected),r.o6.removeEventListener("lcars-floor-selected",this._onFloorSelected),r.o6.removeEventListener("lcars-edit-mode",this._onEditMode),this._stopCameraRefresh(),document.removeEventListener("visibilitychange",this._onVisibilityChange)}_onVisibilityChange=()=>{document.hidden?this._stopCameraTimer():(this._startCameraTimer(),this._refreshVisibleCameras())};_startCameraRefresh(){this._cameraObserver=new IntersectionObserver(e=>{for(const t of e){const e=t.target.dataset.entity;e&&(t.isIntersecting?this._visibleCameras.add(e):this._visibleCameras.delete(e))}},{rootMargin:"50px"}),this._startCameraTimer()}_startCameraTimer(){this._cameraRefreshInterval||(this._cameraRefreshInterval=setInterval(()=>{this._refreshVisibleCameras()},1e4))}_stopCameraTimer(){this._cameraRefreshInterval&&(clearInterval(this._cameraRefreshInterval),this._cameraRefreshInterval=null)}_stopCameraRefresh(){this._stopCameraTimer(),this._cameraObserver&&(this._cameraObserver.disconnect(),this._cameraObserver=null),this._visibleCameras.clear(),this._loadingCameras.clear()}_refreshVisibleCameras(){if(document.hidden||!this._hass)return;const e=Date.now();for(const t of this._visibleCameras){if(this._loadingCameras.has(t))continue;const a=this._hass.states[t];if(!a||"unavailable"===a.state)continue;const r=a.attributes?.entity_picture;if(!r)continue;const i=this.shadowRoot?.querySelector(`img[data-entity="${CSS.escape(t)}"]`);if(!i)continue;const s=r.includes("?")?"&":"?",n=`${r}${s}_cb=${e}`;this._loadingCameras.add(t),i.addEventListener("load",()=>this._loadingCameras.delete(t),{once:!0}),i.addEventListener("error",()=>this._loadingCameras.delete(t),{once:!0}),i.src=n}}updated(e){if(super.updated(e),this._cameraObserver){const e=this.shadowRoot?.querySelectorAll("img[data-entity]")||[],t=new Set;for(const a of e)t.add(a.dataset.entity),this._cameraObserver.observe(a);for(const e of this._visibleCameras)t.has(e)||(this._visibleCameras.delete(e),this._loadingCameras.delete(e))}}setConfig(e){try{this._config=e,r.g0.debug(T,"setConfig:",e)}catch(e){throw r.g0.error(T,"setConfig FAILED — this causes CONFIGURATION ERROR:",e),e}}set hass(e){const t=this._hass;this._hass=e,t||r.g0.debug(T,"First hass received — areas:",Object.keys(e.areas||{}).length,"entities:",Object.keys(e.entities||{}).length),!t||t.entities===e.entities&&t.devices===e.devices||(r.g0.debug(T,"Entity/device registry changed — busting cache"),this._entityCache.clear()),t&&t.areas!==e.areas&&this.selectedArea&&(e.areas?.[this.selectedArea]||(this.selectedArea=null,this._entityCache.clear())),this.data||this._configLoading||this._loadConfiguration()}async _loadConfiguration(){if(this._hass){this._configLoading=!0,r.g0.debug(T,"Loading configuration via WS...");try{const e=await this._hass.callWS({type:"lcars_dashboard/configuration/get"});this.data=e,void 0!==e.debug&&(window.__LCARS_DEBUG=e.debug,e.debug&&r.g0.info(T,"Debug logging auto-enabled from HA backend")),r.g0.debug(T,"Configuration loaded:",Object.keys(e),"version:",e.installed_version)}catch(e){r.g0.error(T,"Failed to load configuration — WS call failed:",e),this.data={}}finally{this._configLoading=!1}}}_handleEntityClick(e){r.g0.debug(T,"Entity click:",e),(0,r.Hv)(e)}_handleEditEntity(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._getEntityState(t),i=a?.attributes?.friendly_name||t;(0,r.Bo)(this._hass,"lcars-edit-entity-card",{entity:t,icon:a?.attributes?.icon||"",name:i},`Edit: ${i}`)}_handleEditDevice(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._hass.devices?.[t],i=a?.name_by_user||a?.name||t;(0,r.Bo)(this._hass,"lcars-edit-device-button-card",{device:t,name:i,icon:""},`Edit: ${i}`)}_handleToggle(e){const t=e.split(".")[0];if(r.g0.debug(T,"Toggle:",e,"domain:",t),"lock"===t){const t=this._getEntityState(e);this._hass.callService("lock","locked"===t?.state?"unlock":"lock",{entity_id:e})}else"script"===t?this._hass.callService("script","turn_on",{entity_id:e}):this._hass.callService("homeassistant","toggle",{entity_id:e})}_getAreaEntities(e){if(!this._hass)return[];if(this._entityCache.has(e))return this._entityCache.get(e);r.g0.debug(T,"Entity cache MISS — resolving area:",e);const t=Object.values(this._hass.entities||{}),a=this._hass.devices||{},i=new Set;Object.values(a).forEach(t=>{t.area_id===e&&i.add(t.id)});const s=t.filter(t=>!(t.hidden_by||t.hidden||t.disabled_by||t.entity_category||t.area_id!==e&&(t.area_id||!t.device_id||!i.has(t.device_id))));return this._entityCache.set(e,s),r.g0.debug(T,"Resolved",s.length,"entities for area:",e),s}_getFloorAreaIds(e){return this._hass?.areas?Object.values(this._hass.areas).filter(t=>t.floor_id===e).map(e=>e.area_id):[]}_getDeviceCategoryEntities(e){if(!this._hass||!e)return{config:[],diagnostic:[]};const t=Object.values(this._hass.entities||{}),a=[],r=[];for(const i of t)i.device_id===e&&(i.disabled_by||"user"===i.hidden_by||i.hidden||("config"===i.entity_category?a.push(i):"diagnostic"===i.entity_category&&r.push(i)));return{config:a,diagnostic:r}}_groupEntities(e){const t=this._hass.devices||{},a=new Map,r=[];e.forEach(e=>{const i=e.entity_id.split(".")[0],s={entity:e,domain:i,state:this._getEntityState(e.entity_id)};s.state&&(e.device_id&&t[e.device_id]?(a.has(e.device_id)||a.set(e.device_id,{device:t[e.device_id],entities:[]}),a.get(e.device_id).entities.push(s)):r.push(s))});const i=(e,t)=>{const a=A[e.domain]??50,r=A[t.domain]??50;return a!==r?a-r:(e.state?.attributes?.friendly_name||"").localeCompare(t.state?.attributes?.friendly_name||"")};return a.forEach(e=>e.entities.sort(i)),r.sort(i),{byDevice:a,noDevice:r}}_groupByDomain(e){const t=new Map;return e.forEach(e=>{t.has(e.domain)||t.set(e.domain,[]),t.get(e.domain).push(e)}),[...t.entries()].sort((e,t)=>(A[e[0]]??50)-(A[t[0]]??50))}_getEntityState(e){return this._hass&&this._hass.states[e]?this._hass.states[e]:null}_getEntityIcon(e){return e?e.attributes?.icon?e.attributes.icon:{light:"mdi:lightbulb",switch:"mdi:toggle-switch",sensor:"mdi:eye",binary_sensor:"mdi:radiobox-blank",climate:"mdi:thermostat",cover:"mdi:window-shutter",fan:"mdi:fan",lock:"mdi:lock",camera:"mdi:video",media_player:"mdi:cast",automation:"mdi:robot",script:"mdi:script-text",update:"mdi:package-up"}[e.entity_id.split(".")[0]]||"mdi:information-outline":"mdi:help-circle-outline"}_withEditPip(t,a){return this._editMode?e.qy`
+    `}}const n=Promise.race([customElements.whenDefined("hui-masonry-view"),new Promise(e=>setTimeout(e,5e3))]);r.g0.debug(i,"Waiting for hui-masonry-view (5s timeout)..."),n.then(()=>{if(customElements.get("lcars-dashboard-layout"))r.g0.warn(i,"lcars-dashboard-layout already registered — skipping");else{customElements.define("lcars-dashboard-layout",s);const e=a(330);r.g0.info(i,`v${e.version} registered`),console.info(`%c LCARS-DASHBOARD \n%c Version ${e.version}`,"color: #ff9966; font-weight: bold; background: black","color: #f5f6fa; font-weight: bold; background: #333")}}).catch(e=>{r.g0.error(i,"Failed to register lcars-dashboard-layout:",e)})})(),(()=>{var e=a(845),t=a(622),r=a(851);const i="camera",s="alarm",n="aquatics",o="climate",l="media",c="environment",d="irrigation",p="weather",h="battery",u={[i]:0,[s]:1,[n]:2,[o]:3,[l]:4,[c]:5,[d]:6,[p]:7,[h]:8},m=new Set(["camera"]),v=new Set(["climate"]),f=new Set(["media_player"]),g=new Set(["alarm_control_panel"]),b=new Set(["weather"]),y=new Set(["light","switch","fan","input_boolean","lock","automation","script"]),_=new Set(["sensor","binary_sensor"]),x=new Set(["cover"]),w=new Set(["carbon_dioxide","carbon_monoxide","volatile_organic_compounds","volatile_organic_compounds_parts","pm25","pm10","pm1","aqi"]),$=/_(air_quality|score)$/,k=/pool|spa/i,S=new Set(["heater","solar","solar_preferred"]);function C(e){const t=e?.preset_modes;return!!Array.isArray(t)&&t.some(e=>S.has(e))}const E=[e=>e.some(e=>m.has(e.domain))?i:null,e=>e.some(e=>g.has(e.domain))?s:null,e=>{for(const t of e)if("climate"===t.domain){if(k.test(t.entity.entity_id))return n;if(C(t.state?.attributes))return n}return null},e=>e.some(e=>v.has(e.domain))?o:null,e=>e.some(e=>f.has(e.domain))?l:null,e=>{let t=0,a=!1;for(const r of e){const e=r.state?.attributes?.device_class||"";w.has(e)&&t++,"fan"===r.domain&&(a=!0),!e&&"sensor"===r.domain&&$.test(r.entity.entity_id)&&t++}return t>=2||t>=1&&a?c:null},e=>function(e){let t=0;for(const a of e){if("switch"!==a.domain)continue;const e=a.state?.attributes;null==e?.zone_number?"outlet"===e?.device_class&&/zone/i.test(a.entity.entity_id)&&t++:t++}return t>=2}(e)?d:null,e=>e.some(e=>b.has(e.domain))?p:null,e=>{let t=!1,a=0;for(const r of e){const e=r.state?.attributes;if(!e)continue;const i=e.device_class||"",s=e.unit_of_measurement||"";"battery"===i&&"%"===s&&(t=!0),"power"===i&&"W"===s&&a++}return t&&a>=2?h:null}],z={light:"Lights",switch:"Switches",fan:"Fans",lock:"Locks",input_boolean:"Toggles",automation:"Automations",script:"Scripts",sensor:"Sensors",binary_sensor:"Binary Sensors",camera:"Cameras",climate:"Climate",cover:"Covers",media_player:"Media",button:"Buttons",number:"Numbers",select:"Selects",input_number:"Inputs",input_select:"Selectors",input_text:"Text Inputs",input_button:"Buttons",input_datetime:"Date/Time",scene:"Scenes",device_tracker:"Trackers",person:"People",update:"Updates",event:"Events",conversation:"Conversation",alarm_control_panel:"Alarm",weather:"Weather",remote:"Remotes",vacuum:"Vacuums"},A={camera:0,light:1,switch:2,climate:3,cover:4,media_player:5,fan:6,lock:7,alarm_control_panel:8,weather:9,sensor:10,binary_sensor:11};function q(e){switch(e){case"sunny":return"var(--lcars-sunflower)";case"clear-night":return"var(--lcars-bluey)";case"partlycloudy":case"snowy-rainy":case"hail":return"var(--lcars-ice)";case"cloudy":case"fog":return"var(--lcars-gray)";case"rainy":case"pouring":default:return"var(--lcars-sky)";case"snowy":return"var(--lcars-space-white)";case"windy":case"windy-variant":return"var(--lcars-almond)";case"lightning":case"lightning-rainy":return"var(--lcars-gold)";case"exceptional":case"unavailable":return"var(--lcars-tomato)"}}function P(e,t={},a={}){const r=a.min??35,i=a.max??95,s=null!=t.min_temp?Number(t.min_temp):r,n=null!=t.max_temp?Number(t.max_temp):i,o=Math.max(r,s),l=Math.min(i,n);return Math.min(l,Math.max(o,Number(e)||o))}function N(e,t){const a=[];function r(){const e=Date.now()-t;for(;a.length>0&&a[0]<e;)a.shift()}return{allow:()=>(r(),!(a.length>=e||(a.push(Date.now()),0))),remaining:()=>(r(),Math.max(0,e-a.length)),resetTime:()=>(r(),a.length<e?0:a[0]+t),reset(){a.length=0}}}function D(e,t=1500){let a=null;return{call(...r){a&&clearTimeout(a),a=setTimeout(()=>{a=null,e(...r)},t)},cancel(){a&&(clearTimeout(a),a=null)}}}const M=new Map,T="Homepage";function F(e){const t=e?.attributes?.entity_picture;if(!t)return"";const a=e.last_updated||e.last_changed||"",r=t.includes("?")?"&":"?";return`${t}${r}_cb=${encodeURIComponent(a)}`}class O extends e.WF{static get properties(){return{data:{type:Object},selectedArea:{type:String},selectedFloor:{type:String},_hass:{type:Object},_editMode:{type:Boolean}}}constructor(){super(),this.data=null,this.selectedArea=null,this.selectedFloor=null,this._editMode=!1,this._configLoading=!1,this._entityCache=new Map,this._cameraRefreshInterval=null,this._cameraObserver=null,this._visibleCameras=new Set,this._loadingCameras=new Set,this._onAreaSelected=e=>{r.g0.debug(T,"Area selected event:",e.detail.areaId),this.selectedArea=e.detail.areaId,this.selectedFloor=null,this._entityCache.clear()},this._onFloorSelected=e=>{r.g0.debug(T,"Floor selected event:",e.detail.floorId),this.selectedFloor=e.detail.floorId,this.selectedArea=null,this._entityCache.clear()},this._onEditMode=e=>{this._editMode=e.detail.enabled,r.g0.debug(T,"Edit mode:",this._editMode)}}connectedCallback(){super.connectedCallback(),r.o6.addEventListener("lcars-area-selected",this._onAreaSelected),r.o6.addEventListener("lcars-floor-selected",this._onFloorSelected),r.o6.addEventListener("lcars-edit-mode",this._onEditMode),this._startCameraRefresh(),document.addEventListener("visibilitychange",this._onVisibilityChange)}disconnectedCallback(){super.disconnectedCallback(),r.o6.removeEventListener("lcars-area-selected",this._onAreaSelected),r.o6.removeEventListener("lcars-floor-selected",this._onFloorSelected),r.o6.removeEventListener("lcars-edit-mode",this._onEditMode),this._stopCameraRefresh(),document.removeEventListener("visibilitychange",this._onVisibilityChange)}_onVisibilityChange=()=>{document.hidden?this._stopCameraTimer():(this._startCameraTimer(),this._refreshVisibleCameras())};_startCameraRefresh(){this._cameraObserver=new IntersectionObserver(e=>{for(const t of e){const e=t.target.dataset.entity;e&&(t.isIntersecting?this._visibleCameras.add(e):this._visibleCameras.delete(e))}},{rootMargin:"50px"}),this._startCameraTimer()}_startCameraTimer(){this._cameraRefreshInterval||(this._cameraRefreshInterval=setInterval(()=>{this._refreshVisibleCameras()},1e4))}_stopCameraTimer(){this._cameraRefreshInterval&&(clearInterval(this._cameraRefreshInterval),this._cameraRefreshInterval=null)}_stopCameraRefresh(){this._stopCameraTimer(),this._cameraObserver&&(this._cameraObserver.disconnect(),this._cameraObserver=null),this._visibleCameras.clear(),this._loadingCameras.clear()}_refreshVisibleCameras(){if(document.hidden||!this._hass)return;const e=Date.now();for(const t of this._visibleCameras){if(this._loadingCameras.has(t))continue;const a=this._hass.states[t];if(!a||"unavailable"===a.state)continue;const r=a.attributes?.entity_picture;if(!r)continue;const i=this.shadowRoot?.querySelector(`img[data-entity="${CSS.escape(t)}"]`);if(!i)continue;const s=r.includes("?")?"&":"?",n=`${r}${s}_cb=${e}`;this._loadingCameras.add(t),i.addEventListener("load",()=>this._loadingCameras.delete(t),{once:!0}),i.addEventListener("error",()=>this._loadingCameras.delete(t),{once:!0}),i.src=n}}updated(e){if(super.updated(e),this._cameraObserver){const e=this.shadowRoot?.querySelectorAll("img[data-entity]")||[],t=new Set;for(const a of e)t.add(a.dataset.entity),this._cameraObserver.observe(a);for(const e of this._visibleCameras)t.has(e)||(this._visibleCameras.delete(e),this._loadingCameras.delete(e))}}setConfig(e){try{this._config=e,r.g0.debug(T,"setConfig:",e)}catch(e){throw r.g0.error(T,"setConfig FAILED — this causes CONFIGURATION ERROR:",e),e}}set hass(e){const t=this._hass;this._hass=e,t||r.g0.debug(T,"First hass received — areas:",Object.keys(e.areas||{}).length,"entities:",Object.keys(e.entities||{}).length),!t||t.entities===e.entities&&t.devices===e.devices||(r.g0.debug(T,"Entity/device registry changed — busting cache"),this._entityCache.clear()),t&&t.areas!==e.areas&&this.selectedArea&&(e.areas?.[this.selectedArea]||(this.selectedArea=null,this._entityCache.clear())),this.data||this._configLoading||this._loadConfiguration()}async _loadConfiguration(){if(this._hass){this._configLoading=!0,r.g0.debug(T,"Loading configuration via WS...");try{const e=await this._hass.callWS({type:"lcars_dashboard/configuration/get"});this.data=e,void 0!==e.debug&&(window.__LCARS_DEBUG=e.debug,e.debug&&r.g0.info(T,"Debug logging auto-enabled from HA backend")),r.g0.debug(T,"Configuration loaded:",Object.keys(e),"version:",e.installed_version)}catch(e){r.g0.error(T,"Failed to load configuration — WS call failed:",e),this.data={}}finally{this._configLoading=!1}}}_handleEntityClick(e){r.g0.debug(T,"Entity click:",e),(0,r.Hv)(e)}_handleEditEntity(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._getEntityState(t),i=a?.attributes?.friendly_name||t;(0,r.Bo)(this._hass,"lcars-edit-entity-card",{entity:t,icon:a?.attributes?.icon||"",name:i},`Edit: ${i}`)}_handleEditDevice(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._hass.devices?.[t],i=a?.name_by_user||a?.name||t;(0,r.Bo)(this._hass,"lcars-edit-device-button-card",{device:t,name:i,icon:""},`Edit: ${i}`)}_handleToggle(e){const t=e.split(".")[0];if(r.g0.debug(T,"Toggle:",e,"domain:",t),"lock"===t){const t=this._getEntityState(e);this._hass.callService("lock","locked"===t?.state?"unlock":"lock",{entity_id:e})}else"script"===t?this._hass.callService("script","turn_on",{entity_id:e}):this._hass.callService("homeassistant","toggle",{entity_id:e})}_getAreaEntities(e){if(!this._hass)return[];if(this._entityCache.has(e))return this._entityCache.get(e);r.g0.debug(T,"Entity cache MISS — resolving area:",e);const t=Object.values(this._hass.entities||{}),a=this._hass.devices||{},i=new Set;Object.values(a).forEach(t=>{t.area_id===e&&i.add(t.id)});const s=t.filter(t=>!(t.hidden_by||t.hidden||t.disabled_by||t.entity_category||t.area_id!==e&&(t.area_id||!t.device_id||!i.has(t.device_id))));return this._entityCache.set(e,s),r.g0.debug(T,"Resolved",s.length,"entities for area:",e),s}_getFloorAreaIds(e){return this._hass?.areas?Object.values(this._hass.areas).filter(t=>t.floor_id===e).map(e=>e.area_id):[]}_getDeviceCategoryEntities(e){if(!this._hass||!e)return{config:[],diagnostic:[]};const t=Object.values(this._hass.entities||{}),a=[],r=[];for(const i of t)i.device_id===e&&(i.disabled_by||"user"===i.hidden_by||i.hidden||("config"===i.entity_category?a.push(i):"diagnostic"===i.entity_category&&r.push(i)));return{config:a,diagnostic:r}}_groupEntities(e){const t=this._hass.devices||{},a=new Map,r=[];e.forEach(e=>{const i=e.entity_id.split(".")[0],s={entity:e,domain:i,state:this._getEntityState(e.entity_id)};s.state&&(e.device_id&&t[e.device_id]?(a.has(e.device_id)||a.set(e.device_id,{device:t[e.device_id],entities:[]}),a.get(e.device_id).entities.push(s)):r.push(s))});const i=(e,t)=>{const a=A[e.domain]??50,r=A[t.domain]??50;return a!==r?a-r:(e.state?.attributes?.friendly_name||"").localeCompare(t.state?.attributes?.friendly_name||"")};return a.forEach(e=>e.entities.sort(i)),r.sort(i),{byDevice:a,noDevice:r}}_groupByDomain(e){const t=new Map;return e.forEach(e=>{t.has(e.domain)||t.set(e.domain,[]),t.get(e.domain).push(e)}),[...t.entries()].sort((e,t)=>(A[e[0]]??50)-(A[t[0]]??50))}_getEntityState(e){return this._hass&&this._hass.states[e]?this._hass.states[e]:null}_getEntityIcon(e){return e?e.attributes?.icon?e.attributes.icon:{light:"mdi:lightbulb",switch:"mdi:toggle-switch",sensor:"mdi:eye",binary_sensor:"mdi:radiobox-blank",climate:"mdi:thermostat",cover:"mdi:window-shutter",fan:"mdi:fan",lock:"mdi:lock",camera:"mdi:video",media_player:"mdi:cast",automation:"mdi:robot",script:"mdi:script-text",update:"mdi:package-up"}[e.entity_id.split(".")[0]]||"mdi:information-outline":"mdi:help-circle-outline"}_withEditPip(t,a){return this._editMode?e.qy`
         <div class="edit-pip-wrap">
           ${a}
           <div class="edit-pip" tabindex="0" role="button" aria-label="Edit entity"
@@ -716,8 +716,15 @@
             content: '';
             display: block;
             height: 2px;
-            background: var(--lcars-data-accent);
+            background:
+              repeating-linear-gradient(90deg,
+                var(--lcars-data-accent) 0px, var(--lcars-data-accent) 12px,
+                transparent 12px, transparent 16px,
+                var(--lcars-data-accent) 16px, var(--lcars-data-accent) 18px,
+                transparent 18px, transparent 22px
+              );
             margin-top: 0.5rem;
+            opacity: 0.6;
           }
 
           /* ─── Floor View ─── */
@@ -958,7 +965,7 @@
             align-items: center;
             gap: 0.5rem;
             height: 2.25rem;
-            padding: 0 0.75rem;
+            padding: 0 0.75rem 0 0;
             background: var(--lcars-ice);
             color: var(--lcars-black);
             border: none;
@@ -969,13 +976,14 @@
             cursor: pointer;
             overflow: hidden;
             transition: filter var(--lcars-transition);
+            border-left: 4px solid rgba(0,0,0,0.2);
           }
           .sensor-readout:hover { filter: brightness(1.1); }
           .sensor-readout:focus-visible {
             outline: 2px solid var(--lcars-ice);
             outline-offset: 2px;
           }
-          .sensor-readout ha-icon { --mdc-icon-size: 14px; flex-shrink: 0; }
+          .sensor-readout ha-icon { --mdc-icon-size: 14px; flex-shrink: 0; margin-left: 0.5rem; }
           .sensor-readout .sensor-name { overflow: hidden; text-overflow: ellipsis; flex: 1; font-size: 0.75rem; }
           .sensor-readout .sensor-value {
             font-size: var(--lcars-font-size-data);
@@ -1008,6 +1016,7 @@
             background: var(--lcars-black);
             cursor: pointer;
             transition: border-color var(--lcars-transition);
+            box-shadow: inset 0 0 20px rgba(100,200,255,0.04);
           }
           .camera-frame:hover { border-color: var(--lcars-gold); }
           .camera-frame:focus-visible {
@@ -1020,6 +1029,18 @@
             aspect-ratio: 16/9;
             object-fit: cover;
             background: #111;
+          }
+          /* Subtle CRT scanline overlay */
+          .camera-frame::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(0deg,
+              transparent 0px, transparent 2px,
+              rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
+            );
+            pointer-events: none;
+            border-radius: inherit;
           }
           .camera-label {
             position: absolute;
@@ -1096,8 +1117,19 @@
             border-right: 2px solid var(--panel-frame-color);
             border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
             padding: var(--lcars-gap);
-            background: var(--lcars-black);
+            background:
+              linear-gradient(180deg, transparent, transparent 49%, rgba(100,200,255,0.03) 50%, transparent 51%, transparent) center / 100% 300% no-repeat,
+              var(--lcars-black);
+            animation: panel-scanline 10s ease-in-out infinite;
             position: relative;
+          }
+          @keyframes panel-scanline {
+            0%, 100% { background-position: center 100%; }
+            50% { background-position: center 0%; }
+          }
+          /* Reduced motion: no scan */
+          @media (prefers-reduced-motion: reduce) {
+            .lcars-device-panel { animation: none; background: var(--lcars-black); }
           }
           /* Corner bracket — top-left */
           .lcars-device-panel::before {
@@ -1143,8 +1175,14 @@
           .device-panel-header-line {
             flex: 1;
             height: 2px;
-            background: var(--panel-frame-color);
-            opacity: 0.5;
+            background:
+              repeating-linear-gradient(90deg,
+                var(--panel-frame-color) 0px, var(--panel-frame-color) 8px,
+                transparent 8px, transparent 12px,
+                var(--panel-frame-color) 12px, var(--panel-frame-color) 14px,
+                transparent 14px, transparent 18px
+              );
+            opacity: 0.4;
           }
 
           /* Sensor telemetry readouts — left column */
@@ -1176,9 +1214,9 @@
             outline-offset: 2px;
           }
           .sensor-indicator {
-            width: 0.5rem;
-            height: 0.5rem;
-            border-radius: 50%;
+            width: 0.25rem;
+            height: 1rem;
+            border-radius: 0.125rem;
             flex-shrink: 0;
           }
           .sensor-label {
@@ -1204,12 +1242,24 @@
             overflow: hidden;
             background: var(--lcars-black);
             aspect-ratio: var(--media-aspect);
+            box-shadow: inset 0 0 20px rgba(100,200,255,0.05);
           }
           .device-panel-media img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
+          }
+          /* Subtle scan line overlay on viewscreens */
+          .device-panel-media::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(0deg,
+              transparent 0px, transparent 2px,
+              rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
+            );
+            pointer-events: none;
           }
           .device-panel-media[data-offline] {
             border-color: var(--lcars-gray);
@@ -1305,7 +1355,7 @@
             max-height: 22rem;
           }
 
-          /* Warp Core */
+          /* Warp Core — Segmented Containment Vessel */
           .warp-core-container {
             grid-area: core;
             display: flex;
@@ -1316,67 +1366,148 @@
           }
           .warp-core {
             position: relative;
-            width: 4rem;
-            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            width: 5rem;
             min-height: 10rem;
-            border-radius: 2rem;
-            border: 2px solid var(--core-color);
-            background: var(--lcars-black);
-            overflow: hidden;
-            box-shadow: 0 0 calc(var(--core-charge, 0) * 0.2px) var(--core-color);
-            transition: border-color 1s ease, box-shadow 1s ease;
+            transition: filter 1s ease;
           }
-          .warp-core-fill {
+
+          /* ── Decorative numeric codes ── */
+          .warp-core-code {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: calc(var(--core-charge, 0) * 1%);
-            background: var(--core-color);
-            opacity: 0.8;
-            transition: height 1s ease, background 1s ease;
-          }
-          .warp-core-fill.core-idle {
-            animation: core-idle-pulse 3s ease-in-out infinite;
-          }
-          .warp-core-fill.core-charging {
-            animation: core-charge-flow 2s linear infinite;
-          }
-          .warp-core-stream {
-            position: absolute;
-            left: 50%;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            transform: translateX(-50%);
-            background: rgba(255,255,255,0.35);
-          }
-          .warp-core-tick {
-            position: absolute;
-            left: 10%;
-            right: 10%;
-            height: 1px;
-            background: var(--core-color);
-            opacity: 0.3;
+            font-family: var(--lcars-font);
+            font-size: 0.6rem;
+            color: var(--core-color);
+            opacity: 0.5;
+            letter-spacing: 0.05em;
             pointer-events: none;
           }
-          @keyframes core-idle-pulse {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 0.55; }
+          .warp-core-code.top { top: -0.25rem; right: -0.5rem; }
+          .warp-core-code.bottom { bottom: -0.25rem; right: -0.5rem; }
+
+          /* ── Top/bottom endcaps ── */
+          .warp-core-cap {
+            width: 1.5rem;
+            height: 0.375rem;
+            background: var(--core-color);
+            opacity: 0.5;
+            border-radius: 0.5rem 0.5rem 0 0;
+            flex-shrink: 0;
           }
-          @keyframes core-charge-flow {
-            0% { background-position-y: 0; }
-            100% { background-position-y: -2rem; }
+          .warp-core-cap.bottom {
+            border-radius: 0 0 0.5rem 0.5rem;
           }
-          .warp-core-fill.core-charging {
-            background-image: repeating-linear-gradient(
-              0deg,
-              transparent 0px,
-              transparent 0.75rem,
-              rgba(255,255,255,0.15) 0.75rem,
-              rgba(255,255,255,0.15) 1rem
-            );
-            background-size: 100% 2rem;
+
+          /* ── Tapered funnels ── */
+          .warp-core-funnel {
+            width: 0;
+            height: 0;
+            flex-shrink: 0;
+          }
+          .warp-core-funnel.top {
+            border-left: 1.75rem solid transparent;
+            border-right: 1.75rem solid transparent;
+            border-bottom: 0.75rem solid var(--core-color);
+            opacity: 0.35;
+          }
+          .warp-core-funnel.bottom {
+            border-left: 1.75rem solid transparent;
+            border-right: 1.75rem solid transparent;
+            border-top: 0.75rem solid var(--core-color);
+            opacity: 0.35;
+          }
+
+          /* ── Pill column sections ── */
+          .warp-core-pills {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            width: 100%;
+            padding: 2px 0;
+          }
+
+          /* ── Individual pill segment ── */
+          .warp-core-pill {
+            width: 70%;
+            height: 0.625rem;
+            border-radius: 0.3125rem;
+            background: rgba(100, 180, 255, 0.08);
+            border: 1px solid rgba(100, 180, 255, 0.12);
+            transition: background 0.8s ease, box-shadow 0.8s ease, border-color 0.8s ease, width 0.3s ease;
+            flex-shrink: 0;
+          }
+          .warp-core-pill.wide {
+            width: 90%;
+            height: 0.75rem;
+            border-radius: 0.375rem;
+          }
+          .warp-core-pill.charged {
+            background: var(--core-color);
+            border-color: var(--core-color);
+            box-shadow: 0 0 6px var(--core-color), inset 0 1px 2px rgba(255,255,255,0.35);
+            opacity: 0.9;
+          }
+          .warp-core-pill.charged.wide {
+            background: var(--core-color);
+            box-shadow: 0 0 10px var(--core-color), inset 0 1px 3px rgba(255,255,255,0.5);
+            opacity: 1;
+            filter: brightness(1.3);
+          }
+
+          /* ── Charging flow animation (uses opacity to coexist with filter:brightness on .wide) ── */
+          @keyframes pill-charge-flow {
+            0%, 100% { opacity: 0.85; }
+            50% { opacity: 1; box-shadow: 0 0 10px var(--core-color); }
+          }
+          .warp-core-pill.charging {
+            animation: pill-charge-flow 1.5s ease-in-out infinite;
+            animation-delay: calc(var(--pill-i, 0) * 100ms);
+          }
+          .warp-core-pills.upper .warp-core-pill:nth-child(1).charging { --pill-i: 6; }
+          .warp-core-pills.upper .warp-core-pill:nth-child(2).charging { --pill-i: 5; }
+          .warp-core-pills.upper .warp-core-pill:nth-child(3).charging { --pill-i: 4; }
+          .warp-core-pills.upper .warp-core-pill:nth-child(4).charging { --pill-i: 3; }
+          .warp-core-pills.upper .warp-core-pill:nth-child(5).charging { --pill-i: 2; }
+          .warp-core-pills.upper .warp-core-pill:nth-child(6).charging { --pill-i: 1; }
+          .warp-core-pills.upper .warp-core-pill:nth-child(7).charging { --pill-i: 0; }
+          .warp-core-pills.lower .warp-core-pill:nth-child(1).charging { --pill-i: 0; }
+          .warp-core-pills.lower .warp-core-pill:nth-child(2).charging { --pill-i: 1; }
+          .warp-core-pills.lower .warp-core-pill:nth-child(3).charging { --pill-i: 2; }
+          .warp-core-pills.lower .warp-core-pill:nth-child(4).charging { --pill-i: 3; }
+          .warp-core-pills.lower .warp-core-pill:nth-child(5).charging { --pill-i: 4; }
+          .warp-core-pills.lower .warp-core-pill:nth-child(6).charging { --pill-i: 5; }
+          .warp-core-pills.lower .warp-core-pill:nth-child(7).charging { --pill-i: 6; }
+
+          /* ── Center junction ring ── */
+          .warp-core-junction {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 3px 0;
+            flex-shrink: 0;
+          }
+          .warp-core-junction-ring {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            border: 3px solid var(--core-color);
+            background: radial-gradient(circle, rgba(100,180,255,0.15) 0%, transparent 70%);
+            box-shadow: 0 0 8px var(--core-color), inset 0 0 6px rgba(100,180,255,0.1);
+            transition: border-color 1s ease, box-shadow 1s ease;
+            position: relative;
+          }
+          .warp-core-junction-ring::after {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            border-radius: 50%;
+            border: 2px solid var(--core-color);
+            opacity: 0.4;
           }
 
           /* Number slider controls */
@@ -1394,16 +1525,25 @@
           .battery-slider-track {
             position: relative;
             height: 1.25rem;
-            background: var(--lcars-gray);
+            background:
+              repeating-linear-gradient(90deg,
+                var(--lcars-gray) 0px, var(--lcars-gray) 5px,
+                transparent 5px, transparent 7px
+              );
             border-radius: 0.625rem;
             cursor: pointer;
             overflow: visible;
           }
           .battery-slider-fill {
             height: 100%;
-            background: var(--lcars-ice);
+            background:
+              repeating-linear-gradient(90deg,
+                var(--lcars-ice) 0px, var(--lcars-ice) 5px,
+                rgba(0,0,0,0.3) 5px, rgba(0,0,0,0.3) 7px
+              );
             border-radius: 0.625rem 0 0 0.625rem;
             transition: width 0.3s ease;
+            box-shadow: 0 0 4px rgba(153,204,255,0.3);
           }
           .battery-slider-thumb {
             position: absolute;
@@ -2019,20 +2159,21 @@
             display: flex;
             gap: 2px;
             align-items: center;
-            height: 0.625rem;
+            height: 0.75rem;
             flex-shrink: 0;
             margin-left: 0.25rem;
           }
           .sensor-seg {
-            width: 3px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 1px;
-            transition: background var(--lcars-transition), height var(--lcars-transition);
+            width: 4px;
+            background: rgba(0,0,0,0.15);
+            border-radius: 2px;
+            transition: background var(--lcars-transition), height var(--lcars-transition), box-shadow var(--lcars-transition);
             height: 40%;
           }
           .sensor-seg.filled {
             background: var(--lcars-black);
             height: calc(40% + var(--seg-i, 0) * 6%);
+            box-shadow: 0 0 2px rgba(0,0,0,0.3);
           }
           .sensor-readout[data-warn] .sensor-seg.filled { background: var(--lcars-space-white); }
 
@@ -2058,6 +2199,8 @@
             .lcars-device-panel:has(.device-panel-media[data-offline]) { animation: none; }
             .alarm-triggered .alarm-shield,
             .alarm-triggered .alarm-viewscreen { animation: none; }
+            .warp-core-pill.charging { animation: none; }
+            .irrigation-zone-fill { animation: none; }
           }
 
           /* ═══════ CLIMATE PANEL ═══════ */
@@ -2097,6 +2240,7 @@
             border-radius: 4px;
             padding: 0.5rem;
             transition: border-color 600ms;
+            box-shadow: inset 0 0 15px rgba(100,200,255,0.06);
           }
           .climate-viewscreen::before,
           .climate-viewscreen::after {
@@ -2201,7 +2345,22 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
+            position: relative;
+            border: 2px solid var(--panel-frame-color);
+            border-radius: 4px;
+            padding: 0.5rem;
+            box-shadow: inset 0 0 15px rgba(100,200,255,0.06);
           }
+          .alarm-viewscreen::before,
+          .alarm-viewscreen::after {
+            content: '';
+            position: absolute;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid var(--panel-frame-color);
+          }
+          .alarm-viewscreen::before { top: 4px; left: 4px; border-right: none; border-bottom: none; }
+          .alarm-viewscreen::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
           .alarm-shield { width: 100%; max-width: 140px; }
           .alarm-countdown {
             display: flex;
@@ -2318,6 +2477,7 @@
             overflow: hidden;
             cursor: pointer;
             position: relative;
+            box-shadow: inset 0 0 15px rgba(100,200,255,0.06);
           }
           .media-viewscreen::before,
           .media-viewscreen::after {
@@ -2344,6 +2504,12 @@
             aspect-ratio: 1/1;
             max-height: 12rem;
             color: var(--lcars-gray);
+            background:
+              radial-gradient(circle, rgba(100,200,255,0.04) 0%, transparent 60%),
+              repeating-linear-gradient(0deg,
+                transparent 0px, transparent 3px,
+                rgba(100,200,255,0.015) 3px, rgba(100,200,255,0.015) 4px
+              );
           }
           .media-idle-glyph { font-size: 3rem; }
           .media-idle-label { font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); }
@@ -2409,7 +2575,11 @@
           .media-volume-bar {
             flex: 1;
             height: 0.75rem;
-            background: var(--lcars-disabled);
+            background:
+              repeating-linear-gradient(90deg,
+                var(--lcars-disabled) 0px, var(--lcars-disabled) 5px,
+                transparent 5px, transparent 7px
+              );
             border-radius: var(--lcars-btn-radius);
             cursor: pointer;
             position: relative;
@@ -2418,9 +2588,14 @@
           .media-volume-bar:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
           .media-volume-fill {
             height: 100%;
-            background: var(--lcars-african-violet);
+            background:
+              repeating-linear-gradient(90deg,
+                var(--lcars-african-violet) 0px, var(--lcars-african-violet) 5px,
+                rgba(0,0,0,0.3) 5px, rgba(0,0,0,0.3) 7px
+              );
             border-radius: inherit;
             transition: width 200ms;
+            box-shadow: 0 0 6px rgba(204,153,255,0.3);
           }
           .media-volume-pct {
             font-family: var(--lcars-font);
@@ -2477,6 +2652,8 @@
             align-items: center;
             gap: 0.25rem;
             position: relative;
+            box-shadow: inset 0 0 20px rgba(100,200,255,0.06);
+            transition: box-shadow 600ms;
           }
           .pool-body-frame::before,
           .pool-body-frame::after {
@@ -2545,6 +2722,8 @@
             border-radius: 4px;
             padding: 0.5rem;
             transition: border-color 600ms;
+            box-shadow: inset 0 0 15px rgba(100,200,255,0.06);
+            position: relative;
           }
           .weather-viewscreen::before,
           .weather-viewscreen::after {
@@ -2583,10 +2762,14 @@
             flex-direction: column;
             align-items: center;
             gap: 0.125rem;
-            padding: 0.25rem;
+            padding: 0.375rem 0.25rem;
             font-family: var(--lcars-font);
             font-size: var(--lcars-font-size-data);
+            border-left: 2px solid rgba(100,200,255,0.08);
+            transition: background 200ms;
           }
+          .forecast-tile:first-child { border-left: none; }
+          .forecast-tile:hover { background: rgba(100,200,255,0.04); }
           .forecast-tile:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
           .forecast-day { color: var(--lcars-data-accent); }
           .forecast-glyph { font-size: 1.25rem; }
@@ -2595,14 +2778,22 @@
           .forecast-range-bar {
             width: 100%;
             height: 4px;
-            background: var(--lcars-disabled);
+            background:
+              repeating-linear-gradient(90deg,
+                var(--lcars-disabled) 0px, var(--lcars-disabled) 3px,
+                transparent 3px, transparent 5px
+              );
             border-radius: 2px;
             position: relative;
           }
           .forecast-range-fill {
             position: absolute;
             height: 100%;
-            background: linear-gradient(90deg, var(--lcars-ice), var(--lcars-butterscotch));
+            background:
+              repeating-linear-gradient(90deg,
+                var(--lcars-ice) 0px, var(--lcars-ice) 3px,
+                rgba(0,0,0,0.2) 3px, rgba(0,0,0,0.2) 5px
+              );
             border-radius: 2px;
           }
           .forecast-precip { color: var(--lcars-gray); font-size: 0.75rem; }
@@ -2678,6 +2869,16 @@
             height: 0.5rem;
             border-radius: 0.25rem;
             transition: width 1s linear;
+            background-image: repeating-linear-gradient(90deg,
+              transparent 0px, transparent 4px,
+              rgba(255,255,255,0.15) 4px, rgba(255,255,255,0.15) 6px
+            );
+            background-size: 10px 100%;
+            animation: zone-flow 1s linear infinite;
+          }
+          @keyframes zone-flow {
+            from { background-position-x: 0; }
+            to { background-position-x: -10px; }
           }
           .irrigation-standby {
             grid-area: standby;
@@ -2706,7 +2907,7 @@
           <h2 class="content-area-header">${t.name}</h2>
           ${this._renderAreaContent(a)}
         </div>
-      `}_getDevicePanelType(e){return function(e){for(const t of E){const a=t(e);if(a)return a}return null}(e)}_partitionDeviceEntities(e){const t=[],a=[],r=[];for(const i of e)m.has(i.domain)?t.push(i):_.has(i.domain)?a.push(i):r.push(i);return{cameras:t,sensors:a,controls:r}}_renderDevicePanel(e,t){switch(e){case i:return this._renderCameraPanel(t);case c:return this._renderEnvironmentPanel(t);case u:return this._renderBatteryPanel(t);case o:return this._renderClimatePanel(t);case s:return this._renderAlarmPanel(t);case l:return this._renderMediaPanel(t);case n:return this._renderPoolSpaPanel(t);case p:return this._renderWeatherPanel(t);case d:return this._renderIrrigationPanel(t);default:return""}}_getSensorIndicatorColor(e){return function(e,t){const a=t?.state;if("unavailable"===a||"unknown"===a)return"var(--lcars-alert)";const r=t?.attributes?.device_class||"",i=e.split(".")[0];if("binary_sensor"===i){if("off"===a)return"var(--lcars-disabled)";switch(r){case"motion":case"moving":return"var(--lcars-butterscotch)";case"occupancy":case"presence":return"var(--lcars-gold)";case"sound":return"var(--lcars-alert)";default:return"var(--lcars-data-accent)"}}if("sensor"===i){if("battery"===r){const e=parseFloat(a);if(!isNaN(e)&&e<20)return"var(--lcars-alert)"}return"var(--lcars-data-accent)"}return"event"===i?"var(--lcars-alert)":"var(--lcars-data-accent)"}(e?.entity_id||"",e)}_renderCameraPanel(t){const{cameras:a,sensors:r,controls:i}=this._partitionDeviceEntities(t.entities),s=this._shortDeviceName(t.device);return e.qy`
+      `}_getDevicePanelType(e){return function(e){for(const t of E){const a=t(e);if(a)return a}return null}(e)}_partitionDeviceEntities(e){const t=[],a=[],r=[];for(const i of e)m.has(i.domain)?t.push(i):_.has(i.domain)?a.push(i):r.push(i);return{cameras:t,sensors:a,controls:r}}_renderDevicePanel(e,t){switch(e){case i:return this._renderCameraPanel(t);case c:return this._renderEnvironmentPanel(t);case h:return this._renderBatteryPanel(t);case o:return this._renderClimatePanel(t);case s:return this._renderAlarmPanel(t);case l:return this._renderMediaPanel(t);case n:return this._renderPoolSpaPanel(t);case p:return this._renderWeatherPanel(t);case d:return this._renderIrrigationPanel(t);default:return""}}_getSensorIndicatorColor(e){return function(e,t){const a=t?.state;if("unavailable"===a||"unknown"===a)return"var(--lcars-alert)";const r=t?.attributes?.device_class||"",i=e.split(".")[0];if("binary_sensor"===i){if("off"===a)return"var(--lcars-disabled)";switch(r){case"motion":case"moving":return"var(--lcars-butterscotch)";case"occupancy":case"presence":return"var(--lcars-gold)";case"sound":return"var(--lcars-alert)";default:return"var(--lcars-data-accent)"}}if("sensor"===i){if("battery"===r){const e=parseFloat(a);if(!isNaN(e)&&e<20)return"var(--lcars-alert)"}return"var(--lcars-data-accent)"}return"event"===i?"var(--lcars-alert)":"var(--lcars-data-accent)"}(e?.entity_id||"",e)}_renderCameraPanel(t){const{cameras:a,sensors:r,controls:i}=this._partitionDeviceEntities(t.entities),s=this._shortDeviceName(t.device);return e.qy`
         <div class="lcars-device-panel" data-panel-type="camera">
           <div class="device-panel-header">
             <span class="device-panel-name">${s}</span>
@@ -2754,7 +2955,7 @@
               `})}
           </div>
         </div>
-      `}_classifyPowerEntity(e){const t=(e||"").toLowerCase();return/total\s*in\s*power/.test(t)?{side:"in",type:"total"}:/total\s*out\s*power/.test(t)?{side:"out",type:"total"}:/solar.*in.*power/.test(t)?{side:"in",type:"solar"}:/ac.*in.*power/.test(t)?{side:"in",type:"ac"}:/ac.*out.*power/.test(t)?{side:"out",type:"ac"}:/dc.*out.*power/.test(t)?{side:"out",type:"dc"}:/usb.*out.*power/.test(t)?{side:"out",type:"usb"}:/type.*c.*out.*power/.test(t)?{side:"out",type:"usbc"}:/power.*i.*o.*input.*power/.test(t)?{side:"in",type:"pio"}:/power.*i.*o.*output.*power/.test(t)?{side:"out",type:"pio"}:/anderson.*out.*power/.test(t)?{side:"out",type:"dc"}:/alternator.*in.*power/.test(t)?{side:"in",type:"alt"}:/station.*power/.test(t)?{side:"out",type:"station"}:/\bin\b/.test(t)?{side:"in",type:"other"}:/\bout\b/.test(t)?{side:"out",type:"other"}:null}_partitionBatteryEntities(e,t){const a=[],r=[],i=[],s=[],n=[],o=[],l=[];for(const t of e){const e=t.state?.attributes||{},o=e.device_class||"",l=e.unit_of_measurement||"",c=t.domain,d=e.friendly_name||t.entity.entity_id;if(["switch","number","button","select"].includes(c))n.push(t);else if("battery"!==o||"%"!==l){if("power"===o&&"W"===l){const e=this._classifyPowerEntity(d);e?"in"===e.side?r.push({...t,ioType:e.type}):i.push({...t,ioType:e.type}):s.push(t);continue}s.push(t)}else a.push(t)}if(t){for(const e of t.config){const t=this._getEntityState(e.entity_id);if(!t)continue;const a=e.entity_id.split(".")[0];o.push({entity:e,domain:a,state:t})}for(const e of t.diagnostic){const t=this._getEntityState(e.entity_id);if(!t)continue;const a=e.entity_id.split(".")[0];l.push({entity:e,domain:a,state:t})}}return{soc:a,powerIn:r,powerOut:i,telemetry:s,controls:n,configControls:o,diagnostics:l}}_partitionEnvironmentEntities(e,t){const a=[],r=[],i=[],s=[],n=[];for(const t of e){const e=t.state?.attributes?.device_class||"",n=t.domain;["fan","switch","button","number","select"].includes(n)?s.push(t):x.has(e)?r.push(t):e||"sensor"!==n||!$.test(t.entity.entity_id)?i.push(t):a.push(t)}if(t)for(const e of[...t.diagnostic,...t.config]){const t=this._getEntityState(e.entity_id);t&&n.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{score:a,airQuality:r,telemetry:i,controls:s,diagnostics:n}}_getScrubberHue(e){return null==e||e<=50?120:e<=100?120-(e-50)/50*70:e<=150?50-(e-100)/50*35:Math.max(0,15-(e-150)/100*15)}_getAQColor(e){return null==e||e<=50?"var(--lcars-ice)":e<=100?"var(--lcars-sunflower)":e<=150?"var(--lcars-butterscotch)":e<=200?"var(--lcars-peach)":"var(--lcars-tomato)"}_getScrubberSpeed(e){return null==e||0===e?20:2+18*Math.pow(1-e/100,1.5)}_envHistoryCache=new Map;async _getSparklineData(e,t){return async function(e,t,a,r,i={}){const{ttlMs:s=3e5,maxEntities:n=10,maxCacheSize:o=30}=i,l=/^[a-z_]+\.[a-z0-9_]+$/,c=Date.now(),d=r.get(t);if(d&&c-d.timestamp<s)return null;try{const i=a.slice(0,n).filter(e=>l.test(e));if(0===i.length)return null;const s=new Date,d=new Date(s.getTime()-864e5),p=await e.callWS({type:"recorder/statistics_during_period",start_time:d.toISOString(),end_time:s.toISOString(),statistic_ids:i,period:"hour",types:["mean"]});if(r.set(t,{data:p,timestamp:c}),r.size>o){const e=r.keys().next().value;r.delete(e)}return p}catch(e){return null}}(this._hass,e,t,this._envHistoryCache)}_renderSparkline(t,a,r){return function(t,{color:a,label:r="",width:i=120,height:s=24,className:n="lcars-sparkline"}={}){const o=function(e){return Array.isArray(e)?e.map(e=>e.mean).filter(e=>null!=e&&Number.isFinite(e)):[]}(t);if(o.length<2)return"";const l=function(e,t,a){const r=Math.min(...e),i=Math.max(...e)-r||1;return e.map((s,n)=>`${(n/(e.length-1)*t).toFixed(1)},${(a-(s-r)/i*a).toFixed(1)}`).join(" ")}(o,i,s),c=o[o.length-1],d=r?`${r}: ${c?.toFixed(0)||""}`:`Sparkline: ${c?.toFixed(0)||""}`;return e.qy`
+      `}_classifyPowerEntity(e){const t=(e||"").toLowerCase();return/total\s*in\s*power/.test(t)?{side:"in",type:"total"}:/total\s*out\s*power/.test(t)?{side:"out",type:"total"}:/solar.*in.*power/.test(t)?{side:"in",type:"solar"}:/ac.*in.*power/.test(t)?{side:"in",type:"ac"}:/ac.*out.*power/.test(t)?{side:"out",type:"ac"}:/dc.*out.*power/.test(t)?{side:"out",type:"dc"}:/usb.*out.*power/.test(t)?{side:"out",type:"usb"}:/type.*c.*out.*power/.test(t)?{side:"out",type:"usbc"}:/power.*i.*o.*input.*power/.test(t)?{side:"in",type:"pio"}:/power.*i.*o.*output.*power/.test(t)?{side:"out",type:"pio"}:/anderson.*out.*power/.test(t)?{side:"out",type:"dc"}:/alternator.*in.*power/.test(t)?{side:"in",type:"alt"}:/station.*power/.test(t)?{side:"out",type:"station"}:/\bin\b/.test(t)?{side:"in",type:"other"}:/\bout\b/.test(t)?{side:"out",type:"other"}:null}_partitionBatteryEntities(e,t){const a=[],r=[],i=[],s=[],n=[],o=[],l=[];for(const t of e){const e=t.state?.attributes||{},o=e.device_class||"",l=e.unit_of_measurement||"",c=t.domain,d=e.friendly_name||t.entity.entity_id;if(["switch","number","button","select"].includes(c))n.push(t);else if("battery"!==o||"%"!==l){if("power"===o&&"W"===l){const e=this._classifyPowerEntity(d);e?"in"===e.side?r.push({...t,ioType:e.type}):i.push({...t,ioType:e.type}):s.push(t);continue}s.push(t)}else a.push(t)}if(t){for(const e of t.config){const t=this._getEntityState(e.entity_id);if(!t)continue;const a=e.entity_id.split(".")[0];o.push({entity:e,domain:a,state:t})}for(const e of t.diagnostic){const t=this._getEntityState(e.entity_id);if(!t)continue;const a=e.entity_id.split(".")[0];l.push({entity:e,domain:a,state:t})}}return{soc:a,powerIn:r,powerOut:i,telemetry:s,controls:n,configControls:o,diagnostics:l}}_partitionEnvironmentEntities(e,t){const a=[],r=[],i=[],s=[],n=[];for(const t of e){const e=t.state?.attributes?.device_class||"",n=t.domain;["fan","switch","button","number","select"].includes(n)?s.push(t):w.has(e)?r.push(t):e||"sensor"!==n||!$.test(t.entity.entity_id)?i.push(t):a.push(t)}if(t)for(const e of[...t.diagnostic,...t.config]){const t=this._getEntityState(e.entity_id);t&&n.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{score:a,airQuality:r,telemetry:i,controls:s,diagnostics:n}}_getScrubberHue(e){return null==e||e<=50?120:e<=100?120-(e-50)/50*70:e<=150?50-(e-100)/50*35:Math.max(0,15-(e-150)/100*15)}_getAQColor(e){return null==e||e<=50?"var(--lcars-ice)":e<=100?"var(--lcars-sunflower)":e<=150?"var(--lcars-butterscotch)":e<=200?"var(--lcars-peach)":"var(--lcars-tomato)"}_getScrubberSpeed(e){return null==e||0===e?20:2+18*Math.pow(1-e/100,1.5)}_envHistoryCache=new Map;async _getSparklineData(e,t){return async function(e,t,a,r,i={}){const{ttlMs:s=3e5,maxEntities:n=10,maxCacheSize:o=30}=i,l=/^[a-z_]+\.[a-z0-9_]+$/,c=Date.now(),d=r.get(t);if(d&&c-d.timestamp<s)return null;try{const i=a.slice(0,n).filter(e=>l.test(e));if(0===i.length)return null;const s=new Date,d=new Date(s.getTime()-864e5),p=await e.callWS({type:"recorder/statistics_during_period",start_time:d.toISOString(),end_time:s.toISOString(),statistic_ids:i,period:"hour",types:["mean"]});if(r.set(t,{data:p,timestamp:c}),r.size>o){const e=r.keys().next().value;r.delete(e)}return p}catch(e){return null}}(this._hass,e,t,this._envHistoryCache)}_renderSparkline(t,a,r){return function(t,{color:a,label:r="",width:i=120,height:s=24,className:n="lcars-sparkline"}={}){const o=function(e){return Array.isArray(e)?e.map(e=>e.mean).filter(e=>null!=e&&Number.isFinite(e)):[]}(t);if(o.length<2)return"";const l=function(e,t,a){const r=Math.min(...e),i=Math.max(...e)-r||1;return e.map((s,n)=>`${(n/(e.length-1)*t).toFixed(1)},${(a-(s-r)/i*a).toFixed(1)}`).join(" ")}(o,i,s),c=o[o.length-1],d=r?`${r}: ${c?.toFixed(0)||""}`:`Sparkline: ${c?.toFixed(0)||""}`;return e.qy`
     <div class="${n}-wrap" aria-label="${d}">
       ${r?e.qy`<span class="${n}-label">${r}</span>`:""}
       <svg class="${n}" viewBox="0 0 ${i} ${s}" preserveAspectRatio="none">
@@ -2762,7 +2963,7 @@
           vector-effect="non-scaling-stroke" />
       </svg>
     </div>
-  `}(t,{color:a,label:r,className:"env-sparkline"})}_renderEnvironmentPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{score:r,airQuality:i,telemetry:s,controls:n,diagnostics:o}=this._partitionEnvironmentEntities(t.entities,a),l=this._shortDeviceName(t.device)||"Environment",c=r[0],d=c?parseFloat(c.state.state):null,p=i.find(e=>"pm25"===(e.state?.attributes?.device_class||"")),u=p?parseFloat(p.state.state):null,h=null!=d&&Number.isFinite(d)?d:null!=u&&Number.isFinite(u)?Math.min(300,4*u):null,m=this._getScrubberHue(h),v=this._getAQColor(h),f=n.find(e=>"fan"===e.domain),g=f?.state,b=g?.attributes?.percentage??null,y=g?.attributes?.preset_modes||[],_=g?.attributes?.preset_mode||"",w=!f||"off"===g?.state||0===b,x=this._getScrubberSpeed(w?0:b),$=!f,k=n.filter(e=>"fan"!==e.domain),S=[...r,...i].map(e=>e.entity.entity_id);S.length>0&&this._getSparklineData(t.device.id,S).then(e=>{e&&this.requestUpdate()});const C=this._envHistoryCache.get(t.device.id)?.data||{};return e.qy`
+  `}(t,{color:a,label:r,className:"env-sparkline"})}_renderEnvironmentPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{score:r,airQuality:i,telemetry:s,controls:n,diagnostics:o}=this._partitionEnvironmentEntities(t.entities,a),l=this._shortDeviceName(t.device)||"Environment",c=r[0],d=c?parseFloat(c.state.state):null,p=i.find(e=>"pm25"===(e.state?.attributes?.device_class||"")),h=p?parseFloat(p.state.state):null,u=null!=d&&Number.isFinite(d)?d:null!=h&&Number.isFinite(h)?Math.min(300,4*h):null,m=this._getScrubberHue(u),v=this._getAQColor(u),f=n.find(e=>"fan"===e.domain),g=f?.state,b=g?.attributes?.percentage??null,y=g?.attributes?.preset_modes||[],_=g?.attributes?.preset_mode||"",x=!f||"off"===g?.state||0===b,w=this._getScrubberSpeed(x?0:b),$=!f,k=n.filter(e=>"fan"!==e.domain),S=[...r,...i].map(e=>e.entity.entity_id);S.length>0&&this._getSparklineData(t.device.id,S).then(e=>{e&&this.requestUpdate()});const C=this._envHistoryCache.get(t.device.id)?.data||{};return e.qy`
         <div class="lcars-device-panel env-panel ${$?"sensor-only":""}" data-panel-type="environment">
           <!-- Header -->
           <div class="env-header">
@@ -2814,15 +3015,15 @@
 
           <!-- Atmoscrubber Cylinder (center) -->
           <div class="atmoscrubber-container" role="meter"
-            aria-valuenow="${null!=h?Math.round(h):""}"
+            aria-valuenow="${null!=u?Math.round(u):""}"
             aria-valuemin="0" aria-valuemax="300"
-            aria-label="Air quality: ${null!=h?Math.round(h):"unknown"}">
-            <div class="atmoscrubber ${w?"scrubber-idle":""}"
-              style="--scrubber-hue:${Math.round(m)};--scrubber-speed:${x.toFixed(1)}s">
+            aria-label="Air quality: ${null!=u?Math.round(u):"unknown"}">
+            <div class="atmoscrubber ${x?"scrubber-idle":""}"
+              style="--scrubber-hue:${Math.round(m)};--scrubber-speed:${w.toFixed(1)}s">
               ${c?e.qy`
                 <div class="scrubber-score">${null!=d&&Number.isFinite(d)?Math.round(d):"—"}</div>
               `:p?e.qy`
-                <div class="scrubber-score">${null!=u&&Number.isFinite(u)?Math.round(u):"—"}</div>
+                <div class="scrubber-score">${null!=h&&Number.isFinite(h)?Math.round(h):"—"}</div>
               `:""}
             </div>
           </div>
@@ -2872,14 +3073,14 @@
             ${[...r,...i].map(({entity:e,state:t})=>{const a=this._friendlyName(t,e),r=C[e.entity_id],i=t.attributes?.device_class||"",s="pm25"===i?"var(--lcars-peach)":"carbon_dioxide"===i?"var(--lcars-sunflower)":"volatile_organic_compounds_parts"===i||"volatile_organic_compounds"===i?"var(--lcars-african-violet)":"var(--lcars-ice)";return this._renderSparkline(r,s,a)})}
           </div>
         </div>
-      `}_getCoreColor(e){return e>=80?"var(--lcars-ice)":e>=60?"var(--lcars-sky)":e>=40?"var(--lcars-bluey)":e>=20?"var(--lcars-butterscotch)":e>=10?"var(--lcars-peach)":"var(--lcars-tomato)"}_getFlowSpeed(e){const t=Math.abs(parseFloat(e)||0);return 0===t?"flow-stopped":t>1e3?"flow-fast":t>100?"flow-medium":"flow-slow"}_renderBatteryPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{soc:r,powerIn:i,powerOut:s,telemetry:n,controls:o,configControls:l,diagnostics:c}=this._partitionBatteryEntities(t.entities,a),d=this._shortDeviceName(t.device)||"Battery",p=r[0],u=p&&parseFloat(p.state.state)||0,h=p&&"unavailable"!==p.state.state&&"unknown"!==p.state.state,m=h?this._getCoreColor(u):"var(--lcars-gray)",v=i.find(e=>"total"===e.ioType),f=s.find(e=>"total"===e.ioType),g=v&&parseFloat(v.state.state)||0,b=f&&parseFloat(f.state.state)||0,_=g>5,w=!(_||b>5),x=new Set;i.filter(e=>"total"!==e.ioType).forEach(e=>x.add(e.ioType)),s.filter(e=>"total"!==e.ioType).forEach(e=>x.add(e.ioType));const $=[...x].map(e=>({type:e,label:e.toUpperCase(),inEntry:i.find(t=>t.ioType===e),outEntry:s.find(t=>t.ioType===e)})),k=n.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||"duration"===t||/state.*health|cycles|remain.*time|status|error.*code|battery.*count/.test(a)}).slice(0,8),S=c.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||/cycles|status|error|battery.*count|charging.*state|power.*diff/.test(a)}).slice(0,8);return e.qy`
+      `}_getCoreColor(e){return e>=80?"var(--lcars-ice)":e>=60?"var(--lcars-sky)":e>=40?"var(--lcars-bluey)":e>=20?"var(--lcars-butterscotch)":e>=10?"var(--lcars-peach)":"var(--lcars-tomato)"}_getFlowSpeed(e){const t=Math.abs(parseFloat(e)||0);return 0===t?"flow-stopped":t>1e3?"flow-fast":t>100?"flow-medium":"flow-slow"}_renderBatteryPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{soc:r,powerIn:i,powerOut:s,telemetry:n,controls:o,configControls:l,diagnostics:c}=this._partitionBatteryEntities(t.entities,a),d=this._shortDeviceName(t.device)||"Battery",p=r[0],h=p&&parseFloat(p.state.state)||0,u=p&&"unavailable"!==p.state.state&&"unknown"!==p.state.state,m=u?this._getCoreColor(h):"var(--lcars-gray)",v=i.find(e=>"total"===e.ioType),f=s.find(e=>"total"===e.ioType),g=v&&parseFloat(v.state.state)||0,b=(f&&parseFloat(f.state.state),g>5),_=new Set;i.filter(e=>"total"!==e.ioType).forEach(e=>_.add(e.ioType)),s.filter(e=>"total"!==e.ioType).forEach(e=>_.add(e.ioType));const x=[..._].map(e=>({type:e,label:e.toUpperCase(),inEntry:i.find(t=>t.ioType===e),outEntry:s.find(t=>t.ioType===e)})),w=n.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||"duration"===t||/state.*health|cycles|remain.*time|status|error.*code|battery.*count/.test(a)}).slice(0,8),$=c.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||/cycles|status|error|battery.*count|charging.*state|power.*diff/.test(a)}).slice(0,8);return e.qy`
         <div class="lcars-device-panel battery-panel" data-panel-type="battery">
           <!-- Header -->
           <div class="battery-header">
             <span class="device-panel-name">${d}</span>
             <div class="device-panel-header-line"></div>
             <span class="battery-charge-label" style="color:${m}">
-              ${h?`${Math.round(u)}%`:"N/A"}
+              ${u?`${Math.round(h)}%`:"N/A"}
             </span>
           </div>
 
@@ -2903,7 +3104,7 @@
                 <span class="sensor-state-value" style="color:var(--lcars-butterscotch)">${f.state.state} W</span>
               </div>
             `:""}
-            ${k.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.state,s=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
+            ${w.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.state,s=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
                   @click=${()=>this._handleEntityClick(t.entity_id)}
                   @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t.entity_id))}}>
@@ -2912,10 +3113,10 @@
                   <span class="sensor-state-value" style="color:${n}">${i}${s?" "+s:""}</span>
                 </div>
               `})}
-            ${S.length>0?e.qy`
+            ${$.length>0?e.qy`
               <div class="battery-section-divider"></div>
               <div class="battery-section-label">DIAGNOSTICS</div>
-              ${S.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.state,s=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
+              ${$.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.state,s=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
                   <div class="device-sensor-line" tabindex="0" role="listitem"
                     @click=${()=>this._handleEntityClick(t.entity_id)}
                     @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t.entity_id))}}>
@@ -2927,17 +3128,26 @@
             `:""}
           </div>
 
-          <!-- Warp Core (center) -->
+          <!-- Warp Core (center) — segmented containment vessel -->
           <div class="warp-core-container" role="meter"
-            aria-valuenow="${u}" aria-valuemin="0" aria-valuemax="100"
-            aria-label="Battery charge level: ${Math.round(u)} percent">
-            <div class="warp-core" style="--core-color:${m};--core-charge:${h?u:0}">
-              <div class="warp-core-fill ${w?"core-idle":""} ${_?"core-charging":""}">
-                <div class="warp-core-stream"></div>
+            aria-valuenow="${h}" aria-valuemin="0" aria-valuemax="100"
+            aria-label="Battery charge level: ${Math.round(h)} percent">
+            <div class="warp-core" style="--core-color:${m};--core-charge:${u?h:0}">
+              <div class="warp-core-cap top"></div>
+              <div class="warp-core-funnel top"></div>
+              <div class="warp-core-pills upper">
+                ${(()=>{const t=Math.round(h/100*14);return Array.from({length:7},(a,r)=>{const i=14-r<=t,s=r>=5;return e.qy`<div class="warp-core-pill ${i?"charged":""} ${i&&b?"charging":""} ${s?"wide":""}"></div>`})})()}
               </div>
-              <div class="warp-core-tick" style="bottom:25%"></div>
-              <div class="warp-core-tick" style="bottom:50%"></div>
-              <div class="warp-core-tick" style="bottom:75%"></div>
+              <div class="warp-core-junction">
+                <div class="warp-core-junction-ring"></div>
+              </div>
+              <div class="warp-core-pills lower">
+                ${(()=>{const t=Math.round(h/100*14);return Array.from({length:7},(a,r)=>{const i=7-r<=t,s=r<=1;return e.qy`<div class="warp-core-pill ${i?"charged":""} ${i&&b?"charging":""} ${s?"wide":""}"></div>`})})()}
+              </div>
+              <div class="warp-core-funnel bottom"></div>
+              <div class="warp-core-cap bottom"></div>
+              <span class="warp-core-code top">${Math.round(3864.56*h).toString().slice(0,6)}</span>
+              <span class="warp-core-code bottom">${(1436+Math.round(.78*h)).toString()}-${(78+Math.round(.22*h)).toString()}</span>
             </div>
           </div>
 
@@ -3010,7 +3220,7 @@
 
           <!-- Power I/O Flow (bottom) -->
           <div class="battery-io-flow" aria-label="Power flow">
-            ${$.map(t=>{const a=t.inEntry&&parseFloat(t.inEntry.state.state)||0,r=t.outEntry&&parseFloat(t.outEntry.state.state)||0,i=this._getFlowSpeed(a),s=this._getFlowSpeed(r);return e.qy`
+            ${x.map(t=>{const a=t.inEntry&&parseFloat(t.inEntry.state.state)||0,r=t.outEntry&&parseFloat(t.outEntry.state.state)||0,i=this._getFlowSpeed(a),s=this._getFlowSpeed(r);return e.qy`
                 <div class="io-pair-row">
                   <div class="io-port io-in" aria-label="${t.label} input: ${a} watts">
                     <span class="io-label">${t.label} IN</span>
@@ -3027,16 +3237,21 @@
               `})}
           </div>
         </div>
-      `}_climateSetpointDebouncer=null;_partitionClimateEntities(e,t){const a=[],r=[],i=[],s=[],n=new Set(["problem","heat","cold","connectivity","battery","tamper","smoke","safety"]);for(const t of e){const e=t.domain;if("climate"!==e){if("binary_sensor"===e){const e=t.state?.attributes?.device_class||"";if(n.has(e)){i.push(t);continue}}_.has(e),r.push(t)}else a.push(t)}if(t)for(const e of t.diagnostic||[]){const t=this._getEntityState(e.entity_id);t&&s.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{climate:a,sensors:r,faults:i,diagnostics:s}}_isDualSetpoint(e){return"heat_cool"===e?.attributes?.hvac_mode||null!=e?.attributes?.target_temp_low&&null!=e?.attributes?.target_temp_high}_renderClimateArc(t,a,r,i,s){const n=100,o=120,l=80,c=i-r||1,d=Math.max(0,Math.min(1,(t-r)/c)),p=Math.PI,u=p-(p-0)*d,h=n+l*Math.cos(p),m=o-l*Math.sin(p),v=n+l*Math.cos(u),f=o-l*Math.sin(u),g=d>.5?1:0,b=p-(p-0)*Math.max(0,Math.min(1,(a-r)/c)),y=n+l*Math.cos(b),_=o-l*Math.sin(b);return e.qy`
+      `}_climateSetpointDebouncer=null;_partitionClimateEntities(e,t){const a=[],r=[],i=[],s=[],n=new Set(["problem","heat","cold","connectivity","battery","tamper","smoke","safety"]);for(const t of e){const e=t.domain;if("climate"!==e){if("binary_sensor"===e){const e=t.state?.attributes?.device_class||"";if(n.has(e)){i.push(t);continue}}_.has(e),r.push(t)}else a.push(t)}if(t)for(const e of t.diagnostic||[]){const t=this._getEntityState(e.entity_id);t&&s.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{climate:a,sensors:r,faults:i,diagnostics:s}}_isDualSetpoint(e){return"heat_cool"===e?.attributes?.hvac_mode||null!=e?.attributes?.target_temp_low&&null!=e?.attributes?.target_temp_high}_renderClimateArc(t,a,r,i,s){const n=100,o=120,l=80,c=i-r||1,d=Math.max(0,Math.min(1,(t-r)/c)),p=Math.PI,h=p-(p-0)*d,u=n+l*Math.cos(p),m=o-l*Math.sin(p),v=n+l*Math.cos(h),f=o-l*Math.sin(h),g=d>.5?1:0,b=p-(p-0)*Math.max(0,Math.min(1,(a-r)/c)),y=n+l*Math.cos(b),_=o-l*Math.sin(b);return e.qy`
         <svg class="climate-arc" viewBox="0 0 ${200} ${130}" role="meter"
           aria-valuemin="${r}" aria-valuemax="${i}" aria-valuenow="${t}"
           aria-label="Temperature: ${t}°, target ${a}°">
+          <!-- Concentric reference rings -->
+          <path d="M ${40},${o} A ${60},${60} 0 1,1 ${160},${o}"
+            fill="none" stroke="var(--lcars-disabled)" stroke-width="0.5" opacity="0.2" />
+          <path d="M ${60},${o} A ${40},${40} 0 1,1 ${140},${o}"
+            fill="none" stroke="var(--lcars-disabled)" stroke-width="0.5" opacity="0.15" />
           <!-- Background arc -->
-          <path d="M ${h},${m} A ${l},${l} 0 1,1 ${180},${o}"
+          <path d="M ${u},${m} A ${l},${l} 0 1,1 ${180},${o}"
             fill="none" stroke="var(--lcars-disabled)" stroke-width="8" stroke-linecap="round" />
           <!-- Progress arc -->
           ${d>0?e.qy`
-            <path d="M ${h},${m} A ${l},${l} 0 ${g},1 ${v},${f}"
+            <path d="M ${u},${m} A ${l},${l} 0 ${g},1 ${v},${f}"
               fill="none" stroke="${s}" stroke-width="8" stroke-linecap="round" />
           `:""}
           <!-- Target tick -->
@@ -3047,15 +3262,15 @@
             ${null!=t&&Number.isFinite(t)?Math.round(t):"—"}°
           </text>
         </svg>
-      `}_handleClimateSetpoint(e,t,a,r,i){const s=P(a,t);this._climateSetpointDebouncer||(this._climateSetpointDebouncer=D((e,t)=>{this._hass.callService("climate","set_temperature",{entity_id:e,...t})},1500));const n=r?{["low"===i?"target_temp_low":"target_temp_high"]:s}:{temperature:s};this._climateSetpointDebouncer.call(e,n)}_handleClimateMode(e,t){this._hass.callService("climate","set_hvac_mode",{entity_id:e,hvac_mode:t})}_handleClimateFanMode(e,t){this._hass.callService("climate","set_fan_mode",{entity_id:e,fan_mode:t})}_handleClimatePreset(e,t){this._hass.callService("climate","set_preset_mode",{entity_id:e,preset_mode:t})}_renderClimatePanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{climate:r,sensors:i,faults:s,diagnostics:n}=this._partitionClimateEntities(t.entities,a),o=this._shortDeviceName(t.device)||"Thermostat";if(0===r.length)return"";const l=r[0],c=l.state,d=c?.attributes||{},p=null!=d.current_temperature?Number(d.current_temperature):null,u=d.hvac_action||"off",h=function(e){switch(e){case"heating":return"var(--lcars-butterscotch)";case"cooling":return"var(--lcars-ice)";case"idle":return"var(--lcars-sunflower)";case"drying":return"var(--lcars-almond)";case"fan":return"var(--lcars-african-violet)";default:return"var(--lcars-disabled)"}}(u),m=this._isDualSetpoint(c),v=m?null:null!=d.temperature?Number(d.temperature):null,f=m?Number(d.target_temp_low):null,g=m?Number(d.target_temp_high):null,b=null!=d.min_temp?Number(d.min_temp):45,y=null!=d.max_temp?Number(d.max_temp):95,_=d.hvac_modes||[],w=d.hvac_mode||"off",x=d.fan_modes||[],$=d.fan_mode||"",k=d.preset_modes||[],S=d.preset_mode||"",C=i.find(e=>"humidity"===(e.state?.attributes?.device_class||"")),E=d.target_temp_step||1;return e.qy`
+      `}_handleClimateSetpoint(e,t,a,r,i){const s=P(a,t);this._climateSetpointDebouncer||(this._climateSetpointDebouncer=D((e,t)=>{this._hass.callService("climate","set_temperature",{entity_id:e,...t})},1500));const n=r?{["low"===i?"target_temp_low":"target_temp_high"]:s}:{temperature:s};this._climateSetpointDebouncer.call(e,n)}_handleClimateMode(e,t){this._hass.callService("climate","set_hvac_mode",{entity_id:e,hvac_mode:t})}_handleClimateFanMode(e,t){this._hass.callService("climate","set_fan_mode",{entity_id:e,fan_mode:t})}_handleClimatePreset(e,t){this._hass.callService("climate","set_preset_mode",{entity_id:e,preset_mode:t})}_renderClimatePanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{climate:r,sensors:i,faults:s,diagnostics:n}=this._partitionClimateEntities(t.entities,a),o=this._shortDeviceName(t.device)||"Thermostat";if(0===r.length)return"";const l=r[0],c=l.state,d=c?.attributes||{},p=null!=d.current_temperature?Number(d.current_temperature):null,h=d.hvac_action||"off",u=function(e){switch(e){case"heating":return"var(--lcars-butterscotch)";case"cooling":return"var(--lcars-ice)";case"idle":return"var(--lcars-sunflower)";case"drying":return"var(--lcars-almond)";case"fan":return"var(--lcars-african-violet)";default:return"var(--lcars-disabled)"}}(h),m=this._isDualSetpoint(c),v=m?null:null!=d.temperature?Number(d.temperature):null,f=m?Number(d.target_temp_low):null,g=m?Number(d.target_temp_high):null,b=null!=d.min_temp?Number(d.min_temp):45,y=null!=d.max_temp?Number(d.max_temp):95,_=d.hvac_modes||[],x=d.hvac_mode||"off",w=d.fan_modes||[],$=d.fan_mode||"",k=d.preset_modes||[],S=d.preset_mode||"",C=i.find(e=>"humidity"===(e.state?.attributes?.device_class||"")),E=d.target_temp_step||1;return e.qy`
         <div class="lcars-device-panel climate-panel" data-panel-type="climate"
-          style="--panel-frame-color:${h}">
+          style="--panel-frame-color:${u}">
           <!-- Header -->
           <div class="climate-header">
             <span class="device-panel-name">${o}</span>
             <div class="device-panel-header-line"></div>
-            <span class="climate-action-badge" style="color:${h}">
-              ${u.toUpperCase()}
+            <span class="climate-action-badge" style="color:${u}">
+              ${h.toUpperCase()}
             </span>
           </div>
 
@@ -3063,9 +3278,9 @@
           <div class="climate-sensors" role="list" aria-label="${o} readings">
             ${null!=p?e.qy`
               <div class="device-sensor-line" role="listitem" aria-label="Current temperature: ${p}°">
-                <div class="sensor-indicator" style="background:${h}"></div>
+                <div class="sensor-indicator" style="background:${u}"></div>
                 <span class="sensor-label">Current</span>
-                <span class="sensor-state-value" style="color:${h}">${Math.round(p)}°</span>
+                <span class="sensor-state-value" style="color:${u}">${Math.round(p)}°</span>
               </div>
             `:""}
             ${m?e.qy`
@@ -3081,9 +3296,9 @@
               </div>
             `:null!=v?e.qy`
               <div class="device-sensor-line" role="listitem" aria-label="Target temperature: ${v}°">
-                <div class="sensor-indicator" style="background:${h}"></div>
+                <div class="sensor-indicator" style="background:${u}"></div>
                 <span class="sensor-label">Target</span>
-                <span class="sensor-state-value" style="color:${h}">${v}°</span>
+                <span class="sensor-state-value" style="color:${u}">${v}°</span>
               </div>
             `:""}
             ${C?e.qy`
@@ -3096,10 +3311,10 @@
               </div>
             `:""}
             <div class="battery-section-divider"></div>
-            <div class="device-sensor-line" role="listitem" aria-label="HVAC mode: ${w}">
-              <div class="sensor-indicator" style="background:${h}"></div>
+            <div class="device-sensor-line" role="listitem" aria-label="HVAC mode: ${x}">
+              <div class="sensor-indicator" style="background:${u}"></div>
               <span class="sensor-label">Mode</span>
-              <span class="sensor-state-value">${w}</span>
+              <span class="sensor-state-value">${x}</span>
             </div>
             ${$?e.qy`
               <div class="device-sensor-line" role="listitem" aria-label="Fan mode: ${$}">
@@ -3128,7 +3343,7 @@
           <div class="climate-viewscreen" tabindex="0"
             @click=${()=>this._handleEntityClick(l.entity.entity_id)}
             @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(l.entity.entity_id))}}>
-            ${this._renderClimateArc(p,m?(f+g)/2:v,b,y,h)}
+            ${this._renderClimateArc(p,m?(f+g)/2:v,b,y,u)}
             <!-- Setpoint controls -->
             <div class="climate-setpoint-controls">
               ${m?e.qy`
@@ -3150,7 +3365,7 @@
                 <div class="climate-setpoint-row">
                   <button class="climate-sp-btn" aria-label="Decrease target temperature"
                     @click=${e=>{e.stopPropagation(),this._handleClimateSetpoint(l.entity.entity_id,d,v-E,!1)}}>−</button>
-                  <span class="climate-sp-label" style="color:${h}">TARGET ${v}°</span>
+                  <span class="climate-sp-label" style="color:${u}">TARGET ${v}°</span>
                   <button class="climate-sp-btn" aria-label="Increase target temperature"
                     @click=${e=>{e.stopPropagation(),this._handleClimateSetpoint(l.entity.entity_id,d,v+E,!1)}}>+</button>
                 </div>
@@ -3163,8 +3378,8 @@
             <div class="climate-modes" role="radiogroup" aria-label="HVAC mode">
               ${_.map(t=>e.qy`
                 <button class="climate-mode-btn" role="radio"
-                  aria-checked="${t===w}"
-                  ?data-active=${t===w}
+                  aria-checked="${t===x}"
+                  ?data-active=${t===x}
                   @click=${()=>this._handleClimateMode(l.entity.entity_id,t)}>
                   ${t.toUpperCase().replace("_"," ")}
                 </button>
@@ -3174,9 +3389,9 @@
 
           <!-- Fan Mode + Preset Strips -->
           <div class="climate-aux-controls">
-            ${x.length>1?e.qy`
+            ${w.length>1?e.qy`
               <div class="climate-aux-strip" role="radiogroup" aria-label="Fan mode">
-                ${x.map(t=>e.qy`
+                ${w.map(t=>e.qy`
                   <button class="climate-mode-btn" role="radio"
                     aria-checked="${t===$}"
                     ?data-active=${t===$}
@@ -3200,8 +3415,8 @@
             `:""}
           </div>
         </div>
-      `}_alarmPinCode="";_alarmPinLimiter=N(3,6e4);_alarmCountdown=null;_alarmCountdownTimer=null;_alarmPinError=!1;_partitionAlarmEntities(e,t){const a=[],r=[],i=[],s=[],n=new Set(["door","window","motion","vibration","moisture","cold","smoke","safety","opening","garage_door","lock","tamper","problem"]);for(const t of e)if("alarm_control_panel"!==t.domain){if("binary_sensor"===t.domain){const e=t.state?.attributes?.device_class||"";if(n.has(e)){r.push(t);continue}}i.push(t)}else a.push(t);if(t)for(const e of t.diagnostic||[]){const t=this._getEntityState(e.entity_id);t&&s.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{alarm:a,zones:r,auxiliary:i,diagnostics:s}}_handleAlarmPinDigit(e){this._alarmPinCode.length>=6||(this._alarmPinCode+=String(e).replace(/\D/g,"").charAt(0)||"",this._alarmPinError=!1,this.requestUpdate())}_handleAlarmPinClear(){this._alarmPinCode="",this._alarmPinError=!1,this.requestUpdate()}_handleAlarmArm(e,t){const a=this._alarmPinCode||void 0,r=`alarm_arm_${t}`;this._hass.callService("alarm_control_panel",r,{entity_id:e,...a?{code:a}:{}}),this._alarmPinCode="",this.requestUpdate()}_handleAlarmDisarm(e){if(!this._alarmPinLimiter.allow())return this._alarmPinError=!0,void this.requestUpdate();const t=this._alarmPinCode||void 0;this._hass.callService("alarm_control_panel","alarm_disarm",{entity_id:e,...t?{code:t}:{}}),this._alarmPinCode="",this.requestUpdate()}_startAlarmCountdown(e){this._alarmCountdown=Math.max(0,e),this._alarmCountdownTimer&&clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=setInterval(()=>{this._alarmCountdown=Math.max(0,(this._alarmCountdown||0)-1),this.requestUpdate(),this._alarmCountdown<=0&&(clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=null)},1e3)}_stopAlarmCountdown(){this._alarmCountdownTimer&&(clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=null),this._alarmCountdown=null}_getAlarmShieldSymbol(e){switch(e){case"disarmed":return"✓";case"armed_home":case"armed_night":return"◉";case"armed_away":case"armed_vacation":return"▲";case"triggered":return"✕";case"arming":case"pending":case"disarming":return"⋯";default:return"?"}}_getAlarmStateLabel(e){return(e||"unknown").toUpperCase().replace(/_/g," ")}_handleAlarmKeydown(e,t){const a=e.key;/^[0-9]$/.test(a)?(e.preventDefault(),this._handleAlarmPinDigit(a)):"Backspace"===a?(e.preventDefault(),this._alarmPinCode=this._alarmPinCode.slice(0,-1),this.requestUpdate()):"Enter"===a?(e.preventDefault(),this._handleAlarmDisarm(t)):"Escape"===a&&(e.preventDefault(),this._handleAlarmPinClear())}_renderAlarmPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{alarm:r,zones:i,auxiliary:s,diagnostics:n}=this._partitionAlarmEntities(t.entities,a),o=this._shortDeviceName(t.device)||"Alarm";if(0===r.length)return"";const l=r[0],c=l.state,d=c?.state||"unavailable",p=function(e){switch(e){case"disarmed":return"var(--lcars-ice)";case"armed_home":case"armed_night":return"var(--lcars-sunflower)";case"armed_away":case"armed_vacation":return"var(--lcars-butterscotch)";case"armed_custom_bypass":return"var(--lcars-african-violet)";case"arming":case"pending":case"disarming":return"var(--lcars-gold)";case"triggered":return"var(--lcars-alert)";default:return"var(--lcars-disabled)"}}(d),u=["arming","pending","disarming"].includes(d),h="triggered"===d,m=this._getAlarmShieldSymbol(d),v=this._getAlarmStateLabel(d),f=!1!==c?.attributes?.code_required,g=Array.from({length:6},(e,t)=>t<this._alarmPinCode.length);if(u&&null==this._alarmCountdown){const e=c?.attributes?.delay||60;this._startAlarmCountdown(e)}else u||null==this._alarmCountdown||this._stopAlarmCountdown();return e.qy`
-        <div class="lcars-device-panel alarm-panel ${h?"alarm-triggered":""}" data-panel-type="alarm"
+      `}_alarmPinCode="";_alarmPinLimiter=N(3,6e4);_alarmCountdown=null;_alarmCountdownTimer=null;_alarmPinError=!1;_partitionAlarmEntities(e,t){const a=[],r=[],i=[],s=[],n=new Set(["door","window","motion","vibration","moisture","cold","smoke","safety","opening","garage_door","lock","tamper","problem"]);for(const t of e)if("alarm_control_panel"!==t.domain){if("binary_sensor"===t.domain){const e=t.state?.attributes?.device_class||"";if(n.has(e)){r.push(t);continue}}i.push(t)}else a.push(t);if(t)for(const e of t.diagnostic||[]){const t=this._getEntityState(e.entity_id);t&&s.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{alarm:a,zones:r,auxiliary:i,diagnostics:s}}_handleAlarmPinDigit(e){this._alarmPinCode.length>=6||(this._alarmPinCode+=String(e).replace(/\D/g,"").charAt(0)||"",this._alarmPinError=!1,this.requestUpdate())}_handleAlarmPinClear(){this._alarmPinCode="",this._alarmPinError=!1,this.requestUpdate()}_handleAlarmArm(e,t){const a=this._alarmPinCode||void 0,r=`alarm_arm_${t}`;this._hass.callService("alarm_control_panel",r,{entity_id:e,...a?{code:a}:{}}),this._alarmPinCode="",this.requestUpdate()}_handleAlarmDisarm(e){if(!this._alarmPinLimiter.allow())return this._alarmPinError=!0,void this.requestUpdate();const t=this._alarmPinCode||void 0;this._hass.callService("alarm_control_panel","alarm_disarm",{entity_id:e,...t?{code:t}:{}}),this._alarmPinCode="",this.requestUpdate()}_startAlarmCountdown(e){this._alarmCountdown=Math.max(0,e),this._alarmCountdownTimer&&clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=setInterval(()=>{this._alarmCountdown=Math.max(0,(this._alarmCountdown||0)-1),this.requestUpdate(),this._alarmCountdown<=0&&(clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=null)},1e3)}_stopAlarmCountdown(){this._alarmCountdownTimer&&(clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=null),this._alarmCountdown=null}_getAlarmShieldSymbol(e){switch(e){case"disarmed":return"✓";case"armed_home":case"armed_night":return"◉";case"armed_away":case"armed_vacation":return"▲";case"triggered":return"✕";case"arming":case"pending":case"disarming":return"⋯";default:return"?"}}_getAlarmStateLabel(e){return(e||"unknown").toUpperCase().replace(/_/g," ")}_handleAlarmKeydown(e,t){const a=e.key;/^[0-9]$/.test(a)?(e.preventDefault(),this._handleAlarmPinDigit(a)):"Backspace"===a?(e.preventDefault(),this._alarmPinCode=this._alarmPinCode.slice(0,-1),this.requestUpdate()):"Enter"===a?(e.preventDefault(),this._handleAlarmDisarm(t)):"Escape"===a&&(e.preventDefault(),this._handleAlarmPinClear())}_renderAlarmPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{alarm:r,zones:i,auxiliary:s,diagnostics:n}=this._partitionAlarmEntities(t.entities,a),o=this._shortDeviceName(t.device)||"Alarm";if(0===r.length)return"";const l=r[0],c=l.state,d=c?.state||"unavailable",p=function(e){switch(e){case"disarmed":return"var(--lcars-ice)";case"armed_home":case"armed_night":return"var(--lcars-sunflower)";case"armed_away":case"armed_vacation":return"var(--lcars-butterscotch)";case"armed_custom_bypass":return"var(--lcars-african-violet)";case"arming":case"pending":case"disarming":return"var(--lcars-gold)";case"triggered":return"var(--lcars-alert)";default:return"var(--lcars-disabled)"}}(d),h=["arming","pending","disarming"].includes(d),u="triggered"===d,m=this._getAlarmShieldSymbol(d),v=this._getAlarmStateLabel(d),f=!1!==c?.attributes?.code_required,g=Array.from({length:6},(e,t)=>t<this._alarmPinCode.length);if(h&&null==this._alarmCountdown){const e=c?.attributes?.delay||60;this._startAlarmCountdown(e)}else h||null==this._alarmCountdown||this._stopAlarmCountdown();return e.qy`
+        <div class="lcars-device-panel alarm-panel ${u?"alarm-triggered":""}" data-panel-type="alarm"
           style="--panel-frame-color:${p}">
           <!-- Header -->
           <div class="alarm-header">
@@ -3238,7 +3453,7 @@
 
           <!-- Viewscreen (right) -->
           <div class="alarm-viewscreen">
-            ${u&&null!=this._alarmCountdown?e.qy`
+            ${h&&null!=this._alarmCountdown?e.qy`
               <div class="alarm-countdown" aria-live="polite">
                 <span class="alarm-countdown-num" style="color:${p}">${this._alarmCountdown}</span>
                 <span class="alarm-countdown-label">${v}</span>
@@ -3246,6 +3461,14 @@
             `:e.qy`
               <svg class="alarm-shield" viewBox="0 0 160 180" role="img"
                 aria-label="${o}: ${v}">
+                <!-- Concentric targeting rings -->
+                <circle cx="80" cy="95" r="70" fill="none" stroke="${p}" stroke-width="1" opacity="0.1" />
+                <circle cx="80" cy="95" r="50" fill="none" stroke="${p}" stroke-width="1" opacity="0.15" />
+                <circle cx="80" cy="95" r="30" fill="none" stroke="${p}" stroke-width="1" opacity="0.1" />
+                <!-- Crosshair lines -->
+                <line x1="80" y1="20" x2="80" y2="170" stroke="${p}" stroke-width="0.5" opacity="0.08" />
+                <line x1="15" y1="95" x2="145" y2="95" stroke="${p}" stroke-width="0.5" opacity="0.08" />
+                <!-- Shield outline -->
                 <path d="M80,10 L145,45 L145,110 Q145,160 80,175 Q15,160 15,110 L15,45 Z"
                   fill="none" stroke="${p}" stroke-width="4" />
                 <text x="80" y="105" text-anchor="middle" fill="${p}"
@@ -3292,14 +3515,14 @@
             </div>
           `:""}
         </div>
-      `}_isValidArtworkUrl(e){return!!e&&(e.startsWith("/api/")||e.startsWith("/local/"))}_getMediaTransportSymbol(e){switch(e){case"playing":return"▶";case"paused":return"❚❚";default:return"■"}}_partitionMediaEntities(e){const t=[],a=[],r=[],i=[];for(const s of e)"media_player"!==s.domain?"remote"!==s.domain?_.has(s.domain)?a.push(s):r.push(s):i.push(s):t.push(s);return{player:t,sensors:a,controls:r,remotes:i}}_handleMediaService(e,t,a={}){this._hass.callService("media_player",t,{entity_id:e,...a})}_handleVolumeChange(e,t){const a=t.currentTarget.getBoundingClientRect(),r=Math.max(0,Math.min(1,(t.clientX-a.left)/a.width));this._handleMediaService(e,"volume_set",{volume_level:Math.round(100*r)/100})}_renderMediaPanel(t){const{player:a,sensors:r,controls:i,remotes:s}=this._partitionMediaEntities(t.entities),n=this._shortDeviceName(t.device)||"Media";if(0===a.length)return"";const o=a[0],l=o.state,c=l?.attributes||{},d=l?.state||"unavailable",p=function(e){if(null==e)return"var(--lcars-disabled)";switch(e){case"playing":return"var(--lcars-african-violet)";case"paused":case"buffering":return"var(--lcars-sunflower)";case"on":return"var(--lcars-data-accent)";case"idle":case"standby":case"off":default:return"var(--lcars-disabled)";case"unavailable":case"unknown":return"var(--lcars-alert)"}}(d),u=this._getMediaTransportSymbol(d),h="playing"===d,m=!(h||"paused"===d),v=c.entity_picture,f=this._isValidArtworkUrl(v),g=c.media_title||"",b=c.media_artist||"",y=c.source||"",_=null!=c.volume_level?Number(c.volume_level):0,w=c.is_volume_muted||!1,x=(c.source_list,c.supported_features||0),$=!!(16&x),k=!!(32&x),S=!!(4&x),C=!!(32768&x),E=!!(262144&x),z=c.shuffle||!1,A=c.repeat||"off";return e.qy`
+      `}_isValidArtworkUrl(e){return!!e&&(e.startsWith("/api/")||e.startsWith("/local/"))}_getMediaTransportSymbol(e){switch(e){case"playing":return"▶";case"paused":return"❚❚";default:return"■"}}_partitionMediaEntities(e){const t=[],a=[],r=[],i=[];for(const s of e)"media_player"!==s.domain?"remote"!==s.domain?_.has(s.domain)?a.push(s):r.push(s):i.push(s):t.push(s);return{player:t,sensors:a,controls:r,remotes:i}}_handleMediaService(e,t,a={}){this._hass.callService("media_player",t,{entity_id:e,...a})}_handleVolumeChange(e,t){const a=t.currentTarget.getBoundingClientRect(),r=Math.max(0,Math.min(1,(t.clientX-a.left)/a.width));this._handleMediaService(e,"volume_set",{volume_level:Math.round(100*r)/100})}_renderMediaPanel(t){const{player:a,sensors:r,controls:i,remotes:s}=this._partitionMediaEntities(t.entities),n=this._shortDeviceName(t.device)||"Media";if(0===a.length)return"";const o=a[0],l=o.state,c=l?.attributes||{},d=l?.state||"unavailable",p=function(e){if(null==e)return"var(--lcars-disabled)";switch(e){case"playing":return"var(--lcars-african-violet)";case"paused":case"buffering":return"var(--lcars-sunflower)";case"on":return"var(--lcars-data-accent)";case"idle":case"standby":case"off":default:return"var(--lcars-disabled)";case"unavailable":case"unknown":return"var(--lcars-alert)"}}(d),h=this._getMediaTransportSymbol(d),u="playing"===d,m=!(u||"paused"===d),v=c.entity_picture,f=this._isValidArtworkUrl(v),g=c.media_title||"",b=c.media_artist||"",y=c.source||"",_=null!=c.volume_level?Number(c.volume_level):0,x=c.is_volume_muted||!1,w=(c.source_list,c.supported_features||0),$=!!(16&w),k=!!(32&w),S=!!(4&w),C=!!(32768&w),E=!!(262144&w),z=c.shuffle||!1,A=c.repeat||"off";return e.qy`
         <div class="lcars-device-panel media-panel ${m?"media-idle":""}" data-panel-type="media"
           style="--panel-frame-color:var(--lcars-african-violet)">
           <!-- Header -->
           <div class="media-header">
             <span class="device-panel-name">${n}</span>
             <div class="device-panel-header-line"></div>
-            <span class="media-state-badge" style="color:${p}">${u} ${d.toUpperCase()}</span>
+            <span class="media-state-badge" style="color:${p}">${h} ${d.toUpperCase()}</span>
           </div>
 
           <!-- Metadata (left) -->
@@ -3367,9 +3590,9 @@
                 <button class="media-transport-btn" title="Previous"
                   @click=${()=>this._handleMediaService(o.entity.entity_id,"media_previous_track")}>⏮</button>
               `:""}
-              <button class="media-transport-btn media-play-btn" title="${h?"Pause":"Play"}"
-                @click=${()=>this._handleMediaService(o.entity.entity_id,h?"media_pause":"media_play")}>
-                ${h?"❚❚":"▶"}
+              <button class="media-transport-btn media-play-btn" title="${u?"Pause":"Play"}"
+                @click=${()=>this._handleMediaService(o.entity.entity_id,u?"media_pause":"media_play")}>
+                ${u?"❚❚":"▶"}
               </button>
               ${k?e.qy`
                 <button class="media-transport-btn" title="Next"
@@ -3382,9 +3605,9 @@
             </div>
             ${S?e.qy`
               <div class="media-volume" aria-label="Volume: ${Math.round(100*_)}%">
-                <button class="media-mute-btn" aria-pressed="${w}" title="${w?"Unmute":"Mute"}"
-                  @click=${()=>this._handleMediaService(o.entity.entity_id,"volume_mute",{is_volume_muted:!w})}>
-                  ${w?"🔇":"🔊"}
+                <button class="media-mute-btn" aria-pressed="${x}" title="${x?"Unmute":"Mute"}"
+                  @click=${()=>this._handleMediaService(o.entity.entity_id,"volume_mute",{is_volume_muted:!x})}>
+                  ${x?"🔇":"🔊"}
                 </button>
                 <div class="media-volume-bar" tabindex="0" role="slider"
                   aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*_)}"
@@ -3397,7 +3620,7 @@
             `:""}
           </div>
         </div>
-      `}_partitionPoolEntities(e){const t=[],a=[],r=[],i=[],s=[],n=[],o=[],l=[],c=/orp|ph_|salt|tds|saturation|calcium|alkalinity|cyanuric/i;for(const d of e){const e=d.entity.entity_id,p=d.domain,u=d.state?.attributes||{};if("climate"!==p)if("light"!==p)if("sensor"===p&&c.test(e))r.push(d);else if("switch"!==p){if("sensor"===p&&"temperature"===(u.device_class||"")){o.push(d);continue}l.push(d)}else/pump/i.test(e)?i.push(d):s.push(d);else n.push(d);else/spa/i.test(e)?a.push(d):t.push(d)}return{pool:t,spa:a,chemistry:r,pumps:i,circuits:s,lights:n,environmental:o,diagnostics:l}}_handlePoolSetpoint(e,t,a){const r=P(a,t,{min:40,max:104});this._poolSetpointDebouncer||(this._poolSetpointDebouncer=D((e,t)=>{this._hass.callService("climate","set_temperature",{entity_id:e,temperature:t})},1500)),this._poolSetpointDebouncer.call(e,r)}_renderPoolBody(t,a,r){if(0===t.length)return"";const i=t[0],s=i.state,n=s?.attributes||{},o=null!=n.current_temperature?Number(n.current_temperature):null,l=null!=n.temperature?Number(n.temperature):null,c=function(e,t="pool"){switch(e){case"heating":return"var(--lcars-butterscotch)";case"idle":return"spa"===t?"var(--lcars-sunflower)":"var(--lcars-ice)";default:return"var(--lcars-disabled)"}}(n.hvac_action||"off",a),d="spa"===a?"SPA":"POOL";return e.qy`
+      `}_partitionPoolEntities(e){const t=[],a=[],r=[],i=[],s=[],n=[],o=[],l=[],c=/orp|ph_|salt|tds|saturation|calcium|alkalinity|cyanuric/i;for(const d of e){const e=d.entity.entity_id,p=d.domain,h=d.state?.attributes||{};if("climate"!==p)if("light"!==p)if("sensor"===p&&c.test(e))r.push(d);else if("switch"!==p){if("sensor"===p&&"temperature"===(h.device_class||"")){o.push(d);continue}l.push(d)}else/pump/i.test(e)?i.push(d):s.push(d);else n.push(d);else/spa/i.test(e)?a.push(d):t.push(d)}return{pool:t,spa:a,chemistry:r,pumps:i,circuits:s,lights:n,environmental:o,diagnostics:l}}_handlePoolSetpoint(e,t,a){const r=P(a,t,{min:40,max:104});this._poolSetpointDebouncer||(this._poolSetpointDebouncer=D((e,t)=>{this._hass.callService("climate","set_temperature",{entity_id:e,temperature:t})},1500)),this._poolSetpointDebouncer.call(e,r)}_renderPoolBody(t,a,r){if(0===t.length)return"";const i=t[0],s=i.state,n=s?.attributes||{},o=null!=n.current_temperature?Number(n.current_temperature):null,l=null!=n.temperature?Number(n.temperature):null,c=function(e,t="pool"){switch(e){case"heating":return"var(--lcars-butterscotch)";case"idle":return"spa"===t?"var(--lcars-sunflower)":"var(--lcars-ice)";default:return"var(--lcars-disabled)"}}(n.hvac_action||"off",a),d="spa"===a?"SPA":"POOL";return e.qy`
         <div class="pool-body-frame" style="--body-color:${c}" role="region"
           aria-label="${d}: ${null!=o?o+"°":"N/A"}, target ${l||"N/A"}°">
           <div class="pool-body-label" style="color:${c}">${d}</div>
@@ -3412,15 +3635,15 @@
             </div>
           `:""}
         </div>
-      `}_renderPoolSpaPanel(t){const{pool:a,spa:r,chemistry:i,pumps:s,circuits:n,lights:o,environmental:l,diagnostics:c}=this._partitionPoolEntities(t.entities),d=this._shortDeviceName(t.device)||"Pool & Spa",p=i.length>0,u=a[0]?.state?.attributes?.current_temperature,h=r[0]?.state?.attributes?.current_temperature,m=l.find(e=>/air/i.test(e.entity.entity_id)),v=m?.state?.state;return e.qy`
+      `}_renderPoolSpaPanel(t){const{pool:a,spa:r,chemistry:i,pumps:s,circuits:n,lights:o,environmental:l,diagnostics:c}=this._partitionPoolEntities(t.entities),d=this._shortDeviceName(t.device)||"Pool & Spa",p=i.length>0,h=a[0]?.state?.attributes?.current_temperature,u=r[0]?.state?.attributes?.current_temperature,m=l.find(e=>/air/i.test(e.entity.entity_id)),v=m?.state?.state;return e.qy`
         <div class="lcars-device-panel pool-panel ${p?"":"pool-no-chem"}" data-panel-type="aquatics"
           style="--panel-frame-color:var(--lcars-bluey)">
           <!-- Header -->
           <div class="pool-header">
             <span class="device-panel-name">${d}</span>
             <div class="device-panel-header-line"></div>
-            ${null!=u?e.qy`<span class="pool-temp-badge" style="color:var(--lcars-ice)">POOL ${Math.round(u)}°</span>`:""}
-            ${null!=h?e.qy`<span class="pool-temp-badge" style="color:var(--lcars-butterscotch)">SPA ${Math.round(h)}°</span>`:""}
+            ${null!=h?e.qy`<span class="pool-temp-badge" style="color:var(--lcars-ice)">POOL ${Math.round(h)}°</span>`:""}
+            ${null!=u?e.qy`<span class="pool-temp-badge" style="color:var(--lcars-butterscotch)">SPA ${Math.round(u)}°</span>`:""}
             ${null!=v?e.qy`<span class="pool-temp-badge" style="color:var(--lcars-space-white)">AIR ${Math.round(Number(v))}°</span>`:""}
           </div>
 
@@ -3484,7 +3707,13 @@
         <div class="weather-wind-compass" role="img"
           aria-label="Wind: ${a||"?"} ${r||"mph"} from ${i}">
           <svg viewBox="0 0 80 80" class="wind-svg">
+            <!-- Concentric targeting rings -->
+            <circle cx="40" cy="40" r="36" fill="none" stroke="var(--lcars-disabled)" stroke-width="0.5" opacity="0.15" />
             <circle cx="40" cy="40" r="28" fill="none" stroke="var(--lcars-disabled)" stroke-width="1" />
+            <circle cx="40" cy="40" r="20" fill="none" stroke="var(--lcars-disabled)" stroke-width="0.5" opacity="0.15" />
+            <!-- Crosshair guides -->
+            <line x1="40" y1="4" x2="40" y2="76" stroke="var(--lcars-disabled)" stroke-width="0.3" opacity="0.1" />
+            <line x1="4" y1="40" x2="76" y2="40" stroke="var(--lcars-disabled)" stroke-width="0.3" opacity="0.1" />
             <text x="40" y="12" text-anchor="middle" fill="var(--lcars-data-accent)" font-size="7" font-family="var(--lcars-font)">N</text>
             <text x="40" y="76" text-anchor="middle" fill="var(--lcars-data-accent)" font-size="7" font-family="var(--lcars-font)">S</text>
             <text x="8" y="43" text-anchor="middle" fill="var(--lcars-data-accent)" font-size="7" font-family="var(--lcars-font)">W</text>
@@ -3498,29 +3727,29 @@
         </div>
       `}async _loadWeatherForecast(e){if(this._weatherForecastCache[e])return;const t=await async function(e,t,a="daily",r={}){const{ttlMs:i=6e5}=r,s=`${t}:${a}`,n=Date.now(),o=M.get(s);if(o&&n-o.timestamp<i)return o.data;try{const r=await e.callWS({type:"weather/subscribe_forecast",entity_id:t,forecast_type:a}),i=r?.forecast||r||[],o=Array.isArray(i)?i:[];if(M.set(s,{data:o,timestamp:n}),M.size>10){const e=M.keys().next().value;M.delete(e)}return o}catch(r){try{const r=await e.callService("weather","get_forecasts",{type:a},{entity_id:t}),i=r?.[t]?.forecast||[];return M.set(s,{data:i,timestamp:n}),i}catch(e){return[]}}}(this._hass,e,"daily");t.length>0&&(this._weatherForecastCache[e]=t,this.requestUpdate())}_renderForecastStrip(t){if(!t?.length)return"";const a=t.slice(0,7),r=a.map(e=>e.temperature).filter(Number.isFinite),i=a.map(e=>e.templow).filter(Number.isFinite),s=Math.min(...i,...r),n=Math.max(...r,...i)-s||1;return e.qy`
         <div class="weather-forecast" role="list" aria-label="7-day forecast">
-          ${a.map(t=>{const a=new Date(t.datetime).toLocaleDateString("en",{weekday:"short"}).toUpperCase(),r=t.temperature,i=t.templow,o=t.condition,l=this._getWeatherGlyph(o),c=q(o),d=t.precipitation_probability,p=(i-s)/n*100,u=(r-i||1)/n*100;return e.qy`
+          ${a.map(t=>{const a=new Date(t.datetime).toLocaleDateString("en",{weekday:"short"}).toUpperCase(),r=t.temperature,i=t.templow,o=t.condition,l=this._getWeatherGlyph(o),c=q(o),d=t.precipitation_probability,p=(i-s)/n*100,h=(r-i||1)/n*100;return e.qy`
               <div class="forecast-tile" role="listitem" tabindex="0"
                 aria-label="${a}: ${o}, high ${r}°, low ${i}°${null!=d?`, ${d}% precipitation`:""}">
                 <span class="forecast-day">${a}</span>
                 <span class="forecast-glyph" style="color:${c}">${l}</span>
                 <span class="forecast-hi">${null!=r?Math.round(r):"—"}°</span>
                 <div class="forecast-range-bar">
-                  <div class="forecast-range-fill" style="left:${p.toFixed(1)}%;width:${u.toFixed(1)}%"></div>
+                  <div class="forecast-range-fill" style="left:${p.toFixed(1)}%;width:${h.toFixed(1)}%"></div>
                 </div>
                 <span class="forecast-lo">${null!=i?Math.round(i):"—"}°</span>
                 ${null!=d?e.qy`<span class="forecast-precip" style="color:${d>50?"var(--lcars-sky)":"var(--lcars-gray)"}">${d}%</span>`:""}
               </div>
             `})}
         </div>
-      `}_renderWeatherPanel(t){const{weather:a,sensors:r,lightning:i,precipitation:s,wind:n,diagnostics:o}=this._partitionWeatherEntities(t.entities),l=this._shortDeviceName(t.device)||"Weather";if(0===a.length)return"";const c=a[0],d=c.state,p=d?.attributes||{},u=d?.state||"unavailable",h=q(u),m=this._getWeatherGlyph(u),v=p.temperature,f=p.humidity,g=p.pressure,b=p.wind_speed,y=p.wind_bearing,_=p.wind_speed_unit||"mph";this._loadWeatherForecast(c.entity.entity_id);const w=this._weatherForecastCache[c.entity.entity_id];return e.qy`
+      `}_renderWeatherPanel(t){const{weather:a,sensors:r,lightning:i,precipitation:s,wind:n,diagnostics:o}=this._partitionWeatherEntities(t.entities),l=this._shortDeviceName(t.device)||"Weather";if(0===a.length)return"";const c=a[0],d=c.state,p=d?.attributes||{},h=d?.state||"unavailable",u=q(h),m=this._getWeatherGlyph(h),v=p.temperature,f=p.humidity,g=p.pressure,b=p.wind_speed,y=p.wind_bearing,_=p.wind_speed_unit||"mph";this._loadWeatherForecast(c.entity.entity_id);const x=this._weatherForecastCache[c.entity.entity_id];return e.qy`
         <div class="lcars-device-panel weather-panel" data-panel-type="weather"
-          style="--panel-frame-color:${h}">
+          style="--panel-frame-color:${u}">
           <!-- Header -->
           <div class="weather-header">
             <span class="device-panel-name">${l}</span>
             <div class="device-panel-header-line"></div>
-            <span class="weather-condition-badge" style="color:${h}">
-              ${m} ${u.toUpperCase().replace(/[_-]/g," ")}
+            <span class="weather-condition-badge" style="color:${u}">
+              ${m} ${h.toUpperCase().replace(/[_-]/g," ")}
             </span>
           </div>
 
@@ -3572,24 +3801,24 @@
 
           <!-- Viewscreen (right) -->
           <div class="weather-viewscreen" role="img"
-            aria-label="${u}: ${null!=v?v+"°":"N/A"}">
+            aria-label="${h}: ${null!=v?v+"°":"N/A"}">
             <svg class="weather-display" viewBox="0 0 200 160">
-              <text x="100" y="35" text-anchor="middle" fill="${h}"
+              <text x="100" y="35" text-anchor="middle" fill="${u}"
                 font-family="var(--lcars-font)" font-size="28">${m}</text>
-              <text x="100" y="85" text-anchor="middle" fill="${h}"
+              <text x="100" y="85" text-anchor="middle" fill="${u}"
                 font-family="var(--lcars-font)" font-size="48" font-weight="bold">
                 ${null!=v?`${Math.round(v)}°`:"—"}
               </text>
               <text x="100" y="108" text-anchor="middle" fill="var(--lcars-data-accent)"
                 font-family="var(--lcars-font)" font-size="12">
-                ${u.toUpperCase().replace(/[_-]/g," ")}
+                ${h.toUpperCase().replace(/[_-]/g," ")}
               </text>
             </svg>
             ${this._renderWindCompass(y,b,_)}
           </div>
 
           <!-- Forecast (bottom) -->
-          ${this._renderForecastStrip(w)}
+          ${this._renderForecastStrip(x)}
         </div>
       `}_irrigationLimiter=N(5,1e4);_partitionIrrigationEntities(e){const t=[],a=[],r=[];for(const i of e){const e=i.domain,s=i.entity.entity_id,n=i.state?.attributes||{};"switch"!==e?"binary_sensor"!==e||r.some(e=>!0)?a.push(i):r.push(i):null!=n.zone_number||/zone/i.test(s)?t.push(i):r.push(i)}return t.sort((e,t)=>(e.state?.attributes?.zone_number??999)-(t.state?.attributes?.zone_number??999)),{zones:t,sensors:a,controller:r}}_handleIrrigationZone(e,t){this._irrigationLimiter.allow()&&this._hass.callService("switch",t?"turn_on":"turn_off",{entity_id:e})}_renderIrrigationPanel(t){const{zones:a,sensors:r,controller:i}=this._partitionIrrigationEntities(t.entities),s=this._shortDeviceName(t.device)||"Irrigation",n=a.find(e=>"on"===e.state?.state),o=i.some(e=>"switch"===e.domain&&"off"===e.state?.state);return e.qy`
         <div class="lcars-device-panel irrigation-panel" data-panel-type="irrigation"
@@ -3678,7 +3907,7 @@
             ${this._renderDomainGroups(r)}
           </div>
         `:""}
-      `;return 0===i.length?n:(i.sort((e,t)=>(h[e.panelType]??99)-(h[t.panelType]??99)),e.qy`
+      `;return 0===i.length?n:(i.sort((e,t)=>(u[e.panelType]??99)-(u[t.panelType]??99)),e.qy`
         <div class="area-split-layout">
           <div class="area-split-main">${n}</div>
           <div class="area-split-panels" aria-live="polite">
@@ -3688,7 +3917,7 @@
       `)}_renderDomainGroups(t){const a=this._groupByDomain(t);return e.qy`${a.map(([t,a])=>e.qy`
         <div class="domain-label" role="heading" aria-level="4">${z[t]||t}</div>
         ${this._renderDomainEntities(t,a)}
-      `)}`}_renderDomainEntities(e,t){return m.has(e)?this._renderCameras(t):y.has(e)?this._renderToggles(t):v.has(e)?this._renderClimates(t):w.has(e)?this._renderCovers(t):f.has(e)?this._renderMedia(t):_.has(e)?this._renderSensors(t):this._renderGeneric(t)}_renderCameras(t){return e.qy`<div class="camera-grid">
+      `)}`}_renderDomainEntities(e,t){return m.has(e)?this._renderCameras(t):y.has(e)?this._renderToggles(t):v.has(e)?this._renderClimates(t):x.has(e)?this._renderCovers(t):f.has(e)?this._renderMedia(t):_.has(e)?this._renderSensors(t):this._renderGeneric(t)}_renderCameras(t){return e.qy`<div class="camera-grid">
         ${t.map(({entity:t,state:a},r)=>{const i=this._friendlyName(a,t),s=this._isOff(a),n=F(a);return e.qy`
             <div class="camera-frame" ?data-off=${s} style="--i:${r}"
               role="button"

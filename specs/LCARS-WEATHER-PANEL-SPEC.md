@@ -1199,6 +1199,14 @@ When lightning strikes are detected within a threshold distance (configurable, d
 
 ## 9. Animation
 
+### v4.12.0 Visual Enhancements
+
+- **Viewscreen inner glow**: `box-shadow: inset 0 0 15px rgba(100,200,255,0.06)` on `.weather-viewscreen` with `position: relative` fix for corner bracket pseudo-elements
+- **Wind compass concentric rings**: Three concentric circles at radii 36, 28, 20 with fading opacity (0.15, 1.0, 0.15) plus crosshair guide lines at 0.1 opacity — evokes LCARS targeting/sensor displays
+- **Segmented forecast range bars**: `.forecast-range-bar` and `.forecast-range-fill` now use `repeating-linear-gradient` with 3px segments and 2px gaps in `--lcars-ice` for a data-readout feel
+- **Forecast tile separators**: Tiles separated by `border-left: 2px solid rgba(100,200,255,0.08)` with hover highlight
+- **Panel scan line**: Inherited from `.lcars-device-panel` base
+
 ### Viewscreen Activation
 
 Reuse the existing `viewscreen-activate` keyframes from the Device Panel Spec §7:

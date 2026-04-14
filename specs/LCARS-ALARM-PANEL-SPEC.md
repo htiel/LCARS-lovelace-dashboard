@@ -615,6 +615,14 @@ An SVG shield shape with a central status symbol and label. The shield uses the 
        role="img"
        aria-hidden="true">
 
+    <!-- Concentric targeting rings (v4.12.0 visual enhancement) -->
+    <circle cx="80" cy="95" r="70" fill="none" stroke="var(--alarm-state-color)" stroke-width="1" opacity="0.1" />
+    <circle cx="80" cy="95" r="50" fill="none" stroke="var(--alarm-state-color)" stroke-width="1" opacity="0.15" />
+    <circle cx="80" cy="95" r="30" fill="none" stroke="var(--alarm-state-color)" stroke-width="1" opacity="0.1" />
+    <!-- Crosshair guides -->
+    <line x1="80" y1="20" x2="80" y2="170" stroke="var(--alarm-state-color)" stroke-width="0.5" opacity="0.08" />
+    <line x1="15" y1="95" x2="145" y2="95" stroke="var(--alarm-state-color)" stroke-width="0.5" opacity="0.08" />
+
     <!-- Shield outline -->
     <path class="alarm-shield-path"
           d="M80 10 L145 45 L145 100 Q145 155 80 170 Q15 155 15 100 L15 45 Z"
@@ -692,6 +700,7 @@ During `arming`, `pending`, or `disarming` states, the shield icon is replaced w
   overflow: hidden;
   background: var(--lcars-bg);
   aspect-ratio: var(--media-aspect, 1 / 1);
+  box-shadow: inset 0 0 15px rgba(100,200,255,0.06);
 
   display: flex;
   flex-direction: column;

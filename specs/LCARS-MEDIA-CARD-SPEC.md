@@ -1476,6 +1476,13 @@ function hasSoundModes(stateObj) {
 
 ## 10. Animation
 
+### v4.12.0 Visual Enhancements
+
+- **Viewscreen inner glow**: `box-shadow: inset 0 0 15px rgba(100,200,255,0.06)` on `.media-viewscreen`
+- **Segmented volume bar**: Volume track and fill now use `repeating-linear-gradient(90deg, ...)` with 5px segments separated by 2px gaps — evokes LCARS bar-meter displays from the TNG engineering panels. Filled segments glow with `box-shadow: 0 0 6px rgba(204,153,255,0.3)`
+- **CRT idle display**: `.media-idle-display` background uses radial center glow + horizontal scan lines for an inactive viewscreen feel
+- **Panel scan line**: Inherited from `.lcars-device-panel` base
+
 ### Viewscreen Activation (Reuse from Device Panel §7)
 
 ```css

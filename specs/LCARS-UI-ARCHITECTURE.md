@@ -1009,6 +1009,25 @@ Total hue families in active use:
 
 ## 7. Interaction Design & Animation
 
+### v4.12.0 Universal Visual Vocabulary (LCARS Visual Overhaul)
+
+Applied across all device panels and standalone entity renderers:
+
+| Enhancement | Selector | Description |
+|---|---|---|
+| Panel scan line | `.lcars-device-panel` | Subtle horizontal gradient sweep on 10s loop via `background-position` animation |
+| Header data pips | `.device-panel-header-line`, `.content-area-header::after` | Dash-dot `repeating-linear-gradient` pattern replacing solid lines |
+| Viewscreen inner glow | All viewscreen containers | `box-shadow: inset 0 0 15px rgba(100,200,255,0.06)` for CRT depth |
+| CRT scan lines | `.device-panel-media::after`, `.camera-frame::after` | Horizontal line overlay at 3% opacity |
+| Sensor indicator bars | `.sensor-indicator` | Vertical bars (0.25rem × 1rem) replace circular dots |
+| Sensor readout left accent | `.sensor-readout` | `border-left: 4px solid rgba(0,0,0,0.2)` and icon margin fix |
+| Segmented bar meters | Volume, slider, forecast, sensor | `repeating-linear-gradient` patterns with segment gaps |
+| SVG targeting rings | Alarm shield, wind compass | Concentric circles + crosshair guide lines at low opacity |
+| SVG reference arcs | Climate arc | Inner semicircular arcs at reduced radii for depth |
+| Warp core segmented pills | Battery panel | 14 horizontal pills (7 upper + 7 lower) with junction ring, funnels, endcaps, decorative numeric codes |
+
+All respect `prefers-reduced-motion: reduce`.
+
 ### Core Timing Constants
 
 ```css

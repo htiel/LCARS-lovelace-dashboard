@@ -1272,10 +1272,10 @@ class LcarsHomepageCard extends LitElement {
             filter: brightness(1.3);
           }
 
-          /* ── Charging flow animation ── */
+          /* ── Charging flow animation (uses opacity to coexist with filter:brightness on .wide) ── */
           @keyframes pill-charge-flow {
-            0%, 100% { filter: brightness(1); }
-            50% { filter: brightness(1.4); }
+            0%, 100% { opacity: 0.85; }
+            50% { opacity: 1; box-shadow: 0 0 10px var(--core-color); }
           }
           .warp-core-pill.charging {
             animation: pill-charge-flow 1.5s ease-in-out infinite;
@@ -1295,12 +1295,6 @@ class LcarsHomepageCard extends LitElement {
           .warp-core-pills.lower .warp-core-pill:nth-child(5).charging { --pill-i: 4; }
           .warp-core-pills.lower .warp-core-pill:nth-child(6).charging { --pill-i: 5; }
           .warp-core-pills.lower .warp-core-pill:nth-child(7).charging { --pill-i: 6; }
-
-          /* ── Idle pulse for uncharged core ── */
-          @keyframes core-idle-pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-          }
 
           /* ── Center junction ring ── */
           .warp-core-junction {

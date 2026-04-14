@@ -833,6 +833,12 @@ On mobile, schedule info moves above zones. Zone grid fills the full width. Read
 
 ## 10. Animation
 
+### v4.12.0 Visual Enhancements
+
+- **Animated zone fill bar**: Active zone fill bars now have a flowing stripe pattern via `repeating-linear-gradient` with `background-position-x` animation at 1s linear loop — water visually flows through the pipe
+- **Panel scan line**: Inherited from `.lcars-device-panel` base
+- **Header data pips**: Inherited from device panel base
+
 ### Fill Bar (Active Watering)
 
 The fill bar animates smoothly as the zone countdown progresses:

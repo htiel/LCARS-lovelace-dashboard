@@ -2,6 +2,58 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.12.0] — 2026-04-13
+
+### Added — LCARS Visual Overhaul
+
+Comprehensive aesthetic upgrade inspired by TNG Engineering panels, Cetacean Ops, and Communications displays. All changes are CSS + DOM only — no new entities, services, or configuration required.
+
+#### Universal Panel Enhancements (All Device Panels)
+- **Panel scan line**: Subtle horizontal gradient sweeps vertically on 10s loop across all `.lcars-device-panel` backgrounds — evokes active LCARS display refresh
+- **Header data pips**: Panel header lines now use a dash-dot `repeating-linear-gradient` pattern instead of solid lines, matching TNG console data bus patterns
+- **Content area header pips**: Area header underlines also use the dash-dot pattern
+- **Viewscreen inner glow**: `box-shadow: inset 0 0 15px` on climate, media, weather, alarm, pool, and camera viewscreen areas for subtle CRT depth
+- **CRT scan line overlay**: Horizontal line overlay (`::after`) on camera frames and device panel media for a viewscreen feel
+- **Sensor indicator bars**: Status indicators changed from circular dots to LCARS-style vertical bars (0.25rem × 1rem)
+- **Sensor readout left accent**: Pill-shaped sensor readouts now have a 4px left border accent
+
+#### Battery Warp Core — Segmented Containment Vessel
+- Replaced flat fill-bar warp core with a **14-segment pill capsule** design (7 upper + 7 lower)
+- **Center junction ring**: Concentric double-ring with radial glow at the dilithium crystal point
+- **Tapered funnels**: CSS triangle funnels above and below each pill section, connecting to endcaps
+- **Endcaps**: Rounded caps at top and bottom of the containment vessel
+- **Wider junction pills**: The 2 pills nearest the junction ring use `.wide` class (90% width, brighter glow)
+- **Charging animation**: Staggered opacity + box-shadow pulse radiating outward from the junction (1.5s loop, 100ms cascade delay per pill)
+- **Decorative numeric codes**: Charge-derived numeric readouts at top-right and bottom-right corners (0.6rem, 50% opacity)
+- **Segmented battery slider**: Track and fill use `repeating-linear-gradient` with glow
+
+#### Segmented Bar Meters
+- **Volume bar**: Segmented with 5px segments, 2px gaps, and violet glow on fill
+- **Forecast range bars**: Segmented ice-blue pattern
+- **Sensor bars**: Wider segments (4px) with subtle box-shadow on filled segments
+
+#### SVG Enhancements
+- **Alarm shield**: Concentric targeting rings (r=70, 50, 30) and crosshair guide lines behind the shield outline
+- **Climate arc**: Inner concentric reference arcs at r-20 and r-40 behind the temperature gauge
+- **Wind compass**: Three concentric rings (r=36, 28, 20) and crosshair guide lines
+
+#### Additional Visual Polish
+- **Forecast tile separators**: Left border + hover highlight between forecast day tiles
+- **Media idle CRT display**: Radial center glow + horizontal scan line background when no media is playing
+- **Irrigation flow animation**: Active zone fill bars have animated striped flow pattern (1s loop)
+- **Camera inner glow**: Subtle inset glow on camera frames
+
+### Fixed
+- **Dead CSS removed**: Orphaned `core-idle-pulse` keyframe (no longer referenced after warp core redesign)
+- **Charging animation fix**: Changed from `filter: brightness()` to `opacity` + `box-shadow` so animation coexists with static `filter: brightness(1.3)` on `.wide` junction pills
+- **Weather viewscreen `position: relative`**: Added missing positioning context for corner bracket pseudo-elements (pre-existing bug)
+
+### Security
+- All DOM changes use Lit-html `html` tagged template literal with auto-escaping — no `unsafeHTML()`, `innerHTML`, or direct DOM manipulation introduced
+- No external resource references (URLs, CDN calls) added
+- All new animations respect `prefers-reduced-motion: reduce`
+- Decorative numeric codes derived from charge percentage via safe arithmetic — no user-controlled strings
+
 ## [4.11.0] — 2026-04-13
 
 ### Added — New Device Panels & Shared Utilities

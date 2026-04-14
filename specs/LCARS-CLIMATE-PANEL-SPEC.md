@@ -1403,6 +1403,13 @@ For dashboard views with limited space, the panel can render in a compact 1-colu
 
 ## 13. Animation
 
+### v4.12.0 Visual Enhancements
+
+- **Viewscreen inner glow**: `box-shadow: inset 0 0 15px rgba(100,200,255,0.06)` on `.climate-viewscreen` for a subtle CRT-like atmospheric depth
+- **Temperature arc concentric guides**: Two inner semicircular reference arcs at radii `r-20` and `r-40` with 0.2/0.15 opacity provide LCARS-style depth markers behind the main temperature arc
+- **Panel scan line**: Inherited from `.lcars-device-panel` base — subtle horizontal scan sweeps vertically on 10s cycle
+- **Header data pips**: Panel header line uses a dash-dot `repeating-linear-gradient` pattern instead of a solid line
+
 ### Viewscreen Activation
 
 Reuse the existing `viewscreen-activate` keyframes from the Device Panel Spec §7:

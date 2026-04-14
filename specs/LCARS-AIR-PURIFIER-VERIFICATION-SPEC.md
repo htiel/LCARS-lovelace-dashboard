@@ -451,15 +451,22 @@ CO₂ concentration drives a three-tier color mapping with semantic meaning: nom
 ```javascript
 /**
  * Resolve CO₂ ppm to threshold level for data attribute.
+ * Includes defensive Number.isFinite() guard — HA entities may return
+ * 'unavailable', 'unknown', null, or NaN. Bad data returns 'high'
+ * (alert state) rather than 'nominal' (false safety). [Worf R1]
  * @param {number} ppm — CO₂ concentration
  * @returns {'nominal'|'elevated'|'high'}
  */
 function getCo2Level(ppm) {
-  if (ppm <= 800)  return 'nominal';
-  if (ppm <= 1200) return 'elevated';
+  const value = Number(ppm);
+  if (!Number.isFinite(value)) return 'high'; // defensive — alert on bad data
+  if (value <= 800)  return 'nominal';
+  if (value <= 1200) return 'elevated';
   return 'high';
 }
 ```
+
+> **Data R1/R2 — DRY Note**: `lcars-color-utils.js` exports `getCo2Color(co2)` with a 4-tier model. Before implementation, reconcile to a single source of truth: either (a) update `getCo2Color()` to use the 3-tier ice/sunflower/tomato model above and apply it directly via inline style (eliminating `getCo2Level()` + data-attribute CSS), or (b) keep `getCo2Level()` but ensure threshold alignment. Geordi recommends option (a) — collapse to 3 tiers in `getCo2Color()`: ice (≤800) / sunflower (801–1200) / tomato (>1200).
 
 JS sets `data-co2-level` attribute on the CO₂ sensor value element each time state updates. The color transition inherits the panel's standard `transition: color var(--lcars-transition-speed) var(--lcars-transition-function)` — smooth, no flash.
 
@@ -543,6 +550,8 @@ The flash uses `box-shadow` (1 shadow animation) — within the ≤2 box-shadow 
 | Filter expired flash | box-shadow | 600ms single-fire | 0 (transient) | Yes (transient) |
 
 **Peak concurrent CSS animations**: ~14 during initial render (stagger + draw overlap), settling to ~11 steady-state (particles + critical pulse). The sensor row stagger and sparkline draw are first-render-only — they complete and release. Steady-state budget: particles (10) + cylinder glow transition (1) + filter pulse if critical (1) = 12 transform/opacity + 1 box-shadow. The ≤6 concurrent animation budget applies to **user-perceptible** simultaneous animations; the 8–12 particles are a single visual cluster perceived as one animation. Effective perceptible concurrency: 4 (particles, glow, filter pulse, preset wipe on interaction).
+
+> **Data R3 — Budget Transient Note**: First-render transient exceeds ≤6 concurrent target for ~730ms. Stagger animations are GPU-composited (transform+opacity) and self-terminating. No performance concern measured. This is an acceptable transient overrun.
 
 ---
 
@@ -755,3 +764,49 @@ The Type-2 atmoscrubber handles the BlueAir atmospheric processor as-is. The ent
 
 ### Disagreements
 - None. This was the cleanest review across all 8 specs — three green/approved verdicts.
+
+---
+
+## Worf — Security Review: v4.13.0 Visual Enhancements (BlueAir-Specific)
+
+**Reviewer**: Worf (Integration Security)
+**Date**: Stardate 2026.04.13
+**Status**: APPROVED WITH CONDITIONS
+
+### Findings
+
+1. **LOW — `getCo2Level()` lacked input validation for non-numeric values.** HA entities may return `unavailable`, `unknown`, null, or NaN. Without a guard, all comparisons evaluate to `false` and the function falls through to `'high'` — a safe failure mode (alert on bad data), but undocumented. **FIXED**: `Number.isFinite()` guard added per R1.
+2. **INFO — `data-co2-level` attribute receives only hardcoded string literals.** No injection vector.
+3. **INFO — `--sensor-index` assigned from render loop index, not entity data.** No injection vector.
+4. **INFO — `_handleFilterExpired()` uses proper guard (`!isExpired || !filterBar`) and `{ once: true }` cleanup.** No memory leak.
+5. **INFO — Filter expired flash is 600ms single-fire.** No seizure risk (WCAG 2.3.1).
+6. **INFO — All animations have `prefers-reduced-motion` fallbacks with information parity.**
+7. **INFO — No `innerHTML`, `unsafeHTML`, or unsafe DOM operations. Shadow DOM isolates all styles.**
+8. **INFO — No new third-party dependencies.**
+
+### Conditions (Applied)
+- **R1 (APPLIED)**: `Number.isFinite()` guard added to `getCo2Level()` with documented fallback behavior.
+
+---
+
+## Data — Architecture Review: v4.13.0 Visual Enhancements (BlueAir-Specific)
+
+**Reviewer**: Data (Architecture & Code Quality)
+**Date**: Stardate 2026.04.13
+**Status**: APPROVED WITH CONDITIONS
+
+### Findings
+
+1. **MEDIUM — DRY violation: `getCo2Level()` duplicates `getCo2Color()` in `lcars-color-utils.js`.** Two functions for CO₂ thresholds with different tier counts (3 vs 4) and different color mappings. **NOTED**: Spec now includes DRY reconciliation note — resolve to single source of truth before implementation.
+2. **LOW — First-render animation budget transient exceeds ≤6 for ~730ms.** GPU-composited transform+opacity stagger. **NOTED**: Budget transient annotation added per R3.
+3. **INFO — `{ once: true }` animationend pattern is correct. YAGNI: shared helper abstraction unnecessary.**
+4. **INFO — Multi-sparkline stagger inherits correctly from Atmoscrubber CSS. Good DRY compliance.**
+5. **INFO — Reduced-motion compliance is thorough. Filter-expired static outline fallback is exemplary.**
+
+### Conditions (Applied)
+- **R1/R2 (NOTED)**: DRY reconciliation note added — `getCo2Color()` must be updated to match before implementation.
+- **R3 (APPLIED)**: First-render budget transient documented in animation budget summary.
+
+### Consultation Notes
+- **Geordi**: Ice/sunflower/tomato 3-tier model is visually cleaner. Recommends collapsing `getCo2Color()` to 3 tiers.
+- **Wesley**: Concurs with eliminating `getCo2Level()` in favour of direct `getCo2Color()` inline style.

@@ -1519,6 +1519,10 @@ Shield SVG drop-shadow by state: disarmed=ice, armed-home=amber, armed-away=ambe
 .lcars-alarm-panel[data-state="triggered"] .lcars-shield-icon {
   --shield-glow-color: var(--lcars-tomato);
   animation: lcars-shield-critical 0.5s linear infinite;
+  /* [Worf M1] MUST NOT shorten below 0.34s (>2.94 Hz) — WCAG 2.3.1 general
+     flash threshold. Combined with frame strobe (1 Hz) and viewscreen pulse
+     (1 Hz), the aggregate visual field flash rate must stay below 3/s across
+     >25% of a 10° field of view. Current 0.5s = 2 Hz. Minimum safe = 0.34s. */
 }
 
 @keyframes lcars-shield-armed {
@@ -1617,6 +1621,11 @@ Enlarged ghost digit floats upward and fades on press (200ms).
 ```
 
 ### 8.1 Frame Pulse (Triggered)
+
+> **[Data C-3] — LEGACY: Superseded by v4.13.0 Visual Enhancements section above.**
+> The v4.13.0 `lcars-red-alert` / `lcars-shield-critical` / `lcars-key-preview`
+> definitions are canonical. Sections 8.1–8.10 are retained for reference only and
+> MUST NOT be implemented alongside the v4.13.0 versions.
 
 ```css
 .lcars-alarm-panel.triggered {
@@ -2618,3 +2627,23 @@ Contains:
 
 ### Disagreements
 - None. Worf's RED threat-level findings are all valid and addressed. This is the security heart of the ship — no shortcuts.
+
+---
+
+## Worf + Data — v4.13.0 Visual Enhancements Review
+
+**Date**: Stardate 2026.04.13
+
+### Worf (Security)
+**Verdict**: APPROVED WITH CONDITIONS
+
+- **[M1 — APPLIED]** Shield critical animation (0.5s = 2 Hz): frequency floor documented. MUST NOT be shortened below 0.34s (>2.94 Hz). Combined visual field flash rate with frame strobe + viewscreen pulse must stay below WCAG 2.3.1 threshold.
+- `data-digit` attribute values (0-9) are controlled integers from component JS, not user input. No injection surface.
+
+### Data (Architecture)
+**Verdict**: APPROVED WITH CONDITIONS
+
+- **[C-3 — APPLIED]** Marked §8.1–§8.10 as LEGACY/SUPERSEDED by v4.13.0 section. Two different implementations of same animations existed with conflicting names, easing, and color endpoints. v4.13.0 is canonical.
+- **[C-6]** Viewscreen border-width animation in legacy §8.3 triggers layout recalc — superseded section, so no longer applies.
+- **[M-5]** ~1.5 KiB redundant CSS eliminated by superseding §8.
+- **[M-6]** SVG `filter: drop-shadow()` at 0.5s linear is expensive. Consider SVG `<feGaussianBlur>` or static glow circle with `opacity` animation during implementation.

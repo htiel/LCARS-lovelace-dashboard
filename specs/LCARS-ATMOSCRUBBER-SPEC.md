@@ -281,6 +281,11 @@ An inner fill rectangle that rises from the bottom, height proportional to fan s
 
 ### v4.13.0 Visual Enhancements
 
+> **[Data C-5 / R-4]** Particle count reduced from 8–12 to 6 max. Dual animation
+> (rise + drift) merged into single `lcars-particle-float` keyframe to halve
+> compositor layers. Existing §3 `atmos-particle-rise` is superseded by this
+> section — consolidate during implementation.
+
 #### Enhanced Particle Drift
 Particles now vary in size (2–6px), opacity (0.3–0.8), speed (3–6s), and gain ±4px horizontal drift as they rise — floating like real particulate matter in an air column, not marching in rigid lines. (Source: Bracer Jack — empty space is beautiful; the particles fill the cylinder without cluttering it. Source: System 47 — animation tempo is methodical.)
 
@@ -294,15 +299,14 @@ Particles now vary in size (2–6px), opacity (0.3–0.8), speed (3–6s), and g
   width: var(--particle-size, 3px);
   height: var(--particle-size, 3px);
   opacity: var(--particle-opacity, 0.5);
-  animation:
-    lcars-particle-rise var(--particle-speed, 4s) linear infinite,
-    lcars-particle-drift var(--particle-drift-speed, 3s) ease-in-out infinite alternate;
+  /* [Data R-4] Single merged keyframe replaces dual rise + drift */
+  animation: lcars-particle-float var(--particle-speed, 4s) linear infinite;
   animation-delay: var(--particle-delay, 0s);
 }
 
-@keyframes lcars-particle-rise {
+@keyframes lcars-particle-float {
   from {
-    transform: translateY(100%);
+    transform: translateY(100%) translateX(calc(var(--particle-drift, 4px) * -1));
     opacity: 0;
   }
   10% {
@@ -312,25 +316,20 @@ Particles now vary in size (2–6px), opacity (0.3–0.8), speed (3–6s), and g
     opacity: var(--particle-opacity, 0.5);
   }
   to {
-    transform: translateY(-100%);
+    transform: translateY(-100%) translateX(var(--particle-drift, 4px));
     opacity: 0;
   }
 }
-
-@keyframes lcars-particle-drift {
-  from { margin-left: calc(var(--particle-drift, 4px) * -1); }
-  to   { margin-left: var(--particle-drift, 4px); }
-}
 ```
 
-JS generates 8–12 particles with randomized custom properties:
+JS generates **6** particles (max) with randomized custom properties:
 - `--particle-size`: `Math.random() * 4 + 2` → 2–6px
 - `--particle-opacity`: `Math.random() * 0.5 + 0.3` → 0.3–0.8
 - `--particle-speed`: `Math.random() * 3 + 3` → 3–6s
 - `--particle-drift`: `Math.random() * 4 + 1` → 1–4px
 - `--particle-delay`: `Math.random() * -6` → staggered start
 
-The dual-animation approach (rise + drift) composes vertical travel with horizontal oscillation. Fade-in at 10% and fade-out at 90% prevents particles popping at cylinder edges.
+The merged keyframe composes vertical travel with horizontal oscillation in a single animation. Fade-in at 10% and fade-out at 90% prevents particles popping at cylinder edges. Concurrent animation count: 6 particles × 1 animation + AQI pulse + breathe = **8** (all GPU-composited, per budget footnote).
 
 #### AQI Cylinder Ambient Glow
 Internal `box-shadow` on the cylinder, colored by AQI level: Good=ice, Moderate=sunflower, USG=golden-orange, Unhealthy=tomato. The warp core glows from within — so does an active atmospheric processing column. (Source: TheLCARS.com — glow halos are permitted for status; Bracer Jack — color carries assigned meaning per the 4-color rule.)
@@ -1441,3 +1440,23 @@ Extends `LcarsDevicePanelBase`:
 
 *"The environmental systems on a Galaxy-class starship process over 7,000 cubic meters of atmosphere per hour. You'd never know it — they just work. That's what good engineering looks like."*  
 — La Forge, Main Engineering
+
+---
+
+## Worf + Data — v4.13.0 Visual Enhancements Review
+
+**Date**: Stardate 2026.04.13
+
+### Worf (Security)
+**Verdict**: APPROVED
+
+- Particle params are computed randoms, not entity data. No injection surface.
+- `getTotalLength()` for sparkline paths is read-only SVG API. Safe.
+- No supply chain changes. No `innerHTML`/`unsafeHTML`.
+
+### Data (Architecture)
+**Verdict**: APPROVED WITH CONDITIONS
+
+- **[C-5 / R-4 — APPLIED]** Particles reduced from 8–12 to 6 max. Dual `lcars-particle-rise` + `lcars-particle-drift` merged into single `lcars-particle-float` keyframe. Concurrent animations: 6 + AQI pulse + breathe = 8 (all GPU-composited, per budget footnote).
+- **[L-3 — APPLIED]** Consolidation note added: existing §3 `atmos-particle-rise` is superseded by v4.13.0 section.
+- **[L-5]** `getTotalLength()` must be called in `firstUpdated()` or `updated()`, not `connectedCallback()`. Document in implementation.

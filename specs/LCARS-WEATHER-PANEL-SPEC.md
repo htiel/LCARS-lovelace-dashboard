@@ -1237,8 +1237,10 @@ A radial gradient behind the temperature readout, tinted by current weather cond
 }
 
 /* ── Storm flicker — irregular opacity jitter ── */
+/* Duration 4s (not 3s) provides 2.0 Hz effective rate — 33% headroom below
+   WCAG 2.3.1 general flash threshold of 3 Hz [Worf M2] */
 :host([condition="lightning"]) .lcars-weather-viewscreen::before {
-  animation: lcars-storm-flicker 3s steps(8, end) infinite;
+  animation: lcars-storm-flicker 4s steps(8, end) infinite;
 }
 
 @keyframes lcars-storm-flicker {
@@ -2371,3 +2373,21 @@ import './lcars-weather-panel.js';
 
 ### Disagreements
 - None. All reviewer feedback is either accepted or reasonably deferred. This panel received a GREEN threat level from Worf, full approval from Geordi (with one gradient exception noted), and SOUND WITH ADVISORIES from Data. Clean bill of health.
+
+---
+
+## Worf + Data — v4.13.0 Visual Enhancements Review
+
+**Date**: Stardate 2026.04.13
+
+### Worf (Security)
+**Verdict**: APPROVED WITH CONDITIONS
+
+- **[M2 — APPLIED]** Storm flicker `steps(8, end)` duration changed from 3s to 4s. Effective rate drops from 2.67 Hz to 2.0 Hz — 33% headroom below WCAG 2.3.1 threshold.
+- `--wind-deg` from `wind_bearing` flows through `Number()` coercion + LitElement style binding. No CSS injection vector.
+
+### Data (Architecture)
+**Verdict**: APPROVED
+
+- **[M-3]** Precipitation pips: 70 DOM elements for decorative indicator. Replace with CSS `repeating-linear-gradient` + `mask` during implementation (70 → 7 elements).
+- Wind compass, forecast bars, sun arc all within animation budget.

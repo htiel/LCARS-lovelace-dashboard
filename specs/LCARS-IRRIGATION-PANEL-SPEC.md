@@ -185,8 +185,8 @@ function getZoneStateInfo(state, isStandby) {
  * @returns {{ label: string, color: string }}
  */
 function getRainDelayInfo(attrs) {
-  const delay = attrs?.rain_delay;
-  if (delay && delay > 0) {
+  const delay = Number(attrs?.rain_delay);
+  if (!isNaN(delay) && delay > 0) { // [Worf M4] explicit numeric guard
     return { label: `${delay} HR DELAY`, color: 'var(--lcars-african-violet)' };
   }
   return { label: 'NONE', color: 'var(--lcars-disabled)' };
@@ -1448,3 +1448,19 @@ Extends `LcarsDevicePanelBase`:
 
 ### Disagreements
 - None. All reviewer feedback is either accepted or reasonably deferred. This is the simplest panel in the suite — clean, minimal, LCARS-faithful. Keiko O'Brien would indeed approve.
+
+---
+
+## Worf + Data — v4.13.0 Visual Enhancements Review
+
+**Date**: Stardate 2026.04.13
+
+### Worf (Security)
+**Verdict**: APPROVED WITH CONDITIONS
+
+- **[M4 — APPLIED]** `getRainDelayInfo()` amended with `Number()` coercion + explicit `!isNaN()` guard. Consistent with all other numeric helpers.
+
+### Data (Architecture)
+**Verdict**: APPROVED
+
+- Clean spec, well within animation budget. No conditions. Barberpole uses `repeating-linear-gradient` — pure CSS, no layout cost.

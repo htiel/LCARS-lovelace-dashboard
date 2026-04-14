@@ -2,6 +2,20 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.14.1] — 2026-04-14
+
+### Fixed — Camera Loading & Offline States (4X-5)
+
+- **Three-State Viewscreen** — Camera feeds now show distinct CONNECTING / LIVE / OFFLINE states via `data-state` attribute on `.camera-frame`
+- **CONNECTING State** — "ESTABLISHING LINK" overlay text in `--lcars-ice` with 4s opacity breathe animation while camera image loads
+- **OFFLINE State** — "VIEWSCREEN OFFLINE" overlay with `mdi:video-off` icon (32px) in `--lcars-tomato`, tomato border, full opacity (WCAG 1.4.3 fix from previous 0.5 opacity)
+- **LIVE State** — `viewscreen-activate` clip-path animation scoped to `[data-state="live"]` only
+- **Recovery Bug Fix** — `@load` handler now clears `display:none` set by `@error`, enabling cameras to recover on the next 10s refresh cycle
+- **Z-Index Stacking Fix** — `<img>` hidden via `opacity: 0` during connecting state so "ESTABLISHING LINK" overlay is visible
+- **Overlay Transitions** — State-driven visibility uses `opacity`/`visibility` (not `display:none`) per D-4 architecture decision
+- **Accessibility** — `aria-busy` on connecting frames, `aria-label` reflects state, overlays `aria-hidden="true"`, `prefers-reduced-motion` disables breathe animation
+- **Scope** — Standalone camera grid only; device panel cameras unchanged (D-3)
+
 ## [4.14.0] — 2026-04-14
 
 ### Added — BlueAir Air Purifier Support & Internal Sensors Grid

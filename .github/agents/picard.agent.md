@@ -135,11 +135,13 @@ This is the chain of command for shipping code. Each phase has a gate — work d
   - Review gates (which agent reviews which story)
   - Risk register
 - Output: Implementation plan document in `plans/`
+- Ensure: All specs are up to date and reflect the final approved design before implementation begins. No "known issues" in the specs that haven't been resolved.
 
 ### Phase 4: Admiral Review (GATE — PAUSE)
 - **The plan is presented to the Admiral for review.**
 - No implementation begins until the Admiral approves.
 - The Admiral may request changes, reprioritize, or redirect.
+- **Patch exception (4.x.y bug fixes, size S):** If the release is a patch version (bug fix only, no new features) AND complexity is S, this gate is auto-approved — proceed directly to Phase 5 without pausing for Admiral review.
 
 ### Phase 5: Implementation
 - Plan the release by code reuse, starting with componenets that can be used by more than one story, then the stories that are on the critical path, and then the rest of the stories in the order of priority.
@@ -159,6 +161,7 @@ This is the chain of command for shipping code. Each phase has a gate — work d
 ### Phase 7: Admiral Review (GATE — PAUSE)
 - **Summary presented to the Admiral for final review.**
 - No release proceeds until the Admiral approves.
+- **Patch exception (4.x.y bug fixes, size S):** If the release is a patch version (bug fix only, no new features) AND complexity is S AND Phase 6 team review found no blocking issues, this gate is auto-approved — proceed directly to Phase 8 without pausing for Admiral review.
 
 ### Phase 8: Release
 Execute in this exact order:

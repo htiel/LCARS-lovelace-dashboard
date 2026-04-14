@@ -1,7 +1,7 @@
 # LCARS Dashboard — 4.x Backlog
 
 > Stable branch (`4.0`). Non-breaking feature additions, bug fixes, and optimizations.
-> Version: 4.14.0 (current) → 4.15.0+
+> Version: 4.14.1 (current) → 4.15.0+
 
 ---
 
@@ -120,6 +120,34 @@ Break the monolithic `lcars-homepage-card.js` (5,848 lines) into reusable panel 
 - Mushroom architecture: https://github.com/piitaya/lovelace-mushroom
 - https://en.wikipedia.org/wiki/Object-oriented_programming
 - https://realpython.com/python3-object-oriented-programming/
+
+---
+
+### 4X-5 · Camera Loading & Offline States — `DONE` · Priority: MEDIUM · Size: S
+
+**Shipped in**: v4.14.1 (2026-04-14)
+**Spec**: None — bug fix / UX improvement
+
+Camera viewscreens currently show a blank or broken state while loading or when the camera is offline/unresponsive. Replace with proper LCARS-styled loading and error states.
+
+**Desired behavior**:
+1. **Loading**: Render a static placeholder image with "CONNECTING..." text while the camera stream loads. LCARS frame renders immediately; viewscreen area shows the placeholder.
+2. **Loaded**: Once the camera image/stream loads successfully, replace the placeholder with the live feed (existing viewscreen activation animation).
+3. **Offline/Error**: If the image fails to load (camera offline, no stream, timeout), replace with a "CAMERA OFFLINE" message with full LCARS visual flare — frame color shift, scan line, appropriate iconography.
+
+**Implementation notes**:
+- Use `<img>` `onload`/`onerror` events (or `loadeddata` for stream) to detect state transitions
+- Loading placeholder should be a styled `<div>`, not an actual image file — keeps bundle clean
+- Offline state should feel deliberate, not broken — LCARS aesthetic for "system unavailable"
+- Consider `prefers-reduced-motion` for any offline animation
+- Respect existing viewscreen activation animation timing
+
+**Acceptance criteria**:
+- Camera panel shows "CONNECTING..." placeholder immediately on render
+- Live feed replaces placeholder once loaded (with viewscreen activation animation)
+- Failed/offline cameras show "CAMERA OFFLINE" with LCARS styling
+- No flash of broken image icon at any point
+- Works with both snapshot and stream camera entities
 
 ---
 

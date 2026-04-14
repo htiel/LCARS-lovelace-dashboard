@@ -836,7 +836,9 @@ class LcarsHomepageCard extends LitElement {
             display: block;
             aspect-ratio: 16/9;
             object-fit: cover;
-            background: #111;
+            background: var(--lcars-black);
+            position: relative;
+            z-index: 2;
           }
           .camera-label {
             position: absolute;
@@ -852,6 +854,7 @@ class LcarsHomepageCard extends LitElement {
             font-family: var(--lcars-font);
             font-size: var(--lcars-font-size-data);
             text-transform: uppercase;
+            z-index: 3;
           }
           .camera-label ha-icon { --mdc-icon-size: 14px; }
           .camera-label .cam-state {
@@ -860,7 +863,65 @@ class LcarsHomepageCard extends LitElement {
             color: var(--lcars-space-white);
             opacity: 0.7;
           }
-          .camera-frame[data-off] { border-color: var(--lcars-gray); opacity: 0.5; }
+
+          /* ── Camera state overlays ── */
+          .camera-connecting-overlay,
+          .camera-offline-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: var(--lcars-black);
+            z-index: 1;
+            transition: opacity 300ms ease-out, visibility 300ms ease-out;
+          }
+          .camera-connecting-text {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-ice);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            animation: lcars-viewscreen-breathe 4s ease-in-out infinite;
+          }
+          @keyframes lcars-viewscreen-breathe {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.4; }
+          }
+          .camera-offline-overlay ha-icon {
+            --mdc-icon-size: 32px;
+            color: var(--lcars-tomato);
+          }
+          .camera-offline-text {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-tomato);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+          }
+
+          /* State-driven visibility (D-4: opacity/visibility, not display:none) */
+          .camera-frame[data-state="live"] .camera-connecting-overlay,
+          .camera-frame[data-state="offline"] .camera-connecting-overlay {
+            opacity: 0;
+            visibility: hidden;
+          }
+          .camera-frame[data-state="connecting"] .camera-offline-overlay,
+          .camera-frame[data-state="live"] .camera-offline-overlay {
+            opacity: 0;
+            visibility: hidden;
+          }
+          .camera-frame[data-state="offline"] {
+            border-color: var(--lcars-tomato);
+            opacity: 1;
+          }
+          .camera-frame[data-state="offline"]:hover { border-color: var(--lcars-gold); }
+          /* Hide img during connecting so overlay text is visible */
+          .camera-frame[data-state="connecting"] img { opacity: 0; }
+          /* Spacer to maintain 16:9 when no img rendered */
+          .camera-spacer { aspect-ratio: 16/9; }
 
           /* ═══════ DEVICE PANEL (reusable frame for camera / climate / media) ═══════ */
           .device-panels-section {
@@ -1783,10 +1844,10 @@ class LcarsHomepageCard extends LitElement {
             40%  { clip-path: inset(10% 0 10% 0); filter: brightness(1.5) saturate(0.3); }
             100% { clip-path: inset(0 0 0 0); filter: brightness(1) saturate(1); }
           }
-          .camera-frame img {
+          .camera-frame[data-state="live"] img {
             animation: viewscreen-activate 600ms ease-out both;
           }
-          .camera-frame[data-off] img {
+          .camera-frame[data-state="offline"] img {
             filter: saturate(0) brightness(0.3);
             animation: none;
           }
@@ -1866,6 +1927,7 @@ class LcarsHomepageCard extends LitElement {
             .sensor-readout::after { animation: none; }
             .camera-frame img,
             .device-panel-media img { animation: none; }
+            .camera-connecting-text { animation: none; }
             .toggle-pill[data-on],
             .climate-panel[data-heat],
             .climate-panel[data-cool],
@@ -5654,23 +5716,28 @@ class LcarsHomepageCard extends LitElement {
           const name = this._friendlyName(state, entity);
           const off = this._isOff(state);
           const imgUrl = cameraImageUrl(state);
+          const initialState = (off || !imgUrl) ? 'offline' : 'connecting';
           return html`
-            <div class="camera-frame" ?data-off=${off} style="--i:${i}"
+            <div class="camera-frame" data-state="${initialState}" style="--i:${i}"
               role="button"
               tabindex="0"
-              aria-label="${name} camera: ${state.state}"
+              aria-label="${name} camera: ${off ? 'viewscreen offline' : state.state}"
+              aria-busy="${initialState === 'connecting'}"
               @click=${() => this._handleEntityClick(entity.entity_id)}
               @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
+              <div class="camera-connecting-overlay" aria-hidden="true">
+                <span class="camera-connecting-text">ESTABLISHING LINK</span>
+              </div>
+              <div class="camera-offline-overlay" aria-hidden="true">
+                <ha-icon icon="mdi:video-off"></ha-icon>
+                <span class="camera-offline-text">VIEWSCREEN OFFLINE</span>
+              </div>
               ${imgUrl
                 ? html`<img src="${imgUrl}" alt="${name}" loading="lazy"
                             data-entity="${entity.entity_id}"
-                            @error=${(e) => { e.target.style.display = 'none'; e.target.nextElementSibling && (e.target.nextElementSibling.style.display = 'flex'); }}
-                            @load=${(e) => { e.target.style.display = ''; const sib = e.target.nextElementSibling; if (sib?.classList.contains('camera-error-fallback')) sib.style.display = 'none'; }} /><div class="camera-error-fallback" style="display:none;aspect-ratio:16/9;align-items:center;justify-content:center;">
-                    <ha-icon icon="mdi:video-off" style="--mdc-icon-size:48px;color:var(--lcars-gray)"></ha-icon>
-                  </div>`
-                : html`<div style="aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;">
-                    <ha-icon icon="mdi:video-off" style="--mdc-icon-size:48px;color:var(--lcars-gray)"></ha-icon>
-                  </div>`
+                            @load=${(e) => { e.target.style.display = ''; const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'live'); f.removeAttribute('aria-busy'); } }}
+                            @error=${(e) => { e.target.style.display = 'none'; const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'offline'); f.removeAttribute('aria-busy'); } }} />`
+                : html`<div class="camera-spacer"></div>`
               }
               <div class="camera-label">
                 <ha-icon icon="mdi:video"></ha-icon>

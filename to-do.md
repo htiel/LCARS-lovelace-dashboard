@@ -1,93 +1,37 @@
 Level 1 Changes for 4.x.x
-    1. ✅ **DONE (v4.7.0, a56c748)** — Environment panel with atmoscrubber cylinder, AQ detection heuristic, entity partitioning, 24h sparklines, fan preset controls, panel ordering. Using the card framework, make an "environment" card that brings together the area's air quality, temperature, humidity, air purifier type sensors, controls, and fans. Modeled like the battery card where the display is a cylinder with air flowing through it tied to the fan speed of the air purifier if there is one, sensors or diagnostics to the left, controls and switches to the right, graphed 24-hour history of the quality sensors under where the power graphs are in the battery card. Make sure this card sits under the security card but above the battery card. Consult all agents.
+    
+    1. **TODO** — Add BlueAir air purifier support to the environment panel. The Admiral has a Blue Pure 311i Max (via `ha_blueair` integration). Verify the environment panel's auto-detection heuristic picks up BlueAir devices — they may expose `fan` domain entities with speed control and possibly `sensor` entities for filter life. Similar to VeSync purifier handling.
 
-    **IMPLEMENTATION NOTES:**
-    - **Detection**: New `PANEL_TYPE_ENVIRONMENT` in `_getDevicePanelType()`. Trigger: device has ≥2 of: `device_class` in {`temperature`, `humidity`, `pm25`, `pm10`, `volatile_organic_compounds`, `carbon_dioxide`, `aqi`} OR domain is `fan`/`air_quality`. Covers Awair Elements, ecobee, standalone fans.
-    - **Partition**: New `_partitionEnvironmentEntities(entries, categoryEntities)` → `{ quality[], climate[], fans[], controls[], diagnostics[] }`. Quality = AQI/PM/VOC/CO2 sensors. Climate = temp/humidity. Fans = fan domain entities. Controls/diagnostics via existing `_getDeviceCategoryEntities()`.
-    - **Visualization**: Center column = CSS cylinder ("atmoscrubber") with animated particle dots flowing upward. Speed tied to `fan.speed_percentage` or `fan.percentage` attribute. Color shifts: green (good AQI) → yellow → orange → red (hazardous). Idle = slow ambient drift.
-    - **History graph**: Bottom row (replacing I/O flow area). Use HA's `history` API via `this._hass.callWS({ type: 'history/history_during_period', ... })` for 24h of quality sensors. Render as simple SVG sparklines — one line per sensor (AQI, PM2.5, temp, humidity) with color-coded traces. Keep it lightweight — no charting library.
-    - **Panel ordering**: In `_renderAreaContent()`, sort `panelDevices` by type: camera → environment → battery. Add `PANEL_ORDER` const map.
-    - **Bundle impact**: Estimate +5-8 KiB for panel renderer + CSS + sparkline SVG generation.
-    - **Agent consults**: Geordi (cylinder design, color mapping, sparkline layout), Data (history API integration, partition logic), Wesley (particle animation tied to fan speed).
-
-    **REFERENCE: [purifier-card](https://github.com/denysdovhan/purifier-card) (v2.8.0, MIT, LitElement/TS)**
-    Patterns to borrow or adapt:
-    - **AQI display with leading-zero formatting**: Their `renderAQI()` pads values < 10 with `00`, < 100 with `0` in a dimmed `number-off` class. Good LCARS aesthetic — adapt with monospace LCARS font and `--lcars-orange` active / `--lcars-gray` dim.
-    - **Round-slider for fan speed**: They use the `round-slider` custom element for percentage control. We could adapt this as a vertical or horizontal LCARS slider bar rather than a circular one — more on-brand — but the service call pattern (`fan.set_percentage`, `fan.set_preset_mode`) is directly reusable.
-    - **Preset mode shortcuts toolbar**: Their toolbar renders preset_mode buttons (Silent, Auto, 25%, 50%, etc.) with active highlighting. Map this to our LCARS option strip pattern (pill buttons, gold=active) already built for battery config selects. Reuse `fan.set_preset_mode` service call.
-    - **Stats section**: Row of stat blocks (attribute or entity value + unit + subtitle) with dividers. Similar to our telemetry row — keep our LCARS grid layout but borrow their flexible `entity_id OR attribute` resolution pattern for showing filter life, motor speed, etc.
-    - **State-dependent image swap**: They swap `purifier-working.gif` / `purifier-standby.png` based on `state === 'on'`. Our cylinder animation should similarly pause/dim when fan is off — use CSS `animation-play-state: paused` tied to entity state rather than swapping images.
-    - **What NOT to borrow**: Their round card layout, `ha-card` wrapper (we render inside our panel grid), `custom-card-helpers` dependency (we use direct hass API), GIF-based animation (we'll use CSS/SVG), `ha-template` for Jinja2 eval (unnecessary complexity for our auto-discovered entities).
-
-    2. ✅ **DONE (v4.9.0)** — Floor-grouped area navigation with combined floor view, drill-down to area, map-based entity cache. Arrange the area dashboard by floor in the navbar using the area configuration, so each floor gets its sections and the areas are below the floor. If I click on the floor it should combine all the devices in that floor in a single view, and then I can drill down by selecting the actual room/area.
-
-    **IMPLEMENTATION NOTES:**
-    - **Data source**: `this._hass.floors` (HA floor registry, available since HA 2024.2+). Each floor has `floor_id`, `name`, `level` (integer sort order), and `icon`. Areas have `floor_id` linking to their floor.
-    - **Navigation card changes**: In `lcars-navigation-card.js`, group area buttons by floor. Render floor headers as wider LCARS separator bars (full sidebar width, different color — e.g., `--lcars-lilac`). Floor button click sets `selectedFloor` instead of `selectedArea`.
-    - **Floor view**: When a floor is selected (not an area), `_getAreaEntities()` needs a floor-level variant `_getFloorEntities(floorId)` that unions all entities from all areas on that floor. Render as a combined view with area-name subheaders within each device group.
-    - **Drill-down**: Click floor → shows combined floor view. Click area under floor → standard area view. Back button or floor re-click returns to floor view.
-    - **Fallback**: Areas with no `floor_id` get grouped under an "Unassigned" section at the bottom.
-    - **CSS**: Floor header buttons get distinct styling — taller, different color, maybe small floor icon. Area buttons remain as-is but indented or smaller under their floor.
-    - **Bundle impact**: ~2-3 KiB. Mostly logic changes in nav card + minor CSS.
-
-    3. ✅ **DONE (v4.10.1–4.10.3)** — Full agent audit pass: Data logic fixes, Worf security hardening, Geordi accessibility pass, elbow alignment fix, brand/ images for HACS.
-
-    **COMPLETED FIXES:**
-    - **v4.10.1 (HIGH/CRITICAL)**: D1 config loading guard, D5 env cache cap, D7 timer cleanup, D8 div-by-zero guard, D9 dead property removal, D10 MutationObserver timeout, W-H1 path validation on 21 schemas + safe_path for rmtree, W-H2 SandboxedEnvironment scoped to config dir, W-M1 require_admin on read endpoints
-    - **v4.10.2 (MEDIUM/LOW)**: P1 semantic headings (h2/h3/h4), P2 main element landmark, P6 aria-hidden decorative bars, P8/P9 contrast fixes (gray→sky), O1/R2 keyboard on total-lines, O2/R1 slider ARIA + keyboard, O3 sensor-line keyboard, O4 edit pip keyboard + focus-visible, W-L1 debug log level
-    - **v4.10.3**: Elbow stem alignment with area buttons (elbow-w 9.5→10.5rem, removed +2rem cutout offset, inner curve 1.5rem)
-    - **Brand images**: Created `brand/` directory with icon.png, icon@2x.png, logo.png, logo@2x.png for HA 2026.3+ integration branding
-
-    Full pass for each agent. Worf should make sure there is no code injection risk of people naming devices and causing security issues. Geordi should do a full accessibility pass making sure tab orders are correct and heading levels guide the screen reader from area, device, entities, etc.
-
-    4. ✅ **DONE (v4.11.0)** — Media panel for Apple TV, HomePod, Sonos. Album art viewscreen, transport controls, volume bar, source selector. Worf-mandated artwork URL validation.
-
-    5. ✅ **DONE (v4.11.0)** — Climate panel for Nest, Ecobee thermostats. SVG temperature arc, setpoint controls with debouncing/clamping, HVAC mode strips, dual setpoint for heat_cool. Display current temperature, target temperature, HVAC mode (heat/cool/auto/off), fan mode, and humidity per zone. The Admiral's setup has 3 Nest thermostats (1st/2nd/3rd floor) — this is the biggest gap for environment card adoption. Detect via `domain === "climate"` and render inline with existing air quality sensors. Consult Geordi for LCARS-styled thermostat controls.
-
-    **IMPLEMENTATION NOTES:**
-    - **Detection**: In `_getDevicePanelType()`, add `climate` domain as a trigger for `PANEL_TYPE_ENVIRONMENT`. Currently triggers on AQ sensors + fans. Thermostats are the other half of the "environmental" picture.
-    - **Partition**: Extend `_partitionEnvironmentEntities()` to include a `climate[]` bucket for `domain === "climate"` entities. Exclude `climate` entities where `device_class` implies non-HVAC use (e.g., fridge/freezer from `smartthinq_sensors` — filter by checking `capabilities.min_temp > 32` or presence of `hvac_modes` including `heat_cool`).
-    - **Rendering**: Climate entities need: (a) current temp readout, (b) target temp ±0.5° adjustment buttons, (c) HVAC mode selector (pill buttons: heat/cool/auto/off), (d) fan mode toggle if supported. Use `climate.set_temperature`, `climate.set_hvac_mode`, `climate.set_fan_mode` service calls.
-    - **Paired sensors**: Nest thermostats expose separate `sensor.Xth_floor_thermostat_temperature` and `sensor.Xth_floor_thermostat_humidity` entities. These should be grouped visually with their `climate` entity rather than rendered as standalone sensors.
-    - **Multi-zone display**: If an area has multiple climate entities (rare), stack them. If floor view shows 3 zones, render a compact multi-zone comparison strip.
-    - **Reference**: SwitchBot meters (WoTHP) provide per-room temperature/humidity as standalone sensors — these don't need climate controls, just readout bars in the environment panel alongside AQ sensors.
-
-    6. ✅ **DONE (v4.11.0)** — Alarm panel for SimpliSafe, Honeywell, Ring. SVG shield, PIN keypad with rate limiter, arm mode strip, zone roster, countdown timer, triggered pulse animation.
-
-    **IMPLEMENTATION NOTES:**
-    - **Detection**: `alarm_control_panel` domain entities should auto-route to the security panel or render prominently at the top of any area that contains one.
-    - **States**: `disarmed`, `armed_home`, `armed_away`, `armed_night`, `triggered`, `arming`, `pending`. Map to LCARS alert colors: disarmed=green, armed_home=gold, armed_away=blue, triggered=tomato+pulse.
-    - **Service calls**: `alarm_control_panel.alarm_arm_home`, `alarm_control_panel.alarm_arm_away`, `alarm_control_panel.alarm_disarm`. Disarm requires `code` parameter — render a numeric PIN pad in LCARS style.
-    - **Worf**: Disarm action MUST require a PIN. Arm actions should have a confirmation dialog ("COMMAND AUTHORIZATION REQUIRED"). Never send PIN in URL or log it.
-
-    7. ✅ **DONE (v4.11.0)** — Pool/spa panel for Pentair ScreenLogic. Dual viewscreens, chemistry readouts, circuit toggles, pool lighting controls. The Admiral has a Pentair EasyTouch2 with pool heater, spa heater, waterfall, bubblers, spillway, air blower, cleaner, pool/spa lights, and temperature sensors. This is a complex subsystem with 10+ entities that doesn't fit neatly into existing panels.
-
-    **IMPLEMENTATION NOTES:**
-    - **Detection**: New `PANEL_TYPE_POOL` or group by `platform === "screenlogic"` or `identifiers` containing `screenlogic`.
-    - **Climate entities**: `climate.pentair_*_pool_heat` and `climate.pentair_*_spa_heat` — off/heat modes, solar/heater presets, 40-104°F range. Render with temperature setpoint + mode selector.
-    - **Switches**: Pool pump, spa mode, waterfall, bubblers, spillway, air blower, cleaner — render as LCARS toggle pills in a feature grid.
-    - **Lights**: Pool light, spa light — on/off toggle pills.
-    - **Temperature**: Air temperature sensor, plus current water temp from climate entity attributes.
-    - **Layout idea**: A "pool schematic" panel with equipment status indicators, similar to the warp core but for pool operations.
-
-    8. **TODO** — Add BlueAir air purifier support to the environment panel. The Admiral has a Blue Pure 311i Max (via `ha_blueair` integration). Verify the environment panel's auto-detection heuristic picks up BlueAir devices — they may expose `fan` domain entities with speed control and possibly `sensor` entities for filter life. Similar to VeSync purifier handling.
-
-    9. **IN PROGRESS** — Spec + CSS + color utilities done (v4.13.0). Renderer not yet implemented. Add standalone room temperature/humidity sensor grid support to the environment panel. The Admiral has 14+ SwitchBot meters (WoTHP) providing per-room temperature and humidity, plus a SwitchBot CO2 meter (WoTHPc). These are sensor-only devices (no controls) that should render as compact readout rows in the environment panel, similar to the existing sensor-only mode for monitor-only air quality devices.
+    2. **IN PROGRESS** — Spec + CSS + color utilities done (v4.13.0). Renderer not yet implemented. Add standalone room temperature/humidity sensor grid support to the environment panel. The Admiral has 14+ SwitchBot meters (WoTHP) providing per-room temperature and humidity, plus a SwitchBot CO2 meter (WoTHPc). These are sensor-only devices (no controls) that should render as compact readout rows in the environment panel, similar to the existing sensor-only mode for monitor-only air quality devices.
 
     **IMPLEMENTATION NOTES:**
     - **Detection**: Devices with ≥2 of `device_class` in {`temperature`, `humidity`} but no `fan`/`air_quality` domain entities → render in sensor-only environment mode (no atmoscrubber cylinder, just the readout grid).
     - **CO2 meter**: If a SwitchBot device has `co2` or `carbon_dioxide` device_class, include it in the AQ sensor list — it should trigger the full atmoscrubber visualization.
     - **Multi-sensor rooms**: If a room has both a SwitchBot meter AND an Awair, group them under the same environment panel rather than creating duplicate panels.
 
-    10. ✅ **DONE (v4.11.0)** — Weather panel for Davis Instruments, WeatherFlow. SVG display, wind compass, 7-day forecast strip, lightning/precipitation sensors. The Admiral has Davis Instruments WLL 6100 + Vantage Pro2 Plus with UV/solar radiation, plus WeatherFlow Tempest, plus AirLink indoor/outdoor air quality monitors. The `weather` domain entities provide forecast data. Consider a compact weather summary strip for the environment panel or a dedicated weather card.
+    3. impliment an Power Pannel for power usage, empooira vue, kasa energy monitors, anything that provides voltage, wattage, or amps.  Some devices alos provide a switch. so in each room with shuch devices we should group them into a pane, left aligned (not under the existing pannles). under switches and lights or devices that do not have energy monitoring.  ther should be a distinct section in hte panel per device or circuit, if it has a switch that she be first, then the stats for the device, voltage can be just a number, but perhaps we can put smal graphs for the KW over time, amperage could aslo just be a pint in time number. Real time devices like the "Kasa Dog heating pad" in my json example is a good exapme of a device with a switch as are the powerstrips in the server room. The Emporia vue plug in provides a lot of data and does not have switches, but I do have a plan to reflash these Emporta Vues to ESP32 engermonitors.  Look up the specs for flashing an Emporia Vue to  ESP32 to get references to that. or check Eric's json file.  I want to be able to look at this for a room and see the devices, or for a virtual room like the area called "main panel" this is my electical panel with two emporia views in so no swithces just monitors.  You can use graphs, bar charts, doughnuts, etc. what ever makes sense and has good LCARS asthetics. Alos some of the devices are duplicate ahd hidden so make sure you respect the hidden devices.
 
-    11. ✅ **DONE (v4.11.0)** — Irrigation panel for Rachio. Zone list with START/STOP, active fill bar, standby toggle, rate-limited zone switching. The Admiral has a Rachio 3 with 8 zones, multiple schedules, rain delay, and a rain sensor. Consider an "irrigation" or "grounds" grouping that shows zone status, active schedules, rain delay, and rain sensor state. Detect via `platform === "rachio"` or `identifiers` containing `rachio`.
+    ESP32 sources to start.
+    https://fuzznotes.com/posts/flash-emporia-vue-3-with-esphome/
+    https://emporia-vue-local.github.io/docs/tutorial/configuration/
+    https://medium.com/@rorygallagher2010/taking-my-data-back-removing-my-emporia-vue-electricity-monitor-from-the-cloud-7b67de716f24
 
-    12. ✅ **DONE (v4.13.0)** — Dynamic visual enhancements across all 9 device panels. Breathing frames, pip strips, numeric code watermarks, button ripple, HVAC pulse, audio waveform, alarm strobe, weather glow, caustic shimmer, barberpole flow, particle system, comfort glow tiles. Shared animation framework (lcars-shared-animations.js), 8 timing tokens, COMFORT_COLORS whitelist, prefers-reduced-motion overrides. Crew reviewed: Worf (security), Data (code quality), Geordi (UI/a11y).
 
-    13. ✅ **DONE (v4.13.1)** — Pip strip fix: solid bars instead of dashed/scalloped pattern.
+    4. Archetecture, in prep for 5.0 I think we need to get out of monolithic files into a more OO archetecture if that is possible in HA.  Problem: we will break the ingel dashboard into mutiple dashboards, we will have a "habitat" which is the current area view where we nav by area and see everyting in the area, but will add views for things like "security" will will pull together all camera, alarms, motion sensors accross all rooms into a "single pane of glass"  I want to keep the individual pannels consistant acorss dashboars with an update once and the it updates all of the dashboards.  Train Data on proper software arhctecture for Python, js, or other languages needed for this. as well as what HA can do without breaking  My thogut is that we will have a group of code (code,css,etc.) per pannel that get incuded or called form the dashboard files.  If we want to chage say the media panel we will jsut edit that code and any dashboard that include the media panel will use that code block. so we should end up with a code block per spec sheet. and perhaps to take it a but further if there are common elements like the boarder that only changes color between pannels we can break the border out as well to help dirve consistancy and ease of editing for future updates. below are two sources I could find but search for more for java script or other languages. and make sure you look in the HA repos for examples.
 
+    Sources for Data's education
+https://en.wikipedia.org/wiki/Object-oriented_programming
+https://realpython.com/python3-object-oriented-programming/
+
+
+
+
+
+    
 Breaking Changes and Rev to Versions 5.x.x
+    
+    
+    
     1. Set up a new 5.0 branch with GitHub pre-release tags so users can opt in to the beta via HACS.
 
     **IMPLEMENTATION NOTES:**

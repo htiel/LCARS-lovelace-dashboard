@@ -264,18 +264,21 @@ Phase 3 (Visualization)
 - [x] **0.5** `lcars-weather-utils.js` — Forecast fetcher with cache ✅
 - [x] **Refactor** — Wire `getStateColor()` into homepage card, replace `_getSensorIndicatorColor()` ✅
 - [x] **Refactor** — Extract sparkline from atmoscrubber into shared module ✅
-- [ ] **Build** — Verify webpack build, measure bundle delta (pending user review)
+- [x] **Build** — Verify webpack build, measure bundle delta ✅
 - [x] **Review** — Data architecture review of all utility modules ✅
 
 ## Phase 1-3 Progress
 
 - [x] **1.1** Climate Panel (Item 5) — CRITICAL / XL ✅
 - [x] **1.2** Alarm Panel (Item 6) — HIGH / XL ✅
-- [ ] **1.3** BlueAir Verification (Item 8) — MEDIUM / S (pending testing)
+- [ ] **1.3** BlueAir Verification (Item 8) — MEDIUM / S → moved to `backlog-4x.md` as 4X-1
 - [x] **2.1** Media Panel (Item 4) — MEDIUM / L ✅
 - [x] **2.2** Pool/Spa Panel (Item 7) — HIGH / XL ✅
-- [ ] **2.3** Temp/Humidity Grid (Item 9) — MEDIUM / M (standalone card, deferred to separate PR)
+- [ ] **2.3** Temp/Humidity Grid (Item 9) — MEDIUM / M → moved to `backlog-4x.md` as 4X-2
 - [x] **3.1** Weather Panel (Item 10) — MEDIUM / M ✅
 - [x] **3.2** Irrigation Panel (Item 11) — LOW / M ✅
 
-## Status: v4.11.0 — Ready for review and commit
+## v4.13.0 Visual Enhancements — ALL SHIPPED ✅
+56 enhancements across 10 panels. See `plans/v4.13.0-task-checklist.md` (61/61 complete).
+
+## Status: v4.13.1 — In production. Remaining items tracked in `plans/backlog-4x.md`.

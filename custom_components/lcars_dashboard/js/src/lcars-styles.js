@@ -65,6 +65,16 @@ export const lcarsColors = css`
   /* ─── Animation ─── */
   --lcars-transition: 200ms ease-out;
   --lcars-transition-slow: 400ms ease-out;
+
+  /* ─── Animation Timing Tokens (Data R-5, v4.13.0) ─── */
+  --lcars-anim-flash: 200ms;
+  --lcars-anim-confirm: 400ms;
+  --lcars-anim-pulse-urgent: 1s;
+  --lcars-anim-pulse: 2s;
+  --lcars-anim-breathe: 4s;
+  --lcars-anim-ambient: 8s;
+  --lcars-anim-scan: 600ms;
+  --lcars-anim-stagger: 50ms;
 `;
 
 export const lcarsBaseStyles = css`

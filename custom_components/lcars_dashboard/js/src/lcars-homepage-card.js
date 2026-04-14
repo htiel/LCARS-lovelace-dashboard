@@ -27,10 +27,11 @@ import {
   AQ_DEVICE_CLASSES, AQ_ENTITY_SUFFIX_RE,
   DOMAIN_LABELS, DOMAIN_ORDER,
 } from './lcars-entity-utils.js';
-import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor } from './lcars-color-utils.js';
+import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor, getCo2Color, getTempColor, getTempComfortClass, getSafeComfortColor, COMFORT_COLORS, getRainDelayInfo } from './lcars-color-utils.js';
 import { clampSetpoint, clampValue, createRateLimiter, createDebouncer } from './lcars-service-utils.js';
 import { renderSparkline, fetchSparklineData } from './lcars-sparkline.js';
 import { fetchForecasts } from './lcars-weather-utils.js';
+import { sharedKeyframes, sharedReducedMotion } from './lcars-shared-animations.js';
 
 const TAG = 'Homepage';
 
@@ -507,6 +508,8 @@ class LcarsHomepageCard extends LitElement {
     static get styles() {
       return [
         lcarsBaseStyles,
+        sharedKeyframes,
+        sharedReducedMotion,
         css`
           :host { display: block; }
 
@@ -2500,6 +2503,846 @@ class LcarsHomepageCard extends LitElement {
             padding: 0.25rem;
           }
           .irrigation-standby-btn { min-width: 10rem; }
+
+          /* ═══════════════════════════════════════════════════════════
+             v4.13.0 — VISUAL ENHANCEMENTS (All Panels)
+             Phase 1: Device Panel Base (cascades to all)
+             ═══════════════════════════════════════════════════════════ */
+
+          /* ── 1.1 Frame Breathing Pulse ── */
+          .lcars-device-panel {
+            animation: lcars-frame-breathe var(--lcars-anim-breathe) ease-in-out infinite;
+          }
+
+          /* ── 1.2 Data Pip Footer Strip ── */
+          .lcars-device-panel .panel-pip-strip {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: repeating-linear-gradient(
+              90deg,
+              var(--panel-frame-color) 0 6px,
+              transparent 6px 10px
+            );
+            pointer-events: none;
+            border-radius: 0 0 0.25rem 0.75rem;
+          }
+
+          /* ── 1.3 Header Numeric Code Watermark ── */
+          .panel-numeric-code {
+            position: absolute;
+            right: var(--lcars-gap);
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: var(--lcars-font);
+            font-size: 0.625rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--lcars-gray);
+            opacity: 0.4;
+            pointer-events: none;
+            user-select: none;
+          }
+
+          /* ── 1.4 Button Press Ripple Flash ── */
+          .device-control-btn {
+            position: relative;
+            overflow: hidden;
+          }
+          .device-control-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 1rem; height: 1rem;
+            margin: -0.5rem 0 0 -0.5rem;
+            border-radius: 50%;
+            background: var(--lcars-space-white);
+            opacity: 0;
+            pointer-events: none;
+          }
+          .device-control-btn:active::after {
+            animation: lcars-button-flash var(--lcars-anim-flash) ease-out forwards;
+          }
+
+          /* ── 1.5 Viewscreen Power-On Scanline ── */
+          .device-panel-media .scanline-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 2;
+          }
+          .device-panel-media .scanline-overlay::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--lcars-space-white) 50%, transparent);
+            opacity: 0;
+            transform: translateY(-100%);
+          }
+          .device-panel-media.scanning .scanline-overlay::before {
+            animation: lcars-scanline var(--lcars-anim-scan) ease-out forwards;
+          }
+
+          /* ═══════ Phase 3: CLIMATE v4.13.0 ═══════ */
+
+          /* ── 3.1 Arc Gauge Segmented Stroke ── */
+          .climate-arc-fill {
+            stroke-dasharray: 6 2;
+            stroke-linecap: butt;
+            transition: stroke-dashoffset 800ms ease-in-out;
+          }
+          .climate-arc-flash {
+            animation: lcars-setpoint-confirm var(--lcars-anim-confirm) ease-out forwards;
+          }
+
+          /* ── 3.2 HVAC Action Frame Pulse ── */
+          .lcars-device-panel[data-hvac-action="heating"] {
+            animation: lcars-hvac-pulse var(--lcars-anim-pulse) ease-in-out infinite;
+            --pulse-color: var(--lcars-butterscotch);
+          }
+          .lcars-device-panel[data-hvac-action="cooling"] {
+            animation: lcars-hvac-pulse var(--lcars-anim-pulse) ease-in-out infinite;
+            --pulse-color: var(--lcars-ice);
+          }
+          @keyframes lcars-hvac-pulse {
+            0%, 100% { border-color: var(--pulse-color); }
+            50%      { border-color: var(--pulse-color); border-color: color-mix(in srgb, var(--pulse-color) 70%, black); }
+          }
+
+          /* ── 3.3 Setpoint Button Glow ── */
+          .lcars-target-temp.confirm {
+            animation: lcars-setpoint-confirm var(--lcars-anim-confirm) ease-out forwards;
+          }
+
+          /* ── 3.4 Mode Strip Active Indicator ── */
+          .lcars-mode-strip {
+            position: relative;
+          }
+          .lcars-mode-strip .mode-indicator {
+            position: absolute;
+            bottom: 0;
+            height: 2px;
+            background: var(--lcars-gold);
+            transition: transform 300ms ease-out, width 300ms ease-out;
+            transform: translateX(var(--indicator-x, 0));
+            width: var(--indicator-w, 3rem);
+          }
+
+          /* ── 3.5 Ambient Temperature Data Pips ── */
+          .climate-temp-pips {
+            display: flex;
+            gap: 2px;
+            padding: 0.25rem 0;
+          }
+          .climate-temp-pips .pip {
+            width: 4px;
+            height: 4px;
+            border-radius: 1px;
+            opacity: 0;
+            transition: opacity 500ms ease-out;
+          }
+          .climate-temp-pips .pip.visible {
+            opacity: 1;
+          }
+
+          /* ═══════ Phase 4: MEDIA v4.13.0 ═══════ */
+
+          /* ── 4.1 Audio Waveform (12 bars, scaleY — Data C-1/C-2) ── */
+          .lcars-audio-waveform {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 2px;
+            height: 32px;
+            overflow: hidden;
+          }
+          .lcars-audio-waveform .bar {
+            width: 2px;
+            border-radius: 1px 1px 0 0;
+            background: var(--lcars-ice);
+            height: 60%;
+            transform-origin: bottom;
+            transform: scaleY(var(--bar-min-ratio, 0.17));
+            will-change: transform;
+            animation: lcars-waveform var(--bar-dur, 400ms) ease-in-out alternate infinite;
+            animation-delay: var(--bar-delay, 0ms);
+          }
+          .lcars-audio-waveform .bar.peak {
+            background: linear-gradient(to top, var(--lcars-ice) 70%, var(--lcars-tomato) 100%);
+          }
+          .lcars-audio-waveform[data-paused] .bar {
+            animation-play-state: paused;
+            transform: scaleY(0.03);
+            opacity: 0.3;
+          }
+          @keyframes lcars-waveform {
+            0%   { transform: scaleY(var(--bar-min-ratio, 0.17)); }
+            100% { transform: scaleY(1); }
+          }
+
+          /* ── 4.2 Album Art Viewscreen Glow ── */
+          .media-viewscreen-glow {
+            box-shadow: 0 0 12px 4px var(--lcars-african-violet);
+            animation: lcars-media-glow 3s ease-in-out infinite;
+          }
+          @keyframes lcars-media-glow {
+            0%, 100% { box-shadow: 0 0 6px 2px var(--lcars-african-violet); }
+            50%      { box-shadow: 0 0 14px 6px var(--lcars-african-violet); }
+          }
+
+          /* ── 4.3 Transport Active State ── */
+          .media-transport-btn.active {
+            box-shadow: 0 0 6px 1px var(--lcars-african-violet);
+          }
+          .media-transport-btn.active::before {
+            content: '';
+            position: absolute;
+            bottom: 2px; left: 50%;
+            width: 4px; height: 4px;
+            margin-left: -2px;
+            border-radius: 50%;
+            background: var(--lcars-african-violet);
+          }
+
+          /* ── 4.4 Progress Bar Luminous Head ── */
+          .media-progress-fill::after {
+            content: '';
+            position: absolute;
+            right: -2px; top: -1px;
+            width: 4px; height: calc(100% + 2px);
+            border-radius: 2px;
+            background: var(--lcars-gold);
+            box-shadow: 0 0 6px 2px var(--lcars-gold);
+            animation: lcars-progress-glow var(--lcars-anim-pulse) ease-in-out infinite;
+          }
+          @keyframes lcars-progress-glow {
+            0%, 100% { box-shadow: 0 0 4px 1px var(--lcars-gold); }
+            50%      { box-shadow: 0 0 8px 3px var(--lcars-gold); }
+          }
+
+          /* ── 4.5 Idle Standby Pulse ── */
+          .media-idle-glyph {
+            font-size: 2rem;
+            color: var(--lcars-african-violet);
+            opacity: 0.4;
+            animation: lcars-standby-pulse var(--lcars-anim-breathe) ease-in-out infinite;
+          }
+          @keyframes lcars-standby-pulse {
+            0%, 100% { opacity: 0.3; }
+            50%      { opacity: 0.6; }
+          }
+
+          /* ═══════ Phase 5: ALARM v4.13.0 ═══════ */
+
+          /* ── 5.1 Red Alert Frame Strobe ── */
+          .lcars-device-panel[data-state="triggered"] {
+            animation: lcars-red-alert var(--lcars-anim-pulse-urgent) linear infinite;
+            box-shadow: 0 0 20px var(--lcars-tomato);
+          }
+          @keyframes lcars-red-alert {
+            0%, 100% { border-color: var(--lcars-tomato); box-shadow: 0 0 20px var(--lcars-tomato); }
+            50%      { border-color: var(--lcars-tomato); border-color: color-mix(in srgb, var(--lcars-tomato) 40%, black); box-shadow: 0 0 8px var(--lcars-tomato); box-shadow: color-mix(in srgb, var(--lcars-tomato) 40%, black); }
+          }
+
+          /* ── 5.2 Shield Icon Reactive Glow ── */
+          .alarm-shield-icon {
+            transition: filter 500ms ease-out;
+          }
+          .alarm-shield-icon[data-glow="ice"] {
+            filter: drop-shadow(0 0 8px var(--lcars-ice));
+          }
+          .alarm-shield-icon[data-glow="butterscotch"] {
+            filter: drop-shadow(0 0 8px var(--lcars-butterscotch));
+          }
+          .alarm-shield-icon[data-glow="butterscotch-pulse"] {
+            filter: drop-shadow(0 0 8px var(--lcars-butterscotch));
+            animation: lcars-shield-armed 3s ease-in-out infinite;
+          }
+          .alarm-shield-icon[data-glow="tomato"] {
+            filter: drop-shadow(0 0 12px var(--lcars-tomato));
+            /* Worf M1: MUST NOT shorten below 0.34s (WCAG 2.3.1) */
+            animation: lcars-shield-critical 0.5s linear infinite;
+          }
+          @keyframes lcars-shield-armed {
+            0%, 100% { filter: drop-shadow(0 0 6px var(--lcars-butterscotch)); }
+            50%      { filter: drop-shadow(0 0 12px var(--lcars-butterscotch)); }
+          }
+          @keyframes lcars-shield-critical {
+            0%, 100% { filter: drop-shadow(0 0 12px var(--lcars-tomato)); }
+            50%      { filter: drop-shadow(0 0 20px var(--lcars-tomato)); }
+          }
+
+          /* ── 5.3 Keypad Tactile Flash ── */
+          .alarm-key {
+            position: relative;
+          }
+          .alarm-key:active::before {
+            content: attr(data-digit);
+            position: absolute;
+            top: -1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5rem;
+            color: var(--lcars-space-white);
+            opacity: 0;
+            animation: lcars-key-preview 200ms ease-out forwards;
+            pointer-events: none;
+          }
+          @keyframes lcars-key-preview {
+            0%   { opacity: 0.8; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0;   transform: translateX(-50%) translateY(-0.75rem); }
+          }
+
+          /* ── 5.4 Countdown Urgency Escalation ── */
+          .alarm-countdown[data-urgency="calm"]     { color: var(--lcars-sunflower); }
+          .alarm-countdown[data-urgency="elevated"] { color: var(--lcars-golden-orange); animation: lcars-urgency-blink var(--lcars-anim-pulse) ease-in-out infinite; }
+          .alarm-countdown[data-urgency="high"]     { color: var(--lcars-tomato); animation: lcars-urgency-blink var(--lcars-anim-pulse-urgent) ease-in-out infinite; }
+          .alarm-countdown[data-urgency="critical"] { color: var(--lcars-tomato); animation: lcars-urgency-critical 0.5s ease-in-out infinite; }
+          @keyframes lcars-urgency-blink {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.5; }
+          }
+          @keyframes lcars-urgency-critical {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50%      { transform: scale(1.05); opacity: 0.7; }
+          }
+
+          /* ── 5.5 Zone Status Micro-Pips ── */
+          .alarm-zone-pip {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            transition: background 300ms ease-out;
+          }
+          .alarm-zone-pip.ok      { background: var(--lcars-ice); }
+          .alarm-zone-pip.bypass  { background: var(--lcars-butterscotch); }
+          .alarm-zone-pip.fault   { background: var(--lcars-tomato); }
+          .alarm-zone-pip.flash {
+            animation: lcars-pip-flash 300ms ease-out;
+          }
+          @keyframes lcars-pip-flash {
+            0%   { transform: scale(1.5); background: var(--lcars-space-white); }
+            100% { transform: scale(1); }
+          }
+
+          /* ═══════ Phase 6: WEATHER v4.13.0 ═══════ */
+
+          /* ── 6.1 Condition Ambient Glow ── */
+          .weather-viewscreen {
+            position: relative;
+          }
+          .weather-viewscreen::before {
+            content: '';
+            position: absolute; inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(ellipse at 50% 80%, var(--weather-glow-color, transparent) 0%, transparent 70%);
+            opacity: var(--weather-glow-opacity, 0.15);
+            pointer-events: none;
+            z-index: 0;
+            transition: opacity 1s ease-out;
+          }
+          /* Storm flicker — 4s per Worf M2 */
+          .weather-viewscreen.storm::before {
+            animation: lcars-storm-flicker 4s steps(8, end) infinite;
+          }
+          @keyframes lcars-storm-flicker {
+            0%   { opacity: 0.12; }
+            12%  { opacity: 0.24; }
+            25%  { opacity: 0.10; }
+            37%  { opacity: 0.22; }
+            50%  { opacity: 0.14; }
+            62%  { opacity: 0.25; }
+            75%  { opacity: 0.11; }
+            87%  { opacity: 0.20; }
+            100% { opacity: 0.12; }
+          }
+
+          /* ── 6.2 Wind Compass Needle ── */
+          .wind-compass {
+            position: relative;
+            width: 3rem; height: 3rem;
+          }
+          .wind-needle {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 2px; height: 40%;
+            margin-left: -1px; margin-top: -40%;
+            background: var(--lcars-ice);
+            transform-origin: bottom center;
+            transform: rotate(var(--wind-deg, 0deg));
+            transition: transform 800ms ease-out;
+            border-radius: 1px;
+          }
+          .wind-compass.gusty .wind-needle {
+            animation: lcars-gust-oscillate 0.8s ease-in-out infinite alternate;
+          }
+          @keyframes lcars-gust-oscillate {
+            0%   { transform: rotate(calc(var(--wind-deg, 0deg) - 5deg)); }
+            100% { transform: rotate(calc(var(--wind-deg, 0deg) + 5deg)); }
+          }
+
+          /* ── 6.3 Forecast Range Bars ── */
+          .forecast-range-bar {
+            width: 3px;
+            transform-origin: bottom;
+            transform: scaleY(0);
+            animation: lcars-bar-grow 400ms ease-out forwards;
+            animation-delay: calc(var(--day-index, 0) * 60ms);
+            border-radius: 1px;
+          }
+          @keyframes lcars-bar-grow {
+            to { transform: scaleY(1); }
+          }
+
+          /* ── 6.4 Sun Arc ── */
+          .sun-arc-track {
+            stroke: var(--lcars-gray);
+            stroke-width: 2;
+            fill: none;
+            opacity: 0.3;
+          }
+          .sun-arc-progress {
+            stroke: var(--lcars-sunflower);
+            stroke-width: 2;
+            fill: none;
+            transition: stroke-dashoffset 60s linear;
+          }
+          .sun-dot {
+            fill: var(--lcars-gold);
+            filter: drop-shadow(0 0 4px var(--lcars-gold));
+            transition: cx 60s linear, cy 60s linear;
+          }
+
+          /* ── 6.5 Precip Pips ── */
+          .precip-pips {
+            display: grid;
+            grid-template-columns: repeat(5, 4px);
+            grid-template-rows: repeat(2, 4px);
+            gap: 1px;
+          }
+          .precip-pips .pip {
+            width: 4px; height: 4px;
+            border-radius: 1px;
+            background: var(--lcars-gray);
+            opacity: 0.3;
+          }
+          .precip-pips .pip.filled {
+            background: var(--lcars-ice);
+            opacity: 1;
+          }
+
+          /* ═══════ Phase 7: POOL/SPA v4.13.0 ═══════ */
+
+          /* ── 7.1 Water Caustic Shimmer ── */
+          .pool-viewscreen {
+            position: relative;
+            overflow: hidden;
+          }
+          .pool-viewscreen::after {
+            content: '';
+            position: absolute; inset: -50%;
+            width: 200%; height: 200%;
+            background:
+              radial-gradient(ellipse at 25% 25%, rgba(153,204,255,0.06), transparent 50%),
+              radial-gradient(ellipse at 75% 30%, rgba(153,204,255,0.04), transparent 50%),
+              radial-gradient(ellipse at 50% 75%, rgba(153,204,255,0.05), transparent 50%);
+            mix-blend-mode: screen;
+            pointer-events: none;
+            animation: lcars-caustic-drift 12s linear infinite;
+          }
+          @keyframes lcars-caustic-drift {
+            0%   { transform: translate(0, 0); }
+            33%  { transform: translate(-3%, 2%); }
+            66%  { transform: translate(2%, -1%); }
+            100% { transform: translate(0, 0); }
+          }
+
+          /* ── 7.2 Heating Active Indicator ── */
+          .pool-heat-bar {
+            height: 3px;
+            background: var(--lcars-gray);
+            border-radius: 1px;
+            overflow: hidden;
+            position: relative;
+          }
+          .pool-heat-bar.heating {
+            background: linear-gradient(90deg, var(--lcars-tomato), var(--lcars-golden-orange), var(--lcars-butterscotch));
+            background-size: 200% 100%;
+            animation: lcars-heat-flow var(--lcars-anim-pulse) linear infinite;
+          }
+          @keyframes lcars-heat-flow {
+            0%   { background-position: 0% 0; }
+            100% { background-position: 200% 0; }
+          }
+
+          /* ── 7.3 Chemistry Sensor Badges ── */
+          .chem-badge {
+            display: inline-flex;
+            gap: 0.25rem;
+            padding: 0.125rem 0.5rem;
+            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+          }
+          .chem-badge[data-threshold="ok"]   { background: var(--lcars-ice); color: var(--lcars-black); }
+          .chem-badge[data-threshold="warn"] { background: var(--lcars-golden-orange); color: var(--lcars-black); }
+          .chem-badge[data-threshold="critical"] {
+            background: var(--lcars-tomato);
+            color: var(--lcars-black);
+            animation: lcars-chem-alert 1.5s ease-in-out infinite;
+          }
+          @keyframes lcars-chem-alert {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.6; }
+          }
+
+          /* ── 7.4 IntelliBrite Swatch Glow ── */
+          .pool-swatch.active {
+            box-shadow: 0 0 8px 2px var(--swatch-color, var(--lcars-ice));
+            transition: box-shadow 200ms ease-out;
+          }
+
+          /* ── 7.5 Pump Spinner (primary only — Data R-6) ── */
+          .lcars-pump-spinner {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 14px; height: 14px;
+            position: relative;
+          }
+          .lcars-pump-spinner .dot {
+            position: absolute;
+            width: 4px; height: 4px;
+            border-radius: 50%;
+            background: var(--lcars-ice);
+            opacity: 0.3;
+          }
+          .lcars-pump-spinner .dot:nth-child(1) { top: 0;    left: 5px;  }
+          .lcars-pump-spinner .dot:nth-child(2) { bottom: 1px; left: 0;   }
+          .lcars-pump-spinner .dot:nth-child(3) { bottom: 1px; right: 0;  }
+          .lcars-pump-spinner.on {
+            animation: lcars-pump-spin 1.2s linear infinite;
+          }
+          .lcars-pump-spinner.on .dot { opacity: 1; }
+          .lcars-pump-spinner.on .dot:nth-child(2) { opacity: 0.6; }
+          .lcars-pump-spinner.on .dot:nth-child(3) { opacity: 0.3; }
+          @keyframes lcars-pump-spin {
+            to { transform: rotate(360deg); }
+          }
+
+          /* ═══════ Phase 8: IRRIGATION v4.13.0 ═══════ */
+
+          /* ── 8.1 Barberpole Flow ── */
+          .zone-fill.active {
+            background-image: repeating-linear-gradient(
+              -45deg,
+              var(--lcars-ice) 0 4px,
+              rgba(153,204,255,0.3) 4px 8px
+            );
+            background-size: 11.31px 11.31px;
+            animation: lcars-flow 0.6s linear infinite;
+          }
+          @keyframes lcars-flow {
+            0%   { background-position: 0 0; }
+            100% { background-position: 11.31px 0; }
+          }
+
+          /* ── 8.2 Zone Completion Flash ── */
+          .zone-bar.completing {
+            animation: lcars-zone-complete 2s ease-out forwards;
+          }
+          @keyframes lcars-zone-complete {
+            0%   { border-left-color: var(--lcars-ice); background: rgba(153,204,255,0.15); }
+            100% { border-left-color: var(--panel-frame-color); background: transparent; }
+          }
+
+          /* ── 8.3 Schedule Countdown Proximity Glow ── */
+          .schedule-countdown {
+            text-shadow: 0 0 calc(var(--schedule-proximity, 0) * 8px) var(--lcars-ice);
+            transition: text-shadow 10s ease-out;
+          }
+
+          /* ── 8.4 Rain Delay Badge ── */
+          .lcars-rain-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.125rem 0.5rem 0.125rem 0.375rem;
+            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+            background: var(--lcars-ice);
+            color: var(--lcars-black);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            animation: lcars-cloud-bob 3s ease-in-out infinite;
+          }
+          @keyframes lcars-cloud-bob {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-1px); }
+          }
+
+          /* ═══════ Phase 9: ATMOSCRUBBER v4.13.0 ═══════ */
+
+          /* ── 9.1 Particles (6 max, single merged keyframe — Data C-5/R-4) ── */
+          .lcars-atmos-particle {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--atmos-quality-color, var(--lcars-ice));
+            will-change: transform, opacity;
+            width: var(--particle-size, 3px);
+            height: var(--particle-size, 3px);
+            animation: lcars-particle-float var(--particle-speed, 4s) linear infinite;
+            animation-delay: var(--particle-delay, 0s);
+          }
+          @keyframes lcars-particle-float {
+            from { transform: translateY(100%) translateX(calc(var(--particle-drift, 4px) * -1)); opacity: 0; }
+            10%  { opacity: var(--particle-opacity, 0.5); }
+            90%  { opacity: var(--particle-opacity, 0.5); }
+            to   { transform: translateY(-100%) translateX(var(--particle-drift, 4px)); opacity: 0; }
+          }
+
+          /* ── 9.2 AQI Cylinder Glow ── */
+          .atmos-cylinder {
+            box-shadow: inset 0 0 12px 4px var(--atmos-quality-color, var(--lcars-ice));
+            transition: box-shadow 1s ease-out;
+          }
+          .atmos-cylinder.warn {
+            animation: lcars-aqi-warn var(--lcars-anim-pulse) ease-in-out infinite;
+          }
+          @keyframes lcars-aqi-warn {
+            0%, 100% { box-shadow: inset 0 0 12px 4px var(--atmos-quality-color); }
+            50%      { box-shadow: inset 0 0 20px 8px var(--atmos-quality-color); }
+          }
+
+          /* ── 9.3 Filter Life Segments ── */
+          .filter-segments {
+            display: flex;
+            gap: 2px;
+          }
+          .filter-seg {
+            flex: 1;
+            height: 6px;
+            border-radius: 1px;
+            background: var(--lcars-gray);
+            opacity: 0.3;
+          }
+          .filter-seg.lit { background: var(--lcars-ice); opacity: 1; }
+          .filter-seg.warn { background: var(--lcars-golden-orange); opacity: 1; }
+          .filter-seg.critical {
+            background: var(--lcars-tomato);
+            opacity: 1;
+            animation: lcars-filter-critical var(--lcars-anim-pulse-urgent) ease-in-out infinite;
+          }
+          @keyframes lcars-filter-critical {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.4; }
+          }
+
+          /* ── 9.4 Sparkline Scan ── */
+          .atmos-sparkline-path {
+            stroke-dasharray: var(--sparkline-length, 200);
+            stroke-dashoffset: var(--sparkline-length, 200);
+            animation: lcars-sparkline-draw 1.5s ease-out forwards;
+            animation-delay: calc(var(--sparkline-index, 0) * 200ms);
+          }
+          @keyframes lcars-sparkline-draw {
+            to { stroke-dashoffset: 0; }
+          }
+
+          /* ── 9.5 Preset Mode Wipe ── */
+          .atmos-preset-btn {
+            position: relative;
+            overflow: hidden;
+          }
+          .atmos-preset-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            width: 0;
+            background: var(--lcars-african-violet);
+            opacity: 0.3;
+            transition: width 250ms ease-out;
+          }
+          .atmos-preset-btn.active::before {
+            width: 100%;
+          }
+
+          /* ═══════ Phase 10: AIR PURIFIER v4.13.0 ═══════ */
+
+          /* ── 10.1 Sensor Row Stagger ── */
+          .purifier-sensor-row {
+            animation: lcars-cascade-in 250ms ease-out both;
+            animation-delay: calc(var(--sensor-index, 0) * 80ms);
+          }
+
+          /* ═══════ Phase 11: TEMP/HUMIDITY GRID v4.13.0 ═══════ */
+
+          /* ── 11.1 Tile Comfort Glow (Worf R1: COMFORT_COLORS whitelist) ── */
+          .env-tile.warm {
+            box-shadow: 0 0 8px 2px rgba(255, 153, 102, 0.2);
+            animation: lcars-warm-glow 3s ease-in-out infinite;
+          }
+          .env-tile.cool {
+            box-shadow: 0 0 8px 2px rgba(136, 153, 255, 0.2);
+            animation: lcars-cool-glow 3s ease-in-out infinite;
+          }
+          .env-tile.hot {
+            box-shadow: 0 0 8px 2px rgba(255, 136, 102, 0.25);
+            animation: lcars-warm-glow 3s ease-in-out infinite;
+          }
+          .env-tile.cold {
+            box-shadow: 0 0 8px 2px rgba(85, 102, 255, 0.25);
+            animation: lcars-cool-glow 3s ease-in-out infinite;
+          }
+          @keyframes lcars-warm-glow {
+            0%, 100% { box-shadow: 0 0 6px 1px rgba(255,153,102,0.15); }
+            50%      { box-shadow: 0 0 10px 3px rgba(255,153,102,0.25); }
+          }
+          @keyframes lcars-cool-glow {
+            0%, 100% { box-shadow: 0 0 6px 1px rgba(136,153,255,0.15); }
+            50%      { box-shadow: 0 0 10px 3px rgba(136,153,255,0.25); }
+          }
+
+          /* ── 11.2 Floor Label Scan-In ── */
+          .env-floor-label {
+            position: relative;
+            overflow: hidden;
+          }
+          .env-floor-label::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: var(--lcars-black);
+            transform-origin: right;
+            transform: scaleX(1);
+            animation: lcars-floor-scan 200ms ease-out forwards;
+            animation-delay: calc(var(--floor-index, 0) * 200ms);
+          }
+          @keyframes lcars-floor-scan {
+            to { transform: scaleX(0); }
+          }
+
+          /* ── 11.3 Sparkline Draw-On ── */
+          .env-sparkline-path {
+            stroke-dasharray: var(--sparkline-length, 200);
+            stroke-dashoffset: var(--sparkline-length, 200);
+            animation: lcars-sparkline-draw 1.2s ease-out forwards;
+            animation-delay: calc(var(--tile-index, 0) * var(--lcars-anim-stagger));
+          }
+
+          /* ── 11.4 Summary Row Pulse ── */
+          .sensors-summary-row {
+            animation: lcars-summary-pulse var(--lcars-anim-breathe) ease-in-out infinite;
+          }
+          @keyframes lcars-summary-pulse {
+            0%, 100% { border-color: var(--lcars-ice); box-shadow: none; }
+            50%      { border-color: var(--lcars-ice); box-shadow: 0 0 4px 1px rgba(153,204,255,0.2); }
+          }
+
+          /* ── 11.5 Hot/Cold Alert Pulse ── */
+          .env-tile.hot-alert {
+            animation: lcars-hot-alert-pulse 1.5s ease-in-out infinite, lcars-warm-glow 3s ease-in-out infinite;
+          }
+          .env-tile.cold-alert {
+            animation: lcars-cold-alert-pulse 2s ease-in-out infinite, lcars-cool-glow 3s ease-in-out infinite;
+          }
+          @keyframes lcars-hot-alert-pulse {
+            0%, 100% { border-color: var(--lcars-peach); }
+            50%      { border-color: var(--lcars-tomato); }
+          }
+          @keyframes lcars-cold-alert-pulse {
+            0%, 100% { border-color: var(--lcars-bluey); }
+            50%      { border-color: var(--lcars-blue); }
+          }
+
+          /* ── 11.6 Value Change Ripple ── */
+          .env-tile.value-changed {
+            animation: lcars-value-ripple 300ms ease-out;
+          }
+          @keyframes lcars-value-ripple {
+            0%   { box-shadow: inset 4px 0 0 0 transparent; }
+            50%  { box-shadow: inset 4px 0 0 0 var(--tile-new-comfort-color, var(--lcars-ice)); }
+            100% { box-shadow: inset 4px 0 0 0 transparent; }
+          }
+
+          /* ═══════ Phase 2: BATTERY v4.13.0 ═══════ */
+
+          /* ── 2.1 Sensor Pill Badges ── */
+          .battery-pill-badge {
+            display: inline-flex;
+            overflow: hidden;
+            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+          }
+          .battery-pill-badge .pill-label {
+            padding: 0.125rem 0.375rem;
+            background: var(--panel-frame-color);
+            color: var(--lcars-black);
+          }
+          .battery-pill-badge .pill-value {
+            padding: 0.125rem 0.5rem;
+            background: rgba(255,255,255,0.08);
+            color: var(--lcars-space-white);
+            font-weight: 700;
+          }
+          .battery-pill-badge .pill-value.updated {
+            animation: lcars-value-flash 300ms ease-out;
+          }
+
+          /* ── 2.3 Charge State Glow ── */
+          .battery-charge-glow {
+            transition: box-shadow 500ms ease-out;
+          }
+          .battery-charge-glow[data-level="high"]    { box-shadow: 0 0 8px 2px rgba(153,204,255,0.3); }
+          .battery-charge-glow[data-level="medium"]  { box-shadow: 0 0 6px 2px rgba(255,153,0,0.25); }
+          .battery-charge-glow[data-level="low"]     { box-shadow: 0 0 8px 2px rgba(255,85,85,0.3); }
+
+          /* ═══════ v4.13.0 REDUCED MOTION OVERRIDES ═══════ */
+          @media (prefers-reduced-motion: reduce) {
+            .lcars-device-panel { animation: none; }
+            .lcars-device-panel[data-hvac-action="heating"],
+            .lcars-device-panel[data-hvac-action="cooling"] {
+              animation: none;
+              border-color: var(--pulse-color);
+            }
+            .lcars-audio-waveform .bar { animation: none !important; transform: scaleY(0.17); }
+            .lcars-device-panel[data-state="triggered"] {
+              animation: none;
+              border-color: var(--lcars-tomato);
+              border-width: 6px 3px 6px 6px;
+              box-shadow: none;
+            }
+            .alarm-shield-icon[data-glow="butterscotch-pulse"],
+            .alarm-shield-icon[data-glow="tomato"] { animation: none; }
+            .alarm-countdown[data-urgency="elevated"],
+            .alarm-countdown[data-urgency="high"],
+            .alarm-countdown[data-urgency="critical"] { animation: none; }
+            .weather-viewscreen.storm::before { animation: none; opacity: 0.18; }
+            .wind-compass.gusty .wind-needle { animation: none; }
+            .pool-viewscreen::after { animation: none; opacity: 0.04; }
+            .pool-heat-bar.heating { animation: none; }
+            .lcars-pump-spinner.on { animation: none; }
+            .chem-badge[data-threshold="critical"] { animation: none; }
+            .zone-fill.active { animation: none; }
+            .lcars-rain-badge { animation: none; }
+            .lcars-atmos-particle { animation: none; opacity: 0.4; }
+            .atmos-cylinder.warn { animation: none; }
+            .filter-seg.critical { animation: none; }
+            .env-tile.warm, .env-tile.cool, .env-tile.hot, .env-tile.cold { animation: none; }
+            .env-tile.hot-alert, .env-tile.cold-alert { animation: none; }
+            .sensors-summary-row { animation: none; }
+            .media-viewscreen-glow { animation: none; }
+            .media-idle-glyph { animation: none; opacity: 0.4; }
+            .media-progress-fill::after { animation: none; }
+            /* Confirmations: halved, still play */
+            .device-control-btn:active::after { animation-duration: 100ms !important; }
+            .alarm-key:active::before { animation-duration: 100ms !important; }
+            .zone-bar.completing { animation-duration: 1s !important; }
+          }
         `,
       ];
     }
@@ -2597,6 +3440,16 @@ class LcarsHomepageCard extends LitElement {
       return { cameras, sensors, controls };
     }
 
+    /* ─── v4.13.0: Generate deterministic 6-digit panel code (Data L-4) ─── */
+    _generatePanelCode(entityId) {
+      let h = 5381;
+      for (let i = 0; i < entityId.length; i++) {
+        h = ((h << 5) + h + entityId.charCodeAt(i)) | 0;
+      }
+      const code = String(Math.abs(h) % 1000000).padStart(6, '0');
+      return `${code.slice(0, 3)}-${code.slice(3)}`;
+    }
+
     /* ─── Dispatch to the correct panel renderer ─── */
     _renderDevicePanel(panelType, group) {
       switch (panelType) {
@@ -2628,6 +3481,7 @@ class LcarsHomepageCard extends LitElement {
           <div class="device-panel-header">
             <span class="device-panel-name">${deviceName}</span>
             <div class="device-panel-header-line"></div>
+            <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(cameras[0]?.entity?.entity_id || deviceName)}</span>
           </div>
 
           <div class="device-panel-sensors" role="list" aria-label="${deviceName} sensors">
@@ -2690,6 +3544,7 @@ class LcarsHomepageCard extends LitElement {
               `;
             })}
           </div>
+          <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
       `;
     }
@@ -2915,6 +3770,7 @@ class LcarsHomepageCard extends LitElement {
                 ${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : '—'}
               </span>
             ` : ''}
+            <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(group.device.id)}</span>
           </div>
 
           <!-- Sensors (left) -->
@@ -2978,12 +3834,16 @@ class LcarsHomepageCard extends LitElement {
             aria-valuemin="0" aria-valuemax="300"
             aria-label="Air quality: ${aqiEstimate != null ? Math.round(aqiEstimate) : 'unknown'}">
             <div class="atmoscrubber ${isIdle ? 'scrubber-idle' : ''}"
-              style="--scrubber-hue:${Math.round(hue)};--scrubber-speed:${scrubberSpeed.toFixed(1)}s">
+              style="--scrubber-hue:${Math.round(hue)};--scrubber-speed:${scrubberSpeed.toFixed(1)}s;--atmos-quality-color:${aqColor}">
               ${scoreEntry ? html`
                 <div class="scrubber-score">${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : '—'}</div>
               ` : pm25Entry ? html`
                 <div class="scrubber-score">${pm25Val != null && Number.isFinite(pm25Val) ? Math.round(pm25Val) : '—'}</div>
               ` : ''}
+              ${!isIdle ? html`${Array.from({ length: 6 }, (_, i) => html`
+                <div class="lcars-atmos-particle" aria-hidden="true"
+                  style="--particle-speed:${3 + i * 0.8}s;--particle-delay:${i * 0.6}s;--particle-drift:${3 + (i % 3) * 2}px;--particle-size:${2 + (i % 3)}px;--particle-opacity:${0.3 + (i % 2) * 0.2};left:${10 + i * 14}%"></div>
+              `)}` : ''}
             </div>
           </div>
 
@@ -3051,6 +3911,7 @@ class LcarsHomepageCard extends LitElement {
               return this._renderSparkline(points, color, name);
             })}
           </div>
+          <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
       `;
     }
@@ -3130,6 +3991,7 @@ class LcarsHomepageCard extends LitElement {
             <span class="battery-charge-label" style="color:${coreColor}">
               ${chargeAvailable ? `${Math.round(charge)}%` : 'N/A'}
             </span>
+            <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(socEntry?.entity?.entity_id || group.device.id)}</span>
           </div>
 
           <!-- Telemetry (left) -->
@@ -3364,6 +4226,7 @@ class LcarsHomepageCard extends LitElement {
               `;
             })}
           </div>
+          <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
       `;
     }
@@ -3507,6 +4370,7 @@ class LcarsHomepageCard extends LitElement {
 
       return html`
         <div class="lcars-device-panel climate-panel" data-panel-type="climate"
+          data-hvac-action="${hvacAction}"
           style="--panel-frame-color:${actionColor}">
           <!-- Header -->
           <div class="climate-header">
@@ -3515,6 +4379,7 @@ class LcarsHomepageCard extends LitElement {
             <span class="climate-action-badge" style="color:${actionColor}">
               ${hvacAction.toUpperCase()}
             </span>
+            <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(primary.entity.entity_id)}</span>
           </div>
 
           <!-- Sensors (left) -->
@@ -3661,6 +4526,7 @@ class LcarsHomepageCard extends LitElement {
               </div>
             ` : ''}
           </div>
+          <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
       `;
     }
@@ -3821,12 +4687,14 @@ class LcarsHomepageCard extends LitElement {
 
       return html`
         <div class="lcars-device-panel alarm-panel ${isTriggered ? 'alarm-triggered' : ''}" data-panel-type="alarm"
+          data-state="${alarmState}"
           style="--panel-frame-color:${stateColor}">
           <!-- Header -->
           <div class="alarm-header">
             <span class="device-panel-name">${deviceName}</span>
             <div class="device-panel-header-line"></div>
             <span class="alarm-state-badge" style="color:${stateColor}">${stateLabel}</span>
+            <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(primary.entity.entity_id)}</span>
           </div>
 
           <!-- Zones (left) -->
@@ -3922,6 +4790,7 @@ class LcarsHomepageCard extends LitElement {
               </div>
             </div>
           ` : ''}
+          <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
       `;
     }
@@ -4008,6 +4877,7 @@ class LcarsHomepageCard extends LitElement {
             <span class="device-panel-name">${deviceName}</span>
             <div class="device-panel-header-line"></div>
             <span class="media-state-badge" style="color:${stateColor}">${transportSymbol} ${playerState.toUpperCase()}</span>
+            <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(primary.entity.entity_id)}</span>
           </div>
 
           <!-- Metadata (left) -->
@@ -4049,14 +4919,14 @@ class LcarsHomepageCard extends LitElement {
           </div>
 
           <!-- Viewscreen (right) -->
-          <div class="media-viewscreen" @click=${() => this._handleEntityClick(primary.entity.entity_id)}>
+          <div class="media-viewscreen ${isPlaying ? 'media-viewscreen-glow' : ''}" @click=${() => this._handleEntityClick(primary.entity.entity_id)}>
             ${validArt && !isIdle ? html`
               <img class="media-art" src="${artUrl}" alt="Album art"
                 crossorigin="anonymous" referrerpolicy="no-referrer" loading="lazy"
                 @error=${(e) => { e.target.style.display = 'none'; }} />
             ` : html`
               <div class="media-idle-display">
-                <span class="media-idle-glyph">♪</span>
+                <span class="media-idle-glyph">&#9834;</span>
                 <span class="media-idle-label">STANDBY</span>
               </div>
             `}
@@ -4066,6 +4936,18 @@ class LcarsHomepageCard extends LitElement {
                 ${artist ? html`<div class="media-artist">${artist}</div>` : ''}
               </div>
             ` : ''}
+          </div>
+
+          <!-- Audio Waveform (12 bars, 4 groups — Data C-1/C-2) -->
+          <div class="lcars-audio-waveform" ?data-paused=${!isPlaying} aria-hidden="true">
+            ${Array.from({ length: 12 }, (_, i) => {
+              const group = Math.floor(i / 3);
+              const baseDur = [380, 420, 350, 460][group];
+              const delay = i * 50;
+              const isPeak = i === 2 || i === 8;
+              return html`<div class="bar ${isPeak ? 'peak' : ''}"
+                style="--bar-dur:${baseDur + (i % 3) * 30}ms;--bar-delay:${delay}ms;--bar-min-ratio:${0.1 + group * 0.05}"></div>`;
+            })}
           </div>
 
           <!-- Transport + Volume (bottom) -->
@@ -4198,6 +5080,7 @@ class LcarsHomepageCard extends LitElement {
                 @click=${() => this._handlePoolSetpoint(primary.entity.entity_id, attrs, targetTemp + (step || 1))}>+</button>
             </div>
           ` : ''}
+          <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
       `;
     }
@@ -4223,6 +5106,7 @@ class LcarsHomepageCard extends LitElement {
             ${poolTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-ice)">POOL ${Math.round(poolTemp)}°</span>` : ''}
             ${spaTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-butterscotch)">SPA ${Math.round(spaTemp)}°</span>` : ''}
             ${airTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-space-white)">AIR ${Math.round(Number(airTemp))}°</span>` : ''}
+            <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(pool[0]?.entity?.entity_id || spa[0]?.entity?.entity_id || group.device.id)}</span>
           </div>
 
           <!-- Chemistry (left, conditional) -->
@@ -4255,14 +5139,19 @@ class LcarsHomepageCard extends LitElement {
 
           <!-- Controls (right) -->
           <div class="pool-controls" aria-label="Circuit controls">
-            ${[...pumps, ...circuits].map(({ entity, state }) => {
+            ${[...pumps, ...circuits].map(({ entity, state }, idx) => {
               const name = this._friendlyName(state, entity);
               const isOn = state.state === 'on';
+              const isPrimaryPump = idx === 0 && pumps.length > 0 && entity.entity_id === pumps[0].entity.entity_id;
               return html`
                 <button class="device-control-btn" role="switch" aria-checked="${isOn}" ?data-on=${isOn}
                   @click=${() => this._handleToggle(entity.entity_id)}
                   title="${name}: ${state.state}">
-                  <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
+                  ${isPrimaryPump ? html`
+                    <div class="lcars-pump-spinner ${isOn ? 'on' : ''}" aria-hidden="true">
+                      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                    </div>
+                  ` : html`<ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>`}
                   <span>${name}</span>
                 </button>
               `;
@@ -4298,6 +5187,7 @@ class LcarsHomepageCard extends LitElement {
               })}
             </div>
           ` : ''}
+          <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
       `;
     }
@@ -4451,6 +5341,7 @@ class LcarsHomepageCard extends LitElement {
             <span class="weather-condition-badge" style="color:${condColor}">
               ${glyph} ${condition.toUpperCase().replace(/[_-]/g, ' ')}
             </span>
+            <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(primary.entity.entity_id)}</span>
           </div>
 
           <!-- Sensors (left) -->
@@ -4532,6 +5423,7 @@ class LcarsHomepageCard extends LitElement {
 
           <!-- Forecast (bottom) -->
           ${this._renderForecastStrip(forecasts)}
+          <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
       `;
     }
@@ -4598,6 +5490,7 @@ class LcarsHomepageCard extends LitElement {
             <span class="irrigation-status-badge" style="color:${activeZone ? 'var(--lcars-ice)' : isStandby ? 'var(--lcars-gray)' : 'var(--lcars-sunflower)'}">
               ${activeZone ? `WATERING ${this._friendlyName(activeZone.state, activeZone.entity)}` : isStandby ? 'STANDBY' : 'IDLE'}
             </span>
+            <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(zones[0]?.entity?.entity_id || group.device.id)}</span>
           </div>
 
           <!-- Schedule (left) -->
@@ -4663,6 +5556,7 @@ class LcarsHomepageCard extends LitElement {
               </div>
             `;
           })}
+          <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
       `;
     }

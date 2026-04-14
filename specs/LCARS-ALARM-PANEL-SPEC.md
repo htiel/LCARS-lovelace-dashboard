@@ -1480,6 +1480,142 @@ function isKeypadVisible(state, codeRequired) {
 
 The triggered state is the most visually intense state in the entire LCARS Dashboard. This is **Red Alert** — the ship is under attack.
 
+### v4.13.0 Visual Enhancements
+
+#### Red Alert Frame Strobe
+Triggered state — frame rapidly pulses tomato/dark-red with 20px ambient glow. Zero subtlety.
+
+```css
+.lcars-alarm-panel[data-state="triggered"] {
+  animation: lcars-red-alert 1s linear infinite;
+  box-shadow: 0 0 20px var(--lcars-tomato);
+}
+
+@keyframes lcars-red-alert {
+  0%, 100% { border-color: var(--lcars-tomato); box-shadow: 0 0 20px var(--lcars-tomato); }
+  50%      { border-color: #882222;             box-shadow: 0 0 8px #882222; }
+}
+```
+
+#### Shield Icon Reactive Glow
+Shield SVG drop-shadow by state: disarmed=ice, armed-home=amber, armed-away=amber+3s pulse, triggered=rapid red 0.5s pulse.
+
+```css
+.lcars-shield-icon {
+  --shield-glow-color: var(--lcars-ice);
+  filter: drop-shadow(0 0 8px var(--shield-glow-color));
+  transition: filter 500ms ease-out;
+}
+
+.lcars-alarm-panel[data-state="armed_home"] .lcars-shield-icon {
+  --shield-glow-color: var(--lcars-butterscotch);
+}
+
+.lcars-alarm-panel[data-state="armed_away"] .lcars-shield-icon {
+  --shield-glow-color: var(--lcars-butterscotch);
+  animation: lcars-shield-armed 3s ease-in-out infinite;
+}
+
+.lcars-alarm-panel[data-state="triggered"] .lcars-shield-icon {
+  --shield-glow-color: var(--lcars-tomato);
+  animation: lcars-shield-critical 0.5s linear infinite;
+}
+
+@keyframes lcars-shield-armed {
+  0%, 100% { filter: drop-shadow(0 0 6px var(--shield-glow-color)); }
+  50%      { filter: drop-shadow(0 0 12px var(--shield-glow-color)); }
+}
+
+@keyframes lcars-shield-critical {
+  0%, 100% { filter: drop-shadow(0 0 12px var(--shield-glow-color)); }
+  50%      { filter: drop-shadow(0 0 4px var(--shield-glow-color)); }
+}
+```
+
+#### Keypad Button Tactile Flash
+Enlarged ghost digit floats upward and fades on press (200ms).
+
+```css
+.lcars-keypad-btn {
+  position: relative;
+  overflow: visible;
+}
+
+.lcars-keypad-btn:active::before {
+  content: attr(data-digit);
+  position: absolute;
+  top: 0;
+  left: 50%;
+  font-size: 150%;
+  color: var(--lcars-gold);
+  pointer-events: none;
+  animation: lcars-key-preview 200ms ease-out forwards;
+}
+
+@keyframes lcars-key-preview {
+  0% { opacity: 1; transform: translateX(-50%) translateY(-100%) scale(1.5); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-150%) scale(1.5); }
+}
+```
+
+#### Countdown Timer Urgency Escalation
+4-tier urgency: >15s=sunflower, 10-15s=orange+2s pulse, 5-10s=tomato+1s pulse, <5s=tomato+0.5s scale pulse.
+
+```css
+.lcars-countdown-display[data-urgency="calm"]     { color: var(--lcars-sunflower); }
+.lcars-countdown-display[data-urgency="elevated"] { color: var(--lcars-orange); animation: lcars-countdown-pulse 2s ease-in-out infinite; }
+.lcars-countdown-display[data-urgency="high"]     { color: var(--lcars-tomato); animation: lcars-countdown-pulse 1s ease-in-out infinite; }
+.lcars-countdown-display[data-urgency="critical"] { color: var(--lcars-tomato); animation: lcars-countdown-critical 0.5s ease-in-out infinite; }
+
+@keyframes lcars-countdown-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+
+@keyframes lcars-countdown-critical {
+  0%, 100% { transform: scale(1.0); opacity: 1; }
+  50%      { transform: scale(1.1); opacity: 0.7; }
+}
+```
+
+#### Zone Status Micro-Pips
+6px coloured dot per zone row. Ice=OK, butterscotch=bypass, tomato=fault. Flash on state change.
+
+```css
+.lcars-zone-row::before {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--zone-status-color, var(--lcars-gray));
+  transition: background 300ms ease-out;
+}
+
+.lcars-zone-row.state-change::before {
+  animation: lcars-pip-flash 300ms ease-out 1;
+}
+
+@keyframes lcars-pip-flash {
+  0%   { background: var(--lcars-space-white); transform: scale(1.5); }
+  100% { background: var(--zone-status-color); transform: scale(1); }
+}
+```
+
+#### Alarm Reduced Motion
+```css
+@media (prefers-reduced-motion: reduce) {
+  .lcars-alarm-panel[data-state="triggered"] { animation: none; border-color: var(--lcars-tomato); }
+  .lcars-alarm-panel[data-state="armed_away"] .lcars-shield-icon,
+  .lcars-alarm-panel[data-state="triggered"] .lcars-shield-icon { animation: none; }
+  .lcars-keypad-btn:active::before { animation: none; }
+  .lcars-countdown-display[data-urgency="elevated"],
+  .lcars-countdown-display[data-urgency="high"],
+  .lcars-countdown-display[data-urgency="critical"] { animation: none; transform: none; }
+  .lcars-zone-row.state-change::before { animation: none; }
+}
+```
+
 ### 8.1 Frame Pulse (Triggered)
 
 ```css

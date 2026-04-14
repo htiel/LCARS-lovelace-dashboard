@@ -15,6 +15,100 @@ All notable changes to the LCARS Dashboard project are documented here.
 
 > **Beta**: Install via HACS with "Show beta versions" enabled.
 
+---
+
+## [4.13.0] — 2026-04-13
+
+### Added — Dynamic Visual Enhancements (All Panels)
+
+#### Shared Animation Framework (Phase 0)
+- **`lcars-shared-animations.js`** (NEW): Shared CSS keyframes module — `lcars-scanline`, `lcars-frame-breathe`, `lcars-button-flash`, `lcars-pip-sweep`, `lcars-distress-pulse`, `lcars-value-flash`, `lcars-confirm-scale`, `lcars-setpoint-confirm` — extracted for DRY reuse across all panels
+- **`lcars-styles.js`**: 8 animation timing tokens as CSS custom properties — `--lcars-anim-flash` (200ms), `--lcars-anim-confirm` (400ms), `--lcars-anim-pulse-urgent` (1s), `--lcars-anim-pulse` (2s), `--lcars-anim-breathe` (4s), `--lcars-anim-ambient` (8s), `--lcars-anim-scan` (600ms), `--lcars-anim-stagger` (50ms)
+- **`lcars-color-utils.js`**: `STATE_COLOR_MAP` centralized state→color lookup, `COMFORT_COLORS` whitelist for temp grid, `getTempComfortClass()`, `getSafeComfortColor()`, `getRainDelayInfo()` with numeric guard
+
+#### Device Panel Base (All Panels)
+- **Frame Breathing Pulse** — Subtle ambient opacity cycle on all device panels via `lcars-frame-breathe`
+- **Data Pip Footer Strip** — Repeating-gradient data pip bar at the bottom of every panel
+- **Header Numeric Code Watermark** — Deterministic 6-digit `XXX-XXX` code (DJB2 hash) per entity, `aria-hidden`, 0.4 opacity
+- **Button Press Ripple Flash** — Radial flash effect on all `.device-control-btn` active press
+- **Viewscreen Scanline Overlay** — 2px luminous sweep on viewscreen power-on
+
+#### Climate Panel Enhancements
+- **HVAC Action Frame Pulse** — Panel border pulses butterscotch (heating) or ice (cooling) via `data-hvac-action` attribute
+- **Arc Gauge Segmented Stroke** — `stroke-dasharray: 6 2` segmented arc with confirmation flash
+- **Setpoint Button Glow** — Confirmation animation on temperature adjustment
+- **Mode Strip Active Indicator** — Sliding gold underline on active HVAC mode
+- **Ambient Temperature Data Pips** — Small pip row for ambient sensor data
+
+#### Media Panel Enhancements
+- **Audio Waveform Visualizer** — 12 bars in 4 groups, `scaleY` GPU-composited animation, pauses when media paused
+- **Album Art Viewscreen Glow** — African-violet box-shadow pulse when playing
+- **Transport Active State** — Glow indicator on active transport button
+- **Progress Bar Luminous Head** — Pulsing gold cursor on playback progress
+- **Idle Standby Pulse** — Breathing ♪ glyph when media player idle
+
+#### Alarm Panel Enhancements
+- **Red Alert Frame Strobe** — Panel border + box-shadow strobe on `triggered` state (1s cycle)
+- **Shield Icon Reactive Glow** — `drop-shadow` glow keyed to alarm state (ice=disarmed, butterscotch=armed, tomato=triggered)
+- **Keypad Tactile Flash** — Digit preview floats up on key press
+- **Countdown Urgency Escalation** — Color + animation intensity escalates as countdown decreases (calm → elevated → high → critical)
+- **Zone Status Micro-Pips** — 6px colored dots for zone OK/bypass/fault status
+
+#### Weather Panel Enhancements
+- **Condition Ambient Glow** — Radial background glow keyed to weather condition with storm flicker (4s cycle per Worf M2)
+- **Wind Compass Needle** — CSS-animated compass with gust oscillation
+- **Forecast Range Bars** — Staggered `scaleY` grow animation for daily forecast bars
+- **Sun Arc** — SVG sunrise/sunset arc with tracking dot
+- **Precipitation Pips** — 10-pip grid showing precipitation probability
+
+#### Pool/Spa Panel Enhancements
+- **Water Caustic Shimmer** — Radial gradient overlay with drift animation on pool viewscreen
+- **Heating Active Indicator** — Gradient heat bar with flow animation when heating
+- **Chemistry Sensor Badges** — Color-coded OK/warn/critical badges with pulse on critical
+- **IntelliBrite Swatch Glow** — Active color swatch glow effect
+- **Pump Spinner** — 3-dot rotating spinner on primary pump button (Data R-6: primary only)
+
+#### Irrigation Panel Enhancements
+- **Barberpole Flow** — Animated diagonal stripe pattern on active zone fill bars
+- **Zone Completion Flash** — Fade-out confirmation when a zone run completes
+- **Schedule Countdown Proximity Glow** — Text-shadow intensity scales with proximity to next run
+- **Rain Delay Badge** — Cloud-bob animated badge with delay duration
+
+#### Atmoscrubber / Environment Panel Enhancements
+- **Particle System** — 6 floating particles inside the atmoscrubber cylinder, parameterized via CSS custom properties (speed, drift, size, opacity), disabled when idle
+- **AQI Cylinder Glow** — Inner box-shadow keyed to air quality color with warn pulse
+- **Filter Life Segments** — Segmented bar for filter life with critical pulse
+- **Sparkline Scan-Draw** — Stroke-dasharray draw-on animation for sparkline paths
+- **Preset Mode Wipe** — Fill wipe transition on active preset button
+
+#### Air Purifier Panel Enhancements
+- **Sensor Row Stagger** — Cascade-in entry animation with 80ms stagger per row
+
+#### Temp/Humidity Grid Enhancements
+- **Tile Comfort Glow** — Warm/cool ambient glow keyed to comfort class (COMFORT_COLORS whitelist per Worf R1)
+- **Floor Label Scan-In** — `scaleX` reveal animation staggered per floor
+- **Sparkline Draw-On** — Stroke-dashoffset draw animation with tile-index stagger
+- **Summary Row Pulse** — Ambient border pulse on summary rows
+- **Hot/Cold Alert Pulse** — Dual animation (alert + glow) on tiles exceeding threshold
+- **Value Change Ripple** — Box-shadow inset ripple when tile value changes
+
+#### Battery Panel Enhancements
+- **Sensor Pill Badges** — Label+value pill format with value flash on change
+- **Charge State Glow** — Box-shadow glow keyed to charge level (high=ice, medium=golden-orange, low=tomato)
+
+### Security & Accessibility
+- **WCAG 2.3.1 compliant** — All flash animations ≥0.5s cycle (alarm shield, urgency critical), verified by Worf M1
+- **`prefers-reduced-motion`** — Comprehensive overrides: ambient loops disabled, confirmations halved, static fallbacks for color state, HVAC pulse specificity gap fixed
+- **`aria-hidden="true"`** — All decorative elements (numeric codes, pip strips, particles, waveform, pump spinner)
+- **COMFORT_COLORS whitelist** — Only pre-approved CSS variables reach `style.setProperty()` for comfort tile colors (Worf R1)
+- **`getRainDelayInfo()`** — `Number()` + `!isNaN()` guard prevents raw entity data in CSS (Worf M4)
+- **No innerHTML/unsafeHTML** — All rendering via LitElement `html` tagged template auto-escaping (Worf R5)
+- **`color-mix()` fallback** — HVAC pulse keyframe includes fallback `border-color` for browsers without `color-mix()` support
+- **Contrast fix** — Chemistry critical badge changed from white-on-tomato (3.3:1) to black-on-tomato (5.2:1) per WCAG AA
+- **Reflow fix** — Value change ripple uses `box-shadow: inset` instead of `border-left-width` animation to avoid layout thrash
+
+---
+
 ## [4.11.0] — 2026-04-13
 
 ### Added — New Device Panels & Shared Utilities

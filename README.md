@@ -32,6 +32,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 - **Smart Name Shortening** — Automatically strips area and device name prefixes from entity names for cleaner display
 - **Device-Grouped Layout** — Entities organized by device, then sorted by domain (cameras first, sensors last)
 - **6 LCARS Animations** — Cascade reveal, scan sweep, viewscreen activation, heartbeat pulse, distress pulse, segmented sensor bars
+- **Dynamic Panel Visuals** — Frame breathing pulse, data pip footers, numeric code watermarks, audio waveform, caustic water shimmer, wind compass, weather glow, barberpole flow, particle system, comfort glow tiles. All animations GPU-composited and `prefers-reduced-motion` safe
 - **9-Panel Auto-Detection** — Priority-ordered device classifier routes entities to the correct panel: camera → alarm → pool/spa → climate → media → environment → irrigation → weather → battery
 - **Security Hardened** — Alarm PIN rate-limiting (3 attempts/60s), media artwork URL validation, temperature setpoint clamping, service call throttling
 - **Self-Contained** — All fonts (Antonio) and dependencies vendored locally, no external CDN calls
@@ -70,7 +71,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 |-------|-----------|
 | HA Integration | Python custom component (`lcars_dashboard`) |
 | Frontend | Lit Element v2 web components |
-| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~277 KiB) |
+| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~316 KiB) |
 | Styling | 40+ LCARS CSS custom properties in shared `lcars-styles.js` |
 | Communication | WebSocket API + window custom events |
 

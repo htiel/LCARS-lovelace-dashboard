@@ -2521,11 +2521,7 @@ class LcarsHomepageCard extends LitElement {
             left: 0;
             right: 0;
             height: 4px;
-            background: repeating-linear-gradient(
-              90deg,
-              var(--panel-frame-color) 0 6px,
-              transparent 6px 10px
-            );
+            background: var(--panel-frame-color);
             pointer-events: none;
             border-radius: 0 0 0.25rem 0.75rem;
           }

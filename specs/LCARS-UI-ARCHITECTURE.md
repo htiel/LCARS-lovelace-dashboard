@@ -1065,6 +1065,15 @@ The following shared animation motifs are introduced in v4.13.0. Each panel spec
 | **Filter Life Segments** | 10-segment discrete bar with threshold colors | 300ms transition + 1s pulse | Atmoscrubber |
 | **Sparkline Draw-On** | stroke-dashoffset reveals line left→right | 1.5s + 200ms stagger | Atmoscrubber |
 | **Preset Mode Wipe** | ::before width transition on button activation | 250ms ease-out | Atmoscrubber |
+| **Sensor Row Stagger** | Cascade-appear for extended sensor columns | 250ms + 80ms stagger | Air Purifier (BlueAir) |
+| **CO₂ Threshold Colors** | 3-tier color mapping: ice/sunflower/tomato by ppm | Instant (transition inherited) | Air Purifier (BlueAir) |
+| **Filter Expired Flash** | Single-fire tomato box-shadow on filter expiry | 600ms ease-out, single fire | Air Purifier (BlueAir) |
+| **Tile Comfort Glow** | Ambient box-shadow by thermal state (warm/cool) | 3s ease-in-out infinite | Temp/Humidity Grid |
+| **Floor Label Scan-In** | Horizontal wipe-in on floor group labels | 200ms + 200ms stagger | Temp/Humidity Grid |
+| **Tile Sparkline Draw** | stroke-dashoffset draw-on per tile sparkline | 1.2s + 50ms stagger | Temp/Humidity Grid |
+| **Summary Row Pulse** | Ship-average border breathing pulse | 4s ease-in-out infinite | Temp/Humidity Grid |
+| **Hot/Cold Alert Pulse** | Border pulse on extreme temp tiles only | 1.5s (hot) / 2s (cold) | Temp/Humidity Grid |
+| **Value Change Ripple** | Left-border width+color flash on data update | 300ms ease-out, single fire | Temp/Humidity Grid |
 
 #### Performance Budget (per panel)
 - ≤ 6 concurrent CSS animations

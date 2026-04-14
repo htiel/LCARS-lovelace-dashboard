@@ -32,17 +32,17 @@ All devices use model `WoTHP` (SwitchBot Meter / Meter Plus), platform `switchbo
 | Device Name         | Device ID      | Area ID          | Entity Prefix        |
 |---------------------|----------------|------------------|----------------------|
 | Meter - Network Closet | `fe2a7f45...` | `utility`        | `sensor.meter_502c_` |
-| Meter - Cadets Bath  | `2489c248...`  | `t_e`            | `sensor.meter_3888_` |
+| Meter - T'Lyn Bath  | `2489c248...`  | `t_e`            | `sensor.meter_3888_` |
 | Meter - Garage      | `80e60a2b...`  | `garage`         | `sensor.meter_1eda_` |
 | Meter - Office      | `171b51b0...`  | `the_office`     | `sensor.meter_e06d_` |
-| Meter - Alexander   | `dd1c449f...`  | `alexander`      | `sensor.meter_d3ab_` |
-| Meter - Cmd Quarters| `c7b132ae...`  | `keiko`          | `sensor.meter_c4c8_` |
+| Meter - Boimler     | `dd1c449f...`  | `boimler`        | `sensor.meter_d3ab_` |
+| Meter - Cmd Quarters| `c7b132ae...`  | `rutherford`     | `sensor.meter_c4c8_` |
 | Meter - Living Room | `22491c77...`  | `shared_spaces`  | `sensor.meter_d487_` |
 | Meter - Master Bed  | `ddf7900d...`  | `master_bed`     | `sensor.meter_2790_` |
-| Meter - Molly       | `61194ccd...`  | `molly`          | `sensor.meter_3380_` |
+| Meter - Mariner     | `61194ccd...`  | `mariner`        | `sensor.meter_3380_` |
 | Meter - Master Bath | `bece20cb...`  | `master_bath`    | `sensor.meter_cc32_` |
 | Meter - South Bath  | `0087a47d...`  | `south_bath`     | `sensor.meter_450a_` |
-| Meter - Naomi Bath  | `97eb75e3...`  | `naomi`          | `sensor.meter_ab6e_` |
+| Meter - Tendi Bath  | `97eb75e3...`  | `tendi`          | `sensor.meter_ab6e_` |
 | Meter - Attic       | `83874841...`  | `attic`          | `sensor.meter_5e03_` |
 | Meter - Crawl Space | `020f0733...`  | `outside`        | `sensor.meter_4cb8_` |
 
@@ -129,12 +129,12 @@ When no `rooms` config is provided, the card auto-discovers all SwitchBot Meter 
 ├──────────────────────────────────────────────────────────────────┤
 │  ■ DECK 2 — UPSTAIRS                                            │  ← floor label
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌────────────┐│
-│  │ OFFICE      │ │ ALEXANDER   │ │ CMD QTRS    │ │ MOLLY      ││
+│  │ OFFICE      │ │ BOIMLER     │ │ CMD QTRS    │ │ MARINER    ││
 │  │  72.1°  48% │ │  73.4°  51% │ │  71.8°  45% │ │  74.0°  52%││
 │  │  ╱╲╱╲╱╲    │ │  ╱╲─╱╲     │ │  ╱╲╱╲╱╲    │ │  ╱╲╱╲╱╲   ││
 │  └─────────────┘ └─────────────┘ └─────────────┘ └────────────┘│
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐               │
-│  │ CADETS BATH │ │ NAOMI BATH  │ │ ATTIC    ●  │               │
+│  │ T'LYN BATH  │ │ TENDI BATH  │ │ ATTIC    ●  │               │
 │  │  75.2°  68% │ │  70.9°  44% │ │  88.3°  32% │               │
 │  │  ╱╲╱╲╱╲    │ │  ╱╲╱╲╱╲    │ │  ╱╲╱╲╱╲    │               │
 │  └─────────────┘ └─────────────┘ └─────────────┘               │
@@ -168,7 +168,7 @@ When no `rooms` config is provided, the card auto-discovers all SwitchBot Meter 
 │ │            48%   │ │
 │ └──────────────────┘ │
 │ ┌──────────────────┐ │
-│ │ ALEXANDER  73.4° │ │
+│ │ BOIMLER    73.4° │ │
 │ │            51%   │ │
 │ └──────────────────┘ │
 │ ...                  │
@@ -1972,11 +1972,11 @@ From `core.area_registry` and `core.floor_registry`:
 |---------------------|--------------------|---------------------|
 | `game_room`         | Game Room          | No                  |
 | `office`            | Office             | Yes                 |
-| `alexander_s_room`  | Alexander's Room   | No                  |
-| `molly_s_room`      | Molly's Room       | No                  |
+| `boimler_s_room`    | Boimler's Room     | No                  |
+| `mariner_s_room`    | Mariner's Room     | No                  |
 | `upstairs_bathroom` | Upstairs Bathroom  | No                  |
 
-> **Note**: The Admiral's device registry uses different area_id values than the static reference registry (e.g., `the_office` vs `office`, `alexander` vs a child's room, `keiko` vs command quarters). The auto-discovery algorithm resolves names from whichever area registry is live, so these mappings are always current.
+> **Note**: The Admiral's device registry uses different area_id values than the static reference registry (e.g., `the_office` vs `office`, `boimler` vs a child's room, `rutherford` vs command quarters). The auto-discovery algorithm resolves names from whichever area registry is live, so these mappings are always current.
 
 ---
 

@@ -121,8 +121,14 @@ This is the chain of command for shipping code. Each phase has a gate — work d
 - Data reviews for architecture: code structure, bundle impact, HA integration patterns, performance implications
 - Output: Review notes appended to specs or filed as concerns. Blocking issues must be resolved before proceeding.
 
-### Phase 3: Team Approval → Implementation Plan (Jean-Luc Picard)
+### Phase 3: Team Approval → Spec Reconciliation → Implementation Plan (Jean-Luc Picard)
 - The full team (Wesley, Geordi, Worf, Data) confirms approval of the designs
+- **Reconcile all spec documents** with Phase 1-2 findings before planning:
+  - Apply all required fixes from Geordi (design corrections, accessibility)
+  - Apply all conditions from Worf (security: input validation, API changes)
+  - Apply all conditions from Data (architecture: API patterns, performance)
+  - Resolve any spec inconsistencies flagged during reviews (e.g., stale code samples, conflicting prose vs CSS)
+  - Specs must be implementation-ready — no known contradictions or outdated patterns
 - Picard synthesizes approved designs into a concrete implementation plan with:
   - Sequenced stories with acceptance criteria
   - Dependency graph and critical path

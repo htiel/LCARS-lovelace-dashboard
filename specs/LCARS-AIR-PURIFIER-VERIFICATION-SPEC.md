@@ -210,16 +210,18 @@ The atmoscrubber spec defines CO₂ threshold coloring (§5, `getCo2Color()`), b
 
 ```javascript
 // In _getSensorIndicatorColor(), add before the generic numeric fallback:
+// Reconciled 3-tier model — matches getCo2Color() in lcars-color-utils.js
 if (deviceClass === 'carbon_dioxide') {
   const v = parseFloat(val);
   if (!isNaN(v)) {
-    if (v <= 800)  return 'var(--lcars-data-accent)';
-    if (v <= 1200) return 'var(--lcars-sunflower)';
-    if (v <= 2000) return 'var(--lcars-butterscotch)';
-    return 'var(--lcars-tomato)';
+    if (v <= 800)  return 'var(--lcars-ice)';        // nominal
+    if (v <= 1200) return 'var(--lcars-sunflower)';   // elevated
+    return 'var(--lcars-tomato)';                     // high
   }
 }
 ```
+
+> **v4.14.0 reconciliation**: The original 4-tier model (data-accent / sunflower / butterscotch / tomato) was collapsed to 3 tiers (ice / sunflower / tomato) per Geordi's design review. The `butterscotch` tier at 1200–2000 ppm was removed — at >1200 ppm the alert should be immediately visible. This matches `getCo2Color()` in `lcars-color-utils.js` and the v4.13.0 CSS data-attribute classes. All three colors pass WCAG AA contrast against #000 (ice 10.3:1, sunflower 13.1:1, tomato 5.2:1).
 
 **Trade-off**: +7 lines. Benefits both BlueAir (which has CO₂) and any future device with a CO₂ sensor (SwitchBot WoTHPc for item 9). Low risk.
 

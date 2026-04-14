@@ -26,6 +26,7 @@ module.exports = {
     './src/lcars-edit-device-popup-card.js',
     './src/lcars-edit-device-button-card.js',
     './src/lcars-popup.js',
+    './src/lcars-internal-sensors-grid.js',  // 4X-2: Temp/Humidity Grid
   ],
   mode: 'production',
   output: {

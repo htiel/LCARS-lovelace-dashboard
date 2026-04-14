@@ -2,6 +2,36 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.14.0] — 2026-04-14
+
+### Added — BlueAir Air Purifier Support & Internal Sensors Grid
+
+#### BlueAir Air Purifier Enhancements (4X-1)
+- **CO₂ Indicator Coloring** — `_getSensorIndicatorColor()` now routes `carbon_dioxide` device class to `getCo2Color()` with 3-tier model: ice (≤800 ppm), sunflower (801–1200 ppm), tomato (>1200 ppm)
+- **LED Light Control** — `light` domain added to environment entity controls partition, enabling BlueAir LED brightness/color control alongside fan/switch
+
+#### Internal Sensors Grid Card (4X-2)
+- **`lcars-internal-sensors-grid`** (NEW): Standalone card for temperature/humidity sensor monitoring
+- **Auto-Discovery** — Discovers temp/humidity devices via `hass.entities/.devices/.areas/.floors` (no WebSocket registry calls), excludes fan/climate/air_quality siblings and appliance devices (fridge, freezer, refrigerator, wine cooler, kegerator)
+- **Floor Grouping** — Sensors grouped by HA floor assignment with descending level sort; unassigned devices sort last
+- **Responsive Layout** — CSS grid with pill-shaped tiles (LCARS cap termination), switches to row layout on mobile (<768px)
+- **Comfort Colors** — Temperature-driven border coloring via `getTempComfortClass()` (nominal/warm/hot/cool/cold)
+- **Sparklines** — Inline SVG sparkline charts via shared `fetchSparklineData()` WebSocket fetcher (hidden on mobile)
+- **Battery Badges** — Pulsing low-battery indicator with `prefers-reduced-motion` override
+- **Ship Averages Summary** — Real-time average temp/humidity with sensor count and low-battery alerts
+- **Tile Stagger Animation** — Cascading tile entrance with 50ms stagger, capped at 20 tiles for large grids
+- **Configurable** — `show_appliance_meters`, `sparkline_hours`, `low_battery_threshold`, `max_sensors` options via `setConfig()`
+
+### Security & Accessibility
+- **Entity ID Validation** — `ENTITY_ID_RE` regex validates all entity IDs at discovery extraction (W-R1)
+- **WebSocket Only** — No REST API calls; sparkline data fetched exclusively via WebSocket (W-R2)
+- **Tracked-Entity Diffing** — `_trackedEntityIds` Set with reference-equality comparison prevents unnecessary re-renders (D-C3)
+- **WCAG 2.2 AA** — Full keyboard navigation (`tabindex="0"`, Enter/Space handlers), `:focus-visible` with 2px sunflower outline, ARIA region/list/listitem/heading/status structure, `aria-live="polite"` on summary
+- **`prefers-reduced-motion`** — Disables all animations and transitions, battery badge forced to `opacity: 1`
+- **No innerHTML** — All rendering via Lit tagged templates (auto-escaped)
+
+---
+
 ## [4.13.0] — 2026-04-13
 
 ### Added — Dynamic Visual Enhancements (All Panels)

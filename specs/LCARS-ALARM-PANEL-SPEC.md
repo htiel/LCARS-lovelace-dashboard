@@ -1480,7 +1480,152 @@ function isKeypadVisible(state, codeRequired) {
 
 The triggered state is the most visually intense state in the entire LCARS Dashboard. This is **Red Alert** — the ship is under attack.
 
+### v4.13.0 Visual Enhancements
+
+#### Red Alert Frame Strobe
+Triggered state — frame rapidly pulses tomato/dark-red with 20px ambient glow. Zero subtlety.
+
+```css
+.lcars-alarm-panel[data-state="triggered"] {
+  animation: lcars-red-alert 1s linear infinite;
+  box-shadow: 0 0 20px var(--lcars-tomato);
+}
+
+@keyframes lcars-red-alert {
+  0%, 100% { border-color: var(--lcars-tomato); box-shadow: 0 0 20px var(--lcars-tomato); }
+  50%      { border-color: #882222;             box-shadow: 0 0 8px #882222; }
+}
+```
+
+#### Shield Icon Reactive Glow
+Shield SVG drop-shadow by state: disarmed=ice, armed-home=amber, armed-away=amber+3s pulse, triggered=rapid red 0.5s pulse.
+
+```css
+.lcars-shield-icon {
+  --shield-glow-color: var(--lcars-ice);
+  filter: drop-shadow(0 0 8px var(--shield-glow-color));
+  transition: filter 500ms ease-out;
+}
+
+.lcars-alarm-panel[data-state="armed_home"] .lcars-shield-icon {
+  --shield-glow-color: var(--lcars-butterscotch);
+}
+
+.lcars-alarm-panel[data-state="armed_away"] .lcars-shield-icon {
+  --shield-glow-color: var(--lcars-butterscotch);
+  animation: lcars-shield-armed 3s ease-in-out infinite;
+}
+
+.lcars-alarm-panel[data-state="triggered"] .lcars-shield-icon {
+  --shield-glow-color: var(--lcars-tomato);
+  animation: lcars-shield-critical 0.5s linear infinite;
+  /* [Worf M1] MUST NOT shorten below 0.34s (>2.94 Hz) — WCAG 2.3.1 general
+     flash threshold. Combined with frame strobe (1 Hz) and viewscreen pulse
+     (1 Hz), the aggregate visual field flash rate must stay below 3/s across
+     >25% of a 10° field of view. Current 0.5s = 2 Hz. Minimum safe = 0.34s. */
+}
+
+@keyframes lcars-shield-armed {
+  0%, 100% { filter: drop-shadow(0 0 6px var(--shield-glow-color)); }
+  50%      { filter: drop-shadow(0 0 12px var(--shield-glow-color)); }
+}
+
+@keyframes lcars-shield-critical {
+  0%, 100% { filter: drop-shadow(0 0 12px var(--shield-glow-color)); }
+  50%      { filter: drop-shadow(0 0 4px var(--shield-glow-color)); }
+}
+```
+
+#### Keypad Button Tactile Flash
+Enlarged ghost digit floats upward and fades on press (200ms).
+
+```css
+.lcars-keypad-btn {
+  position: relative;
+  overflow: visible;
+}
+
+.lcars-keypad-btn:active::before {
+  content: attr(data-digit);
+  position: absolute;
+  top: 0;
+  left: 50%;
+  font-size: 150%;
+  color: var(--lcars-gold);
+  pointer-events: none;
+  animation: lcars-key-preview 200ms ease-out forwards;
+}
+
+@keyframes lcars-key-preview {
+  0% { opacity: 1; transform: translateX(-50%) translateY(-100%) scale(1.5); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-150%) scale(1.5); }
+}
+```
+
+#### Countdown Timer Urgency Escalation
+4-tier urgency: >15s=sunflower, 10-15s=orange+2s pulse, 5-10s=tomato+1s pulse, <5s=tomato+0.5s scale pulse.
+
+```css
+.lcars-countdown-display[data-urgency="calm"]     { color: var(--lcars-sunflower); }
+.lcars-countdown-display[data-urgency="elevated"] { color: var(--lcars-orange); animation: lcars-countdown-pulse 2s ease-in-out infinite; }
+.lcars-countdown-display[data-urgency="high"]     { color: var(--lcars-tomato); animation: lcars-countdown-pulse 1s ease-in-out infinite; }
+.lcars-countdown-display[data-urgency="critical"] { color: var(--lcars-tomato); animation: lcars-countdown-critical 0.5s ease-in-out infinite; }
+
+@keyframes lcars-countdown-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+
+@keyframes lcars-countdown-critical {
+  0%, 100% { transform: scale(1.0); opacity: 1; }
+  50%      { transform: scale(1.1); opacity: 0.7; }
+}
+```
+
+#### Zone Status Micro-Pips
+6px coloured dot per zone row. Ice=OK, butterscotch=bypass, tomato=fault. Flash on state change.
+
+```css
+.lcars-zone-row::before {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--zone-status-color, var(--lcars-gray));
+  transition: background 300ms ease-out;
+}
+
+.lcars-zone-row.state-change::before {
+  animation: lcars-pip-flash 300ms ease-out 1;
+}
+
+@keyframes lcars-pip-flash {
+  0%   { background: var(--lcars-space-white); transform: scale(1.5); }
+  100% { background: var(--zone-status-color); transform: scale(1); }
+}
+```
+
+#### Alarm Reduced Motion
+```css
+@media (prefers-reduced-motion: reduce) {
+  .lcars-alarm-panel[data-state="triggered"] { animation: none; border-color: var(--lcars-tomato); }
+  .lcars-alarm-panel[data-state="armed_away"] .lcars-shield-icon,
+  .lcars-alarm-panel[data-state="triggered"] .lcars-shield-icon { animation: none; }
+  .lcars-keypad-btn:active::before { animation: none; }
+  .lcars-countdown-display[data-urgency="elevated"],
+  .lcars-countdown-display[data-urgency="high"],
+  .lcars-countdown-display[data-urgency="critical"] { animation: none; transform: none; }
+  .lcars-zone-row.state-change::before { animation: none; }
+}
+```
+
 ### 8.1 Frame Pulse (Triggered)
+
+> **[Data C-3] — LEGACY: Superseded by v4.13.0 Visual Enhancements section above.**
+> The v4.13.0 `lcars-red-alert` / `lcars-shield-critical` / `lcars-key-preview`
+> definitions are canonical. Sections 8.1–8.10 are retained for reference only and
+> MUST NOT be implemented alongside the v4.13.0 versions.
 
 ```css
 .lcars-alarm-panel.triggered {
@@ -2482,3 +2627,23 @@ Contains:
 
 ### Disagreements
 - None. Worf's RED threat-level findings are all valid and addressed. This is the security heart of the ship — no shortcuts.
+
+---
+
+## Worf + Data — v4.13.0 Visual Enhancements Review
+
+**Date**: Stardate 2026.04.13
+
+### Worf (Security)
+**Verdict**: APPROVED WITH CONDITIONS
+
+- **[M1 — APPLIED]** Shield critical animation (0.5s = 2 Hz): frequency floor documented. MUST NOT be shortened below 0.34s (>2.94 Hz). Combined visual field flash rate with frame strobe + viewscreen pulse must stay below WCAG 2.3.1 threshold.
+- `data-digit` attribute values (0-9) are controlled integers from component JS, not user input. No injection surface.
+
+### Data (Architecture)
+**Verdict**: APPROVED WITH CONDITIONS
+
+- **[C-3 — APPLIED]** Marked §8.1–§8.10 as LEGACY/SUPERSEDED by v4.13.0 section. Two different implementations of same animations existed with conflicting names, easing, and color endpoints. v4.13.0 is canonical.
+- **[C-6]** Viewscreen border-width animation in legacy §8.3 triggers layout recalc — superseded section, so no longer applies.
+- **[M-5]** ~1.5 KiB redundant CSS eliminated by superseding §8.
+- **[M-6]** SVG `filter: drop-shadow()` at 0.5s linear is expensive. Consider SVG `<feGaussianBlur>` or static glow circle with `opacity` animation during implementation.

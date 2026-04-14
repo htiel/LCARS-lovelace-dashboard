@@ -1294,7 +1294,7 @@ On mobile, the viewscreen goes full-width above metadata (which flows horizontal
 
 ## 8. HA Entity Mapping
 
-### Target Devices (from Eric's HA Instance)
+### Target Devices (from the Admiral's HA Instance)
 
 | Device             | Integration    | Key Features                             | Entity Pattern                           |
 |--------------------|----------------|------------------------------------------|------------------------------------------|
@@ -1475,6 +1475,140 @@ function hasSoundModes(stateObj) {
 ---
 
 ## 10. Animation
+
+### v4.13.0 Visual Enhancements
+
+#### Audio Waveform Visualiser
+**12 bars** (not 32 — [Data C-2] at 2px bar width + gap, 12 vs 32 is indistinguishable at dashboard viewing distance; reduces concurrent animations from 32 to 12). Use **4 shared animation timing groups** (3 bars per group × 4 `--bar-dur`/`--bar-delay` variants) instead of per-bar randomization. Total concurrent: 4 variant keyframes + glow + progress + breathe = **7** (at budget boundary). Thin vertical bars below album art oscillating at varied heights when playing — cyan with red accent at peaks. Inspired by `pool panel.png` Communications waveform. Paused when idle/paused.
+
+```css
+.lcars-audio-waveform {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--lcars-gap, 0.25rem);
+  height: 32px;
+  overflow: hidden;
+}
+
+.lcars-audio-waveform .bar {
+  width: 2px;
+  border-radius: 1px 1px 0 0;
+  background: var(--lcars-ice);
+  /* Use scaleY instead of height to avoid layout thrashing on 12 bars [Data C-1] */
+  height: var(--bar-max, 60%);
+  transform-origin: bottom;
+  transform: scaleY(var(--bar-min-ratio, 0.17));
+  will-change: transform;
+  animation: lcars-waveform var(--bar-dur, 400ms) ease-in-out alternate infinite;
+  animation-delay: var(--bar-delay, 0ms);
+}
+
+.lcars-audio-waveform .bar.peak {
+  background: linear-gradient(to top, var(--lcars-ice) 70%, var(--lcars-tomato) 100%);
+}
+
+.lcars-media-card:not([data-state="playing"]) .lcars-audio-waveform .bar {
+  animation-play-state: paused;
+  transform: scaleY(0.03);
+  opacity: 0.3;
+}
+
+@keyframes lcars-waveform {
+  0%   { transform: scaleY(var(--bar-min-ratio, 0.17)); }
+  100% { transform: scaleY(1); }
+}
+```
+
+#### Album Art Viewscreen Border Glow
+Playing state = pulsing african-violet glow (2px→6px spread, 3s cycle). Idle = no glow.
+
+```css
+.lcars-media-viewscreen.playing {
+  animation: lcars-viewscreen-glow 3s ease-in-out infinite;
+}
+
+@keyframes lcars-viewscreen-glow {
+  0%, 100% { box-shadow: 0 0 12px 2px var(--lcars-african-violet); }
+  50%      { box-shadow: 0 0 12px 6px var(--lcars-african-violet); }
+}
+```
+
+#### Transport Button Active States
+Play button glow ring when active, pulse when paused. Shuffle/repeat indicator dot (4px gold).
+
+```css
+.lcars-transport-btn.play.active {
+  box-shadow: 0 0 6px var(--lcars-gold);
+}
+
+.lcars-transport-btn.play.paused {
+  animation: lcars-pause-pulse 2s ease-in-out infinite;
+}
+
+@keyframes lcars-pause-pulse {
+  0%, 100% { box-shadow: 0 0 0px transparent; }
+  50%      { box-shadow: 0 0 6px var(--lcars-gold); }
+}
+
+.lcars-transport-btn[data-enabled="true"]::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--lcars-gold);
+}
+```
+
+#### Progress Bar Luminous Head
+4px bright gold pip at playback position with glow pulse.
+
+```css
+.lcars-progress-bar .played::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--lcars-gold);
+  border-radius: 1px;
+  animation: lcars-playhead-glow 2s ease-in-out infinite;
+}
+
+@keyframes lcars-playhead-glow {
+  0%, 100% { box-shadow: 0 0 4px var(--lcars-gold); }
+  50%      { box-shadow: 0 0 8px var(--lcars-gold); }
+}
+```
+
+#### Idle State Standby Pulse
+Breathing opacity on idle ♪ glyph (0.2→0.5, 4s cycle).
+
+```css
+.lcars-media-idle .standby-glyph {
+  animation: lcars-standby-breathe 4s ease-in-out infinite;
+}
+
+@keyframes lcars-standby-breathe {
+  0%, 100% { opacity: 0.2; }
+  50%      { opacity: 0.5; }
+}
+```
+
+#### Media Reduced Motion
+```css
+@media (prefers-reduced-motion: reduce) {
+  .lcars-audio-waveform .bar { animation: none; height: var(--bar-min, 10%); }
+  .lcars-media-viewscreen.playing { animation: none; box-shadow: 0 0 12px 2px var(--lcars-african-violet); }
+  .lcars-transport-btn.play.paused { animation: none; box-shadow: 0 0 4px var(--lcars-gold); }
+  .lcars-progress-bar .played::after { animation: none; box-shadow: 0 0 4px var(--lcars-gold); }
+  .lcars-media-idle .standby-glyph { animation: none; opacity: 0.35; }
+}
+```
 
 ### Viewscreen Activation (Reuse from Device Panel §7)
 
@@ -1999,7 +2133,7 @@ Extends `LcarsDevicePanelBase`:
 ### Code Quality & Reusability
 - **DRY compliance**: `getMediaStateColor()`, `getMediaStateLabel()`, `isActivePlayback()` follow the same switch-statement pattern as other panel specs. These utility functions should be extracted to a shared `lcars-state-colors.js` module rather than duplicated per panel file. I count 6 specs that each define a `get*Color()` function with identical structure.
 - **KISS compliance**: The track info display (§3.3) is clean — text overflow handled by CSS `text-overflow: ellipsis`. No JavaScript truncation needed.
-- **YAGNI flag**: The sound mode selector for Sonos (§9) adds conditional complexity for a single device type. Consider deferring this to a future iteration unless Eric has Sonos devices.
+- **YAGNI flag**: The sound mode selector for Sonos (§9) adds conditional complexity for a single device type. Consider deferring this to a future iteration unless the Admiral has Sonos devices.
 - **Configuration schema**: No custom YAML config beyond what `LcarsDevicePanelBase` provides. The panel is auto-discovered via `media_player` domain. This is correct — the media panel should not require manual configuration.
 
 ### Recommendations
@@ -2007,7 +2141,7 @@ Extends `LcarsDevicePanelBase`:
 2. **P1**: Throttle volume service calls during drag to max 10/sec (100ms debounce). Use `this._lastVolumeCall` timestamp comparison — no external deps needed.
 3. **P2**: Gate progress interpolation behind a dedicated 1-second timer rather than recomputing on every `hass` update. Start the timer when state transitions to `playing`, stop on any other state. Clean up in `disconnectedCallback()`.
 4. **P2**: Clarify in the spec whether `classifyMediaEntities()` expects entity registry entries (from `config/entity_registry/list`) or `hass.states` objects. The property access patterns differ (`original_device_class` vs `attributes.device_class`).
-5. **P3**: Defer Sonos sound mode selector (§9) unless validated against Eric's device inventory. Apply YAGNI.
+5. **P3**: Defer Sonos sound mode selector (§9) unless validated against the Admiral's device inventory. Apply YAGNI.
 
 ---
 
@@ -2035,9 +2169,29 @@ Extends `LcarsDevicePanelBase`:
 - **Worf Advisory #6** (source_list length): Accepted. Will cap rendered source list at 50 items.
 
 ### Deferred Items
-- **Data P5** (Sonos sound mode selector): Deferred per YAGNI. Eric doesn't have Sonos — will add if needed.
+- **Data P5** (Sonos sound mode selector): Deferred per YAGNI. The Admiral doesn't have Sonos — will add if needed.
 - **Worf Advisory #5** (Web Audio API CSP): Deferred to proof-of-concept phase — not part of initial implementation.
 - **Geordi Rec #6** (aspect ratio transition): Implementation detail — CSS `transition: aspect-ratio 300ms` will be tested during build.
 
 ### Disagreements
 - None. All reviewer feedback is either accepted or reasonably deferred.
+
+---
+
+## Worf + Data — v4.13.0 Visual Enhancements Review
+
+**Date**: Stardate 2026.04.13
+
+### Worf (Security)
+**Verdict**: APPROVED
+
+- URL validation (`isValidArtworkUrl()`), `crossorigin="anonymous"`, `referrerpolicy="no-referrer"` all present.
+- No new vectors. No `innerHTML`/`unsafeHTML`. Clean.
+
+### Data (Architecture)
+**Verdict**: APPROVED WITH CONDITIONS
+
+- **[C-1 — APPLIED]** Waveform bars: replaced `height` animation with `transform: scaleY()` to avoid layout thrashing (50–100 layout recalcs/sec on RPi4).
+- **[C-2 — APPLIED]** Reduced bars from 32 to 12 with 4 shared animation timing groups. Concurrent animations: 7 (at budget boundary).
+- **[L-1]** Added `will-change: transform` to bar CSS.
+- **[L-2]** Ensure confirmation animations still play at half duration in reduced-motion (not `animation: none`).

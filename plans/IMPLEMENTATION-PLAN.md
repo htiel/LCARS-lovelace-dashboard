@@ -40,7 +40,7 @@
 
 ## Phase 1 — Critical + Quick-Win Panels
 
-**Objective**: Ship the highest-impact panels first. Climate is CRITICAL (Eric's 3 Nest thermostats). Alarm is HIGH (security-sensitive). BlueAir is a quick verification patch.
+**Objective**: Ship the highest-impact panels first. Climate is CRITICAL (the Admiral's 3 Nest thermostats). Alarm is HIGH (security-sensitive). BlueAir is a quick verification patch.
 
 ### 1.1 Climate Panel (Item 5) — CRITICAL / XL
 

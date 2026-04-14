@@ -1410,6 +1410,13 @@ For dashboard views with limited space, the panel can render in a compact 1-colu
 - **Panel scan line**: Inherited from `.lcars-device-panel` base — subtle horizontal scan sweeps vertically on 10s cycle
 - **Header data pips**: Panel header line uses a dash-dot `repeating-linear-gradient` pattern instead of a solid line
 
+### v4.12.1 Visual Polish
+
+- **Viewscreen breathing glow**: `@keyframes viewscreen-breathe` (6s cycle) applied to `.climate-viewscreen` — `box-shadow` oscillates between 20px and 30px spread for a living-display pulse
+- **Pill-shaped setpoint buttons**: Temperature +/- buttons changed from circular (`border-radius: 50%`) to pill-shaped (`border-radius: 0 1.25rem 1.25rem 0`) — flat left edge, rounded right, matching LCARS button vocabulary
+- **Dashed outer arc ring**: SVG gains an additional semicircular reference arc at `r+8` with `stroke-dasharray="4 3"` — evokes LCARS targeting/scanning display overlays
+- **Reduced motion updated**: Added `.climate-viewscreen` to the `prefers-reduced-motion` disable list
+
 ### Viewscreen Activation
 
 Reuse the existing `viewscreen-activate` keyframes from the Device Panel Spec §7:

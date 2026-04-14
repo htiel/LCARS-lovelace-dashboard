@@ -1489,6 +1489,14 @@ function isKeypadVisible(state, codeRequired) {
 
 The triggered state is the most visually intense state in the entire LCARS Dashboard. This is **Red Alert** — the ship is under attack.
 
+### v4.12.1 Visual Polish
+
+- **Concentric ring background**: Alarm viewscreen gains three `radial-gradient` rings at 30%, 45%, and 60% radii — subtle LCARS sensor/targeting scope backdrop behind the shield SVG
+- **Triggered flash overlay**: `.alarm-viewscreen::before` repurposed for a red flash (`@keyframes alarm-flash`, 8% peak opacity) during **triggered** state — adds urgency layered on top of the existing red alert pulse
+- **Pill-shaped keypad buttons**: Digit buttons changed from circular to pill-shaped (flat-left/rounded-right) to match LCARS button vocabulary across all panels
+- **Viewscreen breathing glow**: `@keyframes viewscreen-breathe` (6s cycle) applied to `.alarm-viewscreen` — `box-shadow` oscillates between 20px and 30px spread
+- **Reduced motion updated**: Added `.alarm-viewscreen` and `.alarm-triggered .alarm-viewscreen::before` to the `prefers-reduced-motion` disable list
+
 ### 8.1 Frame Pulse (Triggered)
 
 ```css

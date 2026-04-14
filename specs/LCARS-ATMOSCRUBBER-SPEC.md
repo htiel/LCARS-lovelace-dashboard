@@ -380,6 +380,11 @@ function getParticleSpeed(fanSpeedPercent) {
 
 ### Hazardous Pulse (AQI > 300)
 
+#### v4.12.1 Visual Polish
+
+- **Active breathing glow**: When the purifier is on, the cylinder frame gains `@keyframes scrubber-active-glow` (4s ease-in-out infinite) — `box-shadow` oscillates between 8px and 16px+30px spread, giving the active atmoscrubber a living, pulsing LCARS feel
+- **Reduced motion updated**: Added `.atmoscrubber` to the `prefers-reduced-motion` disable list
+
 ```css
 .atmos-cylinder.hazardous {
   animation: atmos-hazard-pulse 1s ease-in-out infinite;

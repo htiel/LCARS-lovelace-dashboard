@@ -14,6 +14,7 @@
  *   default → LCARS button
  */
 import { LitElement, html, css } from 'lit-element';
+import { svg } from 'lit-html';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getHass, showMoreInfo, fireEvent, createCardElement, lcarsEventBus, lcarsLog, openEditPopup } from './lcars-helpers.js';
 import {

@@ -2,6 +2,13 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.13.0] — 2026-04-13
+
+### Changed
+- Version bump to 4.13.0 to force HACS update — clean rebuild from PII-scrubbed baseline
+
+---
+
 ## [4.11.0] — 2026-04-13
 
 ### Added — New Device Panels & Shared Utilities

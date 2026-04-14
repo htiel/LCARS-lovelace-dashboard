@@ -1476,6 +1476,136 @@ function hasSoundModes(stateObj) {
 
 ## 10. Animation
 
+### v4.13.0 Visual Enhancements
+
+#### Audio Waveform Visualiser
+32 thin vertical bars below album art oscillating at randomised heights when playing — cyan with red accent at peaks. Inspired by `pool panel.png` Communications waveform. Paused when idle/paused.
+
+```css
+.lcars-audio-waveform {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--lcars-gap, 0.25rem);
+  height: 32px;
+  overflow: hidden;
+}
+
+.lcars-audio-waveform .bar {
+  width: 2px;
+  border-radius: 1px 1px 0 0;
+  background: var(--lcars-ice);
+  animation: lcars-waveform var(--bar-dur, 400ms) ease-in-out alternate infinite;
+  animation-delay: var(--bar-delay, 0ms);
+  height: var(--bar-min, 10%);
+}
+
+.lcars-audio-waveform .bar.peak {
+  background: linear-gradient(to top, var(--lcars-ice) 70%, var(--lcars-tomato) 100%);
+}
+
+.lcars-media-card:not([data-state="playing"]) .lcars-audio-waveform .bar {
+  animation-play-state: paused;
+  height: 2px;
+  opacity: 0.3;
+}
+
+@keyframes lcars-waveform {
+  0%   { height: var(--bar-min, 10%); }
+  100% { height: var(--bar-max, 60%); }
+}
+```
+
+#### Album Art Viewscreen Border Glow
+Playing state = pulsing african-violet glow (2px→6px spread, 3s cycle). Idle = no glow.
+
+```css
+.lcars-media-viewscreen.playing {
+  animation: lcars-viewscreen-glow 3s ease-in-out infinite;
+}
+
+@keyframes lcars-viewscreen-glow {
+  0%, 100% { box-shadow: 0 0 12px 2px var(--lcars-african-violet); }
+  50%      { box-shadow: 0 0 12px 6px var(--lcars-african-violet); }
+}
+```
+
+#### Transport Button Active States
+Play button glow ring when active, pulse when paused. Shuffle/repeat indicator dot (4px gold).
+
+```css
+.lcars-transport-btn.play.active {
+  box-shadow: 0 0 6px var(--lcars-gold);
+}
+
+.lcars-transport-btn.play.paused {
+  animation: lcars-pause-pulse 2s ease-in-out infinite;
+}
+
+@keyframes lcars-pause-pulse {
+  0%, 100% { box-shadow: 0 0 0px transparent; }
+  50%      { box-shadow: 0 0 6px var(--lcars-gold); }
+}
+
+.lcars-transport-btn[data-enabled="true"]::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--lcars-gold);
+}
+```
+
+#### Progress Bar Luminous Head
+4px bright gold pip at playback position with glow pulse.
+
+```css
+.lcars-progress-bar .played::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--lcars-gold);
+  border-radius: 1px;
+  animation: lcars-playhead-glow 2s ease-in-out infinite;
+}
+
+@keyframes lcars-playhead-glow {
+  0%, 100% { box-shadow: 0 0 4px var(--lcars-gold); }
+  50%      { box-shadow: 0 0 8px var(--lcars-gold); }
+}
+```
+
+#### Idle State Standby Pulse
+Breathing opacity on idle ♪ glyph (0.2→0.5, 4s cycle).
+
+```css
+.lcars-media-idle .standby-glyph {
+  animation: lcars-standby-breathe 4s ease-in-out infinite;
+}
+
+@keyframes lcars-standby-breathe {
+  0%, 100% { opacity: 0.2; }
+  50%      { opacity: 0.5; }
+}
+```
+
+#### Media Reduced Motion
+```css
+@media (prefers-reduced-motion: reduce) {
+  .lcars-audio-waveform .bar { animation: none; height: var(--bar-min, 10%); }
+  .lcars-media-viewscreen.playing { animation: none; box-shadow: 0 0 12px 2px var(--lcars-african-violet); }
+  .lcars-transport-btn.play.paused { animation: none; box-shadow: 0 0 4px var(--lcars-gold); }
+  .lcars-progress-bar .played::after { animation: none; box-shadow: 0 0 4px var(--lcars-gold); }
+  .lcars-media-idle .standby-glyph { animation: none; opacity: 0.35; }
+}
+```
+
 ### Viewscreen Activation (Reuse from Device Panel §7)
 
 ```css

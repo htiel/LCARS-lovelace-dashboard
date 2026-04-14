@@ -1028,6 +1028,51 @@ Total hue families in active use:
 
 **Rule**: All animations ≤ 1 second. Most are 200–300ms. LCARS conveys advanced technology through **understated confidence**, not flashy motion.
 
+### v4.13.0 Visual Vocabulary
+
+The following shared animation motifs are introduced in v4.13.0. Each panel spec references these by name. All respect `prefers-reduced-motion: reduce`.
+
+| Motif | Description | Duration | Panels Using |
+|---|---|---|---|
+| **Frame Breathing Pulse** | Border color oscillates between full and 70% brightness | 3s ease-in-out infinite | Device, Climate (HVAC action), Pool/Spa (heating) |
+| **Data Pip Footer** | Row of 4px squares as micro-heatmap or status indicator | Static (transition 500ms) | Device, Climate (24h temp), Alarm (zone status) |
+| **Header Numeric Code** | 6-digit pseudo-random code from entity_id hash | Static | Device (shared) |
+| **Button Press Ripple** | Circular opacity wave from press point, 300ms | 300ms ease-out, single fire | Device (shared) |
+| **Viewscreen Power-On Scanline** | Horizontal bright line sweeps top→bottom on first render | 600ms ease-out, single fire | Device, Climate, Media, Weather |
+| **Setpoint Confirm Flash** | Scale 1.05× + gold text-shadow on value change | 400ms ease-out, single fire | Climate (target temp) |
+| **Travelling Indicator Bar** | 2px gold bar slides between active items | 300ms ease-out transition | Climate (mode strip), Pool/Spa (IntelliBrite) |
+| **Audio Waveform** | 32 vertical bars oscillating at random heights | 400ms alternate infinite | Media (playing state) |
+| **Viewscreen Glow** | Pulsing box-shadow spread on active viewscreen | 3s ease-in-out infinite | Media (playing), Atmoscrubber (AQI) |
+| **Progress Luminous Head** | 4px gold pip with glow at playback position | 2s ease-in-out infinite | Media (progress bar) |
+| **Red Alert Strobe** | Frame + ambient glow rapid pulse | 1s linear infinite | Alarm (triggered) |
+| **Shield Reactive Glow** | SVG drop-shadow by security state | 0.5–3s, state-dependent | Alarm |
+| **Countdown Urgency** | 4-tier color + pulse escalation | 0.5–2s by tier | Alarm |
+| **Condition Ambient Glow** | Radial gradient tinted by weather condition | 1s transition (storm: 3s flicker) | Weather |
+| **Wind Compass Needle** | Smooth rotation + gust oscillation on high wind | 800ms transition + 0.8s oscillation | Weather |
+| **Forecast Range Bars** | Gradient bars growing with 60ms stagger | 400ms ease-out, single fire | Weather |
+| **Sun Arc Tracker** | SVG semicircle with gold dot tracking sun position | 60s linear transition | Weather |
+| **Precip Probability Pips** | 10-pip 5×2 grid, lit count = probability/10 | 200ms + 30ms stagger | Weather |
+| **Water Caustic Shimmer** | 3 radial gradients drifting at 6% opacity | 12s linear infinite | Pool/Spa |
+| **EPS Heat Flow** | Warm gradient bar scrolling left→right | 2s linear infinite | Pool/Spa (heating) |
+| **Chemistry Threshold Badges** | Pill badges color-coded by ok/warn/critical | 500ms transition + 1.5s pulse | Pool/Spa |
+| **Pump Spinner** | 3 dots rotating when pump ON | 1.2s linear infinite | Pool/Spa |
+| **Barberpole Flow** | Diagonal stripes scrolling through fill bar | 0.6s linear infinite | Irrigation (active zone) |
+| **Zone Completion Flash** | Row flashes ice-to-dark on cycle end | 2s ease-out, single fire | Irrigation |
+| **Schedule Proximity Glow** | Text-shadow intensifies as scheduled run nears | 10s transition (continuous) | Irrigation |
+| **Rain Delay Badge** | ☁ pill with 1px bob | 3s ease-in-out infinite | Irrigation |
+| **Enhanced Particle Drift** | Varied size/opacity/speed + horizontal drift | 3–6s per particle | Atmoscrubber |
+| **AQI Cylinder Glow** | Inset box-shadow by AQI level, unhealthy pulse | 2s pulse (unhealthy only) | Atmoscrubber |
+| **Filter Life Segments** | 10-segment discrete bar with threshold colors | 300ms transition + 1s pulse | Atmoscrubber |
+| **Sparkline Draw-On** | stroke-dashoffset reveals line left→right | 1.5s + 200ms stagger | Atmoscrubber |
+| **Preset Mode Wipe** | ::before width transition on button activation | 250ms ease-out | Atmoscrubber |
+
+#### Performance Budget (per panel)
+- ≤ 6 concurrent CSS animations
+- ≤ 2 `box-shadow` animations
+- All looping animations gated behind `prefers-reduced-motion`
+- Prefer `transform` and `opacity` for GPU-composited animations
+- No gradients on interactive controls (buttons, toggles)
+
 ### 7.1 View Navigation Transition
 
 When the user taps a sidebar nav button to switch views (Home → Devices → More):

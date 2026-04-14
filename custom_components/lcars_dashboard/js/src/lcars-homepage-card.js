@@ -6230,7 +6230,7 @@ class LcarsHomepageCard extends LitElement {
     /* ── Extract primary power/energy sensors ── */
 
     _getPrimaryPower(group) {
-      for (const entry of group.entries) {
+      for (const entry of group.entities) {
         const dc = entry.state?.attributes?.device_class || '';
         const unit = entry.state?.attributes?.unit_of_measurement || '';
         if (dc === 'power' && (unit === 'W' || unit === 'kW')) {
@@ -6242,7 +6242,7 @@ class LcarsHomepageCard extends LitElement {
     }
 
     _getPrimaryEnergy(group) {
-      for (const entry of group.entries) {
+      for (const entry of group.entities) {
         const dc = entry.state?.attributes?.device_class || '';
         const unit = entry.state?.attributes?.unit_of_measurement || '';
         if (dc === 'energy' && (unit === 'kWh' || unit === 'Wh')) {
@@ -6279,7 +6279,7 @@ class LcarsHomepageCard extends LitElement {
           const kwhToday = pair.reduce((sum, p) => sum + (this._getPrimaryEnergy(p) || 0), 0);
           result.push({
             device: { ...pair[0].device, name },
-            entries: pair.flatMap(p => p.entries),
+            entities: pair.flatMap(p => p.entities),
             is240V: true,
             combinedWatts: watts,
             combinedEnergy: kwhToday,
@@ -6421,7 +6421,7 @@ class LcarsHomepageCard extends LitElement {
       const color = getPowerColor(watts, thresholds);
       const label = getPowerLabel(watts, thresholds);
       const name = this._shortDeviceName(circuit.device) || 'Unknown';
-      const entityId = circuit.entries?.[0]?.entity?.entity_id;
+      const entityId = circuit.entities?.[0]?.entity?.entity_id;
 
       const content = popover.querySelector('.popover-content');
       if (content) {
@@ -6496,8 +6496,8 @@ class LcarsHomepageCard extends LitElement {
           role="listitem"
           tabindex="0"
           aria-label="${name}: ${watts != null ? Math.round(watts) + ' watts, ' + tier.toLowerCase() : 'unavailable'}${energy != null ? ', ' + energy.toFixed(1) + ' kilowatt hours today' : ''}"
-          @click=${() => supportsPopover ? this._showCircuitPopover(circuit) : showMoreInfo(circuit.entries?.[0]?.entity?.entity_id)}
-          @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); supportsPopover ? this._showCircuitPopover(circuit) : showMoreInfo(circuit.entries?.[0]?.entity?.entity_id); }}}>
+          @click=${() => supportsPopover ? this._showCircuitPopover(circuit) : showMoreInfo(circuit.entities?.[0]?.entity?.entity_id)}
+          @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); supportsPopover ? this._showCircuitPopover(circuit) : showMoreInfo(circuit.entities?.[0]?.entity?.entity_id); }}}>
           <div class="power-circuit-name">
             <span class="power-circuit-indicator" aria-hidden="true">${circuit.is240V ? '●●' : indicator}</span>
             <span>${name}</span>
@@ -6515,7 +6515,7 @@ class LcarsHomepageCard extends LitElement {
     /* ── Switch + monitor device row renderer ── */
 
     _renderPowerDeviceRow(group) {
-      const { switches, powerSensors, energySensors } = this._partitionPowerEntities(group.entries);
+      const { switches, powerSensors, energySensors } = this._partitionPowerEntities(group.entities);
       const sw = switches[0];
       const watts = powerSensors[0] ? parseFloat(powerSensors[0].state?.state) || 0 : null;
       const energy = energySensors[0] ? parseFloat(energySensors[0].state?.state) || null : null;
@@ -6550,7 +6550,7 @@ class LcarsHomepageCard extends LitElement {
 
     _renderPowerStrip(parentGroup, children) {
       const parentName = this._shortDeviceName(parentGroup.device) || 'Power Strip';
-      const { powerSensors: parentPower, switches: parentSwitches } = this._partitionPowerEntities(parentGroup.entries);
+      const { powerSensors: parentPower, switches: parentSwitches } = this._partitionPowerEntities(parentGroup.entities);
       const totalWatts = parentPower.reduce((sum, e) => sum + (parseFloat(e.state?.state) || 0), 0);
       const thresholds = this._config?.power_thresholds || {};
       const totalColor = getPowerColor(totalWatts, thresholds);
@@ -6581,7 +6581,7 @@ class LcarsHomepageCard extends LitElement {
 
     _renderStripChild(childGroup) {
       const name = this._shortDeviceName(childGroup.device) || 'Outlet';
-      const { switches, powerSensors } = this._partitionPowerEntities(childGroup.entries);
+      const { switches, powerSensors } = this._partitionPowerEntities(childGroup.entities);
       const watts = powerSensors[0] ? parseFloat(powerSensors[0].state?.state) || 0 : 0;
       const thresholds = this._config?.power_thresholds || {};
       const color = getPowerColor(watts, thresholds);

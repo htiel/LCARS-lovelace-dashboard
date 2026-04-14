@@ -1,7 +1,7 @@
 # LCARS Dashboard — 4.x Backlog
 
 > Stable branch (`4.0`). Non-breaking feature additions, bug fixes, and optimizations.
-> Version: 4.13.1 (current) → 4.14.0+
+> Version: 4.14.0 (current) → 4.15.0+
 
 ---
 
@@ -18,9 +18,9 @@
 
 ## Backlog
 
-### 4X-1 · BlueAir Air Purifier Support — `TODO` · Priority: MEDIUM · Size: S
+### 4X-1 · BlueAir Air Purifier Support — `DONE` · Priority: MEDIUM · Size: S
 
-**Target version**: 4.14.x
+**Shipped in**: v4.14.0 (2026-04-14)
 **Spec**: `specs/LCARS-AIR-PURIFIER-VERIFICATION-SPEC.md`
 
 Verify the environment panel's auto-detection heuristic picks up BlueAir devices (Blue Pure 311i Max via `ha_blueair` integration). They expose `fan` domain entities with speed control and `sensor` entities for filter life. Similar to existing VeSync purifier handling.
@@ -32,9 +32,9 @@ Verify the environment panel's auto-detection heuristic picks up BlueAir devices
 
 ---
 
-### 4X-2 · Temp/Humidity Sensor Grid (SwitchBot Meters) — `IN PROGRESS` · Priority: HIGH · Size: M
+### 4X-2 · Temp/Humidity Sensor Grid (SwitchBot Meters) — `DONE` · Priority: HIGH · Size: M
 
-**Target version**: 4.14.0
+**Shipped in**: v4.14.0 (2026-04-14)
 **Spec**: `specs/LCARS-TEMP-HUMIDITY-GRID-SPEC.md`
 **Done so far**: Spec, CSS, color utilities, v4.13.0 visual enhancements all shipped. Renderer not yet implemented.
 

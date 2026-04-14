@@ -2,6 +2,67 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.12.1] — 2026-04-13
+
+### Enhanced — LCARS Visual Polish Pass
+
+Second visual pass across all cards and panels, inspired by the reference images in `localinfo/inspiration/`. Makes every panel feel more authentically LCARS.
+
+#### Global Enhancements
+- **Panel scan line**: Increased visibility from 3% to 8% opacity, tightened gradient band, faster 8s cycle
+- **Viewscreen breathing glow**: All viewscreens (climate, media, weather, alarm, pool, camera, device panel media) now pulse with a subtle breathing `box-shadow` animation on a 6s cycle — evokes active LCARS display
+- **Sensor scan sweep**: Increased sweep brightness from 15% → 25% for more visible data readout animation
+- **Toggle pill active glow**: On-state toggle pills now emit an ambient box-shadow glow (orange tones)
+- **CRT scan lines**: Increased overlay opacity from 3% → 6% on camera frames and device panel media
+
+#### Battery Warp Core — Redesigned Containment Vessel
+- **Graduated taper**: Pills now smoothly taper from 40% width at extremes to 94% at the junction — matching the TNG containment vessel silhouette from `battery panel 1.png`
+- **Side rails**: Two vertical containment bars run the full length of the core with gradient fade, creating the glass tube frame effect
+- **Junction flanges**: Horizontal ridged bars extend outward from the junction ring — `repeating-linear-gradient` striped pattern at 35% opacity
+- **Larger pills**: Height increased from 0.625rem → 0.9rem base, junction-adjacent pills reach 1.1rem
+- **Larger junction ring**: 2rem → 2.25rem diameter, stronger glow
+- **Stronger charging pulse**: New `pill-charge-wave` animation with dramatic 14px + 24px compound box-shadow glow, 80ms cascade delay
+
+#### Media Panel
+- **Audio waveform visualizer**: 16 animated bars above transport controls — bars dance when playing, flatten when idle. Uses staggered animation delays for organic motion
+- **Pill-shaped transport buttons**: Replaced circular `border-radius: 50%` buttons with LCARS-compliant pill shapes (`border-radius: 0 var(--lcars-btn-radius)`)
+- **Boosted idle CRT**: Increased radial glow and scan line opacity on standby display
+
+#### Climate Panel
+- **Pill-shaped setpoint buttons**: Changed from circular to LCARS-compliant pill shape (flat left, rounded right)
+- **Dashed outer arc ring**: Added decorative `stroke-dasharray` outer ring to the SVG temperature gauge
+
+#### Alarm Panel
+- **Concentric ring background**: CSS radial gradient rings behind the shield SVG at 30%, 45%, 60% radii — targeting display aesthetic
+- **Triggered flash overlay**: Red overlay pulses via `::before` pseudo-element during triggered state (8% peak opacity)
+- **Pill-shaped digit buttons**: Keypad buttons now use LCARS flat-left/rounded-right pill shape
+
+#### Weather Panel
+- **Targeting reticle perimeter**: Dashed outer circle on wind compass SVG (`stroke-dasharray: 3 2`)
+- **Diagonal crosshairs**: Added 45° guide lines at low opacity for full reticle effect
+- **Condition badge glow**: Weather condition text has `text-shadow: 0 0 8px currentColor` for ambient color glow
+
+#### Pool/Spa Panel
+- **Water shimmer**: Background uses `repeating-linear-gradient` vertical bars that shift horizontally on a 4s animation cycle — subtle water surface ripple effect
+
+#### Camera
+- **REC indicator pip**: Blinking red dot + "REC" label in top-right corner of all camera frames. Hidden when camera is offline
+- **Viewscreen breathing**: Camera frames now have the same breathing glow animation as other viewscreens
+
+#### Environment (Atmoscrubber)
+- **Active breathing glow**: Cylinder border glow pulses between 8px and 16px box-shadow on a 4s cycle when active, with a secondary 30px ambient layer
+
+#### Irrigation
+- **Boosted flow bar**: Taller (0.625rem), more visible flow stripes (25% opacity), faster animation (0.8s), tighter segment spacing
+
+### Fixed
+- All new animations added to `prefers-reduced-motion: reduce` block
+
+### Security
+- All DOM additions use Lit-html auto-escaping — no `unsafeHTML()` or `innerHTML`
+- REC indicator is purely decorative (`pointer-events: none`, `aria-hidden` implicit)
+- Waveform bars are `aria-hidden="true"`
+
 ## [4.12.0] — 2026-04-13
 
 ### Added — LCARS Visual Overhaul

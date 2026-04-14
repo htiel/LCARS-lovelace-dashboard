@@ -550,6 +550,22 @@ All device panels feature a subtle horizontal scan line that sweeps vertically t
 
 The scan line is barely perceptible (3% opacity) — it reads as "active display" rather than "flickering screen."
 
+### v4.12.1 Visual Polish
+
+- **Scan line intensity boost**: Opacity increased from 3% to 8%, tighter band (49.5%–50.5%), faster 8-second cycle — more visible sweep without becoming distracting
+- **Viewscreen breathing glow**: `@keyframes viewscreen-breathe` (6s ease-in-out infinite) applied to `.device-panel-media` — `box-shadow` oscillates between 20px and 30px spread, giving viewscreens a gentle living-display pulse
+- **Sensor scan sweep boost**: Sensor indicator brightness increased from 15% to 25%
+- **Toggle pill active glow**: `[data-on]` state gets `box-shadow: 0 0 8px rgba(255,170,0,0.3), 0 0 16px rgba(255,170,0,0.1)` — active toggles now pop against the dark background
+- **CRT scanline overlay boost**: Opacity on `.device-panel-media::after` and `.camera-frame::after` increased from 3% to 6%
+- **Battery warp core redesign**:
+  - Side rails: `::before`/`::after` vertical bars with gradient fade (opacity 0.3)
+  - Graduated taper via CSS `nth-child`: Upper pills 40%→50%→60%→68%→76%→85%→94%, lower half mirrors
+  - Junction flanges: `::before`/`::after` on `.warp-core-junction` with `repeating-linear-gradient` striped horizontal bars
+  - Larger pills (0.625rem→0.9rem base, 1.1rem junction-adjacent), larger junction ring (2rem→2.25rem)
+  - New `pill-charge-wave` keyframe with 14px+24px compound glow, 80ms cascade delay
+  - Container min-height 10rem→14rem, width 5rem→6rem; larger endcaps (1.75rem) and funnels (2rem)
+- **Reduced motion updated**: Added `.device-panel-media` to the `prefers-reduced-motion` disable list
+
 ### Viewscreen Activation (Existing)
 
 Reuse the existing `viewscreen-activate` keyframes from `lcars-homepage-card.js`:

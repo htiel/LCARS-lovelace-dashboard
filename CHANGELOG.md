@@ -2,7 +2,52 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
-## [4.16.0] — 2025-07-25
+## [4.16.6] — 2026-04-14
+
+### Added — LCARS Sliding Track Toggles
+- **`_renderTrackToggle()`** — Unified toggle renderer producing sliding track switches with circular thumb indicator. Gold track + right thumb = ON, gray track + left thumb = OFF. LCARS font, `prefers-reduced-motion` override
+- Applied to all power panel toggles: device row switches, strip master toggles, and per-outlet child toggles
+
+### Fixed — Strip Child Switch Matching (#4 continued)
+- **Parent-owned switches** — Kasa HS300 puts all per-outlet `switch.*` entities on the parent device, not on child outlet devices. `_renderStripChild()` now receives the parent's switch list and matches by normalized child device name appearing in the parent switch entity_id or friendly_name
+
+## [4.16.5] — 2026-04-14
+
+### Fixed — Strip Parent/Child Classification (#4 continued)
+- **Inherited model string** — Kasa HS300 child outlet devices inherit the parent's model ("HS300"), so `_classifyPowerDevice()` marked all 14 as `'strip'`. Every outlet rendered as a separate strip block with zero children
+- **via_device_id check** — Before tagging `subType: 'strip'`, check if the device's `via_device_id` points to another strip-classified device. If so, it's a child outlet — passes through without `subType` so `_groupPowerStrips()` associates it with its parent
+
+## [4.16.4] — 2026-04-14
+
+### Fixed — Power Panel Dedup + Strip Outlet Toggles (#1, #2, #4)
+- **#4 — Strip outlets missing toggles** — `_groupPowerStrips()` checked `group.subType === 'strip'` but `subType` was never set on power groups. Tagged strip groups with `subType: 'strip'` in `_buildPowerCollection()`
+- **#2 — Mains/total circuit double-counting** — Aggregate channels (Balance, Total, Mains, Net, Whole Home) detected by name pattern and excluded from area total. Individual circuit tiles still render
+- **#1 — UPS/battery backup double-counting** — UPS parent devices detected by `device_class: battery` and manufacturer patterns (CyberPower, APC, Tripp Lite). Parent wattage excluded from totals when children are present via `via_device_id`
+- **Strip child dedup** — Strip children excluded from area totals since the strip parent already reports their aggregate
+
+### Changed
+- **`hacs.json`** — Added `icon` URL pointing to `brand/icon.png` on the `4.0` branch
+
+## [4.16.3] — 2026-04-14
+
+### Fixed — Camera Overlay Visibility (#3 continued)
+- **z-index inversion** — `.camera-frame img` had `z-index: 2` sitting on top of overlays (`z-index: 1`). Swapped: img `z-index: 0`, overlays `z-index: 2`
+- **Stale image on room switch** — Removed `loading="lazy"` and `display:none` toggling. Added `.src` property binding to force Lit to update the img element when switching rooms
+- **Offline black screen** — Added `opacity: 0` for img in offline state. Removed `.device-panel-media[data-offline] opacity: 0.5` that was dimming the entire container including overlays
+- **Camera frame fill** — Added CSS for `.camera-frame` inside `.device-panel-media` to remove double borders
+
+## [4.16.2] — 2026-04-14
+
+### Fixed — Camera Overlay in Device Panel (#3)
+- **Missing overlays** — Device panel camera renderer (`_renderCameraPanel()`) lacked ESTABLISHING LINK / VIEWSCREEN OFFLINE overlays that existed in the domain-based `_renderCameras()`. Added proper `camera-frame[data-state]` overlay pattern with connecting/offline states
+
+## [4.16.1] — 2026-04-14
+
+### Fixed — SVG Import Crash + HACS Detection
+- **`svg is not defined`** — Added missing `import { svg } from 'lit-html'` for power arc SVG template literals
+- **HACS version detection** — All patch versions now get GitHub releases (required for HACS update notification)
+
+## [4.16.0] — 2026-04-14
 
 ### Added — Consolidated Power Panel (4X-6)
 
@@ -31,6 +76,11 @@ All notable changes to the LCARS Dashboard project are documented here.
 ### Changed
 - **`_renderDevicePanel()`** — Removed standalone `PANEL_TYPE_POWER` case (now handled by consolidated panel)
 - **`_renderPowerPanel()`** — Marked `@deprecated` in favor of consolidated renderer
+
+## [4.15.1] — 2026-04-14
+
+### Fixed
+- **TreeWalker crash** — Invalid lit-html v1 free-form expression in power panel template caused TreeWalker crash. Fixed with proper attribute binding
 
 ## [4.15.0] — 2026-04-14
 

@@ -4,7 +4,7 @@
 **Target**: v4.17.0  
 **Author**: Data (Architecture Analysis)  
 **Date**: 2026-04-14  
-**Status**: Approved — Awaiting Implementation
+**Status**: IMPLEMENTED — Shipped in v4.17.0 (2026-04-15)
 
 ---
 

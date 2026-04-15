@@ -71,15 +71,33 @@ LCARS-lovelace-dashboard/
 │   ├── notifications.py                 # Notification websocket handlers
 │   ├── process_yaml.py                  # YAML/Jinja2 template processing
 │   ├── sensor.py                        # HA sensor entity
-│   ├── manifest.json                    # HA integration manifest (v4.16.6)
+│   ├── manifest.json                    # HA integration manifest (v4.17.0)
 │   ├── services.yaml                    # HA service definitions
 │   ├── js/                              # Frontend (JavaScript)
 │   │   ├── package.json                 # npm deps & build scripts
-│   │   ├── webpack.config.js            # Webpack 5 config (28 entry points)
-│   │   ├── src/                         # 34 LitElement web component sources
+│   │   ├── webpack.config.js            # Webpack 5 config
+│   │   ├── src/                         # LitElement web component sources
 │   │   │   ├── lcars-dashboard.js       # Main dashboard orchestrator
-│   │   │   ├── lcars-homepage-card.js   # Homepage + all panel renderers (~3140 lines)
+│   │   │   ├── lcars-homepage-card.js   # Homepage + domain renderers (thin orchestrator)
+│   │   │   ├── lcars-base-panel.js      # Abstract base class for all panels
 │   │   │   ├── lcars-styles.js          # LCARS CSS theme/variables
+│   │   │   ├── components/              # 5 shared components
+│   │   │   │   ├── lcars-panel-frame/   # Unified panel frame (header, badge, brackets)
+│   │   │   │   ├── lcars-sensor-row/    # Reusable sensor readout line
+│   │   │   │   ├── lcars-section-divider/ # Horizontal rule with label
+│   │   │   │   ├── lcars-option-strip/  # Radio-group pill buttons
+│   │   │   │   └── lcars-setpoint/      # Spinbutton ± adjustment
+│   │   │   ├── panels/                  # 10 extracted panel elements
+│   │   │   │   ├── alarm/               # <lcars-alarm-panel>
+│   │   │   │   ├── battery/             # <lcars-battery-panel>
+│   │   │   │   ├── camera/              # <lcars-camera-panel>
+│   │   │   │   ├── climate/             # <lcars-climate-panel>
+│   │   │   │   ├── environment/         # <lcars-environment-panel>
+│   │   │   │   ├── irrigation/          # <lcars-irrigation-panel>
+│   │   │   │   ├── media/               # <lcars-media-panel>
+│   │   │   │   ├── pool-spa/            # <lcars-pool-spa-panel>
+│   │   │   │   ├── power/               # <lcars-power-panel>
+│   │   │   │   └── weather/             # <lcars-weather-panel>
 │   │   │   └── ...                      # Cards, popups, editors, utils
 │   │   └── vendor/                      # Vendored HA/lovelace helpers
 │   ├── lovelace/                        # YAML view definitions
@@ -104,7 +122,7 @@ LCARS-lovelace-dashboard/
 | `npm run build` | `custom_components/lcars_dashboard/js/` | Production webpack build → `lcars-dashboard.js` |
 | `npm run watch` | `custom_components/lcars_dashboard/js/` | Dev mode with file watching |
 
-The webpack config bundles 28 entry points into a single `lcars-dashboard.js` file (~203 KiB).
+The webpack config bundles all entry points into a single `lcars-dashboard.js` file (~566 KiB).
 
 ---
 
@@ -141,6 +159,7 @@ The webpack config bundles 28 entry points into a single `lcars-dashboard.js` fi
 
 ## Current Version
 
-- **Integration**: v4.16.6
+- **Integration**: v4.17.0
 - **HA minimum**: 2025.4.0
-- **Architecture**: LitElement v2 web components, Webpack 5, single-bundle HACS distribution
+- **Architecture**: LitElement v2 web components, 10 extracted panel elements + shared base class, Webpack 5, single-bundle HACS distribution
+- **Bundle size**: ~566 KiB (production, minified)

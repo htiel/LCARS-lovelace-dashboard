@@ -35,6 +35,23 @@ import { renderSparkline, fetchSparklineData } from './lcars-sparkline.js';
 import { fetchForecasts } from './lcars-weather-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from './lcars-shared-animations.js';
 
+/* ─── Side-effect imports: extracted components & panels (no webpack entry needed) ─── */
+import './components/lcars-panel-frame/lcars-panel-frame.js';
+import './components/lcars-sensor-row/lcars-sensor-row.js';
+import './components/lcars-section-divider/lcars-section-divider.js';
+import './components/lcars-option-strip/lcars-option-strip.js';
+import './components/lcars-setpoint/lcars-setpoint.js';
+import './panels/irrigation/lcars-irrigation-panel.js';
+import './panels/camera/lcars-camera-panel.js';
+import './panels/environment/lcars-environment-panel.js';
+import './panels/battery/lcars-battery-panel.js';
+import './panels/climate/lcars-climate-panel.js';
+import './panels/alarm/lcars-alarm-panel.js';
+import './panels/media/lcars-media-panel.js';
+import './panels/pool-spa/lcars-pool-spa-panel.js';
+import './panels/weather/lcars-weather-panel.js';
+import './panels/power/lcars-power-panel.js';
+
 const TAG = 'Homepage';
 
 /* Build a cache-busted camera image URL using last_updated timestamp */
@@ -4207,15 +4224,24 @@ class LcarsHomepageCard extends LitElement {
     /* ─── Dispatch to the correct panel renderer ─── */
     _renderDevicePanel(panelType, group) {
       switch (panelType) {
-        case PANEL_TYPE_CAMERA:      return this._renderCameraPanel(group);
-        case PANEL_TYPE_ENVIRONMENT: return this._renderEnvironmentPanel(group);
-        case PANEL_TYPE_BATTERY:     return this._renderBatteryPanel(group);
-        case PANEL_TYPE_CLIMATE:     return this._renderClimatePanel(group);
-        case PANEL_TYPE_ALARM:       return this._renderAlarmPanel(group);
-        case PANEL_TYPE_MEDIA:       return this._renderMediaPanel(group);
-        case PANEL_TYPE_AQUATICS:    return this._renderPoolSpaPanel(group);
-        case PANEL_TYPE_WEATHER:     return this._renderWeatherPanel(group);
-        case PANEL_TYPE_IRRIGATION:  return this._renderIrrigationPanel(group);
+        case PANEL_TYPE_CAMERA:
+          return html`<lcars-camera-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-camera-panel>`;
+        case PANEL_TYPE_ENVIRONMENT:
+          return html`<lcars-environment-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-environment-panel>`;
+        case PANEL_TYPE_BATTERY:
+          return html`<lcars-battery-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-battery-panel>`;
+        case PANEL_TYPE_CLIMATE:
+          return html`<lcars-climate-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-climate-panel>`;
+        case PANEL_TYPE_ALARM:
+          return html`<lcars-alarm-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-alarm-panel>`;
+        case PANEL_TYPE_MEDIA:
+          return html`<lcars-media-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-media-panel>`;
+        case PANEL_TYPE_AQUATICS:
+          return html`<lcars-pool-spa-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-pool-spa-panel>`;
+        case PANEL_TYPE_WEATHER:
+          return html`<lcars-weather-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-weather-panel>`;
+        case PANEL_TYPE_IRRIGATION:
+          return this._renderIrrigationPanel(group);
         default: return '';
       }
     }
@@ -6241,90 +6267,15 @@ class LcarsHomepageCard extends LitElement {
       this._hass.callService('switch', turnOn ? 'turn_on' : 'turn_off', { entity_id: entityId });
     }
 
+    /* ─── Delegate to extracted <lcars-irrigation-panel> component ─── */
     _renderIrrigationPanel(group) {
-      const { zones, sensors, controller } = this._partitionIrrigationEntities(group.entities);
-      const deviceName = this._shortDeviceName(group.device) || 'Irrigation';
-      const activeZone = zones.find(z => z.state?.state === 'on');
-      const isStandby = controller.some(c => c.domain === 'switch' && c.state?.state === 'off');
-
       return html`
-        <div class="lcars-device-panel irrigation-panel" data-panel-type="irrigation"
-          style="--panel-frame-color:var(--lcars-ice)">
-          <!-- Header -->
-          <div class="irrigation-header">
-            <span class="device-panel-name">${deviceName}</span>
-            <div class="device-panel-header-line"></div>
-            <span class="irrigation-status-badge" style="color:${activeZone ? 'var(--lcars-ice)' : isStandby ? 'var(--lcars-gray)' : 'var(--lcars-sunflower)'}">
-              ${activeZone ? `WATERING ${this._friendlyName(activeZone.state, activeZone.entity)}` : isStandby ? 'STANDBY' : 'IDLE'}
-            </span>
-            <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(zones[0]?.entity?.entity_id || group.device.id)}</span>
-          </div>
-
-          <!-- Schedule (left) -->
-          <div class="irrigation-schedule" role="list" aria-label="Schedule info">
-            ${sensors.map(({ entity, state }) => {
-              const name = this._friendlyName(state, entity);
-              const unit = state.attributes?.unit_of_measurement || '';
-              const color = this._getSensorIndicatorColor(state);
-              return html`
-                <div class="device-sensor-line" tabindex="0" role="listitem"
-                  aria-label="${name}: ${state.state}${unit ? ' ' + unit : ''}"
-                  @click=${() => this._handleEntityClick(entity.entity_id)}>
-                  <div class="sensor-indicator" style="background:${color}"></div>
-                  <span class="sensor-label">${name}</span>
-                  <span class="sensor-state-value" style="color:${color}">${state.state}${unit ? ' ' + unit : ''}</span>
-                </div>
-              `;
-            })}
-          </div>
-
-          <!-- Zones (right) -->
-          <div class="irrigation-zones" role="list" aria-label="Irrigation zones">
-            ${zones.map(({ entity, state }) => {
-              const name = this._friendlyName(state, entity);
-              const isOn = state.state === 'on';
-              const zoneColor = getIrrigationZoneColor(state.state, isStandby);
-              return html`
-                <div class="irrigation-zone-row" role="listitem" tabindex="0"
-                  aria-label="${name}: ${isOn ? 'watering' : 'idle'}">
-                  <button class="irrigation-zone-btn" ?data-on=${isOn}
-                    style="--zone-color:${zoneColor}"
-                    ?disabled=${isStandby}
-                    aria-label="${isOn ? 'Stop' : 'Start'} watering ${name}"
-                    @click=${() => this._handleIrrigationZone(entity.entity_id, !isOn)}>
-                    ${isOn ? 'STOP' : 'START'}
-                  </button>
-                  <span class="irrigation-zone-name">${name}</span>
-                  <span class="irrigation-zone-status" style="color:${zoneColor}">
-                    ${isStandby ? 'STANDBY' : isOn ? 'WATERING' : 'IDLE'}
-                  </span>
-                  ${isOn ? html`
-                    <div class="irrigation-zone-fill" role="progressbar"
-                      aria-label="Zone active" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"
-                      style="background:var(--lcars-ice)"></div>
-                  ` : ''}
-                </div>
-              `;
-            })}
-          </div>
-
-          <!-- Standby Toggle (bottom) -->
-          ${controller.filter(c => c.domain === 'switch').map(({ entity, state }) => {
-            const isOff = state.state === 'off';
-            return html`
-              <div class="irrigation-standby">
-                <button class="device-control-btn irrigation-standby-btn" role="switch"
-                  aria-checked="${isOff}" ?data-on=${!isOff}
-                  @click=${() => this._handleToggle(entity.entity_id)}
-                  title="Standby mode: ${isOff ? 'ON' : 'OFF'}">
-                  <ha-icon icon="mdi:water-off"></ha-icon>
-                  <span>STANDBY ${isOff ? 'ON' : 'OFF'}</span>
-                </button>
-              </div>
-            `;
-          })}
-          <div class="panel-pip-strip" aria-hidden="true"></div>
-        </div>
+        <lcars-irrigation-panel
+          .group=${group}
+          .hass=${this._hass}
+          .editMode=${this._editMode}
+          area-id="${this.selectedArea || ''}">
+        </lcars-irrigation-panel>
       `;
     }
 
@@ -7289,9 +7240,7 @@ class LcarsHomepageCard extends LitElement {
             ${this._renderDomainGroups(noDevice)}
           </div>
         ` : ''}
-        ${powerGroups.length > 0 ? this._renderConsolidatedPowerPanel(
-          this._buildPowerCollection(powerGroups)
-        ) : ''}
+        ${powerGroups.length > 0 ? html`<lcars-power-panel .powerGroups=${powerGroups} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-power-panel>` : ''}
       `;
 
       // No panel devices → single-column (power panel is in normalContent)

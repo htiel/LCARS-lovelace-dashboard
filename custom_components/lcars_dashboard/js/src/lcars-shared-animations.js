@@ -59,6 +59,12 @@ export const sharedKeyframes = css`
     100% { transform: scale(1); }
   }
 
+  /* ── Zone activation pulse (Irrigation §7 — zone start/stop) ── */
+  @keyframes lcars-zone-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.6; }
+  }
+
   /* ── Setpoint confirmation flash — scale + glow (Climate §13 enh.3) ── */
   @keyframes lcars-setpoint-confirm {
     0%   { transform: scale(1); text-shadow: none; }
@@ -77,7 +83,8 @@ export const sharedReducedMotion = css`
     .lcars-water-viewscreen::after,
     .lcars-pump-spinner,
     .lcars-atmos-particle,
-    .lcars-rain-badge {
+    .lcars-rain-badge,
+    .irrigation-zone-fill {
       animation: none !important;
     }
 

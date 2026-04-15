@@ -8,7 +8,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-4.16.6-blue)
+![Version](https://img.shields.io/badge/version-4.17.0-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 [![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 
@@ -133,9 +133,10 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 | Layer | Technology |
 |-------|-----------|
 | HA Integration | Python custom component (`lcars_dashboard`) |
-| Frontend | Lit Element v2 web components |
-| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~386 KiB) |
-| Styling | 40+ LCARS CSS custom properties in shared `lcars-styles.js` |
+| Frontend | Lit Element v2 web components — 10 extracted panel elements + shared base class |
+| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~566 KiB) |
+| Styling | 3-tier CSS composition: base variables → component shadow DOM → panel-specific modules |
+| Components | 5 shared components: `<lcars-panel-frame>`, `<lcars-sensor-row>`, `<lcars-section-divider>`, `<lcars-option-strip>`, `<lcars-setpoint>` |
 | Communication | WebSocket API + window custom events |
 
 ## Changelog

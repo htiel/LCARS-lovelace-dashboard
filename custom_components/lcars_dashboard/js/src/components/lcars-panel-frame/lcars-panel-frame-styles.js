@@ -13,10 +13,10 @@ import { css } from 'lit-element';
 export const panelFrameStyles = css`
   :host {
     display: block;
-    --panel-frame-color: var(--frame-color-override, var(--lcars-butterscotch));
   }
 
   .lcars-panel-frame {
+    --panel-frame-color: var(--frame-color-override, var(--lcars-butterscotch));
     display: flex;
     flex-direction: column;
     gap: var(--lcars-gap);

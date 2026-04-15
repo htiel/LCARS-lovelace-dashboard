@@ -4101,7 +4101,7 @@ class LcarsHomepageCard extends LitElement {
       ];
     }
 
-    /* ──────────── FLOOR VIEW ──────────── */lcars-track
+    /* ──────────── FLOOR VIEW ──────────── */
     _renderFloorView(floorId) {
       const floor = this._hass.floors?.[floorId];
       if (!floor) {

@@ -4249,21 +4249,28 @@ class LcarsHomepageCard extends LitElement {
             ${cameras.map(({ entity, state }, idx) => {
               const imgUrl = cameraImageUrl(state);
               const name = idx === 0 ? deviceName : this._friendlyName(state, entity);
-              return imgUrl
-                ? html`<img src="${imgUrl}"
-                            alt="${name} camera feed" loading="lazy"
-                            data-entity="${entity.entity_id}"
-                            style="${idx > 0 ? 'margin-top:var(--lcars-gap);border-top:2px solid var(--panel-frame-color)' : ''}"
-                            @error=${(e) => { e.target.style.display = 'none'; e.target.nextElementSibling && (e.target.nextElementSibling.style.display = ''); }}
-                            @load=${(e) => { e.target.style.display = ''; const sib = e.target.nextElementSibling; if (sib?.classList.contains('camera-error-fallback')) sib.style.display = 'none'; }}
-                            @click=${() => this._handleEntityClick(entity.entity_id)} /><div class="camera-error-fallback" style="display:none;aspect-ratio:16/9;align-items:center;justify-content:center"
-                            @click=${() => this._handleEntityClick(entity.entity_id)}>
-                    <ha-icon icon="mdi:video-off" style="--mdc-icon-size:48px;color:var(--lcars-gray)"></ha-icon>
-                  </div>`
-                : html`<div style="display:flex;aspect-ratio:16/9;align-items:center;justify-content:center"
-                            @click=${() => this._handleEntityClick(entity.entity_id)}>
-                    <ha-icon icon="mdi:video-off" style="--mdc-icon-size:48px;color:var(--lcars-gray)"></ha-icon>
-                  </div>`;
+              const off = this._isOff(state);
+              const camState = (off || !imgUrl) ? 'offline' : 'connecting';
+              return html`
+                <div class="camera-frame" data-state="${camState}"
+                  style="${idx > 0 ? 'margin-top:var(--lcars-gap);border-top:2px solid var(--panel-frame-color)' : ''}"
+                  aria-busy="${camState === 'connecting'}"
+                  @click=${() => this._handleEntityClick(entity.entity_id)}>
+                  <div class="camera-connecting-overlay" aria-hidden="true">
+                    <span class="camera-connecting-text">ESTABLISHING LINK</span>
+                  </div>
+                  <div class="camera-offline-overlay" aria-hidden="true">
+                    <ha-icon icon="mdi:video-off"></ha-icon>
+                    <span class="camera-offline-text">VIEWSCREEN OFFLINE</span>
+                  </div>
+                  ${imgUrl
+                    ? html`<img src="${imgUrl}" alt="${name} camera feed" loading="lazy"
+                                data-entity="${entity.entity_id}"
+                                @load=${(e) => { e.target.style.display = ''; const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'live'); f.removeAttribute('aria-busy'); } }}
+                                @error=${(e) => { e.target.style.display = 'none'; const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'offline'); f.removeAttribute('aria-busy'); } }} />`
+                    : html`<div class="camera-spacer"></div>`
+                  }
+                </div>`;
             })}
           </div>
 

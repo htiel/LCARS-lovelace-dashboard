@@ -2782,31 +2782,62 @@ class LcarsHomepageCard extends LitElement {
             outline: 2px solid var(--lcars-ice);
             outline-offset: 2px;
           }
-          .power-toggle {
-            display: flex;
+          /* ── LCARS sliding track toggle ── */
+          .lcars-track-toggle {
+            position: relative;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            width: 2.5rem;
+            width: 3.25rem;
             height: 1.5rem;
             border-radius: 0.75rem;
-            font-family: var(--lcars-font);
-            font-size: 0.6rem;
-            font-weight: 700;
-            text-transform: uppercase;
             border: none;
             cursor: pointer;
+            background: var(--lcars-gray);
+            padding: 0 0.25rem;
             flex-shrink: 0;
             transition: background var(--lcars-transition);
+            overflow: hidden;
           }
-          .power-toggle[data-state="on"] {
+          .lcars-track-toggle[data-on] {
             background: var(--lcars-gold);
-            color: var(--lcars-black);
           }
-          .power-toggle[data-state="off"] {
-            background: var(--lcars-gray);
+          .lcars-track-toggle .track-label {
+            position: absolute;
+            font-family: var(--lcars-font);
+            font-size: 0.55rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            line-height: 1;
+            pointer-events: none;
+            transition: left var(--lcars-transition), right var(--lcars-transition), color var(--lcars-transition);
+          }
+          .lcars-track-toggle:not([data-on]) .track-label {
+            right: 0.35rem;
+            left: auto;
             color: var(--lcars-space-white);
           }
-          .power-toggle:focus-visible {
+          .lcars-track-toggle[data-on] .track-label {
+            left: 0.35rem;
+            right: auto;
+            color: var(--lcars-black);
+          }
+          .lcars-track-toggle .track-thumb {
+            position: absolute;
+            width: 1.1rem;
+            height: 1.1rem;
+            border-radius: 50%;
+            background: var(--lcars-space-white);
+            top: 0.2rem;
+            transition: left var(--lcars-transition);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+          }
+          .lcars-track-toggle:not([data-on]) .track-thumb {
+            left: 0.2rem;
+          }
+          .lcars-track-toggle[data-on] .track-thumb {
+            left: calc(100% - 1.3rem);
+          }
+          .lcars-track-toggle:focus-visible {
             outline: 2px solid var(--lcars-ice);
             outline-offset: 2px;
           }
@@ -2869,22 +2900,11 @@ class LcarsHomepageCard extends LitElement {
             flex: 1;
           }
           .power-strip-master-toggle {
-            height: 2rem;
-            min-width: 3rem;
-            font-family: var(--lcars-font);
-            font-size: 0.7rem;
-            padding: 0 0.5rem;
-            border: 1px solid var(--lcars-gray);
-            border-radius: var(--lcars-btn-radius);
-            background: transparent;
-            color: var(--lcars-disabled);
-            cursor: pointer;
-            text-transform: uppercase;
+            /* Legacy — replaced by lcars-track-toggle */
+            display: none;
           }
           .power-strip-master-toggle[data-on] {
-            border-color: var(--lcars-ice);
-            color: var(--lcars-ice);
-            background: rgba(153, 204, 255, 0.1);
+            display: none;
           }
           .power-strip-total {
             font-size: var(--lcars-font-size-data);
@@ -2918,21 +2938,11 @@ class LcarsHomepageCard extends LitElement {
             gap: 0.25rem;
           }
           .strip-child-toggle {
-            font-family: var(--lcars-font);
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            padding: 0.125rem 0.375rem;
-            border: 1px solid var(--lcars-gray);
-            border-radius: var(--lcars-btn-radius);
-            background: transparent;
-            color: var(--lcars-disabled);
-            cursor: pointer;
-            transition: all var(--lcars-transition);
+            /* Legacy — replaced by lcars-track-toggle */
+            display: none;
           }
           .strip-child-toggle[data-on] {
-            border-color: var(--lcars-ice);
-            color: var(--lcars-ice);
-            background: rgba(153, 204, 255, 0.1);
+            display: none;
           }
           /* Popover (singleton) */
           .power-detail-popover {
@@ -4091,7 +4101,7 @@ class LcarsHomepageCard extends LitElement {
       ];
     }
 
-    /* ──────────── FLOOR VIEW ──────────── */
+    /* ──────────── FLOOR VIEW ──────────── */lcars-track
     _renderFloorView(floorId) {
       const floor = this._hass.floors?.[floorId];
       if (!floor) {
@@ -6719,14 +6729,10 @@ class LcarsHomepageCard extends LitElement {
           role="listitem" tabindex="0"
           style="--circuit-color:${color}"
           aria-label="${name}: ${sw ? (isOn ? 'on' : 'off') + ', ' : ''}${watts != null ? Math.round(watts) + ' watts' : 'unknown'}">
-          ${sw ? html`
-            <button class="power-toggle" data-state="${isOn ? 'on' : 'off'}"
-              role="switch" aria-checked="${isOn}"
-              aria-label="Toggle ${name}"
-              @click=${(e) => { e.stopPropagation(); if (this._powerToggleLimiter.allow()) this._handleToggle(sw.entity.entity_id); }}>
-              ${isOn ? 'ON' : 'OFF'}
-            </button>
-          ` : ''}
+          ${sw ? this._renderTrackToggle(
+            isOn, `Toggle ${name}`,
+            () => { if (this._powerToggleLimiter.allow()) this._handleToggle(sw.entity.entity_id); }
+          ) : ''}
           <span class="power-device-name">${name}</span>
           <div class="power-device-stats">
             ${this._renderClickableValue(powerEntityId, `View ${name} power: ${watts != null ? Math.round(watts) + ' watts' : 'unknown'}`, html`<span class="power-device-watts" style="color:${color}">${this._formatWatts(watts)}</span>`)}
@@ -6750,51 +6756,57 @@ class LcarsHomepageCard extends LitElement {
         <div class="power-strip-block" role="listitem">
           <div class="power-strip-header" role="heading" aria-level="5">
             <span class="power-strip-name">${parentName}</span>
-            ${parentSwitch ? html`
-              <button class="power-strip-master-toggle"
-                ?data-on=${parentSwitch.state?.state === 'on'}
-                role="switch" aria-checked="${parentSwitch.state?.state === 'on'}"
-                aria-label="Master toggle ${parentName}"
-                @click=${() => { if (this._powerToggleLimiter.allow()) this._handleToggle(parentSwitch.entity.entity_id); }}>
-                ${parentSwitch.state?.state === 'on' ? 'ON' : 'OFF'}
-              </button>
-            ` : ''}
+            ${parentSwitch ? this._renderTrackToggle(
+              parentSwitch.state?.state === 'on',
+              `Master toggle ${parentName}`,
+              () => { if (this._powerToggleLimiter.allow()) this._handleToggle(parentSwitch.entity.entity_id); }
+            ) : ''}
             <span class="power-strip-total" style="color:${totalColor}">TOTAL: ${this._formatWatts(totalWatts)}</span>
           </div>
           <div class="power-strip-divider" aria-hidden="true"></div>
           <div class="power-strip-children" role="list" aria-label="${parentName} outlets">
-            ${children.map(child => this._renderStripChild(child))}
+            ${children.map(child => this._renderStripChild(child, parentSwitches))}
           </div>
         </div>
       `;
     }
 
-    _renderStripChild(childGroup) {
+    _renderStripChild(childGroup, parentSwitches) {
       const name = this._shortDeviceName(childGroup.device) || 'Outlet';
-      const { switches, powerSensors, energySensors } = this._partitionPowerEntities(childGroup.entities);
+      const { switches: childSwitches, powerSensors, energySensors } = this._partitionPowerEntities(childGroup.entities);
       const watts = powerSensors[0] ? parseFloat(powerSensors[0].state?.state) || 0 : 0;
       const energy = energySensors[0] ? parseFloat(energySensors[0].state?.state) || null : null;
       const thresholds = this._config?.power_thresholds || {};
       const color = getPowerColor(watts, thresholds);
-      const childSwitch = switches[0];
-      const isOn = childSwitch?.state?.state === 'on';
       const powerEntityId = powerSensors[0]?.entity?.entity_id;
       const energyEntityId = energySensors[0]?.entity?.entity_id;
+
+      // Child outlets may have switches on the child device, OR the parent
+      // device owns all switch entities (Kasa HS300 pattern). Match by name/index.
+      let childSwitch = childSwitches[0];
+      if (!childSwitch && parentSwitches?.length > 0) {
+        // Kasa HS300 pattern: parent device owns all switch entities, child
+        // devices only have sensors. The child device name (e.g. "US-P1-UDMPRO")
+        // appears in the parent switch entity_id and friendly_name.
+        const childName = (childGroup.device?.name || '').toLowerCase().replace(/[\s\-_]+/g, '');
+        childSwitch = parentSwitches.find(s => {
+          const eid = (s.entity?.entity_id || '').toLowerCase().replace(/[\s\-_]+/g, '');
+          const fn = (s.state?.attributes?.friendly_name || '').toLowerCase().replace(/[\s\-_]+/g, '');
+          return eid.includes(childName) || fn.includes(childName);
+        });
+      }
+
+      const isOn = childSwitch?.state?.state === 'on';
 
       return html`
         <div class="power-strip-child-tile" style="--tile-power-color:${color}"
           role="listitem" aria-label="${name}: ${isOn ? 'on' : 'off'}, ${Math.round(watts)} watts">
           <span class="circuit-name">${name}</span>
           <div class="strip-child-controls">
-            ${childSwitch ? html`
-              <button class="strip-child-toggle"
-                ?data-on=${isOn}
-                role="switch" aria-checked="${isOn}"
-                aria-label="Toggle ${name}"
-                @click=${(e) => { e.stopPropagation(); if (this._powerToggleLimiter.allow()) this._handleToggle(childSwitch.entity.entity_id); }}>
-                ${isOn ? 'ON' : 'OFF'}
-              </button>
-            ` : ''}
+            ${childSwitch ? this._renderTrackToggle(
+              isOn, `Toggle ${name}`,
+              () => { if (this._powerToggleLimiter.allow()) this._handleToggle(childSwitch.entity.entity_id); }
+            ) : ''}
             ${this._renderClickableValue(powerEntityId, `View ${name} power: ${Math.round(watts)} watts`, html`
               <span class="circuit-watts" style="color:${color}">
                 <span class="power-dot" ?data-zero=${watts === 0} aria-hidden="true"></span>
@@ -6941,6 +6953,20 @@ class LcarsHomepageCard extends LitElement {
         totalEnergy: totalEnergy || null,
         deviceCount: powerGroups.length,
       };
+    }
+
+    /* ── LCARS sliding track toggle ── */
+
+    _renderTrackToggle(isOn, ariaLabel, onClick) {
+      return html`
+        <button class="lcars-track-toggle" ?data-on=${isOn}
+          role="switch" aria-checked="${isOn}" aria-label="${ariaLabel}"
+          @click=${(e) => { e.stopPropagation(); onClick(); }}
+          @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}>
+          <span class="track-label">${isOn ? 'ON' : 'OFF'}</span>
+          <span class="track-thumb" aria-hidden="true"></span>
+        </button>
+      `;
     }
 
     /* ── Clickable sensor value wrapper (Geordi G-4) ── */

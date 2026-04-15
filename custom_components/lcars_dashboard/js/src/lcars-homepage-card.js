@@ -6846,7 +6846,8 @@ class LcarsHomepageCard extends LitElement {
         if (deviceType === 'vue') {
           circuits.push(group);
         } else if (deviceType === 'strip') {
-          stripParents.push(group);
+          // Tag with subType so _groupPowerStrips can identify strip parents (#4)
+          stripParents.push({ ...group, subType: 'strip' });
         } else {
           plugs.push(group);
         }
@@ -6865,10 +6866,53 @@ class LcarsHomepageCard extends LitElement {
       // Process circuits through 240V pairing + sort
       const processedCircuits = this._sortCircuits(this._detect240VPairs(circuits));
 
-      // Compute area-wide totals
+      // Build set of device IDs that are children of a strip (used for dedup)
+      const stripChildIds = new Set();
+      for (const { children } of strips) {
+        for (const child of children) {
+          if (child.device?.id) stripChildIds.add(child.device.id);
+        }
+      }
+
+      // Detect aggregate/total circuits to exclude from totals (#2)
+      const AGGREGATE_PATTERN = /^(balance|total|main[s]?|net|whole[\s_-]?home)$/i;
+      const aggregateCircuitIds = new Set();
+      for (const c of processedCircuits) {
+        const name = this._shortDeviceName(c.device) || '';
+        if (AGGREGATE_PATTERN.test(name.trim())) {
+          if (c.device?.id) aggregateCircuitIds.add(c.device.id);
+        }
+      }
+
+      // Detect UPS/battery parent devices whose children are also in the group (#1)
+      const upsParentIds = new Set();
+      for (const group of powerGroups) {
+        const dc = (group.device?.model || '').toLowerCase();
+        const mfr = (group.device?.manufacturer || '').toLowerCase();
+        const isUps = group.entities?.some(e =>
+          e.state?.attributes?.device_class === 'battery' ||
+          (e.domain === 'sensor' && (e.state?.attributes?.device_class || '') === 'battery')
+        ) || dc.includes('ups') || mfr.includes('ups') || mfr.includes('cyberpower') ||
+          mfr.includes('apc') || mfr.includes('tripp');
+        if (!isUps || !group.device?.id) continue;
+        // Only mark as UPS parent if at least one other group has via_device_id pointing to it
+        const hasChildren = powerGroups.some(
+          g => g !== group && g.device?.via_device_id === group.device.id
+        );
+        if (hasChildren) upsParentIds.add(group.device.id);
+      }
+
+      // Compute area-wide totals with dedup
       let totalWatts = 0;
       let totalEnergy = 0;
       for (const group of powerGroups) {
+        const devId = group.device?.id;
+        // Skip aggregate circuits (Balance/Total/Mains) — already summed by children (#2)
+        if (devId && aggregateCircuitIds.has(devId)) continue;
+        // Skip UPS parents when their children are also in the group (#1)
+        if (devId && upsParentIds.has(devId)) continue;
+        // Skip strip children — parent already reports their total
+        if (devId && stripChildIds.has(devId)) continue;
         const w = this._getPrimaryPower(group);
         const e = this._getPrimaryEnergy(group);
         if (w != null) totalWatts += w;

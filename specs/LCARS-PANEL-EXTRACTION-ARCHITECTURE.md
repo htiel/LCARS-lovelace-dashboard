@@ -10,13 +10,13 @@
 
 ## Executive Summary
 
-The `lcars-homepage-card.js` monolith (5,848 lines) must be decomposed into reusable panel modules. My analysis of Lit composition patterns, Home Assistant frontend architecture, and the exemplary `lovelace-mushroom` HACS project converges on a single recommended pattern: **each panel as its own `customElements.define()` web component, sharing a common base class, composed via sub-element embedding in a thin orchestrator host.**
+The `lcars-homepage-card.js` monolith (7,545 lines) must be decomposed into reusable panel modules. My analysis of Lit composition patterns, Home Assistant frontend architecture, and the exemplary `lovelace-mushroom` HACS project converges on a single recommended pattern: **each panel as its own `customElements.define()` web component, sharing a common base class, composed via sub-element embedding in a thin orchestrator host.**
 
 This is not opinion. This is what HA core does. This is what Mushroom does. This is what Lit documentation recommends for reusable UI units with their own state and template.
 
 The key measurements:
-- Current monolith: **5,848 lines**, 1 class, 9 inline panel renderers
-- Proposed structure: **9 panel elements** (~200–450 lines each), **1 base class** (~150 lines), **1 orchestrator** (~300 lines)
+- Current monolith: **7,545 lines**, 1 class, 10 inline panel renderers
+- Proposed structure: **10 panel elements** (~200–920 lines each), **5 shared components**, **1 base class** (~150 lines), **1 orchestrator** (~2,200 lines)
 - Bundle size impact: **~0 bytes** net change (same code, different files — webpack inlines everything)
 - Migration risk: **Low** — incremental, one panel at a time, backwards-compatible at each step
 
@@ -56,6 +56,8 @@ Lit's guidance:
 Controllers are for *behavior without templates* — fetch logic, event handling, timers. Panels are primarily *template + CSS* with associated state. A controller cannot own a shadow DOM or isolated styles. Attempting to return `html` from a controller and render it in the host negates the isolation benefits and creates the same coupling we're trying to eliminate.
 
 ### 1.4 Where Mixins Fit
+
+> **Note**: The mixin pattern below was explored during design. The final implementation uses a `<lcars-panel-frame>` **component** instead — see §5 for the resolved architecture. Frame CSS lives in the component's shadow DOM, not as a shared `panelFrameStyles` export.
 
 The shared LCARS frame (border, pip bar, elbow, color-by-status) is behavior that augments the panel's class — it adds public API (`frameColor`, `panelTitle`, `showPips`) and overrides rendering lifecycle. This is a textbook mixin case:
 
@@ -203,7 +205,7 @@ Webpack 5's tree-shaking works at the ES module `export` level. The current code
 
 ### 3.3 Bundle Size Projection
 
-Current `lcars-dashboard.js` (production): ~290 KiB.
+Current `lcars-dashboard.js` (production): ~386.5 KiB.
 
 Extracting panels into separate modules changes the source structure but NOT the compiled output size. The same code exists — it's just in different files. Webpack module boundaries add ~50 bytes per import (the `__webpack_require__` call). With ~15 new imports, that's < 1 KiB overhead.
 
@@ -277,7 +279,8 @@ LitElement
         ├── LcarsMediaPanel         (customElements: 'lcars-media-panel')
         ├── LcarsPoolSpaPanel       (customElements: 'lcars-pool-spa-panel')
         ├── LcarsWeatherPanel       (customElements: 'lcars-weather-panel')
-        └── LcarsIrrigationPanel    (customElements: 'lcars-irrigation-panel')
+        ├── LcarsIrrigationPanel    (customElements: 'lcars-irrigation-panel')
+        └── LcarsPowerPanel         (customElements: 'lcars-power-panel')
 ```
 
 **Orchestrator** (`lcars-homepage-card.js`) becomes thin:
@@ -306,15 +309,7 @@ import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getHass, lcarsLog, fireEvent } from './lcars-helpers.js';
 import { getStateColor } from './lcars-color-utils.js';
-
-export const panelFrameStyles = css`
-  :host { display: block; }
-  .lcars-panel-frame { /* shared LCARS frame border + elbow */ }
-  .lcars-panel-header { /* panel title bar + code display */ }
-  .lcars-panel-pips { /* animated pip bar */ }
-  .lcars-panel-body { /* scrollable content area */ }
-  /* ... ~80 lines of shared frame CSS currently duplicated across renderers */
-`;
+import './components/lcars-panel-frame/lcars-panel-frame.js';
 
 export class LcarsBasePanel extends LitElement {
   static get properties() {
@@ -355,20 +350,22 @@ export class LcarsBasePanel extends LitElement {
     return !state || state.state === 'off' || state.state === 'unavailable' || state.state === 'unknown';
   }
 
-  /** Shared frame wrapper — override renderContent() in subclass */
+  /**
+   * Base class render() wraps subclass content in <lcars-panel-frame>.
+   * Subclasses override renderContent() only — never render().
+   * This resolves the double-framing concern (Data N8): ONE framing path.
+   */
   render() {
     const code = this._generatePanelCode(this.device?.id || 'panel');
     return html`
-      <div class="lcars-panel-frame" style="--panel-color: ${this.frameColor}">
-        <div class="lcars-panel-header">
-          <span class="panel-title">${this.panelTitle}</span>
-          <span class="panel-code">${code}</span>
-        </div>
-        <div class="lcars-panel-pips"></div>
-        <div class="lcars-panel-body">
-          ${this.renderContent()}
-        </div>
-      </div>
+      <lcars-panel-frame
+        .name=${this.panelTitle}
+        .frameColor=${this.frameColor}
+        .panelCode=${code}
+        .panelType=${this.panelType}
+      >
+        ${this.renderContent()}
+      </lcars-panel-frame>
     `;
   }
 
@@ -376,22 +373,38 @@ export class LcarsBasePanel extends LitElement {
   renderContent() { return html``; }
 
   static get styles() {
-    return [lcarsBaseStyles, panelFrameStyles];
+    // Base styles only — tokens + typography. NO frame CSS (owned by <lcars-panel-frame>).
+    // Panels that need animations add sharedKeyframes explicitly (Data N11).
+    return [lcarsBaseStyles];
   }
 }
+
+// Guard against double-registration during HMR (Data C5)
+if (!customElements.get('lcars-base-panel')) {
+  customElements.define('lcars-base-panel', LcarsBasePanel);
+}
 ```
+
+**Key decisions documented here:**
+- **N8 resolved**: Base class `render()` uses `<lcars-panel-frame>` component. Subclasses implement `renderContent()` only. No double-framing possible.
+- **C4 resolved**: `panelFrameStyles` export removed — frame CSS lives inside `<lcars-panel-frame>` component's shadow DOM.
+- **C7 resolved**: `_renderSensorBar` removed — replaced by `<lcars-sensor-row>` component.
+- **C8 resolved**: `_renderTrackToggle` and `_renderClickableValue` stay on Power panel only (YAGNI). NOT on base class.
+- **U-3 resolved**: `.lcars-panel-pips` removed from base class — pips belong on dashboard frame only, not device panels.
+- **C5 resolved**: `customElements.get()` guard on all `define()` calls.
+- **N11 resolved**: `sharedKeyframes`/`sharedReducedMotion` NOT in base class default styles — only panels that animate include them.
 
 ### 5.3 Example Panel Implementation
 
 ```js
-// panels/lcars-climate-panel.js (~300 lines)
-import { html, css } from 'lit-element';
-import { LcarsBasePanel, panelFrameStyles } from '../lcars-base-panel.js';
-import { lcarsBaseStyles } from '../lcars-styles.js';
-import { getHvacActionColor } from '../lcars-color-utils.js';
-import { clampSetpoint, createRateLimiter } from '../lcars-service-utils.js';
-import { CLIMATE_DOMAINS, SENSOR_DOMAINS } from '../lcars-entity-utils.js';
-import { sharedKeyframes, sharedReducedMotion } from '../lcars-shared-animations.js';
+// panels/climate/lcars-climate-panel.js (~200 lines — logic + render only)
+import { html } from 'lit-element';
+import { LcarsBasePanel } from '../../lcars-base-panel.js';
+import { getHvacActionColor } from '../../lcars-color-utils.js';
+import { clampSetpoint, createRateLimiter } from '../../lcars-service-utils.js';
+import { CLIMATE_DOMAINS, SENSOR_DOMAINS } from '../../lcars-entity-utils.js';
+import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
+import { climatePanelStyles } from './lcars-climate-panel-styles.js';
 
 class LcarsClimatePanel extends LcarsBasePanel {
   static get properties() {
@@ -420,25 +433,36 @@ class LcarsClimatePanel extends LcarsBasePanel {
 
   renderContent() {
     const { climate, sensors, faults, diagnostics } = this._partitionEntities();
-    // ... ~200 lines of climate-specific rendering
+    // ... ~150 lines of climate-specific rendering
     // Moved from homepage card's _renderClimatePanel
   }
 
   static get styles() {
     return [
-      super.styles,          // lcarsBaseStyles + panelFrameStyles
-      sharedKeyframes,
+      ...super.styles,        // Tier 1 (lcarsBaseStyles)
+      sharedKeyframes,        // Only included by panels that animate (N11)
       sharedReducedMotion,
-      css`
-        /* Climate-specific styles — moved from homepage card's static styles */
-        .climate-setpoint { /* ... */ }
-        .hvac-mode-indicator { /* ... */ }
-      `
+      climatePanelStyles,     // Tier 3 — from ./lcars-climate-panel-styles.js
     ];
   }
 }
 
-customElements.define('lcars-climate-panel', LcarsClimatePanel);
+// Guard against double-registration (Data C5)
+if (!customElements.get('lcars-climate-panel')) {
+  customElements.define('lcars-climate-panel', LcarsClimatePanel);
+}
+```
+
+```js
+// panels/climate/lcars-climate-panel-styles.js (~102 lines)
+import { css } from 'lit-element';
+
+export const climatePanelStyles = css`
+  .climate-setpoint { /* ... */ }
+  .hvac-mode-indicator { /* ... */ }
+  .climate-zone-row { /* ... */ }
+  /* ... ~100 lines of climate-specific CSS */
+`;
 ```
 
 ---
@@ -447,7 +471,7 @@ customElements.define('lcars-climate-panel', LcarsClimatePanel);
 
 ```
 js/src/
-  ├── lcars-homepage-card.js          ← REFACTORED: thin orchestrator (~1,200 lines)
+  ├── lcars-homepage-card.js          ← REFACTORED: thin orchestrator (~2,200 lines)
   │                                      - _renderAreaContent()
   │                                      - _renderDevicePanel() → dispatches to sub-elements
   │                                      - _renderDomainGroups() + domain renderers (toggles, sensors, etc.)
@@ -456,19 +480,72 @@ js/src/
   │
   ├── lcars-base-panel.js             ← NEW: shared base class (~150 lines)
   │                                      - LcarsBasePanel class
-  │                                      - panelFrameStyles export
-  │                                      - Shared frame rendering, panel code, entity helpers
+  │                                      - render() wraps content in <lcars-panel-frame>
+  │                                      - Shared entity helpers, panel code generator
   │
-  ├── panels/                         ← NEW: one file per panel type
-  │   ├── lcars-camera-panel.js       ← ~250 lines (from _renderCameraPanel + camera helpers)
-  │   ├── lcars-environment-panel.js  ← ~220 lines (from _renderEnvironmentPanel + AQ helpers)
-  │   ├── lcars-battery-panel.js      ← ~410 lines (from _renderBatteryPanel + SoC helpers)
-  │   ├── lcars-climate-panel.js      ← ~310 lines (from _renderClimatePanel + setpoint logic)
-  │   ├── lcars-alarm-panel.js        ← ~300 lines (from _renderAlarmPanel + PIN keypad)
-  │   ├── lcars-media-panel.js        ← ~250 lines (from _renderMediaPanel + playback controls)
-  │   ├── lcars-pool-spa-panel.js     ← ~230 lines (from _renderPoolSpaPanel + chemistry)
-  │   ├── lcars-weather-panel.js      ← ~170 lines (from _renderWeatherPanel + forecast)
-  │   └── lcars-irrigation-panel.js   ← ~90 lines  (from _renderIrrigationPanel + zones)
+  ├── components/                     ← NEW: shared UI primitives (custom elements)
+  │   ├── lcars-panel-frame/
+  │   │   ├── lcars-panel-frame.js       ← ~80 lines (frame border, corner brackets, header, panel code)
+  │   │   └── lcars-panel-frame-styles.js ← ~115 lines (frame CSS from monolith L969-L1040, L3096-L3130)
+  │   │       INVARIANT: thick→thin border (Bracer Jack Rule 2)
+  │   │       Left+Bottom = 4px, Top+Right = 2px. Corner brackets match.
+  │   ├── lcars-sensor-row/
+  │   │   ├── lcars-sensor-row.js        ← ~50 lines (indicator dot + label + value + click handler)
+  │   │   └── lcars-sensor-row-styles.js ← ~40 lines (from monolith L1049-L1088)
+  │   ├── lcars-option-strip/
+  │   │   ├── lcars-option-strip.js      ← ~60 lines (radiogroup selector — unifies 3 CSS variants)
+  │   │   └── lcars-option-strip-styles.js ← ~50 lines (consolidated from L1332-L1378, L2029-L2045, L2115-L2129)
+  │   ├── lcars-section-divider/
+  │   │   ├── lcars-section-divider.js   ← ~20 lines (horizontal rule + optional label)
+  │   │   └── lcars-section-divider-styles.js ← ~16 lines (from monolith L1315-L1330)
+  │   └── lcars-setpoint/
+  │       ├── lcars-setpoint.js          ← ~50 lines (−/+ buttons with label, debounced events)
+  │       └── lcars-setpoint-styles.js   ← ~16 lines (from monolith L2001-L2016)
+  │
+  ├── panels/                         ← NEW: one directory per panel type
+  │   ├── camera/
+  │   │   ├── lcars-camera-panel.js       ← Component logic + render (~290 lines)
+  │   │   ├── lcars-camera-panel-styles.js ← Tier 3 CSS module (~20 lines — minimal, uses shared frame)
+  │   │   └── panel.html                  ← Static preview — sample data, open in browser
+  │   ├── environment/
+  │   │   ├── lcars-environment-panel.js   ← Component logic + render (~340 lines)
+  │   │   ├── lcars-environment-panel-styles.js ← Tier 3 CSS (~254 lines)
+  │   │   └── panel.html
+  │   ├── battery/
+  │   │   ├── lcars-battery-panel.js       ← Component logic + render (~450 lines)
+  │   │   ├── lcars-battery-panel-styles.js ← Tier 3 CSS (~238 lines)
+  │   │   └── panel.html
+  │   ├── climate/
+  │   │   ├── lcars-climate-panel.js       ← Component logic + render (~350 lines)
+  │   │   ├── lcars-climate-panel-styles.js ← Tier 3 CSS (~102 lines)
+  │   │   └── panel.html
+  │   ├── alarm/
+  │   │   ├── lcars-alarm-panel.js         ← Component logic + render (~315 lines)
+  │   │   ├── lcars-alarm-panel-styles.js  ← Tier 3 CSS (~123 lines)
+  │   │   └── panel.html
+  │   ├── media/
+  │   │   ├── lcars-media-panel.js         ← Component logic + render (~230 lines)
+  │   │   ├── lcars-media-panel-styles.js  ← Tier 3 CSS (~145 lines)
+  │   │   └── panel.html
+  │   ├── pool-spa/
+  │   │   ├── lcars-pool-spa-panel.js      ← Component logic + render (~260 lines)
+  │   │   ├── lcars-pool-spa-panel-styles.js ← Tier 3 CSS (~83 lines)
+  │   │   └── panel.html
+  │   ├── weather/
+  │   │   ├── lcars-weather-panel.js       ← Component logic + render (~250 lines)
+  │   │   ├── lcars-weather-panel-styles.js ← Tier 3 CSS (~94 lines)
+  │   │   └── panel.html
+  │   ├── irrigation/
+  │   │   ├── lcars-irrigation-panel.js    ← Component logic + render (~200 lines)
+  │   │   ├── lcars-irrigation-panel-styles.js ← Tier 3 CSS (~80 lines)
+  │   │   └── panel.html
+  │   └── power/
+  │       ├── lcars-power-panel.js         ← Component logic + render (~920 lines)
+  │       ├── lcars-power-panel-styles.js  ← Tier 3 CSS (~990 lines)
+  │       └── panel.html
+  │
+  ├── panels/index.html               ← Gallery page linking all panel previews
+  ├── components/index.html            ← Gallery page for component visual testing (W-5)
   │
   ├── lcars-styles.js                 ← UNCHANGED: CSS custom properties, color palette, tokens
   ├── lcars-helpers.js                ← UNCHANGED: getHass, fireEvent, lcarsEventBus, lcarsLog
@@ -484,31 +561,22 @@ js/src/
   └── ... (other existing files)      ← UNCHANGED
 ```
 
-### 6.1 Webpack Entry Point Addition
+### 6.1 Webpack Strategy — Imports, Not Entry Points (Data N7)
+
+Panels and components are **NOT** added to the webpack `entry` array. Instead, they are imported via side-effect imports from `lcars-homepage-card.js`:
 
 ```js
-// webpack.config.js — add panels directory
-entry: [
-  './src/lcars-navigation-card.js',
-  './src/lcars-dashboard.js',
-  './src/lcars-dashboard-layout.js',
-  './src/lcars-homepage-card.js',
-  // Panel modules — imported by homepage-card, but listed here for
-  // explicit side-effect registration (customElements.define)
-  './src/panels/lcars-camera-panel.js',
-  './src/panels/lcars-environment-panel.js',
-  './src/panels/lcars-battery-panel.js',
-  './src/panels/lcars-climate-panel.js',
-  './src/panels/lcars-alarm-panel.js',
-  './src/panels/lcars-media-panel.js',
-  './src/panels/lcars-pool-spa-panel.js',
-  './src/panels/lcars-weather-panel.js',
-  './src/panels/lcars-irrigation-panel.js',
-  // ... rest unchanged
-],
+// lcars-homepage-card.js — top of file
+import './panels/irrigation/lcars-irrigation-panel.js';
+import './panels/weather/lcars-weather-panel.js';
+import './panels/camera/lcars-camera-panel.js';
+// ... etc. — one import per panel
+
+// Components are imported by the panels that use them.
+// No entry array changes needed.
 ```
 
-**Note**: Panels can also be imported directly by `lcars-homepage-card.js` instead of being separate entry points. Since `customElements.define()` is a side effect at module scope, the import causes registration. Either approach works; separate entry points are more explicit.
+Side-effect imports ensure `customElements.define()` runs. Webpack follows the import graph and includes everything in the single bundle. The entry array stays clean with only the 4 existing top-level files.
 
 ---
 
@@ -523,18 +591,19 @@ Tier 1: lcars-styles.js (lcarsBaseStyles)
   ├── Typography
   └── Global reset / host styles
 
-Tier 2: lcars-base-panel.js (panelFrameStyles)
-  ├── .lcars-panel-frame (border, elbow, radius)
-  ├── .lcars-panel-header (title bar, panel code)
-  ├── .lcars-panel-pips (pip bar animation)
-  ├── .lcars-panel-body (scrollable content area)
-  └── Shared interactive states (hover, focus, disabled)
-
-Tier 3: panels/*.js (panel-specific CSS)
-  └── Scoped to that panel's shadow DOM
+Tier 2: components/ (shared UI primitives — own shadow DOM)
+  ├── <lcars-panel-frame> (corner brackets, header, panel code)
+  ├── <lcars-sensor-row> (indicator dot, label, value, click handler)
+  ├── <lcars-option-strip> (radiogroup selector, unified CSS)
+  ├── <lcars-section-divider> (horizontal rule + label)
+  └── <lcars-setpoint> (+/- buttons, debounced events)
+Tier 3: panels/*/lcars-*-panel-styles.js (panel-specific CSS modules)
+  └── Exported as `css` tagged template, imported by panel JS
+      Scoped to that panel's shadow DOM
       - Climate: setpoint knob, HVAC mode indicator, temperature scale
       - Alarm: PIN keypad grid, zone status indicators, countdown timer
       - Media: playback controls, album art, progress bar
+      - Power: arc SVG, consolidated grid, responsive breakpoints (~990 lines)
       - etc.
 ```
 
@@ -546,12 +615,12 @@ Projected distribution:
 | Tier | Lines | Notes |
 |---|---|---|
 | Tier 1 (lcarsBaseStyles) | ~120 | Already exists. Unchanged. |
-| Tier 2 (panelFrameStyles) | ~200 | Extracted from shared frame patterns across all 9 renderers |
-| Tier 3 (per panel avg) | ~180 | Panel-specific. 9 panels × 180 = ~1,620 lines total |
+| Tier 2 (components/) | ~237 | Frame ~115 + sensor row ~40 + option strip ~50 + divider ~16 + setpoint ~16 |
+| Tier 3 (per panel avg) | ~150 | Panel-specific only (no frame/sensor CSS). 10 panels × 150 = ~1,500 lines total |
 | Orchestrator CSS | ~300 | Area layout, domain groups, split layout, device headers |
-| **Total** | **~2,240** | **~600 lines eliminated** as duplicated frame CSS |
-
-That is a **21% reduction** in total CSS through deduplication. Measurable.
+| **Total** | **~2,157** | **~680 lines eliminated** — duplicated frame + sensor + option CSS |
+96 | Already exists. 196 lines verifi
+That is a **24% reduction** in total CSS through deduplication + component encapsulation. Measurable.
 
 ### 7.3 Style Isolation
 
@@ -559,55 +628,282 @@ Each panel is a custom element with shadow DOM. Its Tier 3 CSS cannot leak to ot
 
 ---
 
-## 8. Migration Strategy — Incremental, One Panel at a Time
+## 8. Shared UI Components (`components/`)
+
+### 8.1 Rationale — The Mushroom Pattern
+
+Mushroom's architecture includes shared UI primitives as registered custom elements: `mushroom-slider`, `mushroom-button`, `mushroom-state-info`, etc. These are small, focused components with their own shadow DOM, own styles, and a simple property API. Each card uses them via HTML tags — change the component once, every card updates.
+
+The LCARS monolith has the same pattern, but currently implemented as duplicated inline HTML across panels (31 sensor row blocks, 11 frame blocks, 6 option strips). Extracting these into `components/` achieves:
+
+1. **Single source of truth** — update a control's style once, all panels reflect the change
+2. **Consistency enforcement** — impossible for panels to drift apart visually
+3. **Reduced panel code** — 8-line inline blocks become single `<lcars-sensor-row>` tags
+4. **Accessibility centralized** — ARIA roles, keyboard handlers, focus management in one place
+
+### 8.2 Component Inventory
+
+| Component | Tag | Panels Using | Instances | Lines Saved | Priority |
+|---|---|---|---|---|---|
+| **Panel Frame** | `<lcars-panel-frame>` | All 10 | 11 | ~480 | P0 |
+| **Sensor Row** | `<lcars-sensor-row>` | 10 | 31 | ~248 | P0 |
+| **Option Strip** | `<lcars-option-strip>` | 4 (Env, Battery, Climate, Alarm) | 6 | ~90 + unify 79 CSS | P1 |
+| **Section Divider** | `<lcars-section-divider>` | 4 (Env, Battery, Climate, Alarm) | 6 | ~16 CSS | P1 |
+| **Setpoint Control** | `<lcars-setpoint>` | 2 (Climate, Pool/Spa) | 4 | ~40 | P2 |
+
+**Not extracted as components** (too few callers or power-only):
+- `_renderTrackToggle` — 3 callers, all Power panel. Stays as a method on `LcarsBasePanel` or moves to Power panel.
+- `_renderClickableValue` — 6 callers, all Power panel. Same — stays as method.
+- SVG renderers (arcs, compass) — panel-specific, move with their panel.
+
+### 8.3 Component API Designs
+
+#### `<lcars-panel-frame>`
+
+The frame wraps every panel. The panel only sets its color and provides content via a slot.
+
+```html
+<!-- Usage in a panel's render() — called by base class, not subclass -->
+<lcars-panel-frame
+  .name=${"ECOLOGICS 4500"}
+  .frameColor=${"var(--lcars-blue)"}
+  .panelCode=${this._generatePanelCode(this.device?.id)}
+  .panelType=${"climate"}
+>
+  <span slot="badge">${badgeHtml}</span>
+  <!-- Panel content goes in default slot -->
+  ${this.renderContent()}
+</lcars-panel-frame>
+```
+
+**Properties**: `name` (String), `frameColor` (String), `panelCode` (String), `panelType` (String — used as CSS class for panel-type-specific theming hooks, e.g. `.panel-type-climate`)  
+**Slots**: `badge` (optional header badge), default (panel body content)  
+**CSS**: ~115 lines — frame border, corner brackets, header bar, panel code display  
+**Design invariants** (Geordi U-1, U-2):
+- **Thick→Thin** (Bracer Jack Rule 2): Left + bottom borders = 4px, top + right = 2px. This is non-negotiable LCARS canon.
+- **Corner brackets** (not elbows): Device panels use squared corner brackets. The sidebar elbows are a separate pattern belonging to the dashboard layout, not panel frames.
+- **No pip strip** (U-3): Pips belong on the main dashboard frame, not device panel frames. Removed.
+
+#### `<lcars-sensor-row>`
+
+Replaces 31 inline `device-sensor-line` blocks with a single tag.
+
+```html
+<!-- Before: 8 lines of HTML per instance, duplicated 31 times -->
+<lcars-sensor-row
+  .name=${"Temperature"}
+  .value=${"72°F"}
+  .icon=${"mdi:thermometer"}
+  .color=${"var(--lcars-orange)"}
+  .entityId=${"sensor.living_room_temp"}
+  ?clickable=${true}
+></lcars-sensor-row>
+```
+
+**Properties**: `name` (String), `value` (String), `unit` (String), `icon` (String — optional MDI icon, W-1), `color` (String), `entityId` (String), `clickable` (Boolean)  
+**Events**: `lcars-sensor-click` (detail: { entityId }) — prefixed per W-4. Component handles its own click dispatch when `clickable` is true (N2 — component-managed pattern).  
+**Accessibility** (N-1, N-4):
+- When `clickable`: `role="button"`, `tabindex="0"`, `min-height: 1.5rem` touch target
+- When read-only: no role, no tabindex — just display  
+**CSS**: ~40 lines — indicator dot, label, value display, hover/focus states
+
+#### `<lcars-option-strip>`
+
+Unifies 3 CSS variants (option buttons, climate mode, alarm arm) into one component.
+
+```html
+<lcars-option-strip
+  .options=${[
+    {value: 'heat', label: 'HEAT'},
+    {value: 'cool', label: 'COOL'},
+    {value: 'off', label: 'OFF', disabled: true},
+  ]}
+  .value=${"heat"}
+  .label=${"HVAC MODE"}
+  .accentColor=${"var(--lcars-orange)"}
+  @lcars-option-changed=${(e) => this._handleClimateMode(entityId, e.detail.value)}
+></lcars-option-strip>
+```
+
+**Properties**: `options` (Array<{value, label, disabled?}>), `value` (String), `label` (String — container aria-label, N-3), `accentColor` (String)  
+**Events**: `lcars-option-changed` (detail: { value }) — prefixed per W-4  
+**Accessibility** (N-3, N3, N-8):
+- Container: `role="radiogroup"`, `aria-label` set from `label` property
+- Buttons: `role="radio"`, `aria-checked`, `aria-disabled` for disabled options (W-2)
+- Keyboard: Roving tabindex — Arrow keys move focus + selection, only active option is in tab order (N3)
+- Visual: LCARS pill shape with border-radius matching TheLCARS.com spec (Geordi N-8)
+
+#### `<lcars-section-divider>`
+
+Simple horizontal separator with optional label.
+
+```html
+<lcars-section-divider label="DIAGNOSTICS"></lcars-section-divider>
+```
+
+**Properties**: `label` (String, optional)
+
+#### `<lcars-setpoint>`
+
+Temperature/value adjustment control with −/+ buttons.
+
+```html
+<lcars-setpoint
+  .value=${72}
+  .step=${0.5}
+  .min=${60}
+  .max=${90}
+  .unit=${"°F"}
+  .label=${"HEAT 72°"}
+  .color=${"var(--lcars-orange)"}
+  @lcars-setpoint-changed=${(e) => this._handleSetpoint(entityId, e.detail.value)}
+></lcars-setpoint>
+```
+
+**Properties**: `value` (Number), `step` (Number), `min`/`max` (Number), `unit` (String — W-3: °F, °C, %, etc.), `label` (String), `color` (String)  
+**Events**: `lcars-setpoint-changed` (detail: { value }) — prefixed per W-4  
+**Accessibility** (N-2): `role="spinbutton"`, `aria-valuenow`, `aria-valuemin`, `aria-valuemax`, `aria-label` on the control group. −/+ buttons have explicit `aria-label` ("Decrease/Increase target temperature")
+
+### 8.4 CSS Ownership
+
+Components own their CSS in their shadow DOM. This means:
+
+- **Panel frame CSS** moves from Tier 2 (`panelFrameStyles`) into `<lcars-panel-frame>` — the frame is now a component, not base class CSS
+- **Sensor row CSS** moves from the monolith into `<lcars-sensor-row>` — no longer duplicated across panels
+- **Option strip CSS** — 3 variants unified into 1 component stylesheet
+- Panels no longer need to include frame or sensor CSS — they just use the tags
+
+The **3-tier model** becomes:
+
+```
+Tier 1: lcars-styles.js (lcarsBaseStyles) — tokens, colors, typography
+Tier 2: components/ — shared UI primitives with own shadow DOM + styles
+Tier 3: panels/*/styles — panel-specific CSS only (content layout, unique elements)
+```
+
+### 8.5 Extraction Timing (YAGNI-Aligned)
+
+Components are extracted **when first needed** — not all upfront:
+
+1. **Phase 0 (Foundation)**: Create `<lcars-panel-frame>` + `<lcars-sensor-row>` — used by ALL panels
+2. **Phase 1 (Irrigation)**: First panel to USE them — proving the pattern
+3. **Phase 4 (Environment)**: Create `<lcars-option-strip>` + `<lcars-section-divider>` — first panel that needs them
+4. **Phase 6 (Pool/Spa) or Phase 8 (Climate)**: Create `<lcars-setpoint>` — first panel with +/− controls
+
+This YAGNI approach (Data N4) reduces Phase 0 scope from 5 components to 2, getting to the first real panel extraction faster.
+
+### 8.6 CSS Custom Property Theming Contract (N-5)
+
+Components expose theming hooks via CSS custom properties. Panels set these on the component tag to control appearance without piercing shadow DOM:
+
+```css
+/* Example: panel overrides component color */
+lcars-sensor-row {
+  --lcars-sensor-dot-color: var(--lcars-orange);
+  --lcars-sensor-hover-bg: var(--lcars-card-bg-color);
+}
+lcars-panel-frame {
+  --lcars-frame-border-color: var(--lcars-blue);
+}
+```
+
+Each component documents its custom property API in its styles file. This is the ONLY way panels may customize component appearance.
+
+### 8.7 Entity ID Validation (Worf ADV-1)
+
+All components that accept `entityId` must validate the format before use:
+
+```js
+_validateEntityId(id) {
+  return typeof id === 'string' && /^[a-z_]+\.[a-z0-9_]+$/.test(id);
+}
+```
+
+Invalid entity IDs are logged and ignored — never passed to `hass.states[]` or service calls.
+
+### 8.8 Animation Distribution Matrix (Geordi X-2)
+
+When panels are extracted, CSS animations must transfer to the correct owner. This matrix tracks every animation and its post-extraction destination:
+
+| Animation | Current Selector | Post-Extraction Owner | New Selector |
+|---|---|---|---|
+| `lcars-cascade-in` | `.content-area-panel .lcars-device-panel` | Orchestrator | Element tag selectors or shared attribute |
+| `lcars-heartbeat` | `.climate-panel[data-heat/cool]` | Climate panel | `:host([data-heat]), :host([data-cool])` |
+| `lcars-heartbeat` | `.toggle-pill[data-on]`, `.media-strip:not([data-off])` | Orchestrator (domain) | Unchanged |
+| `lcars-distress` | `.sensor-readout[data-off]`, `.toggle-pill[data-off]` | Orchestrator (domain) | Unchanged |
+| `viewscreen-activate` | `.device-panel-media img` | Camera panel | Same, inside shadow DOM |
+| `panel-distress` | `.lcars-device-panel:has(.device-panel-media[data-offline])` | Camera panel | `:host(:has(...))` |
+| Cascade stagger | `animation-delay: calc(var(--i) * 40ms)` | Orchestrator sets `--i` on panel element | `style="--i: ${index}"` |
+| `prefers-reduced-motion` | All above | Split per owner | Each owner adds `:host` overrides |
+
+**Rule**: Every phase PR includes an "Animation Migration" checklist item verifying that all animations for that panel transfer correctly and `prefers-reduced-motion` overrides are present in the new owner.
+
+---
+
+## 9. Migration Strategy — Incremental, One Panel at a Time
 
 ### Phase 0: Foundation (1 PR)
 
-1. Create `lcars-base-panel.js` with `LcarsBasePanel` class
-2. Create `panels/` directory
-3. Extract `panelFrameStyles` from the shared CSS patterns in the monolith
-4. Add `panels/` entry points to webpack config
-5. **No behavioral change.** Homepage card continues to use inline renderers.
+1. Create `lcars-base-panel.js` with `LcarsBasePanel` class (uses `<lcars-panel-frame>` in render())
+2. Create `components/lcars-panel-frame/` — frame component with shadow DOM + styles
+3. Create `components/lcars-sensor-row/` — sensor display component with shadow DOM + styles
+4. Create `panels/` directory structure
+5. Create `components/index.html` — gallery page for visual testing of components in isolation (W-5)
+6. Document `data` property shape contract for base class (W-6)
+7. Compile **Animation Distribution Matrix** deliverable (Geordi X-2)
+8. Run `npm audit` as pre-build check (Worf ADV-3)
+9. **No behavioral change.** Homepage card continues to use inline renderers.
 
 ### Phase 1: First Panel Extraction — Irrigation (1 PR)
 
-**Why irrigation first**: It's the smallest panel (87 lines render, 41 lines partition). Lowest risk for proving the pattern.
+**Why irrigation first**: It's the smallest panel (~200 lines). Lowest risk for proving the pattern.
 
-1. Create `panels/lcars-irrigation-panel.js` extending `LcarsBasePanel`
+1. Create `panels/irrigation/lcars-irrigation-panel.js` extending `LcarsBasePanel`
 2. Move `_renderIrrigationPanel()` logic → `renderContent()`
 3. Move `_partitionIrrigationEntities()` → `_partitionEntities()`
 4. Move irrigation CSS from monolith → panel's `static styles`
-5. Update `_renderDevicePanel()` switch case: `case PANEL_TYPE_IRRIGATION: return html`<lcars-irrigation-panel ...>`
-6. Delete old methods from monolith
-7. Build, test, verify identical rendering
+5. Import panel from `lcars-homepage-card.js` (side-effect import)
+6. Update `_renderDevicePanel()` switch case: `case PANEL_TYPE_IRRIGATION: return html`<lcars-irrigation-panel ...>`
+7. Add animation migration checklist item (X-1)
+8. Delete old methods from monolith
+9. Build, test, verify identical rendering
 
 ### Phase 2: Second Panel — Weather (1 PR)
 
-**Why weather second**: Small (164 lines), uses `lcars-weather-utils.js` (already extracted), proves import pattern for utility modules.
+**Why weather second**: Small (~250 lines), uses `lcars-weather-utils.js` (already extracted), proves import pattern for utility modules.
 
-### Phase 3: Remaining Panels (1 PR each, 7 PRs)
+### Phase 3: Remaining Panels (1 PR each, 8 PRs)
 
 Extract in ascending complexity order:
-1. Environment (215 lines)
-2. Camera (247 lines)
-3. Media (248 lines)
-4. Pool/Spa (223 lines)
-5. Alarm (294 lines)
-6. Climate (303 lines)
-7. Battery (404 lines)
+1. Camera (~290 lines)
+2. Environment (~340 lines) — **also creates `<lcars-option-strip>` + `<lcars-section-divider>`**
+3. Media (~230 lines)
+4. Pool/Spa (~260 lines) — **also creates `<lcars-setpoint>` if not yet created**
+5. Alarm (~315 lines)
+6. Climate (~350 lines)
+7. Battery (~450 lines)
+8. Power (~920 lines) — largest; `_renderTrackToggle` + `_renderClickableValue` stay here
 
 ### Phase 4: Cleanup (1 PR)
 
 1. Remove dead CSS from monolith's `static styles`
 2. Remove dead helper methods no longer called by any renderer
-3. Final bundle size comparison: before vs. after
-4. Update source map comments if present
+3. Sync all `panel.html` preview files with final templates (N-6)
+4. Final bundle size comparison: before vs. after
+5. Update source map comments if present
 
-**Total**: 11 PRs, each independently shippable. Rollback granularity: one panel at a time.
+**Total**: 12
+### Phase 4: Cleanup (1 PR)
 
----
+1. Remove dead CSS from monolith's `static styles`
+2. Remove dead helper methods no longer called by any renderer
+3. Sync all `panel.html` preview files with final templates (N-6)
+4. Final bundle size comparison: before vs. after
+5. Update source map comments if present
 
-## 9. Panel Component API (Interface Contract)
+**Total**: 12
+
+## 10. Panel Communication Contract
 
 Every panel component accepts these properties (set by the orchestrator):
 
@@ -640,7 +936,7 @@ This is the standard Lit "properties down, events up" pattern.
 
 ---
 
-## 10. Risks and Mitigations
+## 11. Risks and Mitigations
 
 ### Risk 1: Shadow DOM Style Isolation Breaks Visual Appearance
 
@@ -674,6 +970,28 @@ This is the standard Lit "properties down, events up" pattern.
 - Each panel receives pre-filtered `entities` array — no caching needed within panels
 - If per-panel caching is needed (e.g., sparkline data), each panel manages its own cache
 
+### Risk 6: Alarm Panel — Arm Mode Injection (Worf RA-1)
+
+**Issue**: The alarm panel accepts arm mode strings from user interaction. If unsanitized, these could be passed to HA service calls.
+
+**Mitigation**: Whitelist arm modes. Only `arm_home`, `arm_away`, `arm_night`, `arm_custom_bypass`, `disarm` are allowed. Any other value is rejected. PIN entry events use `composed: false` to prevent leaking outside the panel's shadow DOM.
+
+### Risk 7: panel.html Static Path Exposure (Worf RA-2)
+
+**Issue**: `panel.html` files contain sample data and could be served by misconfigured web servers.
+
+**Mitigation**: Verify `panel.html` files are excluded from the webpack build output. They are development-only artifacts. Add `panels/**/panel.html` to webpack `exclude` config. The HA frontend only serves files explicitly registered via `add_extra_js_url`.
+
+### Risk 8: innerHTML Usage in Power Panel (Worf RA-3)
+
+**Issue**: The power panel currently uses `innerHTML` for some SVG rendering. Post-extraction, this must be replaced with Lit `html` templates to prevent XSS vectors.
+
+**Mitigation**: During Power panel extraction (Phase 3.8), all `innerHTML` usage is replaced with `svg` tagged template literals from `lit-html`. No raw string HTML injection.
+
+### Scope Boundary: Orchestrator Domain Renderers (Data N10)
+
+The orchestrator's `_renderDomainGroups()` renders toggles, sensors, buttons, etc. that live OUTSIDE device panels. These domain-level renderers do **NOT** adopt `<lcars-sensor-row>` or other shared components. They remain as inline HTML in the orchestrator. Only device panel code uses the shared components.
+
 **Risk Level**: Low. Cache belongs at orchestrator level.
 
 ### Risk 4: Bundle Size Regression
@@ -699,7 +1017,7 @@ This is the standard Lit "properties down, events up" pattern.
 
 ---
 
-## 11. What This Enables (v5.0 Multi-Dashboard)
+## 12. What This Enables (v5.0 Multi-Dashboard)
 
 With extracted panels, the multi-dashboard architecture becomes trivial:
 
@@ -734,20 +1052,83 @@ With extracted panels, the multi-dashboard architecture becomes trivial:
 
 ---
 
-## 12. Summary of Recommendations
+## 13. Panel Preview Files (`panel.html`)
+
+Each panel directory includes a **`panel.html`** file — a standalone, static HTML page that renders the panel's look and feel with hardcoded sample data. These are development/review aids, not shipped to users.
+
+### 12.1 Purpose
+
+- **Visual verification**: Open in any browser (Edge, Chrome) to see the panel without running Home Assistant
+- **Design review**: Allows Geordi (UI review) and the Admiral to inspect look & feel at any time
+- **Living documentation**: Updated whenever panel CSS or HTML structure changes
+- **Regression catch**: Visual side-by-side comparison before/after refactor
+
+### 12.2 Structure
+
+Each `panel.html` is a self-contained file:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LCARS [Panel Name] — Preview</title>
+  <style>
+    /* LCARS base tokens (copy of lcars-styles.js custom properties) */
+    /* Panel frame CSS (from Tier 2 — lcars-base-panel) */
+    /* Panel-specific CSS (from Tier 3 — this panel) */
+  </style>
+</head>
+<body style="background: #000; margin: 0; padding: 24px;">
+  <!-- Static HTML matching the panel's lit-html template output -->
+  <!-- Hardcoded sample entity values (realistic HA data) -->
+</body>
+</html>
+```
+
+### 12.3 Rules
+
+1. **No JavaScript dependencies** — pure HTML + CSS, opens via `file://` in any browser
+2. **Sample data must be realistic** — use plausible HA entity states, not lorem ipsum
+3. **Must stay in sync** — whenever a panel's render template or CSS changes, update its `panel.html`
+4. **Not in webpack build** — excluded from bundle. Add `panels/**/panel.html` to webpack `exclude` if needed
+5. **Git-tracked** — these are checked in, not generated
+
+### 12.4 Gallery Index
+
+`panels/index.html` links to all 10 panel previews with thumbnail descriptions. Opening it shows a navigation page to quickly jump to any panel's preview.
+
+---
+
+## 14. Summary of Recommendations
 
 | Decision | Recommendation | Rationale |
 |---|---|---|
 | **Composition pattern** | Custom elements (component composition) | Panels have own state, template, CSS. Lit docs + HA precedent + Mushroom precedent |
 | **Code sharing** | Base class (`LcarsBasePanel`) | Shared frame, pips, panel code. Mixin not needed — single inheritance sufficient |
-| **CSS strategy** | 3-tier: base → frame → panel-specific, array composition | Eliminates ~600 lines duplication, shadow DOM isolation prevents conflicts |
+| **Shared UI components** | 5 custom elements in `components/` | via `<lcars-panel-frame>`, panel code, entity helpers. Mixin not needed — single inheritance sufficient |
+| **Shared UI components** | 5 custom elements in `components/` (YAGNI-phased)ic | Eliminates ~680 lines duplication, shadow DOM isolation prevents conflicts |
 | **Bundle strategy** | Single bundle, no code splitting | All panels needed on every dashboard. Webpack handles it. +0.3% overhead |
 | **Element registration** | `customElements.define()` per panel, NO `window.customCards` | Panels are sub-components, not standalone Lovelace cards |
 | **Migration order** | Ascending complexity: Irrigation → Weather → Environment → ... → Battery | Lowest risk first, validates pattern early |
-| **File structure** | `panels/` subdirectory, one file per panel | Matches Mushroom `cards/` pattern. Clear ownership per spec sheet |
+| **File structure** | `panels/` + `components/` subdirectories | Matches Mushroom `cards/` + `utils/` pattern. Clear ownership per spec sheet |
 | **Python multi-dashboard** | Loop over `LovelaceYAML` + `_register_panel()` per dashboard URL | Trivially extensible from current single-dashboard code |
 | **Lit version** | Stay on LitElement v2 | All proposed patterns work. Upgrade is orthogonal to this refactor |
 
+
+## 15. Release Strategy
+
+v4.17.0 will be published as a **pre-release tag** to prevent auto-update for stable HACS users.
+
+- **Tag**: `gh release create 4.17.0 --target 4.0 --prerelease --title "v4.17.0 — Panel Extraction Architecture" --notes "..."`
+- **Version bump files** (all 3 must match before tagging):
+  - `custom_components/lcars_dashboard/const.py` → `VERSION`
+  - `custom_components/lcars_dashboard/manifest.json` → `version`
+  - `custom_components/lcars_dashboard/js/package.json` → `version`
+- **Beta testing**: HACS → find LCARS Dashboard → ⋮ menu → Redownload → toggle "Show beta versions"
+- **Promotion to stable**: After Admiral + beta user validation, re-tag as full release (remove `--prerelease`)
+- **Scope boundary** (N10): This refactor extracts panels. No new features, no new entities, no API changes.
+
 ---
 
-*"I have completed my analysis, Admiral. The data is unambiguous. Nine files, one base class, zero ambiguity. The simplest solution that meets requirements is, as always, the optimal solution."*
+*"I have completed my analysis, Admiral. The data is unambiguous. Ten panels, five shared components, one base class, zero ambiguity. The simplest solution that meets requirements is, as always, the optimal solution."*

@@ -840,7 +840,7 @@ class LcarsHomepageCard extends LitElement {
             object-fit: cover;
             background: var(--lcars-black);
             position: relative;
-            z-index: 2;
+            z-index: 0;
           }
           .camera-label {
             position: absolute;
@@ -877,7 +877,7 @@ class LcarsHomepageCard extends LitElement {
             justify-content: center;
             gap: 0.5rem;
             background: var(--lcars-black);
-            z-index: 1;
+            z-index: 2;
             transition: opacity 300ms ease-out, visibility 300ms ease-out;
           }
           .camera-connecting-text {
@@ -922,8 +922,17 @@ class LcarsHomepageCard extends LitElement {
           .camera-frame[data-state="offline"]:hover { border-color: var(--lcars-gold); }
           /* Hide img during connecting so overlay text is visible */
           .camera-frame[data-state="connecting"] img { opacity: 0; }
+          /* Hide img during offline so overlay is visible */
+          .camera-frame[data-state="offline"] img { opacity: 0; }
           /* Spacer to maintain 16:9 when no img rendered */
           .camera-spacer { aspect-ratio: 16/9; }
+          /* Camera frame inside device panel media fills container */
+          .device-panel-media .camera-frame {
+            border: none;
+            border-radius: 0;
+            width: 100%;
+            height: 100%;
+          }
 
           /* ═══════ DEVICE PANEL (reusable frame for camera / climate / media) ═══════ */
           .device-panels-section {
@@ -1093,7 +1102,6 @@ class LcarsHomepageCard extends LitElement {
           }
           .device-panel-media[data-offline] {
             border-color: var(--lcars-gray);
-            opacity: 0.5;
           }
 
           /* Control buttons — bottom row */
@@ -4264,10 +4272,11 @@ class LcarsHomepageCard extends LitElement {
                     <span class="camera-offline-text">VIEWSCREEN OFFLINE</span>
                   </div>
                   ${imgUrl
-                    ? html`<img src="${imgUrl}" alt="${name} camera feed" loading="lazy"
+                    ? html`<img src="${imgUrl}" alt="${name} camera feed"
                                 data-entity="${entity.entity_id}"
-                                @load=${(e) => { e.target.style.display = ''; const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'live'); f.removeAttribute('aria-busy'); } }}
-                                @error=${(e) => { e.target.style.display = 'none'; const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'offline'); f.removeAttribute('aria-busy'); } }} />`
+                                .src=${imgUrl}
+                                @load=${(e) => { const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'live'); f.removeAttribute('aria-busy'); } }}
+                                @error=${(e) => { const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'offline'); f.removeAttribute('aria-busy'); } }} />`
                     : html`<div class="camera-spacer"></div>`
                   }
                 </div>`;
@@ -7264,10 +7273,11 @@ class LcarsHomepageCard extends LitElement {
                 <span class="camera-offline-text">VIEWSCREEN OFFLINE</span>
               </div>
               ${imgUrl
-                ? html`<img src="${imgUrl}" alt="${name}" loading="lazy"
+                ? html`<img src="${imgUrl}" alt="${name}"
                             data-entity="${entity.entity_id}"
-                            @load=${(e) => { e.target.style.display = ''; const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'live'); f.removeAttribute('aria-busy'); } }}
-                            @error=${(e) => { e.target.style.display = 'none'; const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'offline'); f.removeAttribute('aria-busy'); } }} />`
+                            .src=${imgUrl}
+                            @load=${(e) => { const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'live'); f.removeAttribute('aria-busy'); } }}
+                            @error=${(e) => { const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'offline'); f.removeAttribute('aria-busy'); } }} />`
                 : html`<div class="camera-spacer"></div>`
               }
               <div class="camera-label">

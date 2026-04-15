@@ -1,2 +1,2 @@
 DOMAIN = "lcars_dashboard"
-VERSION = "4.16.6"
+VERSION = "4.17.0"

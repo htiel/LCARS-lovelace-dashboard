@@ -1,7 +1,7 @@
 # LCARS Dashboard — 4.x Backlog
 
 > Stable branch (`4.0`). Non-breaking feature additions, bug fixes, and optimizations.
-> Version: 4.16.6 (current)
+> Version: 4.17.0 (current)
 
 ---
 
@@ -88,40 +88,22 @@ Per-area power monitoring panel for Emporia Vue, Kasa energy monitors, and any d
 
 ---
 
-### 4X-4 · Architecture Refactor (Pre-5.0 Enabler) — `TODO` · Priority: CRITICAL · Size: XL
+### 4X-4 · Architecture Refactor (Pre-5.0 Enabler) — `DONE` · Priority: CRITICAL · Size: XL
 
-**Target version**: 4.17.0
-**Spec**: `specs/LCARS-PANEL-EXTRACTION-ARCHITECTURE.md` — **COMPLETE** (Data, 2026-04-14)
+**Shipped in**: v4.17.0 (2026-04-15)
+**Spec**: `specs/LCARS-PANEL-EXTRACTION-ARCHITECTURE.md` — **IMPLEMENTED**
 
 Break the monolithic `lcars-homepage-card.js` (5,848 lines) into reusable panel components. Each panel type becomes its own `customElements.define()` web component extending a shared `LcarsBasePanel` base class. Homepage card becomes a thin orchestrator (~1,200 lines).
 
-**Architecture decision** (from Data's research):
-- Pattern: Custom elements with shared base class (same as HA core `hui-*-card` and Mushroom `MushroomBaseCard`)
-- CSS: 3-tier composition (base → frame → panel-specific) — eliminates ~600 lines of duplication (21%)
-- Bundle: Single bundle stays, +0.3% overhead from module boundaries
-- Migration: 11 PRs, ascending complexity, each independently shippable
-
-**Migration order** (1 PR each):
-1. Foundation: `lcars-base-panel.js` + `panels/` directory + `panelFrameStyles`
-2. Irrigation (87 lines — smallest, proves pattern)
-3. Weather (164 lines — tests utility module imports)
-4. Environment (215 lines)
-5. Camera (247 lines)
-6. Media (248 lines)
-7. Pool/Spa (223 lines)
-8. Alarm (294 lines — Worf security review for PIN extraction)
-9. Climate (303 lines)
-10. Battery (404 lines — largest, most complex)
-11. Cleanup: dead CSS removal, final bundle size comparison
+**What shipped**:
+- 10 extracted panel custom elements (alarm, battery, camera, climate, environment, irrigation, media, pool-spa, power, weather)
+- `LcarsBasePanel` abstract base class with `render()` → `renderContent()` → `renderBadge()` pattern
+- 5 shared components: `<lcars-panel-frame>`, `<lcars-sensor-row>`, `<lcars-section-divider>`, `<lcars-option-strip>`, `<lcars-setpoint>`
+- 3-tier CSS composition eliminating ~600 lines of duplicated frame/header/sensor CSS
+- Power panel innerHTML XSS fix (replaced with lit-html render)
+- Bundle: 566 KiB (down from 573 KiB pre-extraction) — net savings from CSS dedup + dead code removal
 
 **Enables**: v5.0 multi-dashboard — same `<lcars-climate-panel>` on Habitat, Environmental, and Power dashboards with different entity lists, identical rendering.
-
-**Sources (Data's research)**:
-- Lit composition docs: https://lit.dev/docs/composition/overview/
-- HA frontend patterns: https://github.com/home-assistant/frontend
-- Mushroom architecture: https://github.com/piitaya/lovelace-mushroom
-- https://en.wikipedia.org/wiki/Object-oriented_programming
-- https://realpython.com/python3-object-oriented-programming/
 
 ---
 

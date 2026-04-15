@@ -1,10 +1,10 @@
 # LCARS Panel Extraction Architecture Spec
 
 **Backlog Item**: 4X-4 — Panel Module Extraction  
-**Target**: v4.16.0  
+**Target**: v4.17.0  
 **Author**: Data (Architecture Analysis)  
 **Date**: 2026-04-14  
-**Status**: Research Complete — Awaiting Admiral Review
+**Status**: Approved — Awaiting Implementation
 
 ---
 

@@ -1,7 +1,7 @@
 # LCARS Dashboard — 4.x Backlog
 
 > Stable branch (`4.0`). Non-breaking feature additions, bug fixes, and optimizations.
-> Version: 4.14.1 (current) → 4.15.0+
+> Version: 4.16.6 (current)
 
 ---
 
@@ -90,7 +90,7 @@ Per-area power monitoring panel for Emporia Vue, Kasa energy monitors, and any d
 
 ### 4X-4 · Architecture Refactor (Pre-5.0 Enabler) — `TODO` · Priority: CRITICAL · Size: XL
 
-**Target version**: 4.16.0
+**Target version**: 4.17.0
 **Spec**: `specs/LCARS-PANEL-EXTRACTION-ARCHITECTURE.md` — **COMPLETE** (Data, 2026-04-14)
 
 Break the monolithic `lcars-homepage-card.js` (5,848 lines) into reusable panel components. Each panel type becomes its own `customElements.define()` web component extending a shared `LcarsBasePanel` base class. Homepage card becomes a thin orchestrator (~1,200 lines).
@@ -127,7 +127,7 @@ Break the monolithic `lcars-homepage-card.js` (5,848 lines) into reusable panel 
 
 ### 4X-5 · Camera Loading & Offline States — `DONE` · Priority: MEDIUM · Size: S
 
-**Shipped in**: v4.14.1 (2026-04-14)
+**Shipped in**: v4.14.1, hotfixes v4.16.2, v4.16.3 (2026-04-14)
 **Spec**: None — bug fix / UX improvement
 
 Camera viewscreens currently show a blank or broken state while loading or when the camera is offline/unresponsive. Replace with proper LCARS-styled loading and error states.
@@ -153,9 +153,9 @@ Camera viewscreens currently show a blank or broken state while loading or when 
 
 ---
 
-### 4X-6 · Consolidated Power Panel (Area Grouping) — `TODO` · Priority: HIGH · Size: L
+### 4X-6 · Consolidated Power Panel (Area Grouping) — `DONE` · Priority: HIGH · Size: L
 
-**Target version**: 4.16.0
+**Shipped in**: v4.16.0, hotfixes v4.16.1–v4.16.6 (2026-04-14)
 **Spec**: `specs/LCARS-CONSOLIDATED-POWER-PANEL-SPEC.md` (Wesley draft + Geordi review)
 
 Currently each power device gets its own separate panel in the right column — extremely wasteful when an area has multiple power strips, Vue circuits, and monitored plugs. Consolidate ALL power devices in an area into a SINGLE "POWER SYSTEMS" panel in the left content flow (bottom of normal device stack).

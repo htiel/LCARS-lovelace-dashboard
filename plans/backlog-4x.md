@@ -363,6 +363,194 @@ All gated behind `@media (prefers-reduced-motion: no-preference)`. Max concurren
 
 ---
 
+### 4X-10 · Life Support / Environmental Systems Panel — `TODO` · Priority: MEDIUM · Size: XL
+
+**GitHub Issue**: [#10](https://github.com/htiel/LCARS-lovelace-dashboard/issues/10)
+**Spec**: None yet — see design notes below
+
+A new room-level composite panel (`<lcars-lifesupport-panel>`) that aggregates **all environmental entities for a single area/room** into one unified view: thermostat (climate control), air purifier (atmospheric processing), and standalone temperature/humidity sensors (ambient monitoring). Think "Environmental Control Substation" — one console, everything that keeps you breathing and comfortable.
+
+> *"Think of this as everything that keeps me breathing, and comfortable in my room."*
+
+**Key constraint**: The atmoscrubber cylinder visualization is preserved exactly as-is. This panel does NOT replace the existing `<lcars-climate-panel>` or `<lcars-environment-panel>` — it's an additional panel type that users can configure for specific areas.
+
+#### Why a New Panel
+
+Current architecture renders panels per-device. SwitchBot temp/humidity sensors have no parent device panel — they're orphaned entities. This panel solves three problems:
+1. Surfaces standalone temp/humidity sensors (SwitchBot meters) that currently have no dedicated panel
+2. Provides room-level environmental awareness across multiple device types
+3. Eliminates the need to mentally correlate separate climate + environment panels for the same room
+
+#### Entity Landscape
+
+**Rutherford's deployment** (rooms with environmental devices):
+- Master Bedroom: Nest thermostat (2nd floor zone) + SwitchBot temp/humidity + BlueAir purifier
+- Family Room: Nest thermostat (1st floor zone) + SwitchBot meter
+- Children's rooms: SwitchBot meter only (no purifier, no dedicated thermostat)
+- 14 SwitchBot temp/humidity meters across the house
+
+**Developer's deployment**:
+- Master Bedroom: Awair Element (CO₂/VOC/PM2.5/temp/humidity) + VeSync purifier
+- Duncan's Room: Awair Element only (sensor-only)
+- No thermostats in developer deployment
+
+#### Architecture: Area-Level Entity Aggregation
+
+Unlike existing per-device panels, this panel aggregates entities from **multiple devices** in the same HA area:
+
+```
+LifeSupportGroup {
+  areaId, areaName
+
+  // Substation A: Climate (0 or 1 thermostat)
+  climateDevice → climate.*, thermostat sensors
+
+  // Substation B: Atmoscrubber (0 or 1 air purifier)
+  environmentDevice → fan, AQ sensors, controls
+
+  // Ambient: Standalone sensors not tied to climate or environment devices
+  ambientSensors → SwitchBot meters, additional temp/humidity entities
+}
+```
+
+Discovery logic walks all entities in the configured area, classifies devices by existing `getDevicePanelType()` heuristic, and collects orphaned `temperature`/`humidity` device_class entities into the ambient bucket.
+
+**Configuration**: Opt-in per area via dashboard config:
+```yaml
+life_support_areas:
+  - area_id: master_bed
+  - area_id: family_room
+```
+
+When configured, the homepage card renders ONE `<lcars-lifesupport-panel>` for that area instead of separate climate + environment panels.
+
+#### Layout: Dual-Substation Horizontal Split (Geordi)
+
+The panel uses a horizontal split when both climate and atmoscrubber substations are present — two dedicated zones side by side, like adjacent stations on an Engineering console. When only one substation is present, it expands to fill the full width.
+
+**Master grid**:
+```css
+.life-support-content {
+  display: grid;
+  grid-template-areas:
+    "climate   atmos"
+    "ambient   ambient"
+    "sparklines sparklines";
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr auto auto;
+}
+```
+
+**Panel width**: 42rem for single-substation mode (same as existing panels), 56rem for dual-substation (each substation ~27rem). Below 56rem viewport: substations stack vertically via media query.
+
+**Substation composition**: Each substation reuses the existing panel's render function via frameless child element composition:
+```html
+<lcars-lifesupport-panel>
+  <lcars-climate-panel frameless .group=${climateGroup}></lcars-climate-panel>
+  <lcars-environment-panel frameless .group=${envGroup}></lcars-environment-panel>
+  <div class="ls-ambient-row">...</div>
+  <div class="ls-sparkline-tray">...</div>
+</lcars-lifesupport-panel>
+```
+
+This means zero duplication — child panels get their own shadow DOM/styles/lifecycle, and any future improvements to the individual panels automatically flow into the composite view.
+
+#### Graceful Degradation — Four Configurations
+
+| Config | Example Room | Layout |
+|--------|-------------|--------|
+| **Full**: thermostat + purifier + sensors | Rutherford's master bedroom | 2-column substations + ambient row + sparklines |
+| **Atmos only**: purifier + sensors, no thermostat | Developer's master bedroom | Single-column atmoscrubber (identical to existing environment panel) |
+| **Climate only**: thermostat + sensors, no purifier | Family room with Nest + SwitchBot | Single-column climate + ambient row + sparklines |
+| **Sensors only**: standalone temp/humidity only | Children's room with SwitchBot | "Sensor hero" layout — large centered temp + humidity + battery + sparklines |
+
+**Sensor hero layout** (sensors-only rooms): Temperature displayed at title tier (3.5rem) as the visual anchor, colored by comfort zone via existing `getTempColor()`. Humidity and battery below in data tier. No arc, no cylinder — just the essential readings, LCARS-styled.
+
+#### Atmoscrubber Cylinder Preservation
+
+The cylinder is preserved **exactly as-is**:
+- Same 4rem wide pill shape, min-height 10rem, `border-radius: 2rem`
+- Same 6-particle animation with `lcars-particle-float` keyframe
+- Same AQI→HSL hue coloring on border + particles
+- Same idle glow animation when fan is off
+- Same grid position: `grid-area: core` in the atmoscrubber substation
+
+In dual-substation mode, the atmoscrubber substation is structurally identical to the standalone `<lcars-environment-panel>`. The cylinder CSS, JS logic, and render functions are reused directly via composition.
+
+#### Ambient Sensor Row
+
+A full-width row below both substations showing room-level readings from standalone sensors (SwitchBot meters):
+```
+AMBIENT SENSORS
+● SWITCHBOT  TEMP 71.8°F  HUM 47%  ▪▪▪▪▪▪▪▪░░ 82%
+```
+Uses `<lcars-sensor-row>` shared component. Battery level shown as LCARS segmented mini-bar. When multiple sensors report the same metric (Awair temp + SwitchBot temp + thermostat current_temperature), elect a primary source and show corroboration dots:
+```
+TEMP   72.1°   ●●○    ← 3 sources, 2 agree within ±1°
+```
+
+#### Adaptive Sparkline Tray
+
+Single bottom row rendering 2–6 sparklines depending on available data:
+
+| Slot | Metric | Color | Condition |
+|------|--------|-------|-----------|
+| 1 | Temperature | `--climate-action-color` | Always |
+| 2 | Humidity | `--lcars-ice` | Always |
+| 3 | AQI | `--atmos-quality-color` | If purifier or Awair present |
+| 4 | PM2.5 | `--lcars-peach` | If available |
+| 5 | CO₂ | `--lcars-sunflower` | If Awair/SCD40 present |
+| 6 | VOC | `--lcars-african-violet` | If Awair/SGP present |
+
+Reuses `fetchSparklineData()` from `lcars-sparkline.js`. 24-hour window, same caching.
+
+#### Wesley's Creative Enhancements (Stretch Goals)
+
+**Life Support Efficiency (LSE) score** — weighted comfort composite:
+$$\text{LSE} = 0.40 \times C_{\text{temp}} + 0.30 \times C_{\text{humidity}} + 0.30 \times C_{\text{air}}$$
+Each component scored 0–100 via trapezoidal membership function. Displayed as header badge (`LSE 94%`) in dynamic color. Drives cylinder particle speed (below 60% = scrubbers working harder, above 90% = gentle drift). Degrades gracefully when components unavailable.
+
+**Room ambient tint** — CSS `background-image: radial-gradient()` overlay at ≤ 0.06 opacity. Butterscotch when heating, ice when cooling, faint green when all-nominal, faint red when AQI > 150. Uses `@property --ambient-tint` for smooth CSS transitions. Subtle enough to be felt not seen.
+
+**Dual-Core Column** (alternative to side-by-side) — the cylinder gains a temperature gradient band along its right edge, functioning as a thermometer. Fill height = current temp in range, fill color tracks HVAC action. Cylinder body + particles still track AQI. One visualization, two systems. Requires Geordi sign-off on proportions.
+
+**Atmospheric circulation indicator** — CSS-only rotating sweep of light around the cylinder perimeter (conic-gradient pseudo-element, 8s rotation). Speed increases with fan percentage. Invisible when fan is off.
+
+**Mini sensor mesh** — tiny row of 3–5 tiles showing other rooms' temp/humidity at a glance. "Nearby sections" context — the bridge officer glances at adjacent decks.
+
+#### WCAG 2.2 Accessibility
+
+- All substation content inherits accessibility from child panels (climate: `role="meter"` on arc, `role="radiogroup"` on strips; environment: `role="meter"` on AQI, `aria-live` on state changes)
+- Ambient sensor row: `aria-label="${sensorName}: ${value}${unit}"` on each reading
+- Sensor hero (sensors-only mode): `role="status"` with `aria-live="polite"` for temperature updates
+- LSE badge: `aria-label="Life Support Efficiency: ${score} percent"`
+- All animations gated behind `@media (prefers-reduced-motion: no-preference)`
+- Panel header: `role="heading" aria-level="3"` with area name
+
+#### Dependencies
+
+- 4X-8 (Climate Panel Visual Refresh) — climate substation benefits from the refreshed arc and mode strip
+- Panel Extraction Architecture (`specs/LCARS-PANEL-EXTRACTION-ARCHITECTURE/`) — the `frameless` child panel composition pattern needs `LcarsBasePanel` to support suppressing its own frame
+- `getDevicePanelType()` must be exposed for area-level entity classification
+- HA area registry must be accessible from the frontend (already available via `hass.areas`)
+
+#### Acceptance Criteria
+
+- Rutherford's master bedroom renders correctly: Nest thermostat + SwitchBot meter + BlueAir purifier in one panel
+- Developer's master bedroom renders correctly: Awair Element + VeSync purifier (no thermostat)
+- Children's room renders correctly: SwitchBot meter only (sensor hero layout)
+- Family room renders correctly: Nest thermostat + SwitchBot meter (no purifier)
+- Atmoscrubber cylinder preserved with full particle animation and AQI coloring
+- Climate arc and setpoint controls fully functional in composite view
+- Ambient sensors displayed with source corroboration dots when multiple sources exist
+- Sparkline tray adapts to available metrics (2–6 sparklines)
+- No regression on existing standalone climate and environment panels
+- Panel gracefully degrades across all four configurations
+- All animations respect `prefers-reduced-motion`
+- WCAG 2.2 AA compliance
+
+---
+
 ## Wesley's Enhancement Ideas (Unscheduled)
 
 Carried forward from 4.x archive. Creative enhancement ideas — not committed to a version.

@@ -6839,22 +6839,36 @@ class LcarsHomepageCard extends LitElement {
     _buildPowerCollection(powerGroups) {
       const circuits = [];
       const plugs = [];
-      const stripParents = [];
+      const allStrips = [];
 
       for (const group of powerGroups) {
         const deviceType = this._classifyPowerDevice(group.entities || [], group.device);
         if (deviceType === 'vue') {
           circuits.push(group);
         } else if (deviceType === 'strip') {
-          // Tag with subType so _groupPowerStrips can identify strip parents (#4)
-          stripParents.push({ ...group, subType: 'strip' });
+          allStrips.push(group);
         } else {
           plugs.push(group);
         }
       }
 
+      // Distinguish strip parents from strip children (#4).
+      // Child outlets (e.g. Kasa HS300 ports) inherit the parent's model string,
+      // so _classifyPowerDevice marks them ALL as 'strip'. A device whose
+      // via_device_id points to another strip-classified device is a child outlet.
+      const stripDeviceIds = new Set(allStrips.map(g => g.device?.id).filter(Boolean));
+      const stripParents = [];
+      const stripChildren = [];
+      for (const group of allStrips) {
+        if (group.device?.via_device_id && stripDeviceIds.has(group.device.via_device_id)) {
+          stripChildren.push(group); // child outlet — no subType tag
+        } else {
+          stripParents.push({ ...group, subType: 'strip' }); // genuine parent
+        }
+      }
+
       // Group strip parents with their children via via_device_id
-      const { strips: stripMap, standalone } = this._groupPowerStrips([...stripParents, ...plugs]);
+      const { strips: stripMap, standalone } = this._groupPowerStrips([...stripParents, ...stripChildren, ...plugs]);
       const strips = [];
       for (const [, entry] of stripMap) {
         strips.push({ parent: entry.parent, children: entry.children || [] });

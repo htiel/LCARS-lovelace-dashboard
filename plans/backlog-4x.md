@@ -20,7 +20,7 @@
 
 ### 4X-7 · NUT (Network UPS Tools) Battery Panel Support — `TODO` · Priority: HIGH · Size: M
 
-**GitHub Issue**: TBD
+**GitHub Issue**: [#7](https://github.com/htiel/LCARS-lovelace-dashboard/issues/7)
 **Spec**: None yet
 
 Add NUT-monitored UPS devices (CyberPower, APC, Tripp Lite, Eaton, etc.) to the warp core battery panel. The existing battery detector checks for `device_class: battery` + `%` unit — NUT's "Battery charge" sensor matches this, but the panel's entity partition logic expects EcoFlow-style I/O power entities. NUT uses a different entity shape.
@@ -118,7 +118,7 @@ Add NUT-monitored UPS devices (CyberPower, APC, Tripp Lite, Eaton, etc.) to the 
 
 ### 4X-8 · Climate Panel Visual Refresh — `TODO` · Priority: MEDIUM · Size: L
 
-**GitHub Issue**: TBD
+**GitHub Issue**: [#8](https://github.com/htiel/LCARS-lovelace-dashboard/issues/8)
 **Spec**: Existing `specs/LCARS-CLIMATE-PANEL-SPEC/`
 
 The climate panel is functionally complete (SVG arc, setpoint controls, HVAC/fan/preset mode strips, fault indicators) but looks plain compared to newer panels like power and environment. Refresh the visual treatment to match the LCARS polish level of the v4.16+ panels and fix several LCARS design compliance issues.
@@ -222,7 +222,7 @@ New keyframes: **2** (heat-pulse, cool-pulse). Reused: **3** (zone-pulse, scanli
 
 ### 4X-9 · Pool & Spa Panel Visual Refresh — `TODO` · Priority: MEDIUM · Size: L
 
-**GitHub Issue**: TBD
+**GitHub Issue**: [#9](https://github.com/htiel/LCARS-lovelace-dashboard/issues/9)
 **Spec**: Existing `specs/LCARS-POOL-SPA-PANEL-SPEC/`
 
 The pool panel is functionally complete (dual body frames, chemistry readouts, pump/circuit controls, IntelliBrite lighting) but the body viewscreens are plain text displays and several spec'd visual features were never implemented. Additionally, Rutherford's WaterGuru SENSE chemistry data (pH, chlorine, alkalinity, hardness) is a separate HA device not currently surfaced in the panel.

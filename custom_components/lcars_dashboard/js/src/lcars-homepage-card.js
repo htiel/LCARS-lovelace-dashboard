@@ -28,6 +28,7 @@ import {
   TOGGLE_DOMAINS, SENSOR_DOMAINS, COVER_DOMAINS,
   AQ_DEVICE_CLASSES, AQ_ENTITY_SUFFIX_RE,
   DOMAIN_LABELS, DOMAIN_ORDER,
+  isLightingEntity, isClimateEntity, isEnvironmentEntity, isAmbientSensor,
 } from './lcars-entity-utils.js';
 import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor, getCo2Color, getTempColor, getTempComfortClass, getSafeComfortColor, COMFORT_COLORS, getRainDelayInfo, getPowerColor, getPowerLabel, getGridBalanceColor } from './lcars-color-utils.js';
 import { clampSetpoint, clampValue, createRateLimiter, createDebouncer } from './lcars-service-utils.js';
@@ -7167,13 +7168,35 @@ class LcarsHomepageCard extends LitElement {
         }
       }
 
+      // ── Exclude entities consumed by area panels from standalone rendering ──
+      const consumedByArea = this._buildAreaPanelFilter(areaPanelTypes);
+      if (consumedByArea) {
+        for (const [devId, group] of byDevice) {
+          group.entities = group.entities.filter(e => !consumedByArea(e));
+          if (group.entities.length === 0) byDevice.delete(devId);
+        }
+      }
+      const filteredNoDevice = consumedByArea
+        ? noDevice.filter(e => !consumedByArea(e))
+        : noDevice;
+
+      // Device panel types subsumed by area panels (e.g., climate → life_support)
+      const subsumedDeviceTypes = new Set();
+      if (areaPanelTypes.has(PANEL_TYPE_LIFE_SUPPORT)) {
+        subsumedDeviceTypes.add(PANEL_TYPE_CLIMATE);
+        subsumedDeviceTypes.add(PANEL_TYPE_ENVIRONMENT);
+      }
+
       // Partition devices into panel-worthy, normal, and power
       const panelDevices = [];
       const normalDevices = [];
       const powerGroups = [];
       for (const group of byDevice.values()) {
         const panelType = this._getDevicePanelType(group.entities);
-        if (panelType === PANEL_TYPE_POWER) {
+        if (panelType && subsumedDeviceTypes.has(panelType)) {
+          // Skip — subsumed by area-level composite panel
+          continue;
+        } else if (panelType === PANEL_TYPE_POWER) {
           powerGroups.push({ ...group, panelType });
         } else if (panelType) {
           panelDevices.push({ ...group, panelType });
@@ -7198,13 +7221,13 @@ class LcarsHomepageCard extends LitElement {
             ${this._renderDomainGroups(group.entities)}
           </div>
         `)}
-        ${noDevice.length > 0 ? html`
+        ${filteredNoDevice.length > 0 ? html`
           <div class="device-group">
             <div class="device-header">
               <h3 class="device-name">Other Entities</h3>
               <div class="device-line"></div>
             </div>
-            ${this._renderDomainGroups(noDevice)}
+            ${this._renderDomainGroups(filteredNoDevice)}
           </div>
         ` : ''}
         ${powerGroups.length > 0 ? html`<lcars-power-panel .powerGroups=${powerGroups} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-power-panel>` : ''}
@@ -7213,8 +7236,12 @@ class LcarsHomepageCard extends LitElement {
       // No panel devices and no area panels → single-column
       if (panelDevices.length === 0 && areaPanels.length === 0) return normalContent;
 
-      // Sort panels: camera → environment → battery
-      panelDevices.sort((a, b) =>
+      // Merge all panels (device + area) and sort by PANEL_TYPE_ORDER
+      const allPanels = [
+        ...panelDevices.map(g => ({ panelType: g.panelType, template: this._renderDevicePanel(g.panelType, g) })),
+        ...areaPanels,
+      ];
+      allPanels.sort((a, b) =>
         (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99)
       );
 
@@ -7223,11 +7250,22 @@ class LcarsHomepageCard extends LitElement {
         <div class="area-split-layout">
           <div class="area-split-main">${normalContent}</div>
           <div class="area-split-panels" aria-live="polite">
-            ${panelDevices.map(g => this._renderDevicePanel(g.panelType, g))}
-            ${areaPanels.map(ap => ap.template)}
+            ${allPanels.map(p => p.template)}
           </div>
         </div>
       `;
+    }
+
+    /* ─── Build predicate for entities consumed by area-level panels ─── */
+    _buildAreaPanelFilter(areaPanelTypes) {
+      if (areaPanelTypes.size === 0) return null;
+      const predicates = [];
+      if (areaPanelTypes.has(PANEL_TYPE_ILLUMINATION)) predicates.push(isLightingEntity);
+      if (areaPanelTypes.has(PANEL_TYPE_LIFE_SUPPORT)) predicates.push(
+        e => isClimateEntity(e) || isEnvironmentEntity(e) || isAmbientSensor(e)
+      );
+      if (predicates.length === 0) return null;
+      return entry => predicates.some(p => p(entry));
     }
 
     /* ─── Render domain-grouped entity lists ─── */

@@ -171,6 +171,32 @@ Currently each power device gets its own separate panel in the right column — 
 
 ---
 
+### 4X-7 · NUT (Network UPS Tools) Battery Panel Support — `DONE` · v4.17.2 · Priority: HIGH · Size: M
+
+**GitHub Issue**: [#7](https://github.com/htiel/LCARS-lovelace-dashboard/issues/7)
+**Shipped in**: v4.17.2 (2026-04-15)
+
+Add NUT-monitored UPS devices (CyberPower, APC, Tripp Lite, Eaton, etc.) to the warp core battery panel. NUT devices have `device_class: battery` + `%` but no `device_class: power` entities — they use load%, voltage, runtime, and status codes instead of EcoFlow-style I/O power entities.
+
+**Key changes**:
+- Battery detector extended: recognizes NUT pattern (battery + voltage/load/status, no power-class entities)
+- NUT-specific partition path in `_partitionBatteryEntities()`: captures load%, status codes, runtime, voltage
+- NUT status code parsing: `OL`=online, `OB`=on battery, `CHRG`=charging, `LB`=low battery, `FSD`=forced shutdown
+- Watts computed from `load% × nominal_real_power` when nominal power entity is enabled
+- Battery runtime formatted as `Xh Ym`
+- Grid→UPS→Load conduit flow replaces per-port I/O pairs
+- No visual changes — reuses existing warp core, SOC gauge, conduit animations
+
+**Reference device**: CyberPower CP1500PFCRM2U (2U rackmount, 1500VA/1000W) via NUT integration
+
+**Acceptance criteria**:
+- NUT UPS auto-detected and rendered in warp core battery panel
+- SOC gauge, status badge, load, runtime, voltage all displayed
+- Grid→UPS→Load power flow based on NUT status codes
+- No regression for EcoFlow/Victron/Tesla battery devices
+
+---
+
 ## Wesley's 4.x Enhancement Ideas (Backlog — Unscheduled)
 
 These are creative enhancement ideas for existing panels. Not committed to a version.

@@ -18,11 +18,11 @@ import { svg } from 'lit-html';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getHass, showMoreInfo, fireEvent, createCardElement, lcarsEventBus, lcarsLog, openEditPopup } from './lcars-helpers.js';
 import {
-  classifyDevice,
+  classifyDevice, classifyArea,
   PANEL_TYPE_CAMERA, PANEL_TYPE_ALARM, PANEL_TYPE_AQUATICS,
   PANEL_TYPE_CLIMATE, PANEL_TYPE_MEDIA, PANEL_TYPE_ENVIRONMENT,
   PANEL_TYPE_IRRIGATION, PANEL_TYPE_WEATHER, PANEL_TYPE_BATTERY,
-  PANEL_TYPE_POWER,
+  PANEL_TYPE_POWER, PANEL_TYPE_LIFE_SUPPORT, PANEL_TYPE_ILLUMINATION,
   PANEL_TYPE_ORDER,
   CAMERA_DOMAINS, CLIMATE_DOMAINS, MEDIA_DOMAINS, ALARM_DOMAINS, WEATHER_DOMAINS,
   TOGGLE_DOMAINS, SENSOR_DOMAINS, COVER_DOMAINS,
@@ -34,6 +34,8 @@ import { clampSetpoint, clampValue, createRateLimiter, createDebouncer } from '.
 import { renderSparkline, fetchSparklineData } from './lcars-sparkline.js';
 import { fetchForecasts } from './lcars-weather-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from './lcars-shared-animations.js';
+import { getFloorAreas } from './lcars-hierarchy-utils.js';
+import { getAreaEntities, groupEntities } from './lcars-entity-query.js';
 
 /* ─── Side-effect imports: extracted components & panels (no webpack entry needed) ─── */
 import './components/lcars-panel-frame/lcars-panel-frame.js';
@@ -51,8 +53,27 @@ import './panels/media/lcars-media-panel.js';
 import './panels/pool-spa/lcars-pool-spa-panel.js';
 import './panels/weather/lcars-weather-panel.js';
 import './panels/power/lcars-power-panel.js';
+import './panels/lifesupport/lcars-lifesupport-panel.js';
+import './panels/illumination/lcars-illumination-panel.js';
 
 const TAG = 'Homepage';
+
+// ─── Panel Dispatch Registry (4X-21) ────────────────────────────────────────
+// Factory function pattern per Geordi — no unsafeStatic, no dynamic tag injection.
+// Each entry returns a lit-html template for the panel type.
+
+const PANEL_TAG_REGISTRY = new Map([
+  [PANEL_TYPE_CAMERA,       (group, hass, editMode, config) => html`<lcars-camera-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-camera-panel>`],
+  [PANEL_TYPE_ENVIRONMENT,  (group, hass, editMode, config) => html`<lcars-environment-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-environment-panel>`],
+  [PANEL_TYPE_BATTERY,      (group, hass, editMode, config) => html`<lcars-battery-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-battery-panel>`],
+  [PANEL_TYPE_CLIMATE,      (group, hass, editMode, config) => html`<lcars-climate-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-climate-panel>`],
+  [PANEL_TYPE_ALARM,        (group, hass, editMode, config) => html`<lcars-alarm-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-alarm-panel>`],
+  [PANEL_TYPE_MEDIA,        (group, hass, editMode, config) => html`<lcars-media-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-media-panel>`],
+  [PANEL_TYPE_AQUATICS,     (group, hass, editMode, config) => html`<lcars-pool-spa-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-pool-spa-panel>`],
+  [PANEL_TYPE_WEATHER,      (group, hass, editMode, config) => html`<lcars-weather-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-weather-panel>`],
+  [PANEL_TYPE_LIFE_SUPPORT, (group, hass, editMode, config) => html`<lcars-lifesupport-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-lifesupport-panel>`],
+  [PANEL_TYPE_ILLUMINATION, (group, hass, editMode, config) => html`<lcars-illumination-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-illumination-panel>`],
+]);
 
 /* Build a cache-busted camera image URL using last_updated timestamp */
 function cameraImageUrl(state) {
@@ -313,38 +334,14 @@ class LcarsHomepageCard extends LitElement {
       }
     }
 
-    /* ─── Entity resolution: direct area_id OR via device (cached) ─── */
+    /* ─── Entity resolution: delegates to shared lcars-entity-query.js (4X-13) ─── */
     _getAreaEntities(areaId) {
-      if (!this._hass) return [];
-      // Return cached result if available
-      if (this._entityCache.has(areaId)) {
-        return this._entityCache.get(areaId);
-      }
-      lcarsLog.debug(TAG, 'Entity cache MISS — resolving area:', areaId);
-      const entityReg = Object.values(this._hass.entities || {});
-      const deviceReg = this._hass.devices || {};
-      const areaDeviceIds = new Set();
-      Object.values(deviceReg).forEach((dev) => {
-        if (dev.area_id === areaId) areaDeviceIds.add(dev.id);
-      });
-      const result = entityReg.filter((e) => {
-        if (e.hidden_by || e.hidden || e.disabled_by) return false;
-        if (e.entity_category) return false;
-        if (e.area_id === areaId) return true;
-        if (!e.area_id && e.device_id && areaDeviceIds.has(e.device_id)) return true;
-        return false;
-      });
-      this._entityCache.set(areaId, result);
-      lcarsLog.debug(TAG, 'Resolved', result.length, 'entities for area:', areaId);
-      return result;
+      return getAreaEntities(this._hass, areaId, this._entityCache);
     }
 
     /* ─── Floor-level entity resolution: union all areas on a floor ─── */
     _getFloorAreaIds(floorId) {
-      if (!this._hass?.areas) return [];
-      return Object.values(this._hass.areas)
-        .filter(a => a.floor_id === floorId)
-        .map(a => a.area_id);
+      return getFloorAreas(this._hass, floorId);
     }
 
     /* ─── Fetch config/diagnostic entities for a specific device (battery panels) ─── */
@@ -363,40 +360,9 @@ class LcarsHomepageCard extends LitElement {
       return { config, diagnostic };
     }
 
-    /* ─── Group entities: device → domain ─── */
+    /* ─── Group entities: delegates to shared lcars-entity-query.js (4X-13) ─── */
     _groupEntities(entities) {
-      const devices = this._hass.devices || {};
-      const byDevice = new Map();     // deviceId → { device, entities[] }
-      const noDevice = [];             // entities with no device
-
-      entities.forEach((e) => {
-        const domain = e.entity_id.split('.')[0];
-        const entry = { entity: e, domain, state: this._getEntityState(e.entity_id) };
-        if (!entry.state) return;
-        if (e.device_id && devices[e.device_id]) {
-          if (!byDevice.has(e.device_id)) {
-            byDevice.set(e.device_id, { device: devices[e.device_id], entities: [] });
-          }
-          byDevice.get(e.device_id).entities.push(entry);
-        } else {
-          noDevice.push(entry);
-        }
-      });
-
-      // Within each device, sort entities by domain priority then name
-      const sortFn = (a, b) => {
-        const pa = DOMAIN_ORDER[a.domain] ?? 50;
-        const pb = DOMAIN_ORDER[b.domain] ?? 50;
-        if (pa !== pb) return pa - pb;
-        return (a.state?.attributes?.friendly_name || '').localeCompare(
-          b.state?.attributes?.friendly_name || ''
-        );
-      };
-
-      byDevice.forEach((v) => v.entities.sort(sortFn));
-      noDevice.sort(sortFn);
-
-      return { byDevice, noDevice };
+      return groupEntities(this._hass, entities);
     }
 
     /* ─── Group entries by domain ─── */
@@ -4149,7 +4115,7 @@ class LcarsHomepageCard extends LitElement {
             return html`
               <div class="content-area-panel floor-area-section">
                 <h3 class="content-area-header floor-area-subheader">${area.name}</h3>
-                ${this._renderAreaContent(entities)}
+                ${this._renderAreaContent(entities, areaId)}
               </div>
             `;
           })}
@@ -4188,7 +4154,7 @@ class LcarsHomepageCard extends LitElement {
       return html`
         <div class="content-area-panel">
           <h2 class="content-area-header">${area.name}</h2>
-          ${this._renderAreaContent(entities)}
+          ${this._renderAreaContent(entities, this.selectedArea)}
         </div>
       `;
     }
@@ -4221,29 +4187,12 @@ class LcarsHomepageCard extends LitElement {
       return `${code.slice(0, 3)}-${code.slice(3)}`;
     }
 
-    /* ─── Dispatch to the correct panel renderer ─── */
+    /* ─── Dispatch to the correct panel renderer (4X-21: registry-based) ─── */
     _renderDevicePanel(panelType, group) {
-      switch (panelType) {
-        case PANEL_TYPE_CAMERA:
-          return html`<lcars-camera-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-camera-panel>`;
-        case PANEL_TYPE_ENVIRONMENT:
-          return html`<lcars-environment-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-environment-panel>`;
-        case PANEL_TYPE_BATTERY:
-          return html`<lcars-battery-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-battery-panel>`;
-        case PANEL_TYPE_CLIMATE:
-          return html`<lcars-climate-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-climate-panel>`;
-        case PANEL_TYPE_ALARM:
-          return html`<lcars-alarm-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-alarm-panel>`;
-        case PANEL_TYPE_MEDIA:
-          return html`<lcars-media-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-media-panel>`;
-        case PANEL_TYPE_AQUATICS:
-          return html`<lcars-pool-spa-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-pool-spa-panel>`;
-        case PANEL_TYPE_WEATHER:
-          return html`<lcars-weather-panel .group=${group} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-weather-panel>`;
-        case PANEL_TYPE_IRRIGATION:
-          return this._renderIrrigationPanel(group);
-        default: return '';
-      }
+      // Irrigation has custom rendering logic — handle separately
+      if (panelType === PANEL_TYPE_IRRIGATION) return this._renderIrrigationPanel(group);
+      const factory = PANEL_TAG_REGISTRY.get(panelType);
+      return factory ? factory(group, this._hass, this._editMode, this._config) : '';
     }
 
     /* ─── Sensor indicator color per state (Geordi spec) ─── */
@@ -7194,11 +7143,29 @@ class LcarsHomepageCard extends LitElement {
     }
 
     /* ─── Render area content: two-column when cameras present ─── */
-    _renderAreaContent(entities) {
+    _renderAreaContent(entities, areaId) {
       if (entities.length === 0)
         return html`<div class="lcars-empty">No entities in this area</div>`;
 
       const { byDevice, noDevice } = this._groupEntities(entities);
+
+      // ── Area-level composite panels (4X-17): life_support, illumination ──
+      // Hydrate flat entities for classifyArea (need domain + state)
+      const hydratedEntries = entities.map(e => {
+        const domain = e.entity_id.split('.')[0];
+        const state = this._hass?.states?.[e.entity_id];
+        return { entity: e, domain, state };
+      }).filter(e => e.state);
+
+      const areaPanelTypes = classifyArea(this._hass, areaId, hydratedEntries);
+      const areaPanels = [];
+      for (const pt of areaPanelTypes) {
+        const factory = PANEL_TAG_REGISTRY.get(pt);
+        if (factory) {
+          // Build a synthetic group with areaId + all hydrated entries for this panel type
+          areaPanels.push({ panelType: pt, template: factory({ entities: hydratedEntries, areaId }, this._hass, this._editMode, this._config) });
+        }
+      }
 
       // Partition devices into panel-worthy, normal, and power
       const panelDevices = [];
@@ -7243,20 +7210,21 @@ class LcarsHomepageCard extends LitElement {
         ${powerGroups.length > 0 ? html`<lcars-power-panel .powerGroups=${powerGroups} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-power-panel>` : ''}
       `;
 
-      // No panel devices → single-column (power panel is in normalContent)
-      if (panelDevices.length === 0) return normalContent;
+      // No panel devices and no area panels → single-column
+      if (panelDevices.length === 0 && areaPanels.length === 0) return normalContent;
 
       // Sort panels: camera → environment → battery
       panelDevices.sort((a, b) =>
         (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99)
       );
 
-      // Panel devices present → two-column split layout
+      // Panel devices + area-level composite panels → two-column split layout
       return html`
         <div class="area-split-layout">
           <div class="area-split-main">${normalContent}</div>
           <div class="area-split-panels" aria-live="polite">
             ${panelDevices.map(g => this._renderDevicePanel(g.panelType, g))}
+            ${areaPanels.map(ap => ap.template)}
           </div>
         </div>
       `;

@@ -25,11 +25,15 @@ export class LcarsBasePanel extends LitElement {
 
   static get properties() {
     return {
-      group:     { type: Object },
-      hass:      { type: Object },
-      config:    { type: Object },
-      editMode:  { type: Boolean, attribute: 'edit-mode', reflect: true },
-      areaId:    { type: String, attribute: 'area-id' },
+      group:           { type: Object },
+      hass:            { type: Object },
+      config:          { type: Object },
+      editMode:        { type: Boolean, attribute: 'edit-mode', reflect: true },
+      areaId:          { type: String, attribute: 'area-id' },
+      linkedEntities:  { type: Array },
+      entities:        { type: Array },     // 4X-15: direct entity collection (cross-device panels)
+      devices:         { type: Array },     // 4X-15: plural device list
+      frameMode:       { type: String, attribute: 'frame-mode' },  // 4X-19: standard|nested|header-only
     };
   }
 
@@ -40,6 +44,10 @@ export class LcarsBasePanel extends LitElement {
     this.config = null;
     this.editMode = false;
     this.areaId = null;
+    this.linkedEntities = [];
+    this.entities = null;
+    this.devices = null;
+    this.frameMode = 'standard';
   }
 
   /* ─── Entity helpers ─── */
@@ -203,6 +211,18 @@ export class LcarsBasePanel extends LitElement {
 
   /* ─── Panel identity getters (override in subclass) ─── */
 
+  /**
+   * Merge group entities with linked external entities.
+   * When this.entities is set directly (4X-15), use that instead of group.
+   * Linked entries carry `_linked: true` for provenance display.
+   */
+  _getAllEntities() {
+    const own = this.entities || this.group?.entities || [];
+    if (!this.linkedEntities?.length) return own;
+    const linked = this.linkedEntities.map(e => ({ ...e, _linked: true }));
+    return [...own, ...linked];
+  }
+
   /** Panel type identifier — used for data attributes and frame theming */
   get panelType() { return 'unknown'; }
 
@@ -212,14 +232,22 @@ export class LcarsBasePanel extends LitElement {
   /** Frame color — CSS custom property value */
   get frameColor() { return 'var(--lcars-butterscotch)'; }
 
-  /** Computed panel name — device name with area prefix stripped */
+  /** Computed panel name — device name with area prefix stripped (4X-15 fallback) */
   _getPanelName() {
-    return this._shortDeviceName(this.group?.device) || this.defaultPanelTitle;
+    if (this.group?.device) return this._shortDeviceName(this.group.device) || this.defaultPanelTitle;
+    if (this.devices?.length) return this._shortDeviceName(this.devices[0]) || this.defaultPanelTitle;
+    const area = this.hass?.areas?.[this.areaId];
+    if (area?.name) return area.name;
+    return this.defaultPanelTitle;
   }
 
-  /** Computed panel code — deterministic 6-digit hash */
+  /** Computed panel code — deterministic 6-digit hash (4X-15 fallback) */
   _getPanelCode() {
-    const id = this.group?.entities?.[0]?.entity?.entity_id || this.group?.device?.id || 'panel';
+    const id = this.entities?.[0]?.entity?.entity_id
+      || this.group?.entities?.[0]?.entity?.entity_id
+      || this.group?.device?.id
+      || this.areaId
+      || 'panel';
     return this._generatePanelCode(id);
   }
 
@@ -239,15 +267,19 @@ export class LcarsBasePanel extends LitElement {
    * Base class render() wraps subclass content in <lcars-panel-frame>.
    * Subclasses override renderContent() and renderBadge() — never render().
    * This resolves the double-framing concern (Data N8): ONE framing path.
+   *
+   * 4X-15: Support panels without group (entities-only mode).
+   * 4X-19: frame-mode attribute controls frame chrome level.
    */
   render() {
-    if (!this.group) return html``;
+    if (!this.group && !this.entities?.length) return html``;
     return html`
       <lcars-panel-frame
         panel-name="${this._getPanelName()}"
         panel-code="${this._getPanelCode()}"
         frame-color="${this.frameColor}"
-        panel-type="${this.panelType}">
+        panel-type="${this.panelType}"
+        frame-mode="${this.frameMode}">
         <span slot="badge">${this.renderBadge()}</span>
         ${this.renderContent()}
       </lcars-panel-frame>

@@ -2,9 +2,15 @@
  * lcars-pool-spa-panel-styles.js
  *
  * CSS module for <lcars-pool-spa-panel>.
- * Pentair ScreenLogic — pool/spa bodies, chemistry, pump spinner, lighting.
+ * Pentair ScreenLogic — pool/spa bodies, chemistry bars, pump spinner, lighting.
  *
  * v4.17.0 Panel Extraction Architecture (4X-5)
+ * v4.18.0 Visual Refresh (4X-9) — LCARS compliance fixes:
+ *   #1 Endcap pill setpoints, #2 Asymmetric mini-elbow brackets,
+ *   #3 Font size → var(--lcars-font-size-data), #4 Body temp → var(--lcars-font-size-title),
+ *   #6 Inner frame asymmetric borders.
+ *   Chemistry segmented bars, freeze banner, circuit grouping,
+ *   heating indicator, thermal tint, sensor mini-bars.
  */
 import { css } from 'lit-element';
 
@@ -39,6 +45,37 @@ export const poolSpaPanelStyles = css`
     border-radius: 0 0 0.25rem 0; pointer-events: none;
   }
 
+  /* Freeze protection banner */
+  .freeze-banner {
+    background: var(--lcars-tomato);
+    color: var(--lcars-black);
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+    text-align: center;
+    animation: freeze-pulse 3s ease-in-out infinite;
+  }
+  .freeze-icon { margin-right: 0.25rem; }
+  .freeze-nominal {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.5;
+    padding: 0 0.5rem;
+  }
+  @keyframes freeze-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  .freeze-active {
+    border-color: var(--lcars-ice) !important;
+  }
+
   .pool-content {
     display: grid;
     grid-template-areas:
@@ -61,41 +98,134 @@ export const poolSpaPanelStyles = css`
   .panel-numeric-code { font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); color: var(--panel-frame-color); opacity: 0.7; white-space: nowrap; }
   .pool-temp-badge { font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); margin-left: 0.5rem; }
 
+  /* Chemistry — segmented bars */
   .pool-chemistry { grid-area: chemistry; overflow-y: auto; }
+  .chem-reading {
+    display: flex; flex-direction: column; gap: 0.125rem;
+    padding: 0.25rem 0.5rem; cursor: pointer;
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+    transition: background var(--lcars-transition);
+  }
+  .chem-reading:hover { background: rgba(255,255,255,0.05); }
+  .chem-reading:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+  .chem-label {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-space-white);
+    text-transform: uppercase;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .source-pill {
+    display: inline-block;
+    font-size: 0.5rem;
+    padding: 0 0.2rem;
+    border: 1px solid var(--lcars-gray);
+    border-radius: 2px;
+    vertical-align: middle;
+    color: var(--lcars-gray);
+    line-height: 1.2;
+  }
+
+  /* Legacy sensor lines (environmental, diagnostics) */
   .device-sensor-line { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0; transition: background var(--lcars-transition); font-size: var(--lcars-font-size-data); text-transform: uppercase; }
   .device-sensor-line:hover { background: rgba(255,255,255,0.05); }
   .device-sensor-line:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+  /* Compliance #5 equivalent: mini-bars not dots */
+  .sensor-indicator-bar { width: 2px; height: 1rem; border-radius: 1px; flex-shrink: 0; }
   .sensor-indicator { width: 0.5rem; height: 0.5rem; border-radius: 50%; flex-shrink: 0; }
-  .sensor-label { flex: 1; color: var(--lcars-space-white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; }
+  .sensor-label {
+    flex: 1; color: var(--lcars-space-white);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: var(--lcars-font-size-data); /* Compliance #3: use LCARS 3-tier font */
+  }
   .sensor-state-value { flex-shrink: 0; font-weight: 700; font-size: var(--lcars-font-size-data); }
 
   /* Aquatics center */
   .pool-aquatics { grid-area: aquatics; display: flex; gap: var(--lcars-gap); justify-content: center; }
   .pool-body-frame {
-    flex: 1; border: 2px solid var(--body-color); border-radius: 4px;
+    flex: 1;
+    /* Compliance #6: asymmetric borders — thick left/top, thin right/bottom */
+    border-left: 3px solid var(--body-color);
+    border-top: 3px solid var(--body-color);
+    border-right: 1px solid var(--body-color);
+    border-bottom: 1px solid var(--body-color);
+    border-radius: 0.5rem 0.25rem 0.25rem 0.25rem;
     padding: 0.5rem; text-align: center; display: flex; flex-direction: column;
     align-items: center; gap: 0.25rem; position: relative;
+    background: var(--lcars-black, #000);
   }
-  .pool-body-frame::before, .pool-body-frame::after {
-    content: ''; position: absolute; width: 1.5rem; height: 1.5rem;
-    border: 2px solid var(--body-color);
+  /* Thermal tint backgrounds */
+  .pool-body-frame.thermal-cool { background: rgba(153, 204, 255, 0.04); }
+  .pool-body-frame.thermal-warm { background: rgba(255, 180, 100, 0.04); }
+  /* Compliance #2: Asymmetric mini-elbow brackets */
+  .pool-body-frame::before {
+    content: ''; position: absolute;
+    top: 4px; left: 4px; width: 1.5rem; height: 1.5rem;
+    border-top: 3px solid var(--body-color);
+    border-left: 3px solid var(--body-color);
+    border-right: none; border-bottom: none;
+    border-radius: 0.5rem 0 0 0;
+    pointer-events: none;
   }
-  .pool-body-frame::before { top: 4px; left: 4px; border-right: none; border-bottom: none; }
-  .pool-body-frame::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
+  .pool-body-frame::after {
+    content: ''; position: absolute;
+    bottom: 4px; right: 4px; width: 1.5rem; height: 1.5rem;
+    border-bottom: 1px solid var(--body-color);
+    border-right: 1px solid var(--body-color);
+    border-left: none; border-top: none;
+    border-radius: 0 0 0.25rem 0;
+    pointer-events: none;
+  }
   .pool-body-label { font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); text-transform: uppercase; letter-spacing: 0.1em; }
-  .pool-body-temp { font-family: var(--lcars-font); font-size: 2.5rem; font-weight: bold; color: var(--body-color); }
+  /* Compliance #4: map to LCARS title tier */
+  .pool-body-temp { font-family: var(--lcars-font); font-size: var(--lcars-font-size-title); font-weight: bold; }
   .pool-setpoint-row { display: flex; align-items: center; gap: 0.5rem; }
   .pool-target { font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); }
 
-  /* Setpoint buttons (shared with climate) */
-  .climate-sp-btn {
-    width: 2.5rem; height: 2.5rem; border: none; border-radius: 50%;
-    background: var(--lcars-disabled); color: var(--lcars-space-white);
-    font-size: 1.25rem; font-family: var(--lcars-font); cursor: pointer;
-    transition: background 200ms;
+  /* Compliance #1: Endcap pill setpoint buttons, not circles */
+  .pool-sp-btn {
+    width: 3rem; height: 2.5rem;
+    border: none;
+    background: var(--lcars-disabled);
+    color: var(--lcars-space-white);
+    font-size: 1.25rem; font-family: var(--lcars-font);
+    cursor: pointer; transition: background 200ms;
+    border-radius: 0;
   }
-  .climate-sp-btn:hover { background: var(--panel-frame-color); }
-  .climate-sp-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+  .pool-sp-btn:hover { background: var(--panel-frame-color); }
+  .pool-sp-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+  .pool-sp-btn.sp-decrement {
+    border-radius: var(--lcars-btn-radius) 0 0 var(--lcars-btn-radius);
+  }
+  .pool-sp-btn.sp-increment {
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+  }
+
+  /* Heating indicator bar — flat pulse, no gradient (Bracer Jack Rule 1) */
+  .pool-heating-bar {
+    width: 100%; height: 3px;
+    margin-top: 0.25rem;
+    border-radius: 1.5px;
+    background: var(--body-color);
+    animation: pool-heat-pulse 2s ease-in-out infinite;
+  }
+  @keyframes pool-heat-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Circuit groups */
+  .circuit-group { margin-bottom: 0.5rem; }
+  .circuit-group-label {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-sky, #aaaaff);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+  .circuit-count { color: var(--lcars-gray); }
 
   /* Controls */
   .pool-controls { grid-area: controls; display: flex; flex-direction: column; gap: var(--lcars-gap); }
@@ -144,5 +274,7 @@ export const poolSpaPanelStyles = css`
 
   @media (prefers-reduced-motion: reduce) {
     .lcars-pump-spinner.on { animation: none; }
+    .pool-heating-bar { animation: none; }
+    .freeze-banner { animation: none; }
   }
 `;

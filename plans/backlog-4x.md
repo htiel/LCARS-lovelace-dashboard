@@ -1,7 +1,7 @@
 # LCARS Dashboard — 4.x Backlog
 
 > Stable branch (`4.0`). Non-breaking feature additions, bug fixes, and optimizations.
-> Version: 4.17.2 (current)
+> Version: 4.18.0 (current)
 
 ---
 
@@ -18,7 +18,7 @@
 
 ## Backlog
 
-### 4X-8 · Climate Panel Visual Refresh — `TODO` · Priority: MEDIUM · Size: L
+### 4X-8 · Climate Panel Visual Refresh — `DONE` · Priority: MEDIUM · Size: L
 
 **GitHub Issue**: [#8](https://github.com/htiel/LCARS-lovelace-dashboard/issues/8)
 **Spec**: Existing `specs/LCARS-CLIMATE-PANEL-SPEC/`
@@ -120,9 +120,15 @@ New keyframes: **2** (heat-pulse, cool-pulse). Reused: **3** (zone-pulse, scanli
 - WCAG 2.2 AA compliance maintained or improved
 - No regression on 3 Nest thermostats (1st/2nd/3rd floor)
 
+#### 5x Prep Embedded in This Item
+
+| Prep Item | What | Enables |
+|-----------|------|---------|
+| **4X-12** Floor/area hierarchy utilities | Extract `_getFloorAreaIds()` into shared `lcars-hierarchy-utils.js` — multi-zone awareness needs sibling areas on same floor | 5.x Floor → Area → Entity hierarchical layouts in every domain dashboard |
+
 ---
 
-### 4X-9 · Pool & Spa Panel Visual Refresh — `TODO` · Priority: MEDIUM · Size: L
+### 4X-9 · Pool & Spa Panel Visual Refresh — `DONE` · Priority: MEDIUM · Size: L
 
 **GitHub Issue**: [#9](https://github.com/htiel/LCARS-lovelace-dashboard/issues/9)
 **Spec**: Existing `specs/LCARS-POOL-SPA-PANEL-SPEC/`
@@ -131,7 +137,7 @@ The pool panel is functionally complete (dual body frames, chemistry readouts, p
 
 **Current state** (see screenshot): Pool/spa bodies are bordered rectangles with large temp + circular −/+ setpoint controls. Circuit buttons are flat-sided pills (correct shape). Chemistry sensors are inline dot+text rows. No water caustic effects, no pump telemetry, no WaterGuru integration. The panel feels utilitarian — functional but not "Cetacean Ops."
 
-**Rutherford's non-LCARS pool card** (inspiration): Rich dashboard showing Pentair controls, WaterGuru radial gauges for pH (7.7) and Free Chlorine (4.8 ppm) with green/yellow/red ranges, 24hr + 7-day temperature overlay charts (pool temp, WaterGuru temp, Tempest feels-like), freeze mode status, weather section, and WaterGuru diagnostics (cassette days remaining, battery %).
+**Rutherford's non-LCARS pool card** (inspiration): Rich dashboard showing Pentair controls, WaterGuru radial gauges for pH (7.7) and Free Chlorine (4.8 ppm) with green/yellow/red ranges, 24hr + 7-day temperature overlay charts (pool temp, WaterGuru temp, Tempest feels-like), freeze mode status, weather section, and WaterGuru diagnostics (cassette days remaining, battery %). look in inspiration folder for png
 
 #### LCARS Compliance Fixes (Geordi)
 
@@ -263,9 +269,16 @@ All gated behind `@media (prefers-reduced-motion: no-preference)`. Max concurren
 - All animations respect `prefers-reduced-motion`
 - WCAG 2.2 AA compliance maintained or improved
 
+#### 5x Prep Embedded in This Item
+
+| Prep Item | What | Enables |
+|-----------|------|---------|
+| **4X-14** Cross-device entity injection (`linkedEntities`) | Formalize WaterGuru integration pattern into general `linkedEntities` property on `LcarsBasePanel` | 5.x panels receiving entities from multiple devices/areas |
+| **4X-16** `<lcars-segmented-bar>` component | Shared threshold-colored bar for chemistry readings (pH, chlorine, alkalinity, RPM, watts) | Reusable across every 5.x dashboard (power load bars, CO₂ bars, signal bars) |
+
 ---
 
-### 4X-10 · Life Support / Environmental Systems Panel — `TODO` · Priority: MEDIUM · Size: XL
+### 4X-10 · Life Support / Environmental Systems Panel — `DONE` · Priority: MEDIUM · Size: XL
 
 **GitHub Issue**: [#10](https://github.com/htiel/LCARS-lovelace-dashboard/issues/10)
 **Spec**: None yet — see design notes below
@@ -451,9 +464,20 @@ Each component scored 0–100 via trapezoidal membership function. Displayed as 
 - All animations respect `prefers-reduced-motion`
 - WCAG 2.2 AA compliance
 
+#### 5x Prep Embedded in This Item
+
+| Prep Item | What | Enables |
+|-----------|------|---------|
+| **4X-13** Entity query utility (`lcars-entity-query.js`) | Extract `_getAreaEntities/_groupEntities` into shared module with `queryEntities(hass, { areaIds?, domains?, deviceClasses? })` | Every 5.x dashboard — cross-area queries become a parameter change, not an architecture change |
+| **4X-15** Panel data model: `entities` collection | Add `entities` (array) and `devices` (plural) properties to `LcarsBasePanel` alongside `group` | 5.x panels receive cross-area entity collections without needing a device |
+| **4X-17** `classifyArea()` function | Area-level panel detection returning `Set<PANEL_TYPE_*>` — determines composite panels (life_support, illumination) per area | 5.x dashboard-level classification — same pattern at broader scope |
+| **4X-18** Domain/device_class filter predicates | `createDomainFilter()`, `createDeviceClassFilter()`, `isLightingEntity()` composable predicates in `lcars-entity-utils.js` | 5.x dashboard entity filters become declarative one-liners |
+| **4X-19** `LcarsBasePanel` frame-mode property | `frame-mode` attribute: `standard` (default), `nested` (header only, no borders), `header-only` (compact) — per Geordi's review | 5.x dashboard layouts embed panels without double-framing |
+| **4X-21** Panel dispatch registry | Replace `_renderDevicePanel()` switch with `Map<panelType, factory>` — factory function pattern per Geordi | 5.x dashboards register panel types without touching orchestrator code |
+
 ---
 
-### 4X-11 · Illumination Control Panel — `TODO` · Priority: MEDIUM · Size: L
+### 4X-11 · Illumination Control Panel — `DONE` · Priority: MEDIUM · Size: L
 
 **GitHub Issue**: [#11](https://github.com/htiel/LCARS-lovelace-dashboard/issues/11)
 **Spec**: None yet
@@ -614,6 +638,333 @@ Scenes render as a horizontal row of LCARS endcap buttons:
 - All animations respect `prefers-reduced-motion`
 - WCAG 2.2 AA compliance
 - No regression on existing generic light/switch rendering for non-panel areas
+
+#### 5x Prep Embedded in This Item
+
+| Prep Item | What | Enables |
+|-----------|------|---------|
+| **4X-18** Domain/device_class filter predicates | `isLightingSwitch()` heuristic + composable filter predicates (shared with 4X-10) | 5.x Lighting dashboard entity filter is a one-liner |
+| **4X-20** `<lcars-summary-badge>` component | Reusable status badge: `3/5 ON`, `1847 W` — `role="status"` + `aria-live="polite"` | 5.x dashboard summary bars composed from badge components |
+
+---
+
+## 5x Prep Items (Standalone)
+
+> These items are independent prep work that doesn't naturally embed into a feature item above.
+> Label: `5x-prep`
+
+### 4X-12 · Floor/Area Hierarchy Utilities — `DONE` · Priority: MEDIUM · Size: S
+
+**GitHub Issue**: [#12](https://github.com/htiel/LCARS-lovelace-dashboard/issues/12)
+**Label**: `5x-prep`
+
+Extract `_getFloorAreaIds()` from `lcars-homepage-card.js` into shared `lcars-hierarchy-utils.js`. New functions: `getFloors(hass)`, `getFloorAreas(hass, floorId)`, `getAreasByFloor(hass)` (returns `Map<floorId, area[]>`).
+
+**Fits into**: 4X-8 (multi-zone awareness reads sibling areas on same floor) but small enough to do standalone.
+
+**Enables**: 5.x Floor → Area → Entity hierarchical layouts in every domain dashboard (5X-2.2 through 5X-2.5).
+
+**Geordi note**: Pure data utility — no render imports. Include floor sort order.
+
+**Acceptance criteria**:
+- `lcars-hierarchy-utils.js` exports `getFloors`, `getFloorAreas`, `getAreasByFloor`
+- Existing `_getFloorAreaIds()` in homepage card becomes thin wrapper
+- No behavioral change to existing area rendering
+
+---
+
+### 4X-13 · Entity Query Utility — `DONE` · Priority: HIGH · Size: M
+
+**GitHub Issue**: [#13](https://github.com/htiel/LCARS-lovelace-dashboard/issues/13)
+**Label**: `5x-prep`
+
+Extract entity resolution from `_getAreaEntities()` / `_groupEntities()` in `lcars-homepage-card.js` into shared `lcars-entity-query.js`. New function: `queryEntities(hass, { areaIds?, floorIds?, domains?, deviceClasses?, excludeCategories? })`.
+
+**Fits into**: 4X-10 (Life Support needs multi-device area query) — implement during 4X-10.
+
+**Enables**: Every 5.x dashboard. Security = `queryEntities(hass, { domains: ['lock','camera','alarm_control_panel'] })`. Cross-area becomes a parameter, not an architecture change (5X-2.0 through 5X-2.5).
+
+**Geordi note**: Cache must be externally injected (no module-level singleton). Multiple dashboard instances in 5.x would collide.
+
+**Acceptance criteria**:
+- `lcars-entity-query.js` exports `queryEntities(hass, opts, cache?)`
+- Existing `_getAreaEntities(areaId)` becomes `queryEntities(hass, { areaIds: [areaId] }, this._entityCache)`
+- Domain and device_class filtering works correctly
+- No behavioral change to existing entity resolution
+
+---
+
+### 4X-14 · Cross-Device Entity Injection (`linkedEntities`) — `DONE` · Priority: MEDIUM · Size: S
+
+**GitHub Issue**: [#14](https://github.com/htiel/LCARS-lovelace-dashboard/issues/14)
+**Label**: `5x-prep`
+
+Add `linkedEntities` property to `LcarsBasePanel` — an array of external entities merged into the panel's working set. Merge happens in computed getter, not `updated()`.
+
+**Fits into**: 4X-9 (WaterGuru cross-device pattern) — implement during 4X-9.
+
+**Enables**: 5.x panels aggregating entities from many devices/areas.
+
+**Geordi note**: Linked entities must carry `_linked: true` provenance flag for optional source indicators. Same visual treatment as native entities — no `aria-hidden`.
+
+**Acceptance criteria**:
+- `LcarsBasePanel.linkedEntities` property merges with panel's own entities
+- Provenance flag `_linked: true` on injected entries
+- Pool panel uses it for WaterGuru entities
+- No effect on panels that don't set `linkedEntities`
+
+---
+
+### 4X-15 · Panel Data Model: `entities` Collection — `DONE` · Priority: HIGH · Size: M
+
+**GitHub Issue**: [#15](https://github.com/htiel/LCARS-lovelace-dashboard/issues/15)
+**Label**: `5x-prep`
+
+Add `entities` (Array) and `devices` (plural) properties to `LcarsBasePanel` alongside existing `group`. When `entities` is set, panel uses that. When `group` is set, works as today. Fallback: if `entities` absent, derive from `group.entities`.
+
+**Fits into**: 4X-10 (Life Support spans multiple devices) — implement during 4X-10.
+
+**Enables**: 5.x panels receive cross-area entity collections (5X-2.2 Security, 5X-2.3 Power, etc.).
+
+**Geordi note**: `group` must remain functional throughout 5.x for backward compatibility. Don't force all 10 existing panels to migrate simultaneously.
+
+**Acceptance criteria**:
+- `LcarsBasePanel` has `entities` and `devices` properties
+- `_getPanelName()` / `_getPanelCode()` have fallbacks when `group.device` absent
+- Existing panels (using `group`) see zero behavioral change
+- Life Support panel uses `entities` / `devices` properties
+
+---
+
+### 4X-16 · `<lcars-segmented-bar>` Shared Component — `DONE` · Priority: MEDIUM · Size: S
+
+**GitHub Issue**: [#16](https://github.com/htiel/LCARS-lovelace-dashboard/issues/16)
+**Label**: `5x-prep`
+
+Horizontal segmented bar component for threshold-colored level indicators. Props: `value`, `min`, `max`, `segments`, `thresholds` (array of `{ value, color }`), `label`.
+
+**Fits into**: 4X-9 (chemistry bars, pump telemetry) — implement during 4X-9.
+
+**Enables**: Reusable across every 5.x dashboard — power load bars, CO₂ levels, signal strength.
+
+**Geordi rules** (mandatory):
+- **NO gradients** — Bracer Jack Rule 1. Solid-color adjacent blocks only
+- `role="meter"` with `aria-valuenow`, `aria-valuemin`, `aria-valuemax`, `aria-label`
+- Text value readout alongside bar (WCAG 1.4.1 Use of Color)
+- End cap: `border-radius: var(--lcars-endcap)` on rightmost segment only
+- Empty segments: `var(--lcars-gray)` at reduced opacity
+- Min touch target height: 24px (WCAG 2.5.8)
+
+**Acceptance criteria**:
+- `<lcars-segmented-bar>` renders threshold-colored segments
+- Chemistry readings in pool panel use the component
+- Pump telemetry bars use the component
+- ARIA meter role with proper attributes
+- No gradients, flat color segments only
+
+---
+
+### 4X-17 · `classifyArea()` Function — `DONE` · Priority: HIGH · Size: M
+
+**GitHub Issue**: [#17](https://github.com/htiel/LCARS-lovelace-dashboard/issues/17)
+**Label**: `5x-prep`
+
+Add `classifyArea(hass, areaId, entityEntries)` to `lcars-entity-utils.js`. Returns `Set<PANEL_TYPE_*>` of area-level composite panel types (e.g., `PANEL_TYPE_LIFE_SUPPORT`, `PANEL_TYPE_ILLUMINATION`). Homepage card checks area-level panels first, claims entities, then classifies remaining per-device.
+
+**Fits into**: 4X-10 and 4X-11 — implement during 4X-10.
+
+**Enables**: 5.x dashboard-level classification at broader scope.
+
+**Risk**: Medium — changes render dispatch path. Entities claimed by area-level panels must not double-render in device panels. Mitigation: area-level panels return consumed entity IDs.
+
+**Acceptance criteria**:
+- `classifyArea()` returns `Set<string>` of panel types
+- New constants: `PANEL_TYPE_LIFE_SUPPORT`, `PANEL_TYPE_ILLUMINATION`
+- `_renderAreaContent()` checks area-level panels before device-level
+- No double-rendering of entities
+- No regression on existing per-device panel rendering
+
+---
+
+### 4X-18 · Domain/Device_Class Filter Predicates — `DONE` · Priority: MEDIUM · Size: S
+
+**GitHub Issue**: [#18](https://github.com/htiel/LCARS-lovelace-dashboard/issues/18)
+**Label**: `5x-prep`
+
+Add composable filter factory functions to `lcars-entity-utils.js`:
+- `createDomainFilter(domains)` — returns predicate `(entry) => domains.has(entry.domain)`
+- `createDeviceClassFilter(classes)` — returns predicate
+- `createCompositeFilter(...predicates)` — OR composition
+- Named predicates: `isLightingEntity()`, `isSecurityEntity()`, `isClimateEntity()`
+
+**Fits into**: 4X-10 (partition entities into climate/environment/ambient) and 4X-11 (`isLightingSwitch()` heuristic).
+
+**Enables**: 5.x dashboard definitions become declarative: `SECURITY_FILTER = createCompositeFilter(createDomainFilter(['lock','camera']), ...)` (5X-2.2 through 5X-2.5).
+
+**Acceptance criteria**:
+- Filter factory functions exported from `lcars-entity-utils.js`
+- Named predicates for lighting, security, climate entity detection
+- Used by 4X-10 and 4X-11 panels
+
+---
+
+### 4X-19 · `LcarsBasePanel` Frame-Mode Property — `DONE` · Priority: HIGH · Size: S
+
+**GitHub Issue**: [#19](https://github.com/htiel/LCARS-lovelace-dashboard/issues/19)
+**Label**: `5x-prep`
+
+Add `frame-mode` attribute to `LcarsBasePanel` with three values:
+- **`standard`** (default): Full `<lcars-panel-frame>` with borders (current behavior)
+- **`nested`**: No outer border, keeps header bar (name + line + code) — preserves panel identity within parent frame
+- **`header-only`**: Header bar only, no borders, no corner brackets — tightly packed layouts
+
+**Fits into**: 4X-10 (climate/environment panels embedded as substations in Life Support) — implement during 4X-10.
+
+**Enables**: 5.x dashboard layouts embedding existing panels without double-framing (5X-2.2 through 5X-2.5).
+
+**Geordi note**: Rename from Wesley's `frameless` to `frame-mode`. The frame IS LCARS visual grammar — preserving semantic structure and header maintains identity. `role="region"` + `aria-label` persist regardless of frame mode.
+
+**Acceptance criteria**:
+- `frame-mode="standard"` behaves identically to current behavior
+- `frame-mode="nested"` suppresses borders, keeps header
+- `frame-mode="header-only"` minimal chrome
+- ARIA roles persist in all modes
+- Life Support panel uses `nested` for child climate/environment panels
+
+---
+
+### 4X-20 · `<lcars-summary-badge>` Shared Component — `DONE` · Priority: MEDIUM · Size: S
+
+**GitHub Issue**: [#20](https://github.com/htiel/LCARS-lovelace-dashboard/issues/20)
+**Label**: `5x-prep`
+
+Reusable badge component. Props: `label`, `value`, `total`, `color`, `icon`. Renders as `3/5 ON` or `1847 W`. Composable in horizontal strip for multi-stat summaries.
+
+**Fits into**: 4X-11 (badge: `3/5 ON`), 4X-10 (LSE score badge), 4X-8 (multi-zone summary strip).
+
+**Enables**: 5.x dashboard summary bars: `"3 DOORS OPEN | 2 CAMERAS ACTIVE | ALL LOCKS SECURED"` (5X-2.2 Security).
+
+**Geordi rules** (mandatory):
+- Font: `var(--lcars-font)`, size `var(--lcars-font-size-data)`
+- Color: inherit from `--panel-frame-color`, overridable via attribute
+- Text: ALL UPPERCASE
+- `role="status"` + `aria-live="polite"` (WCAG 4.1.3 Status Messages)
+- No borders, no background, no shadows — text-only
+
+**Acceptance criteria**:
+- `<lcars-summary-badge>` component with value/total/label rendering
+- Used by Illumination panel badge, Life Support badge
+- ARIA status role with live region
+- ALL CAPS text styling
+
+---
+
+### 4X-21 · Panel Dispatch Registry — `DONE` · Priority: MEDIUM · Size: S
+
+**GitHub Issue**: [#21](https://github.com/htiel/LCARS-lovelace-dashboard/issues/21)
+**Label**: `5x-prep`
+
+Replace `_renderDevicePanel()` switch statement in `lcars-homepage-card.js` with `Map<panelType, factoryFn>`. Each entry returns a lit-html template for the panel. New panels add a map entry, not a switch case.
+
+**Fits into**: 4X-10 and 4X-11 (both add new panel types) — implement during 4X-10.
+
+**Enables**: 5.x dashboards register panel types without editing orchestrator code.
+
+**Geordi note**: Use factory function pattern, not `unsafeStatic` for dynamic tag names. Avoids `lit-html/static.js` dependency and tag injection risk.
+
+**Acceptance criteria**:
+- `PANEL_TAG_REGISTRY` Map replaces switch statement
+- All 10 existing panels dispatched from the map
+- New panels (life_support, illumination) added as map entries
+- No behavioral change to existing panel rendering
+
+---
+
+### 4X-22 · `load_dashboard.py` Parametric Registration — `DONE` · Priority: HIGH · Size: S
+
+**GitHub Issue**: [#22](https://github.com/htiel/LCARS-lovelace-dashboard/issues/22)
+**Label**: `5x-prep`
+
+Refactor `load_dashboard.py` from hardcoded values to `_register_single_dashboard(hass, url, yaml_path, title, icon)`. Existing `load_dashboard()` calls it once with current defaults.
+
+**Enables**: 5X-2.0 Dashboard Registration Framework — a loop calling `_register_single_dashboard()` N times. The 5.x work becomes config + YAML files, not plumbing.
+
+**Acceptance criteria**:
+- `_register_single_dashboard()` extracted as reusable function
+- `load_dashboard()` calls it once with current defaults
+- Dashboard YAML path validated before registration (existing behavior preserved)
+- No behavioral change to current single-dashboard setup
+
+---
+
+### 4X-23 · Config Flow Options Schema Prep — `DONE` · Priority: LOW · Size: S
+
+**GitHub Issue**: [#23](https://github.com/htiel/LCARS-lovelace-dashboard/issues/23)
+**Label**: `5x-prep`
+
+Add `dashboards` key to `config_entry.options` in `config_flow.py` with default `["habitat"]`. Not exposed in UI yet — forward-compatible schema only.
+
+**Enables**: 5X-2.6 Dashboard Config Flow — adding checkboxes in 5.x is a UI change, not a data model change.
+
+**Acceptance criteria**:
+- Schema accepts `dashboards` key with default `["habitat"]`
+- Existing installations see no change (backward-compatible migration)
+- Not exposed in options UI during 4.x
+
+---
+
+### 4X-24 · Dashboard Identity CSS Custom Properties — `DONE` · Priority: LOW · Size: S
+
+**GitHub Issue**: [#24](https://github.com/htiel/LCARS-lovelace-dashboard/issues/24)
+**Label**: `5x-prep`
+
+Add dashboard-level color identity tokens to `lcars-styles.js`:
+
+| Variable | Maps To | Dashboard |
+|----------|---------|-----------|
+| `--lcars-dash-habitat` | `--lcars-butterscotch` | Habitat (home/area) |
+| `--lcars-dash-security` | `--lcars-tomato` | Security |
+| `--lcars-dash-power` | `--lcars-sunflower` | Power |
+| `--lcars-dash-environmental` | `--lcars-ice` | Environmental |
+| `--lcars-dash-lighting` | `--lcars-gold` | Lighting |
+| `--lcars-dash-comm` | `--lcars-african-violet` | Communications |
+| `--lcars-dash-ops` | `--lcars-bluey` | Operations |
+
+**Geordi note**: 2–3 hue families per dashboard. Within Bracer Jack's safe zone. Each dashboard sets `--lcars-active-dash` to its identity color.
+
+**Enables**: 5.x dashboard chrome inherits color identity (5X-2.1 through 5X-3.2).
+
+**Acceptance criteria**:
+- 7 dashboard identity CSS custom properties defined
+- `--lcars-active-dash` alias property
+- No visual change to existing dashboard (defaults to habitat)
+
+---
+
+### 4X-25 · Shared Focus Style Mixin — `DONE` · Priority: LOW · Size: S
+
+**GitHub Issue**: [#25](https://github.com/htiel/LCARS-lovelace-dashboard/issues/25)
+**Label**: `5x-prep`
+
+Extract shared `lcarsSeraphFocus` CSS fragment for consistent `focus-visible` indicators across all components:
+
+```css
+:focus-visible {
+  outline: 2px solid var(--lcars-ice);
+  outline-offset: 2px;
+}
+```
+
+Apply in every Tier 2 and Tier 3 stylesheet. Currently each component implements its own focus rule.
+
+**Geordi note**: Named "seraph" — the focus halo that guides attention. Required for WCAG 2.4.7 + 2.4.13.
+
+**Enables**: Consistent accessibility across all 5.x dashboard components.
+
+**Acceptance criteria**:
+- `lcarsSeraphFocus` exported from shared styles
+- Applied to all new components (segmented-bar, summary-badge)
+- Existing components migrated to use it (can be incremental)
 
 ---
 

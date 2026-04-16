@@ -453,6 +453,170 @@ Each component scored 0–100 via trapezoidal membership function. Displayed as 
 
 ---
 
+### 4X-11 · Illumination Control Panel — `TODO` · Priority: MEDIUM · Size: L
+
+**GitHub Issue**: [#11](https://github.com/htiel/LCARS-lovelace-dashboard/issues/11)
+**Spec**: None yet
+
+A new `<lcars-illumination-panel>` that aggregates all lighting entities (lights, dimmers, switches controlling lights) for an area into a dedicated LCARS control panel. Currently, lights and switches render as generic domain controls (toggle pills with brightness bars) scattered across device groups. This panel gives lighting its own dedicated console — "Computer, lights."
+
+> In-universe: The Illumination Control subsystem manages all interior lighting for a section of the ship, accessible from any LCARS console. Crew can adjust individual fixtures, set scene presets, or dim an entire deck section from one interface.
+
+#### Problem
+
+- Lights and switches are the most common entities but have no dedicated panel
+- They render as small toggle pills mixed in with other device controls
+- No unified view of a room's lighting state
+- No brightness overview at a glance — you can't tell which lights are dim vs full
+- Dimmers show a tiny 3rem brightness bar that's hard to read or interact with
+- No scene support (HA `scene` domain) in the current rendering
+- Light groups (`light.group`) treated identically to individual lights
+
+#### Supported Entity Types
+
+| Domain | Device Class / Type | Panel Feature |
+|--------|-------------------|---------------|
+| `light` | Any (dimmable) | Toggle + brightness slider + optional color temp |
+| `light` | Color (RGB/HS/XY) | Toggle + brightness + color wheel or preset swatches |
+| `light` | Group | Aggregate toggle + brightness for group members |
+| `switch` | (lighting circuits) | Toggle on/off — no dimming |
+| `input_boolean` | (lighting automations) | Toggle on/off |
+| `scene` | (room scenes) | One-tap scene activation buttons |
+
+#### Entity Detection
+
+Lights are straightforward (`domain === 'light'`), but switches that control lighting circuits need heuristic identification. Proposed detection:
+
+```javascript
+function isLightingSwitch(entry) {
+  const eid = entry.entity?.entity_id || '';
+  const name = (entry.state?.attributes?.friendly_name || '').toLowerCase();
+  // Explicit light device_class
+  if (entry.state?.attributes?.device_class === 'outlet') return false;
+  // Name-based heuristics
+  return /light|lamp|sconce|chandelier|pendant|fixture|dimmer|illuminat/i.test(name) ||
+         /light|lamp|sconce|chandelier/i.test(eid);
+}
+```
+
+Scenes associated with an area are included if `scene.*` entities exist in the area, or if their entity_id/name contains the area name.
+
+#### Layout Design
+
+**Primary grid**: Lights displayed as horizontal bars (not tiny pills). Each bar spans the full panel width, showing name + state + brightness level as a fill bar.
+
+```
+╔═══════════════════════════════════════════════════╗
+║ ILLUMINATION CONTROL — MASTER BEDROOM   3/5  ON  ║
+╠═══════════════════════════════════════════════════╣
+║                                                   ║
+║  ● CEILING     ━━━━━━━━━━━━━━━━━━━━━░░░░░  80%  ║
+║  ● BEDSIDE L   ━━━━━━━━━░░░░░░░░░░░░░░░░  35%  ║
+║  ● BEDSIDE R   ━━━━━━━━━░░░░░░░░░░░░░░░░  35%  ║
+║  ○ CLOSET      ━━━░░░░░░░░░░░░░░░░░░░░░░  OFF  ║
+║  ○ BATHROOM    ━━━░░░░░░░░░░░░░░░░░░░░░░  OFF  ║
+║                                                   ║
+║  ─────── SCENES ──────────────────────────────── ║
+║  [ BRIGHT ]  [ RELAX ]  [ MOVIE ]  [ SLEEP ]    ║
+║                                                   ║
+║  ─────── CIRCUITS ────────────────────────────── ║
+║  ● PORCH LIGHT                              ON   ║
+║  ○ ENTRY LIGHT                              OFF  ║
+║                                                   ║
+╚═══════════════════════════════════════════════════╝
+```
+
+**Sections** (rendered in order):
+1. **Dimmable lights** — full-width brightness bars with toggle + slider
+2. **Scenes** — horizontal strip of scene activation buttons (LCARS endcap pills)
+3. **Switch circuits** — simple on/off rows for non-dimmable lighting switches
+
+**Badge**: `3/5 ON` — active count / total count
+
+**Frame color**: `var(--lcars-sunflower)` — warm light, distinguishes from other panels
+
+#### Brightness Bar Design
+
+Each light gets a full-width horizontal bar:
+- Left: status indicator dot (gold=on, gray=off)
+- Center: entity name (shortened via `_friendlyName()`)
+- Right: brightness percentage or OFF
+- Background: fill bar proportional to brightness (0–100%), colored by color temperature if available (warm amber → cool white)
+- Click the bar → toggle light on/off
+- Click the percentage → open brightness slider popover (or inline expand)
+- Long-press / right-click → HA more-info dialog
+
+```css
+.illumination-bar {
+  display: flex;
+  align-items: center;
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+  background: linear-gradient(
+    to right,
+    var(--bar-color, var(--lcars-sunflower)) var(--brightness, 0%),
+    rgba(255,255,255,0.05) var(--brightness, 0%)
+  );
+  cursor: pointer;
+  transition: --brightness 300ms ease;
+}
+```
+
+#### Color Temperature Visualization
+
+For lights with `color_temp` or `color_temp_kelvin`:
+- Bar fill color shifts from warm amber (`--lcars-butterscotch`) at 2000K to cool white (`--lcars-ice`) at 6500K
+- Uses `color-mix()` or a linear gradient mapped to the color temp range
+- No color picker wheel for v1 — just temperature-aware bar coloring
+
+#### Scene Strip
+
+Scenes render as a horizontal row of LCARS endcap buttons:
+- Active scene (if detectable): gold highlight
+- Tap activates the scene via `scene.turn_on`
+- Scene names stripped of area prefix via existing `_friendlyName()`
+- Overflow: horizontal scroll with fade mask (same pattern as power panel truncation)
+
+#### Graceful Degradation
+
+| Room Contents | Layout |
+|--------------|--------|
+| 3+ dimmable lights + scenes | Full panel: brightness bars + scene strip |
+| 1–2 dimmable lights, no scenes | Compact panel: brightness bars only |
+| Switches only, no dimmable lights | Switch list with simple toggles |
+| Single light | Minimal: one bar, no dividers |
+
+#### Dependencies
+
+- Panel Extraction Architecture — extends `LcarsBasePanel`
+- `lcars-entity-utils.js` — needs new `PANEL_TYPE_ILLUMINATION` constant and detector
+- `lcars-homepage-card.js` — needs dispatch case in `_renderDevicePanel()`
+- Detection challenge: lights are per-device, but this panel is per-area (similar to 4X-10 Life Support). May need area-level aggregation or a simpler "largest light group in area" heuristic
+
+#### Open Questions
+
+1. **Area-level vs device-level**: Should this aggregate ALL lights in an area (like Life Support), or render per light-group device? Area-level is more useful but requires the same aggregation pattern as 4X-10.
+2. **Color light support**: Full RGB color picker is complex. Defer to v2? Just show current color as the bar tint for v1?
+3. **Adaptive Lighting / Circadian integration**: Some users run Adaptive Lighting. Should the panel show the current adaptive state?
+4. **Light groups vs individual**: When a `light.group` exists alongside its member lights, show both or deduplicate?
+
+#### Acceptance Criteria
+
+- All `light` domain entities in an area rendered with brightness bars
+- Dimmable lights show interactive brightness level (click to toggle, slider to adjust)
+- Non-dimmable switches shown as simple on/off rows
+- Scenes (if present) rendered as activation button strip
+- Badge shows active/total light count
+- Color temperature reflected in bar fill color when available
+- Frame color: sunflower (warm light aesthetic)
+- Keyboard accessible (tab to bars, Enter to toggle, arrow keys for brightness)
+- All animations respect `prefers-reduced-motion`
+- WCAG 2.2 AA compliance
+- No regression on existing generic light/switch rendering for non-panel areas
+
+---
+
 ## Wesley's Enhancement Ideas (Unscheduled)
 
 Carried forward from 4.x archive. Creative enhancement ideas — not committed to a version.

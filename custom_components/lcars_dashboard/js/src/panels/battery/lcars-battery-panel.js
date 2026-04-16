@@ -44,6 +44,50 @@ class LcarsBatteryPanel extends LcarsBasePanel {
     return null;
   }
 
+  /* ─── Detect if this is a NUT UPS device ─── */
+
+  _isNutDevice(entries) {
+    let hasBattery = false;
+    let hasPowerClass = false;
+    let hasNutSignal = false;
+    for (const e of entries) {
+      const attrs = e.state?.attributes || {};
+      const dc = attrs.device_class || '';
+      const unit = attrs.unit_of_measurement || '';
+      if (dc === 'battery' && unit === '%') hasBattery = true;
+      if (dc === 'power' && unit === 'W') hasPowerClass = true;
+      const eid = e.entity?.entity_id || '';
+      if (/ups[._]load|ups[._]status/i.test(eid)) hasNutSignal = true;
+      if (dc === 'voltage' && unit === 'V') hasNutSignal = true;
+    }
+    return hasBattery && !hasPowerClass && hasNutSignal;
+  }
+
+  /* ─── Parse NUT status codes ─── */
+
+  _parseNutStatus(statusStr) {
+    const s = (statusStr || '').toUpperCase();
+    return {
+      online: s.includes('OL'),
+      onBattery: s.includes('OB'),
+      charging: s.includes('CHRG'),
+      lowBattery: s.includes('LB'),
+      shutdown: s.includes('FSD'),
+      off: s === 'OFF',
+    };
+  }
+
+  /* ─── Format NUT runtime (seconds → Xh Ym) ─── */
+
+  _formatNutRuntime(seconds) {
+    const s = parseInt(seconds, 10);
+    if (isNaN(s) || s < 0) return 'N/A';
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  }
+
   /* ─── Partition battery entities ─── */
 
   _partitionBatteryEntities(entries, categoryEntities) {
@@ -54,6 +98,14 @@ class LcarsBatteryPanel extends LcarsBasePanel {
     const controls = [];
     const configControls = [];
     const diagnostics = [];
+    const isNut = this._isNutDevice(entries);
+
+    // NUT-specific entity collectors
+    let nutLoadEntry = null;
+    let nutStatusEntry = null;
+    let nutStatusDataEntry = null;
+    let nutNominalPower = null;
+    let nutRuntimeEntry = null;
 
     for (const entry of entries) {
       const attrs = entry.state?.attributes || {};
@@ -61,6 +113,7 @@ class LcarsBatteryPanel extends LcarsBasePanel {
       const unit = attrs.unit_of_measurement || '';
       const domain = entry.domain;
       const name = attrs.friendly_name || entry.entity.entity_id;
+      const eid = entry.entity?.entity_id || '';
 
       if (['switch', 'number', 'button', 'select'].includes(domain)) {
         controls.push(entry);
@@ -70,6 +123,39 @@ class LcarsBatteryPanel extends LcarsBasePanel {
         soc.push(entry);
         continue;
       }
+
+      if (isNut) {
+        // Capture NUT-specific entities
+        if (/ups[._]load$/i.test(eid) || /\bload\b/i.test(name) && unit === '%') {
+          nutLoadEntry = entry;
+          continue;
+        }
+        if (/ups[._]status_data$/i.test(eid) || /status\s*data/i.test(name)) {
+          nutStatusDataEntry = entry;
+          continue;
+        }
+        if (/ups[._]status$/i.test(eid) && !/status_data/i.test(eid)) {
+          nutStatusEntry = entry;
+          continue;
+        }
+        if (/nominal.*real.*power|realpower.*nominal/i.test(name)) {
+          nutNominalPower = parseFloat(entry.state?.state) || null;
+          telemetry.push(entry);
+          continue;
+        }
+        if (dc === 'duration' || /battery.*runtime/i.test(eid)) {
+          nutRuntimeEntry = entry;
+          telemetry.push(entry);
+          continue;
+        }
+        if (dc === 'voltage' && unit === 'V') {
+          telemetry.push(entry);
+          continue;
+        }
+        telemetry.push(entry);
+        continue;
+      }
+
       if (dc === 'power' && unit === 'W') {
         const cls = this._classifyPowerEntity(name);
         if (cls) {
@@ -81,6 +167,35 @@ class LcarsBatteryPanel extends LcarsBasePanel {
         continue;
       }
       telemetry.push(entry);
+    }
+
+    // For NUT devices, synthesize power flow from status + load
+    if (isNut) {
+      const statusRaw = nutStatusDataEntry?.state?.state || '';
+      const nutStatus = this._parseNutStatus(statusRaw);
+      const loadPct = nutLoadEntry ? parseFloat(nutLoadEntry.state?.state) || 0 : 0;
+      const computedWatts = nutNominalPower ? Math.round(loadPct * nutNominalPower / 100) : null;
+
+      // Synthesize a total-out power entry from load
+      if (nutLoadEntry) {
+        const label = computedWatts != null ? `${computedWatts}W (${loadPct}%)` : `${loadPct}%`;
+        powerOut.push({
+          ...nutLoadEntry,
+          ioType: 'total',
+          _nutSynthetic: true,
+          _nutDisplayValue: label,
+          _nutWatts: computedWatts || loadPct,
+        });
+      }
+
+      // Store parsed status for render
+      this._nutStatus = nutStatus;
+      this._nutStatusEntry = nutStatusEntry;
+      this._nutRuntimeEntry = nutRuntimeEntry;
+      this._nutLoadEntry = nutLoadEntry;
+      this._nutComputedWatts = computedWatts;
+    } else {
+      this._nutStatus = null;
     }
 
     if (categoryEntities) {
@@ -142,10 +257,19 @@ class LcarsBatteryPanel extends LcarsBasePanel {
     const totalIn = powerIn.find(e => e.ioType === 'total');
     const totalOut = powerOut.find(e => e.ioType === 'total');
     const totalInW = totalIn ? parseFloat(totalIn.state.state) || 0 : 0;
-    const totalOutW = totalOut ? parseFloat(totalOut.state.state) || 0 : 0;
-    const isCharging = totalInW > 5;
-    const isDischarging = totalOutW > 5;
-    const isIdle = !isCharging && !isDischarging;
+    const totalOutW = totalOut && !totalOut._nutSynthetic ? parseFloat(totalOut.state.state) || 0 : 0;
+
+    // NUT UPS: derive charge state from NUT status codes
+    let isCharging, isDischarging, isIdle;
+    if (this._nutStatus) {
+      isCharging = this._nutStatus.charging;
+      isDischarging = this._nutStatus.onBattery;
+      isIdle = !isCharging && !isDischarging;
+    } else {
+      isCharging = totalInW > 5;
+      isDischarging = totalOutW > 5;
+      isIdle = !isCharging && !isDischarging;
+    }
 
     const ioTypes = new Set();
     powerIn.filter(e => e.ioType !== 'total').forEach(e => ioTypes.add(e.ioType));
@@ -160,8 +284,8 @@ class LcarsBatteryPanel extends LcarsBasePanel {
     const keyTelemetry = telemetry.filter(e => {
       const dc = e.state?.attributes?.device_class || '';
       const name = (e.state?.attributes?.friendly_name || '').toLowerCase();
-      return dc === 'temperature' || dc === 'duration' ||
-        /state.*health|cycles|remain.*time|status|error.*code|battery.*count/.test(name);
+      return dc === 'temperature' || dc === 'duration' || dc === 'voltage' ||
+        /state.*health|cycles|remain.*time|status|error.*code|battery.*count|runtime|load/.test(name);
     }).slice(0, 8);
 
     const keyDiagnostics = diagnostics.filter(e => {
@@ -174,7 +298,34 @@ class LcarsBatteryPanel extends LcarsBasePanel {
       <div class="battery-content">
         <!-- Telemetry (left) -->
         <div class="battery-telemetry" role="list" aria-label="${deviceName} telemetry">
-          ${totalIn ? html`
+          ${this._nutStatus && this._nutStatusEntry ? html`
+            <div class="battery-total-line" tabindex="0" role="button"
+              @click=${() => this._handleEntityClick(this._nutStatusEntry.entity.entity_id)}
+              @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(this._nutStatusEntry.entity.entity_id); } }}>
+              <ha-icon icon="mdi:${this._nutStatus.onBattery ? 'battery-alert' : 'power-plug'}" style="--mdc-icon-size:14px;color:${this._nutStatus.onBattery ? 'var(--lcars-butterscotch)' : 'var(--lcars-ice)'}"></ha-icon>
+              <span class="sensor-label">Status</span>
+              <span class="sensor-state-value" style="color:${this._nutStatus.onBattery ? 'var(--lcars-butterscotch)' : 'var(--lcars-ice)'}">${this._nutStatusEntry.state.state}</span>
+            </div>
+          ` : ''}
+          ${this._nutStatus && this._nutLoadEntry ? html`
+            <div class="battery-total-line" tabindex="0" role="button"
+              @click=${() => this._handleEntityClick(this._nutLoadEntry.entity.entity_id)}
+              @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(this._nutLoadEntry.entity.entity_id); } }}>
+              <ha-icon icon="mdi:gauge" style="--mdc-icon-size:14px;color:var(--lcars-butterscotch)"></ha-icon>
+              <span class="sensor-label">Load</span>
+              <span class="sensor-state-value" style="color:var(--lcars-butterscotch)">${totalOut?._nutDisplayValue || this._nutLoadEntry.state.state + '%'}</span>
+            </div>
+          ` : ''}
+          ${this._nutStatus && this._nutRuntimeEntry ? html`
+            <div class="battery-total-line" tabindex="0" role="button"
+              @click=${() => this._handleEntityClick(this._nutRuntimeEntry.entity.entity_id)}
+              @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(this._nutRuntimeEntry.entity.entity_id); } }}>
+              <ha-icon icon="mdi:timer-outline" style="--mdc-icon-size:14px;color:var(--lcars-sky)"></ha-icon>
+              <span class="sensor-label">Runtime</span>
+              <span class="sensor-state-value" style="color:var(--lcars-sky)">${this._formatNutRuntime(this._nutRuntimeEntry.state.state)}</span>
+            </div>
+          ` : ''}
+          ${!this._nutStatus && totalIn ? html`
             <div class="battery-total-line" tabindex="0" role="button"
               @click=${() => this._handleEntityClick(totalIn.entity.entity_id)}
               @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(totalIn.entity.entity_id); } }}>
@@ -183,7 +334,7 @@ class LcarsBatteryPanel extends LcarsBasePanel {
               <span class="sensor-state-value" style="color:var(--lcars-ice)">${totalIn.state.state} W</span>
             </div>
           ` : ''}
-          ${totalOut ? html`
+          ${!this._nutStatus && totalOut ? html`
             <div class="battery-total-line" tabindex="0" role="button"
               @click=${() => this._handleEntityClick(totalOut.entity.entity_id)}
               @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(totalOut.entity.entity_id); } }}>
@@ -377,6 +528,21 @@ class LcarsBatteryPanel extends LcarsBasePanel {
 
         <!-- Power I/O Flow (bottom) -->
         <div class="battery-io-flow" aria-label="Power flow">
+          ${this._nutStatus ? html`
+            <div class="io-pair-row">
+              <div class="io-port io-in" aria-label="Grid input: ${this._nutStatus.online ? 'online' : 'offline'}">
+                <span class="io-label">GRID</span>
+                <span class="io-watts" style="color:${this._nutStatus.online ? 'var(--lcars-ice)' : 'var(--lcars-tomato)'}">${this._nutStatus.online ? 'ONLINE' : 'OFFLINE'}</span>
+              </div>
+              <div class="io-conduit io-conduit-in ${this._nutStatus.online ? 'flow-medium' : 'flow-stopped'}"></div>
+              <div class="io-core-gap"></div>
+              <div class="io-conduit io-conduit-out ${this._nutLoadEntry && parseFloat(this._nutLoadEntry.state?.state) > 0 ? 'flow-medium' : 'flow-stopped'}"></div>
+              <div class="io-port io-out" aria-label="Load output: ${this._nutComputedWatts ? this._nutComputedWatts + ' watts' : (this._nutLoadEntry?.state?.state || '0') + ' percent'}">
+                <span class="io-label">LOAD</span>
+                <span class="io-watts" style="color:var(--lcars-butterscotch)">${totalOut?._nutDisplayValue || '—'}</span>
+              </div>
+            </div>
+          ` : html`
           ${ioPairs.map(pair => {
             const inW = pair.inEntry ? parseFloat(pair.inEntry.state.state) || 0 : 0;
             const outW = pair.outEntry ? parseFloat(pair.outEntry.state.state) || 0 : 0;
@@ -398,6 +564,7 @@ class LcarsBatteryPanel extends LcarsBasePanel {
               </div>
             `;
           })}
+          `}
         </div>
       </div>
     `;

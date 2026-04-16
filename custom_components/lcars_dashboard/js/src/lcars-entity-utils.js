@@ -141,10 +141,11 @@ const DETECTORS = [
   (entries) => entries.some(e => WEATHER_DOMAINS.has(e.domain))
     ? PANEL_TYPE_WEATHER : null,
 
-  // Battery: battery sensor + ≥2 power sensors (lowest specificity)
+  // Battery: battery sensor + (≥2 power sensors OR NUT UPS pattern)
   (entries) => {
     let hasBattery = false;
     let powerCount = 0;
+    let hasNutSignal = false;
     for (const e of entries) {
       const attrs = e.state?.attributes;
       if (!attrs) continue;
@@ -152,8 +153,14 @@ const DETECTORS = [
       const unit = attrs.unit_of_measurement || '';
       if (dc === 'battery' && unit === '%') hasBattery = true;
       if (dc === 'power' && unit === 'W') powerCount++;
+      // NUT UPS: has voltage sensors + load sensor but no power-class entities
+      if (dc === 'voltage' && unit === 'V') hasNutSignal = true;
+      const eid = e.entity?.entity_id || '';
+      if (/ups[._]load|ups[._]status/i.test(eid)) hasNutSignal = true;
     }
-    return (hasBattery && powerCount >= 2) ? PANEL_TYPE_BATTERY : null;
+    if (hasBattery && powerCount >= 2) return PANEL_TYPE_BATTERY;
+    if (hasBattery && hasNutSignal) return PANEL_TYPE_BATTERY;
+    return null;
   },
 
   // Power monitoring: ≥1 power/energy/voltage/current sensor, NO battery (4X-3)

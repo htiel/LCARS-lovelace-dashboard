@@ -1,6 +1,21 @@
 # Changelog
 
 All notable changes to the LCARS Dashboard project are documented here.
+## [4.17.2] — 2026-04-15
+
+### Added — NUT UPS Battery Panel Support (4X-7)
+
+NUT-monitored UPS devices (CyberPower, APC, Tripp Lite, Eaton, etc.) are now auto-detected and rendered in the warp core battery panel.
+
+- **Detection**: Battery detector recognizes NUT devices (battery sensor + voltage/load/status entities, no power-class entities). Runs alongside existing EcoFlow/Victron/Tesla detection with no regression
+- **Entity partitioning**: NUT-specific classification captures load %, input/output voltage, battery runtime, and status codes. Computes watts from `load% × nominal_real_power` when the nominal power entity is enabled
+- **NUT status parsing**: Decodes NUT status codes (`OL`=online, `OB`=on battery, `CHRG`=charging, `LB`=low battery, `FSD`=forced shutdown) to drive warp core charge/discharge animations
+- **Power flow**: Grid→UPS→Load conduit flow replaces per-port I/O pairs. Grid side shows ONLINE/OFFLINE state, load side shows computed watts or load percentage
+- **Telemetry**: Battery runtime formatted as `Xh Ym`, input/output voltage displayed, status badge with human-readable state
+- **No visual changes**: Uses existing warp core visualization, SOC gauge, conduit animations, and telemetry layout
+
+**Closes**: [#7](https://github.com/htiel/LCARS-lovelace-dashboard/issues/7)
+
 ## [4.17.0] — 2026-04-15
 
 ### Added — Panel Extraction Architecture (4X-4)

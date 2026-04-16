@@ -29,6 +29,8 @@ export const PANEL_TYPE_ILLUMINATION  = 'illumination';
 // ─── Panel Render Priority (lower = rendered first in layout) ───────────────
 
 export const PANEL_TYPE_ORDER = {
+  [PANEL_TYPE_ILLUMINATION]: -2,
+  [PANEL_TYPE_LIFE_SUPPORT]: -1,
   [PANEL_TYPE_CAMERA]:      0,
   [PANEL_TYPE_ALARM]:       1,
   [PANEL_TYPE_AQUATICS]:    2,
@@ -78,17 +80,35 @@ function hasPoolPresets(attrs) {
 
 // ─── Irrigation Detection ───────────────────────────────────────────────────
 
+// Known irrigation integration platforms
+const IRRIGATION_PLATFORMS = new Set([
+  'rachio', 'rainbird', 'rainmachine', 'opensprinkler', 'hydrawise', 'hunter',
+]);
+
 function isIrrigationDevice(entries) {
+  // Platform/integration check — most reliable for known controllers
+  if (entries.some(e => IRRIGATION_PLATFORMS.has(e.entity?.platform))) return true;
+
   let zoneCount = 0;
+  let hasRainSensor = false;
+  let switchCount = 0;
   for (const e of entries) {
+    if (e.domain === 'binary_sensor') {
+      const eid = e.entity?.entity_id || '';
+      if (/rain/i.test(eid)) hasRainSensor = true;
+    }
     if (e.domain !== 'switch') continue;
+    switchCount++;
     const attrs = e.state?.attributes;
     // Rachio zones have zone_number attribute
     if (attrs?.zone_number != null) { zoneCount++; continue; }
     // Fallback: device_class outlet + entity_id contains 'zone'
     if (attrs?.device_class === 'outlet' && /zone/i.test(e.entity.entity_id)) zoneCount++;
   }
-  return zoneCount >= 2;
+  if (zoneCount >= 2) return true;
+  // Heuristic: many switches + rain sensor → irrigation controller
+  if (switchCount >= 5 && hasRainSensor) return true;
+  return false;
 }
 
 // ─── Detector Registry ──────────────────────────────────────────────────────

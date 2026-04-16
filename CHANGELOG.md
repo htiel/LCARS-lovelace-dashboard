@@ -2,6 +2,15 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.18.1] — 2026-04-16
+
+### Fixed — Bugfixes
+
+- **Illumination panel render order** — Area-level panels (illumination, life support) now sort first in the panel column (`PANEL_TYPE_ORDER` priority -2 and -1). All panels (device + area) merged into a single sorted list.
+- **Duplicate standalone entities** — Entities consumed by area-level panels (lights for illumination, climate/environment/ambient for life support) are now filtered out of standalone device groups. Empty groups are pruned.
+- **Rachio irrigation detection** — `isIrrigationDevice()` broadened with platform-based detection for known irrigation integrations (Rachio, RainBird, RainMachine, OpenSprinkler, Hydrawise, Hunter) plus heuristic fallback (≥5 switches + rain sensor).
+- **Climate/environment device panels subsumed** — When life support panel is active, individual climate and environment device panels are suppressed to avoid redundancy.
+
 ## [4.18.0] — 2026-04-16
 
 ### Added — Life Support Panel (4X-10)

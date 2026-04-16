@@ -1,7 +1,7 @@
 # LCARS Dashboard — 4.x Backlog
 
 > Stable branch (`4.0`). Non-breaking feature additions, bug fixes, and optimizations.
-> Version: 4.17.1 (current)
+> Version: 4.17.2 (current)
 
 ---
 
@@ -18,7 +18,7 @@
 
 ## Backlog
 
-### 4X-7 · NUT (Network UPS Tools) Battery Panel Support — `TODO` · Priority: HIGH · Size: M
+### 4X-7 · NUT (Network UPS Tools) Battery Panel Support — `DONE` · v4.17.2 · Priority: HIGH · Size: M
 
 **GitHub Issue**: [#7](https://github.com/htiel/LCARS-lovelace-dashboard/issues/7)
 **Spec**: None yet

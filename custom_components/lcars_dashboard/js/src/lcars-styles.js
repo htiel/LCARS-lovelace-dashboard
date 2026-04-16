@@ -26,6 +26,9 @@ export const lcarsColors = css`
   --lcars-violet-creme: #ddbbff;
   --lcars-black: #000000;
 
+  /* ─── Alpha Variants ─── */
+  --lcars-gray-alpha: rgba(102, 102, 136, 0.15);
+
   /* ─── Semantic Role Tokens ─── */
   --lcars-bg: var(--lcars-black);
   --lcars-text: var(--lcars-space-white);
@@ -59,8 +62,10 @@ export const lcarsColors = css`
   /* ─── Typography ─── */
   --lcars-font: 'Antonio', 'Helvetica Neue', Arial, sans-serif;
   --lcars-font-size-title: 2rem;
+  --lcars-font-size-hero: 3.5rem;
   --lcars-font-size-sub: 1.25rem;
   --lcars-font-size-data: 0.875rem;
+  --lcars-font-size-label: 0.75rem;
 
   /* ─── Animation ─── */
   --lcars-transition: 200ms ease-out;
@@ -75,6 +80,16 @@ export const lcarsColors = css`
   --lcars-anim-ambient: 8s;
   --lcars-anim-scan: 600ms;
   --lcars-anim-stagger: 50ms;
+
+  /* ─── Dashboard Identity Colors (5x-prep: 4X-24) ─── */
+  --lcars-dash-habitat: var(--lcars-butterscotch);
+  --lcars-dash-security: var(--lcars-tomato);
+  --lcars-dash-power: var(--lcars-golden-orange);
+  --lcars-dash-environmental: var(--lcars-ice);
+  --lcars-dash-lighting: var(--lcars-almond);
+  --lcars-dash-comm: var(--lcars-african-violet);
+  --lcars-dash-ops: var(--lcars-bluey);
+  --lcars-active-dash: var(--lcars-dash-habitat);
 `;
 
 export const lcarsBaseStyles = css`
@@ -192,5 +207,18 @@ export const lcarsBaseStyles = css`
       transition-duration: 0.01ms !important;
       animation-duration: 0.01ms !important;
     }
+  }
+`;
+
+/**
+ * Shared focus indicator style — consistent :focus-visible ring across all components.
+ * Apply via `static get styles() { return [lcarsFocusRing, ...]; }` or spread into host styles.
+ * Ice (#99ccff) on black (#000) = ~8.5:1 contrast — meets WCAG 2.4.13 AAA.
+ * (5x-prep: 4X-25)
+ */
+export const lcarsFocusRing = css`
+  :focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
   }
 `;

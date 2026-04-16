@@ -1,6 +1,167 @@
 # Changelog
 
 All notable changes to the LCARS Dashboard project are documented here.
+
+## [4.18.0] — 2026-04-16
+
+### Added — Life Support Panel (4X-10)
+
+New `<lcars-lifesupport-panel>` — area-level composite panel that aggregates climate, environment (air quality), and ambient sensor entities into a unified Life Support view.
+
+- **Four graceful degradation configurations**: Full (thermostat + purifier + sensors), Atmos-only (purifier + sensors), Climate-only (thermostat + sensors), Sensors-only (standalone temp/humidity as sensor hero layout)
+- **Nested panel composition**: Reuses existing `<lcars-climate-panel>` and `<lcars-environment-panel>` as substations via `frame-mode="nested"` — zero code duplication
+- **Ambient sensor row**: Full-width row showing room-level readings from standalone sensors (SwitchBot meters, etc.) with LCARS mini-bar indicators
+- **Adaptive sparkline tray**: 24-hour trend sparklines for temperature, humidity, AQI, PM2.5, CO₂, VOC — adapts to available data
+- **Sensor hero mode**: Large centered temperature display for sensor-only rooms, colored by comfort zone
+- **WCAG 2.2 AA**: Inherits accessibility from child panels, `role="status"` on sensor hero, `aria-label` on all readings, `prefers-reduced-motion` gates
+
+**Closes**: [#10](https://github.com/htiel/LCARS-lovelace-dashboard/issues/10)
+
+### Added — Illumination Control Panel (4X-11)
+
+New `<lcars-illumination-panel>` — area-level lighting control panel that aggregates all light entities, lighting switches, and scenes.
+
+- **Full-width brightness bars**: Each light rendered as interactive bar with status indicator, name, and brightness percentage. Fill bar proportional to brightness level
+- **Color temperature awareness**: Bar fill color shifts between warm amber (2000K) and cool white (6500K) based on `color_temp_kelvin`
+- **Scene strip**: Horizontal row of LCARS endcap buttons for scene activation via `scene.turn_on`
+- **Circuit rows**: Simple on/off rows for non-dimmable lighting switches identified by `isLightingEntity()` heuristic
+- **Inline brightness slider**: Click percentage to expand brightness slider with full keyboard navigation (arrow keys ±5%)
+- **Badge**: `<lcars-summary-badge>` showing `3/5 ON` active/total count
+- **WCAG 2.2 AA**: `role="list"` sections, `role="button"` with `aria-expanded` on brightness toggle, keyboard toggle (Enter/Space), `aria-label` on all controls, `prefers-reduced-motion` gates
+
+**Closes**: [#11](https://github.com/htiel/LCARS-lovelace-dashboard/issues/11)
+
+### Added — `<lcars-summary-badge>` Shared Component (4X-20)
+
+Reusable badge component for panel header status readouts.
+
+- **Props**: `label`, `value`, `total`, `color`, `icon` — renders as `3/5 ON` or `1847 W`
+- **Composable**: Designed for horizontal strip composition in multi-stat summaries
+- **WCAG**: `role="status"` (WCAG 4.1.3 Status Messages)
+- **Style**: Text-only, no borders/background/shadows, ALL CAPS, Antonio font
+
+**Closes**: [#20](https://github.com/htiel/LCARS-lovelace-dashboard/issues/20)
+
+### Added — Entity Query Utility (4X-13)
+
+New `lcars-entity-query.js` — shared entity resolution module extracted from homepage card.
+
+- **`queryEntities(hass, opts, cache?)`**: Multi-criteria entity query with area, floor, domain, device class, and custom predicate filtering
+- **`getAreaEntities(hass, areaId, cache?)`**: Drop-in replacement for the original `_getAreaEntities()` with identical behavior
+- **`groupEntities(hass, entities)`**: Drop-in replacement for `_groupEntities()` — device grouping with domain-priority sorting
+- **External cache injection**: Per Geordi's requirement — no module-level singleton, multiple dashboard instances in 5.x won't collide
+- Homepage card refactored to thin wrappers over shared functions
+
+**Closes**: [#13](https://github.com/htiel/LCARS-lovelace-dashboard/issues/13)
+
+### Added — Panel Dispatch Registry (4X-21)
+
+Replaced the `_renderDevicePanel()` switch statement with a `PANEL_TAG_REGISTRY` Map.
+
+- **Factory function pattern**: Each panel type maps to a `(group, hass, editMode, config) => html\`...\`` factory per Geordi's review (no `unsafeStatic`, no dynamic tag injection)
+- **12 panel types registered**: All 10 existing panels + `life_support` + `illumination`
+- **Irrigation exception**: Retains custom render path for complex irrigation logic
+- **Extensible**: New panels add a Map entry — no switch case editing required
+
+**Closes**: [#21](https://github.com/htiel/LCARS-lovelace-dashboard/issues/21)
+
+### Added — `classifyArea()` Function (4X-17)
+
+New area-level entity classification in `lcars-entity-utils.js`.
+
+- **`classifyArea(hass, areaId, entityEntries)`**: Returns `Set<PANEL_TYPE_*>` of composite panel types
+- **New constants**: `PANEL_TYPE_LIFE_SUPPORT`, `PANEL_TYPE_ILLUMINATION`
+- **Life Support detection**: Triggers on climate entity OR (environment entity AND ambient sensors)
+- **Illumination detection**: Triggers on ≥2 lighting entities in the area
+
+**Closes**: [#17](https://github.com/htiel/LCARS-lovelace-dashboard/issues/17)
+
+### Added — Domain/Device_Class Filter Predicates (4X-18)
+
+Composable filter factory functions added to `lcars-entity-utils.js`.
+
+- **Factories**: `createDomainFilter(domains)`, `createDeviceClassFilter(classes)`, `createCompositeFilter(...predicates)`
+- **Named predicates**: `isClimateEntity()`, `isEnvironmentEntity()`, `isLightingEntity()`, `isSecurityEntity()`, `isAmbientSensor()`
+- **`isLightingEntity()` heuristic**: Identifies switches controlling lights by friendly name/entity_id pattern matching, excludes outlet device_class
+
+**Closes**: [#18](https://github.com/htiel/LCARS-lovelace-dashboard/issues/18)
+
+### Added — Panel Data Model: `entities` Collection (4X-15)
+
+Extended `LcarsBasePanel` with `entities` and `devices` (plural) properties.
+
+- **`entities` property**: Direct entity collection for cross-device panels — bypasses single-device `group` model
+- **`devices` property**: Plural device list for composite panels spanning multiple devices
+- **Fallback chain**: `_getAllEntities()` prefers `this.entities` → `this.group.entities` — backward compatible
+- **Identity fallbacks**: `_getPanelName()` and `_getPanelCode()` fall back through `group.device` → `devices[0]` → area name → defaults
+
+**Closes**: [#15](https://github.com/htiel/LCARS-lovelace-dashboard/issues/15)
+
+### Added — `LcarsBasePanel` Frame-Mode Property (4X-19)
+
+New `frame-mode` attribute for controlling panel chrome level.
+
+- **`standard`** (default): Full `<lcars-panel-frame>` with borders — current behavior
+- **`nested`**: Suppresses borders, keeps header bar — for embedding in parent panels
+- **`header-only`**: Minimal chrome for tightly packed layouts
+- **ARIA preserved**: `role="region"` + `aria-label` persist regardless of frame mode
+
+**Closes**: [#19](https://github.com/htiel/LCARS-lovelace-dashboard/issues/19)
+
+### Added — 5x Prep: Infrastructure & Shared Utilities
+
+Foundational utilities and tokens extracted ahead of the 5.x multi-dashboard architecture.
+
+- **Floor/area hierarchy utilities (4X-12)**: `lcars-hierarchy-utils.js` — `getFloorAreas()` for hierarchical navigation. **Closes**: [#12](https://github.com/htiel/LCARS-lovelace-dashboard/issues/12)
+- **`load_dashboard.py` parametric registration (4X-22)**: Dashboard slug/title/icon configurable via `const.py` — enables multi-dashboard registration in 5.x. **Closes**: [#22](https://github.com/htiel/LCARS-lovelace-dashboard/issues/22)
+- **Config flow options schema prep (4X-23)**: `_build_options_schema()` helper for dynamic options based on installed version. **Closes**: [#23](https://github.com/htiel/LCARS-lovelace-dashboard/issues/23)
+- **Dashboard identity CSS custom properties (4X-24)**: 7 `--lcars-dash-*` color tokens + `--lcars-active-dash` for themed multi-dashboard layouts. **Closes**: [#24](https://github.com/htiel/LCARS-lovelace-dashboard/issues/24)
+- **Shared focus style mixin (4X-25)**: `lcarsFocusRing` CSS fragment — consistent `:focus-visible` outline across all components. **Closes**: [#25](https://github.com/htiel/LCARS-lovelace-dashboard/issues/25)
+
+### Fixed — Team Review (Data, Geordi La Forge, Worf)
+
+Comprehensive line-by-line review across all v4.18.0 features. 37 findings fixed (8 critical, 4 high, 13 medium, 12 low).
+
+#### Critical
+- **`classifyArea()` wired into dispatch** — Area-level composite panels (life support, illumination) were imported but never instantiated; `_renderAreaContent()` now calls `classifyArea()` and dispatches via `PANEL_TAG_REGISTRY`
+- **`showMoreInfo()` signature** — Illumination panel passed `(this, eid)` instead of `(eid)`; context menu now works correctly
+- **Sparkline lifecycle** — Life support sparklines fired `fetchSparklineData()` in `connectedCallback()` before `hass` was set; moved to `updated()` with guard
+- **Registry `areaId` propagation** — `PANEL_TAG_REGISTRY` referenced `group.areaId` but device groups lacked the property; area-level dispatch now builds synthetic groups with `areaId`
+- **WCAG keyboard access** — `tabindex: 0` was in CSS (invalid); moved to HTML attributes on light bars and circuit rows
+- **`role="listitem"` on `<button>`** — Overrode implicit button role; scene buttons now wrapped in `<div role="listitem">`
+- **`role="slider"` on toggle** — Brightness value span used `role="slider"` but functioned as a disclosure toggle; changed to `role="button"` with `aria-expanded`
+- **Slider thumb size** — 20px below WCAG 2.5.8 minimum; increased to 24px (1.5rem)
+
+#### High — Palette Compliance
+- **20+ hex fallback corrections** — All `#f1df6f` → `#ffcc99` (sunflower), `#7c8992` → `#666688` (gray), `#ff9900` → `#f5f6fa` (text), `#f1df6f` → `#ff9966` (butterscotch)
+
+#### Medium
+- **Unthrottled brightness slider** — Debounced at 300ms via `createDebouncer()`
+- **Entity validation bypass** — Illumination panel now uses `_callService()` from base class (entity ID regex validation)
+- **`_buildCacheKey()` array mutation** — Spread-copies before `.sort()` to avoid mutating caller arrays
+- **`excludeCategories` param** — Was documented in JSDoc but never implemented; now functional
+- **`isEnvironmentEntity()` fan gate** — All fans were classified as environment; now gated on `!device_class` (only air purifier fans)
+- **Phantom CSS variables** — Defined `--lcars-font-size-label`, `--lcars-font-size-hero`, `--lcars-gray-alpha` in `lcars-styles.js`
+- **Font-size fallback mismatches** — `--lcars-font-size-data` fallbacks corrected from `1rem` to `0.875rem`
+- **Life support badge** — `renderBadge()` now uses `<lcars-summary-badge>` instead of raw `<span>` (gains `role="status"` + ARIA)
+- **Sparkline SVG accessibility** — `aria-hidden="true"` on sparkline slots (label provides text alternative)
+- **Sensor hero uppercase** — Added `text-transform: uppercase` on `.ls-hero-humidity`
+- **Sequential sparkline fetches** — Single batched `fetchSparklineData()` call replaces O(n) sequential fetches
+
+#### Low
+- **Scene rate limiting** — `createRateLimiter(3, 5000)` on scene activation
+- **Brightness clamping** — `clampValue(pct, 1, 100)` on slider input
+- **Arrow key off-state guard** — Arrow keys no longer turn on lights when brightness is 0
+- **`_shortEntityName()` consistency** — Both panels now use base class `_shortenName()` (case-insensitive prefix stripping)
+- **`_getAllEntities()` in loop** — Sparkline tray computes entity list once outside loop
+- **`requestUpdate()` disconnect guard** — Guarded with `this.isConnected`
+- **Stale sparkline cache** — Cleared on area change in `updated()`
+- **Redundant `aria-live`** — Removed from `<lcars-summary-badge>` (`role="status"` implies it)
+- **`prefers-reduced-motion`** — Added comprehensive override block for illumination panel transitions
+- **Hover overlay** — Changed from `rgba(255,255,255,0.08)` to space-white derived value
+- **Unused import** — Removed `queryEntities` from life support panel
+
+
 ## [4.17.2] — 2026-04-15
 
 ### Added — NUT UPS Battery Panel Support (4X-7)

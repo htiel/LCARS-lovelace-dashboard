@@ -22,6 +22,10 @@ export const PANEL_TYPE_WEATHER     = 'weather';
 export const PANEL_TYPE_BATTERY     = 'battery';
 export const PANEL_TYPE_POWER       = 'power';
 
+// Area-level composite panel types (4X-17)
+export const PANEL_TYPE_LIFE_SUPPORT  = 'life_support';
+export const PANEL_TYPE_ILLUMINATION  = 'illumination';
+
 // ─── Panel Render Priority (lower = rendered first in layout) ───────────────
 
 export const PANEL_TYPE_ORDER = {
@@ -219,3 +223,112 @@ export const DOMAIN_ORDER = {
   media_player: 5, fan: 6, lock: 7, alarm_control_panel: 8,
   weather: 9, sensor: 10, binary_sensor: 11,
 };
+
+// ─── Filter Predicates (4X-18) ──────────────────────────────────────────────
+
+/**
+ * Create a domain filter predicate.
+ * @param {string[]|Set<string>} domains
+ * @returns {(entry) => boolean}
+ */
+export function createDomainFilter(domains) {
+  const s = domains instanceof Set ? domains : new Set(domains);
+  return (entry) => s.has(entry.domain);
+}
+
+/**
+ * Create a device_class filter predicate.
+ * @param {string[]|Set<string>} classes
+ * @returns {(entry) => boolean}
+ */
+export function createDeviceClassFilter(classes) {
+  const s = classes instanceof Set ? classes : new Set(classes);
+  return (entry) => s.has(entry.state?.attributes?.device_class || '');
+}
+
+/**
+ * Compose multiple predicates with OR logic.
+ * @param  {...Function} predicates
+ * @returns {(entry) => boolean}
+ */
+export function createCompositeFilter(...predicates) {
+  return (entry) => predicates.some(p => p(entry));
+}
+
+/** Named predicate: is this a climate/HVAC entity? */
+export function isClimateEntity(entry) {
+  return CLIMATE_DOMAINS.has(entry.domain);
+}
+
+/** Named predicate: is this an air quality / environment entity? */
+export function isEnvironmentEntity(entry) {
+  const dc = entry.state?.attributes?.device_class || '';
+  if (AQ_DEVICE_CLASSES.has(dc)) return true;
+  // Only fans with no device_class (air purifier fans) — ceiling/exhaust fans are not environment
+  if (entry.domain === 'fan' && !dc) return true;
+  if (entry.domain === 'sensor' && AQ_ENTITY_SUFFIX_RE.test(entry.entity?.entity_id || '')) return true;
+  return false;
+}
+
+/** Named predicate: is this a lighting entity (light domain or lighting switch)? */
+export function isLightingEntity(entry) {
+  if (entry.domain === 'light') return true;
+  if (entry.domain === 'scene') return true;
+  if (entry.domain === 'switch' || entry.domain === 'input_boolean') {
+    const eid = entry.entity?.entity_id || '';
+    const name = (entry.state?.attributes?.friendly_name || '').toLowerCase();
+    if (entry.state?.attributes?.device_class === 'outlet') return false;
+    return /light|lamp|sconce|chandelier|pendant|fixture|dimmer|illuminat/i.test(name) ||
+           /light|lamp|sconce|chandelier/i.test(eid);
+  }
+  return false;
+}
+
+/** Named predicate: is this a security entity? */
+export function isSecurityEntity(entry) {
+  if (ALARM_DOMAINS.has(entry.domain)) return true;
+  if (entry.domain === 'lock') return true;
+  if (CAMERA_DOMAINS.has(entry.domain)) return true;
+  const dc = entry.state?.attributes?.device_class || '';
+  if (entry.domain === 'binary_sensor' && ['door', 'window', 'motion', 'occupancy', 'tamper'].includes(dc)) return true;
+  return false;
+}
+
+/** Named predicate: is this a standalone temperature or humidity sensor? */
+export function isAmbientSensor(entry) {
+  if (entry.domain !== 'sensor') return false;
+  const dc = entry.state?.attributes?.device_class || '';
+  return dc === 'temperature' || dc === 'humidity';
+}
+
+// ─── Area-Level Classification (4X-17) ──────────────────────────────────────
+
+/**
+ * Classify an area's entities into area-level composite panel types.
+ * Returns a Set of PANEL_TYPE_* constants for composite panels that should
+ * be rendered at the area level instead of per-device.
+ *
+ * @param {Object} hass - Home Assistant instance
+ * @param {string} areaId - Area to classify
+ * @param {Array} entityEntries - All entity entries for the area
+ * @returns {Set<string>} Set of area-level panel types
+ */
+export function classifyArea(hass, areaId, entityEntries) {
+  const types = new Set();
+
+  // Life Support: climate entity OR (environment entity AND ambient sensors)
+  const hasClimate = entityEntries.some(isClimateEntity);
+  const hasEnvironment = entityEntries.some(isEnvironmentEntity);
+  const hasAmbient = entityEntries.some(isAmbientSensor);
+  if (hasClimate || (hasEnvironment && hasAmbient)) {
+    types.add(PANEL_TYPE_LIFE_SUPPORT);
+  }
+
+  // Illumination: ≥2 lighting entities in the area
+  const lightCount = entityEntries.filter(isLightingEntity).length;
+  if (lightCount >= 2) {
+    types.add(PANEL_TYPE_ILLUMINATION);
+  }
+
+  return types;
+}

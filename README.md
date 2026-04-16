@@ -8,7 +8,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-4.17.2-blue)
+![Version](https://img.shields.io/badge/version-4.18.0-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 [![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 
@@ -23,7 +23,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 ### Auto-Detected Panels
 
-The dashboard auto-discovers devices and routes them to the correct panel using a priority-ordered classifier: camera → alarm → pool/spa → climate → media → environment → irrigation → weather → power → battery.
+The dashboard auto-discovers devices and routes them to the correct panel using a priority-ordered classifier: camera → alarm → pool/spa → climate → media → environment → irrigation → weather → power → battery. Area-level composite panels (life support, illumination) aggregate entities across devices.
 
 #### Camera Panel
 Live camera feeds with LCARS-framed viewscreen and activation animation. Three-state display: ESTABLISHING LINK (connecting), live feed, VIEWSCREEN OFFLINE (error/timeout). Stale image prevention via forced src binding on room switch.
@@ -65,6 +65,14 @@ Consolidated per-area power monitoring with three sections: CIRCUITS (tile grid)
 #### Warp Core Battery Panel
 CSS reactor core with charge-level color, SOC gauge, power flow I/O arrows, telemetry sensors, integrated config/diagnostic entity controls with LCARS option strips. NUT UPS devices auto-detected with Grid→UPS→Load flow, load/runtime telemetry, and NUT status code parsing (OL/OB/CHRG/LB/FSD).
 - **Integrations**: EcoFlow (River, Delta), Victron, Tesla Powerwall, NUT (CyberPower, APC, Tripp Lite, Eaton)
+
+#### Life Support Panel
+Area-level composite panel aggregating climate, environment (air quality), and ambient sensor entities into a unified view. Four graceful degradation configurations: full (thermostat + purifier + sensors), atmos-only, climate-only, and sensor-hero (standalone temp/humidity). Composes existing climate and environment panels as nested substations. Adaptive sparkline tray shows 24-hour trends for temperature, humidity, AQI, PM2.5, CO₂, VOC.
+- **Integrations**: Any combination of climate entities, air quality devices, and ambient sensors in an area
+
+#### Illumination Control Panel
+Area-level lighting panel with full-width brightness bars, color temperature awareness (warm amber to cool white), scene activation strip, and lighting circuit toggles. Inline brightness slider with keyboard navigation (±5% per arrow key). Badge shows active/total light count.
+- **Integrations**: Any `light` domain entities, lighting switches (auto-detected by name heuristic), HA scenes
 
 ### Domain-Specific Renderers
 
@@ -133,10 +141,10 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 | Layer | Technology |
 |-------|-----------|
 | HA Integration | Python custom component (`lcars_dashboard`) |
-| Frontend | Lit Element v2 web components — 10 extracted panel elements + shared base class |
+| Frontend | Lit Element v2 web components — 12 extracted panel elements + shared base class |
 | Build | Webpack 5 → single `lcars-dashboard.js` bundle (~566 KiB) |
 | Styling | 3-tier CSS composition: base variables → component shadow DOM → panel-specific modules |
-| Components | 5 shared components: `<lcars-panel-frame>`, `<lcars-sensor-row>`, `<lcars-section-divider>`, `<lcars-option-strip>`, `<lcars-setpoint>` |
+| Components | 7 shared components: `<lcars-panel-frame>`, `<lcars-sensor-row>`, `<lcars-section-divider>`, `<lcars-option-strip>`, `<lcars-setpoint>`, `<lcars-segmented-bar>`, `<lcars-summary-badge>` |
 | Communication | WebSocket API + window custom events |
 
 ## Changelog

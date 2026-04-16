@@ -2,9 +2,11 @@
  * lcars-climate-panel-styles.js
  *
  * CSS module for <lcars-climate-panel>.
- * Temperature arc, setpoint controls, HVAC mode strips.
+ * Segmented temperature arc, LCARS endcap setpoint buttons,
+ * connected mode strips, mini-elbow viewscreen brackets.
  *
  * v4.17.0 Panel Extraction Architecture (4X-4)
+ * v4.18.0 Visual Refresh (4X-8) — All 7 LCARS compliance fixes
  */
 import { css } from 'lit-element';
 
@@ -98,10 +100,16 @@ export const climatePanelStyles = css`
   }
   .device-sensor-line:hover { background: rgba(255,255,255,0.05); }
   .device-sensor-line:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+
+  /* Compliance #5: mini-bars not dots — 2px × 1rem vertical bars */
+  .sensor-indicator-bar { width: 2px; height: 1rem; border-radius: 1px; flex-shrink: 0; }
+  /* Legacy dot class kept for backward compatibility */
   .sensor-indicator { width: 0.5rem; height: 0.5rem; border-radius: 50%; flex-shrink: 0; }
+
   .sensor-label {
     flex: 1; color: var(--lcars-space-white);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: var(--lcars-font-size-data); /* Compliance #3: use LCARS 3-tier font, not 0.75rem */
   }
   .sensor-state-value { flex-shrink: 0; font-weight: 700; font-size: var(--lcars-font-size-data); }
   .battery-section-divider { height: 1px; background: var(--lcars-gray); opacity: 0.3; margin: 0.375rem 0; }
@@ -111,33 +119,69 @@ export const climatePanelStyles = css`
     letter-spacing: 0.08em; padding: 0 0.5rem; margin-bottom: 0.125rem;
   }
 
-  /* Viewscreen */
+  /* Viewscreen — Compliance #1: explicit black bg, not inherited */
   .climate-viewscreen {
     grid-area: media;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     position: relative; cursor: pointer;
+    background: var(--lcars-black, #000); /* Compliance #1: no lavender bleed */
     border: 2px solid var(--panel-frame-color);
     border-radius: 4px; padding: 0.5rem;
     transition: border-color 600ms;
   }
-  .climate-viewscreen::before,
+  /* Compliance #6: mini-elbow brackets with thick→thin asymmetry */
+  .climate-viewscreen::before {
+    content: '';
+    position: absolute;
+    top: 4px; left: 4px;
+    width: 1.5rem; height: 1.5rem;
+    border-top: 3px solid var(--panel-frame-color); /* thick */
+    border-left: 3px solid var(--panel-frame-color); /* thick */
+    border-right: none; border-bottom: none;
+    border-radius: 0.5rem 0 0 0; /* mini-elbow corner */
+  }
   .climate-viewscreen::after {
     content: '';
     position: absolute;
+    bottom: 4px; right: 4px;
     width: 1.5rem; height: 1.5rem;
-    border: 2px solid var(--panel-frame-color);
+    border-bottom: 1px solid var(--panel-frame-color); /* thin */
+    border-right: 1px solid var(--panel-frame-color); /* thin */
+    border-left: none; border-top: none;
+    border-radius: 0 0 0.25rem 0;
   }
-  .climate-viewscreen::before { top: 4px; left: 4px; border-right: none; border-bottom: none; }
-  .climate-viewscreen::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
   .climate-arc { width: 100%; max-width: 200px; }
 
-  /* Setpoint controls */
+  /* Arc halo drift animation (active HVAC only) */
+  .arc-halo-active {
+    stroke-dasharray: 6 4;
+    animation: arc-halo-drift var(--lcars-anim-ambient) linear infinite;
+  }
+  @keyframes arc-halo-drift {
+    from { stroke-dashoffset: 0; }
+    to { stroke-dashoffset: 40; }
+  }
+
+  /* HVAC action feedback bar — 3px flat pulse bar below viewscreen */
+  .climate-action-bar {
+    width: 100%; height: 3px;
+    margin-top: 0.25rem;
+    border-radius: 1.5px;
+    background: var(--action-color);
+    animation: action-bar-pulse 2s ease-in-out infinite;
+  }
+  @keyframes action-bar-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Setpoint controls — Compliance #3: LCARS endcap pills, not circles */
   .climate-setpoint-controls { display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.5rem; }
   .climate-setpoint-row { display: flex; align-items: center; gap: 0.5rem; justify-content: center; }
   .climate-sp-btn {
-    width: 2.5rem; height: 2.5rem;
-    border: none; border-radius: 50%;
+    width: 3rem; height: 2.5rem;
+    border: none;
     background: var(--lcars-disabled);
     color: var(--lcars-space-white);
     font-size: 1.25rem; font-family: var(--lcars-font);
@@ -145,27 +189,46 @@ export const climatePanelStyles = css`
   }
   .climate-sp-btn:hover { background: var(--panel-frame-color); }
   .climate-sp-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+  /* Decrement: rounded-left, flat-right */
+  .climate-sp-btn.sp-decrement {
+    border-radius: var(--lcars-btn-radius) 0 0 var(--lcars-btn-radius);
+  }
+  /* Increment: flat-left, rounded-right */
+  .climate-sp-btn.sp-increment {
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+  }
   .climate-sp-label {
     font-family: var(--lcars-font);
     font-size: var(--lcars-font-size-data);
     min-width: 6rem; text-align: center;
   }
 
-  /* Mode strips */
+  /* Mode strips — Compliance #2: connected strip, first rounded-left, last rounded-right */
   .climate-modes {
     grid-area: modes;
-    display: flex; gap: var(--lcars-gap); flex-wrap: wrap;
+    display: flex; gap: 1px; flex-wrap: wrap;
   }
   .climate-mode-btn {
     flex: 1; min-width: 4rem;
     height: var(--lcars-btn-height);
-    border: none; border-radius: var(--lcars-btn-radius);
+    border: none;
+    border-radius: 0; /* default: flat both sides (middle buttons) */
     background: var(--lcars-disabled);
     color: var(--lcars-black);
     font-family: var(--lcars-font);
     font-size: var(--lcars-font-size-data);
     text-transform: uppercase; cursor: pointer;
     transition: background 200ms;
+  }
+  .climate-mode-btn.mode-first {
+    border-radius: var(--lcars-btn-radius) 0 0 var(--lcars-btn-radius);
+  }
+  .climate-mode-btn.mode-last {
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+  }
+  /* Single button (both first and last) */
+  .climate-mode-btn.mode-first.mode-last {
+    border-radius: var(--lcars-btn-radius);
   }
   .climate-mode-btn[data-active] { background: var(--panel-frame-color); }
   .climate-mode-btn:hover:not([data-active]) { background: var(--lcars-gray); }
@@ -174,7 +237,7 @@ export const climatePanelStyles = css`
     grid-area: auxctrl;
     display: flex; flex-direction: column; gap: var(--lcars-gap);
   }
-  .climate-aux-strip { display: flex; gap: var(--lcars-gap); flex-wrap: wrap; }
+  .climate-aux-strip { display: flex; gap: 1px; flex-wrap: wrap; }
 
   .panel-pip-strip {
     position: absolute;
@@ -182,5 +245,13 @@ export const climatePanelStyles = css`
     width: 2rem; height: 3px;
     background: var(--panel-frame-color);
     border-radius: 1.5px; opacity: 0.3;
+  }
+
+  /* Animation budget: all gated behind reduced-motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .arc-halo-active,
+    .climate-action-bar {
+      animation: none;
+    }
   }
 `;

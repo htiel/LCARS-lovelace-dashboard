@@ -47,6 +47,11 @@ def _safe_path(base_dir, *parts):
     return full
 
 
+# ─── Security: Allowlisted config keys ───
+ALLOWED_BOOL_KEYS = frozenset({"disabled", "hidden", "favorite", "hide_in_sidebar", "show_on_homepage"})
+ALLOWED_SORT_TYPES = frozenset({"sort_order", "sort_order_floor"})
+
+
 # ─── File I/O helpers (proper handle management) ───
 async def _read_yaml_file(hass, rel_path):
     """Read a YAML config file safely with proper file handle management."""
@@ -113,11 +118,6 @@ async def _load_card_dir_flat(hass, rel_path):
                 _LOGGER.warning("Failed to load %s/%s: %s", rel_path, fname, err)
     return result
 
-areas = OrderedDict()
-entities = OrderedDict()
-devices = OrderedDict()
-homepage_header = OrderedDict()
-
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     _LOGGER.info("LCARS Dashboard v%s starting setup", VERSION)
     _LOGGER.debug("Python %s, HA %s", __import__('sys').version.split()[0], hass.config.version if hasattr(hass.config, 'version') else 'unknown')
@@ -125,7 +125,11 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.data[DOMAIN] = {
         "notifications": {},
         "commands": {},
-        'latest_version': ""
+        'latest_version': "",
+        "areas": OrderedDict(),
+        "entities": OrderedDict(),
+        "devices": OrderedDict(),
+        "homepage_header": OrderedDict(),
     }
 
     _LOGGER.debug("Registering %d websocket commands", 26)
@@ -188,19 +192,14 @@ async def websocket_get_configuration(
 ) -> None:
     """Return dashboard configuration. Gracefully handles missing/stale config files."""
 
-    global areas
-    global entities
-    global devices
-    global homepage_header
-
     _LOGGER.debug("configuration/get requested")
 
     try:
         # Load config files with proper file handle management
-        areas = await _read_yaml_file(hass, "lcars-dashboard/configs/areas.yaml")
-        entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
-        devices = await _read_yaml_file(hass, "lcars-dashboard/configs/devices.yaml")
-        homepage_header = await _read_yaml_file(hass, "lcars-dashboard/configs/settings.yaml")
+        hass.data[DOMAIN]["areas"] = await _read_yaml_file(hass, "lcars-dashboard/configs/areas.yaml")
+        hass.data[DOMAIN]["entities"] = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
+        hass.data[DOMAIN]["devices"] = await _read_yaml_file(hass, "lcars-dashboard/configs/devices.yaml")
+        hass.data[DOMAIN]["homepage_header"] = await _read_yaml_file(hass, "lcars-dashboard/configs/settings.yaml")
 
         area_cards = await _load_card_dir_nested(hass, "lcars-dashboard/configs/cards/areas")
         device_cards = await _load_card_dir_nested(hass, "lcars-dashboard/configs/cards/devices")
@@ -223,9 +222,9 @@ async def websocket_get_configuration(
 
         _LOGGER.debug(
             "configuration/get complete: %d areas, %d entities, %d devices, %d area_cards, %d more_pages",
-            len(areas) if isinstance(areas, dict) else 0,
-            len(entities) if isinstance(entities, dict) else 0,
-            len(devices) if isinstance(devices, dict) else 0,
+            len(hass.data[DOMAIN]["areas"]) if isinstance(hass.data[DOMAIN]["areas"], dict) else 0,
+            len(hass.data[DOMAIN]["entities"]) if isinstance(hass.data[DOMAIN]["entities"], dict) else 0,
+            len(hass.data[DOMAIN]["devices"]) if isinstance(hass.data[DOMAIN]["devices"], dict) else 0,
             len(area_cards),
             len(more_pages),
         )
@@ -233,14 +232,14 @@ async def websocket_get_configuration(
         connection.send_result(
             msg["id"],
             {
-                "areas": areas,
+                "areas": hass.data[DOMAIN]["areas"],
                 "area_cards": area_cards,
                 "device_cards": device_cards,
                 "entity_cards": entity_cards,
                 "entities_popup": entities_popup,
-                "entities": entities,
-                "devices": devices,
-                "homepage_header": homepage_header,
+                "entities": hass.data[DOMAIN]["entities"],
+                "devices": hass.data[DOMAIN]["devices"],
+                "homepage_header": hass.data[DOMAIN]["homepage_header"],
                 "more_pages": more_pages,
                 "installed_version": VERSION,
                 "devices_card": devices_card,
@@ -449,7 +448,7 @@ async def ws_handle_edit_area_button(
 
         if os.path.exists(hass.config.path("lcars-dashboard/configs/areas.yaml")):
             #with open(hass.config.path("lcars-dashboard/configs/areas.yaml")) as f:
-            data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/areas.yaml", "r")
+            data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/areas.yaml"), "r")
             with data as f:
                 areas = yaml.safe_load(f)
         else:
@@ -470,14 +469,10 @@ async def ws_handle_edit_area_button(
             os.makedirs(hass.config.path("lcars-dashboard/configs"))
 
         #with open(hass.config.path("lcars-dashboard/configs/areas.yaml"), 'w') as f:
-        data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/areas.yaml", "w")
+        data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/areas.yaml"), "w")
         with data as f:
             yaml.dump(areas, f, default_flow_style=False, sort_keys=False)
 
-        if areas:
-            areas = await hass.async_add_executor_job(
-                lambda: yaml.safe_load(open(hass.config.path("lcars-dashboard/configs/areas.yaml"), "r"))
-            )
         
     hass.bus.async_fire("lcars_dashboard_homepage_card_reload")
 
@@ -496,7 +491,7 @@ async def ws_handle_edit_area_button(
     {
         vol.Required("type"): "lcars_dashboard/edit_area_bool_value",
         vol.Required("areaId"): str,
-        vol.Optional("key"): str,
+        vol.Optional("key"): vol.In(ALLOWED_BOOL_KEYS),
         vol.Optional("value"): bool,
     }
 )
@@ -508,7 +503,7 @@ async def ws_handle_edit_area_bool_value(
 
     if os.path.exists(hass.config.path("lcars-dashboard/configs/areas.yaml")):
         #with open(hass.config.path("lcars-dashboard/configs/areas.yaml")) as f:
-        data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/areas.yaml", "r")
+        data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/areas.yaml"), "r")
         with data as f:
             areas = yaml.safe_load(f)
     else:
@@ -527,7 +522,7 @@ async def ws_handle_edit_area_bool_value(
         os.makedirs(hass.config.path("lcars-dashboard/configs"))
 
     #with open(hass.config.path("lcars-dashboard/configs/areas.yaml"), 'w') as f:
-    data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/areas.yaml", "w")
+    data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/areas.yaml"), "w")
     with data as f:
         yaml.dump(areas, f, default_flow_style=False, sort_keys=False)
 
@@ -569,7 +564,7 @@ async def ws_handle_edit_homepage_header(
     
     if os.path.exists(hass.config.path("lcars-dashboard/configs/settings.yaml")):
         #with open(hass.config.path("lcars-dashboard/configs/settings.yaml")) as f:
-        data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/settings.yaml", "r")
+        data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/settings.yaml"), "r")
         with data as f:
             homepage_header = yaml.safe_load(f)
     else:
@@ -590,7 +585,7 @@ async def ws_handle_edit_homepage_header(
         os.makedirs(hass.config.path("lcars-dashboard/configs"))
 
     #with open(hass.config.path("lcars-dashboard/configs/settings.yaml"), 'w') as f:
-    data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/settings.yaml", "w")
+    data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/settings.yaml"), "w")
     with data as f:
         yaml.dump(homepage_header, f, default_flow_style=False, sort_keys=False)
 
@@ -623,7 +618,7 @@ async def ws_handle_edit_device_button(
     if(msg["device"]):
         if os.path.exists(hass.config.path("lcars-dashboard/configs/devices.yaml")):
             #with open(hass.config.path("lcars-dashboard/configs/devices.yaml")) as f:
-            data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/devices.yaml", "r")
+            data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/devices.yaml"), "r")
             with data as f:
                 devices = yaml.safe_load(f)
         else:
@@ -643,7 +638,7 @@ async def ws_handle_edit_device_button(
             os.makedirs(hass.config.path("lcars-dashboard/configs"))
 
         #with open(hass.config.path("lcars-dashboard/configs/devices.yaml"), 'w') as f:
-        data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/devices.yaml", "w")
+        data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/devices.yaml"), "w")
         with data as f:
             yaml.dump(devices, f, default_flow_style=False, sort_keys=False)
 
@@ -923,7 +918,7 @@ async def ws_handle_edit_entity(
         os.makedirs(hass.config.path("lcars-dashboard/configs"))
 
     #with open(hass.config.path("lcars-dashboard/configs/entities.yaml"), 'w') as f:
-    data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/entities.yaml", "w")
+    data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/entities.yaml"), "w")
     with data as f:
         yaml.dump(entities, f, default_flow_style=False, sort_keys=False)
 
@@ -989,7 +984,7 @@ async def ws_handle_edit_entity_card(
         os.makedirs(hass.config.path("lcars-dashboard/configs"))
 
     #with open(hass.config.path("lcars-dashboard/configs/entities.yaml"), 'w') as f:
-    data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/entities.yaml", "w")
+    data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/entities.yaml"), "w")
     with data as f:
         yaml.dump(entities, f, default_flow_style=False, sort_keys=False)
 
@@ -1053,7 +1048,7 @@ async def ws_handle_edit_entity_popup(
         os.makedirs(hass.config.path("lcars-dashboard/configs"))
 
     #with open(hass.config.path("lcars-dashboard/configs/entities.yaml"), 'w') as f:
-    data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/entities.yaml", "w")
+    data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/entities.yaml"), "w")
     with data as f:
         yaml.dump(entities, f, default_flow_style=False, sort_keys=False)
 
@@ -1085,7 +1080,7 @@ async def ws_handle_edit_entity_favorite(
 
     if os.path.exists(hass.config.path("lcars-dashboard/configs/entities.yaml")) and os.stat(hass.config.path("lcars-dashboard/configs/entities.yaml")).st_size != 0:
         #with open(hass.config.path("lcars-dashboard/configs/entities.yaml")) as f:
-        data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/entities.yaml", "r")
+        data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/entities.yaml"), "r")
         with data as f:
             entities = yaml.safe_load(f)
     else:
@@ -1104,7 +1099,7 @@ async def ws_handle_edit_entity_favorite(
         os.makedirs(hass.config.path("lcars-dashboard/configs"))
 
     #with open(hass.config.path("lcars-dashboard/configs/entities.yaml"), 'w') as f:
-    data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/entities.yaml", "w")
+    data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/entities.yaml"), "w")
     with data as f:
         yaml.dump(entities, f, default_flow_style=False, sort_keys=False)
 
@@ -1125,7 +1120,7 @@ async def ws_handle_edit_entity_favorite(
     {
         vol.Required("type"): "lcars_dashboard/edit_entity_bool_value",
         vol.Required("entityId"): _validate_path_component,
-        vol.Optional("key"): str,
+        vol.Optional("key"): vol.In(ALLOWED_BOOL_KEYS),
         vol.Optional("value"): bool,
     }
 )
@@ -1137,7 +1132,7 @@ async def ws_handle_edit_entity_bool_value(
 
     if os.path.exists(hass.config.path("lcars-dashboard/configs/entities.yaml")) and os.stat(hass.config.path("lcars-dashboard/configs/entities.yaml")).st_size != 0:
         #with open(hass.config.path("lcars-dashboard/configs/entities.yaml")) as f:
-        data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/entities.yaml", "r")
+        data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/entities.yaml"), "r")
         with data as f:
             entities = yaml.safe_load(f)
     else:
@@ -1156,7 +1151,7 @@ async def ws_handle_edit_entity_bool_value(
         os.makedirs(hass.config.path("lcars-dashboard/configs"))
 
     #with open(hass.config.path("lcars-dashboard/configs/entities.yaml"), 'w') as f:
-    data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/entities.yaml", "w")
+    data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/entities.yaml"), "w")
     with data as f:
         yaml.dump(entities, f, default_flow_style=False, sort_keys=False)
 
@@ -1179,7 +1174,7 @@ async def ws_handle_edit_entity_bool_value(
     {
         vol.Required("type"): "lcars_dashboard/edit_entities_bool_value",
         vol.Required("entities"): str,
-        vol.Optional("key"): str,
+        vol.Optional("key"): vol.In(ALLOWED_BOOL_KEYS),
         vol.Optional("value"): bool,
     }
 )
@@ -1191,7 +1186,7 @@ async def ws_handle_edit_entities_bool_value(
 
     if os.path.exists(hass.config.path("lcars-dashboard/configs/entities.yaml")) and os.stat(hass.config.path("lcars-dashboard/configs/entities.yaml")).st_size != 0:
         #with open(hass.config.path("lcars-dashboard/configs/entities.yaml")) as f:
-        data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/entities.yaml", "r")
+        data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/entities.yaml"), "r")
         with data as f:
             entities = yaml.safe_load(f)
     else:
@@ -1217,7 +1212,7 @@ async def ws_handle_edit_entities_bool_value(
         os.makedirs(hass.config.path("lcars-dashboard/configs"))
 
     #with open(hass.config.path("lcars-dashboard/configs/entities.yaml"), 'w') as f:
-    data = await hass.async_add_executor_job(open, "lcars-dashboard/configs/entities.yaml", "w")
+    data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/entities.yaml"), "w")
     with data as f:
         yaml.dump(entities, f, default_flow_style=False, sort_keys=False)
 
@@ -1554,7 +1549,7 @@ async def ws_handle_add_more_page_to_navbar(
     {
         vol.Required("type"): "lcars_dashboard/sort_area_button",
         vol.Required("sortData"): str,
-        vol.Required("sortType"): str,
+        vol.Required("sortType"): vol.In(ALLOWED_SORT_TYPES),
     }
 )
 @websocket_api.async_response
@@ -1609,7 +1604,7 @@ async def ws_handle_sort_area_button(
     {
         vol.Required("type"): "lcars_dashboard/edit_device_bool_value",
         vol.Required("device"): str,
-        vol.Optional("key"): str,
+        vol.Optional("key"): vol.In(ALLOWED_BOOL_KEYS),
         vol.Optional("value"): bool,
     }
 )
@@ -1774,6 +1769,9 @@ async def ws_handle_sort_more_page(
 
     sortData = json.loads(msg["sortData"])
 
+    for item in sortData:
+        _validate_path_component(item)
+
     for num, more_page in enumerate(sortData, start=1):
         page_link = hass.config.path("lcars-dashboard/configs/more_pages/"+more_page+"/config.yaml")
         if os.path.exists(page_link) and os.stat(page_link).st_size != 0:
@@ -1821,10 +1819,8 @@ async def async_setup_entry(hass, config_entry):
     config_entry.add_update_listener(_update_listener)
 
     #hass.async_add_job( # Deprecated, trying with hass.async_create_task() ...
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setups(
-            config_entry, ["sensor"]
-        )
+    await hass.config_entries.async_forward_entry_setups(
+        config_entry, ["sensor"]
     )
 
     _LOGGER.debug("async_setup_entry complete — sensor platform forwarded")
@@ -1834,6 +1830,13 @@ async def async_remove_entry(hass, config_entry):
     _LOGGER.info("LCARS Dashboard is being uninstalled")
 
     frontend.async_remove_panel(hass, "lcars-dashboard")
+
+async def async_unload_entry(hass, config_entry):
+    """Unload a config entry."""
+    _LOGGER.debug("Unloading LCARS Dashboard")
+    await hass.config_entries.async_unload_platforms(config_entry, ["sensor"])
+    frontend.async_remove_panel(hass, "lcars-dashboard")
+    return True
 
 async def _update_listener(hass, config_entry):
     _LOGGER.debug("Config entry update listener triggered")

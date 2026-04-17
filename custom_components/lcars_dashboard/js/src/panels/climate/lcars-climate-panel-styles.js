@@ -114,7 +114,7 @@ export const climatePanelStyles = css`
   .sensor-state-value { flex-shrink: 0; font-weight: 700; font-size: var(--lcars-font-size-data); }
   .battery-section-divider { height: 1px; background: var(--lcars-gray); opacity: 0.3; margin: 0.375rem 0; }
   .battery-section-label {
-    font-family: var(--lcars-font); font-size: 0.55rem;
+    font-family: var(--lcars-font); font-size: var(--lcars-font-size-label, 0.75rem);
     color: var(--lcars-sky, #aaaaff); text-transform: uppercase;
     letter-spacing: 0.08em; padding: 0 0.5rem; margin-bottom: 0.125rem;
   }

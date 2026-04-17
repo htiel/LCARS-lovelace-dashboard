@@ -14,7 +14,7 @@
  *   default → LCARS button
  */
 import { LitElement, html, css } from 'lit-element';
-import { svg } from 'lit-html';
+import { svg, render } from 'lit-html';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getHass, showMoreInfo, fireEvent, createCardElement, lcarsEventBus, lcarsLog, openEditPopup } from './lcars-helpers.js';
 import {
@@ -535,17 +535,17 @@ class LcarsHomepageCard extends LitElement {
             font-size: calc(var(--lcars-font-size-title) * 1.15);
             font-weight: normal;
             margin: 0;
-            color: var(--lcars-lilac, #cc99cc);
+            color: var(--lcars-lilac, #cc55ff);
             text-transform: uppercase;
             padding: 0.25rem 0 0.5rem 0;
-            border-left: 4px solid var(--lcars-lilac, #cc99cc);
+            border-left: 4px solid var(--lcars-lilac, #cc55ff);
             padding-left: 1rem;
           }
           .content-floor-header::after {
             content: '';
             display: block;
             height: 3px;
-            background: var(--lcars-lilac, #cc99cc);
+            background: var(--lcars-lilac, #cc55ff);
             margin-top: 0.5rem;
             opacity: 0.5;
           }
@@ -1305,7 +1305,7 @@ class LcarsHomepageCard extends LitElement {
           }
           .battery-section-label {
             font-family: var(--lcars-font);
-            font-size: 0.55rem;
+            font-size: var(--lcars-font-size-label, 0.75rem);
             color: var(--lcars-sky, #aaaaff);
             text-transform: uppercase;
             letter-spacing: 0.08em;
@@ -1342,7 +1342,7 @@ class LcarsHomepageCard extends LitElement {
             border: none;
             border-radius: 0 0.75rem 0.75rem 0;
             font-family: var(--lcars-font);
-            font-size: 0.55rem;
+            font-size: var(--lcars-font-size-label, 0.75rem);
             text-transform: uppercase;
             cursor: pointer;
             transition: filter 0.2s, background 0.2s;
@@ -1421,7 +1421,7 @@ class LcarsHomepageCard extends LitElement {
             flex: 1 1 auto;
           }
           .env-sparkline-label {
-            font-size: 0.55rem;
+            font-size: var(--lcars-font-size-label, 0.75rem);
             color: var(--lcars-space-white);
             text-transform: uppercase;
             white-space: nowrap;
@@ -2789,7 +2789,7 @@ class LcarsHomepageCard extends LitElement {
           .lcars-track-toggle .track-label {
             position: absolute;
             font-family: var(--lcars-font);
-            font-size: 0.55rem;
+            font-size: var(--lcars-font-size-label, 0.75rem);
             font-weight: 700;
             text-transform: uppercase;
             line-height: 1;
@@ -3951,7 +3951,7 @@ class LcarsHomepageCard extends LitElement {
             padding-left: var(--lcars-gap, 12px);
           }
           .lcars-consolidated-power-panel .power-strips-section {
-            border-left: 3px solid var(--lcars-african-violet, #cc99cc);
+            border-left: 3px solid var(--lcars-african-violet, #cc99ff);
             padding-left: var(--lcars-gap, 12px);
           }
 
@@ -3962,7 +3962,7 @@ class LcarsHomepageCard extends LitElement {
 
           /* G-5: Focus-visible on circuit tiles */
           .lcars-consolidated-power-panel .power-circuit-tile:focus-visible {
-            outline: 2px solid var(--lcars-sunflower, #ffcc66);
+            outline: 2px solid var(--lcars-sunflower, #ffcc99);
             outline-offset: -2px;
           }
 
@@ -3987,7 +3987,7 @@ class LcarsHomepageCard extends LitElement {
             text-underline-offset: 2px;
           }
           .power-clickable-value:focus-visible {
-            outline: 2px solid var(--lcars-sunflower, #ffcc66);
+            outline: 2px solid var(--lcars-sunflower, #ffcc99);
             outline-offset: 1px;
             border-radius: 2px;
           }
@@ -3997,10 +3997,10 @@ class LcarsHomepageCard extends LitElement {
             display: block;
             margin: 0.5rem auto 0;
             padding: 0.25rem 1rem;
-            border: 1px solid var(--lcars-gray, #999999);
+            border: 1px solid var(--lcars-gray, #666688);
             border-radius: 0 1.5rem 1.5rem 0;
             background: rgba(153, 153, 153, 0.15);
-            color: var(--lcars-gray, #999999);
+            color: var(--lcars-gray, #666688);
             font-family: var(--lcars-font, 'Antonio', sans-serif);
             font-size: 0.75rem;
             text-transform: uppercase;
@@ -4010,11 +4010,11 @@ class LcarsHomepageCard extends LitElement {
           }
           .power-show-all-pill:hover,
           .power-show-all-pill:focus-visible {
-            background: var(--lcars-gray, #999999);
+            background: var(--lcars-gray, #666688);
             color: var(--lcars-black, #000000);
           }
           .power-show-all-pill:focus-visible {
-            outline: 2px solid var(--lcars-sunflower, #ffcc66);
+            outline: 2px solid var(--lcars-sunflower, #ffcc99);
             outline-offset: 2px;
           }
 
@@ -5050,7 +5050,7 @@ class LcarsHomepageCard extends LitElement {
               fill="none" stroke="${actionColor}" stroke-width="8" stroke-linecap="round" />
           ` : ''}
           <!-- Target tick -->
-          <circle cx="${tx}" cy="${ty}" r="5" fill="${actionColor}" stroke="var(--lcars-card-bg, #1a1a2e)" stroke-width="2" />
+          <circle cx="${tx}" cy="${ty}" r="5" fill="${actionColor}" stroke="var(--lcars-card-bg, var(--lcars-black, #000))" stroke-width="2" />
           <!-- Current temp text -->
           <text x="${cx}" y="${cy - 20}" text-anchor="middle" fill="${actionColor}"
             font-family="var(--lcars-font)" font-size="42" font-weight="bold">
@@ -6524,43 +6524,37 @@ class LcarsHomepageCard extends LitElement {
 
       const content = popover.querySelector('.popover-content');
       if (content) {
-        content.innerHTML = '';
-        const tpl = document.createElement('div');
-        tpl.innerHTML = `
-          <div class="popover-header">
-            <span class="popover-title">${this._escapeHtml(name)}</span>
-            <span class="popover-status" style="color:${color}">${label}</span>
-          </div>
-          <div class="popover-hero-value" style="color:${color}">
-            ${watts != null ? this._formatWatts(watts) : 'UNAVAILABLE'}
-          </div>
-          <div class="popover-stats">
-            ${energy != null ? `
-              <div class="popover-stat-row">
-                <span class="popover-stat-label">TODAY</span>
-                <span class="popover-stat-value">${this._formatEnergy(energy)}</span>
-              </div>
+        render(html`
+          <div>
+            <div class="popover-header">
+              <span class="popover-title">${name}</span>
+              <span class="popover-status" style="color:${color}">${label}</span>
+            </div>
+            <div class="popover-hero-value" style="color:${color}">
+              ${watts != null ? this._formatWatts(watts) : 'UNAVAILABLE'}
+            </div>
+            <div class="popover-stats">
+              ${energy != null ? html`
+                <div class="popover-stat-row">
+                  <span class="popover-stat-label">TODAY</span>
+                  <span class="popover-stat-value">${this._formatEnergy(energy)}</span>
+                </div>
+              ` : ''}
+              ${circuit.is240V ? html`
+                <div class="popover-stat-row">
+                  <span class="popover-stat-label">CIRCUIT TYPE</span>
+                  <span class="popover-stat-value" style="color:var(--lcars-butterscotch)">240V PAIRED</span>
+                </div>
+              ` : ''}
+            </div>
+            ${entityId ? html`
+              <button class="popover-history-btn" @click=${() => {
+                showMoreInfo(entityId);
+                try { popover.hidePopover(); } catch (_) {}
+              }}>VIEW FULL HISTORY</button>
             ` : ''}
-            ${circuit.is240V ? `
-              <div class="popover-stat-row">
-                <span class="popover-stat-label">CIRCUIT TYPE</span>
-                <span class="popover-stat-value" style="color:var(--lcars-butterscotch)">240V PAIRED</span>
-              </div>
-            ` : ''}
           </div>
-        `;
-        content.appendChild(tpl);
-
-        if (entityId) {
-          const btn = document.createElement('button');
-          btn.className = 'popover-history-btn';
-          btn.textContent = 'VIEW FULL HISTORY';
-          btn.addEventListener('click', () => {
-            showMoreInfo(entityId);
-            try { popover.hidePopover(); } catch (_) {}
-          });
-          content.appendChild(btn);
-        }
+        `, content);
       }
 
       try {
@@ -6569,12 +6563,6 @@ class LcarsHomepageCard extends LitElement {
         // Fallback for browsers without Popover API
         if (entityId) showMoreInfo(entityId);
       }
-    }
-
-    _escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
     }
 
     /* ── Circuit tile renderer ── */

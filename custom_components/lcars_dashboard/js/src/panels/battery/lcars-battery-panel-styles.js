@@ -118,6 +118,10 @@ export const batteryPanelStyles = css`
     transition: background var(--lcars-transition);
   }
   .battery-total-line:hover { background: rgba(255,255,255,0.05); }
+  .battery-total-line:focus-visible {
+    outline: 2px solid var(--lcars-ice, #99ccff);
+    outline-offset: 2px;
+  }
   .device-sensor-line {
     display: flex;
     align-items: center;
@@ -160,7 +164,7 @@ export const batteryPanelStyles = css`
   }
   .battery-section-label {
     font-family: var(--lcars-font);
-    font-size: 0.55rem;
+    font-size: var(--lcars-font-size-label, 0.75rem);
     color: var(--lcars-sky, #aaaaff);
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -341,7 +345,7 @@ export const batteryPanelStyles = css`
     border: none;
     border-radius: 0 0.75rem 0.75rem 0;
     font-family: var(--lcars-font);
-    font-size: 0.55rem;
+    font-size: var(--lcars-font-size-label, 0.75rem);
     text-transform: uppercase;
     cursor: pointer;
     transition: filter 0.2s, background 0.2s;

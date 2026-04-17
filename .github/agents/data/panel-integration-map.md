@@ -1,4 +1,4 @@
-# Integration → LCARS Panel Cross-Reference
+T# Integration → LCARS Panel Cross-Reference
 
 > Maps which integrations feed into which LCARS Dashboard panels/specs.
 > Use this to understand entity availability when building or modifying panels.

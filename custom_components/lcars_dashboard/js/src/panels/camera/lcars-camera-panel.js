@@ -96,7 +96,8 @@ class LcarsCameraPanel extends LcarsBasePanel {
                 @click=${() => TOGGLE_DOMAINS.has(domain)
                   ? this._handleToggle(entity.entity_id)
                   : this._handleEntityClick(entity.entity_id)}
-                title="${name}: ${state.state}">
+                title="${name}: ${state.state}"
+                aria-label="${name}: ${state.state}">
                 <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
                 <span>${name}</span>
               </button>

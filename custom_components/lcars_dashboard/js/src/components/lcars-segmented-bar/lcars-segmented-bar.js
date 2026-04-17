@@ -64,7 +64,7 @@ class LcarsSegmentedBar extends LitElement {
         .segment {
           width: 4px;
           height: 12px;
-          background: var(--lcars-gray, #9999aa);
+          background: var(--lcars-gray, #666688);
           opacity: 0.3;
           transition: opacity 200ms, background 200ms;
         }

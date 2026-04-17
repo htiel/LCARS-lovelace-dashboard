@@ -21,10 +21,10 @@ export const setpointStyles = css`
   }
 
   .sp-btn {
-    width: 2rem;
-    height: 2rem;
+    width: 3rem;
+    height: 2.5rem;
     border: none;
-    border-radius: 50%;
+    border-radius: 0;
     background: var(--sp-color);
     color: var(--lcars-black, #000);
     font-family: var(--lcars-font);
@@ -38,12 +38,14 @@ export const setpointStyles = css`
     line-height: 1;
     padding: 0;
   }
+  .sp-btn.sp-dec { border-radius: 1.5rem 0 0 1.5rem; }
+  .sp-btn.sp-inc { border-radius: 0 1.5rem 1.5rem 0; }
 
   .sp-btn:hover { opacity: 0.8; }
   .sp-btn:active { opacity: 0.6; }
   .sp-btn:disabled { opacity: 0.3; cursor: not-allowed; }
   .sp-btn:focus-visible {
-    outline: 2px solid var(--lcars-ice, #88f);
+    outline: 2px solid var(--lcars-ice, #99ccff);
     outline-offset: 2px;
   }
 

@@ -27,8 +27,8 @@ export const optionStripStyles = css`
     height: var(--lcars-btn-height, 1.75rem);
     border: none;
     border-radius: 0 var(--lcars-btn-radius, 1rem) var(--lcars-btn-radius, 1rem) 0;
-    background: var(--lcars-card-bg-color, #1a1a2e);
-    color: var(--lcars-space-white, #ccc);
+    background: var(--lcars-card-bg-color, var(--lcars-black, #000));
+    color: var(--lcars-space-white, #f5f6fa);
     font-family: var(--lcars-font);
     font-size: var(--lcars-font-size-data, 0.75rem);
     text-transform: uppercase;
@@ -54,7 +54,7 @@ export const optionStripStyles = css`
   }
 
   .option-btn:focus-visible {
-    outline: 2px solid var(--lcars-ice, #88f);
+    outline: 2px solid var(--lcars-ice, #99ccff);
     outline-offset: 2px;
   }
 `;

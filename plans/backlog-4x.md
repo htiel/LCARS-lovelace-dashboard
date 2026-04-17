@@ -1,7 +1,7 @@
 # LCARS Dashboard — 4.x Backlog
 
 > Stable branch (`4.0`). Non-breaking feature additions, bug fixes, and optimizations.
-> Version: 4.18.2 (current)
+> Version: 4.18.7 (current pre-release)
 
 ---
 

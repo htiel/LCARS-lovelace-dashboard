@@ -76,12 +76,12 @@ class LcarsSetpoint extends LitElement {
         aria-valuemax="${this.max}"
         aria-label="${this.label || 'Setpoint'}"
         style="${colorStyle}">
-        <button class="sp-btn"
+        <button class="sp-btn sp-dec"
           aria-label="Decrease"
           ?disabled=${this.value <= this.min}
           @click=${() => this._adjust(-this.step)}>−</button>
         <span class="sp-label">${displayLabel}</span>
-        <button class="sp-btn"
+        <button class="sp-btn sp-inc"
           aria-label="Increase"
           ?disabled=${this.value >= this.max}
           @click=${() => this._adjust(this.step)}>+</button>

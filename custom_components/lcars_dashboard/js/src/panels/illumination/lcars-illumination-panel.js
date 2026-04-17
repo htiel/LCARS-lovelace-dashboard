@@ -195,7 +195,11 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     const { dimmableLights, circuits } = this._getPartition();
     const all = [...dimmableLights, ...circuits];
     const total = all.length;
-    const active = all.filter(e => e.state?.state === 'on').length;
+    // Read LIVE state from hass for accurate badge count
+    const active = all.filter(e => {
+      const eid = e.entity?.entity_id;
+      return (this.hass?.states?.[eid] || e.state)?.state === 'on';
+    }).length;
     if (total === 0) return html``;
 
     return html`
@@ -282,7 +286,8 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
 
   _renderLightBar(entry) {
     const eid = entry.entity?.entity_id;
-    const state = entry.state;
+    // Read LIVE state from hass — cached entry.state may be stale after toggle
+    const state = this.hass?.states?.[eid] || entry.state;
     const isOn = state?.state === 'on';
     const brightness = isOn ? Math.round((state?.attributes?.brightness || 0) / 255 * 100) : 0;
     const name = this._shortEntityName(entry);
@@ -514,7 +519,8 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
 
   _renderCircuitRow(entry) {
     const eid = entry.entity?.entity_id;
-    const isOn = entry.state?.state === 'on';
+    // Read LIVE state from hass — cached entry.state may be stale after toggle
+    const isOn = (this.hass?.states?.[eid] || entry.state)?.state === 'on';
     const name = this._shortEntityName(entry);
     return html`
       <div class="ilm-circuit-row ${isOn ? 'on' : 'off'}"

@@ -1,7 +1,7 @@
 """LCARS Dashboard version sensor.
 Based on Dwains Dashboard by Dwain Scheeren (https://github.com/dwainscheeren/dwains-lovelace-dashboard).
 """
-from homeassistant.helpers.entity import Entity
+from homeassistant.components.sensor import SensorEntity
 from .const import DOMAIN, VERSION
 
 import logging
@@ -19,7 +19,7 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
     async_add_devices([LcarsVersionSensor(hass)])
 
 
-class LcarsVersionSensor(Entity):
+class LcarsVersionSensor(SensorEntity):
     """LCARS Dashboard installed version sensor — no external calls."""
 
     def __init__(self, hass):

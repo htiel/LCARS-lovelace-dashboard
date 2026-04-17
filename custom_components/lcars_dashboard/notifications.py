@@ -92,6 +92,7 @@ def async_dismiss(hass: HomeAssistant, notification_id: str) -> None:
     hass.async_create_task(hass.services.async_call(DOMAIN, SERVICE_DISMISS, data))
 
 @callback
+@websocket_api.require_admin
 @websocket_api.websocket_command({vol.Required("type"): "lcars_dashboard_notification/get"})
 def websocket_get_notifications(
     hass: HomeAssistant,

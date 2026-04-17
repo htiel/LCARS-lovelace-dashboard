@@ -153,7 +153,7 @@ export const environmentPanelStyles = css`
   }
   .battery-section-label {
     font-family: var(--lcars-font);
-    font-size: 0.55rem;
+    font-size: var(--lcars-font-size-label, 0.75rem);
     color: var(--lcars-sky, #aaaaff);
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -225,7 +225,7 @@ export const environmentPanelStyles = css`
     border: none;
     border-radius: 0 0.75rem 0.75rem 0;
     font-family: var(--lcars-font);
-    font-size: 0.55rem;
+    font-size: var(--lcars-font-size-label, 0.75rem);
     text-transform: uppercase;
     cursor: pointer;
     transition: filter 0.2s, background 0.2s;
@@ -335,7 +335,7 @@ export const environmentPanelStyles = css`
     flex: 1 1 auto;
   }
   .env-sparkline-label {
-    font-size: 0.55rem;
+    font-size: var(--lcars-font-size-label, 0.75rem);
     color: var(--lcars-space-white);
     text-transform: uppercase;
     white-space: nowrap;

@@ -93,7 +93,7 @@ export const powerPanelStyles = css`
   /* Section accent bars (consolidated) */
   .lcars-consolidated-power-panel .power-circuits-section { border-left: 3px solid var(--lcars-butterscotch, #ffcc99); padding-left: var(--lcars-gap, 12px); }
   .lcars-consolidated-power-panel .power-devices-section { border-left: 3px solid var(--lcars-ice, #99ccff); padding-left: var(--lcars-gap, 12px); }
-  .lcars-consolidated-power-panel .power-strips-section { border-left: 3px solid var(--lcars-african-violet, #cc99cc); padding-left: var(--lcars-gap, 12px); }
+  .lcars-consolidated-power-panel .power-strips-section { border-left: 3px solid var(--lcars-african-violet, #cc99ff); padding-left: var(--lcars-gap, 12px); }
 
   /* Circuit tile grid */
   .power-circuits {
@@ -115,7 +115,7 @@ export const powerPanelStyles = css`
   }
   .power-circuit-tile:hover { background: rgba(255, 255, 255, 0.06); }
   .power-circuit-tile:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
-  .lcars-consolidated-power-panel .power-circuit-tile:focus-visible { outline: 2px solid var(--lcars-sunflower, #ffcc66); outline-offset: -2px; }
+  .lcars-consolidated-power-panel .power-circuit-tile:focus-visible { outline: 2px solid var(--lcars-sunflower, #ffcc99); outline-offset: -2px; }
   .power-circuit-name { display: flex; align-items: center; gap: 0.375rem; font-size: var(--lcars-font-size-data); color: var(--lcars-space-white); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .power-circuit-indicator { flex-shrink: 0; font-size: 0.625rem; color: var(--circuit-color, var(--lcars-ice)); }
   .power-circuit-value-row { display: flex; align-items: center; gap: 0.5rem; }
@@ -147,7 +147,7 @@ export const powerPanelStyles = css`
   }
   .lcars-track-toggle[data-on] { background: var(--lcars-gold); }
   .lcars-track-toggle .track-label {
-    position: absolute; font-family: var(--lcars-font); font-size: 0.55rem;
+    position: absolute; font-family: var(--lcars-font); font-size: var(--lcars-font-size-label, 0.75rem);
     font-weight: 700; text-transform: uppercase; line-height: 1; pointer-events: none;
     transition: left var(--lcars-transition), right var(--lcars-transition), color var(--lcars-transition);
   }
@@ -180,7 +180,7 @@ export const powerPanelStyles = css`
   /* Clickable value */
   .power-clickable-value { cursor: pointer; display: inline; }
   .power-clickable-value:hover, .power-clickable-value:focus-visible { text-decoration: underline; text-decoration-style: dashed; text-underline-offset: 2px; }
-  .power-clickable-value:focus-visible { outline: 2px solid var(--lcars-sunflower, #ffcc66); outline-offset: 1px; border-radius: 2px; }
+  .power-clickable-value:focus-visible { outline: 2px solid var(--lcars-sunflower, #ffcc99); outline-offset: 1px; border-radius: 2px; }
 
   /* Popover */
   .power-detail-popover {
@@ -218,15 +218,15 @@ export const powerPanelStyles = css`
   /* Truncation pill */
   .power-show-all-pill {
     display: block; margin: 0.5rem auto 0; padding: 0.25rem 1rem;
-    border: 1px solid var(--lcars-gray, #999999);
+    border: 1px solid var(--lcars-gray, #666688);
     border-radius: 0 1.5rem 1.5rem 0;
-    background: rgba(153, 153, 153, 0.15); color: var(--lcars-gray, #999999);
+    background: rgba(153, 153, 153, 0.15); color: var(--lcars-gray, #666688);
     font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.75rem;
     text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer;
     transition: background 200ms ease, color 200ms ease;
   }
-  .power-show-all-pill:hover, .power-show-all-pill:focus-visible { background: var(--lcars-gray, #999999); color: var(--lcars-black, #000000); }
-  .power-show-all-pill:focus-visible { outline: 2px solid var(--lcars-sunflower, #ffcc66); outline-offset: 2px; }
+  .power-show-all-pill:hover, .power-show-all-pill:focus-visible { background: var(--lcars-gray, #666688); color: var(--lcars-black, #000000); }
+  .power-show-all-pill:focus-visible { outline: 2px solid var(--lcars-sunflower, #ffcc99); outline-offset: 2px; }
 
   .panel-pip-strip { position: absolute; bottom: 4px; right: 4px; width: 2rem; height: 3px; background: var(--panel-frame-color, var(--lcars-butterscotch)); border-radius: 1.5px; opacity: 0.3; }
 

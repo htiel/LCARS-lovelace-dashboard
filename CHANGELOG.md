@@ -2,6 +2,32 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.18.7] — 2026-04-17
+
+### Fixed — Production Hardening (Team Review Pass)
+
+**Security (Worf):**
+- **Path traversal in `ws_handle_sort_more_page`** — `sortData` items now validated via `_validate_path_component()` before use as file path segments.
+- **Missing auth on notification endpoint** — `websocket_get_notifications` now requires `@websocket_api.require_admin`, matching all other WS handlers.
+- **YAML key injection blocked** — `msg["key"]` in 4 bool-value handlers restricted to `ALLOWED_BOOL_KEYS` allowlist via `vol.In()`. `sortType` restricted to `ALLOWED_SORT_TYPES`.
+- **innerHTML XSS in power popover** — `_showCircuitPopover()` rewritten from `innerHTML` string concatenation to `lit-html render()` with auto-escaping. `_escapeHtml()` helper removed.
+
+**Python Backend (Data):**
+- **17 relative-path `open()` calls fixed** — All file I/O now uses `hass.config.path()` for absolute resolution. Prevents `FileNotFoundError` on Docker/venv installs where CWD ≠ config dir.
+- **File handle leak fixed** — Redundant re-read after write in `ws_handle_edit_area_button` deleted (leaked FD on every area edit).
+- **Global mutable state eliminated** — `areas`, `entities`, `devices`, `homepage_header` module globals moved to `hass.data[DOMAIN]`. Prevents race conditions on concurrent admin sessions.
+- **`async_forward_entry_setups` awaited** — Changed from fire-and-forget `async_create_task` to `await`, ensuring sensor platform errors surface properly.
+- **`async_unload_entry` added** — Integration now supports proper unload/reload (unloads sensor platform + removes panel).
+- **`sensor.py` uses `SensorEntity`** — Replaced deprecated `Entity` base class with `SensorEntity` from `homeassistant.components.sensor`.
+- **`package.json` version synced** — Was stuck at 4.17.2, now matches 4.18.7.
+
+**UI & Accessibility (Geordi La Forge):**
+- **11× `font-size: 0.55rem` (8.8px) fixed** — All instances replaced with `var(--lcars-font-size-label, 0.75rem)` across battery, climate, environment, power panel styles and homepage card.
+- **`<lcars-setpoint>` circles → endcap pills** — Replaced `border-radius: 50%` circular ±buttons with LCARS-compliant 3rem × 2.5rem endcap pills (rounded-left decrement, rounded-right increment).
+- **~24 incorrect CSS hex fallback values corrected** — lilac `#cc99cc`→`#cc55ff`, african-violet `#cc99cc`→`#cc99ff`, gray `#9999aa`→`#666688`, ice `#88f`→`#99ccff`, space-white `#ccc`→`#f5f6fa`, sunflower `#ffcc66`→`#ffcc99`, card bg `#1a1a2e`→`var(--lcars-black, #000)`.
+- **`:focus-visible` on `.battery-total-line`** — Added 2px ice-blue outline for keyboard focus visibility (WCAG 2.4.7).
+- **Camera panel `aria-label`** — Control buttons now have `aria-label` matching `title` text for consistent screen reader announcement (WCAG 4.1.2).
+
 ## [4.18.6] — 2026-04-16
 
 ### Fixed — Team Review Pass

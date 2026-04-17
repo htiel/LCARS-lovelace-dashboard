@@ -1,7 +1,7 @@
 ﻿# LCARS Dashboard - 4.x Backlog
 
 > Stable branch (`4.0`). Non-breaking feature additions, bug fixes, and optimizations.
-> Version: 4.18.8 (current stable)
+> Version: 4.18.9 (current stable)
 >
 > Completed items through 4.18.8 archived to `_archive/plans/backlog-4x.md`.
 >
@@ -51,7 +51,7 @@
 
 ## Backlog (WSJF Order)
 
-### 4X-27 - Clean up hass.data[DOMAIN] in async_unload_entry - `TODO` - Priority: HIGH - Size: XS - WSJF: 6.00
+### 4X-27 - Clean up hass.data[DOMAIN] in async_unload_entry - `DONE v4.18.9` - Priority: HIGH - Size: XS - WSJF: 6.00
 
 **GitHub Issue**: [#27](https://github.com/htiel/LCARS-lovelace-dashboard/issues/27)
 
@@ -62,7 +62,7 @@ HA convention is `hass.data.pop(DOMAIN, None)` in `async_unload_entry`. Current 
 
 ---
 
-### 4X-34 - Replace legacy 'D' dashboard icon from Dwains Dashboard - `TODO` - Priority: HIGH - Size: XS - WSJF: 6.00
+### 4X-34 - Replace legacy 'D' dashboard icon from Dwains Dashboard - `DONE v4.18.9` - Priority: HIGH - Size: XS - WSJF: 6.00
 
 **GitHub Issue**: [#34](https://github.com/htiel/LCARS-lovelace-dashboard/issues/34)
 
@@ -74,7 +74,7 @@ The sidebar/panel icon is still the letter 'D' carried over from the Dwains Dash
 
 ---
 
-### 4X-32 - Switches for plugs/lights missing from Illumination panel Circuits - `TODO` - Priority: HIGH - Size: S - WSJF: 5.00
+### 4X-32 - Switches for plugs/lights missing from Illumination panel Circuits - `DONE v4.18.9` - Priority: HIGH - Size: S - WSJF: 5.00
 
 **GitHub Issue**: [#32](https://github.com/htiel/LCARS-lovelace-dashboard/issues/32)
 
@@ -86,7 +86,7 @@ Switch-domain entities that control plugs or lights (e.g. smart plugs powering l
 
 ---
 
-### 4X-31 - Environmental + air purifier panels clip in consolidated room view - `TODO` - Priority: HIGH - Size: M - WSJF: 3.33
+### 4X-31 - Environmental + air purifier panels clip in consolidated room view - `DONE v4.18.9` - Priority: HIGH - Size: M - WSJF: 3.33
 
 **GitHub Issue**: [#31](https://github.com/htiel/LCARS-lovelace-dashboard/issues/31)
 

@@ -242,6 +242,7 @@ Execute in this exact order:
 9. Confirm implemented features are in the README and changelog and remove from the to-do list and roadmap. 
 10. **Clean up implementation plan documents** in `plans/` — mark as complete and archive.
 11. Update the spec documents in `specs/` with any implementation notes or deviations from the original design for future reference and mark as current.
+12. **Update example renders** — If any visual changes affect panel layout, colors, or new panel types, update `examples/lcars-panel-gallery.html` and any screenshots in `screenshots/` to reflect the current state.
 
 ### Release Type Rules
 - **4.x.y patch** (bug fixes, minor): Steps 1-6 only. No GitHub release.

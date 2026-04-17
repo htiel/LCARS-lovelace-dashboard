@@ -2,6 +2,23 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.18.9] — 2026-04-17
+
+### Fixed — Bug Fixes (4X-27, 4X-31, 4X-32, 4X-34)
+
+**Architecture (Data):**
+- **`async_unload_entry` cleanup (4X-27)** — `hass.data.pop(DOMAIN, None)` now cleans up stale data (4 OrderedDicts) on config entry unload. Returns actual `unload_ok` result instead of hardcoded `True`. Follows HA convention.
+
+**UI (Geordi):**
+- **Sidebar icon updated (4X-34)** — Default sidebar icon changed from legacy `mdi:alpha-d-box` (Dwains Dashboard holdover) to `mdi:star-four-points`. Consistent with config flow default.
+- **Life Support panel clipping fixed (4X-31)** — Added `overflow: visible` to panel frame content area, life support substations grid, and substation cells. Prevents clipping of nested climate + environment panels and LCARS corner bracket pseudo-elements.
+- **Switches now appear in Illumination Circuits (4X-32)** — All `switch` domain entities in a room (excluding `device_class: outlet`) now appear in the Illumination panel's Circuits section. Previously only switches matching lighting keywords were included, missing smart plugs powering lamps.
+
+### Review Summary
+- Data: APPROVE (4/4, one condition applied — outlet exclusion added)
+- Worf: APPROVE (4/4, no security concerns)
+- Geordi: APPROVE (4/4, brackets rendering correctly, accessible toggle-pills)
+
 ## [4.18.8] — 2026-04-17
 
 ### Fixed — Production Hardening (Team Review Pass)

@@ -1,8 +1,8 @@
 ## v4.18.2 Addendum — Illumination & Irrigation Panel Enhancements
 
 **Scope**: Illumination entity coverage fixes, stable sort, drag-and-drop reorder; Irrigation panel V2 full Rachio integration
-**Status**: IMPLEMENTED — v4.18.2
-**Date**: 2026-04-16
+**Status**: IMPLEMENTED — v4.18.2, updated v4.18.9
+**Date**: 2026-04-16 (updated 2026-04-17)
 
 ---
 
@@ -38,6 +38,8 @@ These Insteon dimmers register as `switch` domain via `switch_as_x` but have pro
 ---
 
 ### B4. Device-Level Dedup in Partition
+
+**v4.18.9 update**: Pass 2 of `_partitionLightingEntities()` now also includes all `switch` domain entities in the room (excluding `device_class: outlet`) in the Circuits section, even if they don't match lighting keywords. This ensures smart plugs powering lamps, fans controlled by switches, and other switch-domain devices appear in the Illumination panel. The `coveredDeviceIds` dedup still prevents duplicates for devices that expose both a `light` and `switch` entity. Data's review identified that the `device_class: outlet` exclusion from `isLightingEntity()` must be preserved in the catch-all branch — applied.
 
 `_partitionLightingEntities()` now performs two-pass device dedup:
 

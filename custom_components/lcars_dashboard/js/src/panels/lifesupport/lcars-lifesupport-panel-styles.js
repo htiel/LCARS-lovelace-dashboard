@@ -14,6 +14,7 @@ export const lifeSupportPanelStyles = css`
     flex-direction: column;
     gap: 0.75rem;
     width: 100%;
+    overflow: visible;
   }
 
   .ls-empty {
@@ -31,6 +32,7 @@ export const lifeSupportPanelStyles = css`
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
+    overflow: visible;
   }
 
   @media (max-width: 56rem) {
@@ -41,6 +43,8 @@ export const lifeSupportPanelStyles = css`
 
   .ls-substation {
     min-width: 0;
+    min-height: 0;
+    overflow: visible;
   }
 
   /* Nested panels should fill their substation */

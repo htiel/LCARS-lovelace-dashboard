@@ -115,13 +115,18 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
       }
     }
 
-    // Pass 2: collect circuits only for devices not already covered by a light entity
+    // Pass 2: collect circuits — switches controlling lights or power
+    // Include: (a) switches matching lighting keywords (legacy behavior)
+    //          (b) switch-domain entities in the room (plugs powering lights, etc.)
+    // Exclude: devices already covered by a light entity (avoids duplicates)
+    // Exclude: device_class: outlet (pure power monitoring — routes to power panel)
     for (const entry of allEntries) {
       if (entry.domain === 'light' || entry.domain === 'scene') continue;
+      if (entry.entity?.device_id && coveredDeviceIds.has(entry.entity.device_id)) continue;
       if (isLightingEntity(entry)) {
-        if (!entry.entity?.device_id || !coveredDeviceIds.has(entry.entity.device_id)) {
-          circuits.push(entry);
-        }
+        circuits.push(entry);
+      } else if (entry.domain === 'switch' && entry.state?.attributes?.device_class !== 'outlet') {
+        circuits.push(entry);
       }
     }
 

@@ -290,8 +290,27 @@ export function isEnvironmentEntity(entry) {
   return false;
 }
 
+// ─── Infrastructure LED Detection ───────────────────────────────────────────
+
+const INFRA_LED_PLATFORMS = new Set(['unifi']);
+
+/**
+ * Detect infrastructure/indicator LEDs that are NOT room lighting.
+ * UniFi AP LEDs, ESPHome status panels, tplink plug LED indicators, etc.
+ */
+function isInfrastructureLED(entry) {
+  if (entry.domain !== 'light') return false;
+  if (INFRA_LED_PLATFORMS.has(entry.entity?.platform)) return true;
+  const eid = entry.entity?.entity_id || '';
+  if (/led_indicator|status_led|status_panel|status_light/.test(eid)) return true;
+  const name = (entry.state?.attributes?.friendly_name || '').toLowerCase();
+  if (/\bindicator\b|\bstatus\s*(led|light|panel)\b/.test(name)) return true;
+  return false;
+}
+
 /** Named predicate: is this a lighting entity (light domain or lighting switch)? */
 export function isLightingEntity(entry) {
+  if (isInfrastructureLED(entry)) return false;
   if (entry.domain === 'light') return true;
   if (entry.domain === 'scene') return true;
   if (entry.domain === 'switch' || entry.domain === 'input_boolean') {
@@ -299,7 +318,7 @@ export function isLightingEntity(entry) {
     const name = (entry.state?.attributes?.friendly_name || '').toLowerCase();
     if (entry.state?.attributes?.device_class === 'outlet') return false;
     return /light|lamp|sconce|chandelier|pendant|fixture|dimmer|illuminat/i.test(name) ||
-           /light|lamp|sconce|chandelier/i.test(eid);
+           /light|lamp|sconce|chandelier|switchlinc|lamplinc|togglelinc/i.test(eid);
   }
   return false;
 }

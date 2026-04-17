@@ -45,8 +45,6 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     this._dragEntityId = null;
     this._dragState = null;
     this._flipPositions = null;
-    this._cachedPartition = null;
-    this._partitionDirty = true;
     this._brightnessDebouncer = createDebouncer((eid, pct) => {
       const safePct = clampValue(pct, 1, 100);
       const brightness = Math.round(safePct / 100 * 255);
@@ -87,23 +85,13 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     if (changedProps.has('areaId') || changedProps.has('group') || changedProps.has('entities')) {
       this._expandedLight = null;
       this._cancelDrag();
-      // Force-clear partition cache — new area means entirely new entity set
-      this._cachedPartition = null;
-      this._partitionDirty = true;
-    }
-    // Invalidate partition cache on hass state changes (light toggled, brightness changed)
-    if (changedProps.has('hass') || changedProps.has('linkedEntities')) {
-      this._partitionDirty = true;
     }
   }
 
-  /* ─── Entity Partitioning (cached per render cycle) ─── */
+  /* ─── Entity Partitioning (recomputed each render — lightweight) ─── */
 
   _getPartition() {
-    if (!this._partitionDirty && this._cachedPartition) return this._cachedPartition;
-    this._cachedPartition = this._partitionLightingEntities();
-    this._partitionDirty = false;
-    return this._cachedPartition;
+    return this._partitionLightingEntities();
   }
 
   /**
@@ -460,7 +448,6 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
       ids.splice(fromIdx, 1);
       ids.splice(newIndex, 0, this._dragState.entityId);
       this._saveOrder(ids);
-      this._partitionDirty = true;
       this.requestUpdate();
     }
   }
@@ -480,7 +467,6 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     this._dragEntityId = null;
     if (didDrag) {
       requestAnimationFrame(() => { this._lastDragWasDrag = false; });
-      this._partitionDirty = true;
       this.requestUpdate();
     }
   }
@@ -544,7 +530,6 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     ids.splice(idx, 1);
     ids.splice(newIdx, 0, entityId);
     this._saveOrder(ids);
-    this._partitionDirty = true;
     this.requestUpdate();
 
     // Announce position change

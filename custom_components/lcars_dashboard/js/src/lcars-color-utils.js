@@ -365,6 +365,14 @@ export const STATE_COLOR_MAP = {
     off: '--lcars-sunflower',
     unavailable: '--lcars-tomato',
   },
+  power: {
+    standby:     '--lcars-gray',
+    low:         '--lcars-ice',
+    moderate:    '--lcars-sunflower',
+    high:        '--lcars-butterscotch',
+    critical:    '--lcars-tomato',
+    unavailable: '--lcars-tomato',
+  },
 };
 
 /**
@@ -430,4 +438,59 @@ export function getRainDelayInfo(attrs) {
     return { label: `${delay} HR DELAY`, color: 'var(--lcars-african-violet)' };
   }
   return { label: 'NONE', color: 'var(--lcars-disabled)' };
+}
+
+// ─── Power Panel: Power Draw Level ──────────────────────────────────────────
+
+/**
+ * Resolve power consumption (watts) to LCARS color CSS variable.
+ * 5-tier model: off/standby → low → moderate → high → critical.
+ * Source: LCARS-POWER-PANEL-SPEC §2.1 (Geordi), reconciled F-1/F-2 (Picard).
+ * @param {number|string|null} watts - Power consumption in watts
+ * @param {Object} [thresholds] - Custom tier boundaries
+ * @param {number} [thresholds.lowMax=500]
+ * @param {number} [thresholds.moderateMax=1500]
+ * @param {number} [thresholds.highMax=3000]
+ * @returns {string} CSS variable string
+ */
+export function getPowerColor(watts, thresholds = {}) {
+  const { lowMax = 500, moderateMax = 1500, highMax = 3000 } = thresholds;
+  if (watts == null || isNaN(watts)) return 'var(--lcars-tomato)';
+  const w = Math.abs(Number(watts));
+  if (w <= 0)           return 'var(--lcars-gray)';
+  if (w <= lowMax)      return 'var(--lcars-ice)';
+  if (w <= moderateMax) return 'var(--lcars-sunflower)';
+  if (w <= highMax)     return 'var(--lcars-butterscotch)';
+  return 'var(--lcars-tomato)';
+}
+
+/**
+ * Resolve power draw to a semantic tier label (uppercase).
+ * @param {number|string|null} watts - Power consumption in watts
+ * @param {Object} [thresholds] - Custom tier boundaries (same as getPowerColor)
+ * @returns {string} Tier label
+ */
+export function getPowerLabel(watts, thresholds = {}) {
+  const { lowMax = 500, moderateMax = 1500, highMax = 3000 } = thresholds;
+  if (watts == null || isNaN(watts)) return 'UNAVAILABLE';
+  const w = Math.abs(Number(watts));
+  if (w <= 0)           return 'STANDBY';
+  if (w <= lowMax)      return 'LOW DRAW';
+  if (w <= moderateMax) return 'MODERATE';
+  if (w <= highMax)     return 'HIGH DRAW';
+  return 'CRITICAL';
+}
+
+/**
+ * Resolve grid balance direction to LCARS color CSS variable.
+ * Positive = importing from grid, negative = exporting to grid.
+ * @param {number|string|null} watts - Net grid power (positive=import)
+ * @param {number} [deadband=50] - Watts threshold for "balanced" state
+ * @returns {string} CSS variable string
+ */
+export function getGridBalanceColor(watts, deadband = 50) {
+  if (watts == null || isNaN(watts)) return 'var(--lcars-gray)';
+  const w = Number(watts);
+  if (Math.abs(w) <= deadband) return 'var(--lcars-sunflower)';
+  return w > 0 ? 'var(--lcars-butterscotch)' : 'var(--lcars-ice)';
 }

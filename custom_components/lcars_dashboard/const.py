@@ -1,2 +1,6 @@
 DOMAIN = "lcars_dashboard"
-VERSION = "5.0.0-beta.1"
+VERSION = "4.18.8"
+
+# Configuration keys
+CONF_DASHBOARDS = "dashboards"
+DEFAULT_DASHBOARDS = ["habitat"]

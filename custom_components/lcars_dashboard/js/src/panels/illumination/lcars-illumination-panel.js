@@ -310,7 +310,6 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
       <div class="ilm-light-item">
         <div class="ilm-light-bar ${isOn ? 'on' : 'off'} ${isDragging ? 'dragging' : ''}"
            role="listitem"
-           aria-roledescription="${this.editMode ? 'reorderable light' : ''}"
            tabindex="0"
            data-entity-id="${eid}"
            style="--brightness:${isOn && !hasBrightness ? 100 : brightness}%; --bar-color:${barColor}"
@@ -574,6 +573,7 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
       <div class="ilm-circuit-row ${isOn ? 'on' : 'off'}"
            role="listitem"
            tabindex="0"
+           aria-label="${name} — ${isOn ? 'on' : 'off'}"
            @click=${() => this._toggleLight(eid)}
            @contextmenu=${(e) => { e.preventDefault(); showMoreInfo(eid); }}
            @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._toggleLight(eid); } }}>

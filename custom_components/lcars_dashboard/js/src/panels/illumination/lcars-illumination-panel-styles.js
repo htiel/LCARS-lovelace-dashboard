@@ -32,7 +32,7 @@ export const illuminationPanelStyles = css`
 
   .ilm-lights {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
     gap: 0.375rem;
   }
 
@@ -248,7 +248,7 @@ export const illuminationPanelStyles = css`
 
   .ilm-circuits {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
     gap: 0.375rem;
   }
 
@@ -327,6 +327,11 @@ export const illuminationPanelStyles = css`
     filter: brightness(1.2);
   }
 
+  .ilm-effect-btn:focus-visible {
+    outline: 2px solid var(--lcars-sunflower, #ffcc99);
+    outline-offset: 2px;
+  }
+
   /* ─── Color Presets — single row of LCARS pills ─── */
 
   .ilm-color-presets {
@@ -363,6 +368,11 @@ export const illuminationPanelStyles = css`
 
   .ilm-color-preset:hover {
     filter: brightness(1.2);
+  }
+
+  .ilm-color-preset:focus-visible {
+    outline: 2px solid var(--lcars-sunflower, #ffcc99);
+    outline-offset: 2px;
   }
 
   /* ─── Effect name truncation in bar value ─── */

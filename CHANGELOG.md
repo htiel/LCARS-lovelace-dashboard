@@ -2,6 +2,47 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.18.8] — 2026-04-17
+
+### Fixed — Production Hardening (Team Review Pass)
+
+**Security (Worf):**
+- **Path traversal in `ws_handle_sort_more_page`** — `sortData` items validated via `_validate_path_component()`.
+- **Missing auth on notification endpoint** — `websocket_get_notifications` now requires `@websocket_api.require_admin`.
+- **YAML key injection blocked** — 4 bool-value handlers restricted to `ALLOWED_BOOL_KEYS` allowlist, `sortType` restricted to `ALLOWED_SORT_TYPES`.
+- **innerHTML XSS in power popover** — `_showCircuitPopover()` rewritten with `lit-html render()`. `_escapeHtml()` removed.
+
+**Python Backend (Data):**
+- **17 relative-path `open()` calls fixed** — all use `hass.config.path()`.
+- **File handle leak fixed** — redundant re-read in `ws_handle_edit_area_button` deleted.
+- **Global mutable state eliminated** — `areas`, `entities`, `devices`, `homepage_header` moved to `hass.data[DOMAIN]`.
+- **`async_forward_entry_setups` awaited** — was fire-and-forget.
+- **`async_unload_entry` added** — proper unload/reload support.
+- **`sensor.py` uses `SensorEntity`** — replaced deprecated `Entity`.
+- **`package.json` version synced** — was stuck at 4.17.2.
+
+**UI & Accessibility (Geordi La Forge):**
+- **11× `font-size: 0.55rem`** replaced with `var(--lcars-font-size-label, 0.75rem)`.
+- **`<lcars-setpoint>` circles → endcap pills** — LCARS-compliant ± buttons.
+- **~24 CSS hex fallback values corrected** — lilac, african-violet, gray, ice, sunflower, space-white.
+- **`:focus-visible` on `.battery-total-line`** — keyboard focus visibility.
+- **Camera panel `aria-label`** — control buttons now accessible.
+- **Environment panel clipping** — sensor values no longer overflow into atmoscrubber cylinder.
+
+### Added — Illumination Panel: Color & Effects (4X-11 Enhancement)
+
+- **Full-width layout** — illumination panel spans both columns as primary room control via `--panel-max-width` CSS custom property.
+- **Multi-column responsive grid** — light bars and circuits use `repeat(auto-fill, minmax(min(20rem, 100%), 1fr))` for 2-3 per row.
+- **Effect strip** — 2-column LCARS pill grid showing all device effects (Nanoleaf, Govee). Active effect highlighted gold.
+- **Color presets** — 6 LCARS palette pills (Warm, Cool, Red, Green, Blue, Purple) for HS/RGB lights.
+- **Bar value: effect name** — active effect name shown instead of brightness % when an effect is running.
+- **RGB-aware bar fill** — `_hueToLcarsColor()` maps HS hue to nearest LCARS palette color.
+- **Toggle-only lights** — `onoff` mode lights show ON/OFF without expandable slider/controls.
+- **Live state reactivity** — all renders read from `this.hass.states` for immediate feedback.
+- **Stale room bug fixed** — partition cache removed; entities recomputed every render.
+- **Effect/color button `:focus-visible`** — WCAG 2.4.7 keyboard focus outlines.
+- **Circuit row `aria-label`** — state announced to screen readers.
+
 ## [4.18.7] — 2026-04-17
 
 ### Fixed — Production Hardening (Team Review Pass)

@@ -113,6 +113,86 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 - **WCAG 2.2 AA** — Color-blind safe indicators, focus-visible outlines, 24×24px minimum targets
 - **Self-contained** — All fonts (Antonio) and dependencies vendored locally, no external CDN calls
 
+## Panel Gallery
+
+> **[View the interactive panel gallery →](examples/lcars-panel-gallery.html)**
+> Open `examples/lcars-panel-gallery.html` in a browser to see static mockups of all 12 panel types with sample data.
+
+<table>
+<tr>
+<td width="50%">
+
+**Illumination Control** — Full-width lighting panel with brightness bars, effect strip, color presets, scenes, and circuit toggles.
+
+</td>
+<td width="50%">
+
+**Climate** — SVG temperature arc with segmented fill, dual setpoints, HVAC/fan/preset mode strips, sibling zone summary.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Environment / Atmoscrubber** — AQI cylinder with particle animation, PM2.5/CO₂/VOC sensor rows, 24h sparkline tray, fan controls.
+
+</td>
+<td>
+
+**Battery / Warp Core** — Charge-level reactor core with SOC gauge, power flow telemetry, NUT UPS status parsing.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Alarm** — Shield viewscreen, zone sensor roster, rate-limited PIN keypad, arm mode strip with countdown.
+
+</td>
+<td>
+
+**Media** — Album art viewscreen, 12-bar audio waveform, transport toolbar, volume slider with keyboard support.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Power Systems** — Circuit tile grid with 5-tier color coding, smart plug toggles, power strip parent/child blocks, SVG arc chart.
+
+</td>
+<td>
+
+**Camera** — LCARS-framed viewscreen with three-state display (connecting, live, offline), sensor rows, privacy controls.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Weather** — Condition display with ambient glow, forecast strip with range bars, sun arc indicator, wind compass.
+
+</td>
+<td>
+
+**Irrigation** — Zone rows with photo thumbnails, barberpole progress, countdown timers, schedule strips, Quick Run builder.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Pool & Spa** — Dual body viewscreens, chemistry segmented bars (pH, chlorine, salt), circuit groups, freeze protection.
+
+</td>
+<td>
+
+**Life Support** — Composite panel composing climate + environment substations, ambient sensor row, adaptive sparkline tray.
+
+</td>
+</tr>
+</table>
+
 ## Screenshots
 
 ### Area View — Environment Panels
@@ -145,7 +225,7 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 |-------|-----------|
 | HA Integration | Python custom component (`lcars_dashboard`) |
 | Frontend | Lit Element v2 web components — 12 extracted panel elements + shared base class |
-| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~566 KiB) |
+| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~651 KiB) |
 | Styling | 3-tier CSS composition: base variables → component shadow DOM → panel-specific modules |
 | Components | 7 shared components: `<lcars-panel-frame>`, `<lcars-sensor-row>`, `<lcars-section-divider>`, `<lcars-option-strip>`, `<lcars-setpoint>`, `<lcars-segmented-bar>`, `<lcars-summary-badge>` |
 | Communication | WebSocket API + window custom events |

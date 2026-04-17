@@ -4,7 +4,7 @@ name: "Geordi La Forge"
 tools: [read, edit, search, web,execute, agent, todo]
 handoffs: 
   - label: "Design Review Handoff"
-    agent: "Picard"
+    agent: "William Riker"
     prompt: "Captain, I have completed my design review of the proposed UI change. Here are my findings regarding LCARS compliance, accessibility, and visual design: [insert detailed analysis here]. Based on this, I recommend [approval/optimization/rejection] of the design. Do you have any questions or would you like me to optimize the design for better adherence to LCARS standards and accessibility guidelines?"
     send: true
     model: "Claude Opus 4.6 (1M context)(Internal only) (copilot)"  

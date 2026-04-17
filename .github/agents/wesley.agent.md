@@ -4,7 +4,7 @@ name: "Wesley Crusher"
 tools: [read, edit, search, web, agent, todo, execute]
 handoffs: 
   - label: "Creative Idea Handoff"
-    agent: "Picard"
+    agent: "William Riker"
     prompt: "Captain, I have a new creative idea that could enhance our project. Here are the details: [insert idea description, technical feasibility, and potential impact here]. I believe this could bring significant value to our users and align with our goals. Do you have any questions or would you like me to prototype this idea for further evaluation?"
     send: true
     model: "Claude Opus 4.6 (1M context)(Internal only) (copilot)"

@@ -285,36 +285,31 @@ export const illuminationPanelStyles = css`
     color: var(--lcars-gray, #666688);
   }
 
-  /* ─── Effect Strip ─── */
+  /* ─── Effect Strip — 2-column grid of LCARS pill buttons ─── */
 
   .ilm-effects-strip {
-    display: flex;
-    gap: 0.25rem;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--lcars-gray, #666688) transparent;
-    padding: 0.125rem 0.75rem 0.25rem 2.25rem;
-    -webkit-overflow-scrolling: touch;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.375rem;
+    padding: 0.25rem 0.75rem 0.375rem 2.25rem;
   }
 
   .ilm-effect-btn {
     font-family: var(--lcars-font, 'Antonio', sans-serif);
-    font-size: var(--lcars-font-size-label, 0.75rem);
+    font-size: var(--lcars-font-size-data, 0.875rem);
     text-transform: uppercase;
     color: var(--lcars-text, #f5f6fa);
-    background: rgba(102, 102, 136, 0.25);
+    background: rgba(102, 102, 136, 0.3);
     border: none;
-    padding: 0.25rem 0.75rem;
-    border-radius: 0 var(--lcars-btn-radius, 1.5rem) var(--lcars-btn-radius, 1.5rem) 0;
+    padding: 0.5rem 1rem;
+    border-radius: var(--lcars-btn-radius, 1.5rem);
     cursor: pointer;
     white-space: nowrap;
-    min-height: 1.75rem;
-    min-width: 2.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 2.5rem;
     transition: opacity 150ms ease;
-  }
-
-  .ilm-effect-btn:first-child {
-    border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 var(--lcars-btn-radius, 1.5rem);
+    text-align: center;
   }
 
   .ilm-effect-btn.active {
@@ -326,33 +321,32 @@ export const illuminationPanelStyles = css`
     filter: brightness(1.2);
   }
 
-  /* ─── Color Presets ─── */
+  /* ─── Color Presets — single row of LCARS pills ─── */
 
   .ilm-color-presets {
     display: flex;
-    gap: 0.25rem;
-    padding: 0.125rem 0.75rem 0.25rem 2.25rem;
+    gap: 0.375rem;
+    padding: 0.25rem 0.75rem 0.375rem 2.25rem;
+    flex-wrap: wrap;
   }
 
   .ilm-color-preset {
     font-family: var(--lcars-font, 'Antonio', sans-serif);
-    font-size: var(--lcars-font-size-label, 0.75rem);
+    font-size: var(--lcars-font-size-data, 0.875rem);
     text-transform: uppercase;
     color: var(--lcars-black, #000);
     background: var(--preset-color);
     border: none;
-    padding: 0.25rem 0.625rem;
-    border-radius: 0 var(--lcars-btn-radius, 1.5rem) var(--lcars-btn-radius, 1.5rem) 0;
+    padding: 0.5rem 1rem;
+    border-radius: var(--lcars-btn-radius, 1.5rem);
     cursor: pointer;
     white-space: nowrap;
-    min-height: 1.75rem;
-    min-width: 2.5rem;
+    min-height: 2.5rem;
+    flex: 1;
+    min-width: 4rem;
     transition: opacity 150ms ease;
     opacity: 0.6;
-  }
-
-  .ilm-color-preset:first-child {
-    border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 var(--lcars-btn-radius, 1.5rem);
+    text-align: center;
   }
 
   .ilm-color-preset.active {

@@ -941,6 +941,7 @@ class LcarsHomepageCard extends LitElement {
             display: flex;
             flex-direction: column;
             gap: var(--lcars-gap);
+            min-width: 0;
           }
           .area-split-panels .lcars-device-panel {
             max-width: none;
@@ -7146,7 +7147,7 @@ class LcarsHomepageCard extends LitElement {
     /* ─── Render area content: two-column when cameras present ─── */
     _renderAreaContent(entities, areaId) {
       if (entities.length === 0)
-        return html`<div class="lcars-empty">No entities in this area</div>`;
+        return html`<div class="lcars-empty" role="status">No entities in this area</div>`;
 
       const { byDevice, noDevice } = this._groupEntities(entities);
 
@@ -7265,7 +7266,7 @@ class LcarsHomepageCard extends LitElement {
 
       // Left column: illumination → entities → climate/life-support/env → power
       const leftColumn = html`
-        <div class="area-split-main">
+        <div class="area-split-main" role="region" aria-label="Device controls">
           ${ilmPanel ? ilmPanel.template : ''}
           ${entityContent}
           ${belowEntityPanels.map(p => p.template)}
@@ -7280,7 +7281,7 @@ class LcarsHomepageCard extends LitElement {
       return html`
         <div class="area-split-layout">
           ${leftColumn}
-          <div class="area-split-panels" aria-live="polite">
+          <div class="area-split-panels" role="region" aria-label="System panels">
             ${rightPanels.map(p => p.template)}
           </div>
         </div>

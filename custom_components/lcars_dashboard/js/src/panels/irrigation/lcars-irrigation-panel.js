@@ -12,10 +12,9 @@
  *         pause/resume, controller status telemetry.
  */
 import { html } from 'lit-element';
-import { nothing } from 'lit-html/lit-html.js';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { getIrrigationZoneColor } from '../../lcars-color-utils.js';
-import { createRateLimiter } from '../../lcars-service-utils.js';
+import { createRateLimiter, clampValue } from '../../lcars-service-utils.js';
 import { showMoreInfo } from '../../lcars-helpers.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { irrigationPanelStyles } from './lcars-irrigation-panel-styles.js';
@@ -53,10 +52,10 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
   static get properties() {
     return {
       ...super.properties,
-      _expandedZone: { type: String, state: true },
-      _quickRunOpen: { type: Boolean, state: true },
-      _quickRunZones: { type: Array, state: true },
-      _quickRunDuration: { type: Number, state: true },
+      _expandedZone:    { type: String,  attribute: false },
+      _quickRunOpen:    { type: Boolean, attribute: false },
+      _quickRunZones:   { type: Array,   attribute: false },
+      _quickRunDuration:{ type: Number,  attribute: false },
     };
   }
 
@@ -87,7 +86,7 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
 
   /* ─── Partition: zones, schedules, controller, binary sensors ─── */
 
-  _partitionIrrigationEntities(entries) {
+  _partitionIrrigationEntities(entries = []) {
     const zones = [];
     const schedules = [];
     const controller = [];
@@ -167,6 +166,11 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
     this._callService('switch', turnOn ? 'turn_on' : 'turn_off', { entity_id: entityId });
   }
 
+  _handleIrrigationToggle(entityId) {
+    if (!this.#irrigationLimiter.allow()) return;
+    this._callService('homeassistant', 'toggle', { entity_id: entityId });
+  }
+
   _handlePause() {
     if (!this.#irrigationLimiter.allow()) return;
     this._callService('rachio', 'pause_watering', { duration: 60 });
@@ -194,9 +198,12 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
   _handleQuickRun() {
     if (!this.#irrigationLimiter.allow()) return;
     if (!this._quickRunZones.length || !this._quickRunDuration) return;
-    this._callService('rachio', 'start_multiple_zone_schedule', {
+    if (!this.hass) return;
+    const duration = clampValue(this._quickRunDuration, 1, 30);
+    // Bypass base _callService — Rachio expects array entity_id
+    this.hass.callService('rachio', 'start_multiple_zone_schedule', {
       entity_id: this._quickRunZones,
-      duration: Array(this._quickRunZones.length).fill(this._quickRunDuration),
+      duration: Array(this._quickRunZones.length).fill(duration),
     });
     this._quickRunOpen = false;
     this._quickRunZones = [];
@@ -269,7 +276,7 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
   /* ─── Rain Alert Banner ─── */
 
   _renderRainAlert(isRainDelay, isRaining, rainDelayEntry) {
-    if (!isRainDelay && !isRaining) return nothing;
+    if (!isRainDelay && !isRaining) return '';
     const isDelay = isRainDelay;
     const icon = isDelay ? 'mdi:weather-pouring' : 'mdi:weather-rainy';
     const label = isDelay ? 'RAIN DELAY ACTIVE' : 'RAIN DETECTED';
@@ -282,10 +289,10 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
         ${isDelay ? html`
           <button class="irr-rain-cancel-btn"
             aria-label="Cancel rain delay"
-            @click=${() => this._handleToggle(rainDelayEntry.entity.entity_id)}>
+            @click=${() => this._handleIrrigationToggle(rainDelayEntry.entity.entity_id)}>
             CANCEL
           </button>
-        ` : nothing}
+        ` : ''}
       </div>
     `;
   }
@@ -293,7 +300,7 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
   /* ─── Schedule Strips ─── */
 
   _renderSchedules(schedules) {
-    if (!schedules.length) return nothing;
+    if (!schedules.length) return '';
     return html`
       <div class="irr-schedules" role="list" aria-label="Irrigation schedules">
         <div class="irr-section-label">SCHEDULES</div>
@@ -307,7 +314,7 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
             <div class="irr-schedule-strip" role="listitem">
               <button class="irr-schedule-toggle" ?data-on=${isEnabled}
                 aria-label="${name}: ${isEnabled ? 'enabled' : 'disabled'}"
-                @click=${() => this._handleToggle(entity.entity_id)}>
+                @click=${() => this._handleIrrigationToggle(entity.entity_id)}>
                 ${isEnabled ? 'ON' : 'OFF'}
               </button>
               <span class="irr-schedule-name">${name}</span>
@@ -403,18 +410,18 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
         <!-- Countdown timer (when active) -->
         ${countdown ? html`
           <span class="irr-zone-countdown">${countdown}</span>
-        ` : nothing}
+        ` : ''}
 
         <!-- Active zone fill bar (barberpole) -->
         ${isOn ? html`
-          <div class="irr-zone-fill ${isOn ? 'active' : ''}" role="progressbar"
+          <div class="irr-zone-fill active" role="progressbar"
             aria-label="Watering progress" aria-valuemin="0" aria-valuemax="100"
             aria-valuenow="${Math.round(progress)}"
             style="width:${progress}%"></div>
-        ` : nothing}
+        ` : ''}
 
         <!-- Expanded detail row -->
-        ${isExpanded ? this._renderZoneDetail(state) : nothing}
+        ${isExpanded ? this._renderZoneDetail(state) : ''}
       </div>
     `;
   }
@@ -449,7 +456,7 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
             </span>
           `)}
         </div>
-        ${summary ? html`<div class="irr-zone-summary">${summary}</div>` : nothing}
+        ${summary ? html`<div class="irr-zone-summary">${summary}</div>` : ''}
       </div>
     `;
   }
@@ -506,7 +513,7 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
               ENGAGE
             </button>
           </div>
-        ` : nothing}
+        ` : ''}
       </div>
     `;
   }
@@ -520,17 +527,17 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
           <button class="irr-control-btn" ?data-on=${standbyEntry.state?.state === 'on'}
             role="switch" aria-checked="${standbyEntry.state?.state === 'on'}"
             aria-label="Standby mode: ${standbyEntry.state?.state === 'on' ? 'active' : 'inactive'}"
-            @click=${() => this._handleToggle(standbyEntry.entity.entity_id)}>
+            @click=${() => this._handleIrrigationToggle(standbyEntry.entity.entity_id)}>
             STANDBY
           </button>
-        ` : nothing}
+        ` : ''}
         ${rainDelayEntry ? html`
           <button class="irr-control-btn" ?data-on=${rainDelayEntry.state?.state === 'on'}
             aria-label="Rain delay: ${rainDelayEntry.state?.state === 'on' ? 'active, click to cancel' : 'inactive, click to activate 24 hour delay'}"
-            @click=${() => this._handleToggle(rainDelayEntry.entity.entity_id)}>
+            @click=${() => this._handleIrrigationToggle(rainDelayEntry.entity.entity_id)}>
             RAIN DELAY
           </button>
-        ` : nothing}
+        ` : ''}
         ${activeZone ? html`
           <button class="irr-control-btn irr-pause-btn"
             aria-label="Pause watering for 60 minutes"
@@ -542,7 +549,7 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
             @click=${() => this._handleStopAll()}>
             STOP ALL
           </button>
-        ` : nothing}
+        ` : ''}
       </div>
     `;
   }

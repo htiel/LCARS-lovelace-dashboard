@@ -2,6 +2,34 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.18.6] — 2026-04-16
+
+### Fixed — Team Review Pass
+
+**Illumination Panel:**
+- **Duplicate `_handleLightKeydown` deleted** — Second definition silently overwrote first, killing Alt+Arrow keyboard reorder (WCAG 2.5.7 drag alternative).
+- **Click-after-drag race condition** — Pointer up nulled drag state before click event fired, causing unintentional light toggle after drag reorder.
+- **Partition cache optimized** — Only invalidated when data-bearing props change (`hass`, `group`, `entities`, `areaId`), not on every UI state change.
+- **Debouncer cancelled on disconnect** — Prevented stale service calls after area switch.
+- **`releasePointerCapture` guarded** — Wrapped in try/catch to prevent DOMException on browser focus loss.
+- **Drag `hoverIndex` initialized** — Prevented phantom reorder on first drag movement.
+- **`CSS.escape()`** — Entity ID selector injection hardened (Worf finding).
+- **Area change reset** — `_expandedLight` and drag state cleared when `areaId` changes.
+
+**Irrigation Panel:**
+- **`nothing` symbol removed** — lit-html 3.x-only import replaced with `''` across 11 usages (would crash on any irrigation panel render).
+- **Quick Run fixed** — Array `entity_id` bypassed base `_callService` validation; now calls `hass.callService` directly with clamped duration.
+- **`state: true` → `attribute: false`** — lit-element 2.5.1 compatibility (state: true is 3.x-only).
+- **Rate-limited toggles** — Standby/Rain Delay/Schedule toggles now route through `#irrigationLimiter`.
+- **Null guard on partition** — Defensive default parameter prevents crash on undefined `group.entities`.
+- **Redundant `isOn` check** — Removed inside already-guarded block.
+
+**Homepage Card:**
+- **`aria-live` removed from panel container** — Was announcing all right-column panel content on area switch (Geordi finding).
+- **Landmark roles added** — Left column: `role="region" aria-label="Device controls"`, Right column: `role="region" aria-label="System panels"`.
+- **`min-width: 0`** — Added to `.area-split-panels` to prevent grid blowout from wide panel content.
+- **Empty area `role="status"`** — Screen readers now announce empty area state.
+
 ## [4.18.5] — 2026-04-16
 
 ### Fixed — Element Expression Crash

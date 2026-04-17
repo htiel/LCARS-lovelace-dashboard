@@ -53,6 +53,7 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
       this._callService('light', 'turn_on', { entity_id: eid, brightness });
     }, 300);
     this._sceneRateLimiter = createRateLimiter(3, 5000);
+    this._lastDragWasDrag = false;
     // Bound handler for pointer capture events
     this._boundPointerMove = this._handlePointerMove.bind(this);
     this._boundPointerUp = this._handlePointerUp.bind(this);
@@ -75,14 +76,24 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._cancelDrag();
+    this._brightnessDebouncer.cancel();
     this._dragState = null;
     this._flipPositions = null;
   }
 
   willUpdate(changedProps) {
     super.willUpdate(changedProps);
-    // Invalidate partition cache when entities or hass change
-    this._partitionDirty = true;
+    // Reset UI state when switching areas
+    if (changedProps.has('areaId') && changedProps.get('areaId') !== undefined) {
+      this._expandedLight = null;
+      this._cancelDrag();
+    }
+    // Invalidate partition cache only when data-bearing props change
+    if (changedProps.has('hass') || changedProps.has('group') ||
+        changedProps.has('entities') || changedProps.has('linkedEntities') ||
+        changedProps.has('areaId')) {
+      this._partitionDirty = true;
+    }
   }
 
   /* ─── Entity Partitioning (cached per render cycle) ─── */
@@ -289,7 +300,7 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
            tabindex="0"
            data-entity-id="${eid}"
            style="--brightness:${brightness}%; --bar-color:${barColor}"
-           @click=${(e) => { if (!this._dragState?.didDrag) this._toggleLight(eid); }}
+           @click=${(e) => { if (!this._lastDragWasDrag && !this._dragState?.didDrag) this._toggleLight(eid); }}
            @contextmenu=${(e) => { e.preventDefault(); showMoreInfo(eid); }}
            @keydown=${(e) => this._handleLightKeydown(e, eid, brightness)}>
         ${this.editMode ? html`
@@ -340,12 +351,14 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     const { dimmableLights } = this._getPartition();
     const orderedIds = dimmableLights.map(en => en.entity?.entity_id);
 
+    const currentIndex = orderedIds.indexOf(entityId);
     this._dragState = {
       entityId,
       pointerId: e.pointerId,
       startY: e.clientY,
       barEl: bar,
-      currentIndex: orderedIds.indexOf(entityId),
+      currentIndex,
+      hoverIndex: currentIndex,
       orderedIds: [...orderedIds],
       didDrag: false,
     };
@@ -388,15 +401,17 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     if (!this._dragState) return;
     const bar = this._dragState.barEl;
     if (bar) {
-      bar.releasePointerCapture(this._dragState.pointerId);
+      try { bar.releasePointerCapture(this._dragState.pointerId); } catch {}
       bar.removeEventListener('pointermove', this._boundPointerMove);
       bar.removeEventListener('pointerup', this._boundPointerUp);
       bar.removeEventListener('pointercancel', this._boundPointerUp);
     }
     const didDrag = this._dragState.didDrag;
+    this._lastDragWasDrag = didDrag;
     this._dragState = null;
     this._dragEntityId = null;
     if (didDrag) {
+      requestAnimationFrame(() => { this._lastDragWasDrag = false; });
       this._partitionDirty = true;
       this.requestUpdate();
     }
@@ -405,7 +420,7 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
   _cancelDrag() {
     if (this._dragState?.barEl) {
       const bar = this._dragState.barEl;
-      bar.releasePointerCapture(this._dragState.pointerId);
+      try { bar.releasePointerCapture(this._dragState.pointerId); } catch {}
       bar.removeEventListener('pointermove', this._boundPointerMove);
       bar.removeEventListener('pointerup', this._boundPointerUp);
       bar.removeEventListener('pointercancel', this._boundPointerUp);
@@ -474,7 +489,7 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
 
     // Re-focus the moved element after render
     this.updateComplete.then(() => {
-      const bar = this.shadowRoot.querySelector(`[data-entity-id="${entityId}"]`);
+      const bar = this.shadowRoot.querySelector(`[data-entity-id="${CSS.escape(entityId)}"]`);
       if (bar) bar.focus();
     });
   }
@@ -548,23 +563,6 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     if (!this.hass || !entityId) return;
     if (!this._sceneRateLimiter.allow()) return;
     this._callService('scene', 'turn_on', { entity_id: entityId });
-  }
-
-  _handleLightKeydown(e, entityId, currentBrightness) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      this._toggleLight(entityId);
-    } else if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-      e.preventDefault();
-      if (currentBrightness > 0) {
-        this._setBrightness(entityId, Math.min(100, currentBrightness + 5));
-      }
-    } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-      e.preventDefault();
-      if (currentBrightness > 0) {
-        this._setBrightness(entityId, Math.max(1, currentBrightness - 5));
-      }
-    }
   }
 
   /* ─── Utility ─── */

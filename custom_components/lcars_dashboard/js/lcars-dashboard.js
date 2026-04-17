@@ -2323,6 +2323,7 @@
     gap: 0.125rem;
     padding: 0.25rem 0.5rem;
     overflow-y: auto;
+    min-width: 0;
   }
   .device-sensor-line {
     display: flex;
@@ -2354,9 +2355,12 @@
     font-size: 0.75rem;
   }
   .sensor-state-value {
-    flex-shrink: 0;
+    flex-shrink: 1;
     font-weight: 700;
     font-size: var(--lcars-font-size-data);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /* Section dividers */

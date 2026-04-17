@@ -133,6 +133,13 @@ export const illuminationPanelStyles = css`
 
   /* ─── Brightness Slider ─── */
 
+  .ilm-expanded-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding-bottom: 0.25rem;
+  }
+
   .ilm-slider-row {
     padding: 0.25rem 0.75rem 0.375rem 2.25rem;
   }
@@ -278,6 +285,94 @@ export const illuminationPanelStyles = css`
     color: var(--lcars-gray, #666688);
   }
 
+  /* ─── Effect Strip ─── */
+
+  .ilm-effects-strip {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--lcars-gray, #666688) transparent;
+    padding: 0.125rem 0.75rem 0.25rem 2.25rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ilm-effect-btn {
+    font-family: var(--lcars-font, 'Antonio', sans-serif);
+    font-size: var(--lcars-font-size-label, 0.75rem);
+    text-transform: uppercase;
+    color: var(--lcars-text, #f5f6fa);
+    background: rgba(102, 102, 136, 0.25);
+    border: none;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0 var(--lcars-btn-radius, 1.5rem) var(--lcars-btn-radius, 1.5rem) 0;
+    cursor: pointer;
+    white-space: nowrap;
+    min-height: 1.75rem;
+    min-width: 2.5rem;
+    transition: opacity 150ms ease;
+  }
+
+  .ilm-effect-btn:first-child {
+    border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 var(--lcars-btn-radius, 1.5rem);
+  }
+
+  .ilm-effect-btn.active {
+    background: var(--lcars-gold, #ffaa00);
+    color: var(--lcars-black, #000);
+  }
+
+  .ilm-effect-btn:hover {
+    filter: brightness(1.2);
+  }
+
+  /* ─── Color Presets ─── */
+
+  .ilm-color-presets {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.125rem 0.75rem 0.25rem 2.25rem;
+  }
+
+  .ilm-color-preset {
+    font-family: var(--lcars-font, 'Antonio', sans-serif);
+    font-size: var(--lcars-font-size-label, 0.75rem);
+    text-transform: uppercase;
+    color: var(--lcars-black, #000);
+    background: var(--preset-color);
+    border: none;
+    padding: 0.25rem 0.625rem;
+    border-radius: 0 var(--lcars-btn-radius, 1.5rem) var(--lcars-btn-radius, 1.5rem) 0;
+    cursor: pointer;
+    white-space: nowrap;
+    min-height: 1.75rem;
+    min-width: 2.5rem;
+    transition: opacity 150ms ease;
+    opacity: 0.6;
+  }
+
+  .ilm-color-preset:first-child {
+    border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 var(--lcars-btn-radius, 1.5rem);
+  }
+
+  .ilm-color-preset.active {
+    opacity: 1;
+    outline: 2px solid var(--lcars-text, #f5f6fa);
+    outline-offset: 1px;
+  }
+
+  .ilm-color-preset:hover {
+    filter: brightness(1.2);
+  }
+
+  /* ─── Effect name truncation in bar value ─── */
+
+  .ilm-light-value {
+    max-width: 8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   /* ─── Reduced Motion ─── */
 
   @media (prefers-reduced-motion: reduce) {
@@ -285,7 +380,9 @@ export const illuminationPanelStyles = css`
     .ilm-light-bar::before,
     .ilm-indicator,
     .ilm-circuit-row,
-    .ilm-scene-btn {
+    .ilm-scene-btn,
+    .ilm-effect-btn,
+    .ilm-color-preset {
       transition-duration: 0.01ms !important;
     }
   }

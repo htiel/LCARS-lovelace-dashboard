@@ -296,7 +296,22 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
 
     // Color temperature awareness
     const colorTemp = state?.attributes?.color_temp_kelvin;
-    const barColor = this._getBarColor(colorTemp, isOn);
+    const barColor = this._getBarColor(colorTemp, isOn, state);
+
+    // Effect support
+    const effectList = state?.attributes?.effect_list;
+    const activeEffect = state?.attributes?.effect;
+    const hasEffects = Array.isArray(effectList) && effectList.length > 0;
+
+    // Color mode support
+    const supportedModes = state?.attributes?.supported_color_modes || [];
+    const hasColorControl = supportedModes.some(m => m === 'hs' || m === 'rgb' || m === 'xy');
+    const activeHue = state?.attributes?.hs_color?.[0];
+
+    // Bar display: show effect name when active, else brightness %
+    const barValueText = isOn
+      ? (activeEffect && activeEffect !== 'none' ? activeEffect.toUpperCase() : `${brightness}%`)
+      : 'OFF';
 
     return html`
       <div class="ilm-light-bar ${isOn ? 'on' : 'off'} ${isDragging ? 'dragging' : ''}"
@@ -323,17 +338,52 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
               tabindex="0"
               role="button"
               aria-expanded="${expanded}"
-              aria-label="${name} brightness ${isOn ? brightness + '%' : 'OFF'} — click to ${expanded ? 'collapse' : 'expand'} slider"
+              aria-label="${name} ${barValueText} — click to ${expanded ? 'collapse' : 'expand'} controls"
               @click=${(e) => { e.stopPropagation(); this._expandedLight = expanded ? null : eid; }}>
-          ${isOn ? `${brightness}%` : 'OFF'}
+          ${barValueText}
         </span>
       </div>
       ${expanded ? html`
-        <div class="ilm-slider-row">
-          <input type="range" min="1" max="100" .value=${String(brightness)}
-                 aria-label="${name} brightness slider"
-                 @input=${(e) => this._brightnessDebouncer.call(eid, parseInt(e.target.value))}
-                 @change=${(e) => this._setBrightness(eid, parseInt(e.target.value))}>
+        <div class="ilm-expanded-controls">
+          <div class="ilm-slider-row">
+            <input type="range" min="1" max="100" .value=${String(brightness)}
+                   aria-label="${name} brightness slider"
+                   @input=${(e) => { e.stopPropagation(); this._brightnessDebouncer.call(eid, parseInt(e.target.value)); }}
+                   @click=${(e) => e.stopPropagation()}
+                   @change=${(e) => { e.stopPropagation(); this._setBrightness(eid, parseInt(e.target.value)); }}>
+          </div>
+          ${hasColorControl ? html`
+            <div class="ilm-color-presets" role="listbox" aria-label="${name} color presets">
+              ${LcarsIlluminationPanel.COLOR_PRESETS.map(p => html`
+                <button class="ilm-color-preset ${this._isActivePreset(activeHue, p.hs[0]) ? 'active' : ''}"
+                        style="--preset-color:${p.color}"
+                        role="option"
+                        aria-selected="${this._isActivePreset(activeHue, p.hs[0])}"
+                        aria-label="Set ${p.name.toLowerCase()} color"
+                        @click=${(e) => { e.stopPropagation(); this._setColor(eid, p.hs); }}>
+                  ${p.name}
+                </button>
+              `)}
+            </div>
+          ` : ''}
+          ${hasEffects ? html`
+            <div class="ilm-effects-strip" role="listbox" aria-label="${name} effects">
+              <button class="ilm-effect-btn ${!activeEffect || activeEffect === 'none' ? 'active' : ''}"
+                      role="option"
+                      aria-selected="${!activeEffect || activeEffect === 'none'}"
+                      @click=${(e) => { e.stopPropagation(); this._clearEffect(eid); }}>
+                SOLID
+              </button>
+              ${effectList.map(fx => html`
+                <button class="ilm-effect-btn ${activeEffect === fx ? 'active' : ''}"
+                        role="option"
+                        aria-selected="${activeEffect === fx}"
+                        @click=${(e) => { e.stopPropagation(); this._setEffect(eid, fx); }}>
+                  ${fx.toUpperCase()}
+                </button>
+              `)}
+            </div>
+          ` : ''}
         </div>
       ` : ''}
     `;
@@ -539,15 +589,70 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
 
   /* ─── Color Temperature Bar Color ─── */
 
-  _getBarColor(colorTempK, isOn) {
+  _getBarColor(colorTempK, isOn, state) {
     if (!isOn) return 'var(--lcars-gray, #666688)';
+
+    // Priority: HS color mode → color_temp → default
+    const colorMode = state?.attributes?.color_mode;
+    if (colorMode === 'hs' || colorMode === 'rgb' || colorMode === 'xy') {
+      const hs = state?.attributes?.hs_color;
+      if (hs) return this._hueToLcarsColor(hs[0], hs[1]);
+    }
+
     if (!colorTempK) return 'var(--lcars-sunflower)';
-    // Map 2000K (warm amber) to 6500K (cool white)
     const t = Math.max(0, Math.min(1, (colorTempK - 2000) / 4500));
-    // Interpolate between butterscotch and ice
     if (t < 0.5) return 'var(--lcars-butterscotch)';
     if (t < 0.8) return 'var(--lcars-sunflower)';
     return 'var(--lcars-ice)';
+  }
+
+  /** Map hue (0–360) to nearest LCARS palette color */
+  _hueToLcarsColor(hue, saturation) {
+    if (saturation != null && saturation < 15) return 'var(--lcars-sunflower)';
+    if (hue < 30)  return 'var(--lcars-tomato)';
+    if (hue < 60)  return 'var(--lcars-butterscotch)';
+    if (hue < 90)  return 'var(--lcars-sunflower)';
+    if (hue < 160) return '#66bb6a';
+    if (hue < 220) return 'var(--lcars-ice)';
+    if (hue < 270) return 'var(--lcars-bluey)';
+    if (hue < 330) return 'var(--lcars-lilac)';
+    return 'var(--lcars-tomato)';
+  }
+
+  /* ─── Color Presets ─── */
+
+  static get COLOR_PRESETS() {
+    return [
+      { name: 'WARM',   hs: [30, 80],   color: 'var(--lcars-butterscotch, #ff9966)' },
+      { name: 'COOL',   hs: [210, 20],  color: 'var(--lcars-ice, #99ccff)' },
+      { name: 'RED',    hs: [0, 100],   color: 'var(--lcars-tomato, #ff5555)' },
+      { name: 'GREEN',  hs: [120, 100], color: '#66bb6a' },
+      { name: 'BLUE',   hs: [240, 100], color: 'var(--lcars-bluey, #3366cc)' },
+      { name: 'PURPLE', hs: [280, 80],  color: 'var(--lcars-lilac, #cc55ff)' },
+    ];
+  }
+
+  _isActivePreset(activeHue, presetHue) {
+    if (activeHue == null) return false;
+    const diff = Math.abs(activeHue - presetHue);
+    return diff < 20 || diff > 340;
+  }
+
+  /* ─── Effect & Color Actions ─── */
+
+  _setEffect(entityId, effect) {
+    if (!this.hass || !entityId) return;
+    this._callService('light', 'turn_on', { entity_id: entityId, effect });
+  }
+
+  _clearEffect(entityId) {
+    if (!this.hass || !entityId) return;
+    this._callService('light', 'turn_on', { entity_id: entityId, effect: 'none' });
+  }
+
+  _setColor(entityId, hs) {
+    if (!this.hass || !entityId) return;
+    this._callService('light', 'turn_on', { entity_id: entityId, hs_color: hs });
   }
 
   /* ─── Actions ─── */

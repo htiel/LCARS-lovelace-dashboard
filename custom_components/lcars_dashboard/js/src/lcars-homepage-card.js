@@ -934,6 +934,17 @@ class LcarsHomepageCard extends LitElement {
             gap: 1rem;
             align-items: start;
           }
+          /* ─── Full-width illumination panel above columns ─── */
+          .area-illumination-full {
+            margin-bottom: 1rem;
+          }
+          .area-illumination-full lcars-illumination-panel {
+            --ilm-full-width: 1;
+          }
+          .area-illumination-full .lcars-device-panel,
+          .area-illumination-full lcars-illumination-panel {
+            max-width: none;
+          }
           .area-split-main {
             min-width: 0;
           }
@@ -7248,25 +7259,28 @@ class LcarsHomepageCard extends LitElement {
       leftPanels.sort((a, b) => (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99));
       rightPanels.sort((a, b) => (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99));
 
-      // Illumination renders ABOVE entities; other left panels render BELOW
+      // Illumination renders FULL-WIDTH above both columns as primary room control
       const ilmPanel = leftPanels.find(p => p.panelType === PANEL_TYPE_ILLUMINATION);
       const belowEntityPanels = leftPanels.filter(p => p.panelType !== PANEL_TYPE_ILLUMINATION);
 
-      // Left column: illumination → entities → climate/life-support/env → power
+      // Left column: entities → climate/life-support/env → power
       const leftColumn = html`
         <div class="area-split-main" role="region" aria-label="Device controls">
-          ${ilmPanel ? ilmPanel.template : ''}
           ${entityContent}
           ${belowEntityPanels.map(p => p.template)}
           ${powerTemplate}
         </div>
       `;
 
-      // No right-column panels → single column
-      if (rightPanels.length === 0) return leftColumn;
+      // No right-column panels → single column (with illumination on top if present)
+      if (rightPanels.length === 0) return html`
+        ${ilmPanel ? html`<div class="area-illumination-full">${ilmPanel.template}</div>` : ''}
+        ${leftColumn}
+      `;
 
-      // Two-column split: entities+left-panels LEFT, right-panels RIGHT
+      // Two-column split: illumination full-width on top, then columns below
       return html`
+        ${ilmPanel ? html`<div class="area-illumination-full">${ilmPanel.template}</div>` : ''}
         <div class="area-split-layout">
           ${leftColumn}
           <div class="area-split-panels" role="region" aria-label="System panels">

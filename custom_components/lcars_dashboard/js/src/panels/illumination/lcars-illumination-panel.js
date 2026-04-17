@@ -84,14 +84,15 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
   willUpdate(changedProps) {
     super.willUpdate(changedProps);
     // Reset UI state when switching areas
-    if (changedProps.has('areaId') && changedProps.get('areaId') !== undefined) {
+    if (changedProps.has('areaId') || changedProps.has('group') || changedProps.has('entities')) {
       this._expandedLight = null;
       this._cancelDrag();
+      // Force-clear partition cache — new area means entirely new entity set
+      this._cachedPartition = null;
+      this._partitionDirty = true;
     }
-    // Invalidate partition cache only when data-bearing props change
-    if (changedProps.has('hass') || changedProps.has('group') ||
-        changedProps.has('entities') || changedProps.has('linkedEntities') ||
-        changedProps.has('areaId')) {
+    // Invalidate partition cache on hass state changes (light toggled, brightness changed)
+    if (changedProps.has('hass') || changedProps.has('linkedEntities')) {
       this._partitionDirty = true;
     }
   }

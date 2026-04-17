@@ -14,26 +14,67 @@
  *   default → LCARS button
  */
 import { LitElement, html, css } from 'lit-element';
+import { svg, render } from 'lit-html';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getHass, showMoreInfo, fireEvent, createCardElement, lcarsEventBus, lcarsLog, openEditPopup } from './lcars-helpers.js';
 import {
-  classifyDevice,
+  classifyDevice, classifyArea,
   PANEL_TYPE_CAMERA, PANEL_TYPE_ALARM, PANEL_TYPE_AQUATICS,
   PANEL_TYPE_CLIMATE, PANEL_TYPE_MEDIA, PANEL_TYPE_ENVIRONMENT,
   PANEL_TYPE_IRRIGATION, PANEL_TYPE_WEATHER, PANEL_TYPE_BATTERY,
-  PANEL_TYPE_ORDER,
+  PANEL_TYPE_POWER, PANEL_TYPE_LIFE_SUPPORT, PANEL_TYPE_ILLUMINATION,
+  PANEL_TYPE_ORDER, PANEL_COLUMN,
   CAMERA_DOMAINS, CLIMATE_DOMAINS, MEDIA_DOMAINS, ALARM_DOMAINS, WEATHER_DOMAINS,
   TOGGLE_DOMAINS, SENSOR_DOMAINS, COVER_DOMAINS,
   AQ_DEVICE_CLASSES, AQ_ENTITY_SUFFIX_RE,
   DOMAIN_LABELS, DOMAIN_ORDER,
+  isLightingEntity, isClimateEntity, isEnvironmentEntity, isAmbientSensor,
 } from './lcars-entity-utils.js';
-import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor, getCo2Color, getTempColor, getTempComfortClass, getSafeComfortColor, COMFORT_COLORS, getRainDelayInfo } from './lcars-color-utils.js';
+import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor, getCo2Color, getTempColor, getTempComfortClass, getSafeComfortColor, COMFORT_COLORS, getRainDelayInfo, getPowerColor, getPowerLabel, getGridBalanceColor } from './lcars-color-utils.js';
 import { clampSetpoint, clampValue, createRateLimiter, createDebouncer } from './lcars-service-utils.js';
 import { renderSparkline, fetchSparklineData } from './lcars-sparkline.js';
 import { fetchForecasts } from './lcars-weather-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from './lcars-shared-animations.js';
+import { getFloorAreas } from './lcars-hierarchy-utils.js';
+import { getAreaEntities, groupEntities } from './lcars-entity-query.js';
+
+/* ─── Side-effect imports: extracted components & panels (no webpack entry needed) ─── */
+import './components/lcars-panel-frame/lcars-panel-frame.js';
+import './components/lcars-sensor-row/lcars-sensor-row.js';
+import './components/lcars-section-divider/lcars-section-divider.js';
+import './components/lcars-option-strip/lcars-option-strip.js';
+import './components/lcars-setpoint/lcars-setpoint.js';
+import './panels/irrigation/lcars-irrigation-panel.js';
+import './panels/camera/lcars-camera-panel.js';
+import './panels/environment/lcars-environment-panel.js';
+import './panels/battery/lcars-battery-panel.js';
+import './panels/climate/lcars-climate-panel.js';
+import './panels/alarm/lcars-alarm-panel.js';
+import './panels/media/lcars-media-panel.js';
+import './panels/pool-spa/lcars-pool-spa-panel.js';
+import './panels/weather/lcars-weather-panel.js';
+import './panels/power/lcars-power-panel.js';
+import './panels/lifesupport/lcars-lifesupport-panel.js';
+import './panels/illumination/lcars-illumination-panel.js';
 
 const TAG = 'Homepage';
+
+// ─── Panel Dispatch Registry (4X-21) ────────────────────────────────────────
+// Factory function pattern per Geordi — no unsafeStatic, no dynamic tag injection.
+// Each entry returns a lit-html template for the panel type.
+
+const PANEL_TAG_REGISTRY = new Map([
+  [PANEL_TYPE_CAMERA,       (group, hass, editMode, config) => html`<lcars-camera-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-camera-panel>`],
+  [PANEL_TYPE_ENVIRONMENT,  (group, hass, editMode, config) => html`<lcars-environment-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-environment-panel>`],
+  [PANEL_TYPE_BATTERY,      (group, hass, editMode, config) => html`<lcars-battery-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-battery-panel>`],
+  [PANEL_TYPE_CLIMATE,      (group, hass, editMode, config) => html`<lcars-climate-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-climate-panel>`],
+  [PANEL_TYPE_ALARM,        (group, hass, editMode, config) => html`<lcars-alarm-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-alarm-panel>`],
+  [PANEL_TYPE_MEDIA,        (group, hass, editMode, config) => html`<lcars-media-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-media-panel>`],
+  [PANEL_TYPE_AQUATICS,     (group, hass, editMode, config) => html`<lcars-pool-spa-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-pool-spa-panel>`],
+  [PANEL_TYPE_WEATHER,      (group, hass, editMode, config) => html`<lcars-weather-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-weather-panel>`],
+  [PANEL_TYPE_LIFE_SUPPORT, (group, hass, editMode, config) => html`<lcars-lifesupport-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-lifesupport-panel>`],
+  [PANEL_TYPE_ILLUMINATION, (group, hass, editMode, config) => html`<lcars-illumination-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-illumination-panel>`],
+]);
 
 /* Build a cache-busted camera image URL using last_updated timestamp */
 function cameraImageUrl(state) {
@@ -294,38 +335,14 @@ class LcarsHomepageCard extends LitElement {
       }
     }
 
-    /* ─── Entity resolution: direct area_id OR via device (cached) ─── */
+    /* ─── Entity resolution: delegates to shared lcars-entity-query.js (4X-13) ─── */
     _getAreaEntities(areaId) {
-      if (!this._hass) return [];
-      // Return cached result if available
-      if (this._entityCache.has(areaId)) {
-        return this._entityCache.get(areaId);
-      }
-      lcarsLog.debug(TAG, 'Entity cache MISS — resolving area:', areaId);
-      const entityReg = Object.values(this._hass.entities || {});
-      const deviceReg = this._hass.devices || {};
-      const areaDeviceIds = new Set();
-      Object.values(deviceReg).forEach((dev) => {
-        if (dev.area_id === areaId) areaDeviceIds.add(dev.id);
-      });
-      const result = entityReg.filter((e) => {
-        if (e.hidden_by || e.hidden || e.disabled_by) return false;
-        if (e.entity_category) return false;
-        if (e.area_id === areaId) return true;
-        if (!e.area_id && e.device_id && areaDeviceIds.has(e.device_id)) return true;
-        return false;
-      });
-      this._entityCache.set(areaId, result);
-      lcarsLog.debug(TAG, 'Resolved', result.length, 'entities for area:', areaId);
-      return result;
+      return getAreaEntities(this._hass, areaId, this._entityCache);
     }
 
     /* ─── Floor-level entity resolution: union all areas on a floor ─── */
     _getFloorAreaIds(floorId) {
-      if (!this._hass?.areas) return [];
-      return Object.values(this._hass.areas)
-        .filter(a => a.floor_id === floorId)
-        .map(a => a.area_id);
+      return getFloorAreas(this._hass, floorId);
     }
 
     /* ─── Fetch config/diagnostic entities for a specific device (battery panels) ─── */
@@ -344,40 +361,9 @@ class LcarsHomepageCard extends LitElement {
       return { config, diagnostic };
     }
 
-    /* ─── Group entities: device → domain ─── */
+    /* ─── Group entities: delegates to shared lcars-entity-query.js (4X-13) ─── */
     _groupEntities(entities) {
-      const devices = this._hass.devices || {};
-      const byDevice = new Map();     // deviceId → { device, entities[] }
-      const noDevice = [];             // entities with no device
-
-      entities.forEach((e) => {
-        const domain = e.entity_id.split('.')[0];
-        const entry = { entity: e, domain, state: this._getEntityState(e.entity_id) };
-        if (!entry.state) return;
-        if (e.device_id && devices[e.device_id]) {
-          if (!byDevice.has(e.device_id)) {
-            byDevice.set(e.device_id, { device: devices[e.device_id], entities: [] });
-          }
-          byDevice.get(e.device_id).entities.push(entry);
-        } else {
-          noDevice.push(entry);
-        }
-      });
-
-      // Within each device, sort entities by domain priority then name
-      const sortFn = (a, b) => {
-        const pa = DOMAIN_ORDER[a.domain] ?? 50;
-        const pb = DOMAIN_ORDER[b.domain] ?? 50;
-        if (pa !== pb) return pa - pb;
-        return (a.state?.attributes?.friendly_name || '').localeCompare(
-          b.state?.attributes?.friendly_name || ''
-        );
-      };
-
-      byDevice.forEach((v) => v.entities.sort(sortFn));
-      noDevice.sort(sortFn);
-
-      return { byDevice, noDevice };
+      return groupEntities(this._hass, entities);
     }
 
     /* ─── Group entries by domain ─── */
@@ -549,17 +535,17 @@ class LcarsHomepageCard extends LitElement {
             font-size: calc(var(--lcars-font-size-title) * 1.15);
             font-weight: normal;
             margin: 0;
-            color: var(--lcars-lilac, #cc99cc);
+            color: var(--lcars-lilac, #cc55ff);
             text-transform: uppercase;
             padding: 0.25rem 0 0.5rem 0;
-            border-left: 4px solid var(--lcars-lilac, #cc99cc);
+            border-left: 4px solid var(--lcars-lilac, #cc55ff);
             padding-left: 1rem;
           }
           .content-floor-header::after {
             content: '';
             display: block;
             height: 3px;
-            background: var(--lcars-lilac, #cc99cc);
+            background: var(--lcars-lilac, #cc55ff);
             margin-top: 0.5rem;
             opacity: 0.5;
           }
@@ -836,7 +822,9 @@ class LcarsHomepageCard extends LitElement {
             display: block;
             aspect-ratio: 16/9;
             object-fit: cover;
-            background: #111;
+            background: var(--lcars-black);
+            position: relative;
+            z-index: 0;
           }
           .camera-label {
             position: absolute;
@@ -852,6 +840,7 @@ class LcarsHomepageCard extends LitElement {
             font-family: var(--lcars-font);
             font-size: var(--lcars-font-size-data);
             text-transform: uppercase;
+            z-index: 3;
           }
           .camera-label ha-icon { --mdc-icon-size: 14px; }
           .camera-label .cam-state {
@@ -860,7 +849,74 @@ class LcarsHomepageCard extends LitElement {
             color: var(--lcars-space-white);
             opacity: 0.7;
           }
-          .camera-frame[data-off] { border-color: var(--lcars-gray); opacity: 0.5; }
+
+          /* ── Camera state overlays ── */
+          .camera-connecting-overlay,
+          .camera-offline-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: var(--lcars-black);
+            z-index: 2;
+            transition: opacity 300ms ease-out, visibility 300ms ease-out;
+          }
+          .camera-connecting-text {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-ice);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            animation: lcars-viewscreen-breathe 4s ease-in-out infinite;
+          }
+          @keyframes lcars-viewscreen-breathe {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.4; }
+          }
+          .camera-offline-overlay ha-icon {
+            --mdc-icon-size: 32px;
+            color: var(--lcars-tomato);
+          }
+          .camera-offline-text {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-tomato);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+          }
+
+          /* State-driven visibility (D-4: opacity/visibility, not display:none) */
+          .camera-frame[data-state="live"] .camera-connecting-overlay,
+          .camera-frame[data-state="offline"] .camera-connecting-overlay {
+            opacity: 0;
+            visibility: hidden;
+          }
+          .camera-frame[data-state="connecting"] .camera-offline-overlay,
+          .camera-frame[data-state="live"] .camera-offline-overlay {
+            opacity: 0;
+            visibility: hidden;
+          }
+          .camera-frame[data-state="offline"] {
+            border-color: var(--lcars-tomato);
+            opacity: 1;
+          }
+          .camera-frame[data-state="offline"]:hover { border-color: var(--lcars-gold); }
+          /* Hide img during connecting so overlay text is visible */
+          .camera-frame[data-state="connecting"] img { opacity: 0; }
+          /* Hide img during offline so overlay is visible */
+          .camera-frame[data-state="offline"] img { opacity: 0; }
+          /* Spacer to maintain 16:9 when no img rendered */
+          .camera-spacer { aspect-ratio: 16/9; }
+          /* Camera frame inside device panel media fills container */
+          .device-panel-media .camera-frame {
+            border: none;
+            border-radius: 0;
+            width: 100%;
+            height: 100%;
+          }
 
           /* ═══════ DEVICE PANEL (reusable frame for camera / climate / media) ═══════ */
           .device-panels-section {
@@ -871,12 +927,19 @@ class LcarsHomepageCard extends LitElement {
             margin-bottom: 0.75rem;
           }
 
-          /* ─── Two-column split: entities left, camera panels right ─── */
+          /* ─── Two-column split: entities+left-panels left, right-panels right ─── */
           .area-split-layout {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1rem;
             align-items: start;
+          }
+          /* ─── Full-width illumination panel above columns ─── */
+          .area-illumination-full {
+            margin-bottom: 1rem;
+          }
+          .area-illumination-full lcars-illumination-panel {
+            --panel-max-width: none;
           }
           .area-split-main {
             min-width: 0;
@@ -885,6 +948,7 @@ class LcarsHomepageCard extends LitElement {
             display: flex;
             flex-direction: column;
             gap: var(--lcars-gap);
+            min-width: 0;
           }
           .area-split-panels .lcars-device-panel {
             max-width: none;
@@ -1030,7 +1094,6 @@ class LcarsHomepageCard extends LitElement {
           }
           .device-panel-media[data-offline] {
             border-color: var(--lcars-gray);
-            opacity: 0.5;
           }
 
           /* Control buttons — bottom row */
@@ -1249,7 +1312,7 @@ class LcarsHomepageCard extends LitElement {
           }
           .battery-section-label {
             font-family: var(--lcars-font);
-            font-size: 0.55rem;
+            font-size: var(--lcars-font-size-label, 0.75rem);
             color: var(--lcars-sky, #aaaaff);
             text-transform: uppercase;
             letter-spacing: 0.08em;
@@ -1286,7 +1349,7 @@ class LcarsHomepageCard extends LitElement {
             border: none;
             border-radius: 0 0.75rem 0.75rem 0;
             font-family: var(--lcars-font);
-            font-size: 0.55rem;
+            font-size: var(--lcars-font-size-label, 0.75rem);
             text-transform: uppercase;
             cursor: pointer;
             transition: filter 0.2s, background 0.2s;
@@ -1365,7 +1428,7 @@ class LcarsHomepageCard extends LitElement {
             flex: 1 1 auto;
           }
           .env-sparkline-label {
-            font-size: 0.55rem;
+            font-size: var(--lcars-font-size-label, 0.75rem);
             color: var(--lcars-space-white);
             text-transform: uppercase;
             white-space: nowrap;
@@ -1783,10 +1846,10 @@ class LcarsHomepageCard extends LitElement {
             40%  { clip-path: inset(10% 0 10% 0); filter: brightness(1.5) saturate(0.3); }
             100% { clip-path: inset(0 0 0 0); filter: brightness(1) saturate(1); }
           }
-          .camera-frame img {
+          .camera-frame[data-state="live"] img {
             animation: viewscreen-activate 600ms ease-out both;
           }
-          .camera-frame[data-off] img {
+          .camera-frame[data-state="offline"] img {
             filter: saturate(0) brightness(0.3);
             animation: none;
           }
@@ -1866,6 +1929,7 @@ class LcarsHomepageCard extends LitElement {
             .sensor-readout::after { animation: none; }
             .camera-frame img,
             .device-panel-media img { animation: none; }
+            .camera-connecting-text { animation: none; }
             .toggle-pill[data-on],
             .climate-panel[data-heat],
             .climate-panel[data-cool],
@@ -2504,6 +2568,517 @@ class LcarsHomepageCard extends LitElement {
           }
           .irrigation-standby-btn { min-width: 10rem; }
 
+          /* ═══════ POWER PANEL (4X-3) ═══════ */
+          .power-panel {
+            --panel-frame-color: var(--lcars-butterscotch);
+            display: grid;
+            grid-template-areas:
+              "header"
+              "arc"
+              "summary"
+              "circuits"
+              "devices"
+              "strips";
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto auto auto auto auto;
+            gap: var(--lcars-gap);
+          }
+          .power-panel[data-alert="critical"] {
+            --panel-frame-color: var(--lcars-tomato);
+            animation: lcars-distress-pulse var(--lcars-anim-pulse-urgent, 1s) ease-in-out infinite;
+            --pulse-color-a: var(--lcars-tomato);
+            --pulse-color-b: rgba(255, 85, 85, 0.3);
+          }
+          /* Header */
+          .power-panel-header {
+            grid-area: header;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            min-height: var(--lcars-bar-h);
+          }
+          .power-panel-header ha-icon {
+            --mdc-icon-size: 20px;
+            color: var(--panel-frame-color);
+            flex-shrink: 0;
+          }
+          .power-panel-name {
+            font-size: var(--lcars-font-size-sub);
+            color: var(--lcars-text-heading);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .power-panel-header-line {
+            flex: 1;
+            height: 2px;
+            background: var(--panel-frame-color);
+          }
+          .power-panel-badge {
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-data-accent, var(--lcars-ice));
+            text-transform: uppercase;
+            white-space: nowrap;
+          }
+          /* SVG Arc */
+          .power-arc-area { grid-area: arc; display: flex; justify-content: center; }
+          .power-distribution-arc {
+            width: 100%;
+            max-width: 15rem;
+            height: auto;
+          }
+          /* Summary */
+          .power-summary {
+            grid-area: summary;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+            gap: var(--lcars-gap);
+          }
+          .power-summary-card {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding: 0.5rem 0.75rem;
+            border-left: 3px solid var(--card-accent, var(--lcars-butterscotch));
+            border-radius: 0 0.25rem 0.25rem 0;
+            background: rgba(255, 255, 255, 0.03);
+            min-width: 8rem;
+          }
+          .power-summary-label {
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-ice);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+          }
+          .power-summary-value {
+            font-size: var(--lcars-font-size-title);
+            font-weight: 700;
+            text-transform: uppercase;
+          }
+          .power-summary-secondary {
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-space-white);
+            opacity: 0.8;
+          }
+          /* Section labels */
+          .power-section-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0;
+            margin-top: 0.25rem;
+          }
+          .power-section-label-text {
+            font-size: var(--lcars-font-size-sub);
+            color: var(--lcars-text-heading);
+            text-transform: uppercase;
+            white-space: nowrap;
+            flex-shrink: 0;
+            text-wrap: balance;
+          }
+          .power-section-label-rule {
+            flex: 1;
+            height: 2px;
+            background: var(--panel-frame-color);
+            opacity: 0.5;
+          }
+          .power-section-label-count {
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-ice);
+            white-space: nowrap;
+            flex-shrink: 0;
+          }
+          /* Circuit tile grid */
+          .power-circuits {
+            grid-area: circuits;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+            gap: var(--lcars-gap);
+            max-height: 24rem;
+            overflow-y: auto;
+            mask-image: linear-gradient(to bottom, black calc(100% - 2rem), transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 2rem), transparent 100%);
+          }
+          .power-circuit-tile {
+            display: flex;
+            flex-direction: column;
+            gap: 0.125rem;
+            padding: 0.375rem 0.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid var(--circuit-color, var(--lcars-ice));
+            border-radius: 0 0.25rem 0.25rem 0;
+            cursor: pointer;
+            transition: background var(--lcars-transition);
+            min-height: 3rem;
+          }
+          .power-circuit-tile:hover { background: rgba(255, 255, 255, 0.06); }
+          .power-circuit-tile:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
+          .power-circuit-name {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-space-white);
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .power-circuit-indicator {
+            flex-shrink: 0;
+            font-size: 0.625rem;
+            color: var(--circuit-color, var(--lcars-ice));
+          }
+          .power-circuit-value-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+          .power-circuit-watts {
+            font-size: var(--lcars-font-size-data);
+            font-weight: 700;
+            color: var(--circuit-color, var(--lcars-ice));
+            white-space: nowrap;
+          }
+          .power-circuit-energy {
+            font-size: 0.75rem;
+            color: var(--lcars-space-white);
+            opacity: 0.6;
+            text-transform: uppercase;
+          }
+          /* Device rows (switch + monitor) */
+          .power-devices {
+            grid-area: devices;
+            display: flex;
+            flex-direction: column;
+            gap: var(--lcars-gap);
+          }
+          .power-device-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+            transition: background var(--lcars-transition);
+            cursor: pointer;
+            min-height: 2.5rem;
+          }
+          .power-device-row:hover { background: rgba(255, 255, 255, 0.05); }
+          .power-device-row:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
+          /* ── LCARS sliding track toggle ── */
+          .lcars-track-toggle {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            width: 3.25rem;
+            height: 1.5rem;
+            border-radius: 0.75rem;
+            border: none;
+            cursor: pointer;
+            background: var(--lcars-gray);
+            padding: 0 0.25rem;
+            flex-shrink: 0;
+            transition: background var(--lcars-transition);
+            overflow: hidden;
+          }
+          .lcars-track-toggle[data-on] {
+            background: var(--lcars-gold);
+          }
+          .lcars-track-toggle .track-label {
+            position: absolute;
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-label, 0.75rem);
+            font-weight: 700;
+            text-transform: uppercase;
+            line-height: 1;
+            pointer-events: none;
+            transition: left var(--lcars-transition), right var(--lcars-transition), color var(--lcars-transition);
+          }
+          .lcars-track-toggle:not([data-on]) .track-label {
+            right: 0.35rem;
+            left: auto;
+            color: var(--lcars-space-white);
+          }
+          .lcars-track-toggle[data-on] .track-label {
+            left: 0.35rem;
+            right: auto;
+            color: var(--lcars-black);
+          }
+          .lcars-track-toggle .track-thumb {
+            position: absolute;
+            width: 1.1rem;
+            height: 1.1rem;
+            border-radius: 50%;
+            background: var(--lcars-space-white);
+            top: 0.2rem;
+            transition: left var(--lcars-transition);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+          }
+          .lcars-track-toggle:not([data-on]) .track-thumb {
+            left: 0.2rem;
+          }
+          .lcars-track-toggle[data-on] .track-thumb {
+            left: calc(100% - 1.3rem);
+          }
+          .lcars-track-toggle:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
+          .power-device-name {
+            flex: 1;
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-space-white);
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .power-device-stats {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-shrink: 0;
+          }
+          .power-device-watts {
+            font-size: var(--lcars-font-size-data);
+            font-weight: 700;
+            color: var(--circuit-color, var(--lcars-ice));
+            white-space: nowrap;
+            min-width: 4rem;
+            text-align: right;
+          }
+          .power-device-energy {
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-space-white);
+            opacity: 0.7;
+            white-space: nowrap;
+            min-width: 4rem;
+            text-align: right;
+          }
+          /* Power strip blocks */
+          .power-strips {
+            grid-area: strips;
+            display: flex;
+            flex-direction: column;
+            gap: calc(var(--lcars-gap) * 2);
+          }
+          .power-strip-block {
+            border: 1px solid var(--lcars-butterscotch);
+            border-left-width: 3px;
+            border-radius: 0.5rem;
+            padding: var(--lcars-gap);
+          }
+          .power-strip-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            margin-bottom: var(--lcars-gap);
+          }
+          .power-strip-name {
+            font-size: var(--lcars-font-size-sub);
+            color: var(--lcars-text-heading);
+            text-transform: uppercase;
+            text-wrap: balance;
+            flex: 1;
+          }
+          .power-strip-master-toggle {
+            /* Legacy — replaced by lcars-track-toggle */
+            display: none;
+          }
+          .power-strip-master-toggle[data-on] {
+            display: none;
+          }
+          .power-strip-total {
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-butterscotch);
+            font-weight: 700;
+            white-space: nowrap;
+          }
+          .power-strip-divider {
+            height: 1px;
+            background: var(--panel-frame-color);
+            opacity: 0.3;
+            margin-bottom: var(--lcars-gap);
+          }
+          .power-strip-children {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+            gap: var(--lcars-gap);
+          }
+          .power-strip-child-tile {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding: 0.375rem 0.5rem;
+            border-left: 3px solid var(--tile-power-color, var(--lcars-gray));
+            min-height: 3.5rem;
+          }
+          .strip-child-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.25rem;
+          }
+          .strip-child-toggle {
+            /* Legacy — replaced by lcars-track-toggle */
+            display: none;
+          }
+          .strip-child-toggle[data-on] {
+            display: none;
+          }
+          /* Popover (singleton) */
+          .power-detail-popover {
+            margin: auto;
+            padding: 0;
+            border: none;
+            background: transparent;
+            overflow: visible;
+            max-width: min(26rem, 90vw);
+            min-width: 18rem;
+            opacity: 0;
+            transform: translateY(0.5rem) scale(0.98);
+            transition:
+              opacity var(--lcars-transition-slow, 300ms) ease-out,
+              transform var(--lcars-transition-slow, 300ms) ease-out,
+              overlay var(--lcars-transition-slow, 300ms) allow-discrete,
+              display var(--lcars-transition-slow, 300ms) allow-discrete;
+          }
+          .power-detail-popover:popover-open {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+          .power-detail-popover::backdrop {
+            background: rgba(0, 0, 0, 0.5);
+          }
+          .popover-content {
+            background: var(--lcars-black);
+            border: 2px solid var(--lcars-butterscotch);
+            border-left-width: 4px;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            font-family: var(--lcars-font);
+            color: var(--lcars-text);
+            text-transform: uppercase;
+          }
+          .popover-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--lcars-gray);
+            margin-bottom: 0.5rem;
+          }
+          .popover-title {
+            font-size: var(--lcars-font-size-sub);
+            color: var(--lcars-text-heading);
+          }
+          .popover-status {
+            font-size: var(--lcars-font-size-data);
+            font-weight: 700;
+          }
+          .popover-hero-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 0.5rem 0;
+          }
+          .popover-sparkline { padding: 0.5rem 0; }
+          .popover-sparkline-label {
+            display: block;
+            font-size: 0.6rem;
+            color: var(--lcars-gray);
+            text-align: center;
+            margin-top: 0.25rem;
+          }
+          .popover-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding: 0.5rem 0;
+          }
+          .popover-stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: var(--lcars-font-size-data);
+          }
+          .popover-stat-label { color: var(--lcars-space-white); opacity: 0.7; }
+          .popover-stat-value { color: var(--lcars-ice); font-weight: 700; }
+          .popover-history-btn {
+            width: 100%;
+            margin-top: 0.5rem;
+            display: flex;
+            justify-content: center;
+            background: var(--lcars-butterscotch);
+            color: var(--lcars-black);
+            border: none;
+            border-radius: var(--lcars-btn-radius);
+            padding: 0.375rem 0.75rem;
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            text-transform: uppercase;
+            cursor: pointer;
+          }
+          /* Scroll-driven tile animations */
+          @supports (animation-timeline: view()) {
+            .power-circuit-tile {
+              animation: circuit-energize linear both;
+              animation-timeline: view();
+              animation-range: entry 0% entry 40%;
+            }
+            @keyframes circuit-energize {
+              from {
+                opacity: 0;
+                border-left-color: var(--lcars-disabled);
+                transform: translateX(-0.25rem);
+              }
+              to {
+                opacity: 1;
+                border-left-color: var(--circuit-color, var(--lcars-ice));
+                transform: translateX(0);
+              }
+            }
+          }
+          @supports not (animation-timeline: view()) {
+            .power-circuit-tile { opacity: 1; }
+          }
+          /* Responsive */
+          @media (max-width: 1023px) {
+            .power-circuits {
+              grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+            }
+            .power-summary {
+              grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+            }
+          }
+          @media (max-width: 767px) {
+            .power-circuits {
+              grid-template-columns: 1fr 1fr;
+              max-height: 16rem;
+            }
+            .power-summary {
+              grid-template-columns: 1fr;
+            }
+            .power-device-row {
+              flex-direction: column;
+              align-items: stretch;
+            }
+          }
+          @media (max-width: 479px) {
+            .power-circuits {
+              grid-template-columns: 1fr;
+            }
+          }
+
           /* ═══════════════════════════════════════════════════════════
              v4.13.0 — VISUAL ENHANCEMENTS (All Panels)
              Phase 1: Device Panel Base (cascades to all)
@@ -2521,11 +3096,7 @@ class LcarsHomepageCard extends LitElement {
             left: 0;
             right: 0;
             height: 4px;
-            background: repeating-linear-gradient(
-              90deg,
-              var(--panel-frame-color) 0 6px,
-              transparent 6px 10px
-            );
+            background: var(--panel-frame-color);
             pointer-events: none;
             border-radius: 0 0 0.25rem 0.75rem;
           }
@@ -3301,6 +3872,176 @@ class LcarsHomepageCard extends LitElement {
           .battery-charge-glow[data-level="medium"]  { box-shadow: 0 0 6px 2px rgba(255,153,0,0.25); }
           .battery-charge-glow[data-level="low"]     { box-shadow: 0 0 8px 2px rgba(255,85,85,0.3); }
 
+          /* ═══════ v4.16.0 CONSOLIDATED POWER PANEL (4X-6) ═══════ */
+
+          /* G-1: Transition separator */
+          .device-group + .lcars-consolidated-power-panel {
+            margin-top: calc(var(--lcars-gap, 12px) * 2);
+            border-top: 2px solid var(--lcars-gray-blue, #7799bb);
+            padding-top: var(--lcars-gap, 12px);
+          }
+
+          /* Panel frame — G-2: asymmetric border-radius + corner brackets */
+          .lcars-consolidated-power-panel {
+            display: flex;
+            flex-direction: column;
+            gap: var(--lcars-gap, 12px);
+            padding: var(--lcars-gap, 12px);
+            border-left: 4px solid var(--lcars-butterscotch, #ffcc99);
+            border-top: 2px solid var(--lcars-butterscotch, #ffcc99);
+            border-right: 2px solid var(--lcars-butterscotch, #ffcc99);
+            border-bottom: 4px solid var(--lcars-butterscotch, #ffcc99);
+            border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
+            background: rgba(0, 0, 0, 0.35);
+            position: relative;
+            transition: border-color 400ms ease;
+          }
+          .lcars-consolidated-power-panel::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -4px;
+            width: 1.5rem; height: 1.5rem;
+            border-top: 3px solid var(--lcars-butterscotch, #ffcc99);
+            border-left: 3px solid var(--lcars-butterscotch, #ffcc99);
+            border-radius: 0.75rem 0 0 0;
+            pointer-events: none;
+          }
+          .lcars-consolidated-power-panel::after {
+            content: '';
+            position: absolute;
+            bottom: -4px; right: -2px;
+            width: 1.5rem; height: 1.5rem;
+            border-bottom: 3px solid var(--lcars-butterscotch, #ffcc99);
+            border-right: 3px solid var(--lcars-butterscotch, #ffcc99);
+            border-radius: 0 0 0.25rem 0;
+            pointer-events: none;
+          }
+          .lcars-consolidated-power-panel[data-alert="critical"] {
+            border-color: var(--lcars-tomato, #ff5555);
+            animation: power-critical-pulse 2s ease-in-out infinite;
+          }
+
+          /* Header */
+          .consolidated-power-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: var(--lcars-font, 'Antonio', sans-serif);
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            color: var(--lcars-butterscotch, #ffcc99);
+            letter-spacing: 0.05em;
+          }
+          .consolidated-power-header ha-icon {
+            --mdc-icon-size: 20px;
+            color: var(--lcars-butterscotch, #ffcc99);
+          }
+          .consolidated-power-header .power-panel-header-line {
+            flex: 1;
+            height: 2px;
+            background: var(--lcars-butterscotch, #ffcc99);
+            opacity: 0.3;
+          }
+          .consolidated-power-header .power-panel-badge {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            white-space: nowrap;
+          }
+
+          /* G-6: Section accent bars */
+          .lcars-consolidated-power-panel .power-circuits-section {
+            border-left: 3px solid var(--lcars-butterscotch, #ffcc99);
+            padding-left: var(--lcars-gap, 12px);
+          }
+          .lcars-consolidated-power-panel .power-devices-section {
+            border-left: 3px solid var(--lcars-ice, #99ccff);
+            padding-left: var(--lcars-gap, 12px);
+          }
+          .lcars-consolidated-power-panel .power-strips-section {
+            border-left: 3px solid var(--lcars-african-violet, #cc99ff);
+            padding-left: var(--lcars-gap, 12px);
+          }
+
+          /* G-3: Tile minimum height */
+          .lcars-consolidated-power-panel .power-circuit-tile {
+            min-height: 3rem;
+          }
+
+          /* G-5: Focus-visible on circuit tiles */
+          .lcars-consolidated-power-panel .power-circuit-tile:focus-visible {
+            outline: 2px solid var(--lcars-sunflower, #ffcc99);
+            outline-offset: -2px;
+          }
+
+          /* Wider circuit grid for left column */
+          .lcars-consolidated-power-panel .power-circuits {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+            gap: 0.5rem;
+            max-height: 24rem;
+            overflow-y: auto;
+          }
+
+          /* Clickable value styling */
+          .power-clickable-value {
+            cursor: pointer;
+            display: inline;
+          }
+          .power-clickable-value:hover,
+          .power-clickable-value:focus-visible {
+            text-decoration: underline;
+            text-decoration-style: dashed;
+            text-underline-offset: 2px;
+          }
+          .power-clickable-value:focus-visible {
+            outline: 2px solid var(--lcars-sunflower, #ffcc99);
+            outline-offset: 1px;
+            border-radius: 2px;
+          }
+
+          /* Truncation pill — G-7 */
+          .power-show-all-pill {
+            display: block;
+            margin: 0.5rem auto 0;
+            padding: 0.25rem 1rem;
+            border: 1px solid var(--lcars-gray, #666688);
+            border-radius: 0 1.5rem 1.5rem 0;
+            background: rgba(153, 153, 153, 0.15);
+            color: var(--lcars-gray, #666688);
+            font-family: var(--lcars-font, 'Antonio', sans-serif);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: background 200ms ease, color 200ms ease;
+          }
+          .power-show-all-pill:hover,
+          .power-show-all-pill:focus-visible {
+            background: var(--lcars-gray, #666688);
+            color: var(--lcars-black, #000000);
+          }
+          .power-show-all-pill:focus-visible {
+            outline: 2px solid var(--lcars-sunflower, #ffcc99);
+            outline-offset: 2px;
+          }
+
+          /* Responsive breakpoints */
+          @media (max-width: 1023px) {
+            .lcars-consolidated-power-panel .power-circuits {
+              grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+            }
+          }
+          @media (max-width: 767px) {
+            .lcars-consolidated-power-panel .power-circuits {
+              grid-template-columns: 1fr 1fr;
+            }
+          }
+          @media (max-width: 479px) {
+            .lcars-consolidated-power-panel .power-circuits {
+              grid-template-columns: 1fr;
+            }
+          }
+
           /* ═══════ v4.13.0 REDUCED MOTION OVERRIDES ═══════ */
           @media (prefers-reduced-motion: reduce) {
             .lcars-device-panel { animation: none; }
@@ -3338,6 +4079,11 @@ class LcarsHomepageCard extends LitElement {
             .media-viewscreen-glow { animation: none; }
             .media-idle-glyph { animation: none; opacity: 0.4; }
             .media-progress-fill::after { animation: none; }
+            /* Power panel reduced motion */
+            .power-panel[data-alert="critical"] { animation: none; border-color: var(--lcars-tomato); }
+            .lcars-consolidated-power-panel[data-alert="critical"] { animation: none; border-color: var(--lcars-tomato); }
+            .power-circuit-tile { animation: none !important; opacity: 1; }
+            .power-circuit-tile, .power-device-row, .power-toggle { transition-duration: 0.01ms !important; }
             /* Confirmations: halved, still play */
             .device-control-btn:active::after { animation-duration: 100ms !important; }
             .alarm-key:active::before { animation-duration: 100ms !important; }
@@ -3378,7 +4124,7 @@ class LcarsHomepageCard extends LitElement {
             return html`
               <div class="content-area-panel floor-area-section">
                 <h3 class="content-area-header floor-area-subheader">${area.name}</h3>
-                ${this._renderAreaContent(entities)}
+                ${this._renderAreaContent(entities, areaId)}
               </div>
             `;
           })}
@@ -3417,7 +4163,7 @@ class LcarsHomepageCard extends LitElement {
       return html`
         <div class="content-area-panel">
           <h2 class="content-area-header">${area.name}</h2>
-          ${this._renderAreaContent(entities)}
+          ${this._renderAreaContent(entities, this.selectedArea)}
         </div>
       `;
     }
@@ -3450,24 +4196,21 @@ class LcarsHomepageCard extends LitElement {
       return `${code.slice(0, 3)}-${code.slice(3)}`;
     }
 
-    /* ─── Dispatch to the correct panel renderer ─── */
+    /* ─── Dispatch to the correct panel renderer (4X-21: registry-based) ─── */
     _renderDevicePanel(panelType, group) {
-      switch (panelType) {
-        case PANEL_TYPE_CAMERA:      return this._renderCameraPanel(group);
-        case PANEL_TYPE_ENVIRONMENT: return this._renderEnvironmentPanel(group);
-        case PANEL_TYPE_BATTERY:     return this._renderBatteryPanel(group);
-        case PANEL_TYPE_CLIMATE:     return this._renderClimatePanel(group);
-        case PANEL_TYPE_ALARM:       return this._renderAlarmPanel(group);
-        case PANEL_TYPE_MEDIA:       return this._renderMediaPanel(group);
-        case PANEL_TYPE_AQUATICS:    return this._renderPoolSpaPanel(group);
-        case PANEL_TYPE_WEATHER:     return this._renderWeatherPanel(group);
-        case PANEL_TYPE_IRRIGATION:  return this._renderIrrigationPanel(group);
-        default: return '';
-      }
+      // Irrigation has custom rendering logic — handle separately
+      if (panelType === PANEL_TYPE_IRRIGATION) return this._renderIrrigationPanel(group);
+      const factory = PANEL_TAG_REGISTRY.get(panelType);
+      return factory ? factory(group, this._hass, this._editMode, this._config) : '';
     }
 
     /* ─── Sensor indicator color per state (Geordi spec) ─── */
     _getSensorIndicatorColor(state) {
+      // 4X-1: CO₂-specific 3-tier coloring (D-C2 — wire getCo2Color into rendering)
+      const dc = state?.attributes?.device_class || '';
+      if (dc === 'carbon_dioxide') {
+        return getCo2Color(state?.state);
+      }
       return getStateColor(state?.entity_id || '', state);
     }
 
@@ -3508,21 +4251,29 @@ class LcarsHomepageCard extends LitElement {
             ${cameras.map(({ entity, state }, idx) => {
               const imgUrl = cameraImageUrl(state);
               const name = idx === 0 ? deviceName : this._friendlyName(state, entity);
-              return imgUrl
-                ? html`<img src="${imgUrl}"
-                            alt="${name} camera feed" loading="lazy"
-                            data-entity="${entity.entity_id}"
-                            style="${idx > 0 ? 'margin-top:var(--lcars-gap);border-top:2px solid var(--panel-frame-color)' : ''}"
-                            @error=${(e) => { e.target.style.display = 'none'; e.target.nextElementSibling && (e.target.nextElementSibling.style.display = ''); }}
-                            @load=${(e) => { e.target.style.display = ''; const sib = e.target.nextElementSibling; if (sib?.classList.contains('camera-error-fallback')) sib.style.display = 'none'; }}
-                            @click=${() => this._handleEntityClick(entity.entity_id)} /><div class="camera-error-fallback" style="display:none;aspect-ratio:16/9;align-items:center;justify-content:center"
-                            @click=${() => this._handleEntityClick(entity.entity_id)}>
-                    <ha-icon icon="mdi:video-off" style="--mdc-icon-size:48px;color:var(--lcars-gray)"></ha-icon>
-                  </div>`
-                : html`<div style="display:flex;aspect-ratio:16/9;align-items:center;justify-content:center"
-                            @click=${() => this._handleEntityClick(entity.entity_id)}>
-                    <ha-icon icon="mdi:video-off" style="--mdc-icon-size:48px;color:var(--lcars-gray)"></ha-icon>
-                  </div>`;
+              const off = this._isOff(state);
+              const camState = (off || !imgUrl) ? 'offline' : 'connecting';
+              return html`
+                <div class="camera-frame" data-state="${camState}"
+                  style="${idx > 0 ? 'margin-top:var(--lcars-gap);border-top:2px solid var(--panel-frame-color)' : ''}"
+                  aria-busy="${camState === 'connecting'}"
+                  @click=${() => this._handleEntityClick(entity.entity_id)}>
+                  <div class="camera-connecting-overlay" aria-hidden="true">
+                    <span class="camera-connecting-text">ESTABLISHING LINK</span>
+                  </div>
+                  <div class="camera-offline-overlay" aria-hidden="true">
+                    <ha-icon icon="mdi:video-off"></ha-icon>
+                    <span class="camera-offline-text">VIEWSCREEN OFFLINE</span>
+                  </div>
+                  ${imgUrl
+                    ? html`<img src="${imgUrl}" alt="${name} camera feed"
+                                data-entity="${entity.entity_id}"
+                                .src=${imgUrl}
+                                @load=${(e) => { const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'live'); f.removeAttribute('aria-busy'); } }}
+                                @error=${(e) => { const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'offline'); f.removeAttribute('aria-busy'); } }} />`
+                    : html`<div class="camera-spacer"></div>`
+                  }
+                </div>`;
             })}
           </div>
 
@@ -3651,8 +4402,8 @@ class LcarsHomepageCard extends LitElement {
         const dc = entry.state?.attributes?.device_class || '';
         const domain = entry.domain;
 
-        // Controls: fan, switch, button, number, select
-        if (['fan', 'switch', 'button', 'number', 'select'].includes(domain)) {
+        // Controls: fan, switch, button, number, select, light (4X-1: BlueAir LED)
+        if (['fan', 'switch', 'button', 'number', 'select', 'light'].includes(domain)) {
           controls.push(entry);
           continue;
         }
@@ -4306,7 +5057,7 @@ class LcarsHomepageCard extends LitElement {
               fill="none" stroke="${actionColor}" stroke-width="8" stroke-linecap="round" />
           ` : ''}
           <!-- Target tick -->
-          <circle cx="${tx}" cy="${ty}" r="5" fill="${actionColor}" stroke="var(--lcars-card-bg, #1a1a2e)" stroke-width="2" />
+          <circle cx="${tx}" cy="${ty}" r="5" fill="${actionColor}" stroke="var(--lcars-card-bg, var(--lcars-black, #000))" stroke-width="2" />
           <!-- Current temp text -->
           <text x="${cx}" y="${cy - 20}" text-anchor="middle" fill="${actionColor}"
             font-family="var(--lcars-font)" font-size="42" font-weight="bold">
@@ -5474,114 +6225,984 @@ class LcarsHomepageCard extends LitElement {
       this._hass.callService('switch', turnOn ? 'turn_on' : 'turn_off', { entity_id: entityId });
     }
 
+    /* ─── Delegate to extracted <lcars-irrigation-panel> component ─── */
     _renderIrrigationPanel(group) {
-      const { zones, sensors, controller } = this._partitionIrrigationEntities(group.entities);
-      const deviceName = this._shortDeviceName(group.device) || 'Irrigation';
-      const activeZone = zones.find(z => z.state?.state === 'on');
-      const isStandby = controller.some(c => c.domain === 'switch' && c.state?.state === 'off');
+      return html`
+        <lcars-irrigation-panel
+          .group=${group}
+          .hass=${this._hass}
+          .editMode=${this._editMode}
+          area-id="${this.selectedArea || ''}">
+        </lcars-irrigation-panel>
+      `;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════ */
+    /* ═══ POWER PANEL — Energy Monitoring (4X-3) ═════════════════════════ */
+    /* ═══════════════════════════════════════════════════════════════════════ */
+
+    _powerToggleLimiter = createRateLimiter(10, 10000);
+
+    /* ── Format helpers (Wesley §7) ── */
+
+    _formatWatts(watts) {
+      if (watts == null) return '—';
+      const w = Number(watts);
+      if (!Number.isFinite(w)) return '—';
+      if (Math.abs(w) >= 10000) return `${(w / 1000).toFixed(1)} kW`;
+      return `${Math.round(w)} W`;
+    }
+
+    _formatEnergy(kwh) {
+      if (kwh == null) return '—';
+      const v = Number(kwh);
+      if (!Number.isFinite(v)) return '—';
+      return `${v.toFixed(1)} kWh`;
+    }
+
+    /* ── Power shape indicator (Geordi §2.3 — color-blind safe) ── */
+
+    _getPowerIndicator(watts) {
+      if (watts == null || isNaN(watts)) return '✕';
+      const w = Math.abs(Number(watts));
+      if (w <= 0)    return '○';
+      if (w <= 500)  return '●';
+      if (w <= 1500) return '●━';
+      if (w <= 3000) return '●━━';
+      return '●━━━';
+    }
+
+    /* ── Partition power device entities (Data C-6) ── */
+
+    _partitionPowerEntities(entries) {
+      const switches = [];
+      const powerSensors = [];
+      const energySensors = [];
+      const voltageSensors = [];
+      const currentSensors = [];
+      const diagnostics = [];
+
+      for (const entry of entries) {
+        if (entry.disabled_by || entry.hidden_by) continue;
+        const domain = entry.entity?.entity_id?.split('.')[0] || entry.domain;
+        const dc = entry.state?.attributes?.device_class || '';
+        const unit = entry.state?.attributes?.unit_of_measurement || '';
+
+        if (domain === 'switch') {
+          switches.push(entry);
+        } else if (dc === 'power' && (unit === 'W' || unit === 'kW')) {
+          powerSensors.push(entry);
+        } else if (dc === 'energy' && (unit === 'kWh' || unit === 'Wh')) {
+          energySensors.push(entry);
+        } else if (dc === 'voltage' && unit === 'V') {
+          voltageSensors.push(entry);
+        } else if (dc === 'current' && unit === 'A') {
+          currentSensors.push(entry);
+        } else {
+          diagnostics.push(entry);
+        }
+      }
+
+      return { switches, powerSensors, energySensors, voltageSensors, currentSensors, diagnostics };
+    }
+
+    /* ── Device classification (Geordi §7.2) ── */
+
+    _classifyPowerDevice(entries, device) {
+      const hasPowerSensor = entries.some(e => {
+        const dc = e.state?.attributes?.device_class || '';
+        return e.domain === 'sensor' && (dc === 'power' || dc === 'energy' || dc === 'voltage' || dc === 'current');
+      });
+      if (!hasPowerSensor) return null;
+
+      const hasSwitch = entries.some(e => e.domain === 'switch');
+      const manufacturer = (device?.manufacturer || '').toLowerCase();
+      const model = (device?.model || '').toLowerCase();
+
+      // Emporia Vue — monitoring only, no switches
+      if (manufacturer.includes('emporia') || model.includes('vue')) return 'vue';
+
+      // Power strip — HS300 or many switches
+      const switchCount = entries.filter(e => e.domain === 'switch').length;
+      if (switchCount >= 4 || model.includes('hs300') || model.includes('power strip')) return 'strip';
+
+      // Smart plug with monitoring (KP115, KP125M, HS110, etc.)
+      if (hasSwitch) return 'plug';
+
+      // Sensor-only (non-Vue) — treat as circuit
+      return 'vue';
+    }
+
+    /* ── Extract primary power/energy sensors ── */
+
+    _getPrimaryPower(group) {
+      for (const entry of group.entities) {
+        const dc = entry.state?.attributes?.device_class || '';
+        const unit = entry.state?.attributes?.unit_of_measurement || '';
+        if (dc === 'power' && (unit === 'W' || unit === 'kW')) {
+          const val = parseFloat(entry.state?.state);
+          if (!isNaN(val)) return unit === 'kW' ? val * 1000 : val;
+        }
+      }
+      return null;
+    }
+
+    _getPrimaryEnergy(group) {
+      for (const entry of group.entities) {
+        const dc = entry.state?.attributes?.device_class || '';
+        const unit = entry.state?.attributes?.unit_of_measurement || '';
+        if (dc === 'energy' && (unit === 'kWh' || unit === 'Wh')) {
+          const val = parseFloat(entry.state?.state);
+          if (!isNaN(val)) return unit === 'Wh' ? val / 1000 : val;
+        }
+      }
+      return null;
+    }
+
+    /* ── 240V pair detection (Geordi §7.4) ── */
+
+    _detect240VPairs(circuits) {
+      const L1L2_PATTERN = /^(.+?)[\s_]*(l[12]|line[\s_]*[12])$/i;
+      const pairs = new Map();
+      const unpaired = [];
+
+      for (const c of circuits) {
+        const name = this._shortDeviceName(c.device) || '';
+        const match = name.match(L1L2_PATTERN);
+        if (match) {
+          const baseName = match[1].trim();
+          if (!pairs.has(baseName)) pairs.set(baseName, []);
+          pairs.get(baseName).push(c);
+        } else {
+          unpaired.push(c);
+        }
+      }
+
+      const result = [...unpaired];
+      for (const [name, pair] of pairs) {
+        if (pair.length === 2) {
+          const watts = pair.reduce((sum, p) => sum + (this._getPrimaryPower(p) || 0), 0);
+          const kwhToday = pair.reduce((sum, p) => sum + (this._getPrimaryEnergy(p) || 0), 0);
+          result.push({
+            device: { ...pair[0].device, name },
+            entities: pair.flatMap(p => p.entities),
+            is240V: true,
+            combinedWatts: watts,
+            combinedEnergy: kwhToday,
+          });
+        } else {
+          result.push(...pair);
+        }
+      }
+
+      return result;
+    }
+
+    /* ── Sort circuits power-descending (Wesley §6) ── */
+
+    _sortCircuits(circuits) {
+      return [...circuits].sort((a, b) => {
+        const wA = a.combinedWatts != null ? a.combinedWatts : (this._getPrimaryPower(a) || 0);
+        const wB = b.combinedWatts != null ? b.combinedWatts : (this._getPrimaryPower(b) || 0);
+        if (wB !== wA) return wB - wA;
+        const nA = (a.device?.name || '').toLowerCase();
+        const nB = (b.device?.name || '').toLowerCase();
+        return nA.localeCompare(nB);
+      });
+    }
+
+    /* ── Power strip grouping (Wesley §3.2) ── */
+
+    _groupPowerStrips(powerDevices) {
+      const strips = new Map();
+      const standalone = [];
+
+      // First pass: identify strip parents
+      for (const group of powerDevices) {
+        if (group.subType === 'strip') {
+          strips.set(group.device.id, { parent: group, children: [] });
+        }
+      }
+
+      // Second pass: assign children via via_device_id
+      for (const group of powerDevices) {
+        if (group.subType === 'strip') continue;
+        if (group.device?.via_device_id) {
+          const parentStrip = strips.get(group.device.via_device_id);
+          if (parentStrip) {
+            parentStrip.children.push(group);
+            continue;
+          }
+        }
+        standalone.push(group);
+      }
+
+      return { strips, standalone };
+    }
+
+    /* ── SVG half-arc power distribution (Wesley §1/Q1) ── */
+
+    _renderPowerArc(circuits, totalWatts) {
+      if (!circuits.length || !totalWatts || totalWatts <= 0) return '';
+
+      const thresholds = this._config?.power_thresholds || {};
+      const sorted = circuits
+        .map(c => ({
+          name: this._shortDeviceName(c.device) || 'Unknown',
+          watts: c.combinedWatts != null ? c.combinedWatts : (this._getPrimaryPower(c) || 0),
+        }))
+        .filter(c => c.watts > 0)
+        .sort((a, b) => b.watts - a.watts);
+
+      if (sorted.length === 0) return '';
+
+      const top5 = sorted.slice(0, 5);
+      const otherWatts = sorted.slice(5).reduce((sum, c) => sum + c.watts, 0);
+      if (otherWatts > 0) top5.push({ name: 'OTHER', watts: otherWatts });
+
+      const cx = 120, cy = 100, r = 80;
+      const startAngle = Math.PI;
+      const totalAngle = Math.PI;
+      const GAP = 0.02; // Small gap between segments
+
+      let currentAngle = startAngle;
+      const segments = top5.map(seg => {
+        const fraction = seg.watts / totalWatts;
+        const sweep = Math.max(fraction * totalAngle - GAP, 0.01);
+        const endAngle = currentAngle - sweep;
+        const color = getPowerColor(seg.watts, thresholds);
+
+        const x1 = cx + r * Math.cos(currentAngle);
+        const y1 = cy - r * Math.sin(currentAngle);
+        const x2 = cx + r * Math.cos(endAngle);
+        const y2 = cy - r * Math.sin(endAngle);
+        const largeArc = sweep > Math.PI ? 1 : 0;
+
+        const path = `M ${x1.toFixed(1)},${y1.toFixed(1)} A ${r},${r} 0 ${largeArc},1 ${x2.toFixed(1)},${y2.toFixed(1)}`;
+        currentAngle = endAngle - GAP;
+
+        return { path, color, name: seg.name, watts: seg.watts, fraction };
+      });
 
       return html`
-        <div class="lcars-device-panel irrigation-panel" data-panel-type="irrigation"
-          style="--panel-frame-color:var(--lcars-ice)">
+        <div class="power-arc-area">
+          <svg class="power-distribution-arc" viewBox="0 0 240 120"
+            role="img" aria-label="Power distribution: ${this._formatWatts(totalWatts)} total">
+            <!-- Background arc -->
+            <path d="M ${cx - r},${cy} A ${r},${r} 0 1,1 ${cx + r},${cy}"
+              fill="none" stroke="var(--lcars-gray)" stroke-width="10"
+              stroke-linecap="butt" opacity="0.15" />
+            <!-- Segments -->
+            ${segments.map(seg => svg`
+              <path d="${seg.path}" fill="none" stroke="${seg.color}"
+                stroke-width="10" stroke-linecap="butt">
+                <title>${seg.name}: ${Math.round(seg.watts)}W (${Math.round(seg.fraction * 100)}%)</title>
+              </path>
+            `)}
+            <!-- Total text -->
+            <text x="${cx}" y="${cy - 15}" text-anchor="middle"
+              fill="var(--lcars-text-heading)" font-family="var(--lcars-font)"
+              font-size="28" font-weight="bold">
+              ${this._formatWatts(totalWatts)}
+            </text>
+            <text x="${cx}" y="${cy + 5}" text-anchor="middle"
+              fill="var(--lcars-space-white)" font-family="var(--lcars-font)"
+              font-size="10" opacity="0.7">
+              TOTAL
+            </text>
+          </svg>
+        </div>
+      `;
+    }
+
+    /* ── Singleton popover (Data C-5) ── */
+
+    _showCircuitPopover(circuit) {
+      const popover = this.shadowRoot?.querySelector('#power-detail-popover');
+      if (!popover) return;
+
+      const watts = circuit.combinedWatts != null ? circuit.combinedWatts : this._getPrimaryPower(circuit);
+      const energy = circuit.combinedEnergy != null ? circuit.combinedEnergy : this._getPrimaryEnergy(circuit);
+      const thresholds = this._config?.power_thresholds || {};
+      const color = getPowerColor(watts, thresholds);
+      const label = getPowerLabel(watts, thresholds);
+      const name = this._shortDeviceName(circuit.device) || 'Unknown';
+      const entityId = circuit.entities?.[0]?.entity?.entity_id;
+
+      const content = popover.querySelector('.popover-content');
+      if (content) {
+        render(html`
+          <div>
+            <div class="popover-header">
+              <span class="popover-title">${name}</span>
+              <span class="popover-status" style="color:${color}">${label}</span>
+            </div>
+            <div class="popover-hero-value" style="color:${color}">
+              ${watts != null ? this._formatWatts(watts) : 'UNAVAILABLE'}
+            </div>
+            <div class="popover-stats">
+              ${energy != null ? html`
+                <div class="popover-stat-row">
+                  <span class="popover-stat-label">TODAY</span>
+                  <span class="popover-stat-value">${this._formatEnergy(energy)}</span>
+                </div>
+              ` : ''}
+              ${circuit.is240V ? html`
+                <div class="popover-stat-row">
+                  <span class="popover-stat-label">CIRCUIT TYPE</span>
+                  <span class="popover-stat-value" style="color:var(--lcars-butterscotch)">240V PAIRED</span>
+                </div>
+              ` : ''}
+            </div>
+            ${entityId ? html`
+              <button class="popover-history-btn" @click=${() => {
+                showMoreInfo(entityId);
+                try { popover.hidePopover(); } catch (_) {}
+              }}>VIEW FULL HISTORY</button>
+            ` : ''}
+          </div>
+        `, content);
+      }
+
+      try {
+        popover.showPopover();
+      } catch (_) {
+        // Fallback for browsers without Popover API
+        if (entityId) showMoreInfo(entityId);
+      }
+    }
+
+    /* ── Circuit tile renderer ── */
+
+    _renderCircuitTile(circuit) {
+      const watts = circuit.combinedWatts != null ? circuit.combinedWatts : this._getPrimaryPower(circuit);
+      const energy = circuit.combinedEnergy != null ? circuit.combinedEnergy : this._getPrimaryEnergy(circuit);
+      const thresholds = this._config?.power_thresholds || {};
+      const color = getPowerColor(watts, thresholds);
+      const tier = getPowerLabel(watts, thresholds);
+      const indicator = this._getPowerIndicator(watts);
+      const name = this._shortDeviceName(circuit.device) || 'Unknown';
+      const supportsPopover = typeof HTMLElement.prototype.showPopover === 'function';
+      const { powerSensors, energySensors } = this._partitionPowerEntities(circuit.entities || []);
+      const powerEntityId = powerSensors[0]?.entity?.entity_id;
+      const energyEntityId = energySensors[0]?.entity?.entity_id;
+
+      return html`
+        <div class="power-circuit-tile"
+          style="--circuit-color:${color}"
+          role="listitem"
+          tabindex="0"
+          aria-label="${name}: ${watts != null ? Math.round(watts) + ' watts, ' + tier.toLowerCase() : 'unavailable'}${energy != null ? ', ' + energy.toFixed(1) + ' kilowatt hours today' : ''}"
+          @click=${() => supportsPopover ? this._showCircuitPopover(circuit) : showMoreInfo(circuit.entities?.[0]?.entity?.entity_id)}
+          @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); supportsPopover ? this._showCircuitPopover(circuit) : showMoreInfo(circuit.entities?.[0]?.entity?.entity_id); }}}>
+          <div class="power-circuit-name">
+            <span class="power-circuit-indicator" aria-hidden="true">${circuit.is240V ? '●●' : indicator}</span>
+            <span>${name}</span>
+          </div>
+          <div class="power-circuit-value-row">
+            ${this._renderClickableValue(powerEntityId, `View ${name} power: ${watts != null ? Math.round(watts) + ' watts' : 'unavailable'}`, html`<span class="power-circuit-watts">${this._formatWatts(watts)}</span>`)}
+          </div>
+          ${energy != null ? this._renderClickableValue(energyEntityId, `View ${name} energy: ${energy.toFixed(1)} kWh today`, html`<span class="power-circuit-energy">${this._formatEnergy(energy)} TODAY</span>`) : ''}
+        </div>
+      `;
+    }
+
+    /* ── Switch + monitor device row renderer ── */
+
+    _renderPowerDeviceRow(group) {
+      const { switches, powerSensors, energySensors } = this._partitionPowerEntities(group.entities);
+      const sw = switches[0];
+      const watts = powerSensors[0] ? parseFloat(powerSensors[0].state?.state) || 0 : null;
+      const energy = energySensors[0] ? parseFloat(energySensors[0].state?.state) || null : null;
+      const thresholds = this._config?.power_thresholds || {};
+      const color = getPowerColor(watts, thresholds);
+      const name = this._shortDeviceName(group.device) || 'Unknown';
+      const isOn = sw?.state?.state === 'on';
+      const powerEntityId = powerSensors[0]?.entity?.entity_id;
+      const energyEntityId = energySensors[0]?.entity?.entity_id;
+
+      return html`
+        <div class="power-device-row"
+          role="listitem" tabindex="0"
+          style="--circuit-color:${color}"
+          aria-label="${name}: ${sw ? (isOn ? 'on' : 'off') + ', ' : ''}${watts != null ? Math.round(watts) + ' watts' : 'unknown'}">
+          ${sw ? this._renderTrackToggle(
+            isOn, `Toggle ${name}`,
+            () => { if (this._powerToggleLimiter.allow()) this._handleToggle(sw.entity.entity_id); }
+          ) : ''}
+          <span class="power-device-name">${name}</span>
+          <div class="power-device-stats">
+            ${this._renderClickableValue(powerEntityId, `View ${name} power: ${watts != null ? Math.round(watts) + ' watts' : 'unknown'}`, html`<span class="power-device-watts" style="color:${color}">${this._formatWatts(watts)}</span>`)}
+            ${energy != null ? this._renderClickableValue(energyEntityId, `View ${name} energy: ${energy.toFixed(1)} kWh`, html`<span class="power-device-energy">${this._formatEnergy(energy)}</span>`) : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    /* ── Power strip renderer (Wesley §3.3) ── */
+
+    _renderPowerStrip(parentGroup, children) {
+      const parentName = this._shortDeviceName(parentGroup.device) || 'Power Strip';
+      const { powerSensors: parentPower, switches: parentSwitches } = this._partitionPowerEntities(parentGroup.entities);
+      const totalWatts = parentPower.reduce((sum, e) => sum + (parseFloat(e.state?.state) || 0), 0);
+      const thresholds = this._config?.power_thresholds || {};
+      const totalColor = getPowerColor(totalWatts, thresholds);
+      const parentSwitch = parentSwitches[0];
+
+      return html`
+        <div class="power-strip-block" role="listitem">
+          <div class="power-strip-header" role="heading" aria-level="5">
+            <span class="power-strip-name">${parentName}</span>
+            ${parentSwitch ? this._renderTrackToggle(
+              parentSwitch.state?.state === 'on',
+              `Master toggle ${parentName}`,
+              () => { if (this._powerToggleLimiter.allow()) this._handleToggle(parentSwitch.entity.entity_id); }
+            ) : ''}
+            <span class="power-strip-total" style="color:${totalColor}">TOTAL: ${this._formatWatts(totalWatts)}</span>
+          </div>
+          <div class="power-strip-divider" aria-hidden="true"></div>
+          <div class="power-strip-children" role="list" aria-label="${parentName} outlets">
+            ${children.map(child => this._renderStripChild(child, parentSwitches))}
+          </div>
+        </div>
+      `;
+    }
+
+    _renderStripChild(childGroup, parentSwitches) {
+      const name = this._shortDeviceName(childGroup.device) || 'Outlet';
+      const { switches: childSwitches, powerSensors, energySensors } = this._partitionPowerEntities(childGroup.entities);
+      const watts = powerSensors[0] ? parseFloat(powerSensors[0].state?.state) || 0 : 0;
+      const energy = energySensors[0] ? parseFloat(energySensors[0].state?.state) || null : null;
+      const thresholds = this._config?.power_thresholds || {};
+      const color = getPowerColor(watts, thresholds);
+      const powerEntityId = powerSensors[0]?.entity?.entity_id;
+      const energyEntityId = energySensors[0]?.entity?.entity_id;
+
+      // Child outlets may have switches on the child device, OR the parent
+      // device owns all switch entities (Kasa HS300 pattern). Match by name/index.
+      let childSwitch = childSwitches[0];
+      if (!childSwitch && parentSwitches?.length > 0) {
+        // Kasa HS300 pattern: parent device owns all switch entities, child
+        // devices only have sensors. The child device name (e.g. "US-P1-UDMPRO")
+        // appears in the parent switch entity_id and friendly_name.
+        const childName = (childGroup.device?.name || '').toLowerCase().replace(/[\s\-_]+/g, '');
+        childSwitch = parentSwitches.find(s => {
+          const eid = (s.entity?.entity_id || '').toLowerCase().replace(/[\s\-_]+/g, '');
+          const fn = (s.state?.attributes?.friendly_name || '').toLowerCase().replace(/[\s\-_]+/g, '');
+          return eid.includes(childName) || fn.includes(childName);
+        });
+      }
+
+      const isOn = childSwitch?.state?.state === 'on';
+
+      return html`
+        <div class="power-strip-child-tile" style="--tile-power-color:${color}"
+          role="listitem" aria-label="${name}: ${isOn ? 'on' : 'off'}, ${Math.round(watts)} watts">
+          <span class="circuit-name">${name}</span>
+          <div class="strip-child-controls">
+            ${childSwitch ? this._renderTrackToggle(
+              isOn, `Toggle ${name}`,
+              () => { if (this._powerToggleLimiter.allow()) this._handleToggle(childSwitch.entity.entity_id); }
+            ) : ''}
+            ${this._renderClickableValue(powerEntityId, `View ${name} power: ${Math.round(watts)} watts`, html`
+              <span class="circuit-watts" style="color:${color}">
+                <span class="power-dot" ?data-zero=${watts === 0} aria-hidden="true"></span>
+                ${this._formatWatts(watts)}
+              </span>
+            `)}
+            ${energy != null ? this._renderClickableValue(energyEntityId, `View ${name} energy: ${energy.toFixed(1)} kWh`, html`<span class="power-device-energy">${this._formatEnergy(energy)}</span>`) : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    /* ── Summary card renderer (Geordi §4.1) ── */
+
+    _renderPowerSummaryCard(label, watts, energy, accentColor, icon) {
+      const thresholds = this._config?.power_thresholds || {};
+      const color = label === 'TOTAL USAGE' ? getPowerColor(watts, thresholds) : accentColor;
+
+      return html`
+        <div class="power-summary-card" role="status"
+          style="--card-accent:${accentColor}"
+          aria-label="${label}: ${watts != null ? Math.round(watts) + ' watts' : 'unavailable'}${energy != null ? ', ' + energy.toFixed(1) + ' kilowatt hours today' : ''}"
+          aria-live="polite">
+          <span class="power-summary-label">
+            <ha-icon icon="${icon}" style="--mdc-icon-size:14px; vertical-align:middle; color:${accentColor}"></ha-icon>
+            ${label}
+          </span>
+          <span class="power-summary-value" style="color:${color}">
+            ${this._formatWatts(watts)}
+          </span>
+          ${energy != null ? html`
+            <span class="power-summary-secondary">${this._formatEnergy(energy)} TODAY</span>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    /* ═══ CONSOLIDATED POWER PANEL (4X-6) ═══ */
+
+    /* ── Aggregate all power groups for an area into a structured collection ── */
+
+    _buildPowerCollection(powerGroups) {
+      const circuits = [];
+      const plugs = [];
+      const allStrips = [];
+
+      for (const group of powerGroups) {
+        const deviceType = this._classifyPowerDevice(group.entities || [], group.device);
+        if (deviceType === 'vue') {
+          circuits.push(group);
+        } else if (deviceType === 'strip') {
+          allStrips.push(group);
+        } else {
+          plugs.push(group);
+        }
+      }
+
+      // Distinguish strip parents from strip children (#4).
+      // Child outlets (e.g. Kasa HS300 ports) inherit the parent's model string,
+      // so _classifyPowerDevice marks them ALL as 'strip'. A device whose
+      // via_device_id points to another strip-classified device is a child outlet.
+      const stripDeviceIds = new Set(allStrips.map(g => g.device?.id).filter(Boolean));
+      const stripParents = [];
+      const stripChildren = [];
+      for (const group of allStrips) {
+        if (group.device?.via_device_id && stripDeviceIds.has(group.device.via_device_id)) {
+          stripChildren.push(group); // child outlet — no subType tag
+        } else {
+          stripParents.push({ ...group, subType: 'strip' }); // genuine parent
+        }
+      }
+
+      // Group strip parents with their children via via_device_id
+      const { strips: stripMap, standalone } = this._groupPowerStrips([...stripParents, ...stripChildren, ...plugs]);
+      const strips = [];
+      for (const [, entry] of stripMap) {
+        strips.push({ parent: entry.parent, children: entry.children || [] });
+      }
+
+      // Orphan plugs = standalone (not assigned to any strip)
+      const orphanPlugs = standalone;
+
+      // Process circuits through 240V pairing + sort
+      const processedCircuits = this._sortCircuits(this._detect240VPairs(circuits));
+
+      // Build set of device IDs that are children of a strip (used for dedup)
+      const stripChildIds = new Set();
+      for (const { children } of strips) {
+        for (const child of children) {
+          if (child.device?.id) stripChildIds.add(child.device.id);
+        }
+      }
+
+      // Detect aggregate/total circuits to exclude from totals (#2)
+      const AGGREGATE_PATTERN = /^(balance|total|main[s]?|net|whole[\s_-]?home)$/i;
+      const aggregateCircuitIds = new Set();
+      for (const c of processedCircuits) {
+        const name = this._shortDeviceName(c.device) || '';
+        if (AGGREGATE_PATTERN.test(name.trim())) {
+          if (c.device?.id) aggregateCircuitIds.add(c.device.id);
+        }
+      }
+
+      // Detect UPS/battery parent devices whose children are also in the group (#1)
+      const upsParentIds = new Set();
+      for (const group of powerGroups) {
+        const dc = (group.device?.model || '').toLowerCase();
+        const mfr = (group.device?.manufacturer || '').toLowerCase();
+        const isUps = group.entities?.some(e =>
+          e.state?.attributes?.device_class === 'battery' ||
+          (e.domain === 'sensor' && (e.state?.attributes?.device_class || '') === 'battery')
+        ) || dc.includes('ups') || mfr.includes('ups') || mfr.includes('cyberpower') ||
+          mfr.includes('apc') || mfr.includes('tripp');
+        if (!isUps || !group.device?.id) continue;
+        // Only mark as UPS parent if at least one other group has via_device_id pointing to it
+        const hasChildren = powerGroups.some(
+          g => g !== group && g.device?.via_device_id === group.device.id
+        );
+        if (hasChildren) upsParentIds.add(group.device.id);
+      }
+
+      // Compute area-wide totals with dedup
+      let totalWatts = 0;
+      let totalEnergy = 0;
+      for (const group of powerGroups) {
+        const devId = group.device?.id;
+        // Skip aggregate circuits (Balance/Total/Mains) — already summed by children (#2)
+        if (devId && aggregateCircuitIds.has(devId)) continue;
+        // Skip UPS parents when their children are also in the group (#1)
+        if (devId && upsParentIds.has(devId)) continue;
+        // Skip strip children — parent already reports their total
+        if (devId && stripChildIds.has(devId)) continue;
+        const w = this._getPrimaryPower(group);
+        const e = this._getPrimaryEnergy(group);
+        if (w != null) totalWatts += w;
+        if (e != null) totalEnergy += e;
+      }
+
+      return {
+        circuits: processedCircuits,
+        plugs: orphanPlugs,
+        strips,
+        totalWatts,
+        totalEnergy: totalEnergy || null,
+        deviceCount: powerGroups.length,
+      };
+    }
+
+    /* ── LCARS sliding track toggle ── */
+
+    _renderTrackToggle(isOn, ariaLabel, onClick) {
+      return html`
+        <button class="lcars-track-toggle" ?data-on=${isOn}
+          role="switch" aria-checked="${isOn}" aria-label="${ariaLabel}"
+          @click=${(e) => { e.stopPropagation(); onClick(); }}
+          @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}>
+          <span class="track-label">${isOn ? 'ON' : 'OFF'}</span>
+          <span class="track-thumb" aria-hidden="true"></span>
+        </button>
+      `;
+    }
+
+    /* ── Clickable sensor value wrapper (Geordi G-4) ── */
+
+    _renderClickableValue(entityId, ariaLabel, displayHtml) {
+      if (!entityId) return displayHtml;
+      return html`
+        <span class="power-clickable-value"
+          role="button" tabindex="0"
+          aria-label="${ariaLabel}"
+          @click=${(e) => { e.stopPropagation(); this._handleEntityClick(entityId); }}
+          @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entityId); } }}>
+          ${displayHtml}
+        </span>
+      `;
+    }
+
+    /* ── Arc adapter for consolidated panel ── */
+
+    _renderConsolidatedPowerArc(collection) {
+      const allSources = [];
+      for (const c of collection.circuits) {
+        allSources.push({
+          device: c.device,
+          entities: c.entities,
+          combinedWatts: c.combinedWatts != null ? c.combinedWatts : this._getPrimaryPower(c),
+          combinedEnergy: c.combinedEnergy,
+        });
+      }
+      for (const p of collection.plugs) {
+        allSources.push({
+          device: p.device,
+          entities: p.entities,
+          combinedWatts: this._getPrimaryPower(p),
+        });
+      }
+      for (const { parent } of collection.strips) {
+        allSources.push({
+          device: parent.device,
+          entities: parent.entities,
+          combinedWatts: this._getPrimaryPower(parent),
+        });
+      }
+      return this._renderPowerArc(allSources, collection.totalWatts);
+    }
+
+    /* ── Consolidated Power Panel Renderer (4X-6 main orchestrator) ── */
+
+    _renderConsolidatedPowerPanel(collection) {
+      const { circuits, plugs, strips, totalWatts, totalEnergy, deviceCount } = collection;
+      const thresholds = this._config?.power_thresholds || {};
+      const panelColor = getPowerColor(totalWatts, thresholds);
+      const hasCritical = totalWatts != null && Math.abs(totalWatts) > (thresholds.highMax || 3000);
+      const totalSources = circuits.length + plugs.length + strips.length;
+
+      // Build section count badge
+      const badgeParts = [];
+      if (circuits.length > 0) badgeParts.push(`${circuits.length} CIRCUIT${circuits.length !== 1 ? 'S' : ''}`);
+      if (plugs.length > 0) badgeParts.push(`${plugs.length} DEVICE${plugs.length !== 1 ? 'S' : ''}`);
+      if (strips.length > 0) badgeParts.push(`${strips.length} STRIP${strips.length !== 1 ? 'S' : ''}`);
+      const badge = badgeParts.join(' · ') || 'POWER SYSTEMS';
+
+      // Truncation state
+      this._expandedPowerSections = this._expandedPowerSections || new Set();
+      const MAX_VISIBLE = 12;
+
+      const circuitsExpanded = this._expandedPowerSections.has('circuits');
+      const visibleCircuits = circuitsExpanded ? circuits : circuits.slice(0, MAX_VISIBLE);
+      const circuitsHasMore = circuits.length > MAX_VISIBLE;
+
+      const plugsExpanded = this._expandedPowerSections.has('plugs');
+      const visiblePlugs = plugsExpanded ? plugs : plugs.slice(0, MAX_VISIBLE);
+      const plugsHasMore = plugs.length > MAX_VISIBLE;
+
+      return html`
+        <div class="lcars-consolidated-power-panel" data-panel-type="power"
+          data-alert="${hasCritical ? 'critical' : ''}"
+          role="region" aria-label="Power Systems — ${badge}">
+
           <!-- Header -->
-          <div class="irrigation-header">
-            <span class="device-panel-name">${deviceName}</span>
-            <div class="device-panel-header-line"></div>
-            <span class="irrigation-status-badge" style="color:${activeZone ? 'var(--lcars-ice)' : isStandby ? 'var(--lcars-gray)' : 'var(--lcars-sunflower)'}">
-              ${activeZone ? `WATERING ${this._friendlyName(activeZone.state, activeZone.entity)}` : isStandby ? 'STANDBY' : 'IDLE'}
-            </span>
-            <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(zones[0]?.entity?.entity_id || group.device.id)}</span>
+          <div class="consolidated-power-header" role="heading" aria-level="3">
+            <ha-icon icon="mdi:flash"></ha-icon>
+            <span class="power-panel-name">POWER SYSTEMS</span>
+            <div class="power-panel-header-line" aria-hidden="true"></div>
+            <span class="power-panel-badge">${badge}</span>
           </div>
 
-          <!-- Schedule (left) -->
-          <div class="irrigation-schedule" role="list" aria-label="Schedule info">
-            ${sensors.map(({ entity, state }) => {
-              const name = this._friendlyName(state, entity);
-              const unit = state.attributes?.unit_of_measurement || '';
-              const color = this._getSensorIndicatorColor(state);
-              return html`
-                <div class="device-sensor-line" tabindex="0" role="listitem"
-                  aria-label="${name}: ${state.state}${unit ? ' ' + unit : ''}"
-                  @click=${() => this._handleEntityClick(entity.entity_id)}>
-                  <div class="sensor-indicator" style="background:${color}"></div>
-                  <span class="sensor-label">${name}</span>
-                  <span class="sensor-state-value" style="color:${color}">${state.state}${unit ? ' ' + unit : ''}</span>
-                </div>
-              `;
-            })}
+          <!-- Summary -->
+          <div class="power-summary" role="group" aria-label="Power Summary">
+            ${this._renderPowerSummaryCard(
+              'TOTAL USAGE', totalWatts, totalEnergy,
+              panelColor, 'mdi:sigma'
+            )}
           </div>
 
-          <!-- Zones (right) -->
-          <div class="irrigation-zones" role="list" aria-label="Irrigation zones">
-            ${zones.map(({ entity, state }) => {
-              const name = this._friendlyName(state, entity);
-              const isOn = state.state === 'on';
-              const zoneColor = getIrrigationZoneColor(state.state, isStandby);
-              return html`
-                <div class="irrigation-zone-row" role="listitem" tabindex="0"
-                  aria-label="${name}: ${isOn ? 'watering' : 'idle'}">
-                  <button class="irrigation-zone-btn" ?data-on=${isOn}
-                    style="--zone-color:${zoneColor}"
-                    ?disabled=${isStandby}
-                    aria-label="${isOn ? 'Stop' : 'Start'} watering ${name}"
-                    @click=${() => this._handleIrrigationZone(entity.entity_id, !isOn)}>
-                    ${isOn ? 'STOP' : 'START'}
-                  </button>
-                  <span class="irrigation-zone-name">${name}</span>
-                  <span class="irrigation-zone-status" style="color:${zoneColor}">
-                    ${isStandby ? 'STANDBY' : isOn ? 'WATERING' : 'IDLE'}
-                  </span>
-                  ${isOn ? html`
-                    <div class="irrigation-zone-fill" role="progressbar"
-                      aria-label="Zone active" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"
-                      style="background:var(--lcars-ice)"></div>
-                  ` : ''}
-                </div>
-              `;
-            })}
-          </div>
+          <!-- SVG Arc (when 3+ sources) -->
+          ${totalSources >= 3 ? this._renderConsolidatedPowerArc(collection) : ''}
 
-          <!-- Standby Toggle (bottom) -->
-          ${controller.filter(c => c.domain === 'switch').map(({ entity, state }) => {
-            const isOff = state.state === 'off';
-            return html`
-              <div class="irrigation-standby">
-                <button class="device-control-btn irrigation-standby-btn" role="switch"
-                  aria-checked="${isOff}" ?data-on=${!isOff}
-                  @click=${() => this._handleToggle(entity.entity_id)}
-                  title="Standby mode: ${isOff ? 'ON' : 'OFF'}">
-                  <ha-icon icon="mdi:water-off"></ha-icon>
-                  <span>STANDBY ${isOff ? 'ON' : 'OFF'}</span>
-                </button>
+          <!-- Circuits section -->
+          ${circuits.length > 0 ? html`
+            <div class="power-circuits-section">
+              <div class="power-section-label" role="heading" aria-level="4">
+                <span class="power-section-label-text">CIRCUITS</span>
+                <div class="power-section-label-rule" aria-hidden="true"></div>
+                <span class="power-section-label-count">${circuits.length}</span>
               </div>
-            `;
-          })}
+              <div class="power-circuits" role="list" aria-label="Circuit monitors${circuitsHasMore && !circuitsExpanded ? ', showing first 12, expandable' : ''}">
+                ${visibleCircuits.map(c => this._renderCircuitTile(c))}
+              </div>
+              ${circuitsHasMore && !circuitsExpanded ? html`
+                <button class="power-show-all-pill"
+                  aria-label="Show all ${circuits.length} circuits"
+                  @click=${() => { this._expandedPowerSections.add('circuits'); this.requestUpdate(); }}>
+                  SHOW ALL (${circuits.length})
+                </button>
+              ` : ''}
+            </div>
+          ` : ''}
+
+          <!-- Monitored Devices section -->
+          ${plugs.length > 0 ? html`
+            <div class="power-devices-section">
+              <div class="power-section-label" role="heading" aria-level="4">
+                <span class="power-section-label-text">MONITORED DEVICES</span>
+                <div class="power-section-label-rule" aria-hidden="true"></div>
+                <span class="power-section-label-count">${plugs.length}</span>
+              </div>
+              <div class="power-devices" role="list" aria-label="Monitored devices${plugsHasMore && !plugsExpanded ? ', showing first 12, expandable' : ''}">
+                ${visiblePlugs.map(p => this._renderPowerDeviceRow(p))}
+              </div>
+              ${plugsHasMore && !plugsExpanded ? html`
+                <button class="power-show-all-pill"
+                  aria-label="Show all ${plugs.length} devices"
+                  @click=${() => { this._expandedPowerSections.add('plugs'); this.requestUpdate(); }}>
+                  SHOW ALL (${plugs.length})
+                </button>
+              ` : ''}
+            </div>
+          ` : ''}
+
+          <!-- Power Strips section -->
+          ${strips.length > 0 ? html`
+            <div class="power-strips-section">
+              <div class="power-section-label" role="heading" aria-level="4">
+                <span class="power-section-label-text">POWER STRIPS</span>
+                <div class="power-section-label-rule" aria-hidden="true"></div>
+                <span class="power-section-label-count">${strips.length}</span>
+              </div>
+              <div class="power-strips" role="list" aria-label="Power strips">
+                ${strips.map(({ parent, children }) => this._renderPowerStrip(parent, children))}
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Singleton popover element -->
+          <div popover id="power-detail-popover" class="power-detail-popover"
+            role="dialog" aria-label="Circuit detail">
+            <div class="popover-content"></div>
+          </div>
+
+          <div class="panel-pip-strip" aria-hidden="true"></div>
+        </div>
+      `;
+    }
+
+    /* ═══ LEGACY SINGLE-DEVICE POWER PANEL (v4.15.0) ═══ */
+    /** @deprecated Use _renderConsolidatedPowerPanel instead. Retained for potential future single-device detail view. */
+
+    _renderPowerPanel(group) {
+      const allEntries = group.entities || [];
+      const deviceName = this._shortDeviceName(group.device) || 'Power';
+      const thresholds = this._config?.power_thresholds || {};
+
+      // Classify and partition all power devices in this area
+      const deviceType = this._classifyPowerDevice(allEntries, group.device);
+      const { powerSensors, energySensors, switches } = this._partitionPowerEntities(allEntries);
+
+      // For single-device panels, render based on device type
+      const watts = this._getPrimaryPower(group);
+      const energy = this._getPrimaryEnergy(group);
+      const panelColor = getPowerColor(watts, thresholds);
+
+      // Check for critical draw
+      const hasCritical = watts != null && Math.abs(watts) > (thresholds.highMax || 3000);
+
+      // Build circuit list for Vue-type devices
+      const circuits = deviceType === 'vue' ? [group] : [];
+      const processedCircuits = this._sortCircuits(this._detect240VPairs(circuits));
+
+      // Total watts for arc
+      const totalWatts = watts || 0;
+
+      // Determine sections to show
+      const hasCircuits = processedCircuits.length > 0;
+      const hasSwitch = switches.length > 0;
+      const isPlug = deviceType === 'plug';
+      const isStrip = deviceType === 'strip';
+
+      return html`
+        <div class="lcars-device-panel power-panel" data-panel-type="power"
+          data-alert="${hasCritical ? 'critical' : ''}"
+          role="region" aria-label="${deviceName} Power Systems">
+
+          <!-- Header -->
+          <div class="power-panel-header" role="heading" aria-level="3">
+            <ha-icon icon="mdi:flash"></ha-icon>
+            <span class="power-panel-name">${deviceName}</span>
+            <div class="power-panel-header-line" aria-hidden="true"></div>
+            <span class="power-panel-badge">POWER SYSTEMS</span>
+            <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(allEntries[0]?.entity?.entity_id || group.device?.id || 'power')}</span>
+          </div>
+
+          <!-- SVG Arc (for multi-circuit devices) -->
+          ${hasCircuits && processedCircuits.length > 1 ? this._renderPowerArc(processedCircuits, totalWatts) : ''}
+
+          <!-- Summary -->
+          <div class="power-summary" role="group" aria-label="Power Summary">
+            ${this._renderPowerSummaryCard(
+              'TOTAL USAGE', totalWatts, energy,
+              panelColor, 'mdi:sigma'
+            )}
+          </div>
+
+          <!-- Circuits section (Vue-type) -->
+          ${hasCircuits ? html`
+            <div class="power-circuits-section">
+              <div class="power-section-label" role="heading" aria-level="4">
+                <span class="power-section-label-text">CIRCUITS</span>
+                <div class="power-section-label-rule" aria-hidden="true"></div>
+                <span class="power-section-label-count">${processedCircuits.length}/${processedCircuits.length}</span>
+              </div>
+              <div class="power-circuits" role="list" aria-label="Circuit Monitors">
+                ${processedCircuits.map(c => this._renderCircuitTile(c))}
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Device row (plug-type with switch) -->
+          ${isPlug ? html`
+            <div class="power-devices-section">
+              <div class="power-section-label" role="heading" aria-level="4">
+                <span class="power-section-label-text">MONITORED DEVICES</span>
+                <div class="power-section-label-rule" aria-hidden="true"></div>
+                <span class="power-section-label-count">1/1</span>
+              </div>
+              <div class="power-devices" role="list" aria-label="Monitored Devices">
+                ${this._renderPowerDeviceRow(group)}
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Strip rendering -->
+          ${isStrip ? html`
+            <div class="power-strips-section">
+              <div class="power-section-label" role="heading" aria-level="4">
+                <span class="power-section-label-text">POWER STRIPS</span>
+                <div class="power-section-label-rule" aria-hidden="true"></div>
+              </div>
+              <div class="power-strips" role="list" aria-label="Power Strips">
+                ${this._renderPowerStrip(group, [])}
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Singleton popover element (Data C-5) -->
+          <div popover id="power-detail-popover" class="power-detail-popover"
+            role="dialog" aria-label="Circuit detail">
+            <div class="popover-content"></div>
+          </div>
+
           <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
       `;
     }
 
     /* ─── Render area content: two-column when cameras present ─── */
-    _renderAreaContent(entities) {
+    _renderAreaContent(entities, areaId) {
       if (entities.length === 0)
-        return html`<div class="lcars-empty">No entities in this area</div>`;
+        return html`<div class="lcars-empty" role="status">No entities in this area</div>`;
 
       const { byDevice, noDevice } = this._groupEntities(entities);
 
-      // Partition devices into panel-worthy and normal
+      // ── Area-level composite panels (4X-17): life_support, illumination ──
+      // Hydrate flat entities for classifyArea (need domain + state)
+      const hydratedEntries = entities.map(e => {
+        const domain = e.entity_id.split('.')[0];
+        const state = this._hass?.states?.[e.entity_id];
+        return { entity: e, domain, state };
+      }).filter(e => e.state);
+
+      const areaPanelTypes = classifyArea(this._hass, areaId, hydratedEntries);
+      const areaPanels = [];
+      for (const pt of areaPanelTypes) {
+        const factory = PANEL_TAG_REGISTRY.get(pt);
+        if (factory) {
+          // Build a synthetic group with areaId + all hydrated entries for this panel type
+          areaPanels.push({ panelType: pt, template: factory({ entities: hydratedEntries, areaId }, this._hass, this._editMode, this._config) });
+        }
+      }
+
+      // ── Exclude entities consumed by area panels from standalone rendering ──
+      const consumedByArea = this._buildAreaPanelFilter(areaPanelTypes);
+      if (consumedByArea) {
+        for (const [devId, group] of byDevice) {
+          group.entities = group.entities.filter(e => !consumedByArea(e));
+          if (group.entities.length === 0) byDevice.delete(devId);
+        }
+      }
+      const filteredNoDevice = consumedByArea
+        ? noDevice.filter(e => !consumedByArea(e))
+        : noDevice;
+
+      // Device panel types subsumed by area panels (e.g., climate → life_support)
+      const subsumedDeviceTypes = new Set();
+      if (areaPanelTypes.has(PANEL_TYPE_LIFE_SUPPORT)) {
+        subsumedDeviceTypes.add(PANEL_TYPE_CLIMATE);
+        subsumedDeviceTypes.add(PANEL_TYPE_ENVIRONMENT);
+      }
+
+      // Partition devices into panel-worthy, normal, and power
       const panelDevices = [];
       const normalDevices = [];
+      const powerGroups = [];
       for (const group of byDevice.values()) {
         const panelType = this._getDevicePanelType(group.entities);
-        if (panelType) {
+        if (panelType && subsumedDeviceTypes.has(panelType)) {
+          // Skip — subsumed by area-level composite panel
+          continue;
+        } else if (panelType === PANEL_TYPE_POWER) {
+          powerGroups.push({ ...group, panelType });
+        } else if (panelType) {
           panelDevices.push({ ...group, panelType });
         } else {
           normalDevices.push(group);
         }
       }
 
-      // Build normal content once — used in both layouts
-      const normalContent = html`
+      // Build entity groups content (without power — power rendered in left column)
+      const entityContent = html`
         ${normalDevices.map((group) => html`
           <div class="device-group">
             <div class="device-header">
@@ -5596,34 +7217,85 @@ class LcarsHomepageCard extends LitElement {
             ${this._renderDomainGroups(group.entities)}
           </div>
         `)}
-        ${noDevice.length > 0 ? html`
+        ${filteredNoDevice.length > 0 ? html`
           <div class="device-group">
             <div class="device-header">
               <h3 class="device-name">Other Entities</h3>
               <div class="device-line"></div>
             </div>
-            ${this._renderDomainGroups(noDevice)}
+            ${this._renderDomainGroups(filteredNoDevice)}
           </div>
         ` : ''}
       `;
 
-      // No camera panels → single-column (unchanged behavior)
-      if (panelDevices.length === 0) return normalContent;
+      // Power panel template (left column, below environment)
+      const powerTemplate = powerGroups.length > 0
+        ? html`<lcars-power-panel .powerGroups=${powerGroups} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-power-panel>`
+        : '';
 
-      // Sort panels: camera → environment → battery
-      panelDevices.sort((a, b) =>
-        (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99)
-      );
+      // Merge all panels (device + area)
+      const allPanels = [
+        ...panelDevices.map(g => ({ panelType: g.panelType, template: this._renderDevicePanel(g.panelType, g) })),
+        ...areaPanels,
+      ];
 
-      // Panel devices present → two-column split layout
+      // No panels at all → single-column with entities + power
+      if (allPanels.length === 0 && powerGroups.length === 0) return html`${entityContent}${powerTemplate}`;
+
+      // Split panels into left and right columns
+      const leftPanels = [];
+      const rightPanels = [];
+      for (const p of allPanels) {
+        if (PANEL_COLUMN[p.panelType] === 'right') {
+          rightPanels.push(p);
+        } else {
+          leftPanels.push(p);
+        }
+      }
+      leftPanels.sort((a, b) => (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99));
+      rightPanels.sort((a, b) => (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99));
+
+      // Illumination renders FULL-WIDTH above both columns as primary room control
+      const ilmPanel = leftPanels.find(p => p.panelType === PANEL_TYPE_ILLUMINATION);
+      const belowEntityPanels = leftPanels.filter(p => p.panelType !== PANEL_TYPE_ILLUMINATION);
+
+      // Left column: entities → climate/life-support/env → power
+      const leftColumn = html`
+        <div class="area-split-main" role="region" aria-label="Device controls">
+          ${entityContent}
+          ${belowEntityPanels.map(p => p.template)}
+          ${powerTemplate}
+        </div>
+      `;
+
+      // No right-column panels → single column (with illumination on top if present)
+      if (rightPanels.length === 0) return html`
+        ${ilmPanel ? html`<div class="area-illumination-full">${ilmPanel.template}</div>` : ''}
+        ${leftColumn}
+      `;
+
+      // Two-column split: illumination full-width on top, then columns below
       return html`
+        ${ilmPanel ? html`<div class="area-illumination-full">${ilmPanel.template}</div>` : ''}
         <div class="area-split-layout">
-          <div class="area-split-main">${normalContent}</div>
-          <div class="area-split-panels" aria-live="polite">
-            ${panelDevices.map(g => this._renderDevicePanel(g.panelType, g))}
+          ${leftColumn}
+          <div class="area-split-panels" role="region" aria-label="System panels">
+            ${rightPanels.map(p => p.template)}
           </div>
         </div>
       `;
+    }
+
+    /* ─── Build predicate for entities consumed by area-level panels ─── */
+    _buildAreaPanelFilter(areaPanelTypes) {
+      if (areaPanelTypes.size === 0) return null;
+      const predicates = [];
+      if (areaPanelTypes.has(PANEL_TYPE_ILLUMINATION)) predicates.push(isLightingEntity);
+      if (areaPanelTypes.has(PANEL_TYPE_LIFE_SUPPORT)) predicates.push(
+        e => isClimateEntity(e) || isEnvironmentEntity(e) || isAmbientSensor(e)
+      );
+      if (predicates.length === 0) return null;
+      return entry => predicates.some(p => p(entry));
     }
 
     /* ─── Render domain-grouped entity lists ─── */
@@ -5653,23 +7325,29 @@ class LcarsHomepageCard extends LitElement {
           const name = this._friendlyName(state, entity);
           const off = this._isOff(state);
           const imgUrl = cameraImageUrl(state);
+          const initialState = (off || !imgUrl) ? 'offline' : 'connecting';
           return html`
-            <div class="camera-frame" ?data-off=${off} style="--i:${i}"
+            <div class="camera-frame" data-state="${initialState}" style="--i:${i}"
               role="button"
               tabindex="0"
-              aria-label="${name} camera: ${state.state}"
+              aria-label="${name} camera: ${off ? 'viewscreen offline' : state.state}"
+              aria-busy="${initialState === 'connecting'}"
               @click=${() => this._handleEntityClick(entity.entity_id)}
               @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
+              <div class="camera-connecting-overlay" aria-hidden="true">
+                <span class="camera-connecting-text">ESTABLISHING LINK</span>
+              </div>
+              <div class="camera-offline-overlay" aria-hidden="true">
+                <ha-icon icon="mdi:video-off"></ha-icon>
+                <span class="camera-offline-text">VIEWSCREEN OFFLINE</span>
+              </div>
               ${imgUrl
-                ? html`<img src="${imgUrl}" alt="${name}" loading="lazy"
+                ? html`<img src="${imgUrl}" alt="${name}"
                             data-entity="${entity.entity_id}"
-                            @error=${(e) => { e.target.style.display = 'none'; e.target.nextElementSibling && (e.target.nextElementSibling.style.display = 'flex'); }}
-                            @load=${(e) => { e.target.style.display = ''; const sib = e.target.nextElementSibling; if (sib?.classList.contains('camera-error-fallback')) sib.style.display = 'none'; }} /><div class="camera-error-fallback" style="display:none;aspect-ratio:16/9;align-items:center;justify-content:center;">
-                    <ha-icon icon="mdi:video-off" style="--mdc-icon-size:48px;color:var(--lcars-gray)"></ha-icon>
-                  </div>`
-                : html`<div style="aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;">
-                    <ha-icon icon="mdi:video-off" style="--mdc-icon-size:48px;color:var(--lcars-gray)"></ha-icon>
-                  </div>`
+                            .src=${imgUrl}
+                            @load=${(e) => { const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'live'); f.removeAttribute('aria-busy'); } }}
+                            @error=${(e) => { const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'offline'); f.removeAttribute('aria-busy'); } }} />`
+                : html`<div class="camera-spacer"></div>`
               }
               <div class="camera-label">
                 <ha-icon icon="mdi:video"></ha-icon>

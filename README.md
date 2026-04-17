@@ -8,36 +8,110 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-5.0.0--beta.1-orange)
+![Version](https://img.shields.io/badge/version-4.18.8-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 [![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 
 ## Features
 
-- **LCARS Frame Layout** — Authentic elbows, header/footer bars, endcaps, and sidebar in the classic Okudagram style
-- **Floor-Grouped Area Navigation** — Areas grouped by HA floor in the sidebar with clickable floor headers (lilac); click a floor for combined view, click an area to drill down
-- **Domain-Specific Entity Renderers**
-  - Camera → LCARS-framed live feed with viewscreen activation animation
-  - Light / Switch / Fan / Lock → Toggle pills with heartbeat pulse
-  - Sensor / Binary Sensor → Data readout bars with segmented fill
-  - Climate → Thermostat arc with setpoint controls, HVAC mode strips, dual setpoint for heat_cool (Nest, Ecobee)
-  - Alarm → Shield viewscreen with PIN keypad, arm mode selector, zone roster, countdown timer (SimpliSafe, Honeywell, Ring)
-  - Media Player → Album art viewscreen with transport controls, volume bar, source metadata (Apple TV, HomePod, Sonos)
-  - Pool & Spa → Dual body viewscreens with chemistry readouts, circuit toggles, pool lighting (Pentair ScreenLogic)
-  - Weather → Condition display with wind compass, 7-day forecast strip, lightning/precipitation sensors (Davis, WeatherFlow)
-  - Irrigation → Zone list with START/STOP controls, active fill bar, standby toggle (Rachio)
-  - Cover → Position controls
-- **Warp Core Battery Panel** — Auto-detects battery devices (EcoFlow, etc.), renders CSS reactor core with charge-level color, SOC gauge, power flow I/O arrows, telemetry sensors, and integrated config/diagnostic entity controls with LCARS option strips
-- **Atmoscrubber Environment Panel** — Auto-detects air quality devices (Awair, VeSync purifiers, etc.), renders animated particle cylinder with AQI-mapped colors, 24h SVG sparklines, fan/preset controls, and sensor-only mode for monitor-only devices
+### Layout & Navigation
+- **LCARS Frame** — Authentic elbows, header/footer bars, endcaps, and sidebar in the classic Okudagram style
+- **Floor-Grouped Sidebar** — Areas grouped by HA floor with clickable floor headers (lilac); click a floor for combined view, click an area to drill down
 - **Smart Name Shortening** — Automatically strips area and device name prefixes from entity names for cleaner display
 - **Device-Grouped Layout** — Entities organized by device, then sorted by domain (cameras first, sensors last)
+- **Responsive** — Mobile-friendly with horizontal area scroll on narrow viewports
+
+### Auto-Detected Panels
+
+The dashboard auto-discovers devices and routes them to the correct panel using a priority-ordered classifier: camera → alarm → pool/spa → climate → media → environment → irrigation → weather → power → battery. Area-level composite panels (life support, illumination) aggregate entities across devices.
+
+#### Camera Panel
+Live camera feeds with LCARS-framed viewscreen and activation animation. Three-state display: ESTABLISHING LINK (connecting), live feed, VIEWSCREEN OFFLINE (error/timeout). Stale image prevention via forced src binding on room switch.
+- **Integrations**: Any HA camera entity (UniFi Protect, Amcrest, ONVIF, Reolink, etc.)
+
+#### Climate Panel
+Thermostat control with SVG temperature arc, dynamic HVAC action colors (heating=butterscotch, cooling=ice), debounced setpoint controls with safety clamping, HVAC mode/fan mode/preset mode strips, and dual setpoint support for heat_cool mode.
+- **Integrations**: Nest, Ecobee, Honeywell, Z-Wave thermostats
+
+#### Alarm Panel
+Shield viewscreen with state-reactive glow, digit-only PIN keypad with 3-attempt/60s rate limiting, arm mode selector strip, zone sensor roster with micro-pip status, arming countdown with urgency escalation.
+- **Integrations**: SimpliSafe, Honeywell Home, Ring, Alarmo
+
+#### Media Panel
+Album art viewscreen with transport controls (play/pause/prev/next/shuffle/repeat) gated by `supported_features` bitmask, click-to-set volume bar with keyboard arrow support, source/shuffle/repeat metadata, 12-bar audio waveform visualizer.
+- **Integrations**: Apple TV, HomePod, Sonos, Chromecast, Plex
+
+#### Pool & Spa Panel
+Dual body viewscreens (pool=ice, spa=butterscotch) with setpoint controls, circuit toggles, chemistry sensor readouts (pH, ORP, salt), pool lighting controls, caustic water shimmer animation.
+- **Integrations**: Pentair ScreenLogic, Jandy iAqualink
+
+#### Weather Panel
+SVG condition display with ambient glow, wind compass with gust oscillation, 7-day forecast strip with range bars and precipitation probability pips, sun arc with tracking dot.
+- **Integrations**: Davis Instruments, WeatherFlow Tempest, NWS, OpenWeatherMap
+
+#### Irrigation Panel
+Full-featured irrigation control with zone photo thumbnails (from Rachio cloud, with vegetation icon fallback), expandable zone detail badges (shade, vegetation type, slope), barberpole flow animation with real-time progress tracking, countdown timer, schedule management strips (Flex/Fixed type badges), controller status telemetry (connectivity, standby, rain delay, rain sensor), conditional rain alert banner, Quick Run builder (multi-zone selector + duration + ENGAGE), and pause/resume/stop-all controls.
+- **Entity coverage**: Zone switches (with photos, attributes), schedule switches, standby/rain-delay controller, connectivity/rain binary sensors
+- **Rachio services**: `start_watering`, `start_multiple_zone_schedule`, `pause_watering`, `resume_watering`, `stop_watering`
+- **Integrations**: Rachio, RainMachine, OpenSprinkler
+
+#### Environment / Atmoscrubber Panel
+Animated particle cylinder with AQI-mapped colors, 24h SVG sparklines, fan/preset controls, CO₂ 3-tier threshold coloring (ice/sunflower/tomato), filter life segments. Sensor-only mode for monitor-only devices (compact readout grid without cylinder).
+- **Integrations**: Awair, VeSync purifiers, BlueAir (Blue Pure 311i Max), SwitchBot meters (WoTHP/WoTHPc)
+
+#### Power Systems Panel
+Consolidated per-area power monitoring with three sections: CIRCUITS (tile grid), MONITORED DEVICES (toggle + stats rows), POWER STRIPS (parent→child blocks with per-outlet sliding track toggles). SVG half-arc distribution chart for 3+ sources, singleton popover for circuit detail, 240V pair detection, SHOW ALL truncation for 12+ items.
+- **Smart dedup**: Excludes aggregate circuits (Balance/Total/Mains) and UPS parent wattage when children are present
+- **Integrations**: Emporia Vue, TP-Link Kasa (KP115, KP125M, HS110, HS300), Shelly Pro 3EM
+
+#### Warp Core Battery Panel
+CSS reactor core with charge-level color, SOC gauge, power flow I/O arrows, telemetry sensors, integrated config/diagnostic entity controls with LCARS option strips. NUT UPS devices auto-detected with Grid→UPS→Load flow, load/runtime telemetry, and NUT status code parsing (OL/OB/CHRG/LB/FSD).
+- **Integrations**: EcoFlow (River, Delta), Victron, Tesla Powerwall, NUT (CyberPower, APC, Tripp Lite, Eaton)
+
+#### Life Support Panel
+Area-level composite panel aggregating climate, environment (air quality), and ambient sensor entities into a unified view. Four graceful degradation configurations: full (thermostat + purifier + sensors), atmos-only, climate-only, and sensor-hero (standalone temp/humidity). Composes existing climate and environment panels as nested substations. Adaptive sparkline tray shows 24-hour trends for temperature, humidity, AQI, PM2.5, CO₂, VOC.
+- **Integrations**: Any combination of climate entities, air quality devices, and ambient sensors in an area
+
+#### Illumination Control Panel
+Area-level lighting panel spanning full width as the primary room control. Multi-column responsive grid (2-3 lights per row). Full-width brightness bars with color temperature awareness (warm amber to cool white). **Effect strip**: 2-column LCARS pill grid for Nanoleaf/Govee/smart light effects — active effect shown in bar value. **Color presets**: 6 LCARS palette pills (Warm, Cool, Red, Green, Blue, Purple) for HS/RGB color lights. Toggle-only lights show ON/OFF without slider. Scene activation strip and lighting circuit toggles. Inline brightness slider with keyboard navigation. Drag-and-drop reorder in edit mode with FLIP animation. Custom order persisted per area via localStorage.
+- **Entity detection**: Insteon dimmers (SwitchLinc/LampLinc/ToggleLinc), infrastructure LED exclusion (UniFi, ESPHome status), device-level dedup
+- **Integrations**: Any `light` domain entities, Nanoleaf, Govee, lighting switches (auto-detected by name heuristic), HA scenes
+
+### Domain-Specific Renderers
+
+Entities not routed to a panel render with domain-specific controls:
+
+| Domain | Renderer |
+|--------|----------|
+| `camera` | LCARS-framed live feed with viewscreen activation |
+| `light` | Toggle pill with brightness slider, color temp |
+| `switch` / `input_boolean` | Toggle pill with heartbeat pulse |
+| `fan` | Toggle pill with speed percentage |
+| `lock` | Lock/unlock toggle with confirmation |
+| `cover` | Open/close/stop with position control |
+| `sensor` / `binary_sensor` | Data readout bars with segmented fill |
+| `climate` | Routed to Climate Panel |
+| `alarm_control_panel` | Routed to Alarm Panel |
+| `media_player` | Routed to Media Panel |
+
+### Internal Sensors Grid
+
+Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitoring. Auto-discovers SwitchBot meters and similar sensor-only devices, groups by floor, responsive tile grid with comfort-class colors, SVG sparklines, battery badges, and ship-wide averages.
+
+### Visual Design
 - **6 LCARS Animations** — Cascade reveal, scan sweep, viewscreen activation, heartbeat pulse, distress pulse, segmented sensor bars
-- **Dynamic Panel Visuals** — Frame breathing pulse, data pip footers, numeric code watermarks, audio waveform, caustic water shimmer, wind compass, weather glow, barberpole flow, particle system, comfort glow tiles. All animations GPU-composited and `prefers-reduced-motion` safe
-- **9-Panel Auto-Detection** — Priority-ordered device classifier routes entities to the correct panel: camera → alarm → pool/spa → climate → media → environment → irrigation → weather → battery
-- **Security Hardened** — Alarm PIN rate-limiting (3 attempts/60s), media artwork URL validation, temperature setpoint clamping, service call throttling
-- **Self-Contained** — All fonts (Antonio) and dependencies vendored locally, no external CDN calls
-- **Responsive** — Mobile-friendly layout with horizontal area scroll on narrow viewports
-- **Accessible** — ARIA landmarks, keyboard navigation, `prefers-reduced-motion` support
+- **Dynamic Panel Visuals** — Frame breathing pulse, data pip footers, numeric code watermarks, audio waveform, caustic water shimmer, wind compass, weather glow, barberpole flow, particle system, comfort glow tiles
+- **GPU-Composited** — All animations use `transform`/`opacity` for 60fps rendering
+- **`prefers-reduced-motion`** — Comprehensive overrides: ambient loops disabled, confirmations halved, static fallbacks
+
+### Security & Accessibility
+- **Alarm PIN** — Rate-limited (3 attempts/60s), never logged or in DOM attributes, digit-only sanitization
+- **Media artwork** — URL validation restricts to `/api/` or `/local/` paths
+- **Setpoint clamping** — Temperature controls validated against entity min/max with absolute bounds
+- **Service call throttling** — Token-bucket rate limiter on all device control calls
+- **ARIA landmarks** — Full keyboard navigation, `role` structure, `aria-live` announcements
+- **WCAG 2.2 AA** — Color-blind safe indicators, focus-visible outlines, 24×24px minimum targets
+- **Self-contained** — All fonts (Antonio) and dependencies vendored locally, no external CDN calls
 
 ## Screenshots
 
@@ -70,9 +144,10 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 | Layer | Technology |
 |-------|-----------|
 | HA Integration | Python custom component (`lcars_dashboard`) |
-| Frontend | Lit Element v2 web components |
-| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~316 KiB) |
-| Styling | 40+ LCARS CSS custom properties in shared `lcars-styles.js` |
+| Frontend | Lit Element v2 web components — 12 extracted panel elements + shared base class |
+| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~566 KiB) |
+| Styling | 3-tier CSS composition: base variables → component shadow DOM → panel-specific modules |
+| Components | 7 shared components: `<lcars-panel-frame>`, `<lcars-sensor-row>`, `<lcars-section-divider>`, `<lcars-option-strip>`, `<lcars-setpoint>`, `<lcars-segmented-bar>`, `<lcars-summary-badge>` |
 | Communication | WebSocket API + window custom events |
 
 ## Changelog

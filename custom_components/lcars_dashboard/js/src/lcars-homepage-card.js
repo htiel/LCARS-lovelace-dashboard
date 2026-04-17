@@ -73,7 +73,7 @@ const PANEL_TAG_REGISTRY = new Map([
   [PANEL_TYPE_AQUATICS,     (group, hass, editMode, config) => html`<lcars-pool-spa-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-pool-spa-panel>`],
   [PANEL_TYPE_WEATHER,      (group, hass, editMode, config) => html`<lcars-weather-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-weather-panel>`],
   [PANEL_TYPE_LIFE_SUPPORT, (group, hass, editMode, config) => html`<lcars-lifesupport-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-lifesupport-panel>`],
-  [PANEL_TYPE_ILLUMINATION, (group, hass, editMode, config) => html`<lcars-illumination-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-illumination-panel>`],
+  [PANEL_TYPE_ILLUMINATION, (group, hass, editMode, config) => html`<lcars-illumination-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-illumination-panel>`],
 ]);
 
 /* Build a cache-busted camera image URL using last_updated timestamp */

@@ -306,11 +306,15 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     // Color mode support
     const supportedModes = state?.attributes?.supported_color_modes || [];
     const hasColorControl = supportedModes.some(m => m === 'hs' || m === 'rgb' || m === 'xy');
+    const hasBrightness = supportedModes.some(m => m === 'brightness' || m === 'color_temp' || m === 'hs' || m === 'rgb' || m === 'xy');
     const activeHue = state?.attributes?.hs_color?.[0];
+    // Toggle-only lights (onoff only) don't get expanded controls
+    const isExpandable = hasBrightness || hasEffects || hasColorControl;
 
-    // Bar display: show effect name when active, else brightness %
+    // Bar display: show effect name when active, brightness % for dimmable, ON/OFF for toggles
     const barValueText = isOn
-      ? (activeEffect && activeEffect !== 'none' ? activeEffect.toUpperCase() : `${brightness}%`)
+      ? (activeEffect && activeEffect !== 'none' ? activeEffect.toUpperCase()
+         : hasBrightness ? `${brightness}%` : 'ON')
       : 'OFF';
 
     return html`
@@ -319,7 +323,7 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
            aria-roledescription="${this.editMode ? 'reorderable light' : ''}"
            tabindex="0"
            data-entity-id="${eid}"
-           style="--brightness:${brightness}%; --bar-color:${barColor}"
+           style="--brightness:${isOn && !hasBrightness ? 100 : brightness}%; --bar-color:${barColor}"
            @click=${(e) => { if (!this._lastDragWasDrag && !this._dragState?.didDrag) this._toggleLight(eid); }}
            @contextmenu=${(e) => { e.preventDefault(); showMoreInfo(eid); }}
            @keydown=${(e) => this._handleLightKeydown(e, eid, brightness)}>
@@ -334,24 +338,30 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
                 aria-hidden="true"></span>
         `}
         <span class="ilm-light-name">${name}</span>
-        <span class="ilm-light-value"
-              tabindex="0"
-              role="button"
-              aria-expanded="${expanded}"
-              aria-label="${name} ${barValueText} — click to ${expanded ? 'collapse' : 'expand'} controls"
-              @click=${(e) => { e.stopPropagation(); this._expandedLight = expanded ? null : eid; }}>
-          ${barValueText}
-        </span>
+        ${isExpandable ? html`
+          <span class="ilm-light-value"
+                tabindex="0"
+                role="button"
+                aria-expanded="${expanded}"
+                aria-label="${name} ${barValueText} — click to ${expanded ? 'collapse' : 'expand'} controls"
+                @click=${(e) => { e.stopPropagation(); this._expandedLight = expanded ? null : eid; }}>
+            ${barValueText}
+          </span>
+        ` : html`
+          <span class="ilm-light-value">${barValueText}</span>
+        `}
       </div>
-      ${expanded ? html`
+      ${expanded && isExpandable ? html`
         <div class="ilm-expanded-controls">
-          <div class="ilm-slider-row">
-            <input type="range" min="1" max="100" .value=${String(brightness)}
-                   aria-label="${name} brightness slider"
-                   @input=${(e) => { e.stopPropagation(); this._brightnessDebouncer.call(eid, parseInt(e.target.value)); }}
-                   @click=${(e) => e.stopPropagation()}
-                   @change=${(e) => { e.stopPropagation(); this._setBrightness(eid, parseInt(e.target.value)); }}>
-          </div>
+          ${hasBrightness ? html`
+            <div class="ilm-slider-row">
+              <input type="range" min="1" max="100" .value=${String(brightness)}
+                     aria-label="${name} brightness slider"
+                     @input=${(e) => { e.stopPropagation(); this._brightnessDebouncer.call(eid, parseInt(e.target.value)); }}
+                     @click=${(e) => e.stopPropagation()}
+                     @change=${(e) => { e.stopPropagation(); this._setBrightness(eid, parseInt(e.target.value)); }}>
+            </div>
+          ` : ''}
           ${hasColorControl ? html`
             <div class="ilm-color-presets" role="listbox" aria-label="${name} color presets">
               ${LcarsIlluminationPanel.COLOR_PRESETS.map(p => html`

@@ -939,11 +939,7 @@ class LcarsHomepageCard extends LitElement {
             margin-bottom: 1rem;
           }
           .area-illumination-full lcars-illumination-panel {
-            --ilm-full-width: 1;
-          }
-          .area-illumination-full .lcars-device-panel,
-          .area-illumination-full lcars-illumination-panel {
-            max-width: none;
+            --panel-max-width: none;
           }
           .area-split-main {
             min-width: 0;

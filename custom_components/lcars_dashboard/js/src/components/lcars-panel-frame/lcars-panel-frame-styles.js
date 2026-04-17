@@ -21,7 +21,7 @@ export const panelFrameStyles = css`
     flex-direction: column;
     gap: var(--lcars-gap);
     width: 100%;
-    max-width: 42rem;
+    max-width: var(--panel-max-width, 42rem);
     border-left: 4px solid var(--panel-frame-color);
     border-bottom: 4px solid var(--panel-frame-color);
     border-top: 2px solid var(--panel-frame-color);

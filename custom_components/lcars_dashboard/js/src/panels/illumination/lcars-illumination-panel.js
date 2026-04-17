@@ -318,7 +318,8 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
       : 'OFF';
 
     return html`
-      <div class="ilm-light-bar ${isOn ? 'on' : 'off'} ${isDragging ? 'dragging' : ''}"
+      <div class="ilm-light-item">
+        <div class="ilm-light-bar ${isOn ? 'on' : 'off'} ${isDragging ? 'dragging' : ''}"
            role="listitem"
            aria-roledescription="${this.editMode ? 'reorderable light' : ''}"
            tabindex="0"
@@ -396,6 +397,7 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
           ` : ''}
         </div>
       ` : ''}
+      </div>
     `;
   }
 

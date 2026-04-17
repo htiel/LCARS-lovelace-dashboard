@@ -289,4 +289,68 @@ export const illuminationPanelStyles = css`
       transition-duration: 0.01ms !important;
     }
   }
+
+  /* ─── Edit Mode: Drag-and-Drop Reorder ─── */
+
+  /* Reorder status bar */
+  .ilm-reorder-status {
+    font-family: var(--lcars-font, 'Antonio', sans-serif);
+    font-size: var(--lcars-font-size-label, 0.75rem);
+    color: var(--lcars-gold, #ffaa00);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.25rem 0;
+    min-height: 1.25rem;
+  }
+
+  /* Grip handle — 3-pip vertical pattern (LCARS-native, Geordi spec) */
+  .ilm-grip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 2.5rem;
+    height: 100%;
+    flex-shrink: 0;
+    cursor: grab;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    padding: 0 0.5rem;
+    margin-right: 0.25rem;
+    z-index: 1;
+  }
+
+  .ilm-grip span {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 1px;
+    background: var(--lcars-gray, #666688);
+    transition: background 150ms ease;
+  }
+
+  .ilm-grip:hover span {
+    background: var(--lcars-sunflower, #ffcc99);
+  }
+
+  .ilm-grip:active {
+    cursor: grabbing;
+  }
+
+  .ilm-grip:active span {
+    background: var(--lcars-gold, #ffaa00);
+  }
+
+  /* Dragging state on the active bar */
+  .ilm-light-bar.dragging {
+    opacity: 0.5;
+    z-index: 10;
+  }
+
+  /* Edit mode: indicator becomes full-height gold rail */
+  :host([edit-mode]) .ilm-light-bar .ilm-indicator {
+    height: 100%;
+    background: var(--lcars-gold, #ffaa00);
+  }
 `;

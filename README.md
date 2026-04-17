@@ -8,7 +8,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-4.18.0-blue)
+![Version](https://img.shields.io/badge/version-4.18.2-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 [![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 
@@ -50,7 +50,9 @@ SVG condition display with ambient glow, wind compass with gust oscillation, 7-d
 - **Integrations**: Davis Instruments, WeatherFlow Tempest, NWS, OpenWeatherMap
 
 #### Irrigation Panel
-Zone list with START/STOP controls, active zone barberpole fill bar, zone completion flash, schedule countdown proximity glow, rain delay badge, standby toggle.
+Full-featured irrigation control with zone photo thumbnails (from Rachio cloud, with vegetation icon fallback), expandable zone detail badges (shade, vegetation type, slope), barberpole flow animation with real-time progress tracking, countdown timer, schedule management strips (Flex/Fixed type badges), controller status telemetry (connectivity, standby, rain delay, rain sensor), conditional rain alert banner, Quick Run builder (multi-zone selector + duration + ENGAGE), and pause/resume/stop-all controls.
+- **Entity coverage**: Zone switches (with photos, attributes), schedule switches, standby/rain-delay controller, connectivity/rain binary sensors
+- **Rachio services**: `start_watering`, `start_multiple_zone_schedule`, `pause_watering`, `resume_watering`, `stop_watering`
 - **Integrations**: Rachio, RainMachine, OpenSprinkler
 
 #### Environment / Atmoscrubber Panel
@@ -71,7 +73,8 @@ Area-level composite panel aggregating climate, environment (air quality), and a
 - **Integrations**: Any combination of climate entities, air quality devices, and ambient sensors in an area
 
 #### Illumination Control Panel
-Area-level lighting panel with full-width brightness bars, color temperature awareness (warm amber to cool white), scene activation strip, and lighting circuit toggles. Inline brightness slider with keyboard navigation (±5% per arrow key). Badge shows active/total light count.
+Area-level lighting panel with full-width brightness bars, color temperature awareness (warm amber to cool white), scene activation strip, and lighting circuit toggles. Inline brightness slider with keyboard navigation (±5% per arrow key). Badge shows active/total light count. Drag-and-drop reorder in edit mode with FLIP animation, 3-pip LCARS grip handles, and keyboard reorder (Alt+Arrow). Custom order persisted per area via localStorage.
+- **Entity detection**: Insteon dimmers (SwitchLinc/LampLinc/ToggleLinc), infrastructure LED exclusion (UniFi, ESPHome status), device-level dedup
 - **Integrations**: Any `light` domain entities, lighting switches (auto-detected by name heuristic), HA scenes
 
 ### Domain-Specific Renderers

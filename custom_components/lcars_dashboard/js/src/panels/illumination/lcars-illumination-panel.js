@@ -11,8 +11,13 @@
  *
  * Badge: "3/5 ON" — active count / total count
  * Frame color: var(--lcars-sunflower) — warm light aesthetic
+ *
+ * Edit mode: drag-and-drop reorder via Pointer Events + FLIP animation.
+ * Custom order persisted to localStorage keyed by area ID.
+ * // TODO: 5.x — WS persistence for cross-device sync
  */
 import { html, css } from 'lit-element';
+import { repeat } from 'lit-html/directives/repeat.js';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { isLightingEntity } from '../../lcars-entity-utils.js';
 import { showMoreInfo, fireEvent, lcarsLog } from '../../lcars-helpers.js';
@@ -31,18 +36,27 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     return {
       ...super.properties,
       _expandedLight: { type: String },  // entity_id of expanded brightness slider
+      _dragEntityId: { type: String },   // entity_id being dragged
     };
   }
 
   constructor() {
     super();
     this._expandedLight = null;
+    this._dragEntityId = null;
+    this._dragState = null;
+    this._flipPositions = null;
+    this._cachedPartition = null;
+    this._partitionDirty = true;
     this._brightnessDebouncer = createDebouncer((eid, pct) => {
       const safePct = clampValue(pct, 1, 100);
       const brightness = Math.round(safePct / 100 * 255);
       this._callService('light', 'turn_on', { entity_id: eid, brightness });
     }, 300);
     this._sceneRateLimiter = createRateLimiter(3, 5000);
+    // Bound handler for pointer capture events
+    this._boundPointerMove = this._handlePointerMove.bind(this);
+    this._boundPointerUp = this._handlePointerUp.bind(this);
   }
 
   get panelType() { return 'illumination'; }
@@ -59,7 +73,27 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     ];
   }
 
-  /* ─── Entity Partitioning ─── */
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._cancelDrag();
+    this._dragState = null;
+    this._flipPositions = null;
+  }
+
+  willUpdate(changedProps) {
+    super.willUpdate(changedProps);
+    // Invalidate partition cache when entities or hass change
+    this._partitionDirty = true;
+  }
+
+  /* ─── Entity Partitioning (cached per render cycle) ─── */
+
+  _getPartition() {
+    if (!this._partitionDirty && this._cachedPartition) return this._cachedPartition;
+    this._cachedPartition = this._partitionLightingEntities();
+    this._partitionDirty = false;
+    return this._cachedPartition;
+  }
 
   /**
    * Partition area entities into lights, scenes, and circuits.
@@ -70,37 +104,85 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     const dimmableLights = [];  // light domain entities
     const scenes = [];          // scene domain
     const circuits = [];        // switches/booleans controlling lights
+    const coveredDeviceIds = new Set();
 
+    // Pass 1: collect light-domain entities (highest fidelity control)
     for (const entry of allEntries) {
-      if (entry.domain === 'light') {
+      if (entry.domain === 'light' && isLightingEntity(entry)) {
         dimmableLights.push(entry);
+        if (entry.entity?.device_id) coveredDeviceIds.add(entry.entity.device_id);
       } else if (entry.domain === 'scene') {
         scenes.push(entry);
-      } else if (isLightingEntity(entry) && entry.domain !== 'light') {
-        circuits.push(entry);
       }
     }
 
-    // Sort lights: on first, then by brightness descending, then by name
-    dimmableLights.sort((a, b) => {
-      const aOn = a.state?.state === 'on' ? 0 : 1;
-      const bOn = b.state?.state === 'on' ? 0 : 1;
-      if (aOn !== bOn) return aOn - bOn;
-      const aBri = a.state?.attributes?.brightness || 0;
-      const bBri = b.state?.attributes?.brightness || 0;
-      if (aBri !== bBri) return bBri - aBri;
-      return (a.state?.attributes?.friendly_name || '').localeCompare(
-        b.state?.attributes?.friendly_name || ''
-      );
-    });
+    // Pass 2: collect circuits only for devices not already covered by a light entity
+    for (const entry of allEntries) {
+      if (entry.domain === 'light' || entry.domain === 'scene') continue;
+      if (isLightingEntity(entry)) {
+        if (!entry.entity?.device_id || !coveredDeviceIds.has(entry.entity.device_id)) {
+          circuits.push(entry);
+        }
+      }
+    }
+
+    // Stable sort: custom order (localStorage) → alphabetical fallback
+    this._applyCustomOrder(dimmableLights);
 
     return { dimmableLights, scenes, circuits };
+  }
+
+  /* ─── Custom Order (localStorage) ─── */
+
+  _getOrderKey() {
+    return `lcars-ilm-order-${this.areaId || 'default'}`;
+  }
+
+  _loadOrder(entityIds) {
+    try {
+      const stored = JSON.parse(localStorage.getItem(this._getOrderKey()));
+      if (!Array.isArray(stored)) return null;
+      const valid = new Set(entityIds);
+      const filtered = stored.filter(id => valid.has(id));
+      const missing = entityIds.filter(id => !stored.includes(id));
+      missing.sort(); // alphabetical for new entities
+      return [...filtered, ...missing];
+    } catch { return null; }
+  }
+
+  _saveOrder(orderedIds) {
+    try {
+      localStorage.setItem(this._getOrderKey(), JSON.stringify(orderedIds));
+    } catch (e) {
+      lcarsLog.warn(TAG, 'Failed to save light order:', e);
+    }
+  }
+
+  _applyCustomOrder(lights) {
+    const ids = lights.map(e => e.entity?.entity_id);
+    const order = this._loadOrder(ids);
+    if (order) {
+      const orderMap = new Map(order.map((id, i) => [id, i]));
+      lights.sort((a, b) => {
+        const aIdx = orderMap.get(a.entity?.entity_id) ?? 999;
+        const bIdx = orderMap.get(b.entity?.entity_id) ?? 999;
+        if (aIdx !== bIdx) return aIdx - bIdx;
+        return (a.state?.attributes?.friendly_name || '')
+          .localeCompare(b.state?.attributes?.friendly_name || '');
+      });
+    } else {
+      // Default: alphabetical only (stable — no on-state or brightness sorting)
+      lights.sort((a, b) =>
+        (a.state?.attributes?.friendly_name || '')
+          .localeCompare(b.state?.attributes?.friendly_name || '')
+      );
+    }
   }
 
   /* ─── Badge ─── */
 
   renderBadge() {
-    const { dimmableLights, circuits } = this._partitionLightingEntities();
+    const { dimmableLights, circuits } = this._getPartition();
     const all = [...dimmableLights, ...circuits];
     const total = all.length;
     const active = all.filter(e => e.state?.state === 'on').length;
@@ -119,7 +201,7 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
   /* ─── Content ─── */
 
   renderContent() {
-    const { dimmableLights, scenes, circuits } = this._partitionLightingEntities();
+    const { dimmableLights, scenes, circuits } = this._getPartition();
 
     if (dimmableLights.length === 0 && circuits.length === 0) {
       return html`<div class="ilm-empty">NO LIGHTING ENTITIES</div>`;
@@ -127,9 +209,14 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
 
     return html`
       <div class="ilm-content">
+        ${this.editMode ? html`
+          <div class="ilm-reorder-status" role="status" aria-live="polite">
+            ${this._dragEntityId ? '' : 'DRAG TO REORDER \u2022 ALT+ARROWS TO MOVE'}
+          </div>
+        ` : ''}
         ${dimmableLights.length > 0 ? html`
           <div class="ilm-lights" role="list" aria-label="Dimmable lights">
-            ${dimmableLights.map(entry => this._renderLightBar(entry))}
+            ${repeat(dimmableLights, e => e.entity?.entity_id, entry => this._renderLightBar(entry))}
           </div>
         ` : ''}
 
@@ -156,6 +243,31 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     `;
   }
 
+  /* ─── FLIP Animation (after render) ─── */
+
+  updated(changedProps) {
+    super.updated(changedProps);
+    if (!this._flipPositions) return;
+    const items = this.shadowRoot.querySelectorAll('.ilm-light-bar');
+    const flip = this._flipPositions;
+    this._flipPositions = null;
+    requestAnimationFrame(() => {
+      for (const el of items) {
+        const id = el.dataset.entityId;
+        const oldTop = flip.get(id);
+        if (oldTop == null) continue;
+        const newTop = el.getBoundingClientRect().top;
+        const deltaY = oldTop - newTop;
+        if (Math.abs(deltaY) < 1) continue;
+        el.style.transform = `translateY(${deltaY}px)`;
+        el.style.transition = 'none';
+        el.offsetHeight; // force reflow
+        el.style.transition = 'transform 200ms cubic-bezier(0.2, 0, 0.2, 1)';
+        el.style.transform = '';
+      }
+    });
+  }
+
   /* ─── Light Brightness Bar ─── */
 
   _renderLightBar(entry) {
@@ -165,21 +277,33 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     const brightness = isOn ? Math.round((state?.attributes?.brightness || 0) / 255 * 100) : 0;
     const name = this._shortEntityName(entry);
     const expanded = this._expandedLight === eid;
+    const isDragging = this._dragEntityId === eid;
 
     // Color temperature awareness
     const colorTemp = state?.attributes?.color_temp_kelvin;
     const barColor = this._getBarColor(colorTemp, isOn);
 
     return html`
-      <div class="ilm-light-bar ${isOn ? 'on' : 'off'}"
+      <div class="ilm-light-bar ${isOn ? 'on' : 'off'} ${isDragging ? 'dragging' : ''}"
            role="listitem"
+           ${this.editMode ? html`` : ''}
+           aria-roledescription="${this.editMode ? 'reorderable light' : ''}"
            tabindex="0"
+           data-entity-id="${eid}"
            style="--brightness:${brightness}%; --bar-color:${barColor}"
-           @click=${() => this._toggleLight(eid)}
+           @click=${(e) => { if (!this._dragState?.didDrag) this._toggleLight(eid); }}
            @contextmenu=${(e) => { e.preventDefault(); showMoreInfo(eid); }}
            @keydown=${(e) => this._handleLightKeydown(e, eid, brightness)}>
-        <span class="ilm-indicator ${isOn ? 'active' : ''}"
-              aria-hidden="true"></span>
+        ${this.editMode ? html`
+          <span class="ilm-grip"
+                aria-label="Drag to reorder ${name}"
+                @pointerdown=${(e) => this._onPointerDown(e, eid)}>
+            <span></span><span></span><span></span>
+          </span>
+        ` : html`
+          <span class="ilm-indicator ${isOn ? 'active' : ''}"
+                aria-hidden="true"></span>
+        `}
         <span class="ilm-light-name">${name}</span>
         <span class="ilm-light-value"
               tabindex="0"
@@ -199,6 +323,162 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
         </div>
       ` : ''}
     `;
+  }
+
+  /* ─── Drag-and-Drop Reorder (Pointer Events + setPointerCapture) ─── */
+
+  _onPointerDown(e, entityId) {
+    if (!this.editMode) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const bar = e.target.closest('.ilm-light-bar');
+    if (!bar) return;
+
+    bar.setPointerCapture(e.pointerId);
+    bar.addEventListener('pointermove', this._boundPointerMove);
+    bar.addEventListener('pointerup', this._boundPointerUp);
+    bar.addEventListener('pointercancel', this._boundPointerUp);
+
+    const { dimmableLights } = this._getPartition();
+    const orderedIds = dimmableLights.map(en => en.entity?.entity_id);
+
+    this._dragState = {
+      entityId,
+      pointerId: e.pointerId,
+      startY: e.clientY,
+      barEl: bar,
+      currentIndex: orderedIds.indexOf(entityId),
+      orderedIds: [...orderedIds],
+      didDrag: false,
+    };
+    this._dragEntityId = entityId;
+  }
+
+  _handlePointerMove(e) {
+    if (!this._dragState) return;
+    const dy = e.clientY - this._dragState.startY;
+    // Require minimum 8px movement before activating drag
+    if (!this._dragState.didDrag && Math.abs(dy) < 8) return;
+    this._dragState.didDrag = true;
+
+    const bars = this.shadowRoot.querySelectorAll('.ilm-light-bar');
+    if (!bars.length) return;
+    const itemHeight = bars[0].getBoundingClientRect().height + 4; // + gap
+    const indexShift = Math.round(dy / itemHeight);
+    const newIndex = clampValue(
+      this._dragState.currentIndex + indexShift,
+      0,
+      this._dragState.orderedIds.length - 1
+    );
+
+    if (newIndex !== this._dragState.hoverIndex) {
+      this._dragState.hoverIndex = newIndex;
+      // Capture FLIP positions before reorder
+      this._captureFlipPositions();
+      // Reorder the array
+      const ids = [...this._dragState.orderedIds];
+      const fromIdx = ids.indexOf(this._dragState.entityId);
+      ids.splice(fromIdx, 1);
+      ids.splice(newIndex, 0, this._dragState.entityId);
+      this._saveOrder(ids);
+      this._partitionDirty = true;
+      this.requestUpdate();
+    }
+  }
+
+  _handlePointerUp(e) {
+    if (!this._dragState) return;
+    const bar = this._dragState.barEl;
+    if (bar) {
+      bar.releasePointerCapture(this._dragState.pointerId);
+      bar.removeEventListener('pointermove', this._boundPointerMove);
+      bar.removeEventListener('pointerup', this._boundPointerUp);
+      bar.removeEventListener('pointercancel', this._boundPointerUp);
+    }
+    const didDrag = this._dragState.didDrag;
+    this._dragState = null;
+    this._dragEntityId = null;
+    if (didDrag) {
+      this._partitionDirty = true;
+      this.requestUpdate();
+    }
+  }
+
+  _cancelDrag() {
+    if (this._dragState?.barEl) {
+      const bar = this._dragState.barEl;
+      bar.releasePointerCapture(this._dragState.pointerId);
+      bar.removeEventListener('pointermove', this._boundPointerMove);
+      bar.removeEventListener('pointerup', this._boundPointerUp);
+      bar.removeEventListener('pointercancel', this._boundPointerUp);
+    }
+    this._dragState = null;
+    this._dragEntityId = null;
+  }
+
+  _captureFlipPositions() {
+    this._flipPositions = new Map();
+    const bars = this.shadowRoot.querySelectorAll('.ilm-light-bar');
+    for (const bar of bars) {
+      const id = bar.dataset.entityId;
+      if (id) this._flipPositions.set(id, bar.getBoundingClientRect().top);
+    }
+  }
+
+  /* ─── Keyboard Reorder (Alt+Arrow — WCAG 2.5.7) ─── */
+
+  _handleLightKeydown(e, entityId, currentBrightness) {
+    // Edit mode: Alt+Arrow reorders
+    if (this.editMode && e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      e.preventDefault();
+      this._keyboardReorder(entityId, e.key === 'ArrowUp' ? -1 : 1);
+      return;
+    }
+
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      this._toggleLight(entityId);
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      if (currentBrightness > 0) {
+        this._setBrightness(entityId, Math.min(100, currentBrightness + 5));
+      }
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (currentBrightness > 0) {
+        this._setBrightness(entityId, Math.max(1, currentBrightness - 5));
+      }
+    }
+  }
+
+  _keyboardReorder(entityId, direction) {
+    const { dimmableLights } = this._getPartition();
+    const ids = dimmableLights.map(e => e.entity?.entity_id);
+    const idx = ids.indexOf(entityId);
+    if (idx < 0) return;
+    const newIdx = clampValue(idx + direction, 0, ids.length - 1);
+    if (newIdx === idx) return;
+
+    this._captureFlipPositions();
+    ids.splice(idx, 1);
+    ids.splice(newIdx, 0, entityId);
+    this._saveOrder(ids);
+    this._partitionDirty = true;
+    this.requestUpdate();
+
+    // Announce position change
+    const status = this.shadowRoot.querySelector('.ilm-reorder-status');
+    if (status) {
+      const name = dimmableLights.find(e => e.entity?.entity_id === entityId);
+      const displayName = name ? this._shortEntityName(name) : entityId;
+      status.textContent = `${displayName} MOVED TO POSITION ${newIdx + 1} OF ${ids.length}`;
+    }
+
+    // Re-focus the moved element after render
+    this.updateComplete.then(() => {
+      const bar = this.shadowRoot.querySelector(`[data-entity-id="${entityId}"]`);
+      if (bar) bar.focus();
+    });
   }
 
   /* ─── Scene Button ─── */

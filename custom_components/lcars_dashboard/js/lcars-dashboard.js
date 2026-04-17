@@ -1,5 +1,5 @@
 /*! For license information please see lcars-dashboard.js.LICENSE.txt */
-(()=>{"use strict";var e={505(e,t,a){function r(e,t){const a=t?.state;if("unavailable"===a||"unknown"===a)return"var(--lcars-alert)";const r=t?.attributes?.device_class||"",i=e.split(".")[0];if("binary_sensor"===i){if("off"===a)return"var(--lcars-disabled)";switch(r){case"motion":case"moving":return"var(--lcars-butterscotch)";case"occupancy":case"presence":return"var(--lcars-gold)";case"sound":return"var(--lcars-alert)";default:return"var(--lcars-data-accent)"}}if("sensor"===i){if("battery"===r){const e=parseFloat(a);if(!isNaN(e)&&e<20)return"var(--lcars-alert)"}return"var(--lcars-data-accent)"}return"event"===i?"var(--lcars-alert)":"var(--lcars-data-accent)"}function i(e){const t=Number(e);return Number.isFinite(t)?t<=800?"var(--lcars-ice)":t<=1200?"var(--lcars-sunflower)":"var(--lcars-tomato)":"var(--lcars-tomato)"}function s(e,t={}){const{coldMax:a=55,coolMax:r=67,nominalMax:i=76,warmMax:s=84}=t;if(null==e||isNaN(e))return"var(--lcars-gray)";const n=Number(e);return n<a?"var(--lcars-blue)":n<=r?"var(--lcars-bluey)":n<=i?"var(--lcars-ice)":n<=s?"var(--lcars-butterscotch)":"var(--lcars-peach)"}function n(e,t={}){const{veryDryMax:a=20,dryMax:r=29,nominalMax:i=60,humidMax:s=70}=t;if(null==e||isNaN(e))return"var(--lcars-gray)";const n=Number(e);return n<a?"var(--lcars-peach)":n<=r?"var(--lcars-sunflower)":n<=i?"var(--lcars-space-white)":n<=s?"var(--lcars-sunflower)":"var(--lcars-tomato)"}function o(e){switch(e){case"heating":return"var(--lcars-butterscotch)";case"cooling":return"var(--lcars-ice)";case"idle":return"var(--lcars-sunflower)";case"drying":return"var(--lcars-almond)";case"fan":return"var(--lcars-african-violet)";default:return"var(--lcars-disabled)"}}function l(e){switch(e){case"disarmed":return"var(--lcars-ice)";case"armed_home":case"armed_night":return"var(--lcars-sunflower)";case"armed_away":case"armed_vacation":return"var(--lcars-butterscotch)";case"armed_custom_bypass":return"var(--lcars-african-violet)";case"arming":case"pending":case"disarming":return"var(--lcars-gold)";case"triggered":return"var(--lcars-alert)";default:return"var(--lcars-disabled)"}}function c(e){if(null==e)return"var(--lcars-disabled)";switch(e){case"playing":return"var(--lcars-african-violet)";case"paused":case"buffering":return"var(--lcars-sunflower)";case"on":return"var(--lcars-data-accent)";case"idle":case"standby":case"off":default:return"var(--lcars-disabled)";case"unavailable":case"unknown":return"var(--lcars-alert)"}}function d(e,t="pool"){switch(e){case"heating":return"var(--lcars-butterscotch)";case"idle":return"spa"===t?"var(--lcars-sunflower)":"var(--lcars-ice)";default:return"var(--lcars-disabled)"}}function p(e){switch(e){case"sunny":return"var(--lcars-sunflower)";case"clear-night":return"var(--lcars-bluey)";case"partlycloudy":case"snowy-rainy":case"hail":return"var(--lcars-ice)";case"cloudy":case"fog":return"var(--lcars-gray)";case"rainy":case"pouring":default:return"var(--lcars-sky)";case"snowy":return"var(--lcars-space-white)";case"windy":case"windy-variant":return"var(--lcars-almond)";case"lightning":case"lightning-rainy":return"var(--lcars-gold)";case"exceptional":case"unavailable":return"var(--lcars-tomato)"}}function m(e,t=!1){if(t)return"var(--lcars-disabled)";switch(e){case"on":return"var(--lcars-ice)";case"off":return"var(--lcars-sunflower)";case"unavailable":return"var(--lcars-tomato)";default:return"var(--lcars-disabled)"}}function u(e){const t=Number(e);return Number.isFinite(t)?t<55?"cold":t<=67?"cool":t<=76?"nominal":t<=84?"warm":"hot":"nominal"}function h(e,t={}){const{lowMax:a=500,moderateMax:r=1500,highMax:i=3e3}=t;if(null==e||isNaN(e))return"var(--lcars-tomato)";const s=Math.abs(Number(e));return s<=0?"var(--lcars-gray)":s<=a?"var(--lcars-ice)":s<=r?"var(--lcars-sunflower)":s<=i?"var(--lcars-butterscotch)":"var(--lcars-tomato)"}function v(e,t={}){const{lowMax:a=500,moderateMax:r=1500,highMax:i=3e3}=t;if(null==e||isNaN(e))return"UNAVAILABLE";const s=Math.abs(Number(e));return s<=0?"STANDBY":s<=a?"LOW DRAW":s<=r?"MODERATE":s<=i?"HIGH DRAW":"CRITICAL"}a.d(t,{HJ:()=>u,IO:()=>v,JQ:()=>p,OX:()=>o,XI:()=>h,aK:()=>m,kR:()=>i,of:()=>l,qW:()=>d,sx:()=>s,uT:()=>c,xH:()=>r,z5:()=>n})},851(e,t,a){a.d(t,{Bo:()=>d,Hv:()=>l,g0:()=>r,o6:()=>i,oo:()=>o,rC:()=>n,te:()=>c});const r={_prefix:e=>`%c[LCARS ${e}]`,_style:"color: #f1b864; font-weight: bold",debug:(e,...t)=>{window.__LCARS_DEBUG&&console.debug(r._prefix(e),r._style,...t)},info:(e,...t)=>console.info(r._prefix(e),r._style,...t),warn:(e,...t)=>console.warn(r._prefix(e),r._style,...t),error:(e,...t)=>console.error(r._prefix(e),r._style,...t)},i=new EventTarget;function s(){const e=document.querySelector("hc-main");if(e)return e.hass;const t=document.querySelector("home-assistant");return t?t.hass:void 0}function n(e,t={},a=null){const r=new Event(e,{bubbles:!0,cancelable:!1,composed:!0});if(r.detail=t,a)a.dispatchEvent(r);else{const e=function(){let e=document.querySelector("hc-main");return e?(e=e?.shadowRoot?.querySelector("hc-lovelace")?.shadowRoot,e?.querySelector("hui-view")||e?.querySelector("hui-panel-view")):(e=document.querySelector("home-assistant"),e=e?.shadowRoot?.querySelector("home-assistant-main")?.shadowRoot,e=e?.querySelector("app-drawer-layout partial-panel-resolver"),e=e?.shadowRoot||e,e=e?.querySelector("ha-panel-lovelace")?.shadowRoot,e=e?.querySelector("hui-root")?.shadowRoot,e=e?.querySelector("ha-app-layout")?.querySelector("#view"),e?.firstElementChild)}();e&&e.dispatchEvent(r)}}function o(e,t=!1){t?history.replaceState(null,"",e):history.pushState(null,"",e),n("location-changed",{replace:t},window)}function l(e){n("hass-more-info",{entityId:e},document.querySelector("hc-main")||document.querySelector("home-assistant"))}async function c(e){const t=e.type?.startsWith("custom:")?e.type.slice(7):`hui-${e.type}-card`;if(customElements.get(t)||(await async function(){if(customElements.get("hui-view"))return!0;await customElements.whenDefined("partial-panel-resolver");const e=document.createElement("partial-panel-resolver");if(e.hass={panels:[{url_path:"tmp",component_name:"lovelace"}]},e._updateRoutes(),await e.routerOptions.routes.tmp.load(),!customElements.get("ha-panel-lovelace"))return!1;const t=document.createElement("ha-panel-lovelace");return t.hass=s(),void 0===t.hass&&(await new Promise(e=>{window.addEventListener("connection-status",()=>e(),{once:!0})}),t.hass=s()),t.panel={config:{mode:null}},t._fetchConfig(),!0}(),await new Promise(e=>setTimeout(e,100))),"function"==typeof window.loadCardHelpers)try{const t=await window.loadCardHelpers();return await t.createCardElement(e)}catch(e){}const a=document.createElement(t);return a.setConfig&&a.setConfig(e),a}function d(e,t,a,r="Configure"){const i=document.createElement("lcars-popup");i.hass=e,i.setConfig({title:r,card:{type:`custom:${t}`,...a}});const s=new MutationObserver(()=>{const e=i.shadowRoot?.querySelector(".popup-backdrop");e&&!e.hasAttribute("data-open")&&setTimeout(()=>{i.remove(),s.disconnect()},300)});document.body.appendChild(i),s.observe(i.shadowRoot||i,{attributes:!0,subtree:!0}),setTimeout(()=>{s.disconnect()},3e5),requestAnimationFrame(()=>i.open())}},261(e,t,a){a.d(t,{K:()=>i,s:()=>s});var r=a(349);function i(e,{color:t,label:a="",width:i=120,height:s=24,className:n="lcars-sparkline"}={}){const o=function(e){return Array.isArray(e)?e.map(e=>e.mean).filter(e=>null!=e&&Number.isFinite(e)):[]}(e);if(o.length<2)return"";const l=function(e,t,a){const r=Math.min(...e),i=Math.max(...e)-r||1;return e.map((s,n)=>`${(n/(e.length-1)*t).toFixed(1)},${(a-(s-r)/i*a).toFixed(1)}`).join(" ")}(o,i,s),c=o[o.length-1],d=a?`${a}: ${c?.toFixed(0)||""}`:`Sparkline: ${c?.toFixed(0)||""}`;return r.qy`
+(()=>{"use strict";var e={505(e,t,a){function r(e,t){const a=t?.state;if("unavailable"===a||"unknown"===a)return"var(--lcars-alert)";const r=t?.attributes?.device_class||"",i=e.split(".")[0];if("binary_sensor"===i){if("off"===a)return"var(--lcars-disabled)";switch(r){case"motion":case"moving":return"var(--lcars-butterscotch)";case"occupancy":case"presence":return"var(--lcars-gold)";case"sound":return"var(--lcars-alert)";default:return"var(--lcars-data-accent)"}}if("sensor"===i){if("battery"===r){const e=parseFloat(a);if(!isNaN(e)&&e<20)return"var(--lcars-alert)"}return"var(--lcars-data-accent)"}return"event"===i?"var(--lcars-alert)":"var(--lcars-data-accent)"}function i(e){const t=Number(e);return Number.isFinite(t)?t<=800?"var(--lcars-ice)":t<=1200?"var(--lcars-sunflower)":"var(--lcars-tomato)":"var(--lcars-tomato)"}function s(e,t={}){const{coldMax:a=55,coolMax:r=67,nominalMax:i=76,warmMax:s=84}=t;if(null==e||isNaN(e))return"var(--lcars-gray)";const n=Number(e);return n<a?"var(--lcars-blue)":n<=r?"var(--lcars-bluey)":n<=i?"var(--lcars-ice)":n<=s?"var(--lcars-butterscotch)":"var(--lcars-peach)"}function n(e,t={}){const{veryDryMax:a=20,dryMax:r=29,nominalMax:i=60,humidMax:s=70}=t;if(null==e||isNaN(e))return"var(--lcars-gray)";const n=Number(e);return n<a?"var(--lcars-peach)":n<=r?"var(--lcars-sunflower)":n<=i?"var(--lcars-space-white)":n<=s?"var(--lcars-sunflower)":"var(--lcars-tomato)"}function o(e){switch(e){case"heating":return"var(--lcars-butterscotch)";case"cooling":return"var(--lcars-ice)";case"idle":return"var(--lcars-sunflower)";case"drying":return"var(--lcars-almond)";case"fan":return"var(--lcars-african-violet)";default:return"var(--lcars-disabled)"}}function l(e){switch(e){case"disarmed":return"var(--lcars-ice)";case"armed_home":case"armed_night":return"var(--lcars-sunflower)";case"armed_away":case"armed_vacation":return"var(--lcars-butterscotch)";case"armed_custom_bypass":return"var(--lcars-african-violet)";case"arming":case"pending":case"disarming":return"var(--lcars-gold)";case"triggered":return"var(--lcars-alert)";default:return"var(--lcars-disabled)"}}function c(e){if(null==e)return"var(--lcars-disabled)";switch(e){case"playing":return"var(--lcars-african-violet)";case"paused":case"buffering":return"var(--lcars-sunflower)";case"on":return"var(--lcars-data-accent)";case"idle":case"standby":case"off":default:return"var(--lcars-disabled)";case"unavailable":case"unknown":return"var(--lcars-alert)"}}function d(e,t="pool"){switch(e){case"heating":return"var(--lcars-butterscotch)";case"idle":return"spa"===t?"var(--lcars-sunflower)":"var(--lcars-ice)";default:return"var(--lcars-disabled)"}}function p(e){switch(e){case"sunny":return"var(--lcars-sunflower)";case"clear-night":return"var(--lcars-bluey)";case"partlycloudy":case"snowy-rainy":case"hail":return"var(--lcars-ice)";case"cloudy":case"fog":return"var(--lcars-gray)";case"rainy":case"pouring":default:return"var(--lcars-sky)";case"snowy":return"var(--lcars-space-white)";case"windy":case"windy-variant":return"var(--lcars-almond)";case"lightning":case"lightning-rainy":return"var(--lcars-gold)";case"exceptional":case"unavailable":return"var(--lcars-tomato)"}}function u(e,t=!1){if(t)return"var(--lcars-disabled)";switch(e){case"on":return"var(--lcars-ice)";case"off":return"var(--lcars-sunflower)";case"unavailable":return"var(--lcars-tomato)";default:return"var(--lcars-disabled)"}}function m(e){const t=Number(e);return Number.isFinite(t)?t<55?"cold":t<=67?"cool":t<=76?"nominal":t<=84?"warm":"hot":"nominal"}function h(e,t={}){const{lowMax:a=500,moderateMax:r=1500,highMax:i=3e3}=t;if(null==e||isNaN(e))return"var(--lcars-tomato)";const s=Math.abs(Number(e));return s<=0?"var(--lcars-gray)":s<=a?"var(--lcars-ice)":s<=r?"var(--lcars-sunflower)":s<=i?"var(--lcars-butterscotch)":"var(--lcars-tomato)"}function v(e,t={}){const{lowMax:a=500,moderateMax:r=1500,highMax:i=3e3}=t;if(null==e||isNaN(e))return"UNAVAILABLE";const s=Math.abs(Number(e));return s<=0?"STANDBY":s<=a?"LOW DRAW":s<=r?"MODERATE":s<=i?"HIGH DRAW":"CRITICAL"}a.d(t,{HJ:()=>m,IO:()=>v,JQ:()=>p,OX:()=>o,XI:()=>h,aK:()=>u,kR:()=>i,of:()=>l,qW:()=>d,sx:()=>s,uT:()=>c,xH:()=>r,z5:()=>n})},851(e,t,a){a.d(t,{Bo:()=>d,Hv:()=>l,g0:()=>r,o6:()=>i,oo:()=>o,rC:()=>n,te:()=>c});const r={_prefix:e=>`%c[LCARS ${e}]`,_style:"color: #f1b864; font-weight: bold",debug:(e,...t)=>{window.__LCARS_DEBUG&&console.debug(r._prefix(e),r._style,...t)},info:(e,...t)=>console.info(r._prefix(e),r._style,...t),warn:(e,...t)=>console.warn(r._prefix(e),r._style,...t),error:(e,...t)=>console.error(r._prefix(e),r._style,...t)},i=new EventTarget;function s(){const e=document.querySelector("hc-main");if(e)return e.hass;const t=document.querySelector("home-assistant");return t?t.hass:void 0}function n(e,t={},a=null){const r=new Event(e,{bubbles:!0,cancelable:!1,composed:!0});if(r.detail=t,a)a.dispatchEvent(r);else{const e=function(){let e=document.querySelector("hc-main");return e?(e=e?.shadowRoot?.querySelector("hc-lovelace")?.shadowRoot,e?.querySelector("hui-view")||e?.querySelector("hui-panel-view")):(e=document.querySelector("home-assistant"),e=e?.shadowRoot?.querySelector("home-assistant-main")?.shadowRoot,e=e?.querySelector("app-drawer-layout partial-panel-resolver"),e=e?.shadowRoot||e,e=e?.querySelector("ha-panel-lovelace")?.shadowRoot,e=e?.querySelector("hui-root")?.shadowRoot,e=e?.querySelector("ha-app-layout")?.querySelector("#view"),e?.firstElementChild)}();e&&e.dispatchEvent(r)}}function o(e,t=!1){t?history.replaceState(null,"",e):history.pushState(null,"",e),n("location-changed",{replace:t},window)}function l(e){n("hass-more-info",{entityId:e},document.querySelector("hc-main")||document.querySelector("home-assistant"))}async function c(e){const t=e.type?.startsWith("custom:")?e.type.slice(7):`hui-${e.type}-card`;if(customElements.get(t)||(await async function(){if(customElements.get("hui-view"))return!0;await customElements.whenDefined("partial-panel-resolver");const e=document.createElement("partial-panel-resolver");if(e.hass={panels:[{url_path:"tmp",component_name:"lovelace"}]},e._updateRoutes(),await e.routerOptions.routes.tmp.load(),!customElements.get("ha-panel-lovelace"))return!1;const t=document.createElement("ha-panel-lovelace");return t.hass=s(),void 0===t.hass&&(await new Promise(e=>{window.addEventListener("connection-status",()=>e(),{once:!0})}),t.hass=s()),t.panel={config:{mode:null}},t._fetchConfig(),!0}(),await new Promise(e=>setTimeout(e,100))),"function"==typeof window.loadCardHelpers)try{const t=await window.loadCardHelpers();return await t.createCardElement(e)}catch(e){}const a=document.createElement(t);return a.setConfig&&a.setConfig(e),a}function d(e,t,a,r="Configure"){const i=document.createElement("lcars-popup");i.hass=e,i.setConfig({title:r,card:{type:`custom:${t}`,...a}});const s=new MutationObserver(()=>{const e=i.shadowRoot?.querySelector(".popup-backdrop");e&&!e.hasAttribute("data-open")&&setTimeout(()=>{i.remove(),s.disconnect()},300)});document.body.appendChild(i),s.observe(i.shadowRoot||i,{attributes:!0,subtree:!0}),setTimeout(()=>{s.disconnect()},3e5),requestAnimationFrame(()=>i.open())}},261(e,t,a){a.d(t,{K:()=>i,s:()=>s});var r=a(349);function i(e,{color:t,label:a="",width:i=120,height:s=24,className:n="lcars-sparkline"}={}){const o=function(e){return Array.isArray(e)?e.map(e=>e.mean).filter(e=>null!=e&&Number.isFinite(e)):[]}(e);if(o.length<2)return"";const l=function(e,t,a){const r=Math.min(...e),i=Math.max(...e)-r||1;return e.map((s,n)=>`${(n/(e.length-1)*t).toFixed(1)},${(a-(s-r)/i*a).toFixed(1)}`).join(" ")}(o,i,s),c=o[o.length-1],d=a?`${a}: ${c?.toFixed(0)||""}`:`Sparkline: ${c?.toFixed(0)||""}`;return r.qy`
     <div class="${n}-wrap" aria-label="${d}">
       ${a?r.qy`<span class="${n}-label">${a}</span>`:""}
       <svg class="${n}" viewBox="0 0 ${i} ${s}" preserveAspectRatio="none">
@@ -214,7 +214,7 @@
     outline: 2px solid var(--lcars-ice);
     outline-offset: 2px;
   }
-`},349(e,t,a){a.d(t,{WF:()=>z,AH:()=>C,qy:()=>p.qy});var r=a(601),i=a(995);function s(e,t){const{element:{content:a},parts:r}=e,i=document.createTreeWalker(a,133,null,!1);let s=o(r),n=r[s],l=-1,c=0;const d=[];let p=null;for(;i.nextNode();){l++;const e=i.currentNode;for(e.previousSibling===p&&(p=null),t.has(e)&&(d.push(e),null===p&&(p=e)),null!==p&&c++;void 0!==n&&n.index===l;)n.index=null!==p?-1:n.index-c,s=o(r,s),n=r[s]}d.forEach(e=>e.parentNode.removeChild(e))}const n=e=>{let t=11===e.nodeType?0:1;const a=document.createTreeWalker(e,133,null,!1);for(;a.nextNode();)t++;return t},o=(e,t=-1)=>{for(let a=t+1;a<e.length;a++){const t=e[a];if((0,i.s9)(t))return a}return-1};var l=a(841),c=a(172),d=a(679),p=a(637);const m=(e,t)=>`${e}--${t}`;let u=!0;void 0===window.ShadyCSS?u=!1:void 0===window.ShadyCSS.prepareTemplateDom&&(console.warn("Incompatible ShadyCSS version detected. Please update to at least @webcomponents/webcomponentsjs@2.0.2 and @webcomponents/shadycss@1.3.1."),u=!1);const h=e=>t=>{const a=m(t.type,e);let r=c.c.get(a);void 0===r&&(r={stringsArray:new WeakMap,keyString:new Map},c.c.set(a,r));let s=r.stringsArray.get(t.strings);if(void 0!==s)return s;const n=t.strings.join(i.xL);if(s=r.keyString.get(n),void 0===s){const a=t.getTemplateElement();u&&window.ShadyCSS.prepareTemplateDom(a,e),s=new i.Bj(t,a),r.keyString.set(n,s)}return r.stringsArray.set(t.strings,s),s},v=["html","svg"],f=new Set;window.JSCompiler_renameProperty=(e,t)=>e;const g={toAttribute(e,t){switch(t){case Boolean:return e?"":null;case Object:case Array:return null==e?e:JSON.stringify(e)}return e},fromAttribute(e,t){switch(t){case Boolean:return null!==e;case Number:return null===e?null:Number(e);case Object:case Array:return JSON.parse(e)}return e}},b=(e,t)=>t!==e&&(t==t||e==e),y={attribute:!0,type:String,converter:g,reflect:!1,hasChanged:b},w="finalized";class _ extends HTMLElement{constructor(){super(),this.initialize()}static get observedAttributes(){this.finalize();const e=[];return this._classProperties.forEach((t,a)=>{const r=this._attributeNameForProperty(a,t);void 0!==r&&(this._attributeToPropertyMap.set(r,a),e.push(r))}),e}static _ensureClassProperties(){if(!this.hasOwnProperty(JSCompiler_renameProperty("_classProperties",this))){this._classProperties=new Map;const e=Object.getPrototypeOf(this)._classProperties;void 0!==e&&e.forEach((e,t)=>this._classProperties.set(t,e))}}static createProperty(e,t=y){if(this._ensureClassProperties(),this._classProperties.set(e,t),t.noAccessor||this.prototype.hasOwnProperty(e))return;const a="symbol"==typeof e?Symbol():`__${e}`,r=this.getPropertyDescriptor(e,a,t);void 0!==r&&Object.defineProperty(this.prototype,e,r)}static getPropertyDescriptor(e,t,a){return{get(){return this[t]},set(r){const i=this[e];this[t]=r,this.requestUpdateInternal(e,i,a)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this._classProperties&&this._classProperties.get(e)||y}static finalize(){const e=Object.getPrototypeOf(this);if(e.hasOwnProperty(w)||e.finalize(),this[w]=!0,this._ensureClassProperties(),this._attributeToPropertyMap=new Map,this.hasOwnProperty(JSCompiler_renameProperty("properties",this))){const e=this.properties,t=[...Object.getOwnPropertyNames(e),..."function"==typeof Object.getOwnPropertySymbols?Object.getOwnPropertySymbols(e):[]];for(const a of t)this.createProperty(a,e[a])}}static _attributeNameForProperty(e,t){const a=t.attribute;return!1===a?void 0:"string"==typeof a?a:"string"==typeof e?e.toLowerCase():void 0}static _valueHasChanged(e,t,a=b){return a(e,t)}static _propertyValueFromAttribute(e,t){const a=t.type,r=t.converter||g,i="function"==typeof r?r:r.fromAttribute;return i?i(e,a):e}static _propertyValueToAttribute(e,t){if(void 0===t.reflect)return;const a=t.type,r=t.converter;return(r&&r.toAttribute||g.toAttribute)(e,a)}initialize(){this._updateState=0,this._updatePromise=new Promise(e=>this._enableUpdatingResolver=e),this._changedProperties=new Map,this._saveInstanceProperties(),this.requestUpdateInternal()}_saveInstanceProperties(){this.constructor._classProperties.forEach((e,t)=>{if(this.hasOwnProperty(t)){const e=this[t];delete this[t],this._instanceProperties||(this._instanceProperties=new Map),this._instanceProperties.set(t,e)}})}_applyInstanceProperties(){this._instanceProperties.forEach((e,t)=>this[t]=e),this._instanceProperties=void 0}connectedCallback(){this.enableUpdating()}enableUpdating(){void 0!==this._enableUpdatingResolver&&(this._enableUpdatingResolver(),this._enableUpdatingResolver=void 0)}disconnectedCallback(){}attributeChangedCallback(e,t,a){t!==a&&this._attributeToProperty(e,a)}_propertyToAttribute(e,t,a=y){const r=this.constructor,i=r._attributeNameForProperty(e,a);if(void 0!==i){const e=r._propertyValueToAttribute(t,a);if(void 0===e)return;this._updateState=8|this._updateState,null==e?this.removeAttribute(i):this.setAttribute(i,e),this._updateState=-9&this._updateState}}_attributeToProperty(e,t){if(8&this._updateState)return;const a=this.constructor,r=a._attributeToPropertyMap.get(e);if(void 0!==r){const e=a.getPropertyOptions(r);this._updateState=16|this._updateState,this[r]=a._propertyValueFromAttribute(t,e),this._updateState=-17&this._updateState}}requestUpdateInternal(e,t,a){let r=!0;if(void 0!==e){const i=this.constructor;a=a||i.getPropertyOptions(e),i._valueHasChanged(this[e],t,a.hasChanged)?(this._changedProperties.has(e)||this._changedProperties.set(e,t),!0!==a.reflect||16&this._updateState||(void 0===this._reflectingProperties&&(this._reflectingProperties=new Map),this._reflectingProperties.set(e,a))):r=!1}!this._hasRequestedUpdate&&r&&(this._updatePromise=this._enqueueUpdate())}requestUpdate(e,t){return this.requestUpdateInternal(e,t),this.updateComplete}async _enqueueUpdate(){this._updateState=4|this._updateState;try{await this._updatePromise}catch(e){}const e=this.performUpdate();return null!=e&&await e,!this._hasRequestedUpdate}get _hasRequestedUpdate(){return 4&this._updateState}get hasUpdated(){return 1&this._updateState}performUpdate(){if(!this._hasRequestedUpdate)return;this._instanceProperties&&this._applyInstanceProperties();let e=!1;const t=this._changedProperties;try{e=this.shouldUpdate(t),e?this.update(t):this._markUpdated()}catch(t){throw e=!1,this._markUpdated(),t}e&&(1&this._updateState||(this._updateState=1|this._updateState,this.firstUpdated(t)),this.updated(t))}_markUpdated(){this._changedProperties=new Map,this._updateState=-5&this._updateState}get updateComplete(){return this._getUpdateComplete()}_getUpdateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._updatePromise}shouldUpdate(e){return!0}update(e){void 0!==this._reflectingProperties&&this._reflectingProperties.size>0&&(this._reflectingProperties.forEach((e,t)=>this._propertyToAttribute(t,this[t],e)),this._reflectingProperties=void 0),this._markUpdated()}updated(e){}firstUpdated(e){}}_[w]=!0;const x=Element.prototype;x.msMatchesSelector||x.webkitMatchesSelector;const $=window.ShadowRoot&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,k=Symbol();class S{constructor(e,t){if(t!==k)throw new Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e}get styleSheet(){return void 0===this._styleSheet&&($?(this._styleSheet=new CSSStyleSheet,this._styleSheet.replaceSync(this.cssText)):this._styleSheet=null),this._styleSheet}toString(){return this.cssText}}const C=(e,...t)=>{const a=t.reduce((t,a,r)=>t+(e=>{if(e instanceof S)return e.cssText;if("number"==typeof e)return e;throw new Error(`Value passed to 'css' function must be a 'css' function result: ${e}. Use 'unsafeCSS' to pass non-literal values, but\n            take care to ensure page security.`)})(a)+e[r+1],e[0]);return new S(a,k)};(window.litElementVersions||(window.litElementVersions=[])).push("2.5.1");const E={};class z extends _{static getStyles(){return this.styles}static _getUniqueStyles(){if(this.hasOwnProperty(JSCompiler_renameProperty("_styles",this)))return;const e=this.getStyles();if(Array.isArray(e)){const t=(e,a)=>e.reduceRight((e,a)=>Array.isArray(a)?t(a,e):(e.add(a),e),a),a=t(e,new Set),r=[];a.forEach(e=>r.unshift(e)),this._styles=r}else this._styles=void 0===e?[]:[e];this._styles=this._styles.map(e=>{if(e instanceof CSSStyleSheet&&!$){const t=Array.prototype.slice.call(e.cssRules).reduce((e,t)=>e+t.cssText,"");return new S(String(t),k)}return e})}initialize(){super.initialize(),this.constructor._getUniqueStyles(),this.renderRoot=this.createRenderRoot(),window.ShadowRoot&&this.renderRoot instanceof window.ShadowRoot&&this.adoptStyles()}createRenderRoot(){return this.attachShadow(this.constructor.shadowRootOptions)}adoptStyles(){const e=this.constructor._styles;0!==e.length&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow?$?this.renderRoot.adoptedStyleSheets=e.map(e=>e instanceof CSSStyleSheet?e:e.styleSheet):this._needsShimAdoptedStyleSheets=!0:window.ShadyCSS.ScopingShim.prepareAdoptedCssText(e.map(e=>e.cssText),this.localName))}connectedCallback(){super.connectedCallback(),this.hasUpdated&&void 0!==window.ShadyCSS&&window.ShadyCSS.styleElement(this)}update(e){const t=this.render();super.update(e),t!==E&&this.constructor.render(t,this.renderRoot,{scopeName:this.localName,eventContext:this}),this._needsShimAdoptedStyleSheets&&(this._needsShimAdoptedStyleSheets=!1,this.constructor._styles.forEach(e=>{const t=document.createElement("style");t.textContent=e.cssText,this.renderRoot.appendChild(t)}))}render(){return E}}z.finalized=!0,z.render=(e,t,a)=>{if(!a||"object"!=typeof a||!a.scopeName)throw new Error("The `scopeName` option is required.");const i=a.scopeName,p=l.r.has(t),g=u&&11===t.nodeType&&!!t.host,b=g&&!f.has(i),y=b?document.createDocumentFragment():t;if((0,l.X)(e,y,Object.assign({templateFactory:h(i)},a)),b){const e=l.r.get(y);l.r.delete(y);((e,t,a)=>{f.add(e);const r=a?a.element:document.createElement("template"),i=t.querySelectorAll("style"),{length:l}=i;if(0===l)return void window.ShadyCSS.prepareTemplateStyles(r,e);const d=document.createElement("style");for(let e=0;e<l;e++){const t=i[e];t.parentNode.removeChild(t),d.textContent+=t.textContent}(e=>{v.forEach(t=>{const a=c.c.get(m(t,e));void 0!==a&&a.keyString.forEach(e=>{const{element:{content:t}}=e,a=new Set;Array.from(t.querySelectorAll("style")).forEach(e=>{a.add(e)}),s(e,a)})})})(e);const p=r.content;a?function(e,t,a=null){const{element:{content:r},parts:i}=e;if(null==a)return void r.appendChild(t);const s=document.createTreeWalker(r,133,null,!1);let l=o(i),c=0,d=-1;for(;s.nextNode();)for(d++,s.currentNode===a&&(c=n(t),a.parentNode.insertBefore(t,a));-1!==l&&i[l].index===d;){if(c>0){for(;-1!==l;)i[l].index+=c,l=o(i,l);return}l=o(i,l)}}(a,d,p.firstChild):p.insertBefore(d,p.firstChild),window.ShadyCSS.prepareTemplateStyles(r,e);const u=p.querySelector("style");if(window.ShadyCSS.nativeShadow&&null!==u)t.insertBefore(u.cloneNode(!0),t.firstChild);else if(a){p.insertBefore(d,p.firstChild);const e=new Set;e.add(d),s(a,e)}})(i,y,e.value instanceof d.i?e.value.template:void 0),(0,r.if)(t,t.firstChild),t.appendChild(y),l.r.set(t,e)}!p&&g&&window.ShadyCSS.styleElement(t.host)},z.shadowRootOptions={mode:"open"}},12(e,t,a){a.d(t,{q:()=>i});const r=new WeakMap,i=e=>"function"==typeof e&&r.has(e)},601(e,t,a){a.d(t,{Pf:()=>i,if:()=>s,o6:()=>r});const r="undefined"!=typeof window&&null!=window.customElements&&void 0!==window.customElements.polyfillWrapFlushCallback,i=(e,t,a=null,r=null)=>{for(;t!==a;){const a=t.nextSibling;e.insertBefore(t,r),t=a}},s=(e,t,a=null)=>{for(;t!==a;){const a=t.nextSibling;e.removeChild(t),t=a}}},624(e,t,a){a.d(t,{c:()=>r,s:()=>i});const r={},i={}},671(e,t,a){a.d(t,{GP:()=>b,Qh:()=>u,Yp:()=>h,g$:()=>v,pU:()=>p});var r=a(12),i=a(601),s=a(624),n=a(679),o=a(957),l=a(995);const c=e=>null===e||!("object"==typeof e||"function"==typeof e),d=e=>Array.isArray(e)||!(!e||!e[Symbol.iterator]);class p{constructor(e,t,a){this.dirty=!0,this.element=e,this.name=t,this.strings=a,this.parts=[];for(let e=0;e<a.length-1;e++)this.parts[e]=this._createPart()}_createPart(){return new m(this)}_getValue(){const e=this.strings,t=e.length-1,a=this.parts;if(1===t&&""===e[0]&&""===e[1]){const e=a[0].value;if("symbol"==typeof e)return String(e);if("string"==typeof e||!d(e))return e}let r="";for(let i=0;i<t;i++){r+=e[i];const t=a[i];if(void 0!==t){const e=t.value;if(c(e)||!d(e))r+="string"==typeof e?e:String(e);else for(const t of e)r+="string"==typeof t?t:String(t)}}return r+=e[t],r}commit(){this.dirty&&(this.dirty=!1,this.element.setAttribute(this.name,this._getValue()))}}class m{constructor(e){this.value=void 0,this.committer=e}setValue(e){e===s.c||c(e)&&e===this.value||(this.value=e,(0,r.q)(e)||(this.committer.dirty=!0))}commit(){for(;(0,r.q)(this.value);){const e=this.value;this.value=s.c,e(this)}this.value!==s.c&&this.committer.commit()}}class u{constructor(e){this.value=void 0,this.__pendingValue=void 0,this.options=e}appendInto(e){this.startNode=e.appendChild((0,l.h5)()),this.endNode=e.appendChild((0,l.h5)())}insertAfterNode(e){this.startNode=e,this.endNode=e.nextSibling}appendIntoPart(e){e.__insert(this.startNode=(0,l.h5)()),e.__insert(this.endNode=(0,l.h5)())}insertAfterPart(e){e.__insert(this.startNode=(0,l.h5)()),this.endNode=e.endNode,e.endNode=this.startNode}setValue(e){this.__pendingValue=e}commit(){if(null===this.startNode.parentNode)return;for(;(0,r.q)(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=s.c,e(this)}const e=this.__pendingValue;e!==s.c&&(c(e)?e!==this.value&&this.__commitText(e):e instanceof o.Q?this.__commitTemplateResult(e):e instanceof Node?this.__commitNode(e):d(e)?this.__commitIterable(e):e===s.s?(this.value=s.s,this.clear()):this.__commitText(e))}__insert(e){this.endNode.parentNode.insertBefore(e,this.endNode)}__commitNode(e){this.value!==e&&(this.clear(),this.__insert(e),this.value=e)}__commitText(e){const t=this.startNode.nextSibling,a="string"==typeof(e=null==e?"":e)?e:String(e);t===this.endNode.previousSibling&&3===t.nodeType?t.data=a:this.__commitNode(document.createTextNode(a)),this.value=e}__commitTemplateResult(e){const t=this.options.templateFactory(e);if(this.value instanceof n.i&&this.value.template===t)this.value.update(e.values);else{const a=new n.i(t,e.processor,this.options),r=a._clone();a.update(e.values),this.__commitNode(r),this.value=a}}__commitIterable(e){Array.isArray(this.value)||(this.value=[],this.clear());const t=this.value;let a,r=0;for(const i of e)a=t[r],void 0===a&&(a=new u(this.options),t.push(a),0===r?a.appendIntoPart(this):a.insertAfterPart(t[r-1])),a.setValue(i),a.commit(),r++;r<t.length&&(t.length=r,this.clear(a&&a.endNode))}clear(e=this.startNode){(0,i.if)(this.startNode.parentNode,e.nextSibling,this.endNode)}}class h{constructor(e,t,a){if(this.value=void 0,this.__pendingValue=void 0,2!==a.length||""!==a[0]||""!==a[1])throw new Error("Boolean attributes can only contain a single expression");this.element=e,this.name=t,this.strings=a}setValue(e){this.__pendingValue=e}commit(){for(;(0,r.q)(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=s.c,e(this)}if(this.__pendingValue===s.c)return;const e=!!this.__pendingValue;this.value!==e&&(e?this.element.setAttribute(this.name,""):this.element.removeAttribute(this.name),this.value=e),this.__pendingValue=s.c}}class v extends p{constructor(e,t,a){super(e,t,a),this.single=2===a.length&&""===a[0]&&""===a[1]}_createPart(){return new f(this)}_getValue(){return this.single?this.parts[0].value:super._getValue()}commit(){this.dirty&&(this.dirty=!1,this.element[this.name]=this._getValue())}}class f extends m{}let g=!1;(()=>{try{const e={get capture(){return g=!0,!1}};window.addEventListener("test",e,e),window.removeEventListener("test",e,e)}catch(e){}})();class b{constructor(e,t,a){this.value=void 0,this.__pendingValue=void 0,this.element=e,this.eventName=t,this.eventContext=a,this.__boundHandleEvent=e=>this.handleEvent(e)}setValue(e){this.__pendingValue=e}commit(){for(;(0,r.q)(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=s.c,e(this)}if(this.__pendingValue===s.c)return;const e=this.__pendingValue,t=this.value,a=null==e||null!=t&&(e.capture!==t.capture||e.once!==t.once||e.passive!==t.passive),i=null!=e&&(null==t||a);a&&this.element.removeEventListener(this.eventName,this.__boundHandleEvent,this.__options),i&&(this.__options=y(e),this.element.addEventListener(this.eventName,this.__boundHandleEvent,this.__options)),this.value=e,this.__pendingValue=s.c}handleEvent(e){"function"==typeof this.value?this.value.call(this.eventContext||this.element,e):this.value.handleEvent(e)}}const y=e=>e&&(g?{capture:e.capture,passive:e.passive,once:e.once}:e.capture)},841(e,t,a){a.d(t,{X:()=>o,r:()=>n});var r=a(601),i=a(671),s=a(172);const n=new WeakMap,o=(e,t,a)=>{let o=n.get(t);void 0===o&&((0,r.if)(t,t.firstChild),n.set(t,o=new i.Qh(Object.assign({templateFactory:s.v},a))),o.appendInto(t)),o.setValue(e),o.commit()}},172(e,t,a){a.d(t,{c:()=>s,v:()=>i});var r=a(995);function i(e){let t=s.get(e.type);void 0===t&&(t={stringsArray:new WeakMap,keyString:new Map},s.set(e.type,t));let a=t.stringsArray.get(e.strings);if(void 0!==a)return a;const i=e.strings.join(r.xL);return a=t.keyString.get(i),void 0===a&&(a=new r.Bj(e,e.getTemplateElement()),t.keyString.set(i,a)),t.stringsArray.set(e.strings,a),a}const s=new Map},679(e,t,a){a.d(t,{i:()=>s});var r=a(601),i=a(995);class s{constructor(e,t,a){this.__parts=[],this.template=e,this.processor=t,this.options=a}update(e){let t=0;for(const a of this.__parts)void 0!==a&&a.setValue(e[t]),t++;for(const e of this.__parts)void 0!==e&&e.commit()}_clone(){const e=r.o6?this.template.element.content.cloneNode(!0):document.importNode(this.template.element.content,!0),t=[],a=this.template.parts,s=document.createTreeWalker(e,133,null,!1);let n,o=0,l=0,c=s.nextNode();for(;o<a.length;)if(n=a[o],(0,i.s9)(n)){for(;l<n.index;)l++,"TEMPLATE"===c.nodeName&&(t.push(c),s.currentNode=c.content),null===(c=s.nextNode())&&(s.currentNode=t.pop(),c=s.nextNode());if("node"===n.type){const e=this.processor.handleTextExpression(this.options);e.insertAfterNode(c.previousSibling),this.__parts.push(e)}else this.__parts.push(...this.processor.handleAttributeExpressions(c,n.name,n.strings,this.options));o++}else this.__parts.push(void 0),o++;return r.o6&&(document.adoptNode(e),customElements.upgrade(e)),e}}},957(e,t,a){a.d(t,{Q:()=>o,U:()=>l});var r=a(601),i=a(995);const s=window.trustedTypes&&trustedTypes.createPolicy("lit-html",{createHTML:e=>e}),n=` ${i.xL} `;class o{constructor(e,t,a,r){this.strings=e,this.values=t,this.type=a,this.processor=r}getHTML(){const e=this.strings.length-1;let t="",a=!1;for(let r=0;r<e;r++){const e=this.strings[r],s=e.lastIndexOf("\x3c!--");a=(s>-1||a)&&-1===e.indexOf("--\x3e",s+1);const o=i.zY.exec(e);t+=null===o?e+(a?n:i.XY):e.substr(0,o.index)+o[1]+o[2]+i.c1+o[3]+i.xL}return t+=this.strings[e],t}getTemplateElement(){const e=document.createElement("template");let t=this.getHTML();return void 0!==s&&(t=s.createHTML(t)),e.innerHTML=t,e}}class l extends o{getHTML(){return`<svg>${super.getHTML()}</svg>`}getTemplateElement(){const e=super.getTemplateElement(),t=e.content,a=t.firstChild;return t.removeChild(a),(0,r.Pf)(t,a.firstChild),e}}},995(e,t,a){a.d(t,{Bj:()=>o,XY:()=>i,c1:()=>n,h5:()=>d,s9:()=>c,xL:()=>r,zY:()=>p});const r=`{{lit-${String(Math.random()).slice(2)}}}`,i=`\x3c!--${r}--\x3e`,s=new RegExp(`${r}|${i}`),n="$lit$";class o{constructor(e,t){this.parts=[],this.element=t;const a=[],i=[],o=document.createTreeWalker(t.content,133,null,!1);let c=0,m=-1,u=0;const{strings:h,values:{length:v}}=e;for(;u<v;){const e=o.nextNode();if(null!==e){if(m++,1===e.nodeType){if(e.hasAttributes()){const t=e.attributes,{length:a}=t;let r=0;for(let e=0;e<a;e++)l(t[e].name,n)&&r++;for(;r-- >0;){const t=h[u],a=p.exec(t)[2],r=a.toLowerCase()+n,i=e.getAttribute(r);e.removeAttribute(r);const o=i.split(s);this.parts.push({type:"attribute",index:m,name:a,strings:o}),u+=o.length-1}}"TEMPLATE"===e.tagName&&(i.push(e),o.currentNode=e.content)}else if(3===e.nodeType){const t=e.data;if(t.indexOf(r)>=0){const r=e.parentNode,i=t.split(s),o=i.length-1;for(let t=0;t<o;t++){let a,s=i[t];if(""===s)a=d();else{const e=p.exec(s);null!==e&&l(e[2],n)&&(s=s.slice(0,e.index)+e[1]+e[2].slice(0,-n.length)+e[3]),a=document.createTextNode(s)}r.insertBefore(a,e),this.parts.push({type:"node",index:++m})}""===i[o]?(r.insertBefore(d(),e),a.push(e)):e.data=i[o],u+=o}}else if(8===e.nodeType)if(e.data===r){const t=e.parentNode;null!==e.previousSibling&&m!==c||(m++,t.insertBefore(d(),e)),c=m,this.parts.push({type:"node",index:m}),null===e.nextSibling?e.data="":(a.push(e),m--),u++}else{let t=-1;for(;-1!==(t=e.data.indexOf(r,t+1));)this.parts.push({type:"node",index:-1}),u++}}else o.currentNode=i.pop()}for(const e of a)e.parentNode.removeChild(e)}}const l=(e,t)=>{const a=e.length-t.length;return a>=0&&e.slice(a)===t},c=e=>-1!==e.index,d=()=>document.createComment(""),p=/([ \x09\x0a\x0c\x0d])([^\0-\x1F\x7F-\x9F "'>=/]+)([ \x09\x0a\x0c\x0d]*=[ \x09\x0a\x0c\x0d]*(?:[^ \x09\x0a\x0c\x0d"'`<>=]*|"[^"]*|'[^']*))$/},637(e,t,a){a.d(t,{qy:()=>o,XX:()=>n.X,JW:()=>l});var r=a(671);const i=new class{handleAttributeExpressions(e,t,a,i){const s=t[0];return"."===s?new r.g$(e,t.slice(1),a).parts:"@"===s?[new r.GP(e,t.slice(1),i.eventContext)]:"?"===s?[new r.Yp(e,t.slice(1),a)]:new r.pU(e,t,a).parts}handleTextExpression(e){return new r.Qh(e)}};var s=a(957),n=(a(12),a(601),a(624),a(841));a(172),a(679),a(995),"undefined"!=typeof window&&(window.litHtmlVersions||(window.litHtmlVersions=[])).push("1.4.1");const o=(e,...t)=>new s.Q(e,t,"html",i),l=(e,...t)=>new s.U(e,t,"svg",i)},330(e){e.exports=JSON.parse('{"name":"lcars-dashboard","private":true,"version":"4.17.2","description":"LCARS Dashboard — Home Assistant Lovelace dashboard with Star Trek LCARS UI. Based on Dwains Dashboard by Dwain Scheeren.","scripts":{"build":"webpack --mode=production","watch":"webpack --watch --mode=development"},"keywords":["lcars","home-assistant","lovelace","dashboard","hacs"],"author":"htiel (based on Dwains Dashboard by Dwain Scheeren)","license":"MIT","devDependencies":{"autoprefixer":"^10.2.5","css-loader":"^5.1.3","html-webpack-plugin":"^5.3.1","postcss":"^8.2.8","postcss-cli":"^8.3.1","postcss-loader":"^5.2.0","style-loader":"^2.0.0","tailwindcss":"^2.0.3","webpack":"^5.26.0","webpack-cli":"^4.5.0","webpack-dev-server":"^5.2.3","webpack-merge":"^5.7.3"},"dependencies":{"@mdi/js":"^6.5.95","card-tools":"github:thomasloven/lovelace-card-tools#477f3d4eeb5c70cab047d418d19afb6b0f07bf49","custom-card-helpers":"^1.8.0","js-cookie":"^3.0.1","lit-element":"^2.2.1","lit-html":"^1.1.2","sortablejs":"^1.14.0"}}')}},t={};function a(r){var i=t[r];if(void 0!==i)return i.exports;var s=t[r]={exports:{}};return e[r](s,s.exports,a),s.exports}a.d=(e,t)=>{for(var r in t)a.o(t,r)&&!a.o(e,r)&&Object.defineProperty(e,r,{enumerable:!0,get:t[r]})},a.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),(()=>{var e=a(349),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_activePath:{type:String}}}constructor(){super(),this._activePath="home"}set hass(e){this._hass=e}setConfig(e){this._config=e}_handleNav(e){this._activePath=e,(0,r.oo)(`/lcars-dashboard/${e}`),this.requestUpdate()}static get styles(){return[t.Bx,e.AH`
+`},349(e,t,a){a.d(t,{WF:()=>z,AH:()=>C,qy:()=>p.qy});var r=a(601),i=a(995);function s(e,t){const{element:{content:a},parts:r}=e,i=document.createTreeWalker(a,133,null,!1);let s=o(r),n=r[s],l=-1,c=0;const d=[];let p=null;for(;i.nextNode();){l++;const e=i.currentNode;for(e.previousSibling===p&&(p=null),t.has(e)&&(d.push(e),null===p&&(p=e)),null!==p&&c++;void 0!==n&&n.index===l;)n.index=null!==p?-1:n.index-c,s=o(r,s),n=r[s]}d.forEach(e=>e.parentNode.removeChild(e))}const n=e=>{let t=11===e.nodeType?0:1;const a=document.createTreeWalker(e,133,null,!1);for(;a.nextNode();)t++;return t},o=(e,t=-1)=>{for(let a=t+1;a<e.length;a++){const t=e[a];if((0,i.s9)(t))return a}return-1};var l=a(841),c=a(172),d=a(679),p=a(637);const u=(e,t)=>`${e}--${t}`;let m=!0;void 0===window.ShadyCSS?m=!1:void 0===window.ShadyCSS.prepareTemplateDom&&(console.warn("Incompatible ShadyCSS version detected. Please update to at least @webcomponents/webcomponentsjs@2.0.2 and @webcomponents/shadycss@1.3.1."),m=!1);const h=e=>t=>{const a=u(t.type,e);let r=c.c.get(a);void 0===r&&(r={stringsArray:new WeakMap,keyString:new Map},c.c.set(a,r));let s=r.stringsArray.get(t.strings);if(void 0!==s)return s;const n=t.strings.join(i.xL);if(s=r.keyString.get(n),void 0===s){const a=t.getTemplateElement();m&&window.ShadyCSS.prepareTemplateDom(a,e),s=new i.Bj(t,a),r.keyString.set(n,s)}return r.stringsArray.set(t.strings,s),s},v=["html","svg"],f=new Set;window.JSCompiler_renameProperty=(e,t)=>e;const g={toAttribute(e,t){switch(t){case Boolean:return e?"":null;case Object:case Array:return null==e?e:JSON.stringify(e)}return e},fromAttribute(e,t){switch(t){case Boolean:return null!==e;case Number:return null===e?null:Number(e);case Object:case Array:return JSON.parse(e)}return e}},b=(e,t)=>t!==e&&(t==t||e==e),y={attribute:!0,type:String,converter:g,reflect:!1,hasChanged:b},w="finalized";class _ extends HTMLElement{constructor(){super(),this.initialize()}static get observedAttributes(){this.finalize();const e=[];return this._classProperties.forEach((t,a)=>{const r=this._attributeNameForProperty(a,t);void 0!==r&&(this._attributeToPropertyMap.set(r,a),e.push(r))}),e}static _ensureClassProperties(){if(!this.hasOwnProperty(JSCompiler_renameProperty("_classProperties",this))){this._classProperties=new Map;const e=Object.getPrototypeOf(this)._classProperties;void 0!==e&&e.forEach((e,t)=>this._classProperties.set(t,e))}}static createProperty(e,t=y){if(this._ensureClassProperties(),this._classProperties.set(e,t),t.noAccessor||this.prototype.hasOwnProperty(e))return;const a="symbol"==typeof e?Symbol():`__${e}`,r=this.getPropertyDescriptor(e,a,t);void 0!==r&&Object.defineProperty(this.prototype,e,r)}static getPropertyDescriptor(e,t,a){return{get(){return this[t]},set(r){const i=this[e];this[t]=r,this.requestUpdateInternal(e,i,a)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this._classProperties&&this._classProperties.get(e)||y}static finalize(){const e=Object.getPrototypeOf(this);if(e.hasOwnProperty(w)||e.finalize(),this[w]=!0,this._ensureClassProperties(),this._attributeToPropertyMap=new Map,this.hasOwnProperty(JSCompiler_renameProperty("properties",this))){const e=this.properties,t=[...Object.getOwnPropertyNames(e),..."function"==typeof Object.getOwnPropertySymbols?Object.getOwnPropertySymbols(e):[]];for(const a of t)this.createProperty(a,e[a])}}static _attributeNameForProperty(e,t){const a=t.attribute;return!1===a?void 0:"string"==typeof a?a:"string"==typeof e?e.toLowerCase():void 0}static _valueHasChanged(e,t,a=b){return a(e,t)}static _propertyValueFromAttribute(e,t){const a=t.type,r=t.converter||g,i="function"==typeof r?r:r.fromAttribute;return i?i(e,a):e}static _propertyValueToAttribute(e,t){if(void 0===t.reflect)return;const a=t.type,r=t.converter;return(r&&r.toAttribute||g.toAttribute)(e,a)}initialize(){this._updateState=0,this._updatePromise=new Promise(e=>this._enableUpdatingResolver=e),this._changedProperties=new Map,this._saveInstanceProperties(),this.requestUpdateInternal()}_saveInstanceProperties(){this.constructor._classProperties.forEach((e,t)=>{if(this.hasOwnProperty(t)){const e=this[t];delete this[t],this._instanceProperties||(this._instanceProperties=new Map),this._instanceProperties.set(t,e)}})}_applyInstanceProperties(){this._instanceProperties.forEach((e,t)=>this[t]=e),this._instanceProperties=void 0}connectedCallback(){this.enableUpdating()}enableUpdating(){void 0!==this._enableUpdatingResolver&&(this._enableUpdatingResolver(),this._enableUpdatingResolver=void 0)}disconnectedCallback(){}attributeChangedCallback(e,t,a){t!==a&&this._attributeToProperty(e,a)}_propertyToAttribute(e,t,a=y){const r=this.constructor,i=r._attributeNameForProperty(e,a);if(void 0!==i){const e=r._propertyValueToAttribute(t,a);if(void 0===e)return;this._updateState=8|this._updateState,null==e?this.removeAttribute(i):this.setAttribute(i,e),this._updateState=-9&this._updateState}}_attributeToProperty(e,t){if(8&this._updateState)return;const a=this.constructor,r=a._attributeToPropertyMap.get(e);if(void 0!==r){const e=a.getPropertyOptions(r);this._updateState=16|this._updateState,this[r]=a._propertyValueFromAttribute(t,e),this._updateState=-17&this._updateState}}requestUpdateInternal(e,t,a){let r=!0;if(void 0!==e){const i=this.constructor;a=a||i.getPropertyOptions(e),i._valueHasChanged(this[e],t,a.hasChanged)?(this._changedProperties.has(e)||this._changedProperties.set(e,t),!0!==a.reflect||16&this._updateState||(void 0===this._reflectingProperties&&(this._reflectingProperties=new Map),this._reflectingProperties.set(e,a))):r=!1}!this._hasRequestedUpdate&&r&&(this._updatePromise=this._enqueueUpdate())}requestUpdate(e,t){return this.requestUpdateInternal(e,t),this.updateComplete}async _enqueueUpdate(){this._updateState=4|this._updateState;try{await this._updatePromise}catch(e){}const e=this.performUpdate();return null!=e&&await e,!this._hasRequestedUpdate}get _hasRequestedUpdate(){return 4&this._updateState}get hasUpdated(){return 1&this._updateState}performUpdate(){if(!this._hasRequestedUpdate)return;this._instanceProperties&&this._applyInstanceProperties();let e=!1;const t=this._changedProperties;try{e=this.shouldUpdate(t),e?this.update(t):this._markUpdated()}catch(t){throw e=!1,this._markUpdated(),t}e&&(1&this._updateState||(this._updateState=1|this._updateState,this.firstUpdated(t)),this.updated(t))}_markUpdated(){this._changedProperties=new Map,this._updateState=-5&this._updateState}get updateComplete(){return this._getUpdateComplete()}_getUpdateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._updatePromise}shouldUpdate(e){return!0}update(e){void 0!==this._reflectingProperties&&this._reflectingProperties.size>0&&(this._reflectingProperties.forEach((e,t)=>this._propertyToAttribute(t,this[t],e)),this._reflectingProperties=void 0),this._markUpdated()}updated(e){}firstUpdated(e){}}_[w]=!0;const x=Element.prototype;x.msMatchesSelector||x.webkitMatchesSelector;const $=window.ShadowRoot&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,k=Symbol();class S{constructor(e,t){if(t!==k)throw new Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e}get styleSheet(){return void 0===this._styleSheet&&($?(this._styleSheet=new CSSStyleSheet,this._styleSheet.replaceSync(this.cssText)):this._styleSheet=null),this._styleSheet}toString(){return this.cssText}}const C=(e,...t)=>{const a=t.reduce((t,a,r)=>t+(e=>{if(e instanceof S)return e.cssText;if("number"==typeof e)return e;throw new Error(`Value passed to 'css' function must be a 'css' function result: ${e}. Use 'unsafeCSS' to pass non-literal values, but\n            take care to ensure page security.`)})(a)+e[r+1],e[0]);return new S(a,k)};(window.litElementVersions||(window.litElementVersions=[])).push("2.5.1");const E={};class z extends _{static getStyles(){return this.styles}static _getUniqueStyles(){if(this.hasOwnProperty(JSCompiler_renameProperty("_styles",this)))return;const e=this.getStyles();if(Array.isArray(e)){const t=(e,a)=>e.reduceRight((e,a)=>Array.isArray(a)?t(a,e):(e.add(a),e),a),a=t(e,new Set),r=[];a.forEach(e=>r.unshift(e)),this._styles=r}else this._styles=void 0===e?[]:[e];this._styles=this._styles.map(e=>{if(e instanceof CSSStyleSheet&&!$){const t=Array.prototype.slice.call(e.cssRules).reduce((e,t)=>e+t.cssText,"");return new S(String(t),k)}return e})}initialize(){super.initialize(),this.constructor._getUniqueStyles(),this.renderRoot=this.createRenderRoot(),window.ShadowRoot&&this.renderRoot instanceof window.ShadowRoot&&this.adoptStyles()}createRenderRoot(){return this.attachShadow(this.constructor.shadowRootOptions)}adoptStyles(){const e=this.constructor._styles;0!==e.length&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow?$?this.renderRoot.adoptedStyleSheets=e.map(e=>e instanceof CSSStyleSheet?e:e.styleSheet):this._needsShimAdoptedStyleSheets=!0:window.ShadyCSS.ScopingShim.prepareAdoptedCssText(e.map(e=>e.cssText),this.localName))}connectedCallback(){super.connectedCallback(),this.hasUpdated&&void 0!==window.ShadyCSS&&window.ShadyCSS.styleElement(this)}update(e){const t=this.render();super.update(e),t!==E&&this.constructor.render(t,this.renderRoot,{scopeName:this.localName,eventContext:this}),this._needsShimAdoptedStyleSheets&&(this._needsShimAdoptedStyleSheets=!1,this.constructor._styles.forEach(e=>{const t=document.createElement("style");t.textContent=e.cssText,this.renderRoot.appendChild(t)}))}render(){return E}}z.finalized=!0,z.render=(e,t,a)=>{if(!a||"object"!=typeof a||!a.scopeName)throw new Error("The `scopeName` option is required.");const i=a.scopeName,p=l.r.has(t),g=m&&11===t.nodeType&&!!t.host,b=g&&!f.has(i),y=b?document.createDocumentFragment():t;if((0,l.X)(e,y,Object.assign({templateFactory:h(i)},a)),b){const e=l.r.get(y);l.r.delete(y);((e,t,a)=>{f.add(e);const r=a?a.element:document.createElement("template"),i=t.querySelectorAll("style"),{length:l}=i;if(0===l)return void window.ShadyCSS.prepareTemplateStyles(r,e);const d=document.createElement("style");for(let e=0;e<l;e++){const t=i[e];t.parentNode.removeChild(t),d.textContent+=t.textContent}(e=>{v.forEach(t=>{const a=c.c.get(u(t,e));void 0!==a&&a.keyString.forEach(e=>{const{element:{content:t}}=e,a=new Set;Array.from(t.querySelectorAll("style")).forEach(e=>{a.add(e)}),s(e,a)})})})(e);const p=r.content;a?function(e,t,a=null){const{element:{content:r},parts:i}=e;if(null==a)return void r.appendChild(t);const s=document.createTreeWalker(r,133,null,!1);let l=o(i),c=0,d=-1;for(;s.nextNode();)for(d++,s.currentNode===a&&(c=n(t),a.parentNode.insertBefore(t,a));-1!==l&&i[l].index===d;){if(c>0){for(;-1!==l;)i[l].index+=c,l=o(i,l);return}l=o(i,l)}}(a,d,p.firstChild):p.insertBefore(d,p.firstChild),window.ShadyCSS.prepareTemplateStyles(r,e);const m=p.querySelector("style");if(window.ShadyCSS.nativeShadow&&null!==m)t.insertBefore(m.cloneNode(!0),t.firstChild);else if(a){p.insertBefore(d,p.firstChild);const e=new Set;e.add(d),s(a,e)}})(i,y,e.value instanceof d.i?e.value.template:void 0),(0,r.if)(t,t.firstChild),t.appendChild(y),l.r.set(t,e)}!p&&g&&window.ShadyCSS.styleElement(t.host)},z.shadowRootOptions={mode:"open"}},12(e,t,a){a.d(t,{q:()=>s,u:()=>i});const r=new WeakMap,i=e=>(...t)=>{const a=e(...t);return r.set(a,!0),a},s=e=>"function"==typeof e&&r.has(e)},601(e,t,a){a.d(t,{Pf:()=>i,if:()=>s,o6:()=>r});const r="undefined"!=typeof window&&null!=window.customElements&&void 0!==window.customElements.polyfillWrapFlushCallback,i=(e,t,a=null,r=null)=>{for(;t!==a;){const a=t.nextSibling;e.insertBefore(t,r),t=a}},s=(e,t,a=null)=>{for(;t!==a;){const a=t.nextSibling;e.removeChild(t),t=a}}},624(e,t,a){a.d(t,{c:()=>r,s:()=>i});const r={},i={}},671(e,t,a){a.d(t,{GP:()=>b,Qh:()=>m,Yp:()=>h,g$:()=>v,pU:()=>p});var r=a(12),i=a(601),s=a(624),n=a(679),o=a(957),l=a(995);const c=e=>null===e||!("object"==typeof e||"function"==typeof e),d=e=>Array.isArray(e)||!(!e||!e[Symbol.iterator]);class p{constructor(e,t,a){this.dirty=!0,this.element=e,this.name=t,this.strings=a,this.parts=[];for(let e=0;e<a.length-1;e++)this.parts[e]=this._createPart()}_createPart(){return new u(this)}_getValue(){const e=this.strings,t=e.length-1,a=this.parts;if(1===t&&""===e[0]&&""===e[1]){const e=a[0].value;if("symbol"==typeof e)return String(e);if("string"==typeof e||!d(e))return e}let r="";for(let i=0;i<t;i++){r+=e[i];const t=a[i];if(void 0!==t){const e=t.value;if(c(e)||!d(e))r+="string"==typeof e?e:String(e);else for(const t of e)r+="string"==typeof t?t:String(t)}}return r+=e[t],r}commit(){this.dirty&&(this.dirty=!1,this.element.setAttribute(this.name,this._getValue()))}}class u{constructor(e){this.value=void 0,this.committer=e}setValue(e){e===s.c||c(e)&&e===this.value||(this.value=e,(0,r.q)(e)||(this.committer.dirty=!0))}commit(){for(;(0,r.q)(this.value);){const e=this.value;this.value=s.c,e(this)}this.value!==s.c&&this.committer.commit()}}class m{constructor(e){this.value=void 0,this.__pendingValue=void 0,this.options=e}appendInto(e){this.startNode=e.appendChild((0,l.h5)()),this.endNode=e.appendChild((0,l.h5)())}insertAfterNode(e){this.startNode=e,this.endNode=e.nextSibling}appendIntoPart(e){e.__insert(this.startNode=(0,l.h5)()),e.__insert(this.endNode=(0,l.h5)())}insertAfterPart(e){e.__insert(this.startNode=(0,l.h5)()),this.endNode=e.endNode,e.endNode=this.startNode}setValue(e){this.__pendingValue=e}commit(){if(null===this.startNode.parentNode)return;for(;(0,r.q)(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=s.c,e(this)}const e=this.__pendingValue;e!==s.c&&(c(e)?e!==this.value&&this.__commitText(e):e instanceof o.Q?this.__commitTemplateResult(e):e instanceof Node?this.__commitNode(e):d(e)?this.__commitIterable(e):e===s.s?(this.value=s.s,this.clear()):this.__commitText(e))}__insert(e){this.endNode.parentNode.insertBefore(e,this.endNode)}__commitNode(e){this.value!==e&&(this.clear(),this.__insert(e),this.value=e)}__commitText(e){const t=this.startNode.nextSibling,a="string"==typeof(e=null==e?"":e)?e:String(e);t===this.endNode.previousSibling&&3===t.nodeType?t.data=a:this.__commitNode(document.createTextNode(a)),this.value=e}__commitTemplateResult(e){const t=this.options.templateFactory(e);if(this.value instanceof n.i&&this.value.template===t)this.value.update(e.values);else{const a=new n.i(t,e.processor,this.options),r=a._clone();a.update(e.values),this.__commitNode(r),this.value=a}}__commitIterable(e){Array.isArray(this.value)||(this.value=[],this.clear());const t=this.value;let a,r=0;for(const i of e)a=t[r],void 0===a&&(a=new m(this.options),t.push(a),0===r?a.appendIntoPart(this):a.insertAfterPart(t[r-1])),a.setValue(i),a.commit(),r++;r<t.length&&(t.length=r,this.clear(a&&a.endNode))}clear(e=this.startNode){(0,i.if)(this.startNode.parentNode,e.nextSibling,this.endNode)}}class h{constructor(e,t,a){if(this.value=void 0,this.__pendingValue=void 0,2!==a.length||""!==a[0]||""!==a[1])throw new Error("Boolean attributes can only contain a single expression");this.element=e,this.name=t,this.strings=a}setValue(e){this.__pendingValue=e}commit(){for(;(0,r.q)(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=s.c,e(this)}if(this.__pendingValue===s.c)return;const e=!!this.__pendingValue;this.value!==e&&(e?this.element.setAttribute(this.name,""):this.element.removeAttribute(this.name),this.value=e),this.__pendingValue=s.c}}class v extends p{constructor(e,t,a){super(e,t,a),this.single=2===a.length&&""===a[0]&&""===a[1]}_createPart(){return new f(this)}_getValue(){return this.single?this.parts[0].value:super._getValue()}commit(){this.dirty&&(this.dirty=!1,this.element[this.name]=this._getValue())}}class f extends u{}let g=!1;(()=>{try{const e={get capture(){return g=!0,!1}};window.addEventListener("test",e,e),window.removeEventListener("test",e,e)}catch(e){}})();class b{constructor(e,t,a){this.value=void 0,this.__pendingValue=void 0,this.element=e,this.eventName=t,this.eventContext=a,this.__boundHandleEvent=e=>this.handleEvent(e)}setValue(e){this.__pendingValue=e}commit(){for(;(0,r.q)(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=s.c,e(this)}if(this.__pendingValue===s.c)return;const e=this.__pendingValue,t=this.value,a=null==e||null!=t&&(e.capture!==t.capture||e.once!==t.once||e.passive!==t.passive),i=null!=e&&(null==t||a);a&&this.element.removeEventListener(this.eventName,this.__boundHandleEvent,this.__options),i&&(this.__options=y(e),this.element.addEventListener(this.eventName,this.__boundHandleEvent,this.__options)),this.value=e,this.__pendingValue=s.c}handleEvent(e){"function"==typeof this.value?this.value.call(this.eventContext||this.element,e):this.value.handleEvent(e)}}const y=e=>e&&(g?{capture:e.capture,passive:e.passive,once:e.once}:e.capture)},841(e,t,a){a.d(t,{X:()=>o,r:()=>n});var r=a(601),i=a(671),s=a(172);const n=new WeakMap,o=(e,t,a)=>{let o=n.get(t);void 0===o&&((0,r.if)(t,t.firstChild),n.set(t,o=new i.Qh(Object.assign({templateFactory:s.v},a))),o.appendInto(t)),o.setValue(e),o.commit()}},172(e,t,a){a.d(t,{c:()=>s,v:()=>i});var r=a(995);function i(e){let t=s.get(e.type);void 0===t&&(t={stringsArray:new WeakMap,keyString:new Map},s.set(e.type,t));let a=t.stringsArray.get(e.strings);if(void 0!==a)return a;const i=e.strings.join(r.xL);return a=t.keyString.get(i),void 0===a&&(a=new r.Bj(e,e.getTemplateElement()),t.keyString.set(i,a)),t.stringsArray.set(e.strings,a),a}const s=new Map},679(e,t,a){a.d(t,{i:()=>s});var r=a(601),i=a(995);class s{constructor(e,t,a){this.__parts=[],this.template=e,this.processor=t,this.options=a}update(e){let t=0;for(const a of this.__parts)void 0!==a&&a.setValue(e[t]),t++;for(const e of this.__parts)void 0!==e&&e.commit()}_clone(){const e=r.o6?this.template.element.content.cloneNode(!0):document.importNode(this.template.element.content,!0),t=[],a=this.template.parts,s=document.createTreeWalker(e,133,null,!1);let n,o=0,l=0,c=s.nextNode();for(;o<a.length;)if(n=a[o],(0,i.s9)(n)){for(;l<n.index;)l++,"TEMPLATE"===c.nodeName&&(t.push(c),s.currentNode=c.content),null===(c=s.nextNode())&&(s.currentNode=t.pop(),c=s.nextNode());if("node"===n.type){const e=this.processor.handleTextExpression(this.options);e.insertAfterNode(c.previousSibling),this.__parts.push(e)}else this.__parts.push(...this.processor.handleAttributeExpressions(c,n.name,n.strings,this.options));o++}else this.__parts.push(void 0),o++;return r.o6&&(document.adoptNode(e),customElements.upgrade(e)),e}}},957(e,t,a){a.d(t,{Q:()=>o,U:()=>l});var r=a(601),i=a(995);const s=window.trustedTypes&&trustedTypes.createPolicy("lit-html",{createHTML:e=>e}),n=` ${i.xL} `;class o{constructor(e,t,a,r){this.strings=e,this.values=t,this.type=a,this.processor=r}getHTML(){const e=this.strings.length-1;let t="",a=!1;for(let r=0;r<e;r++){const e=this.strings[r],s=e.lastIndexOf("\x3c!--");a=(s>-1||a)&&-1===e.indexOf("--\x3e",s+1);const o=i.zY.exec(e);t+=null===o?e+(a?n:i.XY):e.substr(0,o.index)+o[1]+o[2]+i.c1+o[3]+i.xL}return t+=this.strings[e],t}getTemplateElement(){const e=document.createElement("template");let t=this.getHTML();return void 0!==s&&(t=s.createHTML(t)),e.innerHTML=t,e}}class l extends o{getHTML(){return`<svg>${super.getHTML()}</svg>`}getTemplateElement(){const e=super.getTemplateElement(),t=e.content,a=t.firstChild;return t.removeChild(a),(0,r.Pf)(t,a.firstChild),e}}},995(e,t,a){a.d(t,{Bj:()=>o,XY:()=>i,c1:()=>n,h5:()=>d,s9:()=>c,xL:()=>r,zY:()=>p});const r=`{{lit-${String(Math.random()).slice(2)}}}`,i=`\x3c!--${r}--\x3e`,s=new RegExp(`${r}|${i}`),n="$lit$";class o{constructor(e,t){this.parts=[],this.element=t;const a=[],i=[],o=document.createTreeWalker(t.content,133,null,!1);let c=0,u=-1,m=0;const{strings:h,values:{length:v}}=e;for(;m<v;){const e=o.nextNode();if(null!==e){if(u++,1===e.nodeType){if(e.hasAttributes()){const t=e.attributes,{length:a}=t;let r=0;for(let e=0;e<a;e++)l(t[e].name,n)&&r++;for(;r-- >0;){const t=h[m],a=p.exec(t)[2],r=a.toLowerCase()+n,i=e.getAttribute(r);e.removeAttribute(r);const o=i.split(s);this.parts.push({type:"attribute",index:u,name:a,strings:o}),m+=o.length-1}}"TEMPLATE"===e.tagName&&(i.push(e),o.currentNode=e.content)}else if(3===e.nodeType){const t=e.data;if(t.indexOf(r)>=0){const r=e.parentNode,i=t.split(s),o=i.length-1;for(let t=0;t<o;t++){let a,s=i[t];if(""===s)a=d();else{const e=p.exec(s);null!==e&&l(e[2],n)&&(s=s.slice(0,e.index)+e[1]+e[2].slice(0,-n.length)+e[3]),a=document.createTextNode(s)}r.insertBefore(a,e),this.parts.push({type:"node",index:++u})}""===i[o]?(r.insertBefore(d(),e),a.push(e)):e.data=i[o],m+=o}}else if(8===e.nodeType)if(e.data===r){const t=e.parentNode;null!==e.previousSibling&&u!==c||(u++,t.insertBefore(d(),e)),c=u,this.parts.push({type:"node",index:u}),null===e.nextSibling?e.data="":(a.push(e),u--),m++}else{let t=-1;for(;-1!==(t=e.data.indexOf(r,t+1));)this.parts.push({type:"node",index:-1}),m++}}else o.currentNode=i.pop()}for(const e of a)e.parentNode.removeChild(e)}}const l=(e,t)=>{const a=e.length-t.length;return a>=0&&e.slice(a)===t},c=e=>-1!==e.index,d=()=>document.createComment(""),p=/([ \x09\x0a\x0c\x0d])([^\0-\x1F\x7F-\x9F "'>=/]+)([ \x09\x0a\x0c\x0d]*=[ \x09\x0a\x0c\x0d]*(?:[^ \x09\x0a\x0c\x0d"'`<>=]*|"[^"]*|'[^']*))$/},637(e,t,a){a.d(t,{Qh:()=>r.Qh,h5:()=>d.h5,u$:()=>n.u,qy:()=>p,s6:()=>l.s,if:()=>o.if,XX:()=>c.X,Pf:()=>o.Pf,JW:()=>u});var r=a(671);const i=new class{handleAttributeExpressions(e,t,a,i){const s=t[0];return"."===s?new r.g$(e,t.slice(1),a).parts:"@"===s?[new r.GP(e,t.slice(1),i.eventContext)]:"?"===s?[new r.Yp(e,t.slice(1),a)]:new r.pU(e,t,a).parts}handleTextExpression(e){return new r.Qh(e)}};var s=a(957),n=a(12),o=a(601),l=a(624),c=a(841),d=(a(172),a(679),a(995));"undefined"!=typeof window&&(window.litHtmlVersions||(window.litHtmlVersions=[])).push("1.4.1");const p=(e,...t)=>new s.Q(e,t,"html",i),u=(e,...t)=>new s.U(e,t,"svg",i)},330(e){e.exports=JSON.parse('{"name":"lcars-dashboard","private":true,"version":"4.17.2","description":"LCARS Dashboard — Home Assistant Lovelace dashboard with Star Trek LCARS UI. Based on Dwains Dashboard by Dwain Scheeren.","scripts":{"build":"webpack --mode=production","watch":"webpack --watch --mode=development"},"keywords":["lcars","home-assistant","lovelace","dashboard","hacs"],"author":"htiel (based on Dwains Dashboard by Dwain Scheeren)","license":"MIT","devDependencies":{"autoprefixer":"^10.2.5","css-loader":"^5.1.3","html-webpack-plugin":"^5.3.1","postcss":"^8.2.8","postcss-cli":"^8.3.1","postcss-loader":"^5.2.0","style-loader":"^2.0.0","tailwindcss":"^2.0.3","webpack":"^5.26.0","webpack-cli":"^4.5.0","webpack-dev-server":"^5.2.3","webpack-merge":"^5.7.3"},"dependencies":{"@mdi/js":"^6.5.95","card-tools":"github:thomasloven/lovelace-card-tools#477f3d4eeb5c70cab047d418d19afb6b0f07bf49","custom-card-helpers":"^1.8.0","js-cookie":"^3.0.1","lit-element":"^2.2.1","lit-html":"^1.1.2","sortablejs":"^1.14.0"}}')}},t={};function a(r){var i=t[r];if(void 0!==i)return i.exports;var s=t[r]={exports:{}};return e[r](s,s.exports,a),s.exports}a.d=(e,t)=>{for(var r in t)a.o(t,r)&&!a.o(e,r)&&Object.defineProperty(e,r,{enumerable:!0,get:t[r]})},a.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),(()=>{var e=a(349),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_activePath:{type:String}}}constructor(){super(),this._activePath="home"}set hass(e){this._hass=e}setConfig(e){this._config=e}_handleNav(e){this._activePath=e,(0,r.oo)(`/lcars-dashboard/${e}`),this.requestUpdate()}static get styles(){return[t.Bx,e.AH`
           :host {
             display: block;
           }
@@ -717,7 +717,7 @@
           <div class="lcars-footer-endcap" aria-hidden="true"></div>
         </div>
       </div>
-    `}}const n=Promise.race([customElements.whenDefined("hui-masonry-view"),new Promise(e=>setTimeout(e,5e3))]);r.g0.debug(i,"Waiting for hui-masonry-view (5s timeout)..."),n.then(()=>{if(customElements.get("lcars-dashboard-layout"))r.g0.warn(i,"lcars-dashboard-layout already registered — skipping");else{customElements.define("lcars-dashboard-layout",s);const e=a(330);r.g0.info(i,`v${e.version} registered`),console.info(`%c LCARS-DASHBOARD \n%c Version ${e.version}`,"color: #ff9966; font-weight: bold; background: black","color: #f5f6fa; font-weight: bold; background: #333")}}).catch(e=>{r.g0.error(i,"Failed to register lcars-dashboard-layout:",e)})})(),(()=>{var e=a(349),t=a(637),r=a(622),i=a(851);const s="camera",n="alarm",o="aquatics",l="climate",c="media",d="environment",p="irrigation",m="weather",u="battery",h="power",v="life_support",f="illumination",g={[f]:-2,[v]:-1,[s]:0,[n]:1,[o]:2,[l]:3,[c]:4,[d]:5,[p]:6,[m]:7,[u]:8,[h]:9},b=new Set(["camera"]),y=new Set(["climate"]),w=new Set(["media_player"]),_=new Set(["alarm_control_panel"]),x=new Set(["weather"]),$=new Set(["light","switch","fan","input_boolean","lock","automation","script"]),k=new Set(["sensor","binary_sensor"]),S=new Set(["cover"]),C=new Set(["carbon_dioxide","carbon_monoxide","volatile_organic_compounds","volatile_organic_compounds_parts","pm25","pm10","pm1","aqi"]),E=/_(air_quality|score)$/,z=/pool|spa/i,A=new Set(["heater","solar","solar_preferred"]);function P(e){const t=e?.preset_modes;return!!Array.isArray(t)&&t.some(e=>A.has(e))}const q=new Set(["rachio","rainbird","rainmachine","opensprinkler","hydrawise","hunter"]),N=[e=>e.some(e=>b.has(e.domain))?s:null,e=>e.some(e=>_.has(e.domain))?n:null,e=>{for(const t of e)if("climate"===t.domain){if(z.test(t.entity.entity_id))return o;if(P(t.state?.attributes))return o}return null},e=>e.some(e=>y.has(e.domain))?l:null,e=>e.some(e=>w.has(e.domain))?c:null,e=>{let t=0,a=!1;for(const r of e){const e=r.state?.attributes?.device_class||"";C.has(e)&&t++,"fan"===r.domain&&(a=!0),!e&&"sensor"===r.domain&&E.test(r.entity.entity_id)&&t++}return t>=2||t>=1&&a?d:null},e=>function(e){if(e.some(e=>q.has(e.entity?.platform)))return!0;let t=0,a=!1,r=0;for(const i of e){if("binary_sensor"===i.domain){const e=i.entity?.entity_id||"";/rain/i.test(e)&&(a=!0)}if("switch"!==i.domain)continue;r++;const e=i.state?.attributes;null==e?.zone_number?"outlet"===e?.device_class&&/zone/i.test(i.entity.entity_id)&&t++:t++}return t>=2||!!(r>=5&&a)}(e)?p:null,e=>e.some(e=>x.has(e.domain))?m:null,e=>{let t=!1,a=0,r=!1;for(const i of e){const e=i.state?.attributes;if(!e)continue;const s=e.device_class||"",n=e.unit_of_measurement||"";"battery"===s&&"%"===n&&(t=!0),"power"===s&&"W"===n&&a++,"voltage"===s&&"V"===n&&(r=!0);const o=i.entity?.entity_id||"";/ups[._]load|ups[._]status/i.test(o)&&(r=!0)}return t&&a>=2||t&&r?u:null},e=>{let t=!1,a=0;for(const r of e){const e=r.state?.attributes;if(!e)continue;const i=e.device_class||"",s=e.unit_of_measurement||"";if("battery"===i&&"%"===s){t=!0;break}"power"!==i||"W"!==s&&"kW"!==s||a++,"energy"!==i||"kWh"!==s&&"Wh"!==s||a++,"current"===i&&"A"===s&&a++,"voltage"===i&&"V"===s&&a++}return!t&&a>=1?h:null}],M={light:"Lights",switch:"Switches",fan:"Fans",lock:"Locks",input_boolean:"Toggles",automation:"Automations",script:"Scripts",sensor:"Sensors",binary_sensor:"Binary Sensors",camera:"Cameras",climate:"Climate",cover:"Covers",media_player:"Media",button:"Buttons",number:"Numbers",select:"Selects",input_number:"Inputs",input_select:"Selectors",input_text:"Text Inputs",input_button:"Buttons",input_datetime:"Date/Time",scene:"Scenes",device_tracker:"Trackers",person:"People",update:"Updates",event:"Events",conversation:"Conversation",alarm_control_panel:"Alarm",weather:"Weather",remote:"Remotes",vacuum:"Vacuums"},T={camera:0,light:1,switch:2,climate:3,cover:4,media_player:5,fan:6,lock:7,alarm_control_panel:8,weather:9,sensor:10,binary_sensor:11};function D(e){return y.has(e.domain)}function I(e){const t=e.state?.attributes?.device_class||"";return!!C.has(t)||"fan"===e.domain&&!t||!("sensor"!==e.domain||!E.test(e.entity?.entity_id||""))}function F(e){if("light"===e.domain)return!0;if("scene"===e.domain)return!0;if("switch"===e.domain||"input_boolean"===e.domain){const t=e.entity?.entity_id||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"outlet"!==e.state?.attributes?.device_class&&(/light|lamp|sconce|chandelier|pendant|fixture|dimmer|illuminat/i.test(a)||/light|lamp|sconce|chandelier/i.test(t))}return!1}function O(e){if("sensor"!==e.domain)return!1;const t=e.state?.attributes?.device_class||"";return"temperature"===t||"humidity"===t}var L=a(505);function W(e,t={},a={}){const r=a.min??35,i=a.max??95,s=null!=t.min_temp?Number(t.min_temp):r,n=null!=t.max_temp?Number(t.max_temp):i,o=Math.max(r,s),l=Math.min(i,n);return Math.min(l,Math.max(o,Number(e)||o))}function R(e,t,a){return Math.min(a,Math.max(t,Number(e)||t))}function H(e,t){const a=[];function r(){const e=Date.now()-t;for(;a.length>0&&a[0]<e;)a.shift()}return{allow:()=>(r(),!(a.length>=e||(a.push(Date.now()),0))),remaining:()=>(r(),Math.max(0,e-a.length)),resetTime:()=>(r(),a.length<e?0:a[0]+t),reset(){a.length=0}}}function B(e,t=1500){let a=null;return{call(...r){a&&clearTimeout(a),a=setTimeout(()=>{a=null,e(...r)},t)},cancel(){a&&(clearTimeout(a),a=null)}}}var U=a(261);const V=new Map;async function j(e,t,a="daily",r={}){const{ttlMs:i=6e5}=r,s=`${t}:${a}`,n=Date.now(),o=V.get(s);if(o&&n-o.timestamp<i)return o.data;try{const r=await e.callWS({type:"weather/subscribe_forecast",entity_id:t,forecast_type:a}),i=r?.forecast||r||[],o=Array.isArray(i)?i:[];if(V.set(s,{data:o,timestamp:n}),V.size>10){const e=V.keys().next().value;V.delete(e)}return o}catch(r){try{const r=await e.callService("weather","get_forecasts",{type:a},{entity_id:t}),i=r?.[t]?.forecast||[];return V.set(s,{data:i,timestamp:n}),i}catch(e){return[]}}}const G=e.AH`
+    `}}const n=Promise.race([customElements.whenDefined("hui-masonry-view"),new Promise(e=>setTimeout(e,5e3))]);r.g0.debug(i,"Waiting for hui-masonry-view (5s timeout)..."),n.then(()=>{if(customElements.get("lcars-dashboard-layout"))r.g0.warn(i,"lcars-dashboard-layout already registered — skipping");else{customElements.define("lcars-dashboard-layout",s);const e=a(330);r.g0.info(i,`v${e.version} registered`),console.info(`%c LCARS-DASHBOARD \n%c Version ${e.version}`,"color: #ff9966; font-weight: bold; background: black","color: #f5f6fa; font-weight: bold; background: #333")}}).catch(e=>{r.g0.error(i,"Failed to register lcars-dashboard-layout:",e)})})(),(()=>{var e=a(349),t=a(637),r=a(622),i=a(851);const s="camera",n="alarm",o="aquatics",l="climate",c="media",d="environment",p="irrigation",u="weather",m="battery",h="power",v="life_support",f="illumination",g={[f]:-2,[v]:-1,[s]:0,[n]:1,[o]:2,[l]:3,[c]:4,[d]:5,[p]:6,[u]:7,[m]:8,[h]:9},b=new Set(["camera"]),y=new Set(["climate"]),w=new Set(["media_player"]),_=new Set(["alarm_control_panel"]),x=new Set(["weather"]),$=new Set(["light","switch","fan","input_boolean","lock","automation","script"]),k=new Set(["sensor","binary_sensor"]),S=new Set(["cover"]),C=new Set(["carbon_dioxide","carbon_monoxide","volatile_organic_compounds","volatile_organic_compounds_parts","pm25","pm10","pm1","aqi"]),E=/_(air_quality|score)$/,z=/pool|spa/i,A=new Set(["heater","solar","solar_preferred"]);function q(e){const t=e?.preset_modes;return!!Array.isArray(t)&&t.some(e=>A.has(e))}const P=new Set(["rachio","rainbird","rainmachine","opensprinkler","hydrawise","hunter"]),N=[e=>e.some(e=>b.has(e.domain))?s:null,e=>e.some(e=>_.has(e.domain))?n:null,e=>{for(const t of e)if("climate"===t.domain){if(z.test(t.entity.entity_id))return o;if(q(t.state?.attributes))return o}return null},e=>e.some(e=>y.has(e.domain))?l:null,e=>e.some(e=>w.has(e.domain))?c:null,e=>{let t=0,a=!1;for(const r of e){const e=r.state?.attributes?.device_class||"";C.has(e)&&t++,"fan"===r.domain&&(a=!0),!e&&"sensor"===r.domain&&E.test(r.entity.entity_id)&&t++}return t>=2||t>=1&&a?d:null},e=>function(e){if(e.some(e=>P.has(e.entity?.platform)))return!0;let t=0,a=!1,r=0;for(const i of e){if("binary_sensor"===i.domain){const e=i.entity?.entity_id||"";/rain/i.test(e)&&(a=!0)}if("switch"!==i.domain)continue;r++;const e=i.state?.attributes;null==e?.zone_number?"outlet"===e?.device_class&&/zone/i.test(i.entity.entity_id)&&t++:t++}return t>=2||!!(r>=5&&a)}(e)?p:null,e=>e.some(e=>x.has(e.domain))?u:null,e=>{let t=!1,a=0,r=!1;for(const i of e){const e=i.state?.attributes;if(!e)continue;const s=e.device_class||"",n=e.unit_of_measurement||"";"battery"===s&&"%"===n&&(t=!0),"power"===s&&"W"===n&&a++,"voltage"===s&&"V"===n&&(r=!0);const o=i.entity?.entity_id||"";/ups[._]load|ups[._]status/i.test(o)&&(r=!0)}return t&&a>=2||t&&r?m:null},e=>{let t=!1,a=0;for(const r of e){const e=r.state?.attributes;if(!e)continue;const i=e.device_class||"",s=e.unit_of_measurement||"";if("battery"===i&&"%"===s){t=!0;break}"power"!==i||"W"!==s&&"kW"!==s||a++,"energy"!==i||"kWh"!==s&&"Wh"!==s||a++,"current"===i&&"A"===s&&a++,"voltage"===i&&"V"===s&&a++}return!t&&a>=1?h:null}],M={light:"Lights",switch:"Switches",fan:"Fans",lock:"Locks",input_boolean:"Toggles",automation:"Automations",script:"Scripts",sensor:"Sensors",binary_sensor:"Binary Sensors",camera:"Cameras",climate:"Climate",cover:"Covers",media_player:"Media",button:"Buttons",number:"Numbers",select:"Selects",input_number:"Inputs",input_select:"Selectors",input_text:"Text Inputs",input_button:"Buttons",input_datetime:"Date/Time",scene:"Scenes",device_tracker:"Trackers",person:"People",update:"Updates",event:"Events",conversation:"Conversation",alarm_control_panel:"Alarm",weather:"Weather",remote:"Remotes",vacuum:"Vacuums"},T={camera:0,light:1,switch:2,climate:3,cover:4,media_player:5,fan:6,lock:7,alarm_control_panel:8,weather:9,sensor:10,binary_sensor:11};function D(e){return y.has(e.domain)}function I(e){const t=e.state?.attributes?.device_class||"";return!!C.has(t)||"fan"===e.domain&&!t||!("sensor"!==e.domain||!E.test(e.entity?.entity_id||""))}const O=new Set(["unifi"]);function R(e){if(function(e){if("light"!==e.domain)return!1;if(O.has(e.entity?.platform))return!0;const t=e.entity?.entity_id||"";if(/led_indicator|status_led|status_panel|status_light/.test(t))return!0;const a=(e.state?.attributes?.friendly_name||"").toLowerCase();return!!/\bindicator\b|\bstatus\s*(led|light|panel)\b/.test(a)}(e))return!1;if("light"===e.domain)return!0;if("scene"===e.domain)return!0;if("switch"===e.domain||"input_boolean"===e.domain){const t=e.entity?.entity_id||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"outlet"!==e.state?.attributes?.device_class&&(/light|lamp|sconce|chandelier|pendant|fixture|dimmer|illuminat/i.test(a)||/light|lamp|sconce|chandelier|switchlinc|lamplinc|togglelinc/i.test(t))}return!1}function F(e){if("sensor"!==e.domain)return!1;const t=e.state?.attributes?.device_class||"";return"temperature"===t||"humidity"===t}var L=a(505);function W(e,t={},a={}){const r=a.min??35,i=a.max??95,s=null!=t.min_temp?Number(t.min_temp):r,n=null!=t.max_temp?Number(t.max_temp):i,o=Math.max(r,s),l=Math.min(i,n);return Math.min(l,Math.max(o,Number(e)||o))}function B(e,t,a){return Math.min(a,Math.max(t,Number(e)||t))}function H(e,t){const a=[];function r(){const e=Date.now()-t;for(;a.length>0&&a[0]<e;)a.shift()}return{allow:()=>(r(),!(a.length>=e||(a.push(Date.now()),0))),remaining:()=>(r(),Math.max(0,e-a.length)),resetTime:()=>(r(),a.length<e?0:a[0]+t),reset(){a.length=0}}}function U(e,t=1500){let a=null;return{call(...r){a&&clearTimeout(a),a=setTimeout(()=>{a=null,e(...r)},t)},cancel(){a&&(clearTimeout(a),a=null)}}}var V=a(261);const j=new Map;async function G(e,t,a="daily",r={}){const{ttlMs:i=6e5}=r,s=`${t}:${a}`,n=Date.now(),o=j.get(s);if(o&&n-o.timestamp<i)return o.data;try{const r=await e.callWS({type:"weather/subscribe_forecast",entity_id:t,forecast_type:a}),i=r?.forecast||r||[],o=Array.isArray(i)?i:[];if(j.set(s,{data:o,timestamp:n}),j.size>10){const e=j.keys().next().value;j.delete(e)}return o}catch(r){try{const r=await e.callService("weather","get_forecasts",{type:a},{entity_id:t}),i=r?.[t]?.forecast||[];return j.set(s,{data:i,timestamp:n}),i}catch(e){return[]}}}const X=e.AH`
   /* ── Viewscreen power-on scanline (Device §7.10) ── */
   @keyframes lcars-scanline {
     from { transform: translateY(-100%); opacity: 0.6; }
@@ -775,7 +775,7 @@
     50%  { transform: scale(1.05); text-shadow: 0 0 8px var(--lcars-gold); }
     100% { transform: scale(1); text-shadow: none; }
   }
-`,X=e.AH`
+`,Y=e.AH`
   @media (prefers-reduced-motion: reduce) {
     /* Ambient loops — disabled entirely */
     .lcars-device-panel,
@@ -811,7 +811,7 @@
       border-width: 6px 3px 6px 6px;
     }
   }
-`,Y=e.AH`
+`,Z=e.AH`
   :host {
     display: block;
   }
@@ -905,7 +905,7 @@
     flex: 1;
     min-height: 0;
   }
-`;class Q extends e.WF{static get properties(){return{panelName:{type:String,attribute:"panel-name"},panelCode:{type:String,attribute:"panel-code"},frameColor:{type:String,attribute:"frame-color"},panelType:{type:String,attribute:"panel-type"}}}constructor(){super(),this.panelName="",this.panelCode="",this.frameColor="var(--lcars-butterscotch)",this.panelType=""}static get styles(){return[G,X,Y]}render(){return e.qy`
+`;class Q extends e.WF{static get properties(){return{panelName:{type:String,attribute:"panel-name"},panelCode:{type:String,attribute:"panel-code"},frameColor:{type:String,attribute:"frame-color"},panelType:{type:String,attribute:"panel-type"}}}constructor(){super(),this.panelName="",this.panelCode="",this.frameColor="var(--lcars-butterscotch)",this.panelType=""}static get styles(){return[X,Y,Z]}render(){return e.qy`
       <div class="lcars-panel-frame"
         role="region"
         aria-label="${this.panelName} panel"
@@ -982,7 +982,7 @@
         <span class="sensor-label">${this.label}</span>
         <span class="sensor-value" style="color:${this.color}">${this.value}</span>
       </div>
-    `}}customElements.get("lcars-sensor-row")||customElements.define("lcars-sensor-row",J);const Z=e.AH`
+    `}}customElements.get("lcars-sensor-row")||customElements.define("lcars-sensor-row",J);const ee=e.AH`
   :host {
     display: block;
   }
@@ -1003,12 +1003,12 @@
     padding: 0 0.5rem;
     margin-bottom: 0.125rem;
   }
-`;class ee extends e.WF{static get properties(){return{label:{type:String}}}constructor(){super(),this.label=""}static get styles(){return[Z]}render(){return e.qy`
+`;class te extends e.WF{static get properties(){return{label:{type:String}}}constructor(){super(),this.label=""}static get styles(){return[ee]}render(){return e.qy`
       <div class="divider-line"></div>
       ${this.label?e.qy`
         <div class="divider-label">${this.label}</div>
       `:""}
-    `}}customElements.get("lcars-section-divider")||customElements.define("lcars-section-divider",ee);const te=e.AH`
+    `}}customElements.get("lcars-section-divider")||customElements.define("lcars-section-divider",te);const ae=e.AH`
   :host {
     display: block;
     --strip-accent: var(--lcars-sunflower);
@@ -1056,7 +1056,7 @@
     outline: 2px solid var(--lcars-ice, #88f);
     outline-offset: 2px;
   }
-`;class ae extends e.WF{static get properties(){return{options:{type:Array},value:{type:String},label:{type:String},accentColor:{type:String,attribute:"accent-color"}}}constructor(){super(),this.options=[],this.value="",this.label="",this.accentColor=""}static get styles(){return[te]}_handleSelect(e){e!==this.value&&(this.value=e,this.dispatchEvent(new CustomEvent("lcars-option-changed",{detail:{value:e},bubbles:!0,composed:!0})))}_handleKeydown(e,t,a){if("Enter"===e.key||" "===e.key)return e.preventDefault(),void this._handleSelect(t);const r=this.options.filter(e=>!e.disabled);let i=-1;if("ArrowRight"===e.key||"ArrowDown"===e.key?(e.preventDefault(),i=(r.findIndex(e=>e.value===t)+1)%r.length):"ArrowLeft"!==e.key&&"ArrowUp"!==e.key||(e.preventDefault(),i=(r.findIndex(e=>e.value===t)-1+r.length)%r.length),i>=0){this._handleSelect(r[i].value);const e=this.shadowRoot.querySelectorAll('.option-btn:not([aria-disabled="true"])');e[i]?.focus()}}render(){const t=this.accentColor?`--strip-accent:${this.accentColor}`:"";return e.qy`
+`;class re extends e.WF{static get properties(){return{options:{type:Array},value:{type:String},label:{type:String},accentColor:{type:String,attribute:"accent-color"}}}constructor(){super(),this.options=[],this.value="",this.label="",this.accentColor=""}static get styles(){return[ae]}_handleSelect(e){e!==this.value&&(this.value=e,this.dispatchEvent(new CustomEvent("lcars-option-changed",{detail:{value:e},bubbles:!0,composed:!0})))}_handleKeydown(e,t,a){if("Enter"===e.key||" "===e.key)return e.preventDefault(),void this._handleSelect(t);const r=this.options.filter(e=>!e.disabled);let i=-1;if("ArrowRight"===e.key||"ArrowDown"===e.key?(e.preventDefault(),i=(r.findIndex(e=>e.value===t)+1)%r.length):"ArrowLeft"!==e.key&&"ArrowUp"!==e.key||(e.preventDefault(),i=(r.findIndex(e=>e.value===t)-1+r.length)%r.length),i>=0){this._handleSelect(r[i].value);const e=this.shadowRoot.querySelectorAll('.option-btn:not([aria-disabled="true"])');e[i]?.focus()}}render(){const t=this.accentColor?`--strip-accent:${this.accentColor}`:"";return e.qy`
       <div class="option-strip" role="radiogroup" aria-label="${this.label}" style="${t}">
         ${(this.options||[]).map((t,a)=>{const r=t.value===this.value,i=t.disabled||!1;return e.qy`
             <button class="option-btn"
@@ -1071,7 +1071,7 @@
             </button>
           `})}
       </div>
-    `}}customElements.get("lcars-option-strip")||customElements.define("lcars-option-strip",ae);const re=e.AH`
+    `}}customElements.get("lcars-option-strip")||customElements.define("lcars-option-strip",re);const ie=e.AH`
   :host {
     display: inline-flex;
     --sp-color: var(--lcars-sunflower);
@@ -1119,7 +1119,7 @@
     text-align: center;
     white-space: nowrap;
   }
-`;class ie extends e.WF{static get properties(){return{value:{type:Number},step:{type:Number},min:{type:Number},max:{type:Number},unit:{type:String},label:{type:String},color:{type:String}}}constructor(){super(),this.value=0,this.step=.5,this.min=0,this.max=100,this.unit="",this.label="",this.color=""}static get styles(){return[re]}_adjust(e){const t=Math.min(this.max,Math.max(this.min,this.value+e));t!==this.value&&(this.value=t,this.dispatchEvent(new CustomEvent("lcars-setpoint-changed",{detail:{value:t},bubbles:!0,composed:!0})))}render(){const t=this.color?`--sp-color:${this.color}`:"",a=this.label||`${this.value}${this.unit}`;return e.qy`
+`;class se extends e.WF{static get properties(){return{value:{type:Number},step:{type:Number},min:{type:Number},max:{type:Number},unit:{type:String},label:{type:String},color:{type:String}}}constructor(){super(),this.value=0,this.step=.5,this.min=0,this.max=100,this.unit="",this.label="",this.color=""}static get styles(){return[ie]}_adjust(e){const t=Math.min(this.max,Math.max(this.min,this.value+e));t!==this.value&&(this.value=t,this.dispatchEvent(new CustomEvent("lcars-setpoint-changed",{detail:{value:t},bubbles:!0,composed:!0})))}render(){const t=this.color?`--sp-color:${this.color}`:"",a=this.label||`${this.value}${this.unit}`;return e.qy`
       <div class="setpoint-control"
         role="spinbutton"
         aria-valuenow="${this.value}"
@@ -1137,7 +1137,7 @@
           ?disabled=${this.value>=this.max}
           @click=${()=>this._adjust(this.step)}>+</button>
       </div>
-    `}}customElements.get("lcars-setpoint")||customElements.define("lcars-setpoint",ie);const se=/^[a-z_]+\.[a-z0-9_]+$/;class ne extends e.WF{static get properties(){return{group:{type:Object},hass:{type:Object},config:{type:Object},editMode:{type:Boolean,attribute:"edit-mode",reflect:!0},areaId:{type:String,attribute:"area-id"},linkedEntities:{type:Array},entities:{type:Array},devices:{type:Array},frameMode:{type:String,attribute:"frame-mode"}}}constructor(){super(),this.group=null,this.hass=null,this.config=null,this.editMode=!1,this.areaId=null,this.linkedEntities=[],this.entities=null,this.devices=null,this.frameMode="standard"}_getEntityState(e){return this.hass&&this.hass.states[e]?this.hass.states[e]:null}_isValidEntityId(e){return"string"==typeof e&&se.test(e)}_callService(e,t,a){if(!this.hass)return void i.g0.warn("BasePanel","_callService: no hass instance");const r=a?.entity_id;if(!r||this._isValidEntityId(r))return this.hass.callService(e,t,a);i.g0.warn("BasePanel",`_callService: invalid entity_id "${r}"`)}_handleEntityClick(e){(0,i.Hv)(e)}_getSensorIndicatorColor(e){return"carbon_dioxide"===(e?.attributes?.device_class||"")?(0,L.kR)(e?.state):(0,L.xH)(e?.entity_id||"",e)}_getDeviceCategoryEntities(e){if(!this.hass||!e)return{config:[],diagnostic:[]};const t=Object.values(this.hass.entities||{}),a=[],r=[];for(const i of t)i.device_id===e&&(i.disabled_by||"user"===i.hidden_by||i.hidden||("config"===i.entity_category?a.push(i):"diagnostic"===i.entity_category&&r.push(i)));return{config:a,diagnostic:r}}_shortenName(e,t){if(!e)return e;const a=[],r=this.hass?.areas?.[this.areaId];if(r?.name&&a.push(r.name),t?.device_id){const e=this.hass?.devices?.[t.device_id],r=e?.name_by_user||e?.name;r&&a.push(r)}a.sort((e,t)=>t.length-e.length);let i=e,s=!0;for(;s;){s=!1;for(const e of a)i.toLowerCase().startsWith(e.toLowerCase())&&(i=i.slice(e.length).trim().replace(/^[-–:]\s*/,""),s=!0)}return i||e}_friendlyName(e,t){const a=e?.attributes?.friendly_name||t.entity_id.split(".").pop().replace(/_/g," ");return this._shortenName(a,t)}_shortDeviceName(e){const t=e?.name_by_user||e?.name||"";if(!t)return"Device";const a=this.hass?.areas?.[this.areaId];return a?.name&&t.toLowerCase().startsWith(a.name.toLowerCase())&&t.slice(a.name.length).trim().replace(/^[-–:]\s*/,"")||t}_isOff(e){return["off","unavailable","unknown","idle","standby","locked"].includes(e?.state)}_generatePanelCode(e){let t=5381;for(let a=0;a<e.length;a++)t=(t<<5)+t+e.charCodeAt(a)|0;const a=String(Math.abs(t)%1e6).padStart(6,"0");return`${a.slice(0,3)}-${a.slice(3)}`}_handleToggle(e){const t=e.split(".")[0];if("lock"===t){const t=this._getEntityState(e);this._callService("lock","locked"===t?.state?"unlock":"lock",{entity_id:e})}else"script"===t?this._callService("script","turn_on",{entity_id:e}):this._callService("homeassistant","toggle",{entity_id:e})}_getEntityIcon(e){return e?e.attributes?.icon?e.attributes.icon:{light:"mdi:lightbulb",switch:"mdi:toggle-switch",sensor:"mdi:eye",binary_sensor:"mdi:radiobox-blank",climate:"mdi:thermostat",cover:"mdi:window-shutter",fan:"mdi:fan",lock:"mdi:lock",camera:"mdi:video",media_player:"mdi:cast",automation:"mdi:robot",script:"mdi:script-text",update:"mdi:package-up"}[e.entity_id.split(".")[0]]||"mdi:information-outline":"mdi:help-circle-outline"}_partitionDeviceEntities(e){const t=[],a=[],r=[];for(const i of e)b.has(i.domain)?t.push(i):k.has(i.domain)?a.push(i):r.push(i);return{cameras:t,sensors:a,controls:r}}_getAllEntities(){const e=this.entities||this.group?.entities||[];if(!this.linkedEntities?.length)return e;const t=this.linkedEntities.map(e=>({...e,_linked:!0}));return[...e,...t]}get panelType(){return"unknown"}get defaultPanelTitle(){return"PANEL"}get frameColor(){return"var(--lcars-butterscotch)"}_getPanelName(){if(this.group?.device)return this._shortDeviceName(this.group.device)||this.defaultPanelTitle;if(this.devices?.length)return this._shortDeviceName(this.devices[0])||this.defaultPanelTitle;const e=this.hass?.areas?.[this.areaId];return e?.name?e.name:this.defaultPanelTitle}_getPanelCode(){const e=this.entities?.[0]?.entity?.entity_id||this.group?.entities?.[0]?.entity?.entity_id||this.group?.device?.id||this.areaId||"panel";return this._generatePanelCode(e)}static get styles(){return[]}renderBadge(){return e.qy``}renderContent(){return e.qy``}render(){return this.group||this.entities?.length?e.qy`
+    `}}customElements.get("lcars-setpoint")||customElements.define("lcars-setpoint",se);const ne=/^[a-z_]+\.[a-z0-9_]+$/;class oe extends e.WF{static get properties(){return{group:{type:Object},hass:{type:Object},config:{type:Object},editMode:{type:Boolean,attribute:"edit-mode",reflect:!0},areaId:{type:String,attribute:"area-id"},linkedEntities:{type:Array},entities:{type:Array},devices:{type:Array},frameMode:{type:String,attribute:"frame-mode"}}}constructor(){super(),this.group=null,this.hass=null,this.config=null,this.editMode=!1,this.areaId=null,this.linkedEntities=[],this.entities=null,this.devices=null,this.frameMode="standard"}_getEntityState(e){return this.hass&&this.hass.states[e]?this.hass.states[e]:null}_isValidEntityId(e){return"string"==typeof e&&ne.test(e)}_callService(e,t,a){if(!this.hass)return void i.g0.warn("BasePanel","_callService: no hass instance");const r=a?.entity_id;if(!r||this._isValidEntityId(r))return this.hass.callService(e,t,a);i.g0.warn("BasePanel",`_callService: invalid entity_id "${r}"`)}_handleEntityClick(e){(0,i.Hv)(e)}_getSensorIndicatorColor(e){return"carbon_dioxide"===(e?.attributes?.device_class||"")?(0,L.kR)(e?.state):(0,L.xH)(e?.entity_id||"",e)}_getDeviceCategoryEntities(e){if(!this.hass||!e)return{config:[],diagnostic:[]};const t=Object.values(this.hass.entities||{}),a=[],r=[];for(const i of t)i.device_id===e&&(i.disabled_by||"user"===i.hidden_by||i.hidden||("config"===i.entity_category?a.push(i):"diagnostic"===i.entity_category&&r.push(i)));return{config:a,diagnostic:r}}_shortenName(e,t){if(!e)return e;const a=[],r=this.hass?.areas?.[this.areaId];if(r?.name&&a.push(r.name),t?.device_id){const e=this.hass?.devices?.[t.device_id],r=e?.name_by_user||e?.name;r&&a.push(r)}a.sort((e,t)=>t.length-e.length);let i=e,s=!0;for(;s;){s=!1;for(const e of a)i.toLowerCase().startsWith(e.toLowerCase())&&(i=i.slice(e.length).trim().replace(/^[-–:]\s*/,""),s=!0)}return i||e}_friendlyName(e,t){const a=e?.attributes?.friendly_name||t.entity_id.split(".").pop().replace(/_/g," ");return this._shortenName(a,t)}_shortDeviceName(e){const t=e?.name_by_user||e?.name||"";if(!t)return"Device";const a=this.hass?.areas?.[this.areaId];return a?.name&&t.toLowerCase().startsWith(a.name.toLowerCase())&&t.slice(a.name.length).trim().replace(/^[-–:]\s*/,"")||t}_isOff(e){return["off","unavailable","unknown","idle","standby","locked"].includes(e?.state)}_generatePanelCode(e){let t=5381;for(let a=0;a<e.length;a++)t=(t<<5)+t+e.charCodeAt(a)|0;const a=String(Math.abs(t)%1e6).padStart(6,"0");return`${a.slice(0,3)}-${a.slice(3)}`}_handleToggle(e){const t=e.split(".")[0];if("lock"===t){const t=this._getEntityState(e);this._callService("lock","locked"===t?.state?"unlock":"lock",{entity_id:e})}else"script"===t?this._callService("script","turn_on",{entity_id:e}):this._callService("homeassistant","toggle",{entity_id:e})}_getEntityIcon(e){return e?e.attributes?.icon?e.attributes.icon:{light:"mdi:lightbulb",switch:"mdi:toggle-switch",sensor:"mdi:eye",binary_sensor:"mdi:radiobox-blank",climate:"mdi:thermostat",cover:"mdi:window-shutter",fan:"mdi:fan",lock:"mdi:lock",camera:"mdi:video",media_player:"mdi:cast",automation:"mdi:robot",script:"mdi:script-text",update:"mdi:package-up"}[e.entity_id.split(".")[0]]||"mdi:information-outline":"mdi:help-circle-outline"}_partitionDeviceEntities(e){const t=[],a=[],r=[];for(const i of e)b.has(i.domain)?t.push(i):k.has(i.domain)?a.push(i):r.push(i);return{cameras:t,sensors:a,controls:r}}_getAllEntities(){const e=this.entities||this.group?.entities||[];if(!this.linkedEntities?.length)return e;const t=this.linkedEntities.map(e=>({...e,_linked:!0}));return[...e,...t]}get panelType(){return"unknown"}get defaultPanelTitle(){return"PANEL"}get frameColor(){return"var(--lcars-butterscotch)"}_getPanelName(){if(this.group?.device)return this._shortDeviceName(this.group.device)||this.defaultPanelTitle;if(this.devices?.length)return this._shortDeviceName(this.devices[0])||this.defaultPanelTitle;const e=this.hass?.areas?.[this.areaId];return e?.name?e.name:this.defaultPanelTitle}_getPanelCode(){const e=this.entities?.[0]?.entity?.entity_id||this.group?.entities?.[0]?.entity?.entity_id||this.group?.device?.id||this.areaId||"panel";return this._generatePanelCode(e)}static get styles(){return[]}renderBadge(){return e.qy``}renderContent(){return e.qy``}render(){return this.group||this.entities?.length?e.qy`
       <lcars-panel-frame
         panel-name="${this._getPanelName()}"
         panel-code="${this._getPanelCode()}"
@@ -1147,49 +1147,287 @@
         <span slot="badge">${this.renderBadge()}</span>
         ${this.renderContent()}
       </lcars-panel-frame>
-    `:e.qy``}}const oe=e.AH`
+    `:e.qy``}}const le=e.AH`
   :host {
     display: block;
     --panel-frame-color: var(--lcars-ice);
   }
 
-  .irrigation-content {
+  /* ─── Main Grid: 4 rows ─── */
+
+  .irr-content {
     display: grid;
     grid-template-areas:
-      "schedule zones"
-      "standby  standby";
+      "alert    alert"
+      "sidebar  zones"
+      "quickrun quickrun"
+      "controls controls";
     grid-template-columns: minmax(8rem, 1fr) minmax(16rem, 3fr);
-    grid-template-rows: 1fr auto;
+    grid-template-rows: auto 1fr auto auto;
     gap: var(--lcars-gap);
   }
 
-  /* Schedule sensors — left column */
-  .irrigation-schedule {
-    grid-area: schedule;
+  /* ─── Rain Alert Banner ─── */
+
+  .irr-rain-alert {
+    grid-area: alert;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    background: color-mix(in srgb, var(--alert-color) 12%, transparent);
+    border-left: 4px solid var(--alert-color);
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--alert-color);
+    text-transform: uppercase;
+    animation: irr-banner-in 300ms ease-out;
+  }
+
+  .irr-rain-alert ha-icon {
+    --mdc-icon-size: 1rem;
+    color: var(--alert-color);
+  }
+
+  .irr-rain-alert-label {
+    flex: 1;
+  }
+
+  .irr-rain-cancel-btn {
+    border: none;
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+    background: var(--lcars-tomato);
+    color: var(--lcars-black);
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    text-transform: uppercase;
+    padding: 0.2rem 0.6rem;
+    cursor: pointer;
+    min-height: 1.5rem;
+  }
+
+  .irr-rain-cancel-btn:focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
+  }
+
+  @keyframes irr-banner-in {
+    from { opacity: 0; transform: translateY(-0.5rem); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── Sidebar: Schedules + Controller Status ─── */
+
+  .irr-sidebar {
+    grid-area: sidebar;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
     overflow-y: auto;
   }
 
-  /* Zone controls — right column */
-  .irrigation-zones {
+  .irr-section-label {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-sunflower);
+    text-transform: uppercase;
+    padding-bottom: 0.15rem;
+    border-bottom: 2px solid var(--lcars-gray);
+    margin-bottom: 0.15rem;
+  }
+
+  /* ─── Schedule Strips ─── */
+
+  .irr-schedules {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .irr-schedule-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+  }
+
+  .irr-schedule-toggle {
+    min-width: 2.5rem;
+    height: var(--lcars-btn-height, 2rem);
+    border: none;
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 200ms;
+    background: var(--lcars-gray);
+    color: var(--lcars-black);
+  }
+
+  .irr-schedule-toggle[data-on] {
+    background: var(--lcars-ice);
+  }
+
+  .irr-schedule-toggle:focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
+  }
+
+  .irr-schedule-name {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-space-white);
+    text-transform: uppercase;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .irr-schedule-type-badge {
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+    font-family: var(--lcars-font);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    background: var(--lcars-butterscotch);
+    color: var(--lcars-black);
+  }
+
+  .irr-schedule-type-badge[data-flex] {
+    background: var(--lcars-african-violet);
+  }
+
+  .irr-schedule-duration {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-gray);
+    text-transform: uppercase;
+  }
+
+  /* ─── Controller Status ─── */
+
+  .irr-controller-status {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .irr-status-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    text-transform: uppercase;
+  }
+
+  .irr-status-bar {
+    display: inline-block;
+    width: 1.5rem;
+    height: 0.375rem;
+    border-radius: 0.1875rem;
+    flex-shrink: 0;
+    transition: background 200ms;
+  }
+
+  .irr-status-bar[data-state="on"]     { background: var(--lcars-ice); }
+  .irr-status-bar[data-state="off"]    { background: var(--lcars-gray); }
+  .irr-status-bar[data-state="alert"]  { background: var(--lcars-tomato); animation: irr-pulse 1.5s ease-in-out infinite; }
+  .irr-status-bar[data-state="active"] { background: var(--lcars-gold); }
+  .irr-status-bar[data-state="delay"]  { background: var(--lcars-african-violet); }
+
+  .irr-status-label {
+    color: var(--lcars-space-white);
+  }
+
+  @keyframes irr-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ─── Zone Grid ─── */
+
+  .irr-zones {
     grid-area: zones;
     display: flex;
     flex-direction: column;
     gap: var(--lcars-gap);
     overflow-y: auto;
   }
-  .irrigation-zone-row {
+
+  .irr-zone-row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     position: relative;
+    flex-wrap: wrap;
+    min-height: 2.5rem;
   }
-  .irrigation-zone-row:focus-visible {
+
+  .irr-zone-row:focus-visible {
     outline: 2px solid var(--lcars-ice);
     outline-offset: 2px;
   }
-  .irrigation-zone-btn {
+
+  /* ─── Zone Thumbnail ─── */
+
+  .irr-zone-thumb {
+    width: 2.5rem;
+    height: 2rem;
+    border-radius: var(--lcars-btn-radius);
+    overflow: hidden;
+    border: 2px solid var(--zone-border, var(--lcars-sunflower));
+    flex-shrink: 0;
+    position: relative;
+    cursor: pointer;
+    background: var(--lcars-black);
+  }
+
+  .irr-zone-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .irr-zone-thumb-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: rgba(102, 102, 136, 0.15);
+  }
+
+  .irr-zone-thumb-fallback ha-icon {
+    --mdc-icon-size: 1rem;
+    color: var(--lcars-gray);
+  }
+
+  .irr-zone-num {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    padding: 0.05rem 0.25rem;
+    background: rgba(0, 0, 0, 0.85);
+    color: var(--lcars-sunflower);
+    font-family: var(--lcars-font);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    border-radius: 0 var(--lcars-btn-radius) 0 0;
+    line-height: 1;
+  }
+
+  /* ─── Zone Button ─── */
+
+  .irr-zone-btn {
     min-width: 4.5rem;
-    height: var(--lcars-btn-height);
+    height: var(--lcars-btn-height, 2rem);
     border: none;
     border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
     background: var(--lcars-sunflower);
@@ -1200,115 +1438,522 @@
     cursor: pointer;
     transition: background 200ms;
   }
-  .irrigation-zone-btn[data-on] { background: var(--lcars-ice); }
-  .irrigation-zone-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .irrigation-zone-btn:focus-visible {
+
+  .irr-zone-btn[data-on] { background: var(--lcars-ice); }
+  .irr-zone-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .irr-zone-btn:focus-visible {
     outline: 2px solid var(--lcars-ice);
     outline-offset: 2px;
   }
-  .irrigation-zone-name {
+
+  /* ─── Zone Info ─── */
+
+  .irr-zone-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    min-width: 0;
+  }
+
+  .irr-zone-name {
     font-family: var(--lcars-font);
     font-size: var(--lcars-font-size-data);
     color: var(--lcars-space-white);
+    text-transform: uppercase;
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  .irrigation-zone-status {
+
+  .irr-zone-status {
     font-family: var(--lcars-font);
     font-size: var(--lcars-font-size-data);
     text-transform: uppercase;
+    flex-shrink: 0;
   }
-  .irrigation-zone-fill {
+
+  .irr-zone-countdown {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-ice);
+    text-transform: uppercase;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ─── Zone Fill Bar — Barberpole Flow ─── */
+
+  .irr-zone-fill {
     position: absolute;
     bottom: 0;
     left: 0;
-    width: 100%;
     height: 0.5rem;
     border-radius: 0.25rem;
+    background: var(--lcars-ice);
     transition: width 1s linear;
   }
 
-  /* Standby toggle — bottom */
-  .irrigation-standby {
-    grid-area: standby;
-    display: flex;
-    justify-content: center;
-    padding: 0.25rem;
+  .irr-zone-fill.active {
+    background:
+      repeating-linear-gradient(
+        -45deg,
+        var(--lcars-ice) 0px,
+        var(--lcars-ice) 4px,
+        rgba(153, 204, 255, 0.4) 4px,
+        rgba(153, 204, 255, 0.4) 8px
+      );
+    background-size: 11.31px 100%;
+    animation: irr-flow 0.6s linear infinite;
   }
-  .irrigation-standby-btn {
-    min-width: 10rem;
-    height: var(--lcars-btn-height);
+
+  @keyframes irr-flow {
+    from { background-position: 0 0; }
+    to   { background-position: 11.31px 0; }
+  }
+
+  /* ─── Zone Detail Expansion ─── */
+
+  .irr-zone-detail {
+    flex-basis: 100%;
+    padding: 0.25rem 0 0.25rem 3rem;
+    animation: irr-expand 200ms ease-out;
+  }
+
+  .irr-zone-attrs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .irr-zone-attr-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.15rem 0.5rem;
+    background: rgba(102, 102, 136, 0.2);
+    border-radius: 0 0.5rem 0.5rem 0;
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-space-white);
+    text-transform: uppercase;
+  }
+
+  .irr-zone-attr-badge ha-icon {
+    --mdc-icon-size: 0.9rem;
+    color: var(--badge-color, var(--lcars-sunflower));
+  }
+
+  .irr-zone-summary {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-gray);
+    text-transform: uppercase;
+    padding-top: 0.15rem;
+  }
+
+  @keyframes irr-expand {
+    from { opacity: 0; max-height: 0; }
+    to   { opacity: 1; max-height: 4rem; }
+  }
+
+  /* ─── Quick Run Builder ─── */
+
+  .irr-quickrun {
+    grid-area: quickrun;
+    border-top: 2px solid var(--lcars-gray);
+    padding-top: 0.25rem;
+  }
+
+  .irr-quickrun-header {
+    width: 100%;
     border: none;
-    border-radius: var(--lcars-btn-radius);
+    background: none;
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-sunflower);
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: left;
+    padding: 0.25rem 0;
+  }
+
+  .irr-quickrun-header:focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
+  }
+
+  .irr-quickrun-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.25rem 0;
+    animation: irr-expand 200ms ease-out;
+  }
+
+  .irr-quickrun-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .irr-quickrun-label {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-gray);
+    text-transform: uppercase;
+    min-width: 5rem;
+  }
+
+  .irr-zone-selector,
+  .irr-duration-selector {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+  }
+
+  .irr-zone-select-btn {
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    border-radius: 0.25rem;
+    background: var(--lcars-gray);
+    color: var(--lcars-space-white);
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    cursor: pointer;
+    transition: background 150ms;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+  }
+
+  .irr-zone-select-btn[data-selected] {
+    background: var(--lcars-ice);
+    color: var(--lcars-black);
+  }
+
+  .irr-zone-select-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .irr-zone-select-btn:focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
+  }
+
+  .irr-duration-btn {
+    padding: 0.25rem 0.5rem;
+    border: none;
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+    background: var(--lcars-gray);
+    color: var(--lcars-space-white);
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    cursor: pointer;
+    transition: background 150ms;
+    min-height: 2.5rem;
+  }
+
+  .irr-duration-btn[data-selected] {
+    background: var(--lcars-ice);
+    color: var(--lcars-black);
+  }
+
+  .irr-duration-btn:focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
+  }
+
+  .irr-engage-btn {
+    min-width: 10rem;
+    height: var(--lcars-btn-height, 2rem);
+    border: none;
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+    background: var(--lcars-butterscotch);
+    color: var(--lcars-black);
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 200ms;
+    align-self: flex-start;
+  }
+
+  .irr-engage-btn:active { background: var(--lcars-gold); }
+  .irr-engage-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .irr-engage-btn:focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
+  }
+
+  /* ─── Controls: Standby + Pause/Resume ─── */
+
+  .irr-controls {
+    grid-area: controls;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0.25rem 0;
+  }
+
+  .irr-control-btn {
+    min-width: 6rem;
+    height: var(--lcars-btn-height, 2rem);
+    border: none;
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
     background: var(--lcars-sunflower);
     color: var(--lcars-black);
     font-family: var(--lcars-font);
     font-size: var(--lcars-font-size-data);
     text-transform: uppercase;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    justify-content: center;
     transition: background 200ms;
   }
-  .irrigation-standby-btn[data-on] { background: var(--lcars-ice); }
-  .irrigation-standby-btn:focus-visible {
+
+  .irr-control-btn[data-on] { background: var(--lcars-gold); }
+
+  .irr-control-btn:focus-visible {
     outline: 2px solid var(--lcars-ice);
     outline-offset: 2px;
   }
-`;customElements.get("lcars-irrigation-panel")||customElements.define("lcars-irrigation-panel",class extends ne{#e=H(5,1e4);get panelType(){return"irrigation"}get defaultPanelTitle(){return"Irrigation"}get frameColor(){return"var(--lcars-ice)"}static get styles(){return[...super.styles,G,X,oe]}_partitionIrrigationEntities(e){const t=[],a=[],r=[];for(const i of e){const e=i.domain,s=i.entity.entity_id,n=i.state?.attributes||{};"switch"!==e?"binary_sensor"!==e||r.some(()=>!0)?a.push(i):r.push(i):null!=n.zone_number||/zone/i.test(s)?t.push(i):r.push(i)}return t.sort((e,t)=>(e.state?.attributes?.zone_number??999)-(t.state?.attributes?.zone_number??999)),{zones:t,sensors:a,controller:r}}_handleIrrigationZone(e,t){this.#e.allow()&&this._callService("switch",t?"turn_on":"turn_off",{entity_id:e})}renderBadge(){const{zones:t,controller:a}=this._partitionIrrigationEntities(this.group.entities),r=t.find(e=>"on"===e.state?.state),i=a.some(e=>"switch"===e.domain&&"off"===e.state?.state),s=r?"var(--lcars-ice)":i?"var(--lcars-gray)":"var(--lcars-sunflower)",n=r?`WATERING ${this._friendlyName(r.state,r.entity)}`:i?"STANDBY":"IDLE";return e.qy`<span style="color:${s}">${n}</span>`}renderContent(){const{zones:t,sensors:a,controller:r}=this._partitionIrrigationEntities(this.group.entities),i=(t.find(e=>"on"===e.state?.state),r.some(e=>"switch"===e.domain&&"off"===e.state?.state));return e.qy`
-      <div class="irrigation-content">
-        <!-- Schedule (left) -->
-        <div class="irrigation-schedule" role="list" aria-label="Schedule info">
-          ${a.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.attributes?.unit_of_measurement||"",s=this._getSensorIndicatorColor(a);return e.qy`
-              <lcars-sensor-row
-                label="${r}"
-                value="${a.state}${i?" "+i:""}"
-                color="${s}"
-                entity-id="${t.entity_id}">
-              </lcars-sensor-row>
-            `})}
+
+  .irr-pause-btn { background: var(--lcars-butterscotch); }
+  .irr-stop-btn  { background: var(--lcars-tomato); }
+
+  /* ─── Reduced Motion ─── */
+
+  @media (prefers-reduced-motion: reduce) {
+    .irr-zone-fill.active,
+    .irr-rain-alert,
+    .irr-zone-detail,
+    .irr-quickrun-body,
+    .irr-status-bar[data-state="alert"] {
+      animation: none !important;
+    }
+    .irr-zone-fill.active {
+      background: var(--lcars-ice);
+    }
+  }
+`,ce={"Full Sun":"mdi:weather-sunny","Mostly Sun":"mdi:weather-sunny","Half Shade":"mdi:weather-partly-cloudy","Full Shade":"mdi:weather-cloudy"},de={"Cool Season Grass":"mdi:grass","Warm Season Grass":"mdi:grass",Trees:"mdi:tree",Shrubs:"mdi:flower",Perennials:"mdi:flower-tulip",Annuals:"mdi:flower","Ground Cover":"mdi:grass",Xeriscape:"mdi:cactus"},pe={Flat:"mdi:triangle-outline",Slight:"mdi:triangle-outline",Moderate:"mdi:triangle-outline",Steep:"mdi:triangle-outline"};customElements.get("lcars-irrigation-panel")||customElements.define("lcars-irrigation-panel",class extends oe{#e=H(5,1e4);static get properties(){return{...super.properties,_expandedZone:{type:String,state:!0},_quickRunOpen:{type:Boolean,state:!0},_quickRunZones:{type:Array,state:!0},_quickRunDuration:{type:Number,state:!0}}}constructor(){super(),this._expandedZone=null,this._quickRunOpen=!1,this._quickRunZones=[],this._quickRunDuration=10,this._countdownTimer=null}disconnectedCallback(){super.disconnectedCallback(),this._countdownTimer&&(clearInterval(this._countdownTimer),this._countdownTimer=null)}get panelType(){return"irrigation"}get defaultPanelTitle(){return"Irrigation"}get frameColor(){return"var(--lcars-ice)"}static get styles(){return[...super.styles,X,Y,le]}_partitionIrrigationEntities(e){const t=[],a=[],r=[],i=[];for(const s of e){const e=s.domain,n=s.entity?.entity_id||"",o=s.state?.attributes||{};"switch"!==e?"binary_sensor"!==e||i.push(s):null!=o["Zone number"]||null!=o.zone_number||/zone/i.test(n)?t.push(s):null!=o.Type||/schedule/i.test(n)?a.push(s):r.push(s)}return t.sort((e,t)=>(e.state?.attributes?.["Zone number"]??e.state?.attributes?.zone_number??999)-(t.state?.attributes?.["Zone number"]??t.state?.attributes?.zone_number??999)),{zones:t,schedules:a,controller:r,binarySensors:i}}_getZoneNumber(e){return e?.attributes?.["Zone number"]??e?.attributes?.zone_number??"?"}_getZoneProgress(e){if("on"!==e?.state)return 0;const t=e.attributes?.["Watering Duration seconds"];if(!t||t<=0)return 100;const a=new Date(e.last_changed).getTime(),r=(Date.now()-a)/1e3;return Math.min(100,r/t*100)}_getCountdown(e){if("on"!==e?.state)return"";const t=e.attributes?.["Watering Duration seconds"];if(!t||t<=0)return"";const a=new Date(e.last_changed).getTime(),r=(Date.now()-a)/1e3,i=Math.max(0,t-r),s=Math.floor(i/60),n=Math.floor(i%60);return`${String(s).padStart(2,"0")}:${String(n).padStart(2,"0")}`}_findControllerSwitch(e,t){return e.find(e=>"switch"===e.domain&&(e.entity?.entity_id||"").includes(t))}_findBinarySensor(e,t){return e.find(e=>(e.entity?.entity_id||"").includes(t))}_handleIrrigationZone(e,t){this.#e.allow()&&this._callService("switch",t?"turn_on":"turn_off",{entity_id:e})}_handlePause(){this.#e.allow()&&this._callService("rachio","pause_watering",{duration:60})}_handleResume(){this.#e.allow()&&this._callService("rachio","resume_watering",{})}_handleStopAll(){this.#e.allow()&&this._callService("rachio","stop_watering",{})}_toggleQuickRunZone(e){const t=this._quickRunZones.indexOf(e);this._quickRunZones=t>=0?[...this._quickRunZones.filter(t=>t!==e)]:[...this._quickRunZones,e]}_handleQuickRun(){this.#e.allow()&&this._quickRunZones.length&&this._quickRunDuration&&(this._callService("rachio","start_multiple_zone_schedule",{entity_id:this._quickRunZones,duration:Array(this._quickRunZones.length).fill(this._quickRunDuration)}),this._quickRunOpen=!1,this._quickRunZones=[])}renderBadge(){const{zones:t,controller:a}=this._partitionIrrigationEntities(this.group.entities),r=t.find(e=>"on"===e.state?.state),i=this._findControllerSwitch(a,"standby"),s="on"===i?.state?.state,n=r?"var(--lcars-ice)":s?"var(--lcars-gray)":"var(--lcars-sunflower)",o=r?`WATERING Z${this._getZoneNumber(r.state)}`:s?"STANDBY":"IDLE";return e.qy`<span style="color:${n}">${o}</span>`}renderContent(){const{zones:t,schedules:a,controller:r,binarySensors:i}=this._partitionIrrigationEntities(this.group.entities),s=t.find(e=>"on"===e.state?.state),n=this._findControllerSwitch(r,"standby"),o=this._findControllerSwitch(r,"rain_delay"),l="on"===n?.state?.state,c="on"===o?.state?.state,d=this._findBinarySensor(i,"connectivity"),p=this._findBinarySensor(i,"rain"),u="on"===d?.state?.state,m="on"===p?.state?.state;return s&&!this._countdownTimer?this._countdownTimer=setInterval(()=>this.requestUpdate(),1e3):!s&&this._countdownTimer&&(clearInterval(this._countdownTimer),this._countdownTimer=null),e.qy`
+      <div class="irr-content">
+
+        <!-- Rain Alert Banner (conditional) -->
+        ${this._renderRainAlert(c,m,o)}
+
+        <!-- Left column: schedules + controller status -->
+        <div class="irr-sidebar">
+          ${this._renderSchedules(a)}
+          ${this._renderControllerStatus(u,l,c,m)}
         </div>
 
-        <!-- Zones (right) -->
-        <div class="irrigation-zones" role="list" aria-label="Irrigation zones">
-          ${t.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),s="on"===a.state,n=(0,L.aK)(a.state,i);return e.qy`
-              <div class="irrigation-zone-row" role="listitem" tabindex="0"
-                aria-label="${r}: ${s?"watering":"idle"}">
-                <button class="irrigation-zone-btn" ?data-on=${s}
-                  style="--zone-color:${n}"
-                  ?disabled=${i}
-                  aria-label="${s?"Stop":"Start"} watering ${r}"
-                  @click=${()=>this._handleIrrigationZone(t.entity_id,!s)}>
-                  ${s?"STOP":"START"}
-                </button>
-                <span class="irrigation-zone-name">${r}</span>
-                <span class="irrigation-zone-status" style="color:${n}">
-                  ${i?"STANDBY":s?"WATERING":"IDLE"}
-                </span>
-                ${s?e.qy`
-                  <div class="irrigation-zone-fill" role="progressbar"
-                    aria-label="Zone active" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"
-                    style="background:var(--lcars-ice)"></div>
-                `:""}
-              </div>
-            `})}
+        <!-- Right column: zone grid -->
+        <div class="irr-zones" role="list" aria-label="Irrigation zones">
+          ${t.map(e=>this._renderZoneRow(e,l))}
         </div>
 
-        <!-- Standby Toggle (bottom) -->
-        ${r.filter(e=>"switch"===e.domain).map(({entity:t,state:a})=>{const r="off"===a.state;return e.qy`
-            <div class="irrigation-standby">
-              <button class="irrigation-standby-btn" role="switch"
-                aria-checked="${r}" ?data-on=${!r}
-                @click=${()=>this._handleToggle(t.entity_id)}
-                title="Standby mode: ${r?"ON":"OFF"}">
-                <ha-icon icon="mdi:water-off"></ha-icon>
-                <span>STANDBY ${r?"ON":"OFF"}</span>
+        <!-- Quick Run (collapsible) -->
+        ${this._renderQuickRun(t,l)}
+
+        <!-- Controls: standby + pause/resume -->
+        ${this._renderControls(n,o,s)}
+      </div>
+    `}_renderRainAlert(a,r,i){if(!a&&!r)return t.s6;const s=a,n=s?"mdi:weather-pouring":"mdi:weather-rainy",o=s?"RAIN DELAY ACTIVE":"RAIN DETECTED",l=s?"var(--lcars-african-violet)":"var(--lcars-ice)";return e.qy`
+      <div class="irr-rain-alert" style="--alert-color:${l}"
+           role="alert" aria-live="polite">
+        <ha-icon icon="${n}"></ha-icon>
+        <span class="irr-rain-alert-label">${o}</span>
+        ${s?e.qy`
+          <button class="irr-rain-cancel-btn"
+            aria-label="Cancel rain delay"
+            @click=${()=>this._handleToggle(i.entity.entity_id)}>
+            CANCEL
+          </button>
+        `:t.s6}
+      </div>
+    `}_renderSchedules(a){return a.length?e.qy`
+      <div class="irr-schedules" role="list" aria-label="Irrigation schedules">
+        <div class="irr-section-label">SCHEDULES</div>
+        ${a.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=!1!==a.attributes?.Enabled&&"off"!==a.state,s=a.attributes?.Type||"Fixed",n=a.attributes?.Duration||"",o=/flex/i.test(s);return e.qy`
+            <div class="irr-schedule-strip" role="listitem">
+              <button class="irr-schedule-toggle" ?data-on=${i}
+                aria-label="${r}: ${i?"enabled":"disabled"}"
+                @click=${()=>this._handleToggle(t.entity_id)}>
+                ${i?"ON":"OFF"}
               </button>
+              <span class="irr-schedule-name">${r}</span>
+              <span class="irr-schedule-type-badge" ?data-flex=${o}>
+                ${o?"FLEX":"FIXED"}
+              </span>
+              <span class="irr-schedule-duration">${n}</span>
             </div>
           `})}
       </div>
-    `}});const le=e.AH`
+    `:t.s6}_renderControllerStatus(t,a,r,i){return e.qy`
+      <div class="irr-controller-status">
+        <div class="irr-section-label">CONTROLLER</div>
+        <div class="irr-status-row">
+          <span class="irr-status-bar" data-state="${t?"on":"alert"}"></span>
+          <span class="irr-status-label">${t?"ONLINE":"OFFLINE"}</span>
+        </div>
+        <div class="irr-status-row">
+          <span class="irr-status-bar" data-state="${a?"active":"off"}"></span>
+          <span class="irr-status-label">STANDBY ${a?"ON":"OFF"}</span>
+        </div>
+        <div class="irr-status-row">
+          <span class="irr-status-bar" data-state="${r?"delay":"off"}"></span>
+          <span class="irr-status-label">RAIN DELAY ${r?"ON":"OFF"}</span>
+        </div>
+        <div class="irr-status-row">
+          <span class="irr-status-bar" data-state="${i?"on":"off"}"></span>
+          <span class="irr-status-label">${i?"RAIN":"NO RAIN"}</span>
+        </div>
+      </div>
+    `}_renderZoneRow(a,r){const{entity:s,state:n}=a,o=s.entity_id,l=this._friendlyName(n,s),c="on"===n.state,d=(0,L.aK)(n.state,r),p=this._getZoneNumber(n),u=this._getZoneProgress(n),m=this._getCountdown(n),h=n.attributes?.entity_picture,v=this._expandedZone===o;return e.qy`
+      <div class="irr-zone-row ${c?"active":""}" role="listitem">
+        <!-- Zone photo thumbnail or fallback -->
+        <div class="irr-zone-thumb"
+             style="--zone-border:${d}"
+             @click=${()=>(0,i.Hv)(o)}>
+          ${h?e.qy`
+            <img src="${h}" alt="${l} zone photo"
+                 loading="lazy" referrerpolicy="no-referrer"
+                 @error=${e=>{e.target.style.display="none",e.target.nextElementSibling.style.display="flex"}}>
+            <span class="irr-zone-thumb-fallback" style="display:none">
+              <ha-icon icon="${de[n.attributes?.Type]||"mdi:grass"}"></ha-icon>
+            </span>
+          `:e.qy`
+            <span class="irr-zone-thumb-fallback">
+              <ha-icon icon="${de[n.attributes?.Type]||"mdi:grass"}"></ha-icon>
+            </span>
+          `}
+          <span class="irr-zone-num">${p}</span>
+        </div>
+
+        <!-- Zone action button -->
+        <button class="irr-zone-btn" ?data-on=${c}
+          ?disabled=${r}
+          aria-label="${c?"Stop":"Start"} watering ${l}"
+          @click=${()=>this._handleIrrigationZone(o,!c)}>
+          ${c?"STOP":"START"}
+        </button>
+
+        <!-- Zone info -->
+        <div class="irr-zone-info"
+             @click=${()=>{this._expandedZone=v?null:o}}>
+          <span class="irr-zone-name">${l}</span>
+          <span class="irr-zone-status" style="color:${d}">
+            ${r?"STANDBY":c?"WATERING":"IDLE"}
+          </span>
+        </div>
+
+        <!-- Countdown timer (when active) -->
+        ${m?e.qy`
+          <span class="irr-zone-countdown">${m}</span>
+        `:t.s6}
+
+        <!-- Active zone fill bar (barberpole) -->
+        ${c?e.qy`
+          <div class="irr-zone-fill ${c?"active":""}" role="progressbar"
+            aria-label="Watering progress" aria-valuemin="0" aria-valuemax="100"
+            aria-valuenow="${Math.round(u)}"
+            style="width:${u}%"></div>
+        `:t.s6}
+
+        <!-- Expanded detail row -->
+        ${v?this._renderZoneDetail(n):t.s6}
+      </div>
+    `}_renderZoneDetail(a){const r=a.attributes||{},i=r.Shade,s=r.Type,n=r.Slope,o=r.Summary,l=[];return i&&l.push({icon:ce[i]||"mdi:weather-sunny",label:i,color:"var(--lcars-sunflower)"}),s&&l.push({icon:de[s]||"mdi:grass",label:s,color:"var(--lcars-ice)"}),n&&l.push({icon:pe[n]||"mdi:triangle-outline",label:n,color:"var(--lcars-butterscotch)"}),e.qy`
+      <div class="irr-zone-detail">
+        <div class="irr-zone-attrs">
+          ${l.map(t=>e.qy`
+            <span class="irr-zone-attr-badge" style="--badge-color:${t.color}">
+              <ha-icon icon="${t.icon}"></ha-icon>
+              ${t.label}
+            </span>
+          `)}
+        </div>
+        ${o?e.qy`<div class="irr-zone-summary">${o}</div>`:t.s6}
+      </div>
+    `}_renderQuickRun(a,r){return e.qy`
+      <div class="irr-quickrun">
+        <button class="irr-quickrun-header"
+          aria-expanded="${this._quickRunOpen}"
+          @click=${()=>{this._quickRunOpen=!this._quickRunOpen}}>
+          QUICK RUN ${this._quickRunOpen?"▾":"▸"}
+        </button>
+        ${this._quickRunOpen?e.qy`
+          <div class="irr-quickrun-body">
+            <!-- Zone selector -->
+            <div class="irr-quickrun-row">
+              <span class="irr-quickrun-label">ZONES</span>
+              <div class="irr-zone-selector">
+                ${a.map(({entity:t,state:a})=>{const i=this._getZoneNumber(a),s=t.entity_id,n=this._quickRunZones.includes(s);return e.qy`
+                    <button class="irr-zone-select-btn" ?data-selected=${n}
+                      ?disabled=${r}
+                      aria-label="Zone ${i}" aria-pressed="${n}"
+                      @click=${()=>this._toggleQuickRunZone(s)}>
+                      ${i}
+                    </button>
+                  `})}
+              </div>
+            </div>
+            <!-- Duration selector -->
+            <div class="irr-quickrun-row">
+              <span class="irr-quickrun-label">DURATION</span>
+              <div class="irr-duration-selector">
+                ${[3,5,10,15,20].map(t=>e.qy`
+                  <button class="irr-duration-btn" ?data-selected=${this._quickRunDuration===t}
+                    aria-label="${t} minutes" aria-pressed="${this._quickRunDuration===t}"
+                    @click=${()=>{this._quickRunDuration=t}}>
+                    ${t}M
+                  </button>
+                `)}
+              </div>
+            </div>
+            <!-- Engage -->
+            <button class="irr-engage-btn"
+              ?disabled=${!this._quickRunZones.length||r}
+              aria-label="Start quick run: ${this._quickRunZones.length} zones for ${this._quickRunDuration} minutes"
+              @click=${()=>this._handleQuickRun()}>
+              ENGAGE
+            </button>
+          </div>
+        `:t.s6}
+      </div>
+    `}_renderControls(a,r,i){return e.qy`
+      <div class="irr-controls">
+        ${a?e.qy`
+          <button class="irr-control-btn" ?data-on=${"on"===a.state?.state}
+            role="switch" aria-checked="${"on"===a.state?.state}"
+            aria-label="Standby mode: ${"on"===a.state?.state?"active":"inactive"}"
+            @click=${()=>this._handleToggle(a.entity.entity_id)}>
+            STANDBY
+          </button>
+        `:t.s6}
+        ${r?e.qy`
+          <button class="irr-control-btn" ?data-on=${"on"===r.state?.state}
+            aria-label="Rain delay: ${"on"===r.state?.state?"active, click to cancel":"inactive, click to activate 24 hour delay"}"
+            @click=${()=>this._handleToggle(r.entity.entity_id)}>
+            RAIN DELAY
+          </button>
+        `:t.s6}
+        ${i?e.qy`
+          <button class="irr-control-btn irr-pause-btn"
+            aria-label="Pause watering for 60 minutes"
+            @click=${()=>this._handlePause()}>
+            PAUSE
+          </button>
+          <button class="irr-control-btn irr-stop-btn"
+            aria-label="Stop all watering"
+            @click=${()=>this._handleStopAll()}>
+            STOP ALL
+          </button>
+        `:t.s6}
+      </div>
+    `}});const ue=e.AH`
   :host {
     display: block;
     --panel-frame-color: var(--lcars-butterscotch);
@@ -1529,7 +2174,7 @@
     .camera-frame[data-state="live"] img { animation: none; }
     .device-panel-media img { animation: none; }
   }
-`;customElements.get("lcars-camera-panel")||customElements.define("lcars-camera-panel",class extends ne{get panelType(){return"camera"}get defaultPanelTitle(){return"Camera"}get frameColor(){return"var(--lcars-butterscotch)"}static get styles(){return[...super.styles,G,X,le]}renderContent(){const{cameras:t,sensors:a,controls:r}=this._partitionDeviceEntities(this.group.entities),i=this._shortDeviceName(this.group.device);return e.qy`
+`;customElements.get("lcars-camera-panel")||customElements.define("lcars-camera-panel",class extends oe{get panelType(){return"camera"}get defaultPanelTitle(){return"Camera"}get frameColor(){return"var(--lcars-butterscotch)"}static get styles(){return[...super.styles,X,Y,ue]}renderContent(){const{cameras:t,sensors:a,controls:r}=this._partitionDeviceEntities(this.group.entities),i=this._shortDeviceName(this.group.device);return e.qy`
       <div class="camera-content">
         <div class="device-panel-sensors" role="list" aria-label="${i} sensors">
           ${a.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=a.state,s=a.attributes?.unit_of_measurement||"",n=this._getSensorIndicatorColor(a);return e.qy`
@@ -1575,7 +2220,7 @@
             `})}
         </div>
       </div>
-    `}});const ce=e.AH`
+    `}});const me=e.AH`
   :host {
     display: block;
   }
@@ -1930,7 +2575,7 @@
     .atmoscrubber::after,
     .atmoscrubber.scrubber-idle { animation: none; }
   }
-`;customElements.get("lcars-environment-panel")||customElements.define("lcars-environment-panel",class extends ne{_envHistoryCache=new Map;get panelType(){return"environment"}get defaultPanelTitle(){return"Environment"}get frameColor(){return"var(--lcars-blue)"}static get styles(){return[...super.styles,G,X,ce]}_partitionEnvironmentEntities(e,t){const a=[],r=[],i=[],s=[],n=[];for(const t of e){const e=t.state?.attributes?.device_class||"",n=t.domain;["fan","switch","button","number","select","light"].includes(n)?s.push(t):C.has(e)?r.push(t):e||"sensor"!==n||!E.test(t.entity.entity_id)?i.push(t):a.push(t)}if(t)for(const e of[...t.diagnostic,...t.config]){const t=this._getEntityState(e.entity_id);t&&n.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{score:a,airQuality:r,telemetry:i,controls:s,diagnostics:n}}_getScrubberHue(e){return null==e||e<=50?120:e<=100?120-(e-50)/50*70:e<=150?50-(e-100)/50*35:Math.max(0,15-(e-150)/100*15)}_getAQColor(e){return null==e||e<=50?"var(--lcars-ice)":e<=100?"var(--lcars-sunflower)":e<=150?"var(--lcars-butterscotch)":e<=200?"var(--lcars-peach)":"var(--lcars-tomato)"}_getScrubberSpeed(e){return null==e||0===e?20:2+18*Math.pow(1-e/100,1.5)}async _getSparklineData(e,t){return(0,U.s)(this.hass,e,t,this._envHistoryCache)}_renderSparkline(e,t,a){return(0,U.K)(e,{color:t,label:a,className:"env-sparkline"})}renderBadge(){const{score:t,airQuality:a}=this._partitionEnvironmentEntities(this.group.entities,this._getDeviceCategoryEntities(this.group.device.id)),r=t[0],i=r?parseFloat(r.state.state):null,s=a.find(e=>"pm25"===(e.state?.attributes?.device_class||"")),n=s?parseFloat(s.state.state):null,o=null!=i&&Number.isFinite(i)?i:null!=n&&Number.isFinite(n)?Math.min(300,4*n):null,l=this._getAQColor(o);return r?e.qy`<span style="color:${l}">${null!=i&&Number.isFinite(i)?Math.round(i):"—"}</span>`:e.qy``}renderContent(){const t=this._getDeviceCategoryEntities(this.group.device.id),{score:a,airQuality:r,telemetry:i,controls:s,diagnostics:n}=this._partitionEnvironmentEntities(this.group.entities,t),o=this._shortDeviceName(this.group.device)||"Environment",l=a[0],c=l?parseFloat(l.state.state):null,d=r.find(e=>"pm25"===(e.state?.attributes?.device_class||"")),p=d?parseFloat(d.state.state):null,m=null!=c&&Number.isFinite(c)?c:null!=p&&Number.isFinite(p)?Math.min(300,4*p):null,u=this._getScrubberHue(m),h=this._getAQColor(m),v=s.find(e=>"fan"===e.domain),f=v?.state,g=f?.attributes?.percentage??null,b=f?.attributes?.preset_modes||[],y=f?.attributes?.preset_mode||"",w=!v||"off"===f?.state||0===g,_=this._getScrubberSpeed(w?0:g),x=!v,$=s.filter(e=>"fan"!==e.domain),k=[...a,...r].map(e=>e.entity.entity_id);k.length>0&&this._getSparklineData(this.group.device.id,k).then(e=>{e&&this.requestUpdate()});const S=this._envHistoryCache.get(this.group.device.id)?.data||{};return e.qy`
+`;customElements.get("lcars-environment-panel")||customElements.define("lcars-environment-panel",class extends oe{_envHistoryCache=new Map;get panelType(){return"environment"}get defaultPanelTitle(){return"Environment"}get frameColor(){return"var(--lcars-blue)"}static get styles(){return[...super.styles,X,Y,me]}_partitionEnvironmentEntities(e,t){const a=[],r=[],i=[],s=[],n=[];for(const t of e){const e=t.state?.attributes?.device_class||"",n=t.domain;["fan","switch","button","number","select","light"].includes(n)?s.push(t):C.has(e)?r.push(t):e||"sensor"!==n||!E.test(t.entity.entity_id)?i.push(t):a.push(t)}if(t)for(const e of[...t.diagnostic,...t.config]){const t=this._getEntityState(e.entity_id);t&&n.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{score:a,airQuality:r,telemetry:i,controls:s,diagnostics:n}}_getScrubberHue(e){return null==e||e<=50?120:e<=100?120-(e-50)/50*70:e<=150?50-(e-100)/50*35:Math.max(0,15-(e-150)/100*15)}_getAQColor(e){return null==e||e<=50?"var(--lcars-ice)":e<=100?"var(--lcars-sunflower)":e<=150?"var(--lcars-butterscotch)":e<=200?"var(--lcars-peach)":"var(--lcars-tomato)"}_getScrubberSpeed(e){return null==e||0===e?20:2+18*Math.pow(1-e/100,1.5)}async _getSparklineData(e,t){return(0,V.s)(this.hass,e,t,this._envHistoryCache)}_renderSparkline(e,t,a){return(0,V.K)(e,{color:t,label:a,className:"env-sparkline"})}renderBadge(){const{score:t,airQuality:a}=this._partitionEnvironmentEntities(this.group.entities,this._getDeviceCategoryEntities(this.group.device.id)),r=t[0],i=r?parseFloat(r.state.state):null,s=a.find(e=>"pm25"===(e.state?.attributes?.device_class||"")),n=s?parseFloat(s.state.state):null,o=null!=i&&Number.isFinite(i)?i:null!=n&&Number.isFinite(n)?Math.min(300,4*n):null,l=this._getAQColor(o);return r?e.qy`<span style="color:${l}">${null!=i&&Number.isFinite(i)?Math.round(i):"—"}</span>`:e.qy``}renderContent(){const t=this._getDeviceCategoryEntities(this.group.device.id),{score:a,airQuality:r,telemetry:i,controls:s,diagnostics:n}=this._partitionEnvironmentEntities(this.group.entities,t),o=this._shortDeviceName(this.group.device)||"Environment",l=a[0],c=l?parseFloat(l.state.state):null,d=r.find(e=>"pm25"===(e.state?.attributes?.device_class||"")),p=d?parseFloat(d.state.state):null,u=null!=c&&Number.isFinite(c)?c:null!=p&&Number.isFinite(p)?Math.min(300,4*p):null,m=this._getScrubberHue(u),h=this._getAQColor(u),v=s.find(e=>"fan"===e.domain),f=v?.state,g=f?.attributes?.percentage??null,b=f?.attributes?.preset_modes||[],y=f?.attributes?.preset_mode||"",w=!v||"off"===f?.state||0===g,_=this._getScrubberSpeed(w?0:g),x=!v,$=s.filter(e=>"fan"!==e.domain),k=[...a,...r].map(e=>e.entity.entity_id);k.length>0&&this._getSparklineData(this.group.device.id,k).then(e=>{e&&this.requestUpdate()});const S=this._envHistoryCache.get(this.group.device.id)?.data||{};return e.qy`
       <div class="env-content ${x?"sensor-only":""}">
         <!-- Sensors (left) -->
         <div class="env-sensors" role="list" aria-label="${o} sensors">
@@ -1965,11 +2610,11 @@
 
         <!-- Atmoscrubber Cylinder -->
         <div class="atmoscrubber-container" role="meter"
-          aria-valuenow="${null!=m?Math.round(m):""}"
+          aria-valuenow="${null!=u?Math.round(u):""}"
           aria-valuemin="0" aria-valuemax="300"
-          aria-label="Air quality: ${null!=m?Math.round(m):"unknown"}">
+          aria-label="Air quality: ${null!=u?Math.round(u):"unknown"}">
           <div class="atmoscrubber ${w?"scrubber-idle":""}"
-            style="--scrubber-hue:${Math.round(u)};--scrubber-speed:${_.toFixed(1)}s;--atmos-quality-color:${h}">
+            style="--scrubber-hue:${Math.round(m)};--scrubber-speed:${_.toFixed(1)}s;--atmos-quality-color:${h}">
             ${l?e.qy`
               <div class="scrubber-score">${null!=c&&Number.isFinite(c)?Math.round(c):"—"}</div>
             `:d?e.qy`
@@ -2023,7 +2668,7 @@
           ${[...a,...r].map(({entity:e,state:t})=>{const a=this._friendlyName(t,e),r=S[e.entity_id],i=t.attributes?.device_class||"",s="pm25"===i?"var(--lcars-peach)":"carbon_dioxide"===i?"var(--lcars-sunflower)":"volatile_organic_compounds_parts"===i||"volatile_organic_compounds"===i?"var(--lcars-african-violet)":"var(--lcars-ice)";return this._renderSparkline(r,s,a)})}
         </div>
       </div>
-    `}});const de=e.AH`
+    `}});const he=e.AH`
   :host {
     display: block;
   }
@@ -2465,7 +3110,7 @@
     .io-conduit-in::before,
     .io-conduit-out::before { animation: none; }
   }
-`;customElements.get("lcars-battery-panel")||customElements.define("lcars-battery-panel",class extends ne{get panelType(){return"battery"}get defaultPanelTitle(){return"Battery"}get frameColor(){return"var(--lcars-ice)"}static get styles(){return[...super.styles,G,X,de]}_classifyPowerEntity(e){const t=(e||"").toLowerCase();return/total\s*in\s*power/.test(t)?{side:"in",type:"total"}:/total\s*out\s*power/.test(t)?{side:"out",type:"total"}:/solar.*in.*power/.test(t)?{side:"in",type:"solar"}:/ac.*in.*power/.test(t)?{side:"in",type:"ac"}:/ac.*out.*power/.test(t)?{side:"out",type:"ac"}:/dc.*out.*power/.test(t)?{side:"out",type:"dc"}:/usb.*out.*power/.test(t)?{side:"out",type:"usb"}:/type.*c.*out.*power/.test(t)?{side:"out",type:"usbc"}:/power.*i.*o.*input.*power/.test(t)?{side:"in",type:"pio"}:/power.*i.*o.*output.*power/.test(t)?{side:"out",type:"pio"}:/anderson.*out.*power/.test(t)?{side:"out",type:"dc"}:/alternator.*in.*power/.test(t)?{side:"in",type:"alt"}:/station.*power/.test(t)?{side:"out",type:"station"}:/\bin\b/.test(t)?{side:"in",type:"other"}:/\bout\b/.test(t)?{side:"out",type:"other"}:null}_isNutDevice(e){let t=!1,a=!1,r=!1;for(const i of e){const e=i.state?.attributes||{},s=e.device_class||"",n=e.unit_of_measurement||"";"battery"===s&&"%"===n&&(t=!0),"power"===s&&"W"===n&&(a=!0);const o=i.entity?.entity_id||"";/ups[._]load|ups[._]status/i.test(o)&&(r=!0),"voltage"===s&&"V"===n&&(r=!0)}return t&&!a&&r}_parseNutStatus(e){const t=(e||"").toUpperCase();return{online:t.includes("OL"),onBattery:t.includes("OB"),charging:t.includes("CHRG"),lowBattery:t.includes("LB"),shutdown:t.includes("FSD"),off:"OFF"===t}}_formatNutRuntime(e){const t=parseInt(e,10);if(isNaN(t)||t<0)return"N/A";const a=Math.floor(t/3600),r=Math.floor(t%3600/60);return a>0?`${a}h ${r}m`:`${r}m`}_partitionBatteryEntities(e,t){const a=[],r=[],i=[],s=[],n=[],o=[],l=[],c=this._isNutDevice(e);let d=null,p=null,m=null,u=null,h=null;for(const t of e){const e=t.state?.attributes||{},o=e.device_class||"",l=e.unit_of_measurement||"",v=t.domain,f=e.friendly_name||t.entity.entity_id,g=t.entity?.entity_id||"";if(["switch","number","button","select"].includes(v))n.push(t);else if("battery"!==o||"%"!==l)if(c){if(/ups[._]load$/i.test(g)||/\bload\b/i.test(f)&&"%"===l){d=t;continue}if(/ups[._]status_data$/i.test(g)||/status\s*data/i.test(f)){m=t;continue}if(/ups[._]status$/i.test(g)&&!/status_data/i.test(g)){p=t;continue}if(/nominal.*real.*power|realpower.*nominal/i.test(f)){u=parseFloat(t.state?.state)||null,s.push(t);continue}if("duration"===o||/battery.*runtime/i.test(g)){h=t,s.push(t);continue}if("voltage"===o&&"V"===l){s.push(t);continue}s.push(t)}else{if("power"===o&&"W"===l){const e=this._classifyPowerEntity(f);e?"in"===e.side?r.push({...t,ioType:e.type}):i.push({...t,ioType:e.type}):s.push(t);continue}s.push(t)}else a.push(t)}if(c){const e=m?.state?.state||"",t=this._parseNutStatus(e),a=d&&parseFloat(d.state?.state)||0,r=u?Math.round(a*u/100):null;if(d){const e=null!=r?`${r}W (${a}%)`:`${a}%`;i.push({...d,ioType:"total",_nutSynthetic:!0,_nutDisplayValue:e,_nutWatts:r||a})}this._nutStatus=t,this._nutStatusEntry=p,this._nutRuntimeEntry=h,this._nutLoadEntry=d,this._nutComputedWatts=r}else this._nutStatus=null;if(t){for(const e of t.config){const t=this._getEntityState(e.entity_id);t&&o.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}for(const e of t.diagnostic){const t=this._getEntityState(e.entity_id);t&&l.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}}return{soc:a,powerIn:r,powerOut:i,telemetry:s,controls:n,configControls:o,diagnostics:l}}_getCoreColor(e){return e>=80?"var(--lcars-ice)":e>=60?"var(--lcars-sky)":e>=40?"var(--lcars-bluey)":e>=20?"var(--lcars-butterscotch)":e>=10?"var(--lcars-peach)":"var(--lcars-tomato)"}_getFlowSpeed(e){const t=Math.abs(parseFloat(e)||0);return 0===t?"flow-stopped":t>1e3?"flow-fast":t>100?"flow-medium":"flow-slow"}renderBadge(){const{soc:t}=this._partitionBatteryEntities(this.group.entities,this._getDeviceCategoryEntities(this.group.device.id)),a=t[0],r=a&&parseFloat(a.state.state)||0,i=a&&"unavailable"!==a.state.state&&"unknown"!==a.state.state,s=i?this._getCoreColor(r):"var(--lcars-gray)";return e.qy`<span style="color:${s}">${i?`${Math.round(r)}%`:"N/A"}</span>`}renderContent(){const t=this._getDeviceCategoryEntities(this.group.device.id),{soc:a,powerIn:r,powerOut:i,telemetry:s,controls:n,configControls:o,diagnostics:l}=this._partitionBatteryEntities(this.group.entities,t),c=this._shortDeviceName(this.group.device)||"Battery",d=a[0],p=d&&parseFloat(d.state.state)||0,m=d&&"unavailable"!==d.state.state&&"unknown"!==d.state.state,u=m?this._getCoreColor(p):"var(--lcars-gray)",h=r.find(e=>"total"===e.ioType),v=i.find(e=>"total"===e.ioType),f=h&&parseFloat(h.state.state)||0,g=v&&!v._nutSynthetic&&parseFloat(v.state.state)||0;let b,y,w;this._nutStatus?(b=this._nutStatus.charging,y=this._nutStatus.onBattery,w=!b&&!y):(b=f>5,y=g>5,w=!b&&!y);const _=new Set;r.filter(e=>"total"!==e.ioType).forEach(e=>_.add(e.ioType)),i.filter(e=>"total"!==e.ioType).forEach(e=>_.add(e.ioType));const x=[..._].map(e=>({type:e,label:e.toUpperCase(),inEntry:r.find(t=>t.ioType===e),outEntry:i.find(t=>t.ioType===e)})),k=s.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||"duration"===t||"voltage"===t||/state.*health|cycles|remain.*time|status|error.*code|battery.*count|runtime|load/.test(a)}).slice(0,8),S=l.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||/cycles|status|error|battery.*count|charging.*state|power.*diff/.test(a)}).slice(0,8);return e.qy`
+`;customElements.get("lcars-battery-panel")||customElements.define("lcars-battery-panel",class extends oe{get panelType(){return"battery"}get defaultPanelTitle(){return"Battery"}get frameColor(){return"var(--lcars-ice)"}static get styles(){return[...super.styles,X,Y,he]}_classifyPowerEntity(e){const t=(e||"").toLowerCase();return/total\s*in\s*power/.test(t)?{side:"in",type:"total"}:/total\s*out\s*power/.test(t)?{side:"out",type:"total"}:/solar.*in.*power/.test(t)?{side:"in",type:"solar"}:/ac.*in.*power/.test(t)?{side:"in",type:"ac"}:/ac.*out.*power/.test(t)?{side:"out",type:"ac"}:/dc.*out.*power/.test(t)?{side:"out",type:"dc"}:/usb.*out.*power/.test(t)?{side:"out",type:"usb"}:/type.*c.*out.*power/.test(t)?{side:"out",type:"usbc"}:/power.*i.*o.*input.*power/.test(t)?{side:"in",type:"pio"}:/power.*i.*o.*output.*power/.test(t)?{side:"out",type:"pio"}:/anderson.*out.*power/.test(t)?{side:"out",type:"dc"}:/alternator.*in.*power/.test(t)?{side:"in",type:"alt"}:/station.*power/.test(t)?{side:"out",type:"station"}:/\bin\b/.test(t)?{side:"in",type:"other"}:/\bout\b/.test(t)?{side:"out",type:"other"}:null}_isNutDevice(e){let t=!1,a=!1,r=!1;for(const i of e){const e=i.state?.attributes||{},s=e.device_class||"",n=e.unit_of_measurement||"";"battery"===s&&"%"===n&&(t=!0),"power"===s&&"W"===n&&(a=!0);const o=i.entity?.entity_id||"";/ups[._]load|ups[._]status/i.test(o)&&(r=!0),"voltage"===s&&"V"===n&&(r=!0)}return t&&!a&&r}_parseNutStatus(e){const t=(e||"").toUpperCase();return{online:t.includes("OL"),onBattery:t.includes("OB"),charging:t.includes("CHRG"),lowBattery:t.includes("LB"),shutdown:t.includes("FSD"),off:"OFF"===t}}_formatNutRuntime(e){const t=parseInt(e,10);if(isNaN(t)||t<0)return"N/A";const a=Math.floor(t/3600),r=Math.floor(t%3600/60);return a>0?`${a}h ${r}m`:`${r}m`}_partitionBatteryEntities(e,t){const a=[],r=[],i=[],s=[],n=[],o=[],l=[],c=this._isNutDevice(e);let d=null,p=null,u=null,m=null,h=null;for(const t of e){const e=t.state?.attributes||{},o=e.device_class||"",l=e.unit_of_measurement||"",v=t.domain,f=e.friendly_name||t.entity.entity_id,g=t.entity?.entity_id||"";if(["switch","number","button","select"].includes(v))n.push(t);else if("battery"!==o||"%"!==l)if(c){if(/ups[._]load$/i.test(g)||/\bload\b/i.test(f)&&"%"===l){d=t;continue}if(/ups[._]status_data$/i.test(g)||/status\s*data/i.test(f)){u=t;continue}if(/ups[._]status$/i.test(g)&&!/status_data/i.test(g)){p=t;continue}if(/nominal.*real.*power|realpower.*nominal/i.test(f)){m=parseFloat(t.state?.state)||null,s.push(t);continue}if("duration"===o||/battery.*runtime/i.test(g)){h=t,s.push(t);continue}if("voltage"===o&&"V"===l){s.push(t);continue}s.push(t)}else{if("power"===o&&"W"===l){const e=this._classifyPowerEntity(f);e?"in"===e.side?r.push({...t,ioType:e.type}):i.push({...t,ioType:e.type}):s.push(t);continue}s.push(t)}else a.push(t)}if(c){const e=u?.state?.state||"",t=this._parseNutStatus(e),a=d&&parseFloat(d.state?.state)||0,r=m?Math.round(a*m/100):null;if(d){const e=null!=r?`${r}W (${a}%)`:`${a}%`;i.push({...d,ioType:"total",_nutSynthetic:!0,_nutDisplayValue:e,_nutWatts:r||a})}this._nutStatus=t,this._nutStatusEntry=p,this._nutRuntimeEntry=h,this._nutLoadEntry=d,this._nutComputedWatts=r}else this._nutStatus=null;if(t){for(const e of t.config){const t=this._getEntityState(e.entity_id);t&&o.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}for(const e of t.diagnostic){const t=this._getEntityState(e.entity_id);t&&l.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}}return{soc:a,powerIn:r,powerOut:i,telemetry:s,controls:n,configControls:o,diagnostics:l}}_getCoreColor(e){return e>=80?"var(--lcars-ice)":e>=60?"var(--lcars-sky)":e>=40?"var(--lcars-bluey)":e>=20?"var(--lcars-butterscotch)":e>=10?"var(--lcars-peach)":"var(--lcars-tomato)"}_getFlowSpeed(e){const t=Math.abs(parseFloat(e)||0);return 0===t?"flow-stopped":t>1e3?"flow-fast":t>100?"flow-medium":"flow-slow"}renderBadge(){const{soc:t}=this._partitionBatteryEntities(this.group.entities,this._getDeviceCategoryEntities(this.group.device.id)),a=t[0],r=a&&parseFloat(a.state.state)||0,i=a&&"unavailable"!==a.state.state&&"unknown"!==a.state.state,s=i?this._getCoreColor(r):"var(--lcars-gray)";return e.qy`<span style="color:${s}">${i?`${Math.round(r)}%`:"N/A"}</span>`}renderContent(){const t=this._getDeviceCategoryEntities(this.group.device.id),{soc:a,powerIn:r,powerOut:i,telemetry:s,controls:n,configControls:o,diagnostics:l}=this._partitionBatteryEntities(this.group.entities,t),c=this._shortDeviceName(this.group.device)||"Battery",d=a[0],p=d&&parseFloat(d.state.state)||0,u=d&&"unavailable"!==d.state.state&&"unknown"!==d.state.state,m=u?this._getCoreColor(p):"var(--lcars-gray)",h=r.find(e=>"total"===e.ioType),v=i.find(e=>"total"===e.ioType),f=h&&parseFloat(h.state.state)||0,g=v&&!v._nutSynthetic&&parseFloat(v.state.state)||0;let b,y,w;this._nutStatus?(b=this._nutStatus.charging,y=this._nutStatus.onBattery,w=!b&&!y):(b=f>5,y=g>5,w=!b&&!y);const _=new Set;r.filter(e=>"total"!==e.ioType).forEach(e=>_.add(e.ioType)),i.filter(e=>"total"!==e.ioType).forEach(e=>_.add(e.ioType));const x=[..._].map(e=>({type:e,label:e.toUpperCase(),inEntry:r.find(t=>t.ioType===e),outEntry:i.find(t=>t.ioType===e)})),k=s.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||"duration"===t||"voltage"===t||/state.*health|cycles|remain.*time|status|error.*code|battery.*count|runtime|load/.test(a)}).slice(0,8),S=l.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||/cycles|status|error|battery.*count|charging.*state|power.*diff/.test(a)}).slice(0,8);return e.qy`
       <div class="battery-content">
         <!-- Telemetry (left) -->
         <div class="battery-telemetry" role="list" aria-label="${c} telemetry">
@@ -2539,7 +3184,7 @@
         <div class="warp-core-container" role="meter"
           aria-valuenow="${p}" aria-valuemin="0" aria-valuemax="100"
           aria-label="Battery charge level: ${Math.round(p)} percent">
-          <div class="warp-core" style="--core-color:${u};--core-charge:${m?p:0}">
+          <div class="warp-core" style="--core-color:${m};--core-charge:${u?p:0}">
             <div class="warp-core-fill ${w?"core-idle":""} ${b?"core-charging":""}">
               <div class="warp-core-stream"></div>
             </div>
@@ -2650,7 +3295,7 @@
           `}
         </div>
       </div>
-    `}});const pe=e.AH`
+    `}});const ve=e.AH`
   :host {
     display: block;
   }
@@ -2894,7 +3539,7 @@
       animation: none;
     }
   }
-`;customElements.get("lcars-climate-panel")||customElements.define("lcars-climate-panel",class extends ne{_climateSetpointDebouncer=null;get panelType(){return"climate"}get defaultPanelTitle(){return"Thermostat"}get frameColor(){const e=this.group?.entities?.find(e=>"climate"===e.domain)?.state;return(0,L.OX)(e?.attributes?.hvac_action||"off")}static get styles(){return[...super.styles,G,X,pe]}_partitionClimateEntities(e,t){const a=[],r=[],i=[],s=[],n=new Set(["problem","heat","cold","connectivity","battery","tamper","smoke","safety"]);for(const t of e){const e=t.domain;if("climate"!==e){if("binary_sensor"===e){const e=t.state?.attributes?.device_class||"";if(n.has(e)){i.push(t);continue}}k.has(e),r.push(t)}else a.push(t)}if(t)for(const e of t.diagnostic||[]){const t=this._getEntityState(e.entity_id);t&&s.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{climate:a,sensors:r,faults:i,diagnostics:s}}_isDualSetpoint(e){return"heat_cool"===e?.attributes?.hvac_mode||null!=e?.attributes?.target_temp_low&&null!=e?.attributes?.target_temp_high}_renderClimateArc(t,a,r,i,s,n,o,l,c){const d=100,p=120,m=i-r||1,u=Math.max(0,Math.min(1,(t-r)/m)),h=Math.round(40*u),v=Math.PI/40,f=Math.max(0,Math.min(1,(a-r)/m)),g=Math.PI-Math.PI*f,b=d+80*Math.cos(g),y=p-80*Math.sin(g);let w=0,_=0;n&&null!=o&&null!=l&&(w=Math.round((o-r)/m*40),_=Math.round((l-r)/m*40));const x="off"!==c&&"idle"!==c,$=[];for(let e=0;e<40;e++){const t=Math.PI-(e+.5)*v,a=d+74*Math.cos(t),r=p-74*Math.sin(t),i=d+86*Math.cos(t),o=p-86*Math.sin(t);let l="var(--lcars-disabled)",c="0.2";e<h&&(n?e<w?(l="var(--lcars-ice)",c="0.8"):e<=_?(l="var(--lcars-sunflower)",c="1"):(l="var(--lcars-butterscotch)",c="0.8"):(l=s,c="1")),$.push({x1:a,y1:r,x2:i,y2:o,color:l,opacity:c})}return e.qy`
+`;customElements.get("lcars-climate-panel")||customElements.define("lcars-climate-panel",class extends oe{_climateSetpointDebouncer=null;get panelType(){return"climate"}get defaultPanelTitle(){return"Thermostat"}get frameColor(){const e=this.group?.entities?.find(e=>"climate"===e.domain)?.state;return(0,L.OX)(e?.attributes?.hvac_action||"off")}static get styles(){return[...super.styles,X,Y,ve]}_partitionClimateEntities(e,t){const a=[],r=[],i=[],s=[],n=new Set(["problem","heat","cold","connectivity","battery","tamper","smoke","safety"]);for(const t of e){const e=t.domain;if("climate"!==e){if("binary_sensor"===e){const e=t.state?.attributes?.device_class||"";if(n.has(e)){i.push(t);continue}}k.has(e),r.push(t)}else a.push(t)}if(t)for(const e of t.diagnostic||[]){const t=this._getEntityState(e.entity_id);t&&s.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{climate:a,sensors:r,faults:i,diagnostics:s}}_isDualSetpoint(e){return"heat_cool"===e?.attributes?.hvac_mode||null!=e?.attributes?.target_temp_low&&null!=e?.attributes?.target_temp_high}_renderClimateArc(t,a,r,i,s,n,o,l,c){const d=100,p=120,u=i-r||1,m=Math.max(0,Math.min(1,(t-r)/u)),h=Math.round(40*m),v=Math.PI/40,f=Math.max(0,Math.min(1,(a-r)/u)),g=Math.PI-Math.PI*f,b=d+80*Math.cos(g),y=p-80*Math.sin(g);let w=0,_=0;n&&null!=o&&null!=l&&(w=Math.round((o-r)/u*40),_=Math.round((l-r)/u*40));const x="off"!==c&&"idle"!==c,$=[];for(let e=0;e<40;e++){const t=Math.PI-(e+.5)*v,a=d+74*Math.cos(t),r=p-74*Math.sin(t),i=d+86*Math.cos(t),o=p-86*Math.sin(t);let l="var(--lcars-disabled)",c="0.2";e<h&&(n?e<w?(l="var(--lcars-ice)",c="0.8"):e<=_?(l="var(--lcars-sunflower)",c="1"):(l="var(--lcars-butterscotch)",c="0.8"):(l=s,c="1")),$.push({x1:a,y1:r,x2:i,y2:o,color:l,opacity:c})}return e.qy`
       <svg class="climate-arc" viewBox="0 0 200 140" role="meter"
         aria-valuemin="${r}" aria-valuemax="${i}" aria-valuenow="${t}"
         aria-label="Temperature: ${t}°, target ${a}°">
@@ -2928,19 +3573,19 @@
           ${c.toUpperCase().replace(/_/g," ")}
         </text>
       </svg>
-    `}_handleClimateSetpoint(e,t,a,r,i){const s=W(a,t);this._climateSetpointDebouncer||(this._climateSetpointDebouncer=B((e,t)=>{this.hass.callService("climate","set_temperature",{entity_id:e,...t})},1500));const n=r?{["low"===i?"target_temp_low":"target_temp_high"]:s}:{temperature:s};this._climateSetpointDebouncer.call(e,n)}renderBadge(){const t=this.group?.entities?.find(e=>"climate"===e.domain)?.state,a=t?.attributes?.hvac_action||"off",r=(0,L.OX)(a);return e.qy`<span style="color:${r}">${a.toUpperCase()}</span>`}renderContent(){const t=this._getDeviceCategoryEntities(this.group.device.id),{climate:a,sensors:r,faults:i,diagnostics:s}=this._partitionClimateEntities(this.group.entities,t),n=this._shortDeviceName(this.group.device)||"Thermostat";if(0===a.length)return e.qy``;const o=a[0],l=o.state,c=l?.attributes||{},d=null!=c.current_temperature?Number(c.current_temperature):null,p=c.hvac_action||"off",m=(0,L.OX)(p),u=this._isDualSetpoint(l),h=u?(Number(c.target_temp_low)+Number(c.target_temp_high))/2:null!=c.temperature?Number(c.temperature):null,v=u?Number(c.target_temp_low):null,f=u?Number(c.target_temp_high):null,g=null!=c.min_temp?Number(c.min_temp):45,b=null!=c.max_temp?Number(c.max_temp):95,y=c.hvac_modes||[],w=c.hvac_mode||"off",_=c.fan_modes||[],x=c.fan_mode||"",$=c.preset_modes||[],k=c.preset_mode||"",S=r.find(e=>"humidity"===(e.state?.attributes?.device_class||"")),C=c.target_temp_step||1,E="off"!==p&&"idle"!==p,z=this._getSiblingZoneTemps();return e.qy`
+    `}_handleClimateSetpoint(e,t,a,r,i){const s=W(a,t);this._climateSetpointDebouncer||(this._climateSetpointDebouncer=U((e,t)=>{this.hass.callService("climate","set_temperature",{entity_id:e,...t})},1500));const n=r?{["low"===i?"target_temp_low":"target_temp_high"]:s}:{temperature:s};this._climateSetpointDebouncer.call(e,n)}renderBadge(){const t=this.group?.entities?.find(e=>"climate"===e.domain)?.state,a=t?.attributes?.hvac_action||"off",r=(0,L.OX)(a);return e.qy`<span style="color:${r}">${a.toUpperCase()}</span>`}renderContent(){const t=this._getDeviceCategoryEntities(this.group.device.id),{climate:a,sensors:r,faults:i,diagnostics:s}=this._partitionClimateEntities(this.group.entities,t),n=this._shortDeviceName(this.group.device)||"Thermostat";if(0===a.length)return e.qy``;const o=a[0],l=o.state,c=l?.attributes||{},d=null!=c.current_temperature?Number(c.current_temperature):null,p=c.hvac_action||"off",u=(0,L.OX)(p),m=this._isDualSetpoint(l),h=m?(Number(c.target_temp_low)+Number(c.target_temp_high))/2:null!=c.temperature?Number(c.temperature):null,v=m?Number(c.target_temp_low):null,f=m?Number(c.target_temp_high):null,g=null!=c.min_temp?Number(c.min_temp):45,b=null!=c.max_temp?Number(c.max_temp):95,y=c.hvac_modes||[],w=c.hvac_mode||"off",_=c.fan_modes||[],x=c.fan_mode||"",$=c.preset_modes||[],k=c.preset_mode||"",S=r.find(e=>"humidity"===(e.state?.attributes?.device_class||"")),C=c.target_temp_step||1,E="off"!==p&&"idle"!==p,z=this._getSiblingZoneTemps();return e.qy`
       <div class="climate-content" data-hvac-action="${p}">
 
         <!-- Sensor readouts (left column) — Compliance #5: mini-bars not dots -->
         <div class="climate-sensors" role="list" aria-label="${n} readings">
           ${null!=d?e.qy`
             <div class="device-sensor-line" role="listitem" aria-label="Current temperature: ${d}°">
-              <div class="sensor-indicator-bar" style="background:${m}"></div>
+              <div class="sensor-indicator-bar" style="background:${u}"></div>
               <span class="sensor-label">Current</span>
-              <span class="sensor-state-value" style="color:${m}">${Math.round(d)}°</span>
+              <span class="sensor-state-value" style="color:${u}">${Math.round(d)}°</span>
             </div>
           `:""}
-          ${u?e.qy`
+          ${m?e.qy`
             <div class="device-sensor-line" role="listitem" aria-label="Heat target: ${v}°">
               <div class="sensor-indicator-bar" style="background:var(--lcars-butterscotch)"></div>
               <span class="sensor-label">Heat To</span>
@@ -2953,9 +3598,9 @@
             </div>
           `:null!=h?e.qy`
             <div class="device-sensor-line" role="listitem" aria-label="Target temperature: ${h}°">
-              <div class="sensor-indicator-bar" style="background:${m}"></div>
+              <div class="sensor-indicator-bar" style="background:${u}"></div>
               <span class="sensor-label">Target</span>
-              <span class="sensor-state-value" style="color:${m}">${h}°</span>
+              <span class="sensor-state-value" style="color:${u}">${h}°</span>
             </div>
           `:""}
           ${S?e.qy`
@@ -2969,7 +3614,7 @@
           `:""}
           <div class="battery-section-divider"></div>
           <div class="device-sensor-line" role="listitem" aria-label="HVAC mode: ${w}">
-            <div class="sensor-indicator-bar" style="background:${m}"></div>
+            <div class="sensor-indicator-bar" style="background:${u}"></div>
             <span class="sensor-label">Mode</span>
             <span class="sensor-state-value">${w}</span>
           </div>
@@ -3011,11 +3656,11 @@
         <div class="climate-viewscreen" tabindex="0"
           @click=${()=>this._handleEntityClick(o.entity.entity_id)}
           @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(o.entity.entity_id))}}>
-          ${this._renderClimateArc(d,h,g,b,m,u,v,f,p)}
+          ${this._renderClimateArc(d,h,g,b,u,m,v,f,p)}
 
           <!-- Setpoint controls: Compliance #3 (LCARS endcap pills, not circles) -->
           <div class="climate-setpoint-controls">
-            ${u?e.qy`
+            ${m?e.qy`
               <div class="climate-setpoint-row">
                 <button class="climate-sp-btn sp-decrement" aria-label="Decrease heat target"
                   @click=${e=>{e.stopPropagation(),this._handleClimateSetpoint(o.entity.entity_id,c,v-C,!0,"low")}}>−</button>
@@ -3034,7 +3679,7 @@
               <div class="climate-setpoint-row">
                 <button class="climate-sp-btn sp-decrement" aria-label="Decrease target temperature"
                   @click=${e=>{e.stopPropagation(),this._handleClimateSetpoint(o.entity.entity_id,c,h-C,!1)}}>−</button>
-                <span class="climate-sp-label" style="color:${m}">TARGET ${h}°</span>
+                <span class="climate-sp-label" style="color:${u}">TARGET ${h}°</span>
                 <button class="climate-sp-btn sp-increment" aria-label="Increase target temperature"
                   @click=${e=>{e.stopPropagation(),this._handleClimateSetpoint(o.entity.entity_id,c,h+C,!1)}}>+</button>
               </div>
@@ -3043,7 +3688,7 @@
 
           <!-- HVAC action feedback bar -->
           ${E?e.qy`
-            <div class="climate-action-bar" style="--action-color: ${m}"></div>
+            <div class="climate-action-bar" style="--action-color: ${u}"></div>
           `:""}
         </div>
 
@@ -3085,7 +3730,7 @@
           `:""}
         </div>
       </div>
-    `}_getSiblingZoneTemps(){if(!this.hass||!this.areaId)return[];const e=function(e,t){if(!e?.areas)return[];const a=e.areas[t];return a?.floor_id?Object.values(e.areas).filter(e=>e.floor_id===a.floor_id&&e.area_id!==t).map(e=>e.area_id):[]}(this.hass,this.areaId),t=[];for(const a of e){const e=this.hass.areas?.[a];if(!e)continue;const r=Object.values(this.hass.entities||{}),i=this.hass.devices||{},s=new Set;Object.values(i).forEach(e=>{e.area_id===a&&s.add(e.id)});for(const i of r)if(i.entity_id?.startsWith("climate.")&&!i.hidden_by&&!i.disabled_by){if(!(i.area_id===a||!i.area_id&&i.device_id&&s.has(i.device_id)))continue;const r=this.hass.states?.[i.entity_id],n=r?.attributes?.current_temperature;if(null!=n){const a=r.attributes?.hvac_action||"off";t.push({name:e.name,temp:Math.round(Number(n)),color:(0,L.OX)(a)});break}}}return t}});const me=e.AH`
+    `}_getSiblingZoneTemps(){if(!this.hass||!this.areaId)return[];const e=function(e,t){if(!e?.areas)return[];const a=e.areas[t];return a?.floor_id?Object.values(e.areas).filter(e=>e.floor_id===a.floor_id&&e.area_id!==t).map(e=>e.area_id):[]}(this.hass,this.areaId),t=[];for(const a of e){const e=this.hass.areas?.[a];if(!e)continue;const r=Object.values(this.hass.entities||{}),i=this.hass.devices||{},s=new Set;Object.values(i).forEach(e=>{e.area_id===a&&s.add(e.id)});for(const i of r)if(i.entity_id?.startsWith("climate.")&&!i.hidden_by&&!i.disabled_by){if(!(i.area_id===a||!i.area_id&&i.device_id&&s.has(i.device_id)))continue;const r=this.hass.states?.[i.entity_id],n=r?.attributes?.current_temperature;if(null!=n){const a=r.attributes?.hvac_action||"off";t.push({name:e.name,temp:Math.round(Number(n)),color:(0,L.OX)(a)});break}}}return t}});const fe=e.AH`
   :host { display: block; }
 
   .lcars-device-panel {
@@ -3188,7 +3833,7 @@
     .alarm-triggered { animation: none; }
     .alarm-pin-error { animation: none; }
   }
-`;customElements.get("lcars-alarm-panel")||customElements.define("lcars-alarm-panel",class extends ne{_alarmPinCode="";_alarmPinLimiter=H(3,6e4);_alarmCountdown=null;_alarmCountdownTimer=null;_alarmPinError=!1;get panelType(){return"alarm"}get defaultPanelTitle(){return"Alarm"}get frameColor(){const e=this.group?.entities?.find(e=>"alarm_control_panel"===e.domain)?.state;return(0,L.of)(e?.state||"unavailable")}static get styles(){return[...super.styles,G,X,me]}disconnectedCallback(){super.disconnectedCallback(),this._stopAlarmCountdown()}updated(e){super.updated(e);const t=this.group?.entities?.find(e=>"alarm_control_panel"===e.domain)?.state,a=["arming","pending","disarming"].includes(t?.state);a&&null==this._alarmCountdown?this._startAlarmCountdown(t?.attributes?.delay||60):a||null==this._alarmCountdown||this._stopAlarmCountdown()}_partitionAlarmEntities(e,t){const a=[],r=[],i=[],s=[],n=new Set(["door","window","motion","vibration","moisture","cold","smoke","safety","opening","garage_door","lock","tamper","problem"]);for(const t of e)if("alarm_control_panel"!==t.domain){if("binary_sensor"===t.domain){const e=t.state?.attributes?.device_class||"";if(n.has(e)){r.push(t);continue}}i.push(t)}else a.push(t);if(t)for(const e of t.diagnostic||[]){const t=this._getEntityState(e.entity_id);t&&s.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{alarm:a,zones:r,auxiliary:i,diagnostics:s}}_handleAlarmPinDigit(e){this._alarmPinCode.length>=6||(this._alarmPinCode+=String(e).replace(/\D/g,"").charAt(0)||"",this._alarmPinError=!1,this.requestUpdate())}_handleAlarmPinClear(){this._alarmPinCode="",this._alarmPinError=!1,this.requestUpdate()}_handleAlarmArm(e,t){const a=this._alarmPinCode||void 0;this.hass.callService("alarm_control_panel",`alarm_arm_${t}`,{entity_id:e,...a?{code:a}:{}}),this._alarmPinCode="",this.requestUpdate()}_handleAlarmDisarm(e){if(!this._alarmPinLimiter.allow())return this._alarmPinError=!0,void this.requestUpdate();const t=this._alarmPinCode||void 0;this.hass.callService("alarm_control_panel","alarm_disarm",{entity_id:e,...t?{code:t}:{}}),this._alarmPinCode="",this.requestUpdate()}_startAlarmCountdown(e){this._alarmCountdown=Math.max(0,e),this._alarmCountdownTimer&&clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=setInterval(()=>{this._alarmCountdown=Math.max(0,(this._alarmCountdown||0)-1),this.requestUpdate(),this._alarmCountdown<=0&&(clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=null)},1e3)}_stopAlarmCountdown(){this._alarmCountdownTimer&&(clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=null),this._alarmCountdown=null}_getAlarmShieldSymbol(e){switch(e){case"disarmed":return"✓";case"armed_home":case"armed_night":return"◉";case"armed_away":case"armed_vacation":return"▲";case"triggered":return"✕";case"arming":case"pending":case"disarming":return"⋯";default:return"?"}}_handleAlarmKeydown(e,t){const a=e.key;/^[0-9]$/.test(a)?(e.preventDefault(),this._handleAlarmPinDigit(a)):"Backspace"===a?(e.preventDefault(),this._alarmPinCode=this._alarmPinCode.slice(0,-1),this.requestUpdate()):"Enter"===a?(e.preventDefault(),this._handleAlarmDisarm(t)):"Escape"===a&&(e.preventDefault(),this._handleAlarmPinClear())}renderBadge(){const t=this.group?.entities?.find(e=>"alarm_control_panel"===e.domain)?.state,a=t?.state||"unavailable",r=(0,L.of)(a),i=(a||"unknown").toUpperCase().replace(/_/g," ");return e.qy`<span style="color:${r}">${i}</span>`}renderContent(){const t=this._getDeviceCategoryEntities(this.group.device.id),{alarm:a,zones:r,auxiliary:i}=this._partitionAlarmEntities(this.group.entities,t),s=this._shortDeviceName(this.group.device)||"Alarm";if(0===a.length)return e.qy``;const n=a[0],o=n.state,l=o?.state||"unavailable",c=(0,L.of)(l),d=["arming","pending","disarming"].includes(l),p="triggered"===l,m=this._getAlarmShieldSymbol(l),u=(l||"unknown").toUpperCase().replace(/_/g," "),h=!1!==o?.attributes?.code_required,v=Array.from({length:6},(e,t)=>t<this._alarmPinCode.length);return e.qy`
+`;customElements.get("lcars-alarm-panel")||customElements.define("lcars-alarm-panel",class extends oe{_alarmPinCode="";_alarmPinLimiter=H(3,6e4);_alarmCountdown=null;_alarmCountdownTimer=null;_alarmPinError=!1;get panelType(){return"alarm"}get defaultPanelTitle(){return"Alarm"}get frameColor(){const e=this.group?.entities?.find(e=>"alarm_control_panel"===e.domain)?.state;return(0,L.of)(e?.state||"unavailable")}static get styles(){return[...super.styles,X,Y,fe]}disconnectedCallback(){super.disconnectedCallback(),this._stopAlarmCountdown()}updated(e){super.updated(e);const t=this.group?.entities?.find(e=>"alarm_control_panel"===e.domain)?.state,a=["arming","pending","disarming"].includes(t?.state);a&&null==this._alarmCountdown?this._startAlarmCountdown(t?.attributes?.delay||60):a||null==this._alarmCountdown||this._stopAlarmCountdown()}_partitionAlarmEntities(e,t){const a=[],r=[],i=[],s=[],n=new Set(["door","window","motion","vibration","moisture","cold","smoke","safety","opening","garage_door","lock","tamper","problem"]);for(const t of e)if("alarm_control_panel"!==t.domain){if("binary_sensor"===t.domain){const e=t.state?.attributes?.device_class||"";if(n.has(e)){r.push(t);continue}}i.push(t)}else a.push(t);if(t)for(const e of t.diagnostic||[]){const t=this._getEntityState(e.entity_id);t&&s.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{alarm:a,zones:r,auxiliary:i,diagnostics:s}}_handleAlarmPinDigit(e){this._alarmPinCode.length>=6||(this._alarmPinCode+=String(e).replace(/\D/g,"").charAt(0)||"",this._alarmPinError=!1,this.requestUpdate())}_handleAlarmPinClear(){this._alarmPinCode="",this._alarmPinError=!1,this.requestUpdate()}_handleAlarmArm(e,t){const a=this._alarmPinCode||void 0;this.hass.callService("alarm_control_panel",`alarm_arm_${t}`,{entity_id:e,...a?{code:a}:{}}),this._alarmPinCode="",this.requestUpdate()}_handleAlarmDisarm(e){if(!this._alarmPinLimiter.allow())return this._alarmPinError=!0,void this.requestUpdate();const t=this._alarmPinCode||void 0;this.hass.callService("alarm_control_panel","alarm_disarm",{entity_id:e,...t?{code:t}:{}}),this._alarmPinCode="",this.requestUpdate()}_startAlarmCountdown(e){this._alarmCountdown=Math.max(0,e),this._alarmCountdownTimer&&clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=setInterval(()=>{this._alarmCountdown=Math.max(0,(this._alarmCountdown||0)-1),this.requestUpdate(),this._alarmCountdown<=0&&(clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=null)},1e3)}_stopAlarmCountdown(){this._alarmCountdownTimer&&(clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=null),this._alarmCountdown=null}_getAlarmShieldSymbol(e){switch(e){case"disarmed":return"✓";case"armed_home":case"armed_night":return"◉";case"armed_away":case"armed_vacation":return"▲";case"triggered":return"✕";case"arming":case"pending":case"disarming":return"⋯";default:return"?"}}_handleAlarmKeydown(e,t){const a=e.key;/^[0-9]$/.test(a)?(e.preventDefault(),this._handleAlarmPinDigit(a)):"Backspace"===a?(e.preventDefault(),this._alarmPinCode=this._alarmPinCode.slice(0,-1),this.requestUpdate()):"Enter"===a?(e.preventDefault(),this._handleAlarmDisarm(t)):"Escape"===a&&(e.preventDefault(),this._handleAlarmPinClear())}renderBadge(){const t=this.group?.entities?.find(e=>"alarm_control_panel"===e.domain)?.state,a=t?.state||"unavailable",r=(0,L.of)(a),i=(a||"unknown").toUpperCase().replace(/_/g," ");return e.qy`<span style="color:${r}">${i}</span>`}renderContent(){const t=this._getDeviceCategoryEntities(this.group.device.id),{alarm:a,zones:r,auxiliary:i}=this._partitionAlarmEntities(this.group.entities,t),s=this._shortDeviceName(this.group.device)||"Alarm";if(0===a.length)return e.qy``;const n=a[0],o=n.state,l=o?.state||"unavailable",c=(0,L.of)(l),d=["arming","pending","disarming"].includes(l),p="triggered"===l,u=this._getAlarmShieldSymbol(l),m=(l||"unknown").toUpperCase().replace(/_/g," "),h=!1!==o?.attributes?.code_required,v=Array.from({length:6},(e,t)=>t<this._alarmPinCode.length);return e.qy`
       <div class="alarm-content ${p?"alarm-triggered":""}" data-state="${l}">
 
         <div class="alarm-sensors" role="list" aria-label="${s} zones">
@@ -3220,13 +3865,13 @@
           ${d&&null!=this._alarmCountdown?e.qy`
             <div class="alarm-countdown" aria-live="polite">
               <span class="alarm-countdown-num" style="color:${c}">${this._alarmCountdown}</span>
-              <span class="alarm-countdown-label">${u}</span>
+              <span class="alarm-countdown-label">${m}</span>
             </div>
           `:e.qy`
-            <svg class="alarm-shield" viewBox="0 0 160 180" role="img" aria-label="${s}: ${u}">
+            <svg class="alarm-shield" viewBox="0 0 160 180" role="img" aria-label="${s}: ${m}">
               <path d="M80,10 L145,45 L145,110 Q145,160 80,175 Q15,160 15,110 L15,45 Z" fill="none" stroke="${c}" stroke-width="4" />
-              <text x="80" y="105" text-anchor="middle" fill="${c}" font-family="var(--lcars-font)" font-size="48">${m}</text>
-              <text x="80" y="145" text-anchor="middle" fill="${c}" font-family="var(--lcars-font)" font-size="14">${u}</text>
+              <text x="80" y="105" text-anchor="middle" fill="${c}" font-family="var(--lcars-font)" font-size="48">${u}</text>
+              <text x="80" y="145" text-anchor="middle" fill="${c}" font-family="var(--lcars-font)" font-size="14">${m}</text>
             </svg>
           `}
           <div class="alarm-arm-strip" role="radiogroup" aria-label="Arm mode">
@@ -3259,7 +3904,7 @@
           </div>
         `:""}
       </div>
-    `}});const ue=e.AH`
+    `}});const ge=e.AH`
   :host { display: block; }
 
   .lcars-device-panel {
@@ -3386,7 +4031,7 @@
     .lcars-audio-waveform .bar { animation: none !important; transform: scaleY(0.17); }
     .media-viewscreen-glow { animation: none; }
   }
-`;customElements.get("lcars-media-panel")||customElements.define("lcars-media-panel",class extends ne{get panelType(){return"media"}get defaultPanelTitle(){return"Media"}get frameColor(){return"var(--lcars-african-violet)"}static get styles(){return[...super.styles,G,X,ue]}_isValidArtworkUrl(e){return!!e&&(e.startsWith("/api/")||e.startsWith("/local/"))}_getMediaTransportSymbol(e){switch(e){case"playing":return"▶";case"paused":return"❚❚";default:return"■"}}_partitionMediaEntities(e){const t=[],a=[],r=[],i=[];for(const s of e)"media_player"!==s.domain?"remote"!==s.domain?k.has(s.domain)?a.push(s):r.push(s):i.push(s):t.push(s);return{player:t,sensors:a,controls:r,remotes:i}}_handleMediaService(e,t,a={}){this.hass.callService("media_player",t,{entity_id:e,...a})}_handleVolumeChange(e,t){const a=t.currentTarget.getBoundingClientRect(),r=Math.max(0,Math.min(1,(t.clientX-a.left)/a.width));this._handleMediaService(e,"volume_set",{volume_level:Math.round(100*r)/100})}renderBadge(){const t=this.group?.entities?.find(e=>"media_player"===e.domain);if(!t)return e.qy``;const a=t.state?.state||"unavailable",r=(0,L.uT)(a),i=this._getMediaTransportSymbol(a);return e.qy`<span style="color:${r}">${i} ${a.toUpperCase()}</span>`}renderContent(){const{player:t,sensors:a}=this._partitionMediaEntities(this.group.entities),r=this._shortDeviceName(this.group.device)||"Media";if(0===t.length)return e.qy``;const i=t[0],s=i.state,n=s?.attributes||{},o=s?.state||"unavailable",l=((0,L.uT)(o),this._getMediaTransportSymbol(o),"playing"===o),c=!(l||"paused"===o),d=n.entity_picture,p=this._isValidArtworkUrl(d),m=n.media_title||"",u=n.media_artist||"",h=n.source||"",v=null!=n.volume_level?Number(n.volume_level):0,f=n.is_volume_muted||!1,g=n.supported_features||0,b=!!(16&g),y=!!(32&g),w=!!(4&g),_=!!(32768&g),x=!!(262144&g),$=n.shuffle||!1,k=n.repeat||"off";return e.qy`
+`;customElements.get("lcars-media-panel")||customElements.define("lcars-media-panel",class extends oe{get panelType(){return"media"}get defaultPanelTitle(){return"Media"}get frameColor(){return"var(--lcars-african-violet)"}static get styles(){return[...super.styles,X,Y,ge]}_isValidArtworkUrl(e){return!!e&&(e.startsWith("/api/")||e.startsWith("/local/"))}_getMediaTransportSymbol(e){switch(e){case"playing":return"▶";case"paused":return"❚❚";default:return"■"}}_partitionMediaEntities(e){const t=[],a=[],r=[],i=[];for(const s of e)"media_player"!==s.domain?"remote"!==s.domain?k.has(s.domain)?a.push(s):r.push(s):i.push(s):t.push(s);return{player:t,sensors:a,controls:r,remotes:i}}_handleMediaService(e,t,a={}){this.hass.callService("media_player",t,{entity_id:e,...a})}_handleVolumeChange(e,t){const a=t.currentTarget.getBoundingClientRect(),r=Math.max(0,Math.min(1,(t.clientX-a.left)/a.width));this._handleMediaService(e,"volume_set",{volume_level:Math.round(100*r)/100})}renderBadge(){const t=this.group?.entities?.find(e=>"media_player"===e.domain);if(!t)return e.qy``;const a=t.state?.state||"unavailable",r=(0,L.uT)(a),i=this._getMediaTransportSymbol(a);return e.qy`<span style="color:${r}">${i} ${a.toUpperCase()}</span>`}renderContent(){const{player:t,sensors:a}=this._partitionMediaEntities(this.group.entities),r=this._shortDeviceName(this.group.device)||"Media";if(0===t.length)return e.qy``;const i=t[0],s=i.state,n=s?.attributes||{},o=s?.state||"unavailable",l=((0,L.uT)(o),this._getMediaTransportSymbol(o),"playing"===o),c=!(l||"paused"===o),d=n.entity_picture,p=this._isValidArtworkUrl(d),u=n.media_title||"",m=n.media_artist||"",h=n.source||"",v=null!=n.volume_level?Number(n.volume_level):0,f=n.is_volume_muted||!1,g=n.supported_features||0,b=!!(16&g),y=!!(32&g),w=!!(4&g),_=!!(32768&g),x=!!(262144&g),$=n.shuffle||!1,k=n.repeat||"off";return e.qy`
       <div class="media-content ${c?"media-idle":""}">
 
         <div class="media-metadata" role="list" aria-label="${r} info">
@@ -3417,8 +4062,8 @@
           `}
           ${c?"":e.qy`
             <div class="media-now-playing">
-              ${m?e.qy`<div class="media-title">${m}</div>`:""}
-              ${u?e.qy`<div class="media-artist">${u}</div>`:""}
+              ${u?e.qy`<div class="media-title">${u}</div>`:""}
+              ${m?e.qy`<div class="media-artist">${m}</div>`:""}
             </div>
           `}
         </div>
@@ -3456,7 +4101,7 @@
           `:""}
         </div>
       </div>
-    `}});const he=e.AH`
+    `}});const be=e.AH`
   :host { display: block; }
 
   .lcars-device-panel {
@@ -3719,7 +4364,7 @@
     .pool-heating-bar { animation: none; }
     .freeze-banner { animation: none; }
   }
-`;class ve extends e.WF{static get properties(){return{value:{type:Number},min:{type:Number},max:{type:Number},segments:{type:Number},thresholds:{type:Array},label:{type:String}}}constructor(){super(),this.value=0,this.min=0,this.max=100,this.segments=7,this.thresholds=[],this.label=""}static get styles(){return[r.AM,e.AH`
+`;class ye extends e.WF{static get properties(){return{value:{type:Number},min:{type:Number},max:{type:Number},segments:{type:Number},thresholds:{type:Array},label:{type:String}}}constructor(){super(),this.value=0,this.min=0,this.max=100,this.segments=7,this.thresholds=[],this.label=""}static get styles(){return[r.AM,e.AH`
         :host { display: inline-flex; align-items: center; gap: 0.5rem; }
 
         .bar-container {
@@ -3764,8 +4409,8 @@
         ${s}
       </div>
       <span class="bar-value">${this._formatValue()}</span>
-    `}_formatValue(){return null==this.value?"—":Number.isInteger(this.value)?String(this.value):this.value.toFixed(1)}}customElements.define("lcars-segmented-bar",ve);customElements.get("lcars-pool-spa-panel")||customElements.define("lcars-pool-spa-panel",class extends ne{get panelType(){return"pool-spa"}get defaultPanelTitle(){return"Pool & Spa"}get frameColor(){return"var(--lcars-bluey)"}static get styles(){return[...super.styles,G,X,he]}_poolSetpointDebouncer=null;_partitionPoolEntities(e){const t=[],a=[],r=[],i=[],s=[],n=[],o=[],l=[],c=[],d=[];let p=null;const m=/orp|ph_|salt|tds|saturation|calcium|alkalinity|cyanuric|chlorine|hardness/i,u=/waterfall|spillway|bubbler|fountain/i,h=/blower|spa.*jet|jet.*spa/i;for(const v of e){const e=v.entity.entity_id,f=v.domain,g=(v.state?.attributes||{}).device_class||"";"climate"!==f?"binary_sensor"===f&&/freeze/i.test(e)?p=v:"light"!==f?"sensor"===f&&m.test(e)?r.push(v):"switch"!==f?"sensor"!==f||"temperature"!==g?d.push(v):c.push(v):/pump/i.test(e)?i.push(v):u.test(e)?s.push(v):h.test(e)?n.push(v):o.push(v):l.push(v):/spa/i.test(e)?a.push(v):t.push(v)}return{pool:t,spa:a,chemistry:r,pumps:i,waterFeatures:s,spaCircuits:n,utilityCircuits:o,lights:l,environmental:c,diagnostics:d,freezeSensor:p}}_handlePoolSetpoint(e,t,a){const r=W(a,t,{min:40,max:104});this._poolSetpointDebouncer||(this._poolSetpointDebouncer=B((e,t)=>{this.hass.callService("climate","set_temperature",{entity_id:e,temperature:t})},1500)),this._poolSetpointDebouncer.call(e,r)}_renderPoolBody(t,a,r){if(0===t.length)return"";const i=t[0],s=i.state,n=s?.attributes||{},o=null!=n.current_temperature?Number(n.current_temperature):null,l=null!=n.temperature?Number(n.temperature):null,c=n.hvac_action||"off",d=(0,L.qW)(c,a),p="spa"===a?"SPA":"POOL",m="heating"===c,u="spa"===a?"thermal-warm":"thermal-cool";return e.qy`
-      <div class="pool-body-frame ${u}" style="--body-color:${d}" role="region"
+    `}_formatValue(){return null==this.value?"—":Number.isInteger(this.value)?String(this.value):this.value.toFixed(1)}}customElements.define("lcars-segmented-bar",ye);customElements.get("lcars-pool-spa-panel")||customElements.define("lcars-pool-spa-panel",class extends oe{get panelType(){return"pool-spa"}get defaultPanelTitle(){return"Pool & Spa"}get frameColor(){return"var(--lcars-bluey)"}static get styles(){return[...super.styles,X,Y,be]}_poolSetpointDebouncer=null;_partitionPoolEntities(e){const t=[],a=[],r=[],i=[],s=[],n=[],o=[],l=[],c=[],d=[];let p=null;const u=/orp|ph_|salt|tds|saturation|calcium|alkalinity|cyanuric|chlorine|hardness/i,m=/waterfall|spillway|bubbler|fountain/i,h=/blower|spa.*jet|jet.*spa/i;for(const v of e){const e=v.entity.entity_id,f=v.domain,g=(v.state?.attributes||{}).device_class||"";"climate"!==f?"binary_sensor"===f&&/freeze/i.test(e)?p=v:"light"!==f?"sensor"===f&&u.test(e)?r.push(v):"switch"!==f?"sensor"!==f||"temperature"!==g?d.push(v):c.push(v):/pump/i.test(e)?i.push(v):m.test(e)?s.push(v):h.test(e)?n.push(v):o.push(v):l.push(v):/spa/i.test(e)?a.push(v):t.push(v)}return{pool:t,spa:a,chemistry:r,pumps:i,waterFeatures:s,spaCircuits:n,utilityCircuits:o,lights:l,environmental:c,diagnostics:d,freezeSensor:p}}_handlePoolSetpoint(e,t,a){const r=W(a,t,{min:40,max:104});this._poolSetpointDebouncer||(this._poolSetpointDebouncer=U((e,t)=>{this.hass.callService("climate","set_temperature",{entity_id:e,temperature:t})},1500)),this._poolSetpointDebouncer.call(e,r)}_renderPoolBody(t,a,r){if(0===t.length)return"";const i=t[0],s=i.state,n=s?.attributes||{},o=null!=n.current_temperature?Number(n.current_temperature):null,l=null!=n.temperature?Number(n.temperature):null,c=n.hvac_action||"off",d=(0,L.qW)(c,a),p="spa"===a?"SPA":"POOL",u="heating"===c,m="spa"===a?"thermal-warm":"thermal-cool";return e.qy`
+      <div class="pool-body-frame ${m}" style="--body-color:${d}" role="region"
         aria-label="${p}: ${null!=o?o+"°":"N/A"}, target ${l||"N/A"}°">
         <div class="pool-body-label" style="color:${d}">${p}</div>
         <div class="pool-body-temp" style="color:${d}">${null!=o?`${Math.round(o)}°`:"—"}</div>
@@ -3778,7 +4423,7 @@
               @click=${()=>this._handlePoolSetpoint(i.entity.entity_id,n,l+(r||1))}>+</button>
           </div>
         `:""}
-        ${m?e.qy`
+        ${u?e.qy`
           <div class="pool-heating-bar" style="--body-color:${d}"></div>
         `:""}
       </div>
@@ -3798,8 +4443,8 @@
       ${null!=s?e.qy`<span style="color:var(--lcars-ice)">POOL ${Math.round(s)}°</span>`:""}
       ${null!=n?e.qy`<span style="color:var(--lcars-butterscotch)"> SPA ${Math.round(n)}°</span>`:""}
       ${o?e.qy`<span style="color:var(--lcars-tomato)"> ❄ FREEZE</span>`:""}
-    `}renderContent(){const t=this._getAllEntities(),{pool:a,spa:r,chemistry:i,pumps:s,waterFeatures:n,spaCircuits:o,utilityCircuits:l,lights:c,environmental:d,freezeSensor:p}=this._partitionPoolEntities(t),m=i.length>0,u="on"===p?.state?.state;return e.qy`
-      ${u?e.qy`
+    `}renderContent(){const t=this._getAllEntities(),{pool:a,spa:r,chemistry:i,pumps:s,waterFeatures:n,spaCircuits:o,utilityCircuits:l,lights:c,environmental:d,freezeSensor:p}=this._partitionPoolEntities(t),u=i.length>0,m="on"===p?.state?.state;return e.qy`
+      ${m?e.qy`
         <div class="freeze-banner" role="alert">
           <span class="freeze-icon">❄</span> FREEZE PROTECT ACTIVE
         </div>
@@ -3807,9 +4452,9 @@
         <div class="freeze-nominal">FREEZE: NOMINAL</div>
       `:""}
 
-      <div class="pool-content ${m?"":"pool-no-chem"} ${u?"freeze-active":""}">
+      <div class="pool-content ${u?"":"pool-no-chem"} ${m?"freeze-active":""}">
 
-        ${m?e.qy`
+        ${u?e.qy`
           <div class="pool-chemistry" role="list" aria-label="Water chemistry">
             ${i.map(({entity:t,state:a,_linked:r})=>{const i=this._friendlyName(a,t),s=parseFloat(a.state),n=a.attributes?.unit_of_measurement||"",o=this._getChemThresholds(t.entity_id),l=this._getChemRange(t.entity_id),c=r;return e.qy`
                 <div class="chem-reading" tabindex="0" role="listitem"
@@ -3878,7 +4523,7 @@
           </div>
         `:""}
       </div>
-    `}});const fe=e.AH`
+    `}});const we=e.AH`
   :host { display: block; }
 
   .lcars-device-panel {
@@ -3970,7 +4615,7 @@
   .forecast-precip { color: var(--lcars-gray); font-size: 0.75rem; }
 
   .panel-pip-strip { position: absolute; bottom: 4px; right: 4px; width: 2rem; height: 3px; background: var(--panel-frame-color); border-radius: 1.5px; opacity: 0.3; }
-`;customElements.get("lcars-weather-panel")||customElements.define("lcars-weather-panel",class extends ne{get panelType(){return"weather"}get defaultPanelTitle(){return"Weather"}get frameColor(){const e=this.group?.entities?.find(e=>"weather"===e.domain)?.state;return(0,L.JQ)(e?.state||"unavailable")}static get styles(){return[...super.styles,G,X,fe]}_weatherForecastCache={};_getWeatherGlyph(e){return{sunny:"☀","clear-night":"●",partlycloudy:"◑",cloudy:"◔",fog:"≡",rainy:"▽",pouring:"▼",snowy:"✦","snowy-rainy":"◆",hail:"◆",windy:"〰","windy-variant":"〰",lightning:"⚡","lightning-rainy":"⚡",exceptional:"⚠"}[e]||"○"}_getWindCardinal(e){return null==e?"":["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"][Math.round(e/22.5)%16]}_partitionWeatherEntities(e){const t=[],a=[],r=[],i=[],s=[],n=[];for(const o of e){if("weather"===o.domain){t.push(o);continue}const e=o.entity.entity_id,l=o.state?.attributes?.device_class||"";/lightning/i.test(e)?r.push(o):"precipitation"===l||"precipitation_intensity"===l||/rain/i.test(e)?i.push(o):"wind_speed"===l||/wind/i.test(e)?s.push(o):k.has(o.domain)?a.push(o):n.push(o)}return{weather:t,sensors:a,lightning:r,precipitation:i,wind:s,diagnostics:n}}_renderWindCompass(t,a,r){if(null==t)return"";const i=this._getWindCardinal(t);return e.qy`
+`;customElements.get("lcars-weather-panel")||customElements.define("lcars-weather-panel",class extends oe{get panelType(){return"weather"}get defaultPanelTitle(){return"Weather"}get frameColor(){const e=this.group?.entities?.find(e=>"weather"===e.domain)?.state;return(0,L.JQ)(e?.state||"unavailable")}static get styles(){return[...super.styles,X,Y,we]}_weatherForecastCache={};_getWeatherGlyph(e){return{sunny:"☀","clear-night":"●",partlycloudy:"◑",cloudy:"◔",fog:"≡",rainy:"▽",pouring:"▼",snowy:"✦","snowy-rainy":"◆",hail:"◆",windy:"〰","windy-variant":"〰",lightning:"⚡","lightning-rainy":"⚡",exceptional:"⚠"}[e]||"○"}_getWindCardinal(e){return null==e?"":["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"][Math.round(e/22.5)%16]}_partitionWeatherEntities(e){const t=[],a=[],r=[],i=[],s=[],n=[];for(const o of e){if("weather"===o.domain){t.push(o);continue}const e=o.entity.entity_id,l=o.state?.attributes?.device_class||"";/lightning/i.test(e)?r.push(o):"precipitation"===l||"precipitation_intensity"===l||/rain/i.test(e)?i.push(o):"wind_speed"===l||/wind/i.test(e)?s.push(o):k.has(o.domain)?a.push(o):n.push(o)}return{weather:t,sensors:a,lightning:r,precipitation:i,wind:s,diagnostics:n}}_renderWindCompass(t,a,r){if(null==t)return"";const i=this._getWindCardinal(t);return e.qy`
       <div class="weather-wind-compass" role="img"
         aria-label="Wind: ${a||"?"} ${r||"mph"} from ${i}">
         <svg viewBox="0 0 80 80" class="wind-svg">
@@ -3986,31 +4631,31 @@
         </svg>
         <div class="wind-reading">${a||"—"} ${r||""} ${i}</div>
       </div>
-    `}async _loadWeatherForecast(e){if(this._weatherForecastCache[e])return;const t=await j(this.hass,e,"daily");t.length>0&&(this._weatherForecastCache[e]=t,this.requestUpdate())}_renderForecastStrip(t){if(!t?.length)return"";const a=t.slice(0,7),r=a.map(e=>e.temperature).filter(Number.isFinite),i=a.map(e=>e.templow).filter(Number.isFinite),s=Math.min(...i,...r),n=Math.max(...r,...i)-s||1;return e.qy`
+    `}async _loadWeatherForecast(e){if(this._weatherForecastCache[e])return;const t=await G(this.hass,e,"daily");t.length>0&&(this._weatherForecastCache[e]=t,this.requestUpdate())}_renderForecastStrip(t){if(!t?.length)return"";const a=t.slice(0,7),r=a.map(e=>e.temperature).filter(Number.isFinite),i=a.map(e=>e.templow).filter(Number.isFinite),s=Math.min(...i,...r),n=Math.max(...r,...i)-s||1;return e.qy`
       <div class="weather-forecast" role="list" aria-label="7-day forecast">
-        ${a.map(t=>{const a=new Date(t.datetime).toLocaleDateString("en",{weekday:"short"}).toUpperCase(),r=t.temperature,i=t.templow,o=t.condition,l=this._getWeatherGlyph(o),c=(0,L.JQ)(o),d=t.precipitation_probability,p=(i-s)/n*100,m=(r-i||1)/n*100;return e.qy`
+        ${a.map(t=>{const a=new Date(t.datetime).toLocaleDateString("en",{weekday:"short"}).toUpperCase(),r=t.temperature,i=t.templow,o=t.condition,l=this._getWeatherGlyph(o),c=(0,L.JQ)(o),d=t.precipitation_probability,p=(i-s)/n*100,u=(r-i||1)/n*100;return e.qy`
             <div class="forecast-tile" role="listitem" tabindex="0"
               aria-label="${a}: ${o}, high ${r}°, low ${i}°${null!=d?`, ${d}% precipitation`:""}">
               <span class="forecast-day">${a}</span>
               <span class="forecast-glyph" style="color:${c}">${l}</span>
               <span class="forecast-hi">${null!=r?Math.round(r):"—"}°</span>
               <div class="forecast-range-bar">
-                <div class="forecast-range-fill" style="left:${p.toFixed(1)}%;width:${m.toFixed(1)}%"></div>
+                <div class="forecast-range-fill" style="left:${p.toFixed(1)}%;width:${u.toFixed(1)}%"></div>
               </div>
               <span class="forecast-lo">${null!=i?Math.round(i):"—"}°</span>
               ${null!=d?e.qy`<span class="forecast-precip" style="color:${d>50?"var(--lcars-sky)":"var(--lcars-gray)"}">${d}%</span>`:""}
             </div>
           `})}
       </div>
-    `}renderBadge(){const t=this.group?.entities?.find(e=>"weather"===e.domain)?.state,a=t?.state||"unavailable",r=(0,L.JQ)(a),i=this._getWeatherGlyph(a);return e.qy`<span style="color:${r}">${i} ${a.toUpperCase().replace(/[_-]/g," ")}</span>`}renderContent(){const{weather:t,sensors:a,lightning:r,precipitation:i}=this._partitionWeatherEntities(this.group.entities),s=this._shortDeviceName(this.group.device)||"Weather";if(0===t.length)return e.qy``;const n=t[0],o=n.state,l=o?.attributes||{},c=o?.state||"unavailable",d=(0,L.JQ)(c),p=this._getWeatherGlyph(c),m=l.temperature,u=l.humidity,h=l.pressure,v=l.wind_speed,f=l.wind_bearing,g=l.wind_speed_unit||"mph";this._loadWeatherForecast(n.entity.entity_id);const b=this._weatherForecastCache[n.entity.entity_id];return e.qy`
+    `}renderBadge(){const t=this.group?.entities?.find(e=>"weather"===e.domain)?.state,a=t?.state||"unavailable",r=(0,L.JQ)(a),i=this._getWeatherGlyph(a);return e.qy`<span style="color:${r}">${i} ${a.toUpperCase().replace(/[_-]/g," ")}</span>`}renderContent(){const{weather:t,sensors:a,lightning:r,precipitation:i}=this._partitionWeatherEntities(this.group.entities),s=this._shortDeviceName(this.group.device)||"Weather";if(0===t.length)return e.qy``;const n=t[0],o=n.state,l=o?.attributes||{},c=o?.state||"unavailable",d=(0,L.JQ)(c),p=this._getWeatherGlyph(c),u=l.temperature,m=l.humidity,h=l.pressure,v=l.wind_speed,f=l.wind_bearing,g=l.wind_speed_unit||"mph";this._loadWeatherForecast(n.entity.entity_id);const b=this._weatherForecastCache[n.entity.entity_id];return e.qy`
       <div class="weather-content">
 
         <div class="weather-sensors" role="list" aria-label="${s} readings">
-          ${null!=u?e.qy`
-            <div class="device-sensor-line" role="listitem" aria-label="Humidity: ${u}%">
+          ${null!=m?e.qy`
+            <div class="device-sensor-line" role="listitem" aria-label="Humidity: ${m}%">
               <div class="sensor-indicator" style="background:var(--lcars-ice)"></div>
               <span class="sensor-label">Humidity</span>
-              <span class="sensor-state-value" style="color:var(--lcars-ice)">${u}%</span>
+              <span class="sensor-state-value" style="color:var(--lcars-ice)">${m}%</span>
             </div>
           `:""}
           ${null!=h?e.qy`
@@ -4051,13 +4696,13 @@
         </div>
 
         <div class="weather-viewscreen" role="img"
-          aria-label="${c}: ${null!=m?m+"°":"N/A"}">
+          aria-label="${c}: ${null!=u?u+"°":"N/A"}">
           <svg class="weather-display" viewBox="0 0 200 160">
             <text x="100" y="35" text-anchor="middle" fill="${d}"
               font-family="var(--lcars-font)" font-size="28">${p}</text>
             <text x="100" y="85" text-anchor="middle" fill="${d}"
               font-family="var(--lcars-font)" font-size="48" font-weight="bold">
-              ${null!=m?`${Math.round(m)}°`:"—"}
+              ${null!=u?`${Math.round(u)}°`:"—"}
             </text>
             <text x="100" y="108" text-anchor="middle" fill="var(--lcars-data-accent)"
               font-family="var(--lcars-font)" font-size="12">
@@ -4069,7 +4714,7 @@
 
         ${this._renderForecastStrip(b)}
       </div>
-    `}});const ge=e.AH`
+    `}});const _e=e.AH`
   :host { display: block; }
 
   /* ═══ Legacy single-device power panel ═══ */
@@ -4328,14 +4973,14 @@
     .power-circuit-tile { animation: none !important; opacity: 1; }
     .power-circuit-tile, .power-device-row { transition-duration: 0.01ms !important; }
   }
-`;customElements.get("lcars-power-panel")||customElements.define("lcars-power-panel",class extends ne{static get properties(){return{...super.properties,collection:{type:Object},powerGroups:{type:Array}}}get panelType(){return"power"}get defaultPanelTitle(){return"Power Systems"}get frameColor(){const e=this.config?.power_thresholds||{};if(this.collection||this.powerGroups){const t=this.collection||this._buildPowerCollection(this.powerGroups);return(0,L.XI)(t.totalWatts,e)}if(this.group){const t=this._getPrimaryPower(this.group);return(0,L.XI)(t,e)}return"var(--lcars-orange)"}static get styles(){return[...super.styles,G,X,ge]}_powerToggleLimiter=H(10,1e4);_expandedPowerSections=new Set;_formatWatts(e){if(null==e)return"—";const t=Number(e);return Number.isFinite(t)?Math.abs(t)>=1e4?`${(t/1e3).toFixed(1)} kW`:`${Math.round(t)} W`:"—"}_formatEnergy(e){if(null==e)return"—";const t=Number(e);return Number.isFinite(t)?`${t.toFixed(1)} kWh`:"—"}_getPowerIndicator(e){if(null==e||isNaN(e))return"✕";const t=Math.abs(Number(e));return t<=0?"○":t<=500?"●":t<=1500?"●━":t<=3e3?"●━━":"●━━━"}_partitionPowerEntities(e){const t=[],a=[],r=[],i=[],s=[],n=[];for(const o of e){if(o.disabled_by||o.hidden_by)continue;const e=o.entity?.entity_id?.split(".")[0]||o.domain,l=o.state?.attributes?.device_class||"",c=o.state?.attributes?.unit_of_measurement||"";"switch"===e?t.push(o):"power"!==l||"W"!==c&&"kW"!==c?"energy"!==l||"kWh"!==c&&"Wh"!==c?"voltage"===l&&"V"===c?i.push(o):"current"===l&&"A"===c?s.push(o):n.push(o):r.push(o):a.push(o)}return{switches:t,powerSensors:a,energySensors:r,voltageSensors:i,currentSensors:s,diagnostics:n}}_classifyPowerDevice(e,t){if(!e.some(e=>{const t=e.state?.attributes?.device_class||"";return"sensor"===e.domain&&("power"===t||"energy"===t||"voltage"===t||"current"===t)}))return null;const a=(t?.manufacturer||"").toLowerCase(),r=(t?.model||"").toLowerCase();return a.includes("emporia")||r.includes("vue")?"vue":e.filter(e=>"switch"===e.domain).length>=4||r.includes("hs300")||r.includes("power strip")?"strip":e.some(e=>"switch"===e.domain)?"plug":"vue"}_getPrimaryPower(e){for(const t of e.entities){const e=t.state?.attributes?.device_class||"",a=t.state?.attributes?.unit_of_measurement||"";if("power"===e&&("W"===a||"kW"===a)){const e=parseFloat(t.state?.state);if(!isNaN(e))return"kW"===a?1e3*e:e}}return null}_getPrimaryEnergy(e){for(const t of e.entities){const e=t.state?.attributes?.device_class||"",a=t.state?.attributes?.unit_of_measurement||"";if("energy"===e&&("kWh"===a||"Wh"===a)){const e=parseFloat(t.state?.state);if(!isNaN(e))return"Wh"===a?e/1e3:e}}return null}_detect240VPairs(e){const t=/^(.+?)[\s_]*(l[12]|line[\s_]*[12])$/i,a=new Map,r=[];for(const i of e){const e=(this._shortDeviceName(i.device)||"").match(t);if(e){const t=e[1].trim();a.has(t)||a.set(t,[]),a.get(t).push(i)}else r.push(i)}const i=[...r];for(const[e,t]of a)if(2===t.length){const a=t.reduce((e,t)=>e+(this._getPrimaryPower(t)||0),0),r=t.reduce((e,t)=>e+(this._getPrimaryEnergy(t)||0),0);i.push({device:{...t[0].device,name:e},entities:t.flatMap(e=>e.entities),is240V:!0,combinedWatts:a,combinedEnergy:r})}else i.push(...t);return i}_sortCircuits(e){return[...e].sort((e,t)=>{const a=null!=e.combinedWatts?e.combinedWatts:this._getPrimaryPower(e)||0,r=null!=t.combinedWatts?t.combinedWatts:this._getPrimaryPower(t)||0;if(r!==a)return r-a;const i=(e.device?.name||"").toLowerCase(),s=(t.device?.name||"").toLowerCase();return i.localeCompare(s)})}_groupPowerStrips(e){const t=new Map,a=[];for(const a of e)"strip"===a.subType&&t.set(a.device.id,{parent:a,children:[]});for(const r of e)if("strip"!==r.subType){if(r.device?.via_device_id){const e=t.get(r.device.via_device_id);if(e){e.children.push(r);continue}}a.push(r)}return{strips:t,standalone:a}}_renderPowerArc(e,a){if(!e.length||!a||a<=0)return"";const r=this.config?.power_thresholds||{},i=e.map(e=>({name:this._shortDeviceName(e.device)||"Unknown",watts:null!=e.combinedWatts?e.combinedWatts:this._getPrimaryPower(e)||0})).filter(e=>e.watts>0).sort((e,t)=>t.watts-e.watts);if(0===i.length)return"";const s=i.slice(0,5),n=i.slice(5).reduce((e,t)=>e+t.watts,0);n>0&&s.push({name:"OTHER",watts:n});const o=120,l=100,c=80,d=Math.PI,p=Math.PI;let m=d;const u=s.map(e=>{const t=e.watts/a,i=Math.max(t*p-.02,.01),s=m-i,n=(0,L.XI)(e.watts,r),d=o+c*Math.cos(m),u=l-c*Math.sin(m),h=o+c*Math.cos(s),v=l-c*Math.sin(s),f=i>Math.PI?1:0,g=`M ${d.toFixed(1)},${u.toFixed(1)} A 80,80 0 ${f},1 ${h.toFixed(1)},${v.toFixed(1)}`;return m=s-.02,{path:g,color:n,name:e.name,watts:e.watts,fraction:t}});return t.qy`
+`;customElements.get("lcars-power-panel")||customElements.define("lcars-power-panel",class extends oe{static get properties(){return{...super.properties,collection:{type:Object},powerGroups:{type:Array}}}get panelType(){return"power"}get defaultPanelTitle(){return"Power Systems"}get frameColor(){const e=this.config?.power_thresholds||{};if(this.collection||this.powerGroups){const t=this.collection||this._buildPowerCollection(this.powerGroups);return(0,L.XI)(t.totalWatts,e)}if(this.group){const t=this._getPrimaryPower(this.group);return(0,L.XI)(t,e)}return"var(--lcars-orange)"}static get styles(){return[...super.styles,X,Y,_e]}_powerToggleLimiter=H(10,1e4);_expandedPowerSections=new Set;_formatWatts(e){if(null==e)return"—";const t=Number(e);return Number.isFinite(t)?Math.abs(t)>=1e4?`${(t/1e3).toFixed(1)} kW`:`${Math.round(t)} W`:"—"}_formatEnergy(e){if(null==e)return"—";const t=Number(e);return Number.isFinite(t)?`${t.toFixed(1)} kWh`:"—"}_getPowerIndicator(e){if(null==e||isNaN(e))return"✕";const t=Math.abs(Number(e));return t<=0?"○":t<=500?"●":t<=1500?"●━":t<=3e3?"●━━":"●━━━"}_partitionPowerEntities(e){const t=[],a=[],r=[],i=[],s=[],n=[];for(const o of e){if(o.disabled_by||o.hidden_by)continue;const e=o.entity?.entity_id?.split(".")[0]||o.domain,l=o.state?.attributes?.device_class||"",c=o.state?.attributes?.unit_of_measurement||"";"switch"===e?t.push(o):"power"!==l||"W"!==c&&"kW"!==c?"energy"!==l||"kWh"!==c&&"Wh"!==c?"voltage"===l&&"V"===c?i.push(o):"current"===l&&"A"===c?s.push(o):n.push(o):r.push(o):a.push(o)}return{switches:t,powerSensors:a,energySensors:r,voltageSensors:i,currentSensors:s,diagnostics:n}}_classifyPowerDevice(e,t){if(!e.some(e=>{const t=e.state?.attributes?.device_class||"";return"sensor"===e.domain&&("power"===t||"energy"===t||"voltage"===t||"current"===t)}))return null;const a=(t?.manufacturer||"").toLowerCase(),r=(t?.model||"").toLowerCase();return a.includes("emporia")||r.includes("vue")?"vue":e.filter(e=>"switch"===e.domain).length>=4||r.includes("hs300")||r.includes("power strip")?"strip":e.some(e=>"switch"===e.domain)?"plug":"vue"}_getPrimaryPower(e){for(const t of e.entities){const e=t.state?.attributes?.device_class||"",a=t.state?.attributes?.unit_of_measurement||"";if("power"===e&&("W"===a||"kW"===a)){const e=parseFloat(t.state?.state);if(!isNaN(e))return"kW"===a?1e3*e:e}}return null}_getPrimaryEnergy(e){for(const t of e.entities){const e=t.state?.attributes?.device_class||"",a=t.state?.attributes?.unit_of_measurement||"";if("energy"===e&&("kWh"===a||"Wh"===a)){const e=parseFloat(t.state?.state);if(!isNaN(e))return"Wh"===a?e/1e3:e}}return null}_detect240VPairs(e){const t=/^(.+?)[\s_]*(l[12]|line[\s_]*[12])$/i,a=new Map,r=[];for(const i of e){const e=(this._shortDeviceName(i.device)||"").match(t);if(e){const t=e[1].trim();a.has(t)||a.set(t,[]),a.get(t).push(i)}else r.push(i)}const i=[...r];for(const[e,t]of a)if(2===t.length){const a=t.reduce((e,t)=>e+(this._getPrimaryPower(t)||0),0),r=t.reduce((e,t)=>e+(this._getPrimaryEnergy(t)||0),0);i.push({device:{...t[0].device,name:e},entities:t.flatMap(e=>e.entities),is240V:!0,combinedWatts:a,combinedEnergy:r})}else i.push(...t);return i}_sortCircuits(e){return[...e].sort((e,t)=>{const a=null!=e.combinedWatts?e.combinedWatts:this._getPrimaryPower(e)||0,r=null!=t.combinedWatts?t.combinedWatts:this._getPrimaryPower(t)||0;if(r!==a)return r-a;const i=(e.device?.name||"").toLowerCase(),s=(t.device?.name||"").toLowerCase();return i.localeCompare(s)})}_groupPowerStrips(e){const t=new Map,a=[];for(const a of e)"strip"===a.subType&&t.set(a.device.id,{parent:a,children:[]});for(const r of e)if("strip"!==r.subType){if(r.device?.via_device_id){const e=t.get(r.device.via_device_id);if(e){e.children.push(r);continue}}a.push(r)}return{strips:t,standalone:a}}_renderPowerArc(e,a){if(!e.length||!a||a<=0)return"";const r=this.config?.power_thresholds||{},i=e.map(e=>({name:this._shortDeviceName(e.device)||"Unknown",watts:null!=e.combinedWatts?e.combinedWatts:this._getPrimaryPower(e)||0})).filter(e=>e.watts>0).sort((e,t)=>t.watts-e.watts);if(0===i.length)return"";const s=i.slice(0,5),n=i.slice(5).reduce((e,t)=>e+t.watts,0);n>0&&s.push({name:"OTHER",watts:n});const o=120,l=100,c=80,d=Math.PI,p=Math.PI;let u=d;const m=s.map(e=>{const t=e.watts/a,i=Math.max(t*p-.02,.01),s=u-i,n=(0,L.XI)(e.watts,r),d=o+c*Math.cos(u),m=l-c*Math.sin(u),h=o+c*Math.cos(s),v=l-c*Math.sin(s),f=i>Math.PI?1:0,g=`M ${d.toFixed(1)},${m.toFixed(1)} A 80,80 0 ${f},1 ${h.toFixed(1)},${v.toFixed(1)}`;return u=s-.02,{path:g,color:n,name:e.name,watts:e.watts,fraction:t}});return t.qy`
       <div class="power-arc-area">
         <svg class="power-distribution-arc" viewBox="0 0 240 120"
           role="img" aria-label="Power distribution: ${this._formatWatts(a)} total">
           <path d="M ${40},${l} A ${c},${c} 0 1,1 ${200},${l}"
             fill="none" stroke="var(--lcars-gray)" stroke-width="10"
             stroke-linecap="butt" opacity="0.15" />
-          ${u.map(e=>t.JW`
+          ${m.map(e=>t.JW`
             <path d="${e.path}" fill="none" stroke="${e.color}"
               stroke-width="10" stroke-linecap="butt">
               <title>${e.name}: ${Math.round(e.watts)}W (${Math.round(100*e.fraction)}%)</title>
@@ -4393,7 +5038,7 @@
         @keydown=${t=>{"Enter"!==t.key&&" "!==t.key||(t.preventDefault(),this._handleEntityClick(e))}}>
         ${r}
       </span>
-    `:r}_renderCircuitTile(e){const a=null!=e.combinedWatts?e.combinedWatts:this._getPrimaryPower(e),r=null!=e.combinedEnergy?e.combinedEnergy:this._getPrimaryEnergy(e),s=this.config?.power_thresholds||{},n=(0,L.XI)(a,s),o=(0,L.IO)(a,s),l=this._getPowerIndicator(a),c=this._shortDeviceName(e.device)||"Unknown",d="function"==typeof HTMLElement.prototype.showPopover,{powerSensors:p,energySensors:m}=this._partitionPowerEntities(e.entities||[]),u=p[0]?.entity?.entity_id,h=m[0]?.entity?.entity_id;return t.qy`
+    `:r}_renderCircuitTile(e){const a=null!=e.combinedWatts?e.combinedWatts:this._getPrimaryPower(e),r=null!=e.combinedEnergy?e.combinedEnergy:this._getPrimaryEnergy(e),s=this.config?.power_thresholds||{},n=(0,L.XI)(a,s),o=(0,L.IO)(a,s),l=this._getPowerIndicator(a),c=this._shortDeviceName(e.device)||"Unknown",d="function"==typeof HTMLElement.prototype.showPopover,{powerSensors:p,energySensors:u}=this._partitionPowerEntities(e.entities||[]),m=p[0]?.entity?.entity_id,h=u[0]?.entity?.entity_id;return t.qy`
       <div class="power-circuit-tile" style="--circuit-color:${n}" role="listitem" tabindex="0"
         aria-label="${c}: ${null!=a?Math.round(a)+" watts, "+o.toLowerCase():"unavailable"}${null!=r?", "+r.toFixed(1)+" kilowatt hours today":""}"
         @click=${()=>d?this._showCircuitPopover(e):(0,i.Hv)(e.entities?.[0]?.entity?.entity_id)}
@@ -4403,18 +5048,18 @@
           <span>${c}</span>
         </div>
         <div class="power-circuit-value-row">
-          ${this._renderClickableValue(u,`View ${c} power: ${null!=a?Math.round(a)+" watts":"unavailable"}`,t.qy`<span class="power-circuit-watts">${this._formatWatts(a)}</span>`)}
+          ${this._renderClickableValue(m,`View ${c} power: ${null!=a?Math.round(a)+" watts":"unavailable"}`,t.qy`<span class="power-circuit-watts">${this._formatWatts(a)}</span>`)}
         </div>
         ${null!=r?this._renderClickableValue(h,`View ${c} energy: ${r.toFixed(1)} kWh today`,t.qy`<span class="power-circuit-energy">${this._formatEnergy(r)} TODAY</span>`):""}
       </div>
-    `}_renderPowerDeviceRow(e){const{switches:a,powerSensors:r,energySensors:i}=this._partitionPowerEntities(e.entities),s=a[0],n=r[0]?parseFloat(r[0].state?.state)||0:null,o=i[0]&&parseFloat(i[0].state?.state)||null,l=this.config?.power_thresholds||{},c=(0,L.XI)(n,l),d=this._shortDeviceName(e.device)||"Unknown",p="on"===s?.state?.state,m=r[0]?.entity?.entity_id,u=i[0]?.entity?.entity_id;return t.qy`
+    `}_renderPowerDeviceRow(e){const{switches:a,powerSensors:r,energySensors:i}=this._partitionPowerEntities(e.entities),s=a[0],n=r[0]?parseFloat(r[0].state?.state)||0:null,o=i[0]&&parseFloat(i[0].state?.state)||null,l=this.config?.power_thresholds||{},c=(0,L.XI)(n,l),d=this._shortDeviceName(e.device)||"Unknown",p="on"===s?.state?.state,u=r[0]?.entity?.entity_id,m=i[0]?.entity?.entity_id;return t.qy`
       <div class="power-device-row" role="listitem" tabindex="0" style="--circuit-color:${c}"
         aria-label="${d}: ${s?(p?"on":"off")+", ":""}${null!=n?Math.round(n)+" watts":"unknown"}">
         ${s?this._renderTrackToggle(p,`Toggle ${d}`,()=>{this._powerToggleLimiter.allow()&&this._handleToggle(s.entity.entity_id)}):""}
         <span class="power-device-name">${d}</span>
         <div class="power-device-stats">
-          ${this._renderClickableValue(m,`View ${d} power: ${null!=n?Math.round(n)+" watts":"unknown"}`,t.qy`<span class="power-device-watts" style="color:${c}">${this._formatWatts(n)}</span>`)}
-          ${null!=o?this._renderClickableValue(u,`View ${d} energy: ${o.toFixed(1)} kWh`,t.qy`<span class="power-device-energy">${this._formatEnergy(o)}</span>`):""}
+          ${this._renderClickableValue(u,`View ${d} power: ${null!=n?Math.round(n)+" watts":"unknown"}`,t.qy`<span class="power-device-watts" style="color:${c}">${this._formatWatts(n)}</span>`)}
+          ${null!=o?this._renderClickableValue(m,`View ${d} energy: ${o.toFixed(1)} kWh`,t.qy`<span class="power-device-energy">${this._formatEnergy(o)}</span>`):""}
         </div>
       </div>
     `}_renderPowerStrip(e,a){const r=this._shortDeviceName(e.device)||"Power Strip",{powerSensors:i,switches:s}=this._partitionPowerEntities(e.entities),n=i.reduce((e,t)=>e+(parseFloat(t.state?.state)||0),0),o=this.config?.power_thresholds||{},l=(0,L.XI)(n,o),c=s[0];return t.qy`
@@ -4429,19 +5074,19 @@
           ${a.map(e=>this._renderStripChild(e,s))}
         </div>
       </div>
-    `}_renderStripChild(e,a){const r=this._shortDeviceName(e.device)||"Outlet",{switches:i,powerSensors:s,energySensors:n}=this._partitionPowerEntities(e.entities),o=s[0]&&parseFloat(s[0].state?.state)||0,l=n[0]&&parseFloat(n[0].state?.state)||null,c=this.config?.power_thresholds||{},d=(0,L.XI)(o,c),p=s[0]?.entity?.entity_id,m=n[0]?.entity?.entity_id;let u=i[0];if(!u&&a?.length>0){const t=(e.device?.name||"").toLowerCase().replace(/[\s\-_]+/g,"");u=a.find(e=>{const a=(e.entity?.entity_id||"").toLowerCase().replace(/[\s\-_]+/g,""),r=(e.state?.attributes?.friendly_name||"").toLowerCase().replace(/[\s\-_]+/g,"");return a.includes(t)||r.includes(t)})}const h="on"===u?.state?.state;return t.qy`
+    `}_renderStripChild(e,a){const r=this._shortDeviceName(e.device)||"Outlet",{switches:i,powerSensors:s,energySensors:n}=this._partitionPowerEntities(e.entities),o=s[0]&&parseFloat(s[0].state?.state)||0,l=n[0]&&parseFloat(n[0].state?.state)||null,c=this.config?.power_thresholds||{},d=(0,L.XI)(o,c),p=s[0]?.entity?.entity_id,u=n[0]?.entity?.entity_id;let m=i[0];if(!m&&a?.length>0){const t=(e.device?.name||"").toLowerCase().replace(/[\s\-_]+/g,"");m=a.find(e=>{const a=(e.entity?.entity_id||"").toLowerCase().replace(/[\s\-_]+/g,""),r=(e.state?.attributes?.friendly_name||"").toLowerCase().replace(/[\s\-_]+/g,"");return a.includes(t)||r.includes(t)})}const h="on"===m?.state?.state;return t.qy`
       <div class="power-strip-child-tile" style="--tile-power-color:${d}"
         role="listitem" aria-label="${r}: ${h?"on":"off"}, ${Math.round(o)} watts">
         <span class="circuit-name">${r}</span>
         <div class="strip-child-controls">
-          ${u?this._renderTrackToggle(h,`Toggle ${r}`,()=>{this._powerToggleLimiter.allow()&&this._handleToggle(u.entity.entity_id)}):""}
+          ${m?this._renderTrackToggle(h,`Toggle ${r}`,()=>{this._powerToggleLimiter.allow()&&this._handleToggle(m.entity.entity_id)}):""}
           ${this._renderClickableValue(p,`View ${r} power: ${Math.round(o)} watts`,t.qy`
             <span class="circuit-watts" style="color:${d}">
               <span class="power-dot" ?data-zero=${0===o} aria-hidden="true"></span>
               ${this._formatWatts(o)}
             </span>
           `)}
-          ${null!=l?this._renderClickableValue(m,`View ${r} energy: ${l.toFixed(1)} kWh`,t.qy`<span class="power-device-energy">${this._formatEnergy(l)}</span>`):""}
+          ${null!=l?this._renderClickableValue(u,`View ${r} energy: ${l.toFixed(1)} kWh`,t.qy`<span class="power-device-energy">${this._formatEnergy(l)}</span>`):""}
         </div>
       </div>
     `}_renderPowerSummaryCard(e,a,r,i,s){const n=this.config?.power_thresholds||{},o="TOTAL USAGE"===e?(0,L.XI)(a,n):i;return t.qy`
@@ -4455,7 +5100,7 @@
         <span class="power-summary-value" style="color:${o}">${this._formatWatts(a)}</span>
         ${null!=r?t.qy`<span class="power-summary-secondary">${this._formatEnergy(r)} TODAY</span>`:""}
       </div>
-    `}_buildPowerCollection(e){const t=[],a=[],r=[];for(const i of e){const e=this._classifyPowerDevice(i.entities||[],i.device);"vue"===e?t.push(i):"strip"===e?r.push(i):a.push(i)}const i=new Set(r.map(e=>e.device?.id).filter(Boolean)),s=[],n=[];for(const e of r)e.device?.via_device_id&&i.has(e.device.via_device_id)?n.push(e):s.push({...e,subType:"strip"});const{strips:o,standalone:l}=this._groupPowerStrips([...s,...n,...a]),c=[];for(const[,e]of o)c.push({parent:e.parent,children:e.children||[]});const d=l,p=this._sortCircuits(this._detect240VPairs(t)),m=new Set;for(const{children:e}of c)for(const t of e)t.device?.id&&m.add(t.device.id);const u=/^(balance|total|main[s]?|net|whole[\s_-]?home)$/i,h=new Set;for(const e of p){const t=this._shortDeviceName(e.device)||"";u.test(t.trim())&&e.device?.id&&h.add(e.device.id)}const v=new Set;for(const t of e){const a=(t.device?.model||"").toLowerCase(),r=(t.device?.manufacturer||"").toLowerCase();(t.entities?.some(e=>"battery"===e.state?.attributes?.device_class||"sensor"===e.domain&&"battery"===(e.state?.attributes?.device_class||""))||a.includes("ups")||r.includes("ups")||r.includes("cyberpower")||r.includes("apc")||r.includes("tripp"))&&t.device?.id&&(e.some(e=>e!==t&&e.device?.via_device_id===t.device.id)&&v.add(t.device.id))}let f=0,g=0;for(const t of e){const e=t.device?.id;if(e&&h.has(e))continue;if(e&&v.has(e))continue;if(e&&m.has(e))continue;const a=this._getPrimaryPower(t),r=this._getPrimaryEnergy(t);null!=a&&(f+=a),null!=r&&(g+=r)}return{circuits:p,plugs:d,strips:c,totalWatts:f,totalEnergy:g||null,deviceCount:e.length}}_renderConsolidatedPowerArc(e){const t=[];for(const a of e.circuits)t.push({device:a.device,entities:a.entities,combinedWatts:null!=a.combinedWatts?a.combinedWatts:this._getPrimaryPower(a),combinedEnergy:a.combinedEnergy});for(const a of e.plugs)t.push({device:a.device,entities:a.entities,combinedWatts:this._getPrimaryPower(a)});for(const{parent:a}of e.strips)t.push({device:a.device,entities:a.entities,combinedWatts:this._getPrimaryPower(a)});return this._renderPowerArc(t,e.totalWatts)}renderBadge(){if(this.collection||this.powerGroups){const e=this.collection||this._buildPowerCollection(this.powerGroups),a=this.config?.power_thresholds||{},r=(0,L.XI)(e.totalWatts,a);return t.qy`<span style="color:${r}">${this._formatWatts(e.totalWatts)}</span>`}if(this.group){const e=this._getPrimaryPower(this.group),a=this.config?.power_thresholds||{},r=(0,L.XI)(e,a);return t.qy`<span style="color:${r}">${this._formatWatts(e)}</span>`}return t.qy``}render(){if(this.collection||this.powerGroups){const e=this.collection||this._buildPowerCollection(this.powerGroups);return t.qy`
+    `}_buildPowerCollection(e){const t=[],a=[],r=[];for(const i of e){const e=this._classifyPowerDevice(i.entities||[],i.device);"vue"===e?t.push(i):"strip"===e?r.push(i):a.push(i)}const i=new Set(r.map(e=>e.device?.id).filter(Boolean)),s=[],n=[];for(const e of r)e.device?.via_device_id&&i.has(e.device.via_device_id)?n.push(e):s.push({...e,subType:"strip"});const{strips:o,standalone:l}=this._groupPowerStrips([...s,...n,...a]),c=[];for(const[,e]of o)c.push({parent:e.parent,children:e.children||[]});const d=l,p=this._sortCircuits(this._detect240VPairs(t)),u=new Set;for(const{children:e}of c)for(const t of e)t.device?.id&&u.add(t.device.id);const m=/^(balance|total|main[s]?|net|whole[\s_-]?home)$/i,h=new Set;for(const e of p){const t=this._shortDeviceName(e.device)||"";m.test(t.trim())&&e.device?.id&&h.add(e.device.id)}const v=new Set;for(const t of e){const a=(t.device?.model||"").toLowerCase(),r=(t.device?.manufacturer||"").toLowerCase();(t.entities?.some(e=>"battery"===e.state?.attributes?.device_class||"sensor"===e.domain&&"battery"===(e.state?.attributes?.device_class||""))||a.includes("ups")||r.includes("ups")||r.includes("cyberpower")||r.includes("apc")||r.includes("tripp"))&&t.device?.id&&(e.some(e=>e!==t&&e.device?.via_device_id===t.device.id)&&v.add(t.device.id))}let f=0,g=0;for(const t of e){const e=t.device?.id;if(e&&h.has(e))continue;if(e&&v.has(e))continue;if(e&&u.has(e))continue;const a=this._getPrimaryPower(t),r=this._getPrimaryEnergy(t);null!=a&&(f+=a),null!=r&&(g+=r)}return{circuits:p,plugs:d,strips:c,totalWatts:f,totalEnergy:g||null,deviceCount:e.length}}_renderConsolidatedPowerArc(e){const t=[];for(const a of e.circuits)t.push({device:a.device,entities:a.entities,combinedWatts:null!=a.combinedWatts?a.combinedWatts:this._getPrimaryPower(a),combinedEnergy:a.combinedEnergy});for(const a of e.plugs)t.push({device:a.device,entities:a.entities,combinedWatts:this._getPrimaryPower(a)});for(const{parent:a}of e.strips)t.push({device:a.device,entities:a.entities,combinedWatts:this._getPrimaryPower(a)});return this._renderPowerArc(t,e.totalWatts)}renderBadge(){if(this.collection||this.powerGroups){const e=this.collection||this._buildPowerCollection(this.powerGroups),a=this.config?.power_thresholds||{},r=(0,L.XI)(e.totalWatts,a);return t.qy`<span style="color:${r}">${this._formatWatts(e.totalWatts)}</span>`}if(this.group){const e=this._getPrimaryPower(this.group),a=this.config?.power_thresholds||{},r=(0,L.XI)(e,a);return t.qy`<span style="color:${r}">${this._formatWatts(e)}</span>`}return t.qy``}render(){if(this.collection||this.powerGroups){const e=this.collection||this._buildPowerCollection(this.powerGroups);return t.qy`
         <lcars-panel-frame
           panel-name="POWER SYSTEMS"
           panel-code="${this._generatePanelCode("power-consolidated")}"
@@ -4464,7 +5109,7 @@
           <span slot="badge">${this.renderBadge()}</span>
           ${this._renderConsolidatedPowerContent(e)}
         </lcars-panel-frame>
-      `}return this.group?super.render():t.qy``}renderContent(){return this._renderLegacyPowerContent(this.group)}_renderConsolidatedPowerContent(e){const{circuits:a,plugs:r,strips:i,totalWatts:s,totalEnergy:n}=e,o=this.config?.power_thresholds||{},l=(0,L.XI)(s,o),c=null!=s&&Math.abs(s)>(o.highMax||3e3),d=a.length+r.length+i.length,p=this._expandedPowerSections.has("circuits"),m=p?a:a.slice(0,12),u=a.length>12,h=this._expandedPowerSections.has("plugs"),v=h?r:r.slice(0,12),f=r.length>12;return t.qy`
+      `}return this.group?super.render():t.qy``}renderContent(){return this._renderLegacyPowerContent(this.group)}_renderConsolidatedPowerContent(e){const{circuits:a,plugs:r,strips:i,totalWatts:s,totalEnergy:n}=e,o=this.config?.power_thresholds||{},l=(0,L.XI)(s,o),c=null!=s&&Math.abs(s)>(o.highMax||3e3),d=a.length+r.length+i.length,p=this._expandedPowerSections.has("circuits"),u=p?a:a.slice(0,12),m=a.length>12,h=this._expandedPowerSections.has("plugs"),v=h?r:r.slice(0,12),f=r.length>12;return t.qy`
       <div class="consolidated-power-content" data-alert="${c?"critical":""}">
 
         <div class="power-summary" role="group" aria-label="Power Summary">
@@ -4481,9 +5126,9 @@
               <span class="power-section-label-count">${a.length}</span>
             </div>
             <div class="power-circuits" role="list">
-              ${m.map(e=>this._renderCircuitTile(e))}
+              ${u.map(e=>this._renderCircuitTile(e))}
             </div>
-            ${u&&!p?t.qy`
+            ${m&&!p?t.qy`
               <button class="power-show-all-pill" aria-label="Show all ${a.length} circuits"
                 @click=${()=>{this._expandedPowerSections.add("circuits"),this.requestUpdate()}}>
                 SHOW ALL (${a.length})
@@ -4529,10 +5174,10 @@
           <div class="popover-content"></div>
         </div>
       </div>
-    `}_renderLegacyPowerContent(e){const a=e.entities||[],r=(this._shortDeviceName(e.device),this.config?.power_thresholds||{}),i=this._classifyPowerDevice(a,e.device),{powerSensors:s,energySensors:n,switches:o}=this._partitionPowerEntities(a),l=this._getPrimaryPower(e),c=this._getPrimaryEnergy(e),d=(0,L.XI)(l,r),p=null!=l&&Math.abs(l)>(r.highMax||3e3),m="vue"===i?[e]:[],u=this._sortCircuits(this._detect240VPairs(m)),h=l||0,v=u.length>0,f="plug"===i,g="strip"===i;return t.qy`
+    `}_renderLegacyPowerContent(e){const a=e.entities||[],r=(this._shortDeviceName(e.device),this.config?.power_thresholds||{}),i=this._classifyPowerDevice(a,e.device),{powerSensors:s,energySensors:n,switches:o}=this._partitionPowerEntities(a),l=this._getPrimaryPower(e),c=this._getPrimaryEnergy(e),d=(0,L.XI)(l,r),p=null!=l&&Math.abs(l)>(r.highMax||3e3),u="vue"===i?[e]:[],m=this._sortCircuits(this._detect240VPairs(u)),h=l||0,v=m.length>0,f="plug"===i,g="strip"===i;return t.qy`
       <div class="power-content" data-alert="${p?"critical":""}">
 
-        ${v&&u.length>1?this._renderPowerArc(u,h):""}
+        ${v&&m.length>1?this._renderPowerArc(m,h):""}
 
         <div class="power-summary" role="group" aria-label="Power Summary">
           ${this._renderPowerSummaryCard("TOTAL USAGE",h,c,d,"mdi:sigma")}
@@ -4543,10 +5188,10 @@
             <div class="power-section-label" role="heading" aria-level="4">
               <span class="power-section-label-text">CIRCUITS</span>
               <div class="power-section-label-rule" aria-hidden="true"></div>
-              <span class="power-section-label-count">${u.length}/${u.length}</span>
+              <span class="power-section-label-count">${m.length}/${m.length}</span>
             </div>
             <div class="power-circuits" role="list">
-              ${u.map(e=>this._renderCircuitTile(e))}
+              ${m.map(e=>this._renderCircuitTile(e))}
             </div>
           </div>
         `:""}
@@ -4581,7 +5226,7 @@
           <div class="popover-content"></div>
         </div>
       </div>
-    `}});const be=e.AH`
+    `}});const xe=e.AH`
   /* ─── Base Content ─── */
 
   .ls-content {
@@ -4745,7 +5390,7 @@
     max-width: 120px;
     height: 24px;
   }
-`;class ye extends e.WF{static get properties(){return{label:{type:String},value:{type:String},total:{type:String},color:{type:String},icon:{type:String}}}constructor(){super(),this.label="",this.value="",this.total="",this.color="",this.icon=""}static get styles(){return[r.AM,e.AH`
+`;class $e extends e.WF{static get properties(){return{label:{type:String},value:{type:String},total:{type:String},color:{type:String},icon:{type:String}}}constructor(){super(),this.label="",this.value="",this.total="",this.color="",this.icon=""}static get styles(){return[r.AM,e.AH`
         :host {
           display: inline-flex;
           align-items: baseline;
@@ -4784,7 +5429,7 @@
         ${this.total?e.qy`<span class="badge-separator">/</span><span class="badge-value">${this.total}</span>`:""}
         ${this.label?e.qy`<span class="badge-label">${this.label}</span>`:""}
       </span>
-    `}}customElements.define("lcars-summary-badge",ye),customElements.define("lcars-lifesupport-panel",class extends ne{static get properties(){return{...super.properties,_sparklineData:{type:Object}}}constructor(){super(),this._sparklineData=new Map,this._sparklineTimer=null,this._sparklineCache=new Map,this._prevAreaId=null}get panelType(){return"life_support"}get defaultPanelTitle(){return"LIFE SUPPORT"}get frameColor(){return"var(--lcars-blue)"}static get styles(){return[...super.styles,G,X,r.AM,be]}_partitionEntities(){const e=this._getAllEntities(),t=this.hass?.devices||{},a=[],r=[],i=[],s=[];for(const t of e)D(t)?a.push(t):I(t)?r.push(t):O(t)?i.push(t):s.push(t);const n=this._buildDeviceGroup(a,t),o=this._buildDeviceGroup(r,t),l=a.length>0,c=r.length>0;let d;return i.length,d=l&&c?"full":!l&&c?"atmos-only":l&&!c?"climate-only":"sensors-only",{climateGroup:n,envGroup:o,ambientEntries:i,otherEntries:s,config:d}}_buildDeviceGroup(e,t){if(!e.length)return null;let a=null;for(const r of e){const e=r.entity?.device_id;if(e&&t[e]){a=t[e];break}}return{device:a,entities:e}}connectedCallback(){super.connectedCallback(),this._sparklineTimer=setInterval(()=>this._fetchSparklines(),18e5)}disconnectedCallback(){super.disconnectedCallback(),this._sparklineTimer&&(clearInterval(this._sparklineTimer),this._sparklineTimer=null)}updated(e){super.updated(e),this.areaId!==this._prevAreaId&&(this._prevAreaId=this.areaId,this._sparklineData.clear(),this._sparklineCache.clear()),e.has("hass")&&this.hass&&0===this._sparklineData.size&&this._fetchSparklines()}async _fetchSparklines(){if(!this.hass||!this.isConnected)return;const e=this._getAllEntities().filter(e=>{if("sensor"!==e.domain)return!1;const t=e.state?.attributes?.device_class||"";return["temperature","humidity","pm25","carbon_dioxide","volatile_organic_compounds","aqi"].includes(t)}).map(e=>e.entity?.entity_id).filter(Boolean);if(0===e.length)return;const t=this.areaId||"ls",a=await(0,U.s)(this.hass,t,e,this._sparklineCache);if(a)for(const t of e)a[t]&&this._sparklineData.set(t,a[t]);this.isConnected&&this.requestUpdate()}renderBadge(){const{ambientEntries:t,config:a}=this._partitionEntities(),r=t.find(e=>"temperature"===e.state?.attributes?.device_class);if(!r)return e.qy``;const i=parseFloat(r.state?.state);if(isNaN(i))return e.qy``;const s=r.state?.attributes?.unit_of_measurement||"°F",n=(0,L.sx)(i);return e.qy`<lcars-summary-badge value="${i}${s}" color="${n}"></lcars-summary-badge>`}renderContent(){const{climateGroup:t,envGroup:a,ambientEntries:r,config:i}=this._partitionEntities();switch(i){case"full":return this._renderFullLayout(t,a,r);case"atmos-only":return this._renderAtmosOnly(a);case"climate-only":return this._renderClimateOnly(t,r);case"sensors-only":return this._renderSensorHero(r);default:return e.qy`<div class="ls-empty">NO LIFE SUPPORT DATA</div>`}}_renderFullLayout(t,a,r){return e.qy`
+    `}}customElements.define("lcars-summary-badge",$e),customElements.define("lcars-lifesupport-panel",class extends oe{static get properties(){return{...super.properties,_sparklineData:{type:Object}}}constructor(){super(),this._sparklineData=new Map,this._sparklineTimer=null,this._sparklineCache=new Map,this._prevAreaId=null}get panelType(){return"life_support"}get defaultPanelTitle(){return"LIFE SUPPORT"}get frameColor(){return"var(--lcars-blue)"}static get styles(){return[...super.styles,X,Y,r.AM,xe]}_partitionEntities(){const e=this._getAllEntities(),t=this.hass?.devices||{},a=[],r=[],i=[],s=[];for(const t of e)D(t)?a.push(t):I(t)?r.push(t):F(t)?i.push(t):s.push(t);const n=this._buildDeviceGroup(a,t),o=this._buildDeviceGroup(r,t),l=a.length>0,c=r.length>0;let d;return i.length,d=l&&c?"full":!l&&c?"atmos-only":l&&!c?"climate-only":"sensors-only",{climateGroup:n,envGroup:o,ambientEntries:i,otherEntries:s,config:d}}_buildDeviceGroup(e,t){if(!e.length)return null;let a=null;for(const r of e){const e=r.entity?.device_id;if(e&&t[e]){a=t[e];break}}return{device:a,entities:e}}connectedCallback(){super.connectedCallback(),this._sparklineTimer=setInterval(()=>this._fetchSparklines(),18e5)}disconnectedCallback(){super.disconnectedCallback(),this._sparklineTimer&&(clearInterval(this._sparklineTimer),this._sparklineTimer=null)}updated(e){super.updated(e),this.areaId!==this._prevAreaId&&(this._prevAreaId=this.areaId,this._sparklineData.clear(),this._sparklineCache.clear()),e.has("hass")&&this.hass&&0===this._sparklineData.size&&this._fetchSparklines()}async _fetchSparklines(){if(!this.hass||!this.isConnected)return;const e=this._getAllEntities().filter(e=>{if("sensor"!==e.domain)return!1;const t=e.state?.attributes?.device_class||"";return["temperature","humidity","pm25","carbon_dioxide","volatile_organic_compounds","aqi"].includes(t)}).map(e=>e.entity?.entity_id).filter(Boolean);if(0===e.length)return;const t=this.areaId||"ls",a=await(0,V.s)(this.hass,t,e,this._sparklineCache);if(a)for(const t of e)a[t]&&this._sparklineData.set(t,a[t]);this.isConnected&&this.requestUpdate()}renderBadge(){const{ambientEntries:t,config:a}=this._partitionEntities(),r=t.find(e=>"temperature"===e.state?.attributes?.device_class);if(!r)return e.qy``;const i=parseFloat(r.state?.state);if(isNaN(i))return e.qy``;const s=r.state?.attributes?.unit_of_measurement||"°F",n=(0,L.sx)(i);return e.qy`<lcars-summary-badge value="${i}${s}" color="${n}"></lcars-summary-badge>`}renderContent(){const{climateGroup:t,envGroup:a,ambientEntries:r,config:i}=this._partitionEntities();switch(i){case"full":return this._renderFullLayout(t,a,r);case"atmos-only":return this._renderAtmosOnly(a);case"climate-only":return this._renderClimateOnly(t,r);case"sensors-only":return this._renderSensorHero(r);default:return e.qy`<div class="ls-empty">NO LIFE SUPPORT DATA</div>`}}_renderFullLayout(t,a,r){return e.qy`
       <div class="ls-content ls-full">
         <div class="ls-substations">
           <div class="ls-substation ls-climate-sub">
@@ -4867,13 +5512,13 @@
     `:e.qy``}_renderSparklineTray(){if(0===this._sparklineData.size)return e.qy``;const t=[],a={temperature:"var(--lcars-butterscotch)",humidity:"var(--lcars-ice)",aqi:"var(--lcars-sunflower)",pm25:"var(--lcars-peach)",carbon_dioxide:"var(--lcars-sunflower)",volatile_organic_compounds:"var(--lcars-african-violet)"},r=this._getAllEntities();for(const[i,s]of this._sparklineData){const n=r.find(e=>e.entity?.entity_id===i);if(!n)continue;const o=n.state?.attributes?.device_class||"",l=a[o]||"var(--lcars-butterscotch)",c=(o||i.split(".")[1]).toUpperCase().replace(/_/g," ");t.push(e.qy`
         <div class="ls-sparkline-slot" aria-hidden="true">
           <span class="ls-sparkline-label" style="color:${l}">${c}</span>
-          ${(0,U.K)(s,{color:l,width:120,height:24})}
+          ${(0,V.K)(s,{color:l,width:120,height:24})}
         </div>
       `)}return 0===t.length?e.qy``:e.qy`
       <div class="ls-sparkline-tray" role="region" aria-label="24-hour trends">
         ${t}
       </div>
-    `}_shortEntityName(e){const t=e.state?.attributes?.friendly_name||e.entity?.entity_id||"";return this._shortenName(t,e.entity).toUpperCase()}});const we=e.AH`
+    `}_shortEntityName(e){const t=e.state?.attributes?.friendly_name||e.entity?.entity_id||"";return this._shortenName(t,e.entity).toUpperCase()}});const ke=(e,a)=>{const r=e.startNode.parentNode,i=void 0===a?e.endNode:a.startNode,s=r.insertBefore((0,t.h5)(),i);r.insertBefore((0,t.h5)(),i);const n=new t.Qh(e.options);return n.insertAfterNode(s),n},Se=(e,t)=>(e.setValue(t),e.commit(),e),Ce=(e,a,r)=>{const i=e.startNode.parentNode,s=r?r.startNode:e.endNode,n=a.endNode.nextSibling;n!==s&&(0,t.Pf)(i,a.startNode,n,s)},Ee=e=>{(0,t.if)(e.startNode.parentNode,e.startNode,e.endNode.nextSibling)},ze=(e,t,a)=>{const r=new Map;for(let i=t;i<=a;i++)r.set(e[i],i);return r},Ae=new WeakMap,qe=new WeakMap,Pe=(0,t.u$)((e,a,r)=>{let i;return void 0===r?r=a:void 0!==a&&(i=a),a=>{if(!(a instanceof t.Qh))throw new Error("repeat can only be used in text bindings");const s=Ae.get(a)||[],n=qe.get(a)||[],o=[],l=[],c=[];let d,p,u=0;for(const t of e)c[u]=i?i(t,u):u,l[u]=r(t,u),u++;let m=0,h=s.length-1,v=0,f=l.length-1;for(;m<=h&&v<=f;)if(null===s[m])m++;else if(null===s[h])h--;else if(n[m]===c[v])o[v]=Se(s[m],l[v]),m++,v++;else if(n[h]===c[f])o[f]=Se(s[h],l[f]),h--,f--;else if(n[m]===c[f])o[f]=Se(s[m],l[f]),Ce(a,s[m],o[f+1]),m++,f--;else if(n[h]===c[v])o[v]=Se(s[h],l[v]),Ce(a,s[h],s[m]),h--,v++;else if(void 0===d&&(d=ze(c,v,f),p=ze(n,m,h)),d.has(n[m]))if(d.has(n[h])){const e=p.get(c[v]),t=void 0!==e?s[e]:null;if(null===t){const e=ke(a,s[m]);Se(e,l[v]),o[v]=e}else o[v]=Se(t,l[v]),Ce(a,t,s[m]),s[e]=null;v++}else Ee(s[h]),h--;else Ee(s[m]),m++;for(;v<=f;){const e=ke(a,o[f+1]);Se(e,l[v]),o[v++]=e}for(;m<=h;){const e=s[m++];null!==e&&Ee(e)}Ae.set(a,o),qe.set(a,c)}}),Ne=e.AH`
   /* ─── Content Container ─── */
 
   .ilm-content {
@@ -5153,18 +5798,87 @@
       transition-duration: 0.01ms !important;
     }
   }
-`;customElements.define("lcars-illumination-panel",class extends ne{static get properties(){return{...super.properties,_expandedLight:{type:String}}}constructor(){super(),this._expandedLight=null,this._brightnessDebouncer=B((e,t)=>{const a=R(t,1,100),r=Math.round(a/100*255);this._callService("light","turn_on",{entity_id:e,brightness:r})},300),this._sceneRateLimiter=H(3,5e3)}get panelType(){return"illumination"}get defaultPanelTitle(){return"ILLUMINATION CONTROL"}get frameColor(){return"var(--lcars-sunflower)"}static get styles(){return[...super.styles,G,X,r.AM,we]}_partitionLightingEntities(){const e=this._getAllEntities(),t=[],a=[],r=[];for(const i of e)"light"===i.domain?t.push(i):"scene"===i.domain?a.push(i):F(i)&&"light"!==i.domain&&r.push(i);return t.sort((e,t)=>{const a="on"===e.state?.state?0:1,r="on"===t.state?.state?0:1;if(a!==r)return a-r;const i=e.state?.attributes?.brightness||0,s=t.state?.attributes?.brightness||0;return i!==s?s-i:(e.state?.attributes?.friendly_name||"").localeCompare(t.state?.attributes?.friendly_name||"")}),{dimmableLights:t,scenes:a,circuits:r}}renderBadge(){const{dimmableLights:t,circuits:a}=this._partitionLightingEntities(),r=[...t,...a],i=r.length,s=r.filter(e=>"on"===e.state?.state).length;return 0===i?e.qy``:e.qy`
+
+  /* ─── Edit Mode: Drag-and-Drop Reorder ─── */
+
+  /* Reorder status bar */
+  .ilm-reorder-status {
+    font-family: var(--lcars-font, 'Antonio', sans-serif);
+    font-size: var(--lcars-font-size-label, 0.75rem);
+    color: var(--lcars-gold, #ffaa00);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.25rem 0;
+    min-height: 1.25rem;
+  }
+
+  /* Grip handle — 3-pip vertical pattern (LCARS-native, Geordi spec) */
+  .ilm-grip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 2.5rem;
+    height: 100%;
+    flex-shrink: 0;
+    cursor: grab;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    padding: 0 0.5rem;
+    margin-right: 0.25rem;
+    z-index: 1;
+  }
+
+  .ilm-grip span {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 1px;
+    background: var(--lcars-gray, #666688);
+    transition: background 150ms ease;
+  }
+
+  .ilm-grip:hover span {
+    background: var(--lcars-sunflower, #ffcc99);
+  }
+
+  .ilm-grip:active {
+    cursor: grabbing;
+  }
+
+  .ilm-grip:active span {
+    background: var(--lcars-gold, #ffaa00);
+  }
+
+  /* Dragging state on the active bar */
+  .ilm-light-bar.dragging {
+    opacity: 0.5;
+    z-index: 10;
+  }
+
+  /* Edit mode: indicator becomes full-height gold rail */
+  :host([edit-mode]) .ilm-light-bar .ilm-indicator {
+    height: 100%;
+    background: var(--lcars-gold, #ffaa00);
+  }
+`;customElements.define("lcars-illumination-panel",class extends oe{static get properties(){return{...super.properties,_expandedLight:{type:String},_dragEntityId:{type:String}}}constructor(){super(),this._expandedLight=null,this._dragEntityId=null,this._dragState=null,this._flipPositions=null,this._cachedPartition=null,this._partitionDirty=!0,this._brightnessDebouncer=U((e,t)=>{const a=B(t,1,100),r=Math.round(a/100*255);this._callService("light","turn_on",{entity_id:e,brightness:r})},300),this._sceneRateLimiter=H(3,5e3),this._boundPointerMove=this._handlePointerMove.bind(this),this._boundPointerUp=this._handlePointerUp.bind(this)}get panelType(){return"illumination"}get defaultPanelTitle(){return"ILLUMINATION CONTROL"}get frameColor(){return"var(--lcars-sunflower)"}static get styles(){return[...super.styles,X,Y,r.AM,Ne]}disconnectedCallback(){super.disconnectedCallback(),this._cancelDrag(),this._dragState=null,this._flipPositions=null}willUpdate(e){super.willUpdate(e),this._partitionDirty=!0}_getPartition(){return!this._partitionDirty&&this._cachedPartition||(this._cachedPartition=this._partitionLightingEntities(),this._partitionDirty=!1),this._cachedPartition}_partitionLightingEntities(){const e=this._getAllEntities(),t=[],a=[],r=[],i=new Set;for(const r of e)"light"===r.domain&&R(r)?(t.push(r),r.entity?.device_id&&i.add(r.entity.device_id)):"scene"===r.domain&&a.push(r);for(const t of e)"light"!==t.domain&&"scene"!==t.domain&&R(t)&&(t.entity?.device_id&&i.has(t.entity.device_id)||r.push(t));return this._applyCustomOrder(t),{dimmableLights:t,scenes:a,circuits:r}}_getOrderKey(){return`lcars-ilm-order-${this.areaId||"default"}`}_loadOrder(e){try{const t=JSON.parse(localStorage.getItem(this._getOrderKey()));if(!Array.isArray(t))return null;const a=new Set(e),r=t.filter(e=>a.has(e)),i=e.filter(e=>!t.includes(e));return i.sort(),[...r,...i]}catch{return null}}_saveOrder(e){try{localStorage.setItem(this._getOrderKey(),JSON.stringify(e))}catch(e){i.g0.warn("IlluminationPanel","Failed to save light order:",e)}}_applyCustomOrder(e){const t=e.map(e=>e.entity?.entity_id),a=this._loadOrder(t);if(a){const t=new Map(a.map((e,t)=>[e,t]));e.sort((e,a)=>{const r=t.get(e.entity?.entity_id)??999,i=t.get(a.entity?.entity_id)??999;return r!==i?r-i:(e.state?.attributes?.friendly_name||"").localeCompare(a.state?.attributes?.friendly_name||"")})}else e.sort((e,t)=>(e.state?.attributes?.friendly_name||"").localeCompare(t.state?.attributes?.friendly_name||""))}renderBadge(){const{dimmableLights:t,circuits:a}=this._getPartition(),r=[...t,...a],i=r.length,s=r.filter(e=>"on"===e.state?.state).length;return 0===i?e.qy``:e.qy`
       <lcars-summary-badge
         value="${s}"
         total="${i}"
         label="ON"
         color="var(--lcars-sunflower)">
       </lcars-summary-badge>
-    `}renderContent(){const{dimmableLights:t,scenes:a,circuits:r}=this._partitionLightingEntities();return 0===t.length&&0===r.length?e.qy`<div class="ilm-empty">NO LIGHTING ENTITIES</div>`:e.qy`
+    `}renderContent(){const{dimmableLights:t,scenes:a,circuits:r}=this._getPartition();return 0===t.length&&0===r.length?e.qy`<div class="ilm-empty">NO LIGHTING ENTITIES</div>`:e.qy`
       <div class="ilm-content">
+        ${this.editMode?e.qy`
+          <div class="ilm-reorder-status" role="status" aria-live="polite">
+            ${this._dragEntityId?"":"DRAG TO REORDER • ALT+ARROWS TO MOVE"}
+          </div>
+        `:""}
         ${t.length>0?e.qy`
           <div class="ilm-lights" role="list" aria-label="Dimmable lights">
-            ${t.map(e=>this._renderLightBar(e))}
+            ${Pe(t,e=>e.entity?.entity_id,e=>this._renderLightBar(e))}
           </div>
         `:""}
 
@@ -5188,16 +5902,27 @@
           </div>
         `:""}
       </div>
-    `}_renderLightBar(t){const a=t.entity?.entity_id,r=t.state,s="on"===r?.state,n=s?Math.round((r?.attributes?.brightness||0)/255*100):0,o=this._shortEntityName(t),l=this._expandedLight===a,c=r?.attributes?.color_temp_kelvin,d=this._getBarColor(c,s);return e.qy`
-      <div class="ilm-light-bar ${s?"on":"off"}"
+    `}updated(e){if(super.updated(e),!this._flipPositions)return;const t=this.shadowRoot.querySelectorAll(".ilm-light-bar"),a=this._flipPositions;this._flipPositions=null,requestAnimationFrame(()=>{for(const e of t){const t=e.dataset.entityId,r=a.get(t);if(null==r)continue;const i=r-e.getBoundingClientRect().top;Math.abs(i)<1||(e.style.transform=`translateY(${i}px)`,e.style.transition="none",e.offsetHeight,e.style.transition="transform 200ms cubic-bezier(0.2, 0, 0.2, 1)",e.style.transform="")}})}_renderLightBar(t){const a=t.entity?.entity_id,r=t.state,s="on"===r?.state,n=s?Math.round((r?.attributes?.brightness||0)/255*100):0,o=this._shortEntityName(t),l=this._expandedLight===a,c=this._dragEntityId===a,d=r?.attributes?.color_temp_kelvin,p=this._getBarColor(d,s);return e.qy`
+      <div class="ilm-light-bar ${s?"on":"off"} ${c?"dragging":""}"
            role="listitem"
+           ${this.editMode?e.qy``:""}
+           aria-roledescription="${this.editMode?"reorderable light":""}"
            tabindex="0"
-           style="--brightness:${n}%; --bar-color:${d}"
-           @click=${()=>this._toggleLight(a)}
+           data-entity-id="${a}"
+           style="--brightness:${n}%; --bar-color:${p}"
+           @click=${e=>{this._dragState?.didDrag||this._toggleLight(a)}}
            @contextmenu=${e=>{e.preventDefault(),(0,i.Hv)(a)}}
            @keydown=${e=>this._handleLightKeydown(e,a,n)}>
-        <span class="ilm-indicator ${s?"active":""}"
-              aria-hidden="true"></span>
+        ${this.editMode?e.qy`
+          <span class="ilm-grip"
+                aria-label="Drag to reorder ${o}"
+                @pointerdown=${e=>this._onPointerDown(e,a)}>
+            <span></span><span></span><span></span>
+          </span>
+        `:e.qy`
+          <span class="ilm-indicator ${s?"active":""}"
+                aria-hidden="true"></span>
+        `}
         <span class="ilm-light-name">${o}</span>
         <span class="ilm-light-value"
               tabindex="0"
@@ -5216,7 +5941,7 @@
                  @change=${e=>this._setBrightness(a,parseInt(e.target.value))}>
         </div>
       `:""}
-    `}_renderSceneButton(t){const a=t.entity?.entity_id,r=this._shortEntityName(t);return e.qy`
+    `}_onPointerDown(e,t){if(!this.editMode)return;e.preventDefault(),e.stopPropagation();const a=e.target.closest(".ilm-light-bar");if(!a)return;a.setPointerCapture(e.pointerId),a.addEventListener("pointermove",this._boundPointerMove),a.addEventListener("pointerup",this._boundPointerUp),a.addEventListener("pointercancel",this._boundPointerUp);const{dimmableLights:r}=this._getPartition(),i=r.map(e=>e.entity?.entity_id);this._dragState={entityId:t,pointerId:e.pointerId,startY:e.clientY,barEl:a,currentIndex:i.indexOf(t),orderedIds:[...i],didDrag:!1},this._dragEntityId=t}_handlePointerMove(e){if(!this._dragState)return;const t=e.clientY-this._dragState.startY;if(!this._dragState.didDrag&&Math.abs(t)<8)return;this._dragState.didDrag=!0;const a=this.shadowRoot.querySelectorAll(".ilm-light-bar");if(!a.length)return;const r=a[0].getBoundingClientRect().height+4,i=Math.round(t/r),s=B(this._dragState.currentIndex+i,0,this._dragState.orderedIds.length-1);if(s!==this._dragState.hoverIndex){this._dragState.hoverIndex=s,this._captureFlipPositions();const e=[...this._dragState.orderedIds],t=e.indexOf(this._dragState.entityId);e.splice(t,1),e.splice(s,0,this._dragState.entityId),this._saveOrder(e),this._partitionDirty=!0,this.requestUpdate()}}_handlePointerUp(e){if(!this._dragState)return;const t=this._dragState.barEl;t&&(t.releasePointerCapture(this._dragState.pointerId),t.removeEventListener("pointermove",this._boundPointerMove),t.removeEventListener("pointerup",this._boundPointerUp),t.removeEventListener("pointercancel",this._boundPointerUp));const a=this._dragState.didDrag;this._dragState=null,this._dragEntityId=null,a&&(this._partitionDirty=!0,this.requestUpdate())}_cancelDrag(){if(this._dragState?.barEl){const e=this._dragState.barEl;e.releasePointerCapture(this._dragState.pointerId),e.removeEventListener("pointermove",this._boundPointerMove),e.removeEventListener("pointerup",this._boundPointerUp),e.removeEventListener("pointercancel",this._boundPointerUp)}this._dragState=null,this._dragEntityId=null}_captureFlipPositions(){this._flipPositions=new Map;const e=this.shadowRoot.querySelectorAll(".ilm-light-bar");for(const t of e){const e=t.dataset.entityId;e&&this._flipPositions.set(e,t.getBoundingClientRect().top)}}_handleLightKeydown(e,t,a){if(this.editMode&&e.altKey&&("ArrowUp"===e.key||"ArrowDown"===e.key))return e.preventDefault(),void this._keyboardReorder(t,"ArrowUp"===e.key?-1:1);"Enter"===e.key||" "===e.key?(e.preventDefault(),this._toggleLight(t)):"ArrowUp"===e.key||"ArrowRight"===e.key?(e.preventDefault(),a>0&&this._setBrightness(t,Math.min(100,a+5))):"ArrowDown"!==e.key&&"ArrowLeft"!==e.key||(e.preventDefault(),a>0&&this._setBrightness(t,Math.max(1,a-5)))}_keyboardReorder(e,t){const{dimmableLights:a}=this._getPartition(),r=a.map(e=>e.entity?.entity_id),i=r.indexOf(e);if(i<0)return;const s=B(i+t,0,r.length-1);if(s===i)return;this._captureFlipPositions(),r.splice(i,1),r.splice(s,0,e),this._saveOrder(r),this._partitionDirty=!0,this.requestUpdate();const n=this.shadowRoot.querySelector(".ilm-reorder-status");if(n){const t=a.find(t=>t.entity?.entity_id===e),i=t?this._shortEntityName(t):e;n.textContent=`${i} MOVED TO POSITION ${s+1} OF ${r.length}`}this.updateComplete.then(()=>{const t=this.shadowRoot.querySelector(`[data-entity-id="${e}"]`);t&&t.focus()})}_renderSceneButton(t){const a=t.entity?.entity_id,r=this._shortEntityName(t);return e.qy`
       <div role="listitem">
         <button class="ilm-scene-btn"
                 aria-label="Activate ${r} scene"
@@ -5236,7 +5961,7 @@
         <span class="ilm-circuit-name">${s}</span>
         <span class="ilm-circuit-state">${r?"ON":"OFF"}</span>
       </div>
-    `}_getBarColor(e,t){if(!t)return"var(--lcars-gray, #666688)";if(!e)return"var(--lcars-sunflower)";const a=Math.max(0,Math.min(1,(e-2e3)/4500));return a<.5?"var(--lcars-butterscotch)":a<.8?"var(--lcars-sunflower)":"var(--lcars-ice)"}_toggleLight(e){if(!this.hass||!e)return;const t=e.split(".")[0];this._callService(t,"toggle",{entity_id:e})}_setBrightness(e,t){if(!this.hass||!e)return;const a=R(t,1,100),r=Math.round(a/100*255);this._callService("light","turn_on",{entity_id:e,brightness:r})}_activateScene(e){this.hass&&e&&this._sceneRateLimiter.allow()&&this._callService("scene","turn_on",{entity_id:e})}_handleLightKeydown(e,t,a){"Enter"===e.key||" "===e.key?(e.preventDefault(),this._toggleLight(t)):"ArrowUp"===e.key||"ArrowRight"===e.key?(e.preventDefault(),a>0&&this._setBrightness(t,Math.min(100,a+5))):"ArrowDown"!==e.key&&"ArrowLeft"!==e.key||(e.preventDefault(),a>0&&this._setBrightness(t,Math.max(1,a-5)))}_shortEntityName(e){const t=e.state?.attributes?.friendly_name||e.entity?.entity_id||"";return this._shortenName(t,e.entity).toUpperCase()}});const _e="Homepage",xe=new Map([[s,(t,a,r,i)=>e.qy`<lcars-camera-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-camera-panel>`],[d,(t,a,r,i)=>e.qy`<lcars-environment-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-environment-panel>`],[u,(t,a,r,i)=>e.qy`<lcars-battery-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-battery-panel>`],[l,(t,a,r,i)=>e.qy`<lcars-climate-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-climate-panel>`],[n,(t,a,r,i)=>e.qy`<lcars-alarm-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-alarm-panel>`],[c,(t,a,r,i)=>e.qy`<lcars-media-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-media-panel>`],[o,(t,a,r,i)=>e.qy`<lcars-pool-spa-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-pool-spa-panel>`],[m,(t,a,r,i)=>e.qy`<lcars-weather-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-weather-panel>`],[v,(t,a,r,i)=>e.qy`<lcars-lifesupport-panel .group=${t} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-lifesupport-panel>`],[f,(t,a,r,i)=>e.qy`<lcars-illumination-panel .group=${t} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-illumination-panel>`]]);function $e(e){const t=e?.attributes?.entity_picture;if(!t)return"";const a=e.last_updated||e.last_changed||"",r=t.includes("?")?"&":"?";return`${t}${r}_cb=${encodeURIComponent(a)}`}class ke extends e.WF{static get properties(){return{data:{type:Object},selectedArea:{type:String},selectedFloor:{type:String},_hass:{type:Object},_editMode:{type:Boolean}}}constructor(){super(),this.data=null,this.selectedArea=null,this.selectedFloor=null,this._editMode=!1,this._configLoading=!1,this._entityCache=new Map,this._cameraRefreshInterval=null,this._cameraObserver=null,this._visibleCameras=new Set,this._loadingCameras=new Set,this._onAreaSelected=e=>{i.g0.debug(_e,"Area selected event:",e.detail.areaId),this.selectedArea=e.detail.areaId,this.selectedFloor=null,this._entityCache.clear()},this._onFloorSelected=e=>{i.g0.debug(_e,"Floor selected event:",e.detail.floorId),this.selectedFloor=e.detail.floorId,this.selectedArea=null,this._entityCache.clear()},this._onEditMode=e=>{this._editMode=e.detail.enabled,i.g0.debug(_e,"Edit mode:",this._editMode)}}connectedCallback(){super.connectedCallback(),i.o6.addEventListener("lcars-area-selected",this._onAreaSelected),i.o6.addEventListener("lcars-floor-selected",this._onFloorSelected),i.o6.addEventListener("lcars-edit-mode",this._onEditMode),this._startCameraRefresh(),document.addEventListener("visibilitychange",this._onVisibilityChange)}disconnectedCallback(){super.disconnectedCallback(),i.o6.removeEventListener("lcars-area-selected",this._onAreaSelected),i.o6.removeEventListener("lcars-floor-selected",this._onFloorSelected),i.o6.removeEventListener("lcars-edit-mode",this._onEditMode),this._stopCameraRefresh(),document.removeEventListener("visibilitychange",this._onVisibilityChange)}_onVisibilityChange=()=>{document.hidden?this._stopCameraTimer():(this._startCameraTimer(),this._refreshVisibleCameras())};_startCameraRefresh(){this._cameraObserver=new IntersectionObserver(e=>{for(const t of e){const e=t.target.dataset.entity;e&&(t.isIntersecting?this._visibleCameras.add(e):this._visibleCameras.delete(e))}},{rootMargin:"50px"}),this._startCameraTimer()}_startCameraTimer(){this._cameraRefreshInterval||(this._cameraRefreshInterval=setInterval(()=>{this._refreshVisibleCameras()},1e4))}_stopCameraTimer(){this._cameraRefreshInterval&&(clearInterval(this._cameraRefreshInterval),this._cameraRefreshInterval=null)}_stopCameraRefresh(){this._stopCameraTimer(),this._cameraObserver&&(this._cameraObserver.disconnect(),this._cameraObserver=null),this._visibleCameras.clear(),this._loadingCameras.clear()}_refreshVisibleCameras(){if(document.hidden||!this._hass)return;const e=Date.now();for(const t of this._visibleCameras){if(this._loadingCameras.has(t))continue;const a=this._hass.states[t];if(!a||"unavailable"===a.state)continue;const r=a.attributes?.entity_picture;if(!r)continue;const i=this.shadowRoot?.querySelector(`img[data-entity="${CSS.escape(t)}"]`);if(!i)continue;const s=r.includes("?")?"&":"?",n=`${r}${s}_cb=${e}`;this._loadingCameras.add(t),i.addEventListener("load",()=>this._loadingCameras.delete(t),{once:!0}),i.addEventListener("error",()=>this._loadingCameras.delete(t),{once:!0}),i.src=n}}updated(e){if(super.updated(e),this._cameraObserver){const e=this.shadowRoot?.querySelectorAll("img[data-entity]")||[],t=new Set;for(const a of e)t.add(a.dataset.entity),this._cameraObserver.observe(a);for(const e of this._visibleCameras)t.has(e)||(this._visibleCameras.delete(e),this._loadingCameras.delete(e))}}setConfig(e){try{this._config=e,i.g0.debug(_e,"setConfig:",e)}catch(e){throw i.g0.error(_e,"setConfig FAILED — this causes CONFIGURATION ERROR:",e),e}}set hass(e){const t=this._hass;this._hass=e,t||i.g0.debug(_e,"First hass received — areas:",Object.keys(e.areas||{}).length,"entities:",Object.keys(e.entities||{}).length),!t||t.entities===e.entities&&t.devices===e.devices||(i.g0.debug(_e,"Entity/device registry changed — busting cache"),this._entityCache.clear()),t&&t.areas!==e.areas&&this.selectedArea&&(e.areas?.[this.selectedArea]||(this.selectedArea=null,this._entityCache.clear())),this.data||this._configLoading||this._loadConfiguration()}async _loadConfiguration(){if(this._hass){this._configLoading=!0,i.g0.debug(_e,"Loading configuration via WS...");try{const e=await this._hass.callWS({type:"lcars_dashboard/configuration/get"});this.data=e,void 0!==e.debug&&(window.__LCARS_DEBUG=e.debug,e.debug&&i.g0.info(_e,"Debug logging auto-enabled from HA backend")),i.g0.debug(_e,"Configuration loaded:",Object.keys(e),"version:",e.installed_version)}catch(e){i.g0.error(_e,"Failed to load configuration — WS call failed:",e),this.data={}}finally{this._configLoading=!1}}}_handleEntityClick(e){i.g0.debug(_e,"Entity click:",e),(0,i.Hv)(e)}_handleEditEntity(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._getEntityState(t),r=a?.attributes?.friendly_name||t;(0,i.Bo)(this._hass,"lcars-edit-entity-card",{entity:t,icon:a?.attributes?.icon||"",name:r},`Edit: ${r}`)}_handleEditDevice(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._hass.devices?.[t],r=a?.name_by_user||a?.name||t;(0,i.Bo)(this._hass,"lcars-edit-device-button-card",{device:t,name:r,icon:""},`Edit: ${r}`)}_handleToggle(e){const t=e.split(".")[0];if(i.g0.debug(_e,"Toggle:",e,"domain:",t),"lock"===t){const t=this._getEntityState(e);this._hass.callService("lock","locked"===t?.state?"unlock":"lock",{entity_id:e})}else"script"===t?this._hass.callService("script","turn_on",{entity_id:e}):this._hass.callService("homeassistant","toggle",{entity_id:e})}_getAreaEntities(e){return function(e,t,a=null){if(!e)return[];if(a&&a.has(t))return a.get(t);const r=Object.values(e.entities||{}),i=e.devices||{},s=new Set;for(const e of Object.values(i))e.area_id===t&&s.add(e.id);const n=r.filter(e=>!(e.hidden_by||e.hidden||e.disabled_by||e.entity_category||e.area_id!==t&&(e.area_id||!e.device_id||!s.has(e.device_id))));return a&&a.set(t,n),n}(this._hass,e,this._entityCache)}_getFloorAreaIds(e){return function(e,t){return e?.areas?Object.values(e.areas).filter(e=>e.floor_id===t).map(e=>e.area_id):[]}(this._hass,e)}_getDeviceCategoryEntities(e){if(!this._hass||!e)return{config:[],diagnostic:[]};const t=Object.values(this._hass.entities||{}),a=[],r=[];for(const i of t)i.device_id===e&&(i.disabled_by||"user"===i.hidden_by||i.hidden||("config"===i.entity_category?a.push(i):"diagnostic"===i.entity_category&&r.push(i)));return{config:a,diagnostic:r}}_groupEntities(e){return function(e,t){const a=e.devices||{},r=new Map,i=[];for(const s of t){const t=s.entity_id.split(".")[0],n=e.states?.[s.entity_id],o={entity:s,domain:t,state:n};n&&(s.device_id&&a[s.device_id]?(r.has(s.device_id)||r.set(s.device_id,{device:a[s.device_id],entities:[]}),r.get(s.device_id).entities.push(o)):i.push(o))}const s=(e,t)=>{const a=T[e.domain]??50,r=T[t.domain]??50;return a!==r?a-r:(e.state?.attributes?.friendly_name||"").localeCompare(t.state?.attributes?.friendly_name||"")};return r.forEach(e=>e.entities.sort(s)),i.sort(s),{byDevice:r,noDevice:i}}(this._hass,e)}_groupByDomain(e){const t=new Map;return e.forEach(e=>{t.has(e.domain)||t.set(e.domain,[]),t.get(e.domain).push(e)}),[...t.entries()].sort((e,t)=>(T[e[0]]??50)-(T[t[0]]??50))}_getEntityState(e){return this._hass&&this._hass.states[e]?this._hass.states[e]:null}_getEntityIcon(e){return e?e.attributes?.icon?e.attributes.icon:{light:"mdi:lightbulb",switch:"mdi:toggle-switch",sensor:"mdi:eye",binary_sensor:"mdi:radiobox-blank",climate:"mdi:thermostat",cover:"mdi:window-shutter",fan:"mdi:fan",lock:"mdi:lock",camera:"mdi:video",media_player:"mdi:cast",automation:"mdi:robot",script:"mdi:script-text",update:"mdi:package-up"}[e.entity_id.split(".")[0]]||"mdi:information-outline":"mdi:help-circle-outline"}_withEditPip(t,a){return this._editMode?e.qy`
+    `}_getBarColor(e,t){if(!t)return"var(--lcars-gray, #666688)";if(!e)return"var(--lcars-sunflower)";const a=Math.max(0,Math.min(1,(e-2e3)/4500));return a<.5?"var(--lcars-butterscotch)":a<.8?"var(--lcars-sunflower)":"var(--lcars-ice)"}_toggleLight(e){if(!this.hass||!e)return;const t=e.split(".")[0];this._callService(t,"toggle",{entity_id:e})}_setBrightness(e,t){if(!this.hass||!e)return;const a=B(t,1,100),r=Math.round(a/100*255);this._callService("light","turn_on",{entity_id:e,brightness:r})}_activateScene(e){this.hass&&e&&this._sceneRateLimiter.allow()&&this._callService("scene","turn_on",{entity_id:e})}_handleLightKeydown(e,t,a){"Enter"===e.key||" "===e.key?(e.preventDefault(),this._toggleLight(t)):"ArrowUp"===e.key||"ArrowRight"===e.key?(e.preventDefault(),a>0&&this._setBrightness(t,Math.min(100,a+5))):"ArrowDown"!==e.key&&"ArrowLeft"!==e.key||(e.preventDefault(),a>0&&this._setBrightness(t,Math.max(1,a-5)))}_shortEntityName(e){const t=e.state?.attributes?.friendly_name||e.entity?.entity_id||"";return this._shortenName(t,e.entity).toUpperCase()}});const Me="Homepage",Te=new Map([[s,(t,a,r,i)=>e.qy`<lcars-camera-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-camera-panel>`],[d,(t,a,r,i)=>e.qy`<lcars-environment-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-environment-panel>`],[m,(t,a,r,i)=>e.qy`<lcars-battery-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-battery-panel>`],[l,(t,a,r,i)=>e.qy`<lcars-climate-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-climate-panel>`],[n,(t,a,r,i)=>e.qy`<lcars-alarm-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-alarm-panel>`],[c,(t,a,r,i)=>e.qy`<lcars-media-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-media-panel>`],[o,(t,a,r,i)=>e.qy`<lcars-pool-spa-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-pool-spa-panel>`],[u,(t,a,r,i)=>e.qy`<lcars-weather-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-weather-panel>`],[v,(t,a,r,i)=>e.qy`<lcars-lifesupport-panel .group=${t} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-lifesupport-panel>`],[f,(t,a,r,i)=>e.qy`<lcars-illumination-panel .group=${t} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-illumination-panel>`]]);function De(e){const t=e?.attributes?.entity_picture;if(!t)return"";const a=e.last_updated||e.last_changed||"",r=t.includes("?")?"&":"?";return`${t}${r}_cb=${encodeURIComponent(a)}`}class Ie extends e.WF{static get properties(){return{data:{type:Object},selectedArea:{type:String},selectedFloor:{type:String},_hass:{type:Object},_editMode:{type:Boolean}}}constructor(){super(),this.data=null,this.selectedArea=null,this.selectedFloor=null,this._editMode=!1,this._configLoading=!1,this._entityCache=new Map,this._cameraRefreshInterval=null,this._cameraObserver=null,this._visibleCameras=new Set,this._loadingCameras=new Set,this._onAreaSelected=e=>{i.g0.debug(Me,"Area selected event:",e.detail.areaId),this.selectedArea=e.detail.areaId,this.selectedFloor=null,this._entityCache.clear()},this._onFloorSelected=e=>{i.g0.debug(Me,"Floor selected event:",e.detail.floorId),this.selectedFloor=e.detail.floorId,this.selectedArea=null,this._entityCache.clear()},this._onEditMode=e=>{this._editMode=e.detail.enabled,i.g0.debug(Me,"Edit mode:",this._editMode)}}connectedCallback(){super.connectedCallback(),i.o6.addEventListener("lcars-area-selected",this._onAreaSelected),i.o6.addEventListener("lcars-floor-selected",this._onFloorSelected),i.o6.addEventListener("lcars-edit-mode",this._onEditMode),this._startCameraRefresh(),document.addEventListener("visibilitychange",this._onVisibilityChange)}disconnectedCallback(){super.disconnectedCallback(),i.o6.removeEventListener("lcars-area-selected",this._onAreaSelected),i.o6.removeEventListener("lcars-floor-selected",this._onFloorSelected),i.o6.removeEventListener("lcars-edit-mode",this._onEditMode),this._stopCameraRefresh(),document.removeEventListener("visibilitychange",this._onVisibilityChange)}_onVisibilityChange=()=>{document.hidden?this._stopCameraTimer():(this._startCameraTimer(),this._refreshVisibleCameras())};_startCameraRefresh(){this._cameraObserver=new IntersectionObserver(e=>{for(const t of e){const e=t.target.dataset.entity;e&&(t.isIntersecting?this._visibleCameras.add(e):this._visibleCameras.delete(e))}},{rootMargin:"50px"}),this._startCameraTimer()}_startCameraTimer(){this._cameraRefreshInterval||(this._cameraRefreshInterval=setInterval(()=>{this._refreshVisibleCameras()},1e4))}_stopCameraTimer(){this._cameraRefreshInterval&&(clearInterval(this._cameraRefreshInterval),this._cameraRefreshInterval=null)}_stopCameraRefresh(){this._stopCameraTimer(),this._cameraObserver&&(this._cameraObserver.disconnect(),this._cameraObserver=null),this._visibleCameras.clear(),this._loadingCameras.clear()}_refreshVisibleCameras(){if(document.hidden||!this._hass)return;const e=Date.now();for(const t of this._visibleCameras){if(this._loadingCameras.has(t))continue;const a=this._hass.states[t];if(!a||"unavailable"===a.state)continue;const r=a.attributes?.entity_picture;if(!r)continue;const i=this.shadowRoot?.querySelector(`img[data-entity="${CSS.escape(t)}"]`);if(!i)continue;const s=r.includes("?")?"&":"?",n=`${r}${s}_cb=${e}`;this._loadingCameras.add(t),i.addEventListener("load",()=>this._loadingCameras.delete(t),{once:!0}),i.addEventListener("error",()=>this._loadingCameras.delete(t),{once:!0}),i.src=n}}updated(e){if(super.updated(e),this._cameraObserver){const e=this.shadowRoot?.querySelectorAll("img[data-entity]")||[],t=new Set;for(const a of e)t.add(a.dataset.entity),this._cameraObserver.observe(a);for(const e of this._visibleCameras)t.has(e)||(this._visibleCameras.delete(e),this._loadingCameras.delete(e))}}setConfig(e){try{this._config=e,i.g0.debug(Me,"setConfig:",e)}catch(e){throw i.g0.error(Me,"setConfig FAILED — this causes CONFIGURATION ERROR:",e),e}}set hass(e){const t=this._hass;this._hass=e,t||i.g0.debug(Me,"First hass received — areas:",Object.keys(e.areas||{}).length,"entities:",Object.keys(e.entities||{}).length),!t||t.entities===e.entities&&t.devices===e.devices||(i.g0.debug(Me,"Entity/device registry changed — busting cache"),this._entityCache.clear()),t&&t.areas!==e.areas&&this.selectedArea&&(e.areas?.[this.selectedArea]||(this.selectedArea=null,this._entityCache.clear())),this.data||this._configLoading||this._loadConfiguration()}async _loadConfiguration(){if(this._hass){this._configLoading=!0,i.g0.debug(Me,"Loading configuration via WS...");try{const e=await this._hass.callWS({type:"lcars_dashboard/configuration/get"});this.data=e,void 0!==e.debug&&(window.__LCARS_DEBUG=e.debug,e.debug&&i.g0.info(Me,"Debug logging auto-enabled from HA backend")),i.g0.debug(Me,"Configuration loaded:",Object.keys(e),"version:",e.installed_version)}catch(e){i.g0.error(Me,"Failed to load configuration — WS call failed:",e),this.data={}}finally{this._configLoading=!1}}}_handleEntityClick(e){i.g0.debug(Me,"Entity click:",e),(0,i.Hv)(e)}_handleEditEntity(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._getEntityState(t),r=a?.attributes?.friendly_name||t;(0,i.Bo)(this._hass,"lcars-edit-entity-card",{entity:t,icon:a?.attributes?.icon||"",name:r},`Edit: ${r}`)}_handleEditDevice(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._hass.devices?.[t],r=a?.name_by_user||a?.name||t;(0,i.Bo)(this._hass,"lcars-edit-device-button-card",{device:t,name:r,icon:""},`Edit: ${r}`)}_handleToggle(e){const t=e.split(".")[0];if(i.g0.debug(Me,"Toggle:",e,"domain:",t),"lock"===t){const t=this._getEntityState(e);this._hass.callService("lock","locked"===t?.state?"unlock":"lock",{entity_id:e})}else"script"===t?this._hass.callService("script","turn_on",{entity_id:e}):this._hass.callService("homeassistant","toggle",{entity_id:e})}_getAreaEntities(e){return function(e,t,a=null){if(!e)return[];if(a&&a.has(t))return a.get(t);const r=Object.values(e.entities||{}),i=e.devices||{},s=new Set;for(const e of Object.values(i))e.area_id===t&&s.add(e.id);const n=r.filter(e=>!(e.hidden_by||e.hidden||e.disabled_by||e.entity_category||e.area_id!==t&&(e.area_id||!e.device_id||!s.has(e.device_id))));return a&&a.set(t,n),n}(this._hass,e,this._entityCache)}_getFloorAreaIds(e){return function(e,t){return e?.areas?Object.values(e.areas).filter(e=>e.floor_id===t).map(e=>e.area_id):[]}(this._hass,e)}_getDeviceCategoryEntities(e){if(!this._hass||!e)return{config:[],diagnostic:[]};const t=Object.values(this._hass.entities||{}),a=[],r=[];for(const i of t)i.device_id===e&&(i.disabled_by||"user"===i.hidden_by||i.hidden||("config"===i.entity_category?a.push(i):"diagnostic"===i.entity_category&&r.push(i)));return{config:a,diagnostic:r}}_groupEntities(e){return function(e,t){const a=e.devices||{},r=new Map,i=[];for(const s of t){const t=s.entity_id.split(".")[0],n=e.states?.[s.entity_id],o={entity:s,domain:t,state:n};n&&(s.device_id&&a[s.device_id]?(r.has(s.device_id)||r.set(s.device_id,{device:a[s.device_id],entities:[]}),r.get(s.device_id).entities.push(o)):i.push(o))}const s=(e,t)=>{const a=T[e.domain]??50,r=T[t.domain]??50;return a!==r?a-r:(e.state?.attributes?.friendly_name||"").localeCompare(t.state?.attributes?.friendly_name||"")};return r.forEach(e=>e.entities.sort(s)),i.sort(s),{byDevice:r,noDevice:i}}(this._hass,e)}_groupByDomain(e){const t=new Map;return e.forEach(e=>{t.has(e.domain)||t.set(e.domain,[]),t.get(e.domain).push(e)}),[...t.entries()].sort((e,t)=>(T[e[0]]??50)-(T[t[0]]??50))}_getEntityState(e){return this._hass&&this._hass.states[e]?this._hass.states[e]:null}_getEntityIcon(e){return e?e.attributes?.icon?e.attributes.icon:{light:"mdi:lightbulb",switch:"mdi:toggle-switch",sensor:"mdi:eye",binary_sensor:"mdi:radiobox-blank",climate:"mdi:thermostat",cover:"mdi:window-shutter",fan:"mdi:fan",lock:"mdi:lock",camera:"mdi:video",media_player:"mdi:cast",automation:"mdi:robot",script:"mdi:script-text",update:"mdi:package-up"}[e.entity_id.split(".")[0]]||"mdi:information-outline":"mdi:help-circle-outline"}_withEditPip(t,a){return this._editMode?e.qy`
         <div class="edit-pip-wrap">
           ${a}
           <div class="edit-pip" tabindex="0" role="button" aria-label="Edit entity"
@@ -5250,7 +5975,7 @@
                  style="--seg-i:${a}"></div>
           `)}
         </div>
-      `}static get styles(){return[r.Bx,G,X,e.AH`
+      `}static get styles(){return[r.Bx,X,Y,e.AH`
           :host { display: block; }
 
           /* ─── Content Area Header (Geordi: gold = active area) ─── */
@@ -8835,12 +9560,12 @@
             .alarm-key:active::before { animation-duration: 100ms !important; }
             .zone-bar.completing { animation-duration: 1s !important; }
           }
-        `]}_renderFloorView(t){const a=this._hass.floors?.[t];if(!a)return i.g0.debug(_e,"Render: floor not found:",t),e.qy`<div class="lcars-empty">Floor not found</div>`;const r=this._getFloorAreaIds(t);return 0===r.length?e.qy`
+        `]}_renderFloorView(t){const a=this._hass.floors?.[t];if(!a)return i.g0.debug(Me,"Render: floor not found:",t),e.qy`<div class="lcars-empty">Floor not found</div>`;const r=this._getFloorAreaIds(t);return 0===r.length?e.qy`
           <div class="content-area-panel">
             <h2 class="content-area-header">${a.name}</h2>
             <div class="lcars-empty">No areas on this floor</div>
           </div>
-        `:(i.g0.debug(_e,"Render: floor=%s areas=%d",a.name,r.length),e.qy`
+        `:(i.g0.debug(Me,"Render: floor=%s areas=%d",a.name,r.length),e.qy`
         <div class="content-floor-panel">
           <h2 class="content-floor-header">${a.name}</h2>
           ${r.map(t=>{const a=this._hass.areas?.[t];if(!a)return"";const r=this._getAreaEntities(t);return 0===r.length?"":e.qy`
@@ -8850,12 +9575,12 @@
               </div>
             `})}
         </div>
-      `)}render(){if(!this._hass)return i.g0.debug(_e,"Render: waiting for hass"),e.qy`<div class="lcars-empty">Initializing...</div>`;if(this.selectedFloor)return this._renderFloorView(this.selectedFloor);if(!this.selectedArea)return i.g0.debug(_e,"Render: no area selected"),e.qy`<div class="lcars-empty">Select an area</div>`;const t=this._hass.areas?.[this.selectedArea];if(!t)return i.g0.debug(_e,"Render: area not found:",this.selectedArea),e.qy`<div class="lcars-empty">Area not found</div>`;const a=this._getAreaEntities(this.selectedArea);return i.g0.debug(_e,"Render: area=%s entities=%d",t.name,a.length),e.qy`
+      `)}render(){if(!this._hass)return i.g0.debug(Me,"Render: waiting for hass"),e.qy`<div class="lcars-empty">Initializing...</div>`;if(this.selectedFloor)return this._renderFloorView(this.selectedFloor);if(!this.selectedArea)return i.g0.debug(Me,"Render: no area selected"),e.qy`<div class="lcars-empty">Select an area</div>`;const t=this._hass.areas?.[this.selectedArea];if(!t)return i.g0.debug(Me,"Render: area not found:",this.selectedArea),e.qy`<div class="lcars-empty">Area not found</div>`;const a=this._getAreaEntities(this.selectedArea);return i.g0.debug(Me,"Render: area=%s entities=%d",t.name,a.length),e.qy`
         <div class="content-area-panel">
           <h2 class="content-area-header">${t.name}</h2>
           ${this._renderAreaContent(a,this.selectedArea)}
         </div>
-      `}_getDevicePanelType(e){return function(e){for(const t of N){const a=t(e);if(a)return a}return null}(e)}_partitionDeviceEntities(e){const t=[],a=[],r=[];for(const i of e)b.has(i.domain)?t.push(i):k.has(i.domain)?a.push(i):r.push(i);return{cameras:t,sensors:a,controls:r}}_generatePanelCode(e){let t=5381;for(let a=0;a<e.length;a++)t=(t<<5)+t+e.charCodeAt(a)|0;const a=String(Math.abs(t)%1e6).padStart(6,"0");return`${a.slice(0,3)}-${a.slice(3)}`}_renderDevicePanel(e,t){if(e===p)return this._renderIrrigationPanel(t);const a=xe.get(e);return a?a(t,this._hass,this._editMode,this._config):""}_getSensorIndicatorColor(e){return"carbon_dioxide"===(e?.attributes?.device_class||"")?(0,L.kR)(e?.state):(0,L.xH)(e?.entity_id||"",e)}_renderCameraPanel(t){const{cameras:a,sensors:r,controls:i}=this._partitionDeviceEntities(t.entities),s=this._shortDeviceName(t.device);return e.qy`
+      `}_getDevicePanelType(e){return function(e){for(const t of N){const a=t(e);if(a)return a}return null}(e)}_partitionDeviceEntities(e){const t=[],a=[],r=[];for(const i of e)b.has(i.domain)?t.push(i):k.has(i.domain)?a.push(i):r.push(i);return{cameras:t,sensors:a,controls:r}}_generatePanelCode(e){let t=5381;for(let a=0;a<e.length;a++)t=(t<<5)+t+e.charCodeAt(a)|0;const a=String(Math.abs(t)%1e6).padStart(6,"0");return`${a.slice(0,3)}-${a.slice(3)}`}_renderDevicePanel(e,t){if(e===p)return this._renderIrrigationPanel(t);const a=Te.get(e);return a?a(t,this._hass,this._editMode,this._config):""}_getSensorIndicatorColor(e){return"carbon_dioxide"===(e?.attributes?.device_class||"")?(0,L.kR)(e?.state):(0,L.xH)(e?.entity_id||"",e)}_renderCameraPanel(t){const{cameras:a,sensors:r,controls:i}=this._partitionDeviceEntities(t.entities),s=this._shortDeviceName(t.device);return e.qy`
         <div class="lcars-device-panel" data-panel-type="camera">
           <div class="device-panel-header">
             <span class="device-panel-name">${s}</span>
@@ -8878,7 +9603,7 @@
 
           <div class="device-panel-media"
             ?data-offline=${a.length>0&&this._isOff(a[0].state)}>
-            ${a.map(({entity:t,state:a},r)=>{const i=$e(a),n=0===r?s:this._friendlyName(a,t),o=this._isOff(a)||!i?"offline":"connecting";return e.qy`
+            ${a.map(({entity:t,state:a},r)=>{const i=De(a),n=0===r?s:this._friendlyName(a,t),o=this._isOff(a)||!i?"offline":"connecting";return e.qy`
                 <div class="camera-frame" data-state="${o}"
                   style="${r>0?"margin-top:var(--lcars-gap);border-top:2px solid var(--panel-frame-color)":""}"
                   aria-busy="${"connecting"===o}"
@@ -8910,7 +9635,7 @@
           </div>
           <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
-      `}_classifyPowerEntity(e){const t=(e||"").toLowerCase();return/total\s*in\s*power/.test(t)?{side:"in",type:"total"}:/total\s*out\s*power/.test(t)?{side:"out",type:"total"}:/solar.*in.*power/.test(t)?{side:"in",type:"solar"}:/ac.*in.*power/.test(t)?{side:"in",type:"ac"}:/ac.*out.*power/.test(t)?{side:"out",type:"ac"}:/dc.*out.*power/.test(t)?{side:"out",type:"dc"}:/usb.*out.*power/.test(t)?{side:"out",type:"usb"}:/type.*c.*out.*power/.test(t)?{side:"out",type:"usbc"}:/power.*i.*o.*input.*power/.test(t)?{side:"in",type:"pio"}:/power.*i.*o.*output.*power/.test(t)?{side:"out",type:"pio"}:/anderson.*out.*power/.test(t)?{side:"out",type:"dc"}:/alternator.*in.*power/.test(t)?{side:"in",type:"alt"}:/station.*power/.test(t)?{side:"out",type:"station"}:/\bin\b/.test(t)?{side:"in",type:"other"}:/\bout\b/.test(t)?{side:"out",type:"other"}:null}_partitionBatteryEntities(e,t){const a=[],r=[],i=[],s=[],n=[],o=[],l=[];for(const t of e){const e=t.state?.attributes||{},o=e.device_class||"",l=e.unit_of_measurement||"",c=t.domain,d=e.friendly_name||t.entity.entity_id;if(["switch","number","button","select"].includes(c))n.push(t);else if("battery"!==o||"%"!==l){if("power"===o&&"W"===l){const e=this._classifyPowerEntity(d);e?"in"===e.side?r.push({...t,ioType:e.type}):i.push({...t,ioType:e.type}):s.push(t);continue}s.push(t)}else a.push(t)}if(t){for(const e of t.config){const t=this._getEntityState(e.entity_id);if(!t)continue;const a=e.entity_id.split(".")[0];o.push({entity:e,domain:a,state:t})}for(const e of t.diagnostic){const t=this._getEntityState(e.entity_id);if(!t)continue;const a=e.entity_id.split(".")[0];l.push({entity:e,domain:a,state:t})}}return{soc:a,powerIn:r,powerOut:i,telemetry:s,controls:n,configControls:o,diagnostics:l}}_partitionEnvironmentEntities(e,t){const a=[],r=[],i=[],s=[],n=[];for(const t of e){const e=t.state?.attributes?.device_class||"",n=t.domain;["fan","switch","button","number","select","light"].includes(n)?s.push(t):C.has(e)?r.push(t):e||"sensor"!==n||!E.test(t.entity.entity_id)?i.push(t):a.push(t)}if(t)for(const e of[...t.diagnostic,...t.config]){const t=this._getEntityState(e.entity_id);t&&n.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{score:a,airQuality:r,telemetry:i,controls:s,diagnostics:n}}_getScrubberHue(e){return null==e||e<=50?120:e<=100?120-(e-50)/50*70:e<=150?50-(e-100)/50*35:Math.max(0,15-(e-150)/100*15)}_getAQColor(e){return null==e||e<=50?"var(--lcars-ice)":e<=100?"var(--lcars-sunflower)":e<=150?"var(--lcars-butterscotch)":e<=200?"var(--lcars-peach)":"var(--lcars-tomato)"}_getScrubberSpeed(e){return null==e||0===e?20:2+18*Math.pow(1-e/100,1.5)}_envHistoryCache=new Map;async _getSparklineData(e,t){return(0,U.s)(this._hass,e,t,this._envHistoryCache)}_renderSparkline(e,t,a){return(0,U.K)(e,{color:t,label:a,className:"env-sparkline"})}_renderEnvironmentPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{score:r,airQuality:i,telemetry:s,controls:n,diagnostics:o}=this._partitionEnvironmentEntities(t.entities,a),l=this._shortDeviceName(t.device)||"Environment",c=r[0],d=c?parseFloat(c.state.state):null,p=i.find(e=>"pm25"===(e.state?.attributes?.device_class||"")),m=p?parseFloat(p.state.state):null,u=null!=d&&Number.isFinite(d)?d:null!=m&&Number.isFinite(m)?Math.min(300,4*m):null,h=this._getScrubberHue(u),v=this._getAQColor(u),f=n.find(e=>"fan"===e.domain),g=f?.state,b=g?.attributes?.percentage??null,y=g?.attributes?.preset_modes||[],w=g?.attributes?.preset_mode||"",_=!f||"off"===g?.state||0===b,x=this._getScrubberSpeed(_?0:b),$=!f,k=n.filter(e=>"fan"!==e.domain),S=[...r,...i].map(e=>e.entity.entity_id);S.length>0&&this._getSparklineData(t.device.id,S).then(e=>{e&&this.requestUpdate()});const C=this._envHistoryCache.get(t.device.id)?.data||{};return e.qy`
+      `}_classifyPowerEntity(e){const t=(e||"").toLowerCase();return/total\s*in\s*power/.test(t)?{side:"in",type:"total"}:/total\s*out\s*power/.test(t)?{side:"out",type:"total"}:/solar.*in.*power/.test(t)?{side:"in",type:"solar"}:/ac.*in.*power/.test(t)?{side:"in",type:"ac"}:/ac.*out.*power/.test(t)?{side:"out",type:"ac"}:/dc.*out.*power/.test(t)?{side:"out",type:"dc"}:/usb.*out.*power/.test(t)?{side:"out",type:"usb"}:/type.*c.*out.*power/.test(t)?{side:"out",type:"usbc"}:/power.*i.*o.*input.*power/.test(t)?{side:"in",type:"pio"}:/power.*i.*o.*output.*power/.test(t)?{side:"out",type:"pio"}:/anderson.*out.*power/.test(t)?{side:"out",type:"dc"}:/alternator.*in.*power/.test(t)?{side:"in",type:"alt"}:/station.*power/.test(t)?{side:"out",type:"station"}:/\bin\b/.test(t)?{side:"in",type:"other"}:/\bout\b/.test(t)?{side:"out",type:"other"}:null}_partitionBatteryEntities(e,t){const a=[],r=[],i=[],s=[],n=[],o=[],l=[];for(const t of e){const e=t.state?.attributes||{},o=e.device_class||"",l=e.unit_of_measurement||"",c=t.domain,d=e.friendly_name||t.entity.entity_id;if(["switch","number","button","select"].includes(c))n.push(t);else if("battery"!==o||"%"!==l){if("power"===o&&"W"===l){const e=this._classifyPowerEntity(d);e?"in"===e.side?r.push({...t,ioType:e.type}):i.push({...t,ioType:e.type}):s.push(t);continue}s.push(t)}else a.push(t)}if(t){for(const e of t.config){const t=this._getEntityState(e.entity_id);if(!t)continue;const a=e.entity_id.split(".")[0];o.push({entity:e,domain:a,state:t})}for(const e of t.diagnostic){const t=this._getEntityState(e.entity_id);if(!t)continue;const a=e.entity_id.split(".")[0];l.push({entity:e,domain:a,state:t})}}return{soc:a,powerIn:r,powerOut:i,telemetry:s,controls:n,configControls:o,diagnostics:l}}_partitionEnvironmentEntities(e,t){const a=[],r=[],i=[],s=[],n=[];for(const t of e){const e=t.state?.attributes?.device_class||"",n=t.domain;["fan","switch","button","number","select","light"].includes(n)?s.push(t):C.has(e)?r.push(t):e||"sensor"!==n||!E.test(t.entity.entity_id)?i.push(t):a.push(t)}if(t)for(const e of[...t.diagnostic,...t.config]){const t=this._getEntityState(e.entity_id);t&&n.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{score:a,airQuality:r,telemetry:i,controls:s,diagnostics:n}}_getScrubberHue(e){return null==e||e<=50?120:e<=100?120-(e-50)/50*70:e<=150?50-(e-100)/50*35:Math.max(0,15-(e-150)/100*15)}_getAQColor(e){return null==e||e<=50?"var(--lcars-ice)":e<=100?"var(--lcars-sunflower)":e<=150?"var(--lcars-butterscotch)":e<=200?"var(--lcars-peach)":"var(--lcars-tomato)"}_getScrubberSpeed(e){return null==e||0===e?20:2+18*Math.pow(1-e/100,1.5)}_envHistoryCache=new Map;async _getSparklineData(e,t){return(0,V.s)(this._hass,e,t,this._envHistoryCache)}_renderSparkline(e,t,a){return(0,V.K)(e,{color:t,label:a,className:"env-sparkline"})}_renderEnvironmentPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{score:r,airQuality:i,telemetry:s,controls:n,diagnostics:o}=this._partitionEnvironmentEntities(t.entities,a),l=this._shortDeviceName(t.device)||"Environment",c=r[0],d=c?parseFloat(c.state.state):null,p=i.find(e=>"pm25"===(e.state?.attributes?.device_class||"")),u=p?parseFloat(p.state.state):null,m=null!=d&&Number.isFinite(d)?d:null!=u&&Number.isFinite(u)?Math.min(300,4*u):null,h=this._getScrubberHue(m),v=this._getAQColor(m),f=n.find(e=>"fan"===e.domain),g=f?.state,b=g?.attributes?.percentage??null,y=g?.attributes?.preset_modes||[],w=g?.attributes?.preset_mode||"",_=!f||"off"===g?.state||0===b,x=this._getScrubberSpeed(_?0:b),$=!f,k=n.filter(e=>"fan"!==e.domain),S=[...r,...i].map(e=>e.entity.entity_id);S.length>0&&this._getSparklineData(t.device.id,S).then(e=>{e&&this.requestUpdate()});const C=this._envHistoryCache.get(t.device.id)?.data||{};return e.qy`
         <div class="lcars-device-panel env-panel ${$?"sensor-only":""}" data-panel-type="environment">
           <!-- Header -->
           <div class="env-header">
@@ -8963,15 +9688,15 @@
 
           <!-- Atmoscrubber Cylinder (center) -->
           <div class="atmoscrubber-container" role="meter"
-            aria-valuenow="${null!=u?Math.round(u):""}"
+            aria-valuenow="${null!=m?Math.round(m):""}"
             aria-valuemin="0" aria-valuemax="300"
-            aria-label="Air quality: ${null!=u?Math.round(u):"unknown"}">
+            aria-label="Air quality: ${null!=m?Math.round(m):"unknown"}">
             <div class="atmoscrubber ${_?"scrubber-idle":""}"
               style="--scrubber-hue:${Math.round(h)};--scrubber-speed:${x.toFixed(1)}s;--atmos-quality-color:${v}">
               ${c?e.qy`
                 <div class="scrubber-score">${null!=d&&Number.isFinite(d)?Math.round(d):"—"}</div>
               `:p?e.qy`
-                <div class="scrubber-score">${null!=m&&Number.isFinite(m)?Math.round(m):"—"}</div>
+                <div class="scrubber-score">${null!=u&&Number.isFinite(u)?Math.round(u):"—"}</div>
               `:""}
               ${_?"":e.qy`${Array.from({length:6},(t,a)=>e.qy`
                 <div class="lcars-atmos-particle" aria-hidden="true"
@@ -9026,14 +9751,14 @@
           </div>
           <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
-      `}_getCoreColor(e){return e>=80?"var(--lcars-ice)":e>=60?"var(--lcars-sky)":e>=40?"var(--lcars-bluey)":e>=20?"var(--lcars-butterscotch)":e>=10?"var(--lcars-peach)":"var(--lcars-tomato)"}_getFlowSpeed(e){const t=Math.abs(parseFloat(e)||0);return 0===t?"flow-stopped":t>1e3?"flow-fast":t>100?"flow-medium":"flow-slow"}_renderBatteryPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{soc:r,powerIn:i,powerOut:s,telemetry:n,controls:o,configControls:l,diagnostics:c}=this._partitionBatteryEntities(t.entities,a),d=this._shortDeviceName(t.device)||"Battery",p=r[0],m=p&&parseFloat(p.state.state)||0,u=p&&"unavailable"!==p.state.state&&"unknown"!==p.state.state,h=u?this._getCoreColor(m):"var(--lcars-gray)",v=i.find(e=>"total"===e.ioType),f=s.find(e=>"total"===e.ioType),g=v&&parseFloat(v.state.state)||0,b=f&&parseFloat(f.state.state)||0,y=g>5,w=!(y||b>5),_=new Set;i.filter(e=>"total"!==e.ioType).forEach(e=>_.add(e.ioType)),s.filter(e=>"total"!==e.ioType).forEach(e=>_.add(e.ioType));const x=[..._].map(e=>({type:e,label:e.toUpperCase(),inEntry:i.find(t=>t.ioType===e),outEntry:s.find(t=>t.ioType===e)})),k=n.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||"duration"===t||/state.*health|cycles|remain.*time|status|error.*code|battery.*count/.test(a)}).slice(0,8),S=c.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||/cycles|status|error|battery.*count|charging.*state|power.*diff/.test(a)}).slice(0,8);return e.qy`
+      `}_getCoreColor(e){return e>=80?"var(--lcars-ice)":e>=60?"var(--lcars-sky)":e>=40?"var(--lcars-bluey)":e>=20?"var(--lcars-butterscotch)":e>=10?"var(--lcars-peach)":"var(--lcars-tomato)"}_getFlowSpeed(e){const t=Math.abs(parseFloat(e)||0);return 0===t?"flow-stopped":t>1e3?"flow-fast":t>100?"flow-medium":"flow-slow"}_renderBatteryPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{soc:r,powerIn:i,powerOut:s,telemetry:n,controls:o,configControls:l,diagnostics:c}=this._partitionBatteryEntities(t.entities,a),d=this._shortDeviceName(t.device)||"Battery",p=r[0],u=p&&parseFloat(p.state.state)||0,m=p&&"unavailable"!==p.state.state&&"unknown"!==p.state.state,h=m?this._getCoreColor(u):"var(--lcars-gray)",v=i.find(e=>"total"===e.ioType),f=s.find(e=>"total"===e.ioType),g=v&&parseFloat(v.state.state)||0,b=f&&parseFloat(f.state.state)||0,y=g>5,w=!(y||b>5),_=new Set;i.filter(e=>"total"!==e.ioType).forEach(e=>_.add(e.ioType)),s.filter(e=>"total"!==e.ioType).forEach(e=>_.add(e.ioType));const x=[..._].map(e=>({type:e,label:e.toUpperCase(),inEntry:i.find(t=>t.ioType===e),outEntry:s.find(t=>t.ioType===e)})),k=n.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||"duration"===t||/state.*health|cycles|remain.*time|status|error.*code|battery.*count/.test(a)}).slice(0,8),S=c.filter(e=>{const t=e.state?.attributes?.device_class||"",a=(e.state?.attributes?.friendly_name||"").toLowerCase();return"temperature"===t||/cycles|status|error|battery.*count|charging.*state|power.*diff/.test(a)}).slice(0,8);return e.qy`
         <div class="lcars-device-panel battery-panel" data-panel-type="battery">
           <!-- Header -->
           <div class="battery-header">
             <span class="device-panel-name">${d}</span>
             <div class="device-panel-header-line"></div>
             <span class="battery-charge-label" style="color:${h}">
-              ${u?`${Math.round(m)}%`:"N/A"}
+              ${m?`${Math.round(u)}%`:"N/A"}
             </span>
             <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(p?.entity?.entity_id||t.device.id)}</span>
           </div>
@@ -9084,9 +9809,9 @@
 
           <!-- Warp Core (center) -->
           <div class="warp-core-container" role="meter"
-            aria-valuenow="${m}" aria-valuemin="0" aria-valuemax="100"
-            aria-label="Battery charge level: ${Math.round(m)} percent">
-            <div class="warp-core" style="--core-color:${h};--core-charge:${u?m:0}">
+            aria-valuenow="${u}" aria-valuemin="0" aria-valuemax="100"
+            aria-label="Battery charge level: ${Math.round(u)} percent">
+            <div class="warp-core" style="--core-color:${h};--core-charge:${m?u:0}">
               <div class="warp-core-fill ${w?"core-idle":""} ${y?"core-charging":""}">
                 <div class="warp-core-stream"></div>
               </div>
@@ -9183,16 +9908,16 @@
           </div>
           <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
-      `}_climateSetpointDebouncer=null;_partitionClimateEntities(e,t){const a=[],r=[],i=[],s=[],n=new Set(["problem","heat","cold","connectivity","battery","tamper","smoke","safety"]);for(const t of e){const e=t.domain;if("climate"!==e){if("binary_sensor"===e){const e=t.state?.attributes?.device_class||"";if(n.has(e)){i.push(t);continue}}k.has(e),r.push(t)}else a.push(t)}if(t)for(const e of t.diagnostic||[]){const t=this._getEntityState(e.entity_id);t&&s.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{climate:a,sensors:r,faults:i,diagnostics:s}}_isDualSetpoint(e){return"heat_cool"===e?.attributes?.hvac_mode||null!=e?.attributes?.target_temp_low&&null!=e?.attributes?.target_temp_high}_renderClimateArc(t,a,r,i,s){const n=100,o=120,l=80,c=i-r||1,d=Math.max(0,Math.min(1,(t-r)/c)),p=Math.PI,m=p-(p-0)*d,u=n+l*Math.cos(p),h=o-l*Math.sin(p),v=n+l*Math.cos(m),f=o-l*Math.sin(m),g=d>.5?1:0,b=p-(p-0)*Math.max(0,Math.min(1,(a-r)/c)),y=n+l*Math.cos(b),w=o-l*Math.sin(b);return e.qy`
+      `}_climateSetpointDebouncer=null;_partitionClimateEntities(e,t){const a=[],r=[],i=[],s=[],n=new Set(["problem","heat","cold","connectivity","battery","tamper","smoke","safety"]);for(const t of e){const e=t.domain;if("climate"!==e){if("binary_sensor"===e){const e=t.state?.attributes?.device_class||"";if(n.has(e)){i.push(t);continue}}k.has(e),r.push(t)}else a.push(t)}if(t)for(const e of t.diagnostic||[]){const t=this._getEntityState(e.entity_id);t&&s.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{climate:a,sensors:r,faults:i,diagnostics:s}}_isDualSetpoint(e){return"heat_cool"===e?.attributes?.hvac_mode||null!=e?.attributes?.target_temp_low&&null!=e?.attributes?.target_temp_high}_renderClimateArc(t,a,r,i,s){const n=100,o=120,l=80,c=i-r||1,d=Math.max(0,Math.min(1,(t-r)/c)),p=Math.PI,u=p-(p-0)*d,m=n+l*Math.cos(p),h=o-l*Math.sin(p),v=n+l*Math.cos(u),f=o-l*Math.sin(u),g=d>.5?1:0,b=p-(p-0)*Math.max(0,Math.min(1,(a-r)/c)),y=n+l*Math.cos(b),w=o-l*Math.sin(b);return e.qy`
         <svg class="climate-arc" viewBox="0 0 ${200} ${130}" role="meter"
           aria-valuemin="${r}" aria-valuemax="${i}" aria-valuenow="${t}"
           aria-label="Temperature: ${t}°, target ${a}°">
           <!-- Background arc -->
-          <path d="M ${u},${h} A ${l},${l} 0 1,1 ${180},${o}"
+          <path d="M ${m},${h} A ${l},${l} 0 1,1 ${180},${o}"
             fill="none" stroke="var(--lcars-disabled)" stroke-width="8" stroke-linecap="round" />
           <!-- Progress arc -->
           ${d>0?e.qy`
-            <path d="M ${u},${h} A ${l},${l} 0 ${g},1 ${v},${f}"
+            <path d="M ${m},${h} A ${l},${l} 0 ${g},1 ${v},${f}"
               fill="none" stroke="${s}" stroke-width="8" stroke-linecap="round" />
           `:""}
           <!-- Target tick -->
@@ -9203,16 +9928,16 @@
             ${null!=t&&Number.isFinite(t)?Math.round(t):"—"}°
           </text>
         </svg>
-      `}_handleClimateSetpoint(e,t,a,r,i){const s=W(a,t);this._climateSetpointDebouncer||(this._climateSetpointDebouncer=B((e,t)=>{this._hass.callService("climate","set_temperature",{entity_id:e,...t})},1500));const n=r?{["low"===i?"target_temp_low":"target_temp_high"]:s}:{temperature:s};this._climateSetpointDebouncer.call(e,n)}_handleClimateMode(e,t){this._hass.callService("climate","set_hvac_mode",{entity_id:e,hvac_mode:t})}_handleClimateFanMode(e,t){this._hass.callService("climate","set_fan_mode",{entity_id:e,fan_mode:t})}_handleClimatePreset(e,t){this._hass.callService("climate","set_preset_mode",{entity_id:e,preset_mode:t})}_renderClimatePanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{climate:r,sensors:i,faults:s,diagnostics:n}=this._partitionClimateEntities(t.entities,a),o=this._shortDeviceName(t.device)||"Thermostat";if(0===r.length)return"";const l=r[0],c=l.state,d=c?.attributes||{},p=null!=d.current_temperature?Number(d.current_temperature):null,m=d.hvac_action||"off",u=(0,L.OX)(m),h=this._isDualSetpoint(c),v=h?null:null!=d.temperature?Number(d.temperature):null,f=h?Number(d.target_temp_low):null,g=h?Number(d.target_temp_high):null,b=null!=d.min_temp?Number(d.min_temp):45,y=null!=d.max_temp?Number(d.max_temp):95,w=d.hvac_modes||[],_=d.hvac_mode||"off",x=d.fan_modes||[],$=d.fan_mode||"",k=d.preset_modes||[],S=d.preset_mode||"",C=i.find(e=>"humidity"===(e.state?.attributes?.device_class||"")),E=d.target_temp_step||1;return e.qy`
+      `}_handleClimateSetpoint(e,t,a,r,i){const s=W(a,t);this._climateSetpointDebouncer||(this._climateSetpointDebouncer=U((e,t)=>{this._hass.callService("climate","set_temperature",{entity_id:e,...t})},1500));const n=r?{["low"===i?"target_temp_low":"target_temp_high"]:s}:{temperature:s};this._climateSetpointDebouncer.call(e,n)}_handleClimateMode(e,t){this._hass.callService("climate","set_hvac_mode",{entity_id:e,hvac_mode:t})}_handleClimateFanMode(e,t){this._hass.callService("climate","set_fan_mode",{entity_id:e,fan_mode:t})}_handleClimatePreset(e,t){this._hass.callService("climate","set_preset_mode",{entity_id:e,preset_mode:t})}_renderClimatePanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{climate:r,sensors:i,faults:s,diagnostics:n}=this._partitionClimateEntities(t.entities,a),o=this._shortDeviceName(t.device)||"Thermostat";if(0===r.length)return"";const l=r[0],c=l.state,d=c?.attributes||{},p=null!=d.current_temperature?Number(d.current_temperature):null,u=d.hvac_action||"off",m=(0,L.OX)(u),h=this._isDualSetpoint(c),v=h?null:null!=d.temperature?Number(d.temperature):null,f=h?Number(d.target_temp_low):null,g=h?Number(d.target_temp_high):null,b=null!=d.min_temp?Number(d.min_temp):45,y=null!=d.max_temp?Number(d.max_temp):95,w=d.hvac_modes||[],_=d.hvac_mode||"off",x=d.fan_modes||[],$=d.fan_mode||"",k=d.preset_modes||[],S=d.preset_mode||"",C=i.find(e=>"humidity"===(e.state?.attributes?.device_class||"")),E=d.target_temp_step||1;return e.qy`
         <div class="lcars-device-panel climate-panel" data-panel-type="climate"
-          data-hvac-action="${m}"
-          style="--panel-frame-color:${u}">
+          data-hvac-action="${u}"
+          style="--panel-frame-color:${m}">
           <!-- Header -->
           <div class="climate-header">
             <span class="device-panel-name">${o}</span>
             <div class="device-panel-header-line"></div>
-            <span class="climate-action-badge" style="color:${u}">
-              ${m.toUpperCase()}
+            <span class="climate-action-badge" style="color:${m}">
+              ${u.toUpperCase()}
             </span>
             <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(l.entity.entity_id)}</span>
           </div>
@@ -9221,9 +9946,9 @@
           <div class="climate-sensors" role="list" aria-label="${o} readings">
             ${null!=p?e.qy`
               <div class="device-sensor-line" role="listitem" aria-label="Current temperature: ${p}°">
-                <div class="sensor-indicator" style="background:${u}"></div>
+                <div class="sensor-indicator" style="background:${m}"></div>
                 <span class="sensor-label">Current</span>
-                <span class="sensor-state-value" style="color:${u}">${Math.round(p)}°</span>
+                <span class="sensor-state-value" style="color:${m}">${Math.round(p)}°</span>
               </div>
             `:""}
             ${h?e.qy`
@@ -9239,9 +9964,9 @@
               </div>
             `:null!=v?e.qy`
               <div class="device-sensor-line" role="listitem" aria-label="Target temperature: ${v}°">
-                <div class="sensor-indicator" style="background:${u}"></div>
+                <div class="sensor-indicator" style="background:${m}"></div>
                 <span class="sensor-label">Target</span>
-                <span class="sensor-state-value" style="color:${u}">${v}°</span>
+                <span class="sensor-state-value" style="color:${m}">${v}°</span>
               </div>
             `:""}
             ${C?e.qy`
@@ -9255,7 +9980,7 @@
             `:""}
             <div class="battery-section-divider"></div>
             <div class="device-sensor-line" role="listitem" aria-label="HVAC mode: ${_}">
-              <div class="sensor-indicator" style="background:${u}"></div>
+              <div class="sensor-indicator" style="background:${m}"></div>
               <span class="sensor-label">Mode</span>
               <span class="sensor-state-value">${_}</span>
             </div>
@@ -9286,7 +10011,7 @@
           <div class="climate-viewscreen" tabindex="0"
             @click=${()=>this._handleEntityClick(l.entity.entity_id)}
             @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(l.entity.entity_id))}}>
-            ${this._renderClimateArc(p,h?(f+g)/2:v,b,y,u)}
+            ${this._renderClimateArc(p,h?(f+g)/2:v,b,y,m)}
             <!-- Setpoint controls -->
             <div class="climate-setpoint-controls">
               ${h?e.qy`
@@ -9308,7 +10033,7 @@
                 <div class="climate-setpoint-row">
                   <button class="climate-sp-btn" aria-label="Decrease target temperature"
                     @click=${e=>{e.stopPropagation(),this._handleClimateSetpoint(l.entity.entity_id,d,v-E,!1)}}>−</button>
-                  <span class="climate-sp-label" style="color:${u}">TARGET ${v}°</span>
+                  <span class="climate-sp-label" style="color:${m}">TARGET ${v}°</span>
                   <button class="climate-sp-btn" aria-label="Increase target temperature"
                     @click=${e=>{e.stopPropagation(),this._handleClimateSetpoint(l.entity.entity_id,d,v+E,!1)}}>+</button>
                 </div>
@@ -9359,8 +10084,8 @@
           </div>
           <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
-      `}_alarmPinCode="";_alarmPinLimiter=H(3,6e4);_alarmCountdown=null;_alarmCountdownTimer=null;_alarmPinError=!1;_partitionAlarmEntities(e,t){const a=[],r=[],i=[],s=[],n=new Set(["door","window","motion","vibration","moisture","cold","smoke","safety","opening","garage_door","lock","tamper","problem"]);for(const t of e)if("alarm_control_panel"!==t.domain){if("binary_sensor"===t.domain){const e=t.state?.attributes?.device_class||"";if(n.has(e)){r.push(t);continue}}i.push(t)}else a.push(t);if(t)for(const e of t.diagnostic||[]){const t=this._getEntityState(e.entity_id);t&&s.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{alarm:a,zones:r,auxiliary:i,diagnostics:s}}_handleAlarmPinDigit(e){this._alarmPinCode.length>=6||(this._alarmPinCode+=String(e).replace(/\D/g,"").charAt(0)||"",this._alarmPinError=!1,this.requestUpdate())}_handleAlarmPinClear(){this._alarmPinCode="",this._alarmPinError=!1,this.requestUpdate()}_handleAlarmArm(e,t){const a=this._alarmPinCode||void 0,r=`alarm_arm_${t}`;this._hass.callService("alarm_control_panel",r,{entity_id:e,...a?{code:a}:{}}),this._alarmPinCode="",this.requestUpdate()}_handleAlarmDisarm(e){if(!this._alarmPinLimiter.allow())return this._alarmPinError=!0,void this.requestUpdate();const t=this._alarmPinCode||void 0;this._hass.callService("alarm_control_panel","alarm_disarm",{entity_id:e,...t?{code:t}:{}}),this._alarmPinCode="",this.requestUpdate()}_startAlarmCountdown(e){this._alarmCountdown=Math.max(0,e),this._alarmCountdownTimer&&clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=setInterval(()=>{this._alarmCountdown=Math.max(0,(this._alarmCountdown||0)-1),this.requestUpdate(),this._alarmCountdown<=0&&(clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=null)},1e3)}_stopAlarmCountdown(){this._alarmCountdownTimer&&(clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=null),this._alarmCountdown=null}_getAlarmShieldSymbol(e){switch(e){case"disarmed":return"✓";case"armed_home":case"armed_night":return"◉";case"armed_away":case"armed_vacation":return"▲";case"triggered":return"✕";case"arming":case"pending":case"disarming":return"⋯";default:return"?"}}_getAlarmStateLabel(e){return(e||"unknown").toUpperCase().replace(/_/g," ")}_handleAlarmKeydown(e,t){const a=e.key;/^[0-9]$/.test(a)?(e.preventDefault(),this._handleAlarmPinDigit(a)):"Backspace"===a?(e.preventDefault(),this._alarmPinCode=this._alarmPinCode.slice(0,-1),this.requestUpdate()):"Enter"===a?(e.preventDefault(),this._handleAlarmDisarm(t)):"Escape"===a&&(e.preventDefault(),this._handleAlarmPinClear())}_renderAlarmPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{alarm:r,zones:i,auxiliary:s,diagnostics:n}=this._partitionAlarmEntities(t.entities,a),o=this._shortDeviceName(t.device)||"Alarm";if(0===r.length)return"";const l=r[0],c=l.state,d=c?.state||"unavailable",p=(0,L.of)(d),m=["arming","pending","disarming"].includes(d),u="triggered"===d,h=this._getAlarmShieldSymbol(d),v=this._getAlarmStateLabel(d),f=!1!==c?.attributes?.code_required,g=Array.from({length:6},(e,t)=>t<this._alarmPinCode.length);if(m&&null==this._alarmCountdown){const e=c?.attributes?.delay||60;this._startAlarmCountdown(e)}else m||null==this._alarmCountdown||this._stopAlarmCountdown();return e.qy`
-        <div class="lcars-device-panel alarm-panel ${u?"alarm-triggered":""}" data-panel-type="alarm"
+      `}_alarmPinCode="";_alarmPinLimiter=H(3,6e4);_alarmCountdown=null;_alarmCountdownTimer=null;_alarmPinError=!1;_partitionAlarmEntities(e,t){const a=[],r=[],i=[],s=[],n=new Set(["door","window","motion","vibration","moisture","cold","smoke","safety","opening","garage_door","lock","tamper","problem"]);for(const t of e)if("alarm_control_panel"!==t.domain){if("binary_sensor"===t.domain){const e=t.state?.attributes?.device_class||"";if(n.has(e)){r.push(t);continue}}i.push(t)}else a.push(t);if(t)for(const e of t.diagnostic||[]){const t=this._getEntityState(e.entity_id);t&&s.push({entity:e,domain:e.entity_id.split(".")[0],state:t})}return{alarm:a,zones:r,auxiliary:i,diagnostics:s}}_handleAlarmPinDigit(e){this._alarmPinCode.length>=6||(this._alarmPinCode+=String(e).replace(/\D/g,"").charAt(0)||"",this._alarmPinError=!1,this.requestUpdate())}_handleAlarmPinClear(){this._alarmPinCode="",this._alarmPinError=!1,this.requestUpdate()}_handleAlarmArm(e,t){const a=this._alarmPinCode||void 0,r=`alarm_arm_${t}`;this._hass.callService("alarm_control_panel",r,{entity_id:e,...a?{code:a}:{}}),this._alarmPinCode="",this.requestUpdate()}_handleAlarmDisarm(e){if(!this._alarmPinLimiter.allow())return this._alarmPinError=!0,void this.requestUpdate();const t=this._alarmPinCode||void 0;this._hass.callService("alarm_control_panel","alarm_disarm",{entity_id:e,...t?{code:t}:{}}),this._alarmPinCode="",this.requestUpdate()}_startAlarmCountdown(e){this._alarmCountdown=Math.max(0,e),this._alarmCountdownTimer&&clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=setInterval(()=>{this._alarmCountdown=Math.max(0,(this._alarmCountdown||0)-1),this.requestUpdate(),this._alarmCountdown<=0&&(clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=null)},1e3)}_stopAlarmCountdown(){this._alarmCountdownTimer&&(clearInterval(this._alarmCountdownTimer),this._alarmCountdownTimer=null),this._alarmCountdown=null}_getAlarmShieldSymbol(e){switch(e){case"disarmed":return"✓";case"armed_home":case"armed_night":return"◉";case"armed_away":case"armed_vacation":return"▲";case"triggered":return"✕";case"arming":case"pending":case"disarming":return"⋯";default:return"?"}}_getAlarmStateLabel(e){return(e||"unknown").toUpperCase().replace(/_/g," ")}_handleAlarmKeydown(e,t){const a=e.key;/^[0-9]$/.test(a)?(e.preventDefault(),this._handleAlarmPinDigit(a)):"Backspace"===a?(e.preventDefault(),this._alarmPinCode=this._alarmPinCode.slice(0,-1),this.requestUpdate()):"Enter"===a?(e.preventDefault(),this._handleAlarmDisarm(t)):"Escape"===a&&(e.preventDefault(),this._handleAlarmPinClear())}_renderAlarmPanel(t){const a=this._getDeviceCategoryEntities(t.device.id),{alarm:r,zones:i,auxiliary:s,diagnostics:n}=this._partitionAlarmEntities(t.entities,a),o=this._shortDeviceName(t.device)||"Alarm";if(0===r.length)return"";const l=r[0],c=l.state,d=c?.state||"unavailable",p=(0,L.of)(d),u=["arming","pending","disarming"].includes(d),m="triggered"===d,h=this._getAlarmShieldSymbol(d),v=this._getAlarmStateLabel(d),f=!1!==c?.attributes?.code_required,g=Array.from({length:6},(e,t)=>t<this._alarmPinCode.length);if(u&&null==this._alarmCountdown){const e=c?.attributes?.delay||60;this._startAlarmCountdown(e)}else u||null==this._alarmCountdown||this._stopAlarmCountdown();return e.qy`
+        <div class="lcars-device-panel alarm-panel ${m?"alarm-triggered":""}" data-panel-type="alarm"
           data-state="${d}"
           style="--panel-frame-color:${p}">
           <!-- Header -->
@@ -9399,7 +10124,7 @@
 
           <!-- Viewscreen (right) -->
           <div class="alarm-viewscreen">
-            ${m&&null!=this._alarmCountdown?e.qy`
+            ${u&&null!=this._alarmCountdown?e.qy`
               <div class="alarm-countdown" aria-live="polite">
                 <span class="alarm-countdown-num" style="color:${p}">${this._alarmCountdown}</span>
                 <span class="alarm-countdown-label">${v}</span>
@@ -9454,14 +10179,14 @@
           `:""}
           <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
-      `}_isValidArtworkUrl(e){return!!e&&(e.startsWith("/api/")||e.startsWith("/local/"))}_getMediaTransportSymbol(e){switch(e){case"playing":return"▶";case"paused":return"❚❚";default:return"■"}}_partitionMediaEntities(e){const t=[],a=[],r=[],i=[];for(const s of e)"media_player"!==s.domain?"remote"!==s.domain?k.has(s.domain)?a.push(s):r.push(s):i.push(s):t.push(s);return{player:t,sensors:a,controls:r,remotes:i}}_handleMediaService(e,t,a={}){this._hass.callService("media_player",t,{entity_id:e,...a})}_handleVolumeChange(e,t){const a=t.currentTarget.getBoundingClientRect(),r=Math.max(0,Math.min(1,(t.clientX-a.left)/a.width));this._handleMediaService(e,"volume_set",{volume_level:Math.round(100*r)/100})}_renderMediaPanel(t){const{player:a,sensors:r,controls:i,remotes:s}=this._partitionMediaEntities(t.entities),n=this._shortDeviceName(t.device)||"Media";if(0===a.length)return"";const o=a[0],l=o.state,c=l?.attributes||{},d=l?.state||"unavailable",p=(0,L.uT)(d),m=this._getMediaTransportSymbol(d),u="playing"===d,h=!(u||"paused"===d),v=c.entity_picture,f=this._isValidArtworkUrl(v),g=c.media_title||"",b=c.media_artist||"",y=c.source||"",w=null!=c.volume_level?Number(c.volume_level):0,_=c.is_volume_muted||!1,x=(c.source_list,c.supported_features||0),$=!!(16&x),k=!!(32&x),S=!!(4&x),C=!!(32768&x),E=!!(262144&x),z=c.shuffle||!1,A=c.repeat||"off";return e.qy`
+      `}_isValidArtworkUrl(e){return!!e&&(e.startsWith("/api/")||e.startsWith("/local/"))}_getMediaTransportSymbol(e){switch(e){case"playing":return"▶";case"paused":return"❚❚";default:return"■"}}_partitionMediaEntities(e){const t=[],a=[],r=[],i=[];for(const s of e)"media_player"!==s.domain?"remote"!==s.domain?k.has(s.domain)?a.push(s):r.push(s):i.push(s):t.push(s);return{player:t,sensors:a,controls:r,remotes:i}}_handleMediaService(e,t,a={}){this._hass.callService("media_player",t,{entity_id:e,...a})}_handleVolumeChange(e,t){const a=t.currentTarget.getBoundingClientRect(),r=Math.max(0,Math.min(1,(t.clientX-a.left)/a.width));this._handleMediaService(e,"volume_set",{volume_level:Math.round(100*r)/100})}_renderMediaPanel(t){const{player:a,sensors:r,controls:i,remotes:s}=this._partitionMediaEntities(t.entities),n=this._shortDeviceName(t.device)||"Media";if(0===a.length)return"";const o=a[0],l=o.state,c=l?.attributes||{},d=l?.state||"unavailable",p=(0,L.uT)(d),u=this._getMediaTransportSymbol(d),m="playing"===d,h=!(m||"paused"===d),v=c.entity_picture,f=this._isValidArtworkUrl(v),g=c.media_title||"",b=c.media_artist||"",y=c.source||"",w=null!=c.volume_level?Number(c.volume_level):0,_=c.is_volume_muted||!1,x=(c.source_list,c.supported_features||0),$=!!(16&x),k=!!(32&x),S=!!(4&x),C=!!(32768&x),E=!!(262144&x),z=c.shuffle||!1,A=c.repeat||"off";return e.qy`
         <div class="lcars-device-panel media-panel ${h?"media-idle":""}" data-panel-type="media"
           style="--panel-frame-color:var(--lcars-african-violet)">
           <!-- Header -->
           <div class="media-header">
             <span class="device-panel-name">${n}</span>
             <div class="device-panel-header-line"></div>
-            <span class="media-state-badge" style="color:${p}">${m} ${d.toUpperCase()}</span>
+            <span class="media-state-badge" style="color:${p}">${u} ${d.toUpperCase()}</span>
             <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(o.entity.entity_id)}</span>
           </div>
 
@@ -9500,7 +10225,7 @@
           </div>
 
           <!-- Viewscreen (right) -->
-          <div class="media-viewscreen ${u?"media-viewscreen-glow":""}" @click=${()=>this._handleEntityClick(o.entity.entity_id)}>
+          <div class="media-viewscreen ${m?"media-viewscreen-glow":""}" @click=${()=>this._handleEntityClick(o.entity.entity_id)}>
             ${f&&!h?e.qy`
               <img class="media-art" src="${v}" alt="Album art"
                 crossorigin="anonymous" referrerpolicy="no-referrer" loading="lazy"
@@ -9520,7 +10245,7 @@
           </div>
 
           <!-- Audio Waveform (12 bars, 4 groups — Data C-1/C-2) -->
-          <div class="lcars-audio-waveform" ?data-paused=${!u} aria-hidden="true">
+          <div class="lcars-audio-waveform" ?data-paused=${!m} aria-hidden="true">
             ${Array.from({length:12},(t,a)=>{const r=Math.floor(a/3),i=[380,420,350,460][r],s=50*a,n=2===a||8===a;return e.qy`<div class="bar ${n?"peak":""}"
                 style="--bar-dur:${i+a%3*30}ms;--bar-delay:${s}ms;--bar-min-ratio:${.1+.05*r}"></div>`})}
           </div>
@@ -9536,9 +10261,9 @@
                 <button class="media-transport-btn" title="Previous"
                   @click=${()=>this._handleMediaService(o.entity.entity_id,"media_previous_track")}>⏮</button>
               `:""}
-              <button class="media-transport-btn media-play-btn" title="${u?"Pause":"Play"}"
-                @click=${()=>this._handleMediaService(o.entity.entity_id,u?"media_pause":"media_play")}>
-                ${u?"❚❚":"▶"}
+              <button class="media-transport-btn media-play-btn" title="${m?"Pause":"Play"}"
+                @click=${()=>this._handleMediaService(o.entity.entity_id,m?"media_pause":"media_play")}>
+                ${m?"❚❚":"▶"}
               </button>
               ${k?e.qy`
                 <button class="media-transport-btn" title="Next"
@@ -9566,7 +10291,7 @@
             `:""}
           </div>
         </div>
-      `}_partitionPoolEntities(e){const t=[],a=[],r=[],i=[],s=[],n=[],o=[],l=[],c=/orp|ph_|salt|tds|saturation|calcium|alkalinity|cyanuric/i;for(const d of e){const e=d.entity.entity_id,p=d.domain,m=d.state?.attributes||{};if("climate"!==p)if("light"!==p)if("sensor"===p&&c.test(e))r.push(d);else if("switch"!==p){if("sensor"===p&&"temperature"===(m.device_class||"")){o.push(d);continue}l.push(d)}else/pump/i.test(e)?i.push(d):s.push(d);else n.push(d);else/spa/i.test(e)?a.push(d):t.push(d)}return{pool:t,spa:a,chemistry:r,pumps:i,circuits:s,lights:n,environmental:o,diagnostics:l}}_handlePoolSetpoint(e,t,a){const r=W(a,t,{min:40,max:104});this._poolSetpointDebouncer||(this._poolSetpointDebouncer=B((e,t)=>{this._hass.callService("climate","set_temperature",{entity_id:e,temperature:t})},1500)),this._poolSetpointDebouncer.call(e,r)}_renderPoolBody(t,a,r){if(0===t.length)return"";const i=t[0],s=i.state,n=s?.attributes||{},o=null!=n.current_temperature?Number(n.current_temperature):null,l=null!=n.temperature?Number(n.temperature):null,c=n.hvac_action||"off",d=(0,L.qW)(c,a),p="spa"===a?"SPA":"POOL";return e.qy`
+      `}_partitionPoolEntities(e){const t=[],a=[],r=[],i=[],s=[],n=[],o=[],l=[],c=/orp|ph_|salt|tds|saturation|calcium|alkalinity|cyanuric/i;for(const d of e){const e=d.entity.entity_id,p=d.domain,u=d.state?.attributes||{};if("climate"!==p)if("light"!==p)if("sensor"===p&&c.test(e))r.push(d);else if("switch"!==p){if("sensor"===p&&"temperature"===(u.device_class||"")){o.push(d);continue}l.push(d)}else/pump/i.test(e)?i.push(d):s.push(d);else n.push(d);else/spa/i.test(e)?a.push(d):t.push(d)}return{pool:t,spa:a,chemistry:r,pumps:i,circuits:s,lights:n,environmental:o,diagnostics:l}}_handlePoolSetpoint(e,t,a){const r=W(a,t,{min:40,max:104});this._poolSetpointDebouncer||(this._poolSetpointDebouncer=U((e,t)=>{this._hass.callService("climate","set_temperature",{entity_id:e,temperature:t})},1500)),this._poolSetpointDebouncer.call(e,r)}_renderPoolBody(t,a,r){if(0===t.length)return"";const i=t[0],s=i.state,n=s?.attributes||{},o=null!=n.current_temperature?Number(n.current_temperature):null,l=null!=n.temperature?Number(n.temperature):null,c=n.hvac_action||"off",d=(0,L.qW)(c,a),p="spa"===a?"SPA":"POOL";return e.qy`
         <div class="pool-body-frame" style="--body-color:${d}" role="region"
           aria-label="${p}: ${null!=o?o+"°":"N/A"}, target ${l||"N/A"}°">
           <div class="pool-body-label" style="color:${d}">${p}</div>
@@ -9582,15 +10307,15 @@
           `:""}
           <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
-      `}_renderPoolSpaPanel(t){const{pool:a,spa:r,chemistry:i,pumps:s,circuits:n,lights:o,environmental:l,diagnostics:c}=this._partitionPoolEntities(t.entities),d=this._shortDeviceName(t.device)||"Pool & Spa",p=i.length>0,m=a[0]?.state?.attributes?.current_temperature,u=r[0]?.state?.attributes?.current_temperature,h=l.find(e=>/air/i.test(e.entity.entity_id)),v=h?.state?.state;return e.qy`
+      `}_renderPoolSpaPanel(t){const{pool:a,spa:r,chemistry:i,pumps:s,circuits:n,lights:o,environmental:l,diagnostics:c}=this._partitionPoolEntities(t.entities),d=this._shortDeviceName(t.device)||"Pool & Spa",p=i.length>0,u=a[0]?.state?.attributes?.current_temperature,m=r[0]?.state?.attributes?.current_temperature,h=l.find(e=>/air/i.test(e.entity.entity_id)),v=h?.state?.state;return e.qy`
         <div class="lcars-device-panel pool-panel ${p?"":"pool-no-chem"}" data-panel-type="aquatics"
           style="--panel-frame-color:var(--lcars-bluey)">
           <!-- Header -->
           <div class="pool-header">
             <span class="device-panel-name">${d}</span>
             <div class="device-panel-header-line"></div>
-            ${null!=m?e.qy`<span class="pool-temp-badge" style="color:var(--lcars-ice)">POOL ${Math.round(m)}°</span>`:""}
-            ${null!=u?e.qy`<span class="pool-temp-badge" style="color:var(--lcars-butterscotch)">SPA ${Math.round(u)}°</span>`:""}
+            ${null!=u?e.qy`<span class="pool-temp-badge" style="color:var(--lcars-ice)">POOL ${Math.round(u)}°</span>`:""}
+            ${null!=m?e.qy`<span class="pool-temp-badge" style="color:var(--lcars-butterscotch)">SPA ${Math.round(m)}°</span>`:""}
             ${null!=v?e.qy`<span class="pool-temp-badge" style="color:var(--lcars-space-white)">AIR ${Math.round(Number(v))}°</span>`:""}
             <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(a[0]?.entity?.entity_id||r[0]?.entity?.entity_id||t.device.id)}</span>
           </div>
@@ -9672,31 +10397,31 @@
           </svg>
           <div class="wind-reading">${a||"—"} ${r||""} ${i}</div>
         </div>
-      `}async _loadWeatherForecast(e){if(this._weatherForecastCache[e])return;const t=await j(this._hass,e,"daily");t.length>0&&(this._weatherForecastCache[e]=t,this.requestUpdate())}_renderForecastStrip(t){if(!t?.length)return"";const a=t.slice(0,7),r=a.map(e=>e.temperature).filter(Number.isFinite),i=a.map(e=>e.templow).filter(Number.isFinite),s=Math.min(...i,...r),n=Math.max(...r,...i)-s||1;return e.qy`
+      `}async _loadWeatherForecast(e){if(this._weatherForecastCache[e])return;const t=await G(this._hass,e,"daily");t.length>0&&(this._weatherForecastCache[e]=t,this.requestUpdate())}_renderForecastStrip(t){if(!t?.length)return"";const a=t.slice(0,7),r=a.map(e=>e.temperature).filter(Number.isFinite),i=a.map(e=>e.templow).filter(Number.isFinite),s=Math.min(...i,...r),n=Math.max(...r,...i)-s||1;return e.qy`
         <div class="weather-forecast" role="list" aria-label="7-day forecast">
-          ${a.map(t=>{const a=new Date(t.datetime).toLocaleDateString("en",{weekday:"short"}).toUpperCase(),r=t.temperature,i=t.templow,o=t.condition,l=this._getWeatherGlyph(o),c=(0,L.JQ)(o),d=t.precipitation_probability,p=(i-s)/n*100,m=(r-i||1)/n*100;return e.qy`
+          ${a.map(t=>{const a=new Date(t.datetime).toLocaleDateString("en",{weekday:"short"}).toUpperCase(),r=t.temperature,i=t.templow,o=t.condition,l=this._getWeatherGlyph(o),c=(0,L.JQ)(o),d=t.precipitation_probability,p=(i-s)/n*100,u=(r-i||1)/n*100;return e.qy`
               <div class="forecast-tile" role="listitem" tabindex="0"
                 aria-label="${a}: ${o}, high ${r}°, low ${i}°${null!=d?`, ${d}% precipitation`:""}">
                 <span class="forecast-day">${a}</span>
                 <span class="forecast-glyph" style="color:${c}">${l}</span>
                 <span class="forecast-hi">${null!=r?Math.round(r):"—"}°</span>
                 <div class="forecast-range-bar">
-                  <div class="forecast-range-fill" style="left:${p.toFixed(1)}%;width:${m.toFixed(1)}%"></div>
+                  <div class="forecast-range-fill" style="left:${p.toFixed(1)}%;width:${u.toFixed(1)}%"></div>
                 </div>
                 <span class="forecast-lo">${null!=i?Math.round(i):"—"}°</span>
                 ${null!=d?e.qy`<span class="forecast-precip" style="color:${d>50?"var(--lcars-sky)":"var(--lcars-gray)"}">${d}%</span>`:""}
               </div>
             `})}
         </div>
-      `}_renderWeatherPanel(t){const{weather:a,sensors:r,lightning:i,precipitation:s,wind:n,diagnostics:o}=this._partitionWeatherEntities(t.entities),l=this._shortDeviceName(t.device)||"Weather";if(0===a.length)return"";const c=a[0],d=c.state,p=d?.attributes||{},m=d?.state||"unavailable",u=(0,L.JQ)(m),h=this._getWeatherGlyph(m),v=p.temperature,f=p.humidity,g=p.pressure,b=p.wind_speed,y=p.wind_bearing,w=p.wind_speed_unit||"mph";this._loadWeatherForecast(c.entity.entity_id);const _=this._weatherForecastCache[c.entity.entity_id];return e.qy`
+      `}_renderWeatherPanel(t){const{weather:a,sensors:r,lightning:i,precipitation:s,wind:n,diagnostics:o}=this._partitionWeatherEntities(t.entities),l=this._shortDeviceName(t.device)||"Weather";if(0===a.length)return"";const c=a[0],d=c.state,p=d?.attributes||{},u=d?.state||"unavailable",m=(0,L.JQ)(u),h=this._getWeatherGlyph(u),v=p.temperature,f=p.humidity,g=p.pressure,b=p.wind_speed,y=p.wind_bearing,w=p.wind_speed_unit||"mph";this._loadWeatherForecast(c.entity.entity_id);const _=this._weatherForecastCache[c.entity.entity_id];return e.qy`
         <div class="lcars-device-panel weather-panel" data-panel-type="weather"
-          style="--panel-frame-color:${u}">
+          style="--panel-frame-color:${m}">
           <!-- Header -->
           <div class="weather-header">
             <span class="device-panel-name">${l}</span>
             <div class="device-panel-header-line"></div>
-            <span class="weather-condition-badge" style="color:${u}">
-              ${h} ${m.toUpperCase().replace(/[_-]/g," ")}
+            <span class="weather-condition-badge" style="color:${m}">
+              ${h} ${u.toUpperCase().replace(/[_-]/g," ")}
             </span>
             <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(c.entity.entity_id)}</span>
           </div>
@@ -9749,17 +10474,17 @@
 
           <!-- Viewscreen (right) -->
           <div class="weather-viewscreen" role="img"
-            aria-label="${m}: ${null!=v?v+"°":"N/A"}">
+            aria-label="${u}: ${null!=v?v+"°":"N/A"}">
             <svg class="weather-display" viewBox="0 0 200 160">
-              <text x="100" y="35" text-anchor="middle" fill="${u}"
+              <text x="100" y="35" text-anchor="middle" fill="${m}"
                 font-family="var(--lcars-font)" font-size="28">${h}</text>
-              <text x="100" y="85" text-anchor="middle" fill="${u}"
+              <text x="100" y="85" text-anchor="middle" fill="${m}"
                 font-family="var(--lcars-font)" font-size="48" font-weight="bold">
                 ${null!=v?`${Math.round(v)}°`:"—"}
               </text>
               <text x="100" y="108" text-anchor="middle" fill="var(--lcars-data-accent)"
                 font-family="var(--lcars-font)" font-size="12">
-                ${m.toUpperCase().replace(/[_-]/g," ")}
+                ${u.toUpperCase().replace(/[_-]/g," ")}
               </text>
             </svg>
             ${this._renderWindCompass(y,b,w)}
@@ -9776,7 +10501,7 @@
           .editMode=${this._editMode}
           area-id="${this.selectedArea||""}">
         </lcars-irrigation-panel>
-      `}_powerToggleLimiter=H(10,1e4);_formatWatts(e){if(null==e)return"—";const t=Number(e);return Number.isFinite(t)?Math.abs(t)>=1e4?`${(t/1e3).toFixed(1)} kW`:`${Math.round(t)} W`:"—"}_formatEnergy(e){if(null==e)return"—";const t=Number(e);return Number.isFinite(t)?`${t.toFixed(1)} kWh`:"—"}_getPowerIndicator(e){if(null==e||isNaN(e))return"✕";const t=Math.abs(Number(e));return t<=0?"○":t<=500?"●":t<=1500?"●━":t<=3e3?"●━━":"●━━━"}_partitionPowerEntities(e){const t=[],a=[],r=[],i=[],s=[],n=[];for(const o of e){if(o.disabled_by||o.hidden_by)continue;const e=o.entity?.entity_id?.split(".")[0]||o.domain,l=o.state?.attributes?.device_class||"",c=o.state?.attributes?.unit_of_measurement||"";"switch"===e?t.push(o):"power"!==l||"W"!==c&&"kW"!==c?"energy"!==l||"kWh"!==c&&"Wh"!==c?"voltage"===l&&"V"===c?i.push(o):"current"===l&&"A"===c?s.push(o):n.push(o):r.push(o):a.push(o)}return{switches:t,powerSensors:a,energySensors:r,voltageSensors:i,currentSensors:s,diagnostics:n}}_classifyPowerDevice(e,t){if(!e.some(e=>{const t=e.state?.attributes?.device_class||"";return"sensor"===e.domain&&("power"===t||"energy"===t||"voltage"===t||"current"===t)}))return null;const a=e.some(e=>"switch"===e.domain),r=(t?.manufacturer||"").toLowerCase(),i=(t?.model||"").toLowerCase();return r.includes("emporia")||i.includes("vue")?"vue":e.filter(e=>"switch"===e.domain).length>=4||i.includes("hs300")||i.includes("power strip")?"strip":a?"plug":"vue"}_getPrimaryPower(e){for(const t of e.entities){const e=t.state?.attributes?.device_class||"",a=t.state?.attributes?.unit_of_measurement||"";if("power"===e&&("W"===a||"kW"===a)){const e=parseFloat(t.state?.state);if(!isNaN(e))return"kW"===a?1e3*e:e}}return null}_getPrimaryEnergy(e){for(const t of e.entities){const e=t.state?.attributes?.device_class||"",a=t.state?.attributes?.unit_of_measurement||"";if("energy"===e&&("kWh"===a||"Wh"===a)){const e=parseFloat(t.state?.state);if(!isNaN(e))return"Wh"===a?e/1e3:e}}return null}_detect240VPairs(e){const t=/^(.+?)[\s_]*(l[12]|line[\s_]*[12])$/i,a=new Map,r=[];for(const i of e){const e=(this._shortDeviceName(i.device)||"").match(t);if(e){const t=e[1].trim();a.has(t)||a.set(t,[]),a.get(t).push(i)}else r.push(i)}const i=[...r];for(const[e,t]of a)if(2===t.length){const a=t.reduce((e,t)=>e+(this._getPrimaryPower(t)||0),0),r=t.reduce((e,t)=>e+(this._getPrimaryEnergy(t)||0),0);i.push({device:{...t[0].device,name:e},entities:t.flatMap(e=>e.entities),is240V:!0,combinedWatts:a,combinedEnergy:r})}else i.push(...t);return i}_sortCircuits(e){return[...e].sort((e,t)=>{const a=null!=e.combinedWatts?e.combinedWatts:this._getPrimaryPower(e)||0,r=null!=t.combinedWatts?t.combinedWatts:this._getPrimaryPower(t)||0;if(r!==a)return r-a;const i=(e.device?.name||"").toLowerCase(),s=(t.device?.name||"").toLowerCase();return i.localeCompare(s)})}_groupPowerStrips(e){const t=new Map,a=[];for(const a of e)"strip"===a.subType&&t.set(a.device.id,{parent:a,children:[]});for(const r of e)if("strip"!==r.subType){if(r.device?.via_device_id){const e=t.get(r.device.via_device_id);if(e){e.children.push(r);continue}}a.push(r)}return{strips:t,standalone:a}}_renderPowerArc(a,r){if(!a.length||!r||r<=0)return"";const i=this._config?.power_thresholds||{},s=a.map(e=>({name:this._shortDeviceName(e.device)||"Unknown",watts:null!=e.combinedWatts?e.combinedWatts:this._getPrimaryPower(e)||0})).filter(e=>e.watts>0).sort((e,t)=>t.watts-e.watts);if(0===s.length)return"";const n=s.slice(0,5),o=s.slice(5).reduce((e,t)=>e+t.watts,0);o>0&&n.push({name:"OTHER",watts:o});const l=120,c=100,d=80,p=Math.PI,m=Math.PI;let u=p;const h=n.map(e=>{const t=e.watts/r,a=Math.max(t*m-.02,.01),s=u-a,n=(0,L.XI)(e.watts,i),o=l+d*Math.cos(u),p=c-d*Math.sin(u),h=l+d*Math.cos(s),v=c-d*Math.sin(s),f=a>Math.PI?1:0,g=`M ${o.toFixed(1)},${p.toFixed(1)} A 80,80 0 ${f},1 ${h.toFixed(1)},${v.toFixed(1)}`;return u=s-.02,{path:g,color:n,name:e.name,watts:e.watts,fraction:t}});return e.qy`
+      `}_powerToggleLimiter=H(10,1e4);_formatWatts(e){if(null==e)return"—";const t=Number(e);return Number.isFinite(t)?Math.abs(t)>=1e4?`${(t/1e3).toFixed(1)} kW`:`${Math.round(t)} W`:"—"}_formatEnergy(e){if(null==e)return"—";const t=Number(e);return Number.isFinite(t)?`${t.toFixed(1)} kWh`:"—"}_getPowerIndicator(e){if(null==e||isNaN(e))return"✕";const t=Math.abs(Number(e));return t<=0?"○":t<=500?"●":t<=1500?"●━":t<=3e3?"●━━":"●━━━"}_partitionPowerEntities(e){const t=[],a=[],r=[],i=[],s=[],n=[];for(const o of e){if(o.disabled_by||o.hidden_by)continue;const e=o.entity?.entity_id?.split(".")[0]||o.domain,l=o.state?.attributes?.device_class||"",c=o.state?.attributes?.unit_of_measurement||"";"switch"===e?t.push(o):"power"!==l||"W"!==c&&"kW"!==c?"energy"!==l||"kWh"!==c&&"Wh"!==c?"voltage"===l&&"V"===c?i.push(o):"current"===l&&"A"===c?s.push(o):n.push(o):r.push(o):a.push(o)}return{switches:t,powerSensors:a,energySensors:r,voltageSensors:i,currentSensors:s,diagnostics:n}}_classifyPowerDevice(e,t){if(!e.some(e=>{const t=e.state?.attributes?.device_class||"";return"sensor"===e.domain&&("power"===t||"energy"===t||"voltage"===t||"current"===t)}))return null;const a=e.some(e=>"switch"===e.domain),r=(t?.manufacturer||"").toLowerCase(),i=(t?.model||"").toLowerCase();return r.includes("emporia")||i.includes("vue")?"vue":e.filter(e=>"switch"===e.domain).length>=4||i.includes("hs300")||i.includes("power strip")?"strip":a?"plug":"vue"}_getPrimaryPower(e){for(const t of e.entities){const e=t.state?.attributes?.device_class||"",a=t.state?.attributes?.unit_of_measurement||"";if("power"===e&&("W"===a||"kW"===a)){const e=parseFloat(t.state?.state);if(!isNaN(e))return"kW"===a?1e3*e:e}}return null}_getPrimaryEnergy(e){for(const t of e.entities){const e=t.state?.attributes?.device_class||"",a=t.state?.attributes?.unit_of_measurement||"";if("energy"===e&&("kWh"===a||"Wh"===a)){const e=parseFloat(t.state?.state);if(!isNaN(e))return"Wh"===a?e/1e3:e}}return null}_detect240VPairs(e){const t=/^(.+?)[\s_]*(l[12]|line[\s_]*[12])$/i,a=new Map,r=[];for(const i of e){const e=(this._shortDeviceName(i.device)||"").match(t);if(e){const t=e[1].trim();a.has(t)||a.set(t,[]),a.get(t).push(i)}else r.push(i)}const i=[...r];for(const[e,t]of a)if(2===t.length){const a=t.reduce((e,t)=>e+(this._getPrimaryPower(t)||0),0),r=t.reduce((e,t)=>e+(this._getPrimaryEnergy(t)||0),0);i.push({device:{...t[0].device,name:e},entities:t.flatMap(e=>e.entities),is240V:!0,combinedWatts:a,combinedEnergy:r})}else i.push(...t);return i}_sortCircuits(e){return[...e].sort((e,t)=>{const a=null!=e.combinedWatts?e.combinedWatts:this._getPrimaryPower(e)||0,r=null!=t.combinedWatts?t.combinedWatts:this._getPrimaryPower(t)||0;if(r!==a)return r-a;const i=(e.device?.name||"").toLowerCase(),s=(t.device?.name||"").toLowerCase();return i.localeCompare(s)})}_groupPowerStrips(e){const t=new Map,a=[];for(const a of e)"strip"===a.subType&&t.set(a.device.id,{parent:a,children:[]});for(const r of e)if("strip"!==r.subType){if(r.device?.via_device_id){const e=t.get(r.device.via_device_id);if(e){e.children.push(r);continue}}a.push(r)}return{strips:t,standalone:a}}_renderPowerArc(a,r){if(!a.length||!r||r<=0)return"";const i=this._config?.power_thresholds||{},s=a.map(e=>({name:this._shortDeviceName(e.device)||"Unknown",watts:null!=e.combinedWatts?e.combinedWatts:this._getPrimaryPower(e)||0})).filter(e=>e.watts>0).sort((e,t)=>t.watts-e.watts);if(0===s.length)return"";const n=s.slice(0,5),o=s.slice(5).reduce((e,t)=>e+t.watts,0);o>0&&n.push({name:"OTHER",watts:o});const l=120,c=100,d=80,p=Math.PI,u=Math.PI;let m=p;const h=n.map(e=>{const t=e.watts/r,a=Math.max(t*u-.02,.01),s=m-a,n=(0,L.XI)(e.watts,i),o=l+d*Math.cos(m),p=c-d*Math.sin(m),h=l+d*Math.cos(s),v=c-d*Math.sin(s),f=a>Math.PI?1:0,g=`M ${o.toFixed(1)},${p.toFixed(1)} A 80,80 0 ${f},1 ${h.toFixed(1)},${v.toFixed(1)}`;return m=s-.02,{path:g,color:n,name:e.name,watts:e.watts,fraction:t}});return e.qy`
         <div class="power-arc-area">
           <svg class="power-distribution-arc" viewBox="0 0 240 120"
             role="img" aria-label="Power distribution: ${this._formatWatts(r)} total">
@@ -9804,7 +10529,7 @@
             </text>
           </svg>
         </div>
-      `}_showCircuitPopover(e){const t=this.shadowRoot?.querySelector("#power-detail-popover");if(!t)return;const a=null!=e.combinedWatts?e.combinedWatts:this._getPrimaryPower(e),r=null!=e.combinedEnergy?e.combinedEnergy:this._getPrimaryEnergy(e),s=this._config?.power_thresholds||{},n=(0,L.XI)(a,s),o=(0,L.IO)(a,s),l=this._shortDeviceName(e.device)||"Unknown",c=e.entities?.[0]?.entity?.entity_id,d=t.querySelector(".popover-content");if(d){d.innerHTML="";const s=document.createElement("div");if(s.innerHTML=`\n          <div class="popover-header">\n            <span class="popover-title">${this._escapeHtml(l)}</span>\n            <span class="popover-status" style="color:${n}">${o}</span>\n          </div>\n          <div class="popover-hero-value" style="color:${n}">\n            ${null!=a?this._formatWatts(a):"UNAVAILABLE"}\n          </div>\n          <div class="popover-stats">\n            ${null!=r?`\n              <div class="popover-stat-row">\n                <span class="popover-stat-label">TODAY</span>\n                <span class="popover-stat-value">${this._formatEnergy(r)}</span>\n              </div>\n            `:""}\n            ${e.is240V?'\n              <div class="popover-stat-row">\n                <span class="popover-stat-label">CIRCUIT TYPE</span>\n                <span class="popover-stat-value" style="color:var(--lcars-butterscotch)">240V PAIRED</span>\n              </div>\n            ':""}\n          </div>\n        `,d.appendChild(s),c){const e=document.createElement("button");e.className="popover-history-btn",e.textContent="VIEW FULL HISTORY",e.addEventListener("click",()=>{(0,i.Hv)(c);try{t.hidePopover()}catch(e){}}),d.appendChild(e)}}try{t.showPopover()}catch(e){c&&(0,i.Hv)(c)}}_escapeHtml(e){const t=document.createElement("div");return t.textContent=e,t.innerHTML}_renderCircuitTile(t){const a=null!=t.combinedWatts?t.combinedWatts:this._getPrimaryPower(t),r=null!=t.combinedEnergy?t.combinedEnergy:this._getPrimaryEnergy(t),s=this._config?.power_thresholds||{},n=(0,L.XI)(a,s),o=(0,L.IO)(a,s),l=this._getPowerIndicator(a),c=this._shortDeviceName(t.device)||"Unknown",d="function"==typeof HTMLElement.prototype.showPopover,{powerSensors:p,energySensors:m}=this._partitionPowerEntities(t.entities||[]),u=p[0]?.entity?.entity_id,h=m[0]?.entity?.entity_id;return e.qy`
+      `}_showCircuitPopover(e){const t=this.shadowRoot?.querySelector("#power-detail-popover");if(!t)return;const a=null!=e.combinedWatts?e.combinedWatts:this._getPrimaryPower(e),r=null!=e.combinedEnergy?e.combinedEnergy:this._getPrimaryEnergy(e),s=this._config?.power_thresholds||{},n=(0,L.XI)(a,s),o=(0,L.IO)(a,s),l=this._shortDeviceName(e.device)||"Unknown",c=e.entities?.[0]?.entity?.entity_id,d=t.querySelector(".popover-content");if(d){d.innerHTML="";const s=document.createElement("div");if(s.innerHTML=`\n          <div class="popover-header">\n            <span class="popover-title">${this._escapeHtml(l)}</span>\n            <span class="popover-status" style="color:${n}">${o}</span>\n          </div>\n          <div class="popover-hero-value" style="color:${n}">\n            ${null!=a?this._formatWatts(a):"UNAVAILABLE"}\n          </div>\n          <div class="popover-stats">\n            ${null!=r?`\n              <div class="popover-stat-row">\n                <span class="popover-stat-label">TODAY</span>\n                <span class="popover-stat-value">${this._formatEnergy(r)}</span>\n              </div>\n            `:""}\n            ${e.is240V?'\n              <div class="popover-stat-row">\n                <span class="popover-stat-label">CIRCUIT TYPE</span>\n                <span class="popover-stat-value" style="color:var(--lcars-butterscotch)">240V PAIRED</span>\n              </div>\n            ':""}\n          </div>\n        `,d.appendChild(s),c){const e=document.createElement("button");e.className="popover-history-btn",e.textContent="VIEW FULL HISTORY",e.addEventListener("click",()=>{(0,i.Hv)(c);try{t.hidePopover()}catch(e){}}),d.appendChild(e)}}try{t.showPopover()}catch(e){c&&(0,i.Hv)(c)}}_escapeHtml(e){const t=document.createElement("div");return t.textContent=e,t.innerHTML}_renderCircuitTile(t){const a=null!=t.combinedWatts?t.combinedWatts:this._getPrimaryPower(t),r=null!=t.combinedEnergy?t.combinedEnergy:this._getPrimaryEnergy(t),s=this._config?.power_thresholds||{},n=(0,L.XI)(a,s),o=(0,L.IO)(a,s),l=this._getPowerIndicator(a),c=this._shortDeviceName(t.device)||"Unknown",d="function"==typeof HTMLElement.prototype.showPopover,{powerSensors:p,energySensors:u}=this._partitionPowerEntities(t.entities||[]),m=p[0]?.entity?.entity_id,h=u[0]?.entity?.entity_id;return e.qy`
         <div class="power-circuit-tile"
           style="--circuit-color:${n}"
           role="listitem"
@@ -9817,11 +10542,11 @@
             <span>${c}</span>
           </div>
           <div class="power-circuit-value-row">
-            ${this._renderClickableValue(u,`View ${c} power: ${null!=a?Math.round(a)+" watts":"unavailable"}`,e.qy`<span class="power-circuit-watts">${this._formatWatts(a)}</span>`)}
+            ${this._renderClickableValue(m,`View ${c} power: ${null!=a?Math.round(a)+" watts":"unavailable"}`,e.qy`<span class="power-circuit-watts">${this._formatWatts(a)}</span>`)}
           </div>
           ${null!=r?this._renderClickableValue(h,`View ${c} energy: ${r.toFixed(1)} kWh today`,e.qy`<span class="power-circuit-energy">${this._formatEnergy(r)} TODAY</span>`):""}
         </div>
-      `}_renderPowerDeviceRow(t){const{switches:a,powerSensors:r,energySensors:i}=this._partitionPowerEntities(t.entities),s=a[0],n=r[0]?parseFloat(r[0].state?.state)||0:null,o=i[0]&&parseFloat(i[0].state?.state)||null,l=this._config?.power_thresholds||{},c=(0,L.XI)(n,l),d=this._shortDeviceName(t.device)||"Unknown",p="on"===s?.state?.state,m=r[0]?.entity?.entity_id,u=i[0]?.entity?.entity_id;return e.qy`
+      `}_renderPowerDeviceRow(t){const{switches:a,powerSensors:r,energySensors:i}=this._partitionPowerEntities(t.entities),s=a[0],n=r[0]?parseFloat(r[0].state?.state)||0:null,o=i[0]&&parseFloat(i[0].state?.state)||null,l=this._config?.power_thresholds||{},c=(0,L.XI)(n,l),d=this._shortDeviceName(t.device)||"Unknown",p="on"===s?.state?.state,u=r[0]?.entity?.entity_id,m=i[0]?.entity?.entity_id;return e.qy`
         <div class="power-device-row"
           role="listitem" tabindex="0"
           style="--circuit-color:${c}"
@@ -9829,8 +10554,8 @@
           ${s?this._renderTrackToggle(p,`Toggle ${d}`,()=>{this._powerToggleLimiter.allow()&&this._handleToggle(s.entity.entity_id)}):""}
           <span class="power-device-name">${d}</span>
           <div class="power-device-stats">
-            ${this._renderClickableValue(m,`View ${d} power: ${null!=n?Math.round(n)+" watts":"unknown"}`,e.qy`<span class="power-device-watts" style="color:${c}">${this._formatWatts(n)}</span>`)}
-            ${null!=o?this._renderClickableValue(u,`View ${d} energy: ${o.toFixed(1)} kWh`,e.qy`<span class="power-device-energy">${this._formatEnergy(o)}</span>`):""}
+            ${this._renderClickableValue(u,`View ${d} power: ${null!=n?Math.round(n)+" watts":"unknown"}`,e.qy`<span class="power-device-watts" style="color:${c}">${this._formatWatts(n)}</span>`)}
+            ${null!=o?this._renderClickableValue(m,`View ${d} energy: ${o.toFixed(1)} kWh`,e.qy`<span class="power-device-energy">${this._formatEnergy(o)}</span>`):""}
           </div>
         </div>
       `}_renderPowerStrip(t,a){const r=this._shortDeviceName(t.device)||"Power Strip",{powerSensors:i,switches:s}=this._partitionPowerEntities(t.entities),n=i.reduce((e,t)=>e+(parseFloat(t.state?.state)||0),0),o=this._config?.power_thresholds||{},l=(0,L.XI)(n,o),c=s[0];return e.qy`
@@ -9845,19 +10570,19 @@
             ${a.map(e=>this._renderStripChild(e,s))}
           </div>
         </div>
-      `}_renderStripChild(t,a){const r=this._shortDeviceName(t.device)||"Outlet",{switches:i,powerSensors:s,energySensors:n}=this._partitionPowerEntities(t.entities),o=s[0]&&parseFloat(s[0].state?.state)||0,l=n[0]&&parseFloat(n[0].state?.state)||null,c=this._config?.power_thresholds||{},d=(0,L.XI)(o,c),p=s[0]?.entity?.entity_id,m=n[0]?.entity?.entity_id;let u=i[0];if(!u&&a?.length>0){const e=(t.device?.name||"").toLowerCase().replace(/[\s\-_]+/g,"");u=a.find(t=>{const a=(t.entity?.entity_id||"").toLowerCase().replace(/[\s\-_]+/g,""),r=(t.state?.attributes?.friendly_name||"").toLowerCase().replace(/[\s\-_]+/g,"");return a.includes(e)||r.includes(e)})}const h="on"===u?.state?.state;return e.qy`
+      `}_renderStripChild(t,a){const r=this._shortDeviceName(t.device)||"Outlet",{switches:i,powerSensors:s,energySensors:n}=this._partitionPowerEntities(t.entities),o=s[0]&&parseFloat(s[0].state?.state)||0,l=n[0]&&parseFloat(n[0].state?.state)||null,c=this._config?.power_thresholds||{},d=(0,L.XI)(o,c),p=s[0]?.entity?.entity_id,u=n[0]?.entity?.entity_id;let m=i[0];if(!m&&a?.length>0){const e=(t.device?.name||"").toLowerCase().replace(/[\s\-_]+/g,"");m=a.find(t=>{const a=(t.entity?.entity_id||"").toLowerCase().replace(/[\s\-_]+/g,""),r=(t.state?.attributes?.friendly_name||"").toLowerCase().replace(/[\s\-_]+/g,"");return a.includes(e)||r.includes(e)})}const h="on"===m?.state?.state;return e.qy`
         <div class="power-strip-child-tile" style="--tile-power-color:${d}"
           role="listitem" aria-label="${r}: ${h?"on":"off"}, ${Math.round(o)} watts">
           <span class="circuit-name">${r}</span>
           <div class="strip-child-controls">
-            ${u?this._renderTrackToggle(h,`Toggle ${r}`,()=>{this._powerToggleLimiter.allow()&&this._handleToggle(u.entity.entity_id)}):""}
+            ${m?this._renderTrackToggle(h,`Toggle ${r}`,()=>{this._powerToggleLimiter.allow()&&this._handleToggle(m.entity.entity_id)}):""}
             ${this._renderClickableValue(p,`View ${r} power: ${Math.round(o)} watts`,e.qy`
               <span class="circuit-watts" style="color:${d}">
                 <span class="power-dot" ?data-zero=${0===o} aria-hidden="true"></span>
                 ${this._formatWatts(o)}
               </span>
             `)}
-            ${null!=l?this._renderClickableValue(m,`View ${r} energy: ${l.toFixed(1)} kWh`,e.qy`<span class="power-device-energy">${this._formatEnergy(l)}</span>`):""}
+            ${null!=l?this._renderClickableValue(u,`View ${r} energy: ${l.toFixed(1)} kWh`,e.qy`<span class="power-device-energy">${this._formatEnergy(l)}</span>`):""}
           </div>
         </div>
       `}_renderPowerSummaryCard(t,a,r,i,s){const n=this._config?.power_thresholds||{},o="TOTAL USAGE"===t?(0,L.XI)(a,n):i;return e.qy`
@@ -9876,7 +10601,7 @@
             <span class="power-summary-secondary">${this._formatEnergy(r)} TODAY</span>
           `:""}
         </div>
-      `}_buildPowerCollection(e){const t=[],a=[],r=[];for(const i of e){const e=this._classifyPowerDevice(i.entities||[],i.device);"vue"===e?t.push(i):"strip"===e?r.push(i):a.push(i)}const i=new Set(r.map(e=>e.device?.id).filter(Boolean)),s=[],n=[];for(const e of r)e.device?.via_device_id&&i.has(e.device.via_device_id)?n.push(e):s.push({...e,subType:"strip"});const{strips:o,standalone:l}=this._groupPowerStrips([...s,...n,...a]),c=[];for(const[,e]of o)c.push({parent:e.parent,children:e.children||[]});const d=l,p=this._sortCircuits(this._detect240VPairs(t)),m=new Set;for(const{children:e}of c)for(const t of e)t.device?.id&&m.add(t.device.id);const u=/^(balance|total|main[s]?|net|whole[\s_-]?home)$/i,h=new Set;for(const e of p){const t=this._shortDeviceName(e.device)||"";u.test(t.trim())&&e.device?.id&&h.add(e.device.id)}const v=new Set;for(const t of e){const a=(t.device?.model||"").toLowerCase(),r=(t.device?.manufacturer||"").toLowerCase();(t.entities?.some(e=>"battery"===e.state?.attributes?.device_class||"sensor"===e.domain&&"battery"===(e.state?.attributes?.device_class||""))||a.includes("ups")||r.includes("ups")||r.includes("cyberpower")||r.includes("apc")||r.includes("tripp"))&&t.device?.id&&(e.some(e=>e!==t&&e.device?.via_device_id===t.device.id)&&v.add(t.device.id))}let f=0,g=0;for(const t of e){const e=t.device?.id;if(e&&h.has(e))continue;if(e&&v.has(e))continue;if(e&&m.has(e))continue;const a=this._getPrimaryPower(t),r=this._getPrimaryEnergy(t);null!=a&&(f+=a),null!=r&&(g+=r)}return{circuits:p,plugs:d,strips:c,totalWatts:f,totalEnergy:g||null,deviceCount:e.length}}_renderTrackToggle(t,a,r){return e.qy`
+      `}_buildPowerCollection(e){const t=[],a=[],r=[];for(const i of e){const e=this._classifyPowerDevice(i.entities||[],i.device);"vue"===e?t.push(i):"strip"===e?r.push(i):a.push(i)}const i=new Set(r.map(e=>e.device?.id).filter(Boolean)),s=[],n=[];for(const e of r)e.device?.via_device_id&&i.has(e.device.via_device_id)?n.push(e):s.push({...e,subType:"strip"});const{strips:o,standalone:l}=this._groupPowerStrips([...s,...n,...a]),c=[];for(const[,e]of o)c.push({parent:e.parent,children:e.children||[]});const d=l,p=this._sortCircuits(this._detect240VPairs(t)),u=new Set;for(const{children:e}of c)for(const t of e)t.device?.id&&u.add(t.device.id);const m=/^(balance|total|main[s]?|net|whole[\s_-]?home)$/i,h=new Set;for(const e of p){const t=this._shortDeviceName(e.device)||"";m.test(t.trim())&&e.device?.id&&h.add(e.device.id)}const v=new Set;for(const t of e){const a=(t.device?.model||"").toLowerCase(),r=(t.device?.manufacturer||"").toLowerCase();(t.entities?.some(e=>"battery"===e.state?.attributes?.device_class||"sensor"===e.domain&&"battery"===(e.state?.attributes?.device_class||""))||a.includes("ups")||r.includes("ups")||r.includes("cyberpower")||r.includes("apc")||r.includes("tripp"))&&t.device?.id&&(e.some(e=>e!==t&&e.device?.via_device_id===t.device.id)&&v.add(t.device.id))}let f=0,g=0;for(const t of e){const e=t.device?.id;if(e&&h.has(e))continue;if(e&&v.has(e))continue;if(e&&u.has(e))continue;const a=this._getPrimaryPower(t),r=this._getPrimaryEnergy(t);null!=a&&(f+=a),null!=r&&(g+=r)}return{circuits:p,plugs:d,strips:c,totalWatts:f,totalEnergy:g||null,deviceCount:e.length}}_renderTrackToggle(t,a,r){return e.qy`
         <button class="lcars-track-toggle" ?data-on=${t}
           role="switch" aria-checked="${t}" aria-label="${a}"
           @click=${e=>{e.stopPropagation(),r()}}
@@ -9892,17 +10617,17 @@
           @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._handleEntityClick(t))}}>
           ${r}
         </span>
-      `:r}_renderConsolidatedPowerArc(e){const t=[];for(const a of e.circuits)t.push({device:a.device,entities:a.entities,combinedWatts:null!=a.combinedWatts?a.combinedWatts:this._getPrimaryPower(a),combinedEnergy:a.combinedEnergy});for(const a of e.plugs)t.push({device:a.device,entities:a.entities,combinedWatts:this._getPrimaryPower(a)});for(const{parent:a}of e.strips)t.push({device:a.device,entities:a.entities,combinedWatts:this._getPrimaryPower(a)});return this._renderPowerArc(t,e.totalWatts)}_renderConsolidatedPowerPanel(t){const{circuits:a,plugs:r,strips:i,totalWatts:s,totalEnergy:n,deviceCount:o}=t,l=this._config?.power_thresholds||{},c=(0,L.XI)(s,l),d=null!=s&&Math.abs(s)>(l.highMax||3e3),p=a.length+r.length+i.length,m=[];a.length>0&&m.push(`${a.length} CIRCUIT${1!==a.length?"S":""}`),r.length>0&&m.push(`${r.length} DEVICE${1!==r.length?"S":""}`),i.length>0&&m.push(`${i.length} STRIP${1!==i.length?"S":""}`);const u=m.join(" · ")||"POWER SYSTEMS";this._expandedPowerSections=this._expandedPowerSections||new Set;const h=this._expandedPowerSections.has("circuits"),v=h?a:a.slice(0,12),f=a.length>12,g=this._expandedPowerSections.has("plugs"),b=g?r:r.slice(0,12),y=r.length>12;return e.qy`
+      `:r}_renderConsolidatedPowerArc(e){const t=[];for(const a of e.circuits)t.push({device:a.device,entities:a.entities,combinedWatts:null!=a.combinedWatts?a.combinedWatts:this._getPrimaryPower(a),combinedEnergy:a.combinedEnergy});for(const a of e.plugs)t.push({device:a.device,entities:a.entities,combinedWatts:this._getPrimaryPower(a)});for(const{parent:a}of e.strips)t.push({device:a.device,entities:a.entities,combinedWatts:this._getPrimaryPower(a)});return this._renderPowerArc(t,e.totalWatts)}_renderConsolidatedPowerPanel(t){const{circuits:a,plugs:r,strips:i,totalWatts:s,totalEnergy:n,deviceCount:o}=t,l=this._config?.power_thresholds||{},c=(0,L.XI)(s,l),d=null!=s&&Math.abs(s)>(l.highMax||3e3),p=a.length+r.length+i.length,u=[];a.length>0&&u.push(`${a.length} CIRCUIT${1!==a.length?"S":""}`),r.length>0&&u.push(`${r.length} DEVICE${1!==r.length?"S":""}`),i.length>0&&u.push(`${i.length} STRIP${1!==i.length?"S":""}`);const m=u.join(" · ")||"POWER SYSTEMS";this._expandedPowerSections=this._expandedPowerSections||new Set;const h=this._expandedPowerSections.has("circuits"),v=h?a:a.slice(0,12),f=a.length>12,g=this._expandedPowerSections.has("plugs"),b=g?r:r.slice(0,12),y=r.length>12;return e.qy`
         <div class="lcars-consolidated-power-panel" data-panel-type="power"
           data-alert="${d?"critical":""}"
-          role="region" aria-label="Power Systems — ${u}">
+          role="region" aria-label="Power Systems — ${m}">
 
           <!-- Header -->
           <div class="consolidated-power-header" role="heading" aria-level="3">
             <ha-icon icon="mdi:flash"></ha-icon>
             <span class="power-panel-name">POWER SYSTEMS</span>
             <div class="power-panel-header-line" aria-hidden="true"></div>
-            <span class="power-panel-badge">${u}</span>
+            <span class="power-panel-badge">${m}</span>
           </div>
 
           <!-- Summary -->
@@ -9977,9 +10702,9 @@
 
           <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
-      `}_renderPowerPanel(t){const a=t.entities||[],r=this._shortDeviceName(t.device)||"Power",i=this._config?.power_thresholds||{},s=this._classifyPowerDevice(a,t.device),{powerSensors:n,energySensors:o,switches:l}=this._partitionPowerEntities(a),c=this._getPrimaryPower(t),d=this._getPrimaryEnergy(t),p=(0,L.XI)(c,i),m=null!=c&&Math.abs(c)>(i.highMax||3e3),u="vue"===s?[t]:[],h=this._sortCircuits(this._detect240VPairs(u)),v=c||0,f=h.length>0,g=(l.length,"plug"===s),b="strip"===s;return e.qy`
+      `}_renderPowerPanel(t){const a=t.entities||[],r=this._shortDeviceName(t.device)||"Power",i=this._config?.power_thresholds||{},s=this._classifyPowerDevice(a,t.device),{powerSensors:n,energySensors:o,switches:l}=this._partitionPowerEntities(a),c=this._getPrimaryPower(t),d=this._getPrimaryEnergy(t),p=(0,L.XI)(c,i),u=null!=c&&Math.abs(c)>(i.highMax||3e3),m="vue"===s?[t]:[],h=this._sortCircuits(this._detect240VPairs(m)),v=c||0,f=h.length>0,g=(l.length,"plug"===s),b="strip"===s;return e.qy`
         <div class="lcars-device-panel power-panel" data-panel-type="power"
-          data-alert="${m?"critical":""}"
+          data-alert="${u?"critical":""}"
           role="region" aria-label="${r} Power Systems">
 
           <!-- Header -->
@@ -10048,7 +10773,7 @@
 
           <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
-      `}_renderAreaContent(t,a){if(0===t.length)return e.qy`<div class="lcars-empty">No entities in this area</div>`;const{byDevice:r,noDevice:i}=this._groupEntities(t),s=t.map(e=>{const t=e.entity_id.split(".")[0],a=this._hass?.states?.[e.entity_id];return{entity:e,domain:t,state:a}}).filter(e=>e.state),n=function(e,t,a){const r=new Set,i=a.some(D),s=a.some(I),n=a.some(O);return(i||s&&n)&&r.add(v),a.filter(F).length>=2&&r.add(f),r}(this._hass,0,s),o=[];for(const e of n){const t=xe.get(e);t&&o.push({panelType:e,template:t({entities:s,areaId:a},this._hass,this._editMode,this._config)})}const c=this._buildAreaPanelFilter(n);if(c)for(const[e,t]of r)t.entities=t.entities.filter(e=>!c(e)),0===t.entities.length&&r.delete(e);const p=c?i.filter(e=>!c(e)):i,m=new Set;n.has(v)&&(m.add(l),m.add(d));const u=[],b=[],y=[];for(const e of r.values()){const t=this._getDevicePanelType(e.entities);t&&m.has(t)||(t===h?y.push({...e,panelType:t}):t?u.push({...e,panelType:t}):b.push(e))}const w=e.qy`
+      `}_renderAreaContent(t,a){if(0===t.length)return e.qy`<div class="lcars-empty">No entities in this area</div>`;const{byDevice:r,noDevice:i}=this._groupEntities(t),s=t.map(e=>{const t=e.entity_id.split(".")[0],a=this._hass?.states?.[e.entity_id];return{entity:e,domain:t,state:a}}).filter(e=>e.state),n=function(e,t,a){const r=new Set,i=a.some(D),s=a.some(I),n=a.some(F);return(i||s&&n)&&r.add(v),a.filter(R).length>=2&&r.add(f),r}(this._hass,0,s),o=[];for(const e of n){const t=Te.get(e);t&&o.push({panelType:e,template:t({entities:s,areaId:a},this._hass,this._editMode,this._config)})}const c=this._buildAreaPanelFilter(n);if(c)for(const[e,t]of r)t.entities=t.entities.filter(e=>!c(e)),0===t.entities.length&&r.delete(e);const p=c?i.filter(e=>!c(e)):i,u=new Set;n.has(v)&&(u.add(l),u.add(d));const m=[],b=[],y=[];for(const e of r.values()){const t=this._getDevicePanelType(e.entities);t&&u.has(t)||(t===h?y.push({...e,panelType:t}):t?m.push({...e,panelType:t}):b.push(e))}const w=e.qy`
         ${b.map(t=>e.qy`
           <div class="device-group">
             <div class="device-header">
@@ -10073,18 +10798,18 @@
           </div>
         `:""}
         ${y.length>0?e.qy`<lcars-power-panel .powerGroups=${y} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-power-panel>`:""}
-      `;if(0===u.length&&0===o.length)return w;const _=[...u.map(e=>({panelType:e.panelType,template:this._renderDevicePanel(e.panelType,e)})),...o];return _.sort((e,t)=>(g[e.panelType]??99)-(g[t.panelType]??99)),e.qy`
+      `;if(0===m.length&&0===o.length)return w;const _=[...m.map(e=>({panelType:e.panelType,template:this._renderDevicePanel(e.panelType,e)})),...o];return _.sort((e,t)=>(g[e.panelType]??99)-(g[t.panelType]??99)),e.qy`
         <div class="area-split-layout">
-          <div class="area-split-main">${w}</div>
           <div class="area-split-panels" aria-live="polite">
             ${_.map(e=>e.template)}
           </div>
+          <div class="area-split-main">${w}</div>
         </div>
-      `}_buildAreaPanelFilter(e){if(0===e.size)return null;const t=[];return e.has(f)&&t.push(F),e.has(v)&&t.push(e=>D(e)||I(e)||O(e)),0===t.length?null:e=>t.some(t=>t(e))}_renderDomainGroups(t){const a=this._groupByDomain(t);return e.qy`${a.map(([t,a])=>e.qy`
+      `}_buildAreaPanelFilter(e){if(0===e.size)return null;const t=[];return e.has(f)&&t.push(R),e.has(v)&&t.push(e=>D(e)||I(e)||F(e)),0===t.length?null:e=>t.some(t=>t(e))}_renderDomainGroups(t){const a=this._groupByDomain(t);return e.qy`${a.map(([t,a])=>e.qy`
         <div class="domain-label" role="heading" aria-level="4">${M[t]||t}</div>
         ${this._renderDomainEntities(t,a)}
       `)}`}_renderDomainEntities(e,t){return b.has(e)?this._renderCameras(t):$.has(e)?this._renderToggles(t):y.has(e)?this._renderClimates(t):S.has(e)?this._renderCovers(t):w.has(e)?this._renderMedia(t):k.has(e)?this._renderSensors(t):this._renderGeneric(t)}_renderCameras(t){return e.qy`<div class="camera-grid">
-        ${t.map(({entity:t,state:a},r)=>{const i=this._friendlyName(a,t),s=this._isOff(a),n=$e(a),o=s||!n?"offline":"connecting";return e.qy`
+        ${t.map(({entity:t,state:a},r)=>{const i=this._friendlyName(a,t),s=this._isOff(a),n=De(a),o=s||!n?"offline":"connecting";return e.qy`
             <div class="camera-frame" data-state="${o}" style="--i:${r}"
               role="button"
               tabindex="0"
@@ -10192,7 +10917,7 @@
               <span class="entity-state">${a.state}</span>
             </button>
           `)})}
-      </div>`}getCardSize(){return 6}}customElements.get("homepage-card")?i.g0.warn(_e,"Custom element homepage-card already registered — skipping"):(customElements.define("homepage-card",ke),i.g0.debug(_e,"Custom element registered: homepage-card"))})(),(()=>{var e=a(349),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_pages:{type:Array}}}constructor(){super(),this._pages=[]}set hass(e){this._hass=e,0===this._pages.length&&this._loadPages()}setConfig(e){this._config=e}async _loadPages(){if(this._hass)try{const e=await this._hass.callWS({type:"lcars_dashboard/configuration/get"});e&&e.more_pages&&(this._pages=Object.entries(e.more_pages).map(([e,t])=>({id:e,...t})))}catch(e){console.warn("LCARS: Could not load more-pages",e)}}_openPage(e){(0,r.oo)(`/lcars-dashboard/more/${e}`)}static get styles(){return[t.Bx,e.AH`
+      </div>`}getCardSize(){return 6}}customElements.get("homepage-card")?i.g0.warn(Me,"Custom element homepage-card already registered — skipping"):(customElements.define("homepage-card",Ie),i.g0.debug(Me,"Custom element registered: homepage-card"))})(),(()=>{var e=a(349),t=a(622),r=a(851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_pages:{type:Array}}}constructor(){super(),this._pages=[]}set hass(e){this._hass=e,0===this._pages.length&&this._loadPages()}setConfig(e){this._config=e}async _loadPages(){if(this._hass)try{const e=await this._hass.callWS({type:"lcars_dashboard/configuration/get"});e&&e.more_pages&&(this._pages=Object.entries(e.more_pages).map(([e,t])=>({id:e,...t})))}catch(e){console.warn("LCARS: Could not load more-pages",e)}}_openPage(e){(0,r.oo)(`/lcars-dashboard/more/${e}`)}static get styles(){return[t.Bx,e.AH`
           :host { display: block; }
 
           .divider {
@@ -11189,7 +11914,7 @@
             </div>
           </div>
         </div>
-      `}getCardSize(){return 0}}customElements.get("lcars-popup")||customElements.define("lcars-popup",i)})(),(()=>{var e=a(349),t=a(622),r=a(851),i=a(505),s=a(261);const n="lcars-sensors-grid",o=/^[a-z_]+\.[a-z0-9_]+$/,l=new Set(["fan","climate"]),c=new Set(["aqi","pm25","pm10","volatile_organic_compounds"]),d=/fridge|freezer|refrigerator|wine\s*cooler|kegerator|deep\s*freeze/i;class p extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_sensorGroups:{type:Array},_sparklineData:{type:Object}}}constructor(){super(),this._sensorGroups=[],this._trackedEntityIds=new Set,this._sparklineCache=new Map,this._sparklineData=null,this._needsDiscovery=!0,this._lastRegistryRef=null}setConfig(e){const t=(e,t)=>null!=e?Math.max(-50,Math.min(200,Number(e))):t,a=(e,t)=>null!=e?Math.max(0,Math.min(100,Number(e))):t;this._config={...e,temp_comfort_min:t(e.temp_comfort_min,68),temp_comfort_max:t(e.temp_comfort_max,76),humidity_comfort_min:a(e.humidity_comfort_min,30),humidity_comfort_max:a(e.humidity_comfort_max,60),battery_alert:a(e.battery_alert,20),show_sparklines:!1!==e.show_sparklines,show_averages:!1!==e.show_averages,show_appliance_meters:!0===e.show_appliance_meters,group_by_floor:!1!==e.group_by_floor},this._needsDiscovery=!0}set hass(e){const t=this._hass;this._hass=e;const a=`${Object.keys(e.entities||{}).length}:${Object.keys(e.devices||{}).length}`;if(!t||this._needsDiscovery||a!==this._lastRegistryRef)return this._lastRegistryRef=a,this._discoverSensors(),this._needsDiscovery=!1,void this.requestUpdate();if(this._trackedEntityIds.size>0){let a=!1;for(const r of this._trackedEntityIds)if(t.states[r]!==e.states[r]){a=!0;break}if(!a)return}this.requestUpdate()}_discoverSensors(){if(!this._hass)return;const e=Object.values(this._hass.entities||{}),t=this._hass.devices||{},a=this._hass.areas||{},i=this._hass.floors||{},s=new Map;for(const t of e)t.device_id&&!t.disabled_by&&(s.has(t.device_id)||s.set(t.device_id,[]),s.get(t.device_id).push(t));const p=e.filter(e=>"temperature"===e.original_device_class&&!e.disabled_by&&o.test(e.entity_id)),m=[],u=new Set;for(const e of p){const r=e.device_id,n=t[r];if(!n)continue;const p=s.get(r)||[],h=p.some(e=>{const t=e.entity_id?.split(".")[0];return l.has(t)}),v=p.some(e=>c.has(e.original_device_class));if(h||v)continue;const f=n.name_by_user||n.name||"";if(!this._config.show_appliance_meters&&d.test(f))continue;const g=p.find(e=>"humidity"===e.original_device_class&&o.test(e.entity_id));if(!g)continue;const b=p.find(e=>"battery"===e.original_device_class&&o.test(e.entity_id)),y=n.area_id,w=y?a[y]:null,_=w?.floor_id,x=_?i[_]:null;m.push({deviceId:r,deviceName:f,areaId:y,areaName:w?w.name:f.replace(/^Meter\s*-\s*/i,""),floorId:_,floorName:x?x.name:"UNASSIGNED",floorLevel:x?x.level:-999,temperatureEntityId:e.entity_id,humidityEntityId:g.entity_id,batteryEntityId:b?b.entity_id:null}),u.add(e.entity_id),u.add(g.entity_id),b&&u.add(b.entity_id)}m.sort((e,t)=>t.floorLevel!==e.floorLevel?t.floorLevel-e.floorLevel:e.areaName.localeCompare(t.areaName)),this._sensorGroups=m,this._trackedEntityIds=u,r.g0.debug(n,`Discovered ${m.length} sensor groups, tracking ${u.size} entities`)}async _fetchSparklines(){if(!this._config?.show_sparklines||!this._hass||0===this._sensorGroups.length)return;const e=this._sensorGroups.map(e=>e.temperatureEntityId),t=await(0,s.s)(this._hass,"sensors-grid",e,this._sparklineCache,{maxEntities:Math.max(e.length,10)});t&&(this._sparklineData=t,this.requestUpdate())}firstUpdated(){this._fetchSparklines()}updated(e){e.has("_sensorGroups")&&this._sensorGroups.length>0&&this._fetchSparklines()}_getState(e){return e?this._hass?.states[e]:null}_getNumericState(e){const t=this._getState(e);if(!t||"unavailable"===t.state||"unknown"===t.state)return null;const a=parseFloat(t.state);return isNaN(a)?null:a}_isUnavailable(e){const t=this._getState(e);return!t||["unavailable","unknown"].includes(t.state)}_getStardate(){const e=new Date,t=e.getFullYear(),a=new Date(t,0,0),r=Math.floor((e-a)/864e5);return`${t}${String(r).padStart(3,"0")}.${String(e.getHours()).padStart(2,"0")}`}_handleTileTap(e,t){e.stopPropagation(),(0,r.Hv)(t)}_computeAverages(){const e=[],t=[];let a=0,r=0;for(const i of this._sensorGroups){const s=this._getNumericState(i.temperatureEntityId),n=this._getNumericState(i.humidityEntityId);if(null!=s&&(e.push(s),a++),null!=n&&t.push(n),i.batteryEntityId){const e=this._getNumericState(i.batteryEntityId);null!=e&&e<=(this._config.battery_alert||20)&&r++}}const i=e=>e.length>0?Math.round(e.reduce((e,t)=>e+t,0)/e.length*10)/10:null;return{avgTemp:i(e),avgHumidity:i(t),onlineCount:a,totalCount:this._sensorGroups.length,lowBatteryCount:r}}_groupByFloor(){const e=new Map;for(const t of this._sensorGroups){const a=t.floorName;e.has(a)||e.set(a,[]),e.get(a).push(t)}return e}_getSparklinePoints(e){return this._sparklineData&&this._sparklineData[e]?this._sparklineData[e]:null}render(){if(!this._hass||!this._config)return e.qy``;if(0===this._sensorGroups.length)return e.qy`
+      `}getCardSize(){return 0}}customElements.get("lcars-popup")||customElements.define("lcars-popup",i)})(),(()=>{var e=a(349),t=a(622),r=a(851),i=a(505),s=a(261);const n="lcars-sensors-grid",o=/^[a-z_]+\.[a-z0-9_]+$/,l=new Set(["fan","climate"]),c=new Set(["aqi","pm25","pm10","volatile_organic_compounds"]),d=/fridge|freezer|refrigerator|wine\s*cooler|kegerator|deep\s*freeze/i;class p extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_sensorGroups:{type:Array},_sparklineData:{type:Object}}}constructor(){super(),this._sensorGroups=[],this._trackedEntityIds=new Set,this._sparklineCache=new Map,this._sparklineData=null,this._needsDiscovery=!0,this._lastRegistryRef=null}setConfig(e){const t=(e,t)=>null!=e?Math.max(-50,Math.min(200,Number(e))):t,a=(e,t)=>null!=e?Math.max(0,Math.min(100,Number(e))):t;this._config={...e,temp_comfort_min:t(e.temp_comfort_min,68),temp_comfort_max:t(e.temp_comfort_max,76),humidity_comfort_min:a(e.humidity_comfort_min,30),humidity_comfort_max:a(e.humidity_comfort_max,60),battery_alert:a(e.battery_alert,20),show_sparklines:!1!==e.show_sparklines,show_averages:!1!==e.show_averages,show_appliance_meters:!0===e.show_appliance_meters,group_by_floor:!1!==e.group_by_floor},this._needsDiscovery=!0}set hass(e){const t=this._hass;this._hass=e;const a=`${Object.keys(e.entities||{}).length}:${Object.keys(e.devices||{}).length}`;if(!t||this._needsDiscovery||a!==this._lastRegistryRef)return this._lastRegistryRef=a,this._discoverSensors(),this._needsDiscovery=!1,void this.requestUpdate();if(this._trackedEntityIds.size>0){let a=!1;for(const r of this._trackedEntityIds)if(t.states[r]!==e.states[r]){a=!0;break}if(!a)return}this.requestUpdate()}_discoverSensors(){if(!this._hass)return;const e=Object.values(this._hass.entities||{}),t=this._hass.devices||{},a=this._hass.areas||{},i=this._hass.floors||{},s=new Map;for(const t of e)t.device_id&&!t.disabled_by&&(s.has(t.device_id)||s.set(t.device_id,[]),s.get(t.device_id).push(t));const p=e.filter(e=>"temperature"===e.original_device_class&&!e.disabled_by&&o.test(e.entity_id)),u=[],m=new Set;for(const e of p){const r=e.device_id,n=t[r];if(!n)continue;const p=s.get(r)||[],h=p.some(e=>{const t=e.entity_id?.split(".")[0];return l.has(t)}),v=p.some(e=>c.has(e.original_device_class));if(h||v)continue;const f=n.name_by_user||n.name||"";if(!this._config.show_appliance_meters&&d.test(f))continue;const g=p.find(e=>"humidity"===e.original_device_class&&o.test(e.entity_id));if(!g)continue;const b=p.find(e=>"battery"===e.original_device_class&&o.test(e.entity_id)),y=n.area_id,w=y?a[y]:null,_=w?.floor_id,x=_?i[_]:null;u.push({deviceId:r,deviceName:f,areaId:y,areaName:w?w.name:f.replace(/^Meter\s*-\s*/i,""),floorId:_,floorName:x?x.name:"UNASSIGNED",floorLevel:x?x.level:-999,temperatureEntityId:e.entity_id,humidityEntityId:g.entity_id,batteryEntityId:b?b.entity_id:null}),m.add(e.entity_id),m.add(g.entity_id),b&&m.add(b.entity_id)}u.sort((e,t)=>t.floorLevel!==e.floorLevel?t.floorLevel-e.floorLevel:e.areaName.localeCompare(t.areaName)),this._sensorGroups=u,this._trackedEntityIds=m,r.g0.debug(n,`Discovered ${u.length} sensor groups, tracking ${m.size} entities`)}async _fetchSparklines(){if(!this._config?.show_sparklines||!this._hass||0===this._sensorGroups.length)return;const e=this._sensorGroups.map(e=>e.temperatureEntityId),t=await(0,s.s)(this._hass,"sensors-grid",e,this._sparklineCache,{maxEntities:Math.max(e.length,10)});t&&(this._sparklineData=t,this.requestUpdate())}firstUpdated(){this._fetchSparklines()}updated(e){e.has("_sensorGroups")&&this._sensorGroups.length>0&&this._fetchSparklines()}_getState(e){return e?this._hass?.states[e]:null}_getNumericState(e){const t=this._getState(e);if(!t||"unavailable"===t.state||"unknown"===t.state)return null;const a=parseFloat(t.state);return isNaN(a)?null:a}_isUnavailable(e){const t=this._getState(e);return!t||["unavailable","unknown"].includes(t.state)}_getStardate(){const e=new Date,t=e.getFullYear(),a=new Date(t,0,0),r=Math.floor((e-a)/864e5);return`${t}${String(r).padStart(3,"0")}.${String(e.getHours()).padStart(2,"0")}`}_handleTileTap(e,t){e.stopPropagation(),(0,r.Hv)(t)}_computeAverages(){const e=[],t=[];let a=0,r=0;for(const i of this._sensorGroups){const s=this._getNumericState(i.temperatureEntityId),n=this._getNumericState(i.humidityEntityId);if(null!=s&&(e.push(s),a++),null!=n&&t.push(n),i.batteryEntityId){const e=this._getNumericState(i.batteryEntityId);null!=e&&e<=(this._config.battery_alert||20)&&r++}}const i=e=>e.length>0?Math.round(e.reduce((e,t)=>e+t,0)/e.length*10)/10:null;return{avgTemp:i(e),avgHumidity:i(t),onlineCount:a,totalCount:this._sensorGroups.length,lowBatteryCount:r}}_groupByFloor(){const e=new Map;for(const t of this._sensorGroups){const a=t.floorName;e.has(a)||e.set(a,[]),e.get(a).push(t)}return e}_getSparklinePoints(e){return this._sparklineData&&this._sparklineData[e]?this._sparklineData[e]:null}render(){if(!this._hass||!this._config)return e.qy``;if(0===this._sensorGroups.length)return e.qy`
         <ha-card>
           <div class="lcars-sensors-grid empty" role="region"
                aria-label="Internal environmental sensors — no sensors found">
@@ -11233,7 +11958,7 @@
           </div>
         `)}
       </div>
-    `}_renderTile(t,a){const r=this._getNumericState(t.temperatureEntityId),n=this._getNumericState(t.humidityEntityId),o=t.batteryEntityId?this._getNumericState(t.batteryEntityId):null,l=this._isUnavailable(t.temperatureEntityId),c=l?"unavailable":(0,i.HJ)(r),d=l?"var(--lcars-gray)":(0,i.sx)(r),p=l?"var(--lcars-gray)":(0,i.z5)(n),m=null!=o&&o<=(this._config.battery_alert||20),u=this._config.show_sparklines?this._getSparklinePoints(t.temperatureEntityId):null;let h=l?`${t.areaName}: sensor offline`:`${t.areaName}: ${null!=r?Math.round(r):"?"} degrees, ${null!=n?Math.round(n):"?"} percent humidity`;return m&&(h+=`. Low battery: ${Math.round(o)} percent`),e.qy`
+    `}_renderTile(t,a){const r=this._getNumericState(t.temperatureEntityId),n=this._getNumericState(t.humidityEntityId),o=t.batteryEntityId?this._getNumericState(t.batteryEntityId):null,l=this._isUnavailable(t.temperatureEntityId),c=l?"unavailable":(0,i.HJ)(r),d=l?"var(--lcars-gray)":(0,i.sx)(r),p=l?"var(--lcars-gray)":(0,i.z5)(n),u=null!=o&&o<=(this._config.battery_alert||20),m=this._config.show_sparklines?this._getSparklinePoints(t.temperatureEntityId):null;let h=l?`${t.areaName}: sensor offline`:`${t.areaName}: ${null!=r?Math.round(r):"?"} degrees, ${null!=n?Math.round(n):"?"} percent humidity`;return u&&(h+=`. Low battery: ${Math.round(o)} percent`),e.qy`
       <div class="sensor-tile ${c}"
            tabindex="0"
            role="listitem"
@@ -11253,14 +11978,14 @@
           </span>
         </div>
 
-        ${m?e.qy`
+        ${u?e.qy`
           <div class="tile-battery-badge"
                aria-label="Low battery: ${Math.round(o)} percent"
                title="BATTERY: ${Math.round(o)}%">●</div>
         `:""}
 
-        ${u&&u.length>=2?e.qy`
-          ${(0,s.K)(u,{color:d,width:100,height:16,className:"tile-sparkline"})}
+        ${m&&m.length>=2?e.qy`
+          ${(0,s.K)(m,{color:d,width:100,height:16,className:"tile-sparkline"})}
         `:""}
 
         ${l?e.qy`

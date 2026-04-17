@@ -7248,10 +7248,10 @@ class LcarsHomepageCard extends LitElement {
       // Panel devices + area-level composite panels → two-column split layout
       return html`
         <div class="area-split-layout">
-          <div class="area-split-main">${normalContent}</div>
           <div class="area-split-panels" aria-live="polite">
             ${allPanels.map(p => p.template)}
           </div>
+          <div class="area-split-main">${normalContent}</div>
         </div>
       `;
     }

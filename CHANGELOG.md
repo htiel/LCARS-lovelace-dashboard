@@ -2,6 +2,41 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.18.2] — 2026-04-16
+
+### Fixed — Layout & Entity Coverage
+
+- **Panel column position** — Area-level panels (illumination, life support) now render in the left column; main content renders in the right column. Previously reversed.
+- **Infrastructure LED exclusion** — UniFi AP indicator LEDs, ESPHome status LEDs, and `status_led`/`status_panel`/`led_indicator` entities are now excluded from the illumination panel via `isInfrastructureLED()` predicate.
+- **Insteon product name detection** — `isLightingEntity()` now matches Insteon dimmer product names (`SwitchLinc`, `LampLinc`, `ToggleLinc`) in entity IDs.
+- **Device-level dedup** — Illumination panel no longer shows duplicate entries when multiple entities belong to the same device. Two-pass partition: first pass groups by `device_id`, second pass selects the best representative entity per device.
+
+### Added — Illumination Panel: Stable Sort & Drag-and-Drop Reorder
+
+- **Stable light ordering** — Lights no longer jump position when toggled on/off. Sort order: custom user order (localStorage) → alphabetical fallback. Removed on-state/brightness from sort comparator.
+- **Drag-and-drop reorder (edit mode)** — In settings/edit mode, each light bar shows a 3-pip vertical grip handle (LCARS-native design per Geordi). Drag to reorder using Pointer Events API with `setPointerCapture()` — works in Shadow DOM, touch-friendly.
+- **FLIP animation** — Reorder transitions use First-Last-Invert-Play technique at 200ms cubic-bezier. Respects `prefers-reduced-motion`.
+- **Keyboard reorder** — Alt+ArrowUp / Alt+ArrowDown moves lights in edit mode (WCAG 2.5.7). Position announced via `aria-live="assertive"` status region.
+- **localStorage persistence** — Custom light order persisted per area (`lcars-ilm-order-{areaId}`). Stale entity keys automatically pruned on load.
+- **`repeat()` directive** — Illumination panel now uses `repeat()` from `lit-html/directives/repeat.js` for keyed DOM diffing, enabling stable FLIP animation across reorders.
+- **Partition caching** — `_getPartition()` caches the entity partition result per render cycle via `willUpdate()` dirty flag. Eliminates redundant `_partitionLightingEntities()` calls between `renderBadge()` and `renderContent()`.
+
+### Added — Irrigation Panel V2: Full Rachio Integration
+
+Complete redesign of `<lcars-irrigation-panel>` — "Arboretum Environmental Control" — with full Rachio Gen 3 entity coverage.
+
+- **Zone photo thumbnails** — Each zone row shows a photo from Rachio's `entity_picture` (loaded via HA proxy with `loading="lazy"`, `referrerpolicy="no-referrer"`). Fallback to vegetation type icon (mdi:grass, mdi:tree, mdi:flower) when no photo is set. Zone number badge overlay.
+- **Zone detail expansion** — Click a zone name to expand inline attribute badges: Shade (Full Sun/Half Shade/etc.), Vegetation Type (Cool Season Grass/Shrubs/etc.), Slope (Flat/Slight/Moderate/Steep), plus zone Summary text. Badges use LCARS pill shape.
+- **Barberpole flow animation** — Active zones show animated diagonal ice-blue stripes scrolling left→right (per original spec). Fill bar width tracks real watering progress using `last_changed` + `Watering Duration seconds`.
+- **Countdown timer** — Active zones show `MM:SS` remaining in ice-blue tabular numerals, updated every second.
+- **Schedule strips** — Schedule switches rendered as ON/OFF toggle strips with name, type badge (FLEX=african-violet, FIXED=butterscotch), and duration. Replaces generic sensor-row treatment.
+- **Controller status telemetry** — Four LCARS horizontal mini-bar indicators: ONLINE/OFFLINE (ice/tomato-pulsing), STANDBY (gold), RAIN DELAY (african-violet), RAIN SENSOR (ice).
+- **Rain alert banner** — Full-width conditional banner when rain delay or rain detected is active. 4px left border, CANCEL button for rain delay. `role="alert"` with `aria-live="polite"`.
+- **Quick Run builder** — Collapsible section: zone selector (multi-select pill buttons), duration picker (3/5/10/15/20 min presets), ENGAGE button. Calls `rachio.start_multiple_zone_schedule`.
+- **Pause/Resume/Stop All** — When watering active: PAUSE button (`rachio.pause_watering`), STOP ALL button (`rachio.stop_watering`). All rate-limited at 5/10s.
+- **Rain delay toggle** — Dedicated control to activate/deactivate 24-hour rain delay.
+- **LCARS compliance** — All buttons LCARS pill shape (Geordi), status indicators are horizontal mini-bars not dots (Geordi), 4-row consolidated grid, `prefers-reduced-motion` gates on all animations.
+
 ## [4.18.1] — 2026-04-16
 
 ### Fixed — Bugfixes

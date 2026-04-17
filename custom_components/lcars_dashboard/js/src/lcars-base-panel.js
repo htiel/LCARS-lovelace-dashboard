@@ -236,8 +236,6 @@ export class LcarsBasePanel extends LitElement {
   _getPanelName() {
     if (this.group?.device) return this._shortDeviceName(this.group.device) || this.defaultPanelTitle;
     if (this.devices?.length) return this._shortDeviceName(this.devices[0]) || this.defaultPanelTitle;
-    const area = this.hass?.areas?.[this.areaId];
-    if (area?.name) return area.name;
     return this.defaultPanelTitle;
   }
 

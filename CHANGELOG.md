@@ -2,6 +2,16 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.18.3] — 2026-04-16
+
+### Fixed — Panel Layout & Illumination Detection
+
+- **Panel column assignments** — Panels now render in explicit left/right columns instead of a single panels column. LEFT: illumination (above entities), entity groups, climate, life support, environment, power. RIGHT: alarm, camera, battery, irrigation, media, pool/spa, weather. Fixes reversed column order from v4.18.2.
+- **Illumination panel detection** — Threshold lowered from ≥2 to ≥1 lighting entity. The `isInfrastructureLED()` exclusion (v4.18.2) reduced counts below the previous threshold in rooms where UniFi AP indicator LEDs inflated the count.
+- **Power panel placement** — Power panel now renders in the left column after environment, instead of inside the entity groups section.
+
+**Closes**: [#26](https://github.com/htiel/LCARS-lovelace-dashboard/issues/26)
+
 ## [4.18.2] — 2026-04-16
 
 ### Fixed — Layout & Entity Coverage

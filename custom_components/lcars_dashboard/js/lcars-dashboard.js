@@ -822,7 +822,7 @@
     flex-direction: column;
     gap: var(--lcars-gap);
     width: 100%;
-    max-width: 42rem;
+    max-width: var(--panel-max-width, 42rem);
     border-left: 4px solid var(--panel-frame-color);
     border-bottom: 4px solid var(--panel-frame-color);
     border-top: 2px solid var(--panel-frame-color);
@@ -6006,13 +6006,13 @@
           </div>
         `:""}
       </div>
-    `}updated(e){if(super.updated(e),!this._flipPositions)return;const t=this.shadowRoot.querySelectorAll(".ilm-light-bar"),a=this._flipPositions;this._flipPositions=null,requestAnimationFrame(()=>{for(const e of t){const t=e.dataset.entityId,r=a.get(t);if(null==r)continue;const i=r-e.getBoundingClientRect().top;Math.abs(i)<1||(e.style.transform=`translateY(${i}px)`,e.style.transition="none",e.offsetHeight,e.style.transition="transform 200ms cubic-bezier(0.2, 0, 0.2, 1)",e.style.transform="")}})}_renderLightBar(t){const a=t.entity?.entity_id,r=this.hass?.states?.[a]||t.state,s="on"===r?.state,n=s?Math.round((r?.attributes?.brightness||0)/255*100):0,o=this._shortEntityName(t),l=this._expandedLight===a,c=this._dragEntityId===a,d=r?.attributes?.color_temp_kelvin,p=this._getBarColor(d,s,r),u=r?.attributes?.effect_list,m=r?.attributes?.effect,h=Array.isArray(u)&&u.length>0,v=(r?.attributes?.supported_color_modes||[]).some(e=>"hs"===e||"rgb"===e||"xy"===e),f=r?.attributes?.hs_color?.[0],g=s?m&&"none"!==m?m.toUpperCase():`${n}%`:"OFF";return e.qy`
+    `}updated(e){if(super.updated(e),!this._flipPositions)return;const t=this.shadowRoot.querySelectorAll(".ilm-light-bar"),a=this._flipPositions;this._flipPositions=null,requestAnimationFrame(()=>{for(const e of t){const t=e.dataset.entityId,r=a.get(t);if(null==r)continue;const i=r-e.getBoundingClientRect().top;Math.abs(i)<1||(e.style.transform=`translateY(${i}px)`,e.style.transition="none",e.offsetHeight,e.style.transition="transform 200ms cubic-bezier(0.2, 0, 0.2, 1)",e.style.transform="")}})}_renderLightBar(t){const a=t.entity?.entity_id,r=this.hass?.states?.[a]||t.state,s="on"===r?.state,n=s?Math.round((r?.attributes?.brightness||0)/255*100):0,o=this._shortEntityName(t),l=this._expandedLight===a,c=this._dragEntityId===a,d=r?.attributes?.color_temp_kelvin,p=this._getBarColor(d,s,r),u=r?.attributes?.effect_list,m=r?.attributes?.effect,h=Array.isArray(u)&&u.length>0,v=r?.attributes?.supported_color_modes||[],f=v.some(e=>"hs"===e||"rgb"===e||"xy"===e),g=v.some(e=>"brightness"===e||"color_temp"===e||"hs"===e||"rgb"===e||"xy"===e),b=r?.attributes?.hs_color?.[0],y=g||h||f,_=s?m&&"none"!==m?m.toUpperCase():g?`${n}%`:"ON":"OFF";return e.qy`
       <div class="ilm-light-bar ${s?"on":"off"} ${c?"dragging":""}"
            role="listitem"
            aria-roledescription="${this.editMode?"reorderable light":""}"
            tabindex="0"
            data-entity-id="${a}"
-           style="--brightness:${n}%; --bar-color:${p}"
+           style="--brightness:${s&&!g?100:n}%; --bar-color:${p}"
            @click=${e=>{this._lastDragWasDrag||this._dragState?.didDrag||this._toggleLight(a)}}
            @contextmenu=${e=>{e.preventDefault(),(0,i.Hv)(a)}}
            @keydown=${e=>this._handleLightKeydown(e,a,n)}>
@@ -6027,31 +6027,37 @@
                 aria-hidden="true"></span>
         `}
         <span class="ilm-light-name">${o}</span>
-        <span class="ilm-light-value"
-              tabindex="0"
-              role="button"
-              aria-expanded="${l}"
-              aria-label="${o} ${g} — click to ${l?"collapse":"expand"} controls"
-              @click=${e=>{e.stopPropagation(),this._expandedLight=l?null:a}}>
-          ${g}
-        </span>
+        ${y?e.qy`
+          <span class="ilm-light-value"
+                tabindex="0"
+                role="button"
+                aria-expanded="${l}"
+                aria-label="${o} ${_} — click to ${l?"collapse":"expand"} controls"
+                @click=${e=>{e.stopPropagation(),this._expandedLight=l?null:a}}>
+            ${_}
+          </span>
+        `:e.qy`
+          <span class="ilm-light-value">${_}</span>
+        `}
       </div>
-      ${l?e.qy`
+      ${l&&y?e.qy`
         <div class="ilm-expanded-controls">
-          <div class="ilm-slider-row">
-            <input type="range" min="1" max="100" .value=${String(n)}
-                   aria-label="${o} brightness slider"
-                   @input=${e=>{e.stopPropagation(),this._brightnessDebouncer.call(a,parseInt(e.target.value))}}
-                   @click=${e=>e.stopPropagation()}
-                   @change=${e=>{e.stopPropagation(),this._setBrightness(a,parseInt(e.target.value))}}>
-          </div>
-          ${v?e.qy`
+          ${g?e.qy`
+            <div class="ilm-slider-row">
+              <input type="range" min="1" max="100" .value=${String(n)}
+                     aria-label="${o} brightness slider"
+                     @input=${e=>{e.stopPropagation(),this._brightnessDebouncer.call(a,parseInt(e.target.value))}}
+                     @click=${e=>e.stopPropagation()}
+                     @change=${e=>{e.stopPropagation(),this._setBrightness(a,parseInt(e.target.value))}}>
+            </div>
+          `:""}
+          ${f?e.qy`
             <div class="ilm-color-presets" role="listbox" aria-label="${o} color presets">
               ${Ce.COLOR_PRESETS.map(t=>e.qy`
-                <button class="ilm-color-preset ${this._isActivePreset(f,t.hs[0])?"active":""}"
+                <button class="ilm-color-preset ${this._isActivePreset(b,t.hs[0])?"active":""}"
                         style="--preset-color:${t.color}"
                         role="option"
-                        aria-selected="${this._isActivePreset(f,t.hs[0])}"
+                        aria-selected="${this._isActivePreset(b,t.hs[0])}"
                         aria-label="Set ${t.name.toLowerCase()} color"
                         @click=${e=>{e.stopPropagation(),this._setColor(a,t.hs)}}>
                   ${t.name}
@@ -6556,11 +6562,7 @@
             margin-bottom: 1rem;
           }
           .area-illumination-full lcars-illumination-panel {
-            --ilm-full-width: 1;
-          }
-          .area-illumination-full .lcars-device-panel,
-          .area-illumination-full lcars-illumination-panel {
-            max-width: none;
+            --panel-max-width: none;
           }
           .area-split-main {
             min-width: 0;

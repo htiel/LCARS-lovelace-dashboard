@@ -1834,9 +1834,11 @@ async def async_remove_entry(hass, config_entry):
 async def async_unload_entry(hass, config_entry):
     """Unload a config entry."""
     _LOGGER.debug("Unloading LCARS Dashboard")
-    await hass.config_entries.async_unload_platforms(config_entry, ["sensor"])
+    unload_ok = await hass.config_entries.async_unload_platforms(config_entry, ["sensor"])
+    if unload_ok:
+        hass.data.pop(DOMAIN, None)
     frontend.async_remove_panel(hass, "lcars-dashboard")
-    return True
+    return unload_ok
 
 async def _update_listener(hass, config_entry):
     _LOGGER.debug("Config entry update listener triggered")

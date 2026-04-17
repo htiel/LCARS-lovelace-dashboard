@@ -2,6 +2,12 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.18.5] — 2026-04-16
+
+### Fixed — Element Expression Crash
+
+- **Removed invalid element expression** — The illumination panel's `_renderLightBar()` had `${this.editMode ? html`` : ''}` inside a `<div>` opening tag. Lit-html 1.x does not support element expressions (only lit 3.x does), causing the Template constructor's attribute regex to return null → `null[2]` crash.
+
 ## [4.18.4] — 2026-04-16
 
 ### Fixed — Illumination Panel Crash & Cache Busting

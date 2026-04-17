@@ -5905,7 +5905,6 @@
     `}updated(e){if(super.updated(e),!this._flipPositions)return;const t=this.shadowRoot.querySelectorAll(".ilm-light-bar"),a=this._flipPositions;this._flipPositions=null,requestAnimationFrame(()=>{for(const e of t){const t=e.dataset.entityId,r=a.get(t);if(null==r)continue;const i=r-e.getBoundingClientRect().top;Math.abs(i)<1||(e.style.transform=`translateY(${i}px)`,e.style.transition="none",e.offsetHeight,e.style.transition="transform 200ms cubic-bezier(0.2, 0, 0.2, 1)",e.style.transform="")}})}_renderLightBar(t){const a=t.entity?.entity_id,r=t.state,s="on"===r?.state,n=s?Math.round((r?.attributes?.brightness||0)/255*100):0,o=this._shortEntityName(t),l=this._expandedLight===a,c=this._dragEntityId===a,d=r?.attributes?.color_temp_kelvin,p=this._getBarColor(d,s);return e.qy`
       <div class="ilm-light-bar ${s?"on":"off"} ${c?"dragging":""}"
            role="listitem"
-           ${this.editMode?e.qy``:""}
            aria-roledescription="${this.editMode?"reorderable light":""}"
            tabindex="0"
            data-entity-id="${a}"

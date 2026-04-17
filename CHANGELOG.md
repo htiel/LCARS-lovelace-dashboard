@@ -2,6 +2,14 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.18.4] — 2026-04-16
+
+### Fixed — Illumination Panel Crash & Cache Busting
+
+- **repeat() directive removed** — The bundled lit-html 1.x `repeat()` directive was incompatible with HA's lit 3.x runtime, causing `Cannot read properties of null` crashes. Replaced with `.map()`.
+- **const.py VERSION synced** — Cache-busting URL query parameter was stuck at 4.17.2, preventing browsers from loading updated JS bundles.
+- **Area-level panel naming** — Illumination and Life Support panels now show "ILLUMINATION CONTROL" / "LIFE SUPPORT" instead of the room name.
+
 ## [4.18.3] — 2026-04-16
 
 ### Fixed — Panel Layout & Illumination Detection

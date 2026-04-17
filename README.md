@@ -115,7 +115,7 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 
 ## Panel Gallery
 
-> **[View the interactive panel gallery →](examples/lcars-panel-gallery.html)**
+> **[View the interactive panel gallery →](https://htmlpreview.github.io/?https://github.com/htiel/LCARS-lovelace-dashboard/blob/4.0/examples/lcars-panel-gallery.html)**
 > Open `examples/lcars-panel-gallery.html` in a browser to see static mockups of all 12 panel types with sample data.
 
 <table>

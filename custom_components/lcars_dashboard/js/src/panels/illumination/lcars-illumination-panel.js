@@ -285,7 +285,6 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     return html`
       <div class="ilm-light-bar ${isOn ? 'on' : 'off'} ${isDragging ? 'dragging' : ''}"
            role="listitem"
-           ${this.editMode ? html`` : ''}
            aria-roledescription="${this.editMode ? 'reorderable light' : ''}"
            tabindex="0"
            data-entity-id="${eid}"

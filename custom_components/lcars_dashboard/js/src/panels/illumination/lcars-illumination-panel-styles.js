@@ -31,6 +31,12 @@ export const illuminationPanelStyles = css`
   /* ─── Light Brightness Bars ─── */
 
   .ilm-lights {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: 0.375rem;
+  }
+
+  .ilm-light-item {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
@@ -141,7 +147,7 @@ export const illuminationPanelStyles = css`
   }
 
   .ilm-slider-row {
-    padding: 0.25rem 0.75rem 0.375rem 2.25rem;
+    padding: 0.25rem 0.75rem 0.375rem 0.75rem;
   }
 
   .ilm-slider-row input[type="range"] {
@@ -241,9 +247,9 @@ export const illuminationPanelStyles = css`
   /* ─── Circuit Rows ─── */
 
   .ilm-circuits {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: 0.375rem;
   }
 
   .ilm-circuit-row {
@@ -291,7 +297,7 @@ export const illuminationPanelStyles = css`
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.375rem;
-    padding: 0.25rem 0.75rem 0.375rem 2.25rem;
+    padding: 0.25rem 0.75rem 0.375rem 0.75rem;
   }
 
   .ilm-effect-btn {
@@ -326,7 +332,7 @@ export const illuminationPanelStyles = css`
   .ilm-color-presets {
     display: flex;
     gap: 0.375rem;
-    padding: 0.25rem 0.75rem 0.375rem 2.25rem;
+    padding: 0.25rem 0.75rem 0.375rem 0.75rem;
     flex-wrap: wrap;
   }
 

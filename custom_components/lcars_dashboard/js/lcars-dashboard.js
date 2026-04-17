@@ -5547,6 +5547,12 @@
   /* ─── Light Brightness Bars ─── */
 
   .ilm-lights {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: 0.375rem;
+  }
+
+  .ilm-light-item {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
@@ -5657,7 +5663,7 @@
   }
 
   .ilm-slider-row {
-    padding: 0.25rem 0.75rem 0.375rem 2.25rem;
+    padding: 0.25rem 0.75rem 0.375rem 0.75rem;
   }
 
   .ilm-slider-row input[type="range"] {
@@ -5757,9 +5763,9 @@
   /* ─── Circuit Rows ─── */
 
   .ilm-circuits {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: 0.375rem;
   }
 
   .ilm-circuit-row {
@@ -5807,7 +5813,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.375rem;
-    padding: 0.25rem 0.75rem 0.375rem 2.25rem;
+    padding: 0.25rem 0.75rem 0.375rem 0.75rem;
   }
 
   .ilm-effect-btn {
@@ -5842,7 +5848,7 @@
   .ilm-color-presets {
     display: flex;
     gap: 0.375rem;
-    padding: 0.25rem 0.75rem 0.375rem 2.25rem;
+    padding: 0.25rem 0.75rem 0.375rem 0.75rem;
     flex-wrap: wrap;
   }
 
@@ -6001,7 +6007,8 @@
         `:""}
       </div>
     `}updated(e){if(super.updated(e),!this._flipPositions)return;const t=this.shadowRoot.querySelectorAll(".ilm-light-bar"),a=this._flipPositions;this._flipPositions=null,requestAnimationFrame(()=>{for(const e of t){const t=e.dataset.entityId,r=a.get(t);if(null==r)continue;const i=r-e.getBoundingClientRect().top;Math.abs(i)<1||(e.style.transform=`translateY(${i}px)`,e.style.transition="none",e.offsetHeight,e.style.transition="transform 200ms cubic-bezier(0.2, 0, 0.2, 1)",e.style.transform="")}})}_renderLightBar(t){const a=t.entity?.entity_id,r=this.hass?.states?.[a]||t.state,s="on"===r?.state,n=s?Math.round((r?.attributes?.brightness||0)/255*100):0,o=this._shortEntityName(t),l=this._expandedLight===a,c=this._dragEntityId===a,d=r?.attributes?.color_temp_kelvin,p=this._getBarColor(d,s,r),u=r?.attributes?.effect_list,m=r?.attributes?.effect,h=Array.isArray(u)&&u.length>0,v=r?.attributes?.supported_color_modes||[],f=v.some(e=>"hs"===e||"rgb"===e||"xy"===e),g=v.some(e=>"brightness"===e||"color_temp"===e||"hs"===e||"rgb"===e||"xy"===e),b=r?.attributes?.hs_color?.[0],y=g||h||f,_=s?m&&"none"!==m?m.toUpperCase():g?`${n}%`:"ON":"OFF";return e.qy`
-      <div class="ilm-light-bar ${s?"on":"off"} ${c?"dragging":""}"
+      <div class="ilm-light-item">
+        <div class="ilm-light-bar ${s?"on":"off"} ${c?"dragging":""}"
            role="listitem"
            aria-roledescription="${this.editMode?"reorderable light":""}"
            tabindex="0"
@@ -6079,6 +6086,7 @@
           `:""}
         </div>
       `:""}
+      </div>
     `}_onPointerDown(e,t){if(!this.editMode)return;e.preventDefault(),e.stopPropagation();const a=e.target.closest(".ilm-light-bar");if(!a)return;a.setPointerCapture(e.pointerId),a.addEventListener("pointermove",this._boundPointerMove),a.addEventListener("pointerup",this._boundPointerUp),a.addEventListener("pointercancel",this._boundPointerUp);const{dimmableLights:r}=this._getPartition(),i=r.map(e=>e.entity?.entity_id),s=i.indexOf(t);this._dragState={entityId:t,pointerId:e.pointerId,startY:e.clientY,barEl:a,currentIndex:s,hoverIndex:s,orderedIds:[...i],didDrag:!1},this._dragEntityId=t}_handlePointerMove(e){if(!this._dragState)return;const t=e.clientY-this._dragState.startY;if(!this._dragState.didDrag&&Math.abs(t)<8)return;this._dragState.didDrag=!0;const a=this.shadowRoot.querySelectorAll(".ilm-light-bar");if(!a.length)return;const r=a[0].getBoundingClientRect().height+4,i=Math.round(t/r),s=H(this._dragState.currentIndex+i,0,this._dragState.orderedIds.length-1);if(s!==this._dragState.hoverIndex){this._dragState.hoverIndex=s,this._captureFlipPositions();const e=[...this._dragState.orderedIds],t=e.indexOf(this._dragState.entityId);e.splice(t,1),e.splice(s,0,this._dragState.entityId),this._saveOrder(e),this._partitionDirty=!0,this.requestUpdate()}}_handlePointerUp(e){if(!this._dragState)return;const t=this._dragState.barEl;if(t){try{t.releasePointerCapture(this._dragState.pointerId)}catch{}t.removeEventListener("pointermove",this._boundPointerMove),t.removeEventListener("pointerup",this._boundPointerUp),t.removeEventListener("pointercancel",this._boundPointerUp)}const a=this._dragState.didDrag;this._lastDragWasDrag=a,this._dragState=null,this._dragEntityId=null,a&&(requestAnimationFrame(()=>{this._lastDragWasDrag=!1}),this._partitionDirty=!0,this.requestUpdate())}_cancelDrag(){if(this._dragState?.barEl){const e=this._dragState.barEl;try{e.releasePointerCapture(this._dragState.pointerId)}catch{}e.removeEventListener("pointermove",this._boundPointerMove),e.removeEventListener("pointerup",this._boundPointerUp),e.removeEventListener("pointercancel",this._boundPointerUp)}this._dragState=null,this._dragEntityId=null}_captureFlipPositions(){this._flipPositions=new Map;const e=this.shadowRoot.querySelectorAll(".ilm-light-bar");for(const t of e){const e=t.dataset.entityId;e&&this._flipPositions.set(e,t.getBoundingClientRect().top)}}_handleLightKeydown(e,t,a){if(this.editMode&&e.altKey&&("ArrowUp"===e.key||"ArrowDown"===e.key))return e.preventDefault(),void this._keyboardReorder(t,"ArrowUp"===e.key?-1:1);"Enter"===e.key||" "===e.key?(e.preventDefault(),this._toggleLight(t)):"ArrowUp"===e.key||"ArrowRight"===e.key?(e.preventDefault(),a>0&&this._setBrightness(t,Math.min(100,a+5))):"ArrowDown"!==e.key&&"ArrowLeft"!==e.key||(e.preventDefault(),a>0&&this._setBrightness(t,Math.max(1,a-5)))}_keyboardReorder(e,t){const{dimmableLights:a}=this._getPartition(),r=a.map(e=>e.entity?.entity_id),i=r.indexOf(e);if(i<0)return;const s=H(i+t,0,r.length-1);if(s===i)return;this._captureFlipPositions(),r.splice(i,1),r.splice(s,0,e),this._saveOrder(r),this._partitionDirty=!0,this.requestUpdate();const n=this.shadowRoot.querySelector(".ilm-reorder-status");if(n){const t=a.find(t=>t.entity?.entity_id===e),i=t?this._shortEntityName(t):e;n.textContent=`${i} MOVED TO POSITION ${s+1} OF ${r.length}`}this.updateComplete.then(()=>{const t=this.shadowRoot.querySelector(`[data-entity-id="${CSS.escape(e)}"]`);t&&t.focus()})}_renderSceneButton(t){const a=t.entity?.entity_id,r=this._shortEntityName(t);return e.qy`
       <div role="listitem">
         <button class="ilm-scene-btn"

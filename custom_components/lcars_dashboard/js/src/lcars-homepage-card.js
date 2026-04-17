@@ -23,7 +23,7 @@ import {
   PANEL_TYPE_CLIMATE, PANEL_TYPE_MEDIA, PANEL_TYPE_ENVIRONMENT,
   PANEL_TYPE_IRRIGATION, PANEL_TYPE_WEATHER, PANEL_TYPE_BATTERY,
   PANEL_TYPE_POWER, PANEL_TYPE_LIFE_SUPPORT, PANEL_TYPE_ILLUMINATION,
-  PANEL_TYPE_ORDER,
+  PANEL_TYPE_ORDER, PANEL_COLUMN,
   CAMERA_DOMAINS, CLIMATE_DOMAINS, MEDIA_DOMAINS, ALARM_DOMAINS, WEATHER_DOMAINS,
   TOGGLE_DOMAINS, SENSOR_DOMAINS, COVER_DOMAINS,
   AQ_DEVICE_CLASSES, AQ_ENTITY_SUFFIX_RE,
@@ -927,7 +927,7 @@ class LcarsHomepageCard extends LitElement {
             margin-bottom: 0.75rem;
           }
 
-          /* ─── Two-column split: entities left, camera panels right ─── */
+          /* ─── Two-column split: entities+left-panels left, right-panels right ─── */
           .area-split-layout {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -7205,8 +7205,8 @@ class LcarsHomepageCard extends LitElement {
         }
       }
 
-      // Build normal content once — used in both layouts
-      const normalContent = html`
+      // Build entity groups content (without power — power rendered in left column)
+      const entityContent = html`
         ${normalDevices.map((group) => html`
           <div class="device-group">
             <div class="device-header">
@@ -7230,28 +7230,59 @@ class LcarsHomepageCard extends LitElement {
             ${this._renderDomainGroups(filteredNoDevice)}
           </div>
         ` : ''}
-        ${powerGroups.length > 0 ? html`<lcars-power-panel .powerGroups=${powerGroups} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-power-panel>` : ''}
       `;
 
-      // No panel devices and no area panels → single-column
-      if (panelDevices.length === 0 && areaPanels.length === 0) return normalContent;
+      // Power panel template (left column, below environment)
+      const powerTemplate = powerGroups.length > 0
+        ? html`<lcars-power-panel .powerGroups=${powerGroups} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-power-panel>`
+        : '';
 
-      // Merge all panels (device + area) and sort by PANEL_TYPE_ORDER
+      // Merge all panels (device + area)
       const allPanels = [
         ...panelDevices.map(g => ({ panelType: g.panelType, template: this._renderDevicePanel(g.panelType, g) })),
         ...areaPanels,
       ];
-      allPanels.sort((a, b) =>
-        (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99)
-      );
 
-      // Panel devices + area-level composite panels → two-column split layout
+      // No panels at all → single-column with entities + power
+      if (allPanels.length === 0 && powerGroups.length === 0) return html`${entityContent}${powerTemplate}`;
+
+      // Split panels into left and right columns
+      const leftPanels = [];
+      const rightPanels = [];
+      for (const p of allPanels) {
+        if (PANEL_COLUMN[p.panelType] === 'right') {
+          rightPanels.push(p);
+        } else {
+          leftPanels.push(p);
+        }
+      }
+      leftPanels.sort((a, b) => (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99));
+      rightPanels.sort((a, b) => (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99));
+
+      // Illumination renders ABOVE entities; other left panels render BELOW
+      const ilmPanel = leftPanels.find(p => p.panelType === PANEL_TYPE_ILLUMINATION);
+      const belowEntityPanels = leftPanels.filter(p => p.panelType !== PANEL_TYPE_ILLUMINATION);
+
+      // Left column: illumination → entities → climate/life-support/env → power
+      const leftColumn = html`
+        <div class="area-split-main">
+          ${ilmPanel ? ilmPanel.template : ''}
+          ${entityContent}
+          ${belowEntityPanels.map(p => p.template)}
+          ${powerTemplate}
+        </div>
+      `;
+
+      // No right-column panels → single column
+      if (rightPanels.length === 0) return leftColumn;
+
+      // Two-column split: entities+left-panels LEFT, right-panels RIGHT
       return html`
         <div class="area-split-layout">
+          ${leftColumn}
           <div class="area-split-panels" aria-live="polite">
-            ${allPanels.map(p => p.template)}
+            ${rightPanels.map(p => p.template)}
           </div>
-          <div class="area-split-main">${normalContent}</div>
         </div>
       `;
     }

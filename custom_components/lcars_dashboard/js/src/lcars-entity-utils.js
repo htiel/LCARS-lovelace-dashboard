@@ -26,21 +26,41 @@ export const PANEL_TYPE_POWER       = 'power';
 export const PANEL_TYPE_LIFE_SUPPORT  = 'life_support';
 export const PANEL_TYPE_ILLUMINATION  = 'illumination';
 
-// ─── Panel Render Priority (lower = rendered first in layout) ───────────────
+// ─── Panel Column Assignments ───────────────────────────────────────────────
+// 'left' = renders alongside entity groups; 'right' = opposite column
+
+export const PANEL_COLUMN = {
+  [PANEL_TYPE_ILLUMINATION]: 'left',
+  [PANEL_TYPE_CLIMATE]:      'left',
+  [PANEL_TYPE_LIFE_SUPPORT]: 'left',
+  [PANEL_TYPE_ENVIRONMENT]:  'left',
+  [PANEL_TYPE_POWER]:        'left',
+  [PANEL_TYPE_ALARM]:        'right',
+  [PANEL_TYPE_CAMERA]:       'right',
+  [PANEL_TYPE_BATTERY]:      'right',
+  [PANEL_TYPE_IRRIGATION]:   'right',
+  [PANEL_TYPE_MEDIA]:        'right',
+  [PANEL_TYPE_AQUATICS]:     'right',
+  [PANEL_TYPE_WEATHER]:      'right',
+};
+
+// ─── Panel Render Priority (lower = rendered first within its column) ───────
 
 export const PANEL_TYPE_ORDER = {
-  [PANEL_TYPE_ILLUMINATION]: -2,
-  [PANEL_TYPE_LIFE_SUPPORT]: -1,
-  [PANEL_TYPE_CAMERA]:      0,
-  [PANEL_TYPE_ALARM]:       1,
-  [PANEL_TYPE_AQUATICS]:    2,
-  [PANEL_TYPE_CLIMATE]:     3,
-  [PANEL_TYPE_MEDIA]:       4,
-  [PANEL_TYPE_ENVIRONMENT]: 5,
-  [PANEL_TYPE_IRRIGATION]:  6,
-  [PANEL_TYPE_WEATHER]:     7,
-  [PANEL_TYPE_BATTERY]:     8,
-  [PANEL_TYPE_POWER]:       9,
+  // Left column: illumination above entities, rest below
+  [PANEL_TYPE_ILLUMINATION]: 0,
+  [PANEL_TYPE_CLIMATE]:      2,
+  [PANEL_TYPE_LIFE_SUPPORT]: 3,
+  [PANEL_TYPE_ENVIRONMENT]:  4,
+  [PANEL_TYPE_POWER]:        5,
+  // Right column
+  [PANEL_TYPE_ALARM]:        0,
+  [PANEL_TYPE_CAMERA]:       1,
+  [PANEL_TYPE_BATTERY]:      2,
+  [PANEL_TYPE_IRRIGATION]:   3,
+  [PANEL_TYPE_MEDIA]:        4,
+  [PANEL_TYPE_AQUATICS]:     5,
+  [PANEL_TYPE_WEATHER]:      6,
 };
 
 // ─── Domain Sets ────────────────────────────────────────────────────────────
@@ -363,9 +383,9 @@ export function classifyArea(hass, areaId, entityEntries) {
     types.add(PANEL_TYPE_LIFE_SUPPORT);
   }
 
-  // Illumination: ≥2 lighting entities in the area
+  // Illumination: ≥1 lighting entity in the area
   const lightCount = entityEntries.filter(isLightingEntity).length;
-  if (lightCount >= 2) {
+  if (lightCount >= 1) {
     types.add(PANEL_TYPE_ILLUMINATION);
   }
 

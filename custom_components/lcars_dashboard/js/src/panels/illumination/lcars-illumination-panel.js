@@ -17,7 +17,6 @@
  * // TODO: 5.x — WS persistence for cross-device sync
  */
 import { html, css } from 'lit-element';
-import { repeat } from 'lit-html/directives/repeat.js';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { isLightingEntity } from '../../lcars-entity-utils.js';
 import { showMoreInfo, fireEvent, lcarsLog } from '../../lcars-helpers.js';
@@ -216,7 +215,7 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
         ` : ''}
         ${dimmableLights.length > 0 ? html`
           <div class="ilm-lights" role="list" aria-label="Dimmable lights">
-            ${repeat(dimmableLights, e => e.entity?.entity_id, entry => this._renderLightBar(entry))}
+            ${dimmableLights.map(entry => this._renderLightBar(entry))}
           </div>
         ` : ''}
 

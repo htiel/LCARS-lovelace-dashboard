@@ -37,19 +37,29 @@ class LcarsMediaPanel extends LcarsBasePanel {
   }
 
   _partitionMediaEntities(entries) {
-    // Only include media_player, remote, and relevant sensor entities.
-    // Exclude ALL binary_sensors (camera detection, motion, etc. — none belong on media)
-    // and camera domain entities.
+    // Device-affinity scoping: only include entities from devices that have
+    // a media_player entity. Prevents stealing sensors from EcoFlow, weather
+    // stations, air purifiers, etc. that share the same area. (4X-43 fix)
+    const mediaDeviceIds = new Set();
+    for (const entry of entries) {
+      if (entry.domain === 'media_player' && entry.entity?.device_id) {
+        mediaDeviceIds.add(entry.entity.device_id);
+      }
+    }
+
     const player = [];
     const sensors = [];
     const controls = [];
     const remotes = [];
     for (const entry of entries) {
+      // Always accept media_player (even deviceless)
       if (entry.domain === 'media_player') { player.push(entry); continue; }
+      // Non-media_player entities must belong to a media player's device
+      const devId = entry.entity?.device_id;
+      if (!devId || !mediaDeviceIds.has(devId)) continue;
       if (entry.domain === 'remote') { remotes.push(entry); continue; }
-      // Exclude binary_sensors entirely — no legitimate media panel use case
+      // Exclude binary_sensors and cameras even from media devices
       if (entry.domain === 'binary_sensor') continue;
-      // Exclude camera domain entirely
       if (entry.domain === 'camera') continue;
       if (SENSOR_DOMAINS.has(entry.domain)) { sensors.push(entry); continue; }
       controls.push(entry);

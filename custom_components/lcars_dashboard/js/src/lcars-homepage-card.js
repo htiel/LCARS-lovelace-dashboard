@@ -7267,7 +7267,7 @@ class LcarsHomepageCard extends LitElement {
         e => isClimateEntity(e) || isEnvironmentEntity(e) || isAmbientSensor(e)
       );
       if (areaPanelTypes.has(PANEL_TYPE_TACTICAL)) predicates.push(isTacticalEntity);
-      if (areaPanelTypes.has(PANEL_TYPE_MEDIA)) predicates.push(e => MEDIA_DOMAINS.has(e.domain));
+      if (areaPanelTypes.has(PANEL_TYPE_MEDIA)) predicates.push(e => MEDIA_DOMAINS.has(e.domain) || e.domain === 'remote');
       if (predicates.length === 0) return null;
       return entry => predicates.some(p => p(entry));
     }

@@ -2,52 +2,41 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
-## [4.21.0-rc.4] — 2026-04-17
+## [4.21.0] — 2026-04-17
 
-### Fixed — Media Panel Camera Sensor Bleeding (#46 continued)
+### Added — 4 New Panel Types
 
-- **Root cause**: UniFi Protect doorbell cameras are also `media_player` entities (they have speakers), so camera detection binary sensors shared the same `device_id` and passed the rc.3 filter.
-- **Fix**: Media panel now explicitly excludes camera detection binary sensors by `device_class` (motion, occupancy, sound, tamper, smoke, etc.) and entity_id patterns (is_dark, doorbell, person_detected, vehicle_detected, etc.). Also excludes `camera` domain entirely.
+**Tactical Panel (4X-42):** Composite security panel — alarm control, lock toggles, perimeter sensors, motion indicators. Subsumes alarm panel.
 
-## [4.21.0-rc.3] — 2026-04-17
+**Viewport Controls (4X-41):** Blinds/shades/covers with open/close/stop controls and position display.
 
-### Fixed — Media Panel Entity Bleeding (#46)
+**Hazard Detection (4X-39):** Smoke/CO/heat detector status grid (Nest Protect) with battery overview.
 
-- **Media panel no longer displays camera/sensor entities from other devices**: `_partitionMediaEntities()` now filters to only include entities sharing a `device_id` with a `media_player` entity. Camera binary sensors (IS DARK, MOTION DETECTION, PERSON DETECTED, etc.) and motion sensors no longer bleed into the media panel.
+**Galley Systems (4X-40):** Smart appliance cards (GE Home, LG SmartThinQ) with cook status, timers.
 
-## [4.21.0-rc.2] — 2026-04-17
+### Added — Entity Routing
 
-### Fixed — Device Ownership in Illumination (4X-45)
+**Media Consolidation (4X-43):** Area-level media panel with primary/secondary speaker layout. Camera doorbell media_players excluded.
 
-- **Switches from panel-owned devices excluded from Illumination circuits**: `classifyDevice()` now runs on each device group in `_partitionLightingEntities()`. Switches belonging to devices classified as battery, environment, galley, etc. are excluded from the catch-all circuit section. Only the `isLightingEntity()` keyword-matched branch is ungated (explicit naming wins).
-- Confirmed: `claimedDeviceIds` guard was in rc.1 source but this RC ensures the compiled bundle is current.
+**Platform-to-Panel Routing (4X-44):** 20+ integration platforms mapped. Diagnostic entity filter.
 
-## [4.21.0-rc.1] — 2026-04-17
+**Weather Detection (4X-36):** Platform + sensor class detection.
 
-### Added — New Panel Types
+**Pool/Spa Detection (4X-37):** Platform-based detection for screenlogic, iaqualink, waterguru, pentair.
 
-**Tactical Panel (4X-42):**
-- New `PANEL_TYPE_TACTICAL` — composite security panel consolidating alarm, locks, door/window sensors, and motion detectors into a unified view.
-- Composes existing `<lcars-alarm-panel>` as nested substation with `frame-mode="nested"`.
-- 4 graceful degradation configs: full, alarm-only, access+perimeter, sensors-only.
-- Lock toggle controls, perimeter status chips, motion detection indicators.
-- Subsumes `PANEL_TYPE_ALARM` — alarm devices no longer render standalone when tactical is active.
-- Frame color adapts to alarm state (tomato=triggered, butterscotch=armed, ice=secure).
+### Added — CSS Polish
 
-**Viewport Controls Panel (4X-41):**
-- New `PANEL_TYPE_VIEWPORT` — blinds, shades, curtains, awnings.
-- Open/close/stop controls with position display per cover entity.
-- Excludes security covers (garage_door, gate, door) which route to Tactical.
+**Responsive Breakpoints (4X-29):** 9 panels, single-column below 30rem. Power panel px→rem.
 
-**Hazard Detection Panel (4X-39):**
-- New `PANEL_TYPE_HAZARD` — smoke/CO/heat detectors (Nest Protect, etc.).
-- Per-device status grid with smoke/CO/heat indicators, occupancy, battery overview.
-- Platform detection: `nest_protect` + device_class-based fallback.
+**Gradient Cleanup (4X-30):** 4 decorative gradients removed.
 
-**Galley Systems Panel (4X-40):**
-- New `PANEL_TYPE_GALLEY` — smart kitchen appliances (GE Home, LG SmartThinQ).
-- Per-appliance cards with cook status, temperature, timer display.
-- Platform detection: `ge_home`, `smartthinq_sensors`.
+### Fixed
+
+- **Life Support Clipping (4X-46):** flex-basis auto, :host display:block, overflow fixes.
+- **Device Ownership (#45):** claimedDeviceIds guard in illumination circuits.
+- **Media Entity Bleeding (#46):** Device-affinity scoping + camera doorbell exclusion.
+
+## [4.19.1] — 2026-04-17
 
 ### Added — Entity Routing Improvements
 

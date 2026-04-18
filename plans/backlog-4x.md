@@ -86,15 +86,19 @@ Switch-domain entities that control plugs or lights (e.g. smart plugs powering l
 
 ---
 
-### 4X-31 - Environmental + air purifier panels clip in consolidated room view - `DONE v4.18.9` - Priority: HIGH - Size: M - WSJF: 3.33
+### 4X-31 - Environmental + air purifier panels clip in consolidated room view - `DONE v4.18.9 — REOPENED as 4X-46` - Priority: HIGH - Size: M - WSJF: 3.33
 
-**GitHub Issue**: [#31](https://github.com/htiel/LCARS-lovelace-dashboard/issues/31)
+**GitHub Issue**: [#31](https://github.com/htiel/LCARS-lovelace-dashboard/issues/31) → reopened as [#44](https://github.com/htiel/LCARS-lovelace-dashboard/issues/44)
 
-When a room has both an environmental system (climate) and an air-aware / air purifier panel, content clips in the consolidated room view. Panels overflow their container. Fix options: separate devices into distinct panels, or shrink the frame when stacked in an over-consolidated panel.
+v4.18.9 fix (overflow: visible) was insufficient. Clipping persists in the Life Support panel's nested environment substation. Root cause likely in a parent container constraint.
 
-**Acceptance criteria**:
-- No visual clipping when environmental + air purifier panels are both present in a room
-- Panels either render in separate sections or scale down to fit within the consolidated view
+---
+
+### 4X-46 - Life Support panel still clipping nested environment substation - `TODO` - Priority: HIGH - Size: M - WSJF: 3.33
+
+**GitHub Issue**: [#44](https://github.com/htiel/LCARS-lovelace-dashboard/issues/44)
+
+Reopened from 4X-31. The `overflow: visible` fix in v4.18.9 did not fully resolve clipping. The Awair atmoscrubber sparkline tray at the bottom of the Life Support panel is cut off. Root cause may be in the homepage card's room container, the panel frame's outer div, or a parent flex/grid height constraint.
 
 ---
 

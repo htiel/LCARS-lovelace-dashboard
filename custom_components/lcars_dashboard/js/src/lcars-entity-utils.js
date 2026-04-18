@@ -134,6 +134,48 @@ const HAZARD_STATUS_CLASSES = new Set(['smoke', 'gas', 'carbon_monoxide', 'heat'
 // Known appliance platforms (4X-40)
 const GALLEY_PLATFORMS = new Set(['ge_home', 'smartthinq_sensors']);
 
+// ─── Platform-to-Panel Routing Map (4X-44) ──────────────────────────────────
+// Master map of known HA integration platforms → LCARS panel types.
+// Used as fallback when domain/device_class detection doesn't match.
+const PLATFORM_PANEL_MAP = new Map([
+  // Camera systems
+  ['unifiprotect', PANEL_TYPE_CAMERA],
+  ['blink', PANEL_TYPE_CAMERA],
+  // Pool/Spa (also in POOL_SPA_PLATFORMS for device-level detection)
+  ['screenlogic', PANEL_TYPE_AQUATICS],
+  ['iaqualink', PANEL_TYPE_AQUATICS],
+  ['waterguru', PANEL_TYPE_AQUATICS],
+  ['pentair', PANEL_TYPE_AQUATICS],
+  ['poolmath', PANEL_TYPE_AQUATICS],
+  // Weather (also in WEATHER_PLATFORMS)
+  ['weatherflow', PANEL_TYPE_WEATHER],
+  ['weatherlink', PANEL_TYPE_WEATHER],
+  // Irrigation (also in IRRIGATION_PLATFORMS)
+  ['rachio', PANEL_TYPE_IRRIGATION],
+  ['rainbird', PANEL_TYPE_IRRIGATION],
+  ['rainmachine', PANEL_TYPE_IRRIGATION],
+  ['opensprinkler', PANEL_TYPE_IRRIGATION],
+  ['flume', PANEL_TYPE_IRRIGATION],
+  // Hazard detection
+  ['nest_protect', PANEL_TYPE_HAZARD],
+  // Appliances
+  ['ge_home', PANEL_TYPE_GALLEY],
+  ['smartthinq_sensors', PANEL_TYPE_GALLEY],
+  // Air purifiers → environment/atmoscrubber
+  ['ha_blueair', PANEL_TYPE_ENVIRONMENT],
+  ['vesync', PANEL_TYPE_ENVIRONMENT],
+  // Power monitoring
+  ['emporia_vue', PANEL_TYPE_POWER],
+]);
+
+// ─── Diagnostic Entity Filter (4X-44) ───────────────────────────────────────
+// Entities with entity_category 'diagnostic' or 'config' are excluded from
+// room panel rendering. They're system/maintenance data, not user-facing.
+export function isDiagnosticEntity(entry) {
+  const cat = entry.entity?.entity_category;
+  return cat === 'diagnostic' || cat === 'config';
+}
+
 // ─── Irrigation Detection ───────────────────────────────────────────────────
 
 // Known irrigation integration platforms
@@ -287,6 +329,18 @@ const DETECTORS = [
       if (dc === 'voltage' && unit === 'V') powerSignals++;
     }
     return (!hasBattery && powerSignals >= 1) ? PANEL_TYPE_POWER : null;
+  },
+
+  // Platform-based fallback: check PLATFORM_PANEL_MAP for known integrations (4X-44)
+  // Runs last — only matches devices not caught by domain/device_class detectors above.
+  (entries) => {
+    for (const e of entries) {
+      const platform = e.entity?.platform;
+      if (platform && PLATFORM_PANEL_MAP.has(platform)) {
+        return PLATFORM_PANEL_MAP.get(platform);
+      }
+    }
+    return null;
   },
 ];
 

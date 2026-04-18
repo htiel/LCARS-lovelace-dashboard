@@ -32,6 +32,7 @@ import {
   isTacticalEntity, PANEL_TYPE_TACTICAL,
   PANEL_TYPE_VIEWPORT,
   PANEL_TYPE_HAZARD, PANEL_TYPE_GALLEY,
+  isDiagnosticEntity,
 } from './lcars-entity-utils.js';
 import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor, getCo2Color, getTempColor, getTempComfortClass, getSafeComfortColor, COMFORT_COLORS, getRainDelayInfo, getPowerColor, getPowerLabel, getGridBalanceColor } from './lcars-color-utils.js';
 import { clampSetpoint, clampValue, createRateLimiter, createDebouncer } from './lcars-service-utils.js';
@@ -7116,7 +7117,8 @@ class LcarsHomepageCard extends LitElement {
         const domain = e.entity_id.split('.')[0];
         const state = this._hass?.states?.[e.entity_id];
         return { entity: e, domain, state };
-      }).filter(e => e.state);
+      }).filter(e => e.state)
+        .filter(e => !isDiagnosticEntity(e)); // 4X-44: exclude diagnostic/config entities from panels
 
       const areaPanelTypes = classifyArea(this._hass, areaId, hydratedEntries);
       const areaPanels = [];

@@ -116,7 +116,7 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 ## Panel Gallery
 
 > **[View the interactive panel gallery →](https://htmlpreview.github.io/?https://github.com/htiel/LCARS-lovelace-dashboard/blob/4.0/examples/lcars-panel-gallery.html)**
-> Open `examples/lcars-panel-gallery.html` in a browser to see static mockups of all 12 panel types with sample data.
+> Open `examples/lcars-panel-gallery.html` in a browser to see static mockups of all 16 panel types with sample data.
 
 <table>
 <tr>
@@ -188,6 +188,30 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 <td>
 
 **Life Support** — Composite panel composing climate + environment substations, ambient sensor row, adaptive sparkline tray.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Tactical** — Composite security panel: alarm control (nested substation), lock toggles, perimeter sensor chips, motion indicators. Subsumes alarm panel.
+
+</td>
+<td>
+
+**Viewport Controls** — Blinds/shades/covers with open/close/stop controls and position percentage display.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Hazard Detection** — Smoke/CO/heat detector status grid (Nest Protect), per-device cards with battery overview.
+
+</td>
+<td>
+
+**Galley Systems** — Smart appliance cards (GE Home, LG SmartThinQ) with cook status, temperature, and timer display.
 
 </td>
 </tr>

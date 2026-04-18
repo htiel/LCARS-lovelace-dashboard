@@ -2,6 +2,71 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.21.0-rc.1] — 2026-04-17
+
+### Added — New Panel Types
+
+**Tactical Panel (4X-42):**
+- New `PANEL_TYPE_TACTICAL` — composite security panel consolidating alarm, locks, door/window sensors, and motion detectors into a unified view.
+- Composes existing `<lcars-alarm-panel>` as nested substation with `frame-mode="nested"`.
+- 4 graceful degradation configs: full, alarm-only, access+perimeter, sensors-only.
+- Lock toggle controls, perimeter status chips, motion detection indicators.
+- Subsumes `PANEL_TYPE_ALARM` — alarm devices no longer render standalone when tactical is active.
+- Frame color adapts to alarm state (tomato=triggered, butterscotch=armed, ice=secure).
+
+**Viewport Controls Panel (4X-41):**
+- New `PANEL_TYPE_VIEWPORT` — blinds, shades, curtains, awnings.
+- Open/close/stop controls with position display per cover entity.
+- Excludes security covers (garage_door, gate, door) which route to Tactical.
+
+**Hazard Detection Panel (4X-39):**
+- New `PANEL_TYPE_HAZARD` — smoke/CO/heat detectors (Nest Protect, etc.).
+- Per-device status grid with smoke/CO/heat indicators, occupancy, battery overview.
+- Platform detection: `nest_protect` + device_class-based fallback.
+
+**Galley Systems Panel (4X-40):**
+- New `PANEL_TYPE_GALLEY` — smart kitchen appliances (GE Home, LG SmartThinQ).
+- Per-appliance cards with cook status, temperature, timer display.
+- Platform detection: `ge_home`, `smartthinq_sensors`.
+
+### Added — Entity Routing Improvements
+
+**Media Consolidation (4X-43):**
+- Media panel now operates at the area level — all `media_player` entities in a room render in a single panel.
+- Primary player selection: playing > paused > most features (Apple TV over HomePod).
+- Secondary speakers render as compact rows with play/pause + volume controls.
+
+**Platform-to-Panel Routing (4X-44):**
+- `PLATFORM_PANEL_MAP` — 20+ known HA integration platforms mapped to correct panel types.
+- Platform-based fallback detector in DETECTORS array catches devices missed by domain/device_class.
+- `isDiagnosticEntity()` filter — entities with `entity_category: diagnostic/config` excluded from all room panels.
+- Mappings: unifiprotect/blink→camera, screenlogic/waterguru→aquatics, weatherflow/weatherlink→weather, rachio/flume→irrigation, nest_protect→hazard, ge_home/smartthinq→galley, ha_blueair/vesync→environment, emporia_vue→power.
+
+**Weather Station Detection (4X-36):**
+- `WEATHER_PLATFORMS` set: weatherflow, weatherlink, met, openweathermap, accuweather, ecobee, environment_canada, nws, pirateweather.
+- `WEATHER_SENSOR_CLASSES` device_class matching: wind_speed, wind_direction, precipitation, pressure, irradiance.
+- ≥2 weather sensor classes on a device triggers weather panel.
+
+**Pool/Spa Detection (4X-37):**
+- `POOL_SPA_PLATFORMS` set: screenlogic, iaqualink, poolmath, waterguru, pentair.
+- Platform check runs before entity_id/preset heuristics for reliable detection.
+
+### Also includes from earlier pre-releases
+
+**Responsive Breakpoints (4X-29):**
+- 9 panels gain single-column fallback below 30rem (~480px).
+- Battery & environment cylinders rotate horizontal on narrow screens.
+- Power panel breakpoints normalized from px to rem.
+
+**Gradient Cleanup (4X-30):**
+- 4 decorative gradients removed (forecast fill, waveform peak, weather glow, pool caustic shimmer).
+- 10 functional gradients kept and documented.
+
+**Life Support Clipping Fix (4X-46):**
+- `.panel-content { flex: 1 1 auto }` — content-based sizing.
+- `:host { display: block }` in LcarsBasePanel for all panels.
+- `.env-content` overflow + min-width fixes.
+
 ## [4.20.0-rc.1] — 2026-04-17
 
 ### Added — Responsive Breakpoints (4X-29)

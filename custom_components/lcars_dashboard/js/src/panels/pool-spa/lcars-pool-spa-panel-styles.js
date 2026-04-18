@@ -272,6 +272,22 @@ export const poolSpaPanelStyles = css`
 
   .panel-pip-strip { position: absolute; bottom: 4px; right: 4px; width: 2rem; height: 3px; background: var(--panel-frame-color); border-radius: 1.5px; opacity: 0.3; }
 
+  @media (max-width: 30rem) {
+    .pool-content {
+      grid-template-areas: "aquatics" "chemistry" "controls" "lighting";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto auto;
+    }
+    .pool-content.pool-no-chem {
+      grid-template-areas: "aquatics" "controls" "lighting";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+    }
+    .pool-aquatics {
+      flex-direction: column;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .lcars-pump-spinner.on { animation: none; }
     .pool-heating-bar { animation: none; }

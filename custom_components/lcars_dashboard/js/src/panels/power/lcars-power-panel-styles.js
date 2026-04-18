@@ -246,18 +246,18 @@ export const powerPanelStyles = css`
   }
 
   /* Responsive */
-  @media (max-width: 1023px) {
+  @media (max-width: 64rem) {
     .power-circuits { grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); }
     .lcars-consolidated-power-panel .power-circuits { grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); }
     .power-summary { grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); }
   }
-  @media (max-width: 767px) {
+  @media (max-width: 48rem) {
     .power-circuits { grid-template-columns: 1fr 1fr; max-height: 16rem; }
     .lcars-consolidated-power-panel .power-circuits { grid-template-columns: 1fr 1fr; }
     .power-summary { grid-template-columns: 1fr; }
     .power-device-row { flex-direction: column; align-items: stretch; }
   }
-  @media (max-width: 479px) {
+  @media (max-width: 30rem) {
     .power-circuits { grid-template-columns: 1fr; }
     .lcars-consolidated-power-panel .power-circuits { grid-template-columns: 1fr; }
   }

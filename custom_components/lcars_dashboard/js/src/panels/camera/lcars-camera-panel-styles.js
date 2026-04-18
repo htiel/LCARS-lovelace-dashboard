@@ -224,6 +224,14 @@ export const cameraPanelStyles = css`
     animation: none;
   }
 
+  @media (max-width: 30rem) {
+    .camera-content {
+      grid-template-areas: "media" "sensors" "controls";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .camera-connecting-text { animation: none; }
     .camera-frame[data-state="live"] img { animation: none; }

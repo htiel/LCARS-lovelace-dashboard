@@ -448,6 +448,30 @@ export const batteryPanelStyles = css`
     opacity: 0.3;
   }
 
+  @media (max-width: 30rem) {
+    .battery-content {
+      grid-template-areas: "core" "sensors" "controls" "ioflow";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto auto;
+    }
+    .warp-core-container {
+      min-height: 6rem;
+      flex-direction: row;
+    }
+    .warp-core {
+      width: 100%;
+      height: 4rem;
+      min-height: 4rem;
+      border-radius: 2rem;
+    }
+    .warp-core-fill {
+      left: 0; bottom: 0; top: 0;
+      right: auto;
+      width: calc(var(--core-charge, 0) * 1%);
+      height: 100%;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .warp-core-fill.core-idle,
     .warp-core-fill.core-charging { animation: none; }

@@ -2,6 +2,28 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.20.0-rc.1] — 2026-04-17
+
+### Added — Responsive Breakpoints (4X-29)
+
+- **9 panels gain mobile-first responsive layout**: Alarm, battery, camera, climate, environment, irrigation, media, weather, pool/spa panels all collapse to single-column layout below 30rem (~480px).
+- **Battery & environment cylinders rotate horizontal** on narrow screens — 4rem tall horizontal bar instead of vertical cylinder.
+- **Power panel breakpoints normalized** from px to rem units (64rem/48rem/30rem) per Data's architectural review.
+
+### Fixed — Gradient Cleanup (4X-30)
+
+- **4 decorative gradients removed** per Bracer Jack Rule 1:
+  - Forecast range fill → flat `var(--lcars-butterscotch)`
+  - Waveform peak bar → flat `var(--lcars-tomato)`
+  - Weather glow radial → replaced with `border-color` shift
+  - Pool caustic shimmer → removed entirely (thermal tint backgrounds sufficient)
+- **10 functional gradients documented and kept**: scroll fades, particle animations, scan sweeps, charge flow stripes.
+
+### Review Summary
+- Geordi: Designed all 9 breakpoint specs + classified 14 gradients
+- Data: APPROVE (condition met: power panel px→rem)
+- Worf: Auto-approve (pure CSS)
+
 ## [4.19.1-rc.3] — 2026-04-17
 
 ### Fixed — Environment panel horizontal clipping (4X-46 continued)

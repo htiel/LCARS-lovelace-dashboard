@@ -31,6 +31,7 @@ import {
   isLightingEntity, isClimateEntity, isEnvironmentEntity, isAmbientSensor,
   isTacticalEntity, PANEL_TYPE_TACTICAL,
   PANEL_TYPE_VIEWPORT,
+  PANEL_TYPE_HAZARD, PANEL_TYPE_GALLEY,
 } from './lcars-entity-utils.js';
 import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor, getCo2Color, getTempColor, getTempComfortClass, getSafeComfortColor, COMFORT_COLORS, getRainDelayInfo, getPowerColor, getPowerLabel, getGridBalanceColor } from './lcars-color-utils.js';
 import { clampSetpoint, clampValue, createRateLimiter, createDebouncer } from './lcars-service-utils.js';
@@ -60,6 +61,8 @@ import './panels/lifesupport/lcars-lifesupport-panel.js';
 import './panels/illumination/lcars-illumination-panel.js';
 import './panels/tactical/lcars-tactical-panel.js';
 import './panels/viewport/lcars-viewport-panel.js';
+import './panels/hazard/lcars-hazard-panel.js';
+import './panels/galley/lcars-galley-panel.js';
 
 const TAG = 'Homepage';
 
@@ -80,6 +83,8 @@ const PANEL_TAG_REGISTRY = new Map([
   [PANEL_TYPE_ILLUMINATION, (group, hass, editMode, config) => html`<lcars-illumination-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-illumination-panel>`],
   [PANEL_TYPE_TACTICAL,      (group, hass, editMode, config) => html`<lcars-tactical-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-tactical-panel>`],
   [PANEL_TYPE_VIEWPORT,       (group, hass, editMode, config) => html`<lcars-viewport-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-viewport-panel>`],
+  [PANEL_TYPE_HAZARD,          (group, hass, editMode, config) => html`<lcars-hazard-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-hazard-panel>`],
+  [PANEL_TYPE_GALLEY,          (group, hass, editMode, config) => html`<lcars-galley-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-galley-panel>`],
 ]);
 
 /* Build a cache-busted camera image URL using last_updated timestamp */

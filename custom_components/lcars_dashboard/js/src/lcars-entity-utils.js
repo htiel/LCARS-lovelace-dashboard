@@ -27,6 +27,8 @@ export const PANEL_TYPE_LIFE_SUPPORT  = 'life_support';
 export const PANEL_TYPE_ILLUMINATION  = 'illumination';
 export const PANEL_TYPE_TACTICAL      = 'tactical'; // 4X-42: subsumes PANEL_TYPE_ALARM
 export const PANEL_TYPE_VIEWPORT      = 'viewport'; // 4X-41: blinds/shades/covers
+export const PANEL_TYPE_HAZARD        = 'hazard'; // 4X-39: smoke/CO/heat detectors
+export const PANEL_TYPE_GALLEY        = 'galley'; // 4X-40: smart appliances
 
 // ─── Panel Column Assignments ───────────────────────────────────────────────
 // 'left' = renders alongside entity groups; 'right' = opposite column
@@ -46,6 +48,8 @@ export const PANEL_COLUMN = {
   [PANEL_TYPE_AQUATICS]:     'right',
   [PANEL_TYPE_WEATHER]:      'right',
   [PANEL_TYPE_VIEWPORT]:     'left', // 4X-41: blinds near illumination
+  [PANEL_TYPE_GALLEY]:        'left', // 4X-40: appliances
+  [PANEL_TYPE_HAZARD]:        'right', // 4X-39: safety alerts
 };
 
 // ─── Panel Render Priority (lower = rendered first within its column) ───────
@@ -57,6 +61,7 @@ export const PANEL_TYPE_ORDER = {
   [PANEL_TYPE_LIFE_SUPPORT]: 3,
   [PANEL_TYPE_ENVIRONMENT]:  4,
   [PANEL_TYPE_VIEWPORT]:     4.5, // 4X-41: between environment and power
+  [PANEL_TYPE_GALLEY]:        4.7, // 4X-40: near power
   [PANEL_TYPE_POWER]:        5,
   // Right column
   [PANEL_TYPE_ALARM]:        0, // subsumed by tactical when both present
@@ -67,6 +72,7 @@ export const PANEL_TYPE_ORDER = {
   [PANEL_TYPE_MEDIA]:        4,
   [PANEL_TYPE_AQUATICS]:     5,
   [PANEL_TYPE_WEATHER]:      6,
+  [PANEL_TYPE_HAZARD]:       7, // 4X-39: after weather
 };
 
 // ─── Domain Sets ────────────────────────────────────────────────────────────
@@ -97,12 +103,36 @@ export const AQ_ENTITY_SUFFIX_RE = /_(air_quality|score)$/;
 
 const POOL_SPA_ID_RE = /pool|spa/i;
 const POOL_PRESET_MODES = new Set(['heater', 'solar', 'solar_preferred']);
+// Known pool/spa integration platforms (4X-37)
+const POOL_SPA_PLATFORMS = new Set([
+  'screenlogic', 'iaqualink', 'poolmath', 'waterguru', 'pentair',
+]);
 
 function hasPoolPresets(attrs) {
   const modes = attrs?.preset_modes;
   if (!Array.isArray(modes)) return false;
   return modes.some(m => POOL_PRESET_MODES.has(m));
 }
+
+// ─── Weather Detection ──────────────────────────────────────────────────────
+// Known weather station platforms (4X-36)
+const WEATHER_PLATFORMS = new Set([
+  'weatherflow', 'weatherlink', 'met', 'openweathermap', 'accuweather',
+  'ecobee', 'environment_canada', 'nws', 'pirateweather',
+]);
+// Weather sensor device classes
+const WEATHER_SENSOR_CLASSES = new Set([
+  'wind_speed', 'wind_direction', 'precipitation', 'precipitation_intensity',
+  'pressure', 'irradiance',
+]);
+
+// ─── Hazard Detection ───────────────────────────────────────────────────────
+// Safety-critical device classes (4X-39)
+const HAZARD_STATUS_CLASSES = new Set(['smoke', 'gas', 'carbon_monoxide', 'heat', 'safety']);
+
+// ─── Galley/Appliance Detection ─────────────────────────────────────────────
+// Known appliance platforms (4X-40)
+const GALLEY_PLATFORMS = new Set(['ge_home', 'smartthinq_sensors']);
 
 // ─── Irrigation Detection ───────────────────────────────────────────────────
 
@@ -149,9 +179,27 @@ const DETECTORS = [
   (entries) => entries.some(e => ALARM_DOMAINS.has(e.domain))
     ? PANEL_TYPE_ALARM : null,
 
-  // Pool/Spa: climate entity with pool/spa in entity_id or pool-specific presets
+  // Hazard Detection: nest_protect platform OR ≥1 smoke/CO/heat binary sensor (4X-39)
+  (entries) => {
+    if (entries.some(e => e.entity?.platform === 'nest_protect')) return PANEL_TYPE_HAZARD;
+    const hazardCount = entries.filter(e =>
+      e.domain === 'binary_sensor' && HAZARD_STATUS_CLASSES.has(e.state?.attributes?.device_class || '')
+    ).length;
+    if (hazardCount >= 1) return PANEL_TYPE_HAZARD;
+    return null;
+  },
+
+  // Galley Systems: ge_home or smartthinq_sensors platform (4X-40)
+  (entries) => {
+    if (entries.some(e => GALLEY_PLATFORMS.has(e.entity?.platform))) return PANEL_TYPE_GALLEY;
+    return null;
+  },
+
+  // Pool/Spa: climate entity with pool/spa in entity_id, pool-specific presets, OR known platform
   // MUST run before generic climate detector
   (entries) => {
+    // Platform check first — most reliable (4X-37)
+    if (entries.some(e => POOL_SPA_PLATFORMS.has(e.entity?.platform))) return PANEL_TYPE_AQUATICS;
     for (const e of entries) {
       if (e.domain !== 'climate') continue;
       if (POOL_SPA_ID_RE.test(e.entity.entity_id)) return PANEL_TYPE_AQUATICS;
@@ -187,9 +235,18 @@ const DETECTORS = [
   // Irrigation: ≥2 zone switches
   (entries) => isIrrigationDevice(entries) ? PANEL_TYPE_IRRIGATION : null,
 
-  // Weather: any weather-domain entity
-  (entries) => entries.some(e => WEATHER_DOMAINS.has(e.domain))
-    ? PANEL_TYPE_WEATHER : null,
+  // Weather: any weather-domain entity OR known weather platform OR ≥2 weather sensor classes (4X-36)
+  (entries) => {
+    if (entries.some(e => WEATHER_DOMAINS.has(e.domain))) return PANEL_TYPE_WEATHER;
+    if (entries.some(e => WEATHER_PLATFORMS.has(e.entity?.platform))) return PANEL_TYPE_WEATHER;
+    let weatherSignals = 0;
+    for (const e of entries) {
+      const dc = e.state?.attributes?.device_class || '';
+      if (WEATHER_SENSOR_CLASSES.has(dc)) weatherSignals++;
+    }
+    if (weatherSignals >= 2) return PANEL_TYPE_WEATHER;
+    return null;
+  },
 
   // Battery: battery sensor + (≥2 power sensors OR NUT UPS pattern)
   (entries) => {

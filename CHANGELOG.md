@@ -2,6 +2,13 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.21.0-rc.2] — 2026-04-17
+
+### Fixed — Device Ownership in Illumination (4X-45)
+
+- **Switches from panel-owned devices excluded from Illumination circuits**: `classifyDevice()` now runs on each device group in `_partitionLightingEntities()`. Switches belonging to devices classified as battery, environment, galley, etc. are excluded from the catch-all circuit section. Only the `isLightingEntity()` keyword-matched branch is ungated (explicit naming wins).
+- Confirmed: `claimedDeviceIds` guard was in rc.1 source but this RC ensures the compiled bundle is current.
+
 ## [4.21.0-rc.1] — 2026-04-17
 
 ### Added — New Panel Types

@@ -26,6 +26,7 @@ export const PANEL_TYPE_POWER       = 'power';
 export const PANEL_TYPE_LIFE_SUPPORT  = 'life_support';
 export const PANEL_TYPE_ILLUMINATION  = 'illumination';
 export const PANEL_TYPE_TACTICAL      = 'tactical'; // 4X-42: subsumes PANEL_TYPE_ALARM
+export const PANEL_TYPE_VIEWPORT      = 'viewport'; // 4X-41: blinds/shades/covers
 
 // ─── Panel Column Assignments ───────────────────────────────────────────────
 // 'left' = renders alongside entity groups; 'right' = opposite column
@@ -44,6 +45,7 @@ export const PANEL_COLUMN = {
   [PANEL_TYPE_MEDIA]:        'right',
   [PANEL_TYPE_AQUATICS]:     'right',
   [PANEL_TYPE_WEATHER]:      'right',
+  [PANEL_TYPE_VIEWPORT]:     'left', // 4X-41: blinds near illumination
 };
 
 // ─── Panel Render Priority (lower = rendered first within its column) ───────
@@ -54,6 +56,7 @@ export const PANEL_TYPE_ORDER = {
   [PANEL_TYPE_CLIMATE]:      2,
   [PANEL_TYPE_LIFE_SUPPORT]: 3,
   [PANEL_TYPE_ENVIRONMENT]:  4,
+  [PANEL_TYPE_VIEWPORT]:     4.5, // 4X-41: between environment and power
   [PANEL_TYPE_POWER]:        5,
   // Right column
   [PANEL_TYPE_ALARM]:        0, // subsumed by tactical when both present
@@ -408,6 +411,18 @@ export function classifyArea(hass, areaId, entityEntries) {
   const hasTactical = entityEntries.some(isTacticalEntity);
   if (hasTactical) {
     types.add(PANEL_TYPE_TACTICAL);
+  }
+
+  // Viewport: any cover entity that's a blind/shade/curtain (4X-41)
+  const VIEWPORT_COVER_CLASSES = new Set(['blind', 'shade', 'curtain', 'awning', 'shutter']);
+  const hasViewport = entityEntries.some(e => {
+    if (e.domain !== 'cover') return false;
+    const dc = e.state?.attributes?.device_class || '';
+    // Covers without a device_class that aren't security covers are also viewport candidates
+    return VIEWPORT_COVER_CLASSES.has(dc) || (dc === '' && !TACTICAL_COVER_CLASSES.has(dc));
+  });
+  if (hasViewport) {
+    types.add(PANEL_TYPE_VIEWPORT);
   }
 
   return types;

@@ -2,6 +2,12 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.21.0-rc.3] — 2026-04-17
+
+### Fixed — Media Panel Entity Bleeding (#46)
+
+- **Media panel no longer displays camera/sensor entities from other devices**: `_partitionMediaEntities()` now filters to only include entities sharing a `device_id` with a `media_player` entity. Camera binary sensors (IS DARK, MOTION DETECTION, PERSON DETECTED, etc.) and motion sensors no longer bleed into the media panel.
+
 ## [4.21.0-rc.2] — 2026-04-17
 
 ### Fixed — Device Ownership in Illumination (4X-45)

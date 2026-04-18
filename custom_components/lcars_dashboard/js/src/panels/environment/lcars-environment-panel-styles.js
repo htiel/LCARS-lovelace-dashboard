@@ -59,6 +59,8 @@ export const environmentPanelStyles = css`
     grid-template-columns: 1fr auto 1fr;
     grid-template-rows: auto auto;
     gap: var(--lcars-gap);
+    overflow: hidden;
+    min-width: 0;
   }
   .env-content.sensor-only {
     grid-template-areas:
@@ -173,6 +175,8 @@ export const environmentPanelStyles = css`
     gap: var(--lcars-gap);
     padding: 0.25rem 0.5rem;
     border-left: 2px solid var(--panel-frame-color);
+    min-width: 0;
+    overflow: hidden;
   }
   .device-control-btn {
     display: flex;

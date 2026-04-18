@@ -2,6 +2,20 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.19.1-rc.1] — 2026-04-17
+
+### Fixed — Life Support Panel Clipping (4X-46)
+
+**UI (Geordi):**
+- **Root cause identified**: `flex: 1` on `.panel-content` expands to `flex-basis: 0%`, collapsing height to zero across nested Shadow DOM boundaries (Life Support → environment substation).
+- **Fix 1**: `.panel-content { flex: 1 1 auto }` — content-based initial sizing instead of zero-basis. Affects all 12 panels via shared `lcars-panel-frame` but zero visual change for standalone panels.
+- **Fix 2**: `.env-content { grid-template-rows: auto auto }` — explicit content sizing for environment panel grid, removing fragile `1fr` track dependency.
+
+### Review Summary
+- Geordi: APPROVE (diagnosed root cause, verified fix)
+- Data: APPROVE (confirmed zero regression for standalone panels)
+- Worf: APPROVE (pure CSS, no security surface)
+
 ## [4.19.0] — 2026-04-17
 
 ### Fixed — File I/O Hardening (4X-28)

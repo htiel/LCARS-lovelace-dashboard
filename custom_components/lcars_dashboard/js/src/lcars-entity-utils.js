@@ -536,9 +536,23 @@ export function classifyArea(hass, areaId, entityEntries) {
     types.add(PANEL_TYPE_VIEWPORT);
   }
 
-  // Media: ≥1 media_player entity — consolidate Apple TV + HomePods per room (4X-43)
-  const mediaCount = entityEntries.filter(e => MEDIA_DOMAINS.has(e.domain)).length;
-  if (mediaCount >= 1) {
+  // Media: ≥1 media_player entity that isn't a camera doorbell (4X-43)
+  // Camera doorbells register as media_player (they have speakers) but shouldn't trigger a media panel.
+  // Exclude media_players whose device_id also has a camera entity.
+  const cameraDeviceIds = new Set();
+  for (const e of entityEntries) {
+    if (CAMERA_DOMAINS.has(e.domain) && e.entity?.device_id) {
+      cameraDeviceIds.add(e.entity.device_id);
+    }
+  }
+  const realMediaCount = entityEntries.filter(e => {
+    if (!MEDIA_DOMAINS.has(e.domain)) return false;
+    // Skip if this media_player's device also has a camera entity
+    const did = e.entity?.device_id;
+    if (did && cameraDeviceIds.has(did)) return false;
+    return true;
+  }).length;
+  if (realMediaCount >= 1) {
     types.add(PANEL_TYPE_MEDIA);
   }
 

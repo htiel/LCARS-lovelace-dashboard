@@ -37,12 +37,24 @@ class LcarsMediaPanel extends LcarsBasePanel {
   }
 
   _partitionMediaEntities(entries) {
+    // 4X-46 fix: Only include entities sharing a device_id with a media_player entity.
+    // Prevents camera binary sensors, motion sensors, etc. from bleeding into the media panel.
+    const mediaDeviceIds = new Set();
+    for (const entry of entries) {
+      if (entry.domain === 'media_player' && entry.entity?.device_id) {
+        mediaDeviceIds.add(entry.entity.device_id);
+      }
+    }
+
     const player = [];
     const sensors = [];
     const controls = [];
     const remotes = [];
     for (const entry of entries) {
       if (entry.domain === 'media_player') { player.push(entry); continue; }
+      // Only include non-media_player entities if they belong to a media device
+      const did = entry.entity?.device_id;
+      if (!did || !mediaDeviceIds.has(did)) continue;
       if (entry.domain === 'remote') { remotes.push(entry); continue; }
       if (SENSOR_DOMAINS.has(entry.domain)) { sensors.push(entry); continue; }
       controls.push(entry);

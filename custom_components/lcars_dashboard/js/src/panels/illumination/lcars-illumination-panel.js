@@ -117,6 +117,9 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
 
     // Build set of device IDs claimed by non-illumination panels (battery, environment, etc.)
     // classifyDevice returns null for uncategorized devices — only those are fair game.
+    // NOTE: allEntries excludes entity_category (diagnostic/config) entities, but
+    // classifyDevice needs the full picture (e.g. battery % sensor is diagnostic).
+    // We augment each device's entries with its diagnostic/config entities from hass.
     const claimedDeviceIds = new Set();
     const byDevice = new Map();
     for (const entry of allEntries) {
@@ -127,7 +130,22 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
       }
     }
     for (const [did, devEntries] of byDevice) {
-      if (classifyDevice(devEntries)) claimedDeviceIds.add(did);
+      // Augment with diagnostic/config entities so classifyDevice can detect battery devices
+      let augmented = devEntries;
+      if (this.hass) {
+        const extraEntries = [];
+        const entityReg = Object.values(this.hass.entities || {});
+        for (const e of entityReg) {
+          if (e.device_id !== did) continue;
+          if (e.disabled_by || e.hidden_by) continue;
+          if (!e.entity_category) continue; // already in devEntries
+          const state = this.hass.states?.[e.entity_id];
+          if (!state) continue;
+          extraEntries.push({ entity: e, domain: e.entity_id.split('.')[0], state });
+        }
+        if (extraEntries.length) augmented = [...devEntries, ...extraEntries];
+      }
+      if (classifyDevice(augmented)) claimedDeviceIds.add(did);
     }
 
     // Pass 2: collect circuits — switches controlling lights or power

@@ -2,6 +2,12 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.19.1-rc.3] — 2026-04-17
+
+### Fixed — Environment panel horizontal clipping (4X-46 continued)
+
+- **Horizontal overflow on nested environment panel**: `.env-content` grid and `.env-controls` now have `overflow: hidden` and `min-width: 0` to prevent the atmoscrubber cylinder from overflowing the right side of the panel frame when nested inside Life Support.
+
 ## [4.19.1-rc.2] — 2026-04-17
 
 ### Fixed — Life Support Panel Clipping (4X-46) — continued

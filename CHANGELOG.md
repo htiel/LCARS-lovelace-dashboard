@@ -2,6 +2,13 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.19.1-rc.2] — 2026-04-17
+
+### Fixed — Life Support Panel Clipping (4X-46) — continued
+
+- **Root cause #2 found**: `<lcars-lifesupport-panel>` had no `:host { display: block; }` — defaulted to `display: inline`, breaking height propagation through the Shadow DOM boundary. Every other panel had this rule.
+- **Fix**: Added `:host { display: block; }` to `LcarsBasePanel.static get styles()` — all panels now inherit it. No panel can miss it going forward.
+
 ## [4.19.1-rc.1] — 2026-04-17
 
 ### Fixed — Life Support Panel Clipping (4X-46)

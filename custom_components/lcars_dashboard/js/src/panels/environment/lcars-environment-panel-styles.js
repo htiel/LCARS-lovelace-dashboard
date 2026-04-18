@@ -57,7 +57,7 @@ export const environmentPanelStyles = css`
       "sensors core controls"
       "sparklines sparklines sparklines";
     grid-template-columns: 1fr auto 1fr;
-    grid-template-rows: 1fr auto;
+    grid-template-rows: auto auto;
     gap: var(--lcars-gap);
   }
   .env-content.sensor-only {

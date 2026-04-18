@@ -167,6 +167,8 @@ For each PI:
 
 **Every version release follows this exact sequence. No exceptions. No shortcuts.**
 
+**MANDATORY**: This process must be followed for EVERY release — patches, features, pre-releases, and stable promotions. No code is touched until Phase 5. No release ships without Phase 6 team review. No stable release publishes without Phase 7 Captain approval. Skipping phases is a process violation that must be self-reported and corrected before proceeding. Implementation plans must exist in `plans/` BEFORE implementation begins. Specs must be updated BEFORE the release is finalized.
+
 This is the chain of command for shipping code. Each phase has a gate — work does not proceed until the gate is passed.
 
 ### Phase 1: Design (Wesley + Geordi)
@@ -223,6 +225,7 @@ This is the chain of command for shipping code. Each phase has a gate — work d
 - No release proceeds until the Captain approves.
 - This is the single gate where the Captain reviews all accumulated work since the last release.
 - Present: changelog of all items completed, team review summary, any concerns or trade-offs.
+- **Captain decides release track:** pre-release (for live testing) or stable (direct to production).
 - **Patch exception (4.x.y bug fixes, size S):** If the release is a patch version (bug fix only, no new features) AND complexity is S AND Phase 6 team review found no blocking issues, this gate is auto-approved — proceed directly to Phase 8 without pausing for Captain review.
 
 ### Phase 8: Release
@@ -243,11 +246,52 @@ Execute in this exact order:
 10. **Clean up implementation plan documents** in `plans/` — mark as complete and archive.
 11. Update the spec documents in `specs/` with any implementation notes or deviations from the original design for future reference and mark as current.
 12. **Update example renders** — If any visual changes affect panel layout, colors, or new panel types, update `examples/lcars-panel-gallery.html` and any screenshots in `screenshots/` to reflect the current state.
+13. archive the implementation plan document in `plans/` with a summary of what was implemented, any deviations from the original plan, and lessons learned for future reference.
+14. archive features from the backlog that were implemented in this release, marking them as "done" and noting the release version in their comments for historical tracking. and move the text to the _archive folders backlog.
 
 ### Release Type Rules
 - **4.x.y patch** (bug fixes, minor): Steps 1-6 only. No GitHub release.
 - **4.x.0 feature** (new features): Steps 1-8. Full GitHub release.
 - **5.x.x-beta.N** (breaking changes): Steps 1-7 with `--prerelease` flag on step 7.
+
+### Pre-Release Testing Workflow (Risky Features)
+
+For features that are risky, complex, or involve significant visual/behavioral changes (Size L+, multiple panels, new entity routing, CSS layout changes):
+
+**Step 1: Publish as pre-release**
+```
+gh release create 4.X.0-rc.1 --target 4.0 --prerelease --title "v4.X.0-rc.1 — Description (Pre-Release)" --notes "..."
+```
+- Version in code files uses the RC tag: `4.X.0-rc.1`
+- HACS will show this as an available update (pre-release channel)
+- Captain tests on live HA instance
+
+**Step 2: Bug fix iterations**
+- Captain reports issues from live testing
+- Team fixes bugs following the standard Phase 5-6 process (implement → team review)
+- Bump RC number: `4.X.0-rc.2`, `4.X.0-rc.3`, etc.
+- Each RC gets a new `--prerelease` GitHub release
+
+**Step 3: Captain approves → Promote to stable**
+- Bump version to final: `4.X.0` (remove RC tag from all 3 files)
+- Build, commit, push
+- Create stable GitHub release:
+  ```
+  gh release create 4.X.0 --target 4.0 --title "v4.X.0 — Description" --notes "..."
+  ```
+- Delete all pre-release tags:
+  ```
+  gh release delete 4.X.0-rc.1 --yes
+  gh release delete 4.X.0-rc.2 --yes
+  ```
+- Complete steps 9-14 (README, specs, plans, archives, example renders)
+
+**When to use pre-release:**
+- Size L or XL features
+- CSS layout changes (clipping, overflow, grid restructuring)
+- Entity routing or panel classification changes
+- Any change the team flagged concerns about during Phase 6
+- Captain's discretion — can always request pre-release for any change
 
 ## Communication Style
 

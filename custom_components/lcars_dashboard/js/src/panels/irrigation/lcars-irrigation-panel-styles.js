@@ -588,6 +588,14 @@ export const irrigationPanelStyles = css`
 
   /* ─── Reduced Motion ─── */
 
+  @media (max-width: 30rem) {
+    .irr-content {
+      grid-template-areas: "alert" "zones" "sidebar" "quickrun" "controls";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr auto auto auto;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .irr-zone-fill.active,
     .irr-rain-alert,

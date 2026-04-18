@@ -106,7 +106,7 @@ export const mediaPanelStyles = css`
     animation: lcars-waveform var(--bar-dur, 400ms) ease-in-out alternate infinite;
     animation-delay: var(--bar-delay, 0ms);
   }
-  .lcars-audio-waveform .bar.peak { background: linear-gradient(to top, var(--lcars-ice) 70%, var(--lcars-tomato) 100%); }
+  .lcars-audio-waveform .bar.peak { background: var(--lcars-tomato); }
   .lcars-audio-waveform[data-paused] .bar { animation-play-state: paused; transform: scaleY(0.03); opacity: 0.3; }
   @keyframes lcars-waveform { 0% { transform: scaleY(var(--bar-min-ratio, 0.17)); } 100% { transform: scaleY(1); } }
 
@@ -130,6 +130,14 @@ export const mediaPanelStyles = css`
   .media-volume-pct { font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); color: var(--lcars-data-accent); min-width: 3rem; text-align: right; }
 
   .panel-pip-strip { position: absolute; bottom: 4px; right: 4px; width: 2rem; height: 3px; background: var(--panel-frame-color); border-radius: 1.5px; opacity: 0.3; }
+
+  @media (max-width: 30rem) {
+    .media-content {
+      grid-template-areas: "media" "metadata" "waveform" "volume";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto auto;
+    }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .lcars-audio-waveform .bar { animation: none !important; transform: scaleY(0.17); }

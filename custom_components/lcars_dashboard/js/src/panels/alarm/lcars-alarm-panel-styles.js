@@ -107,6 +107,14 @@ export const alarmPanelStyles = css`
 
   .panel-pip-strip { position: absolute; bottom: 4px; right: 4px; width: 2rem; height: 3px; background: var(--panel-frame-color); border-radius: 1.5px; opacity: 0.3; }
 
+  @media (max-width: 30rem) {
+    .alarm-content {
+      grid-template-areas: "media" "sensors" "keypad";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .alarm-triggered { animation: none; }
     .alarm-pin-error { animation: none; }

@@ -366,6 +366,32 @@ export const environmentPanelStyles = css`
     opacity: 0.3;
   }
 
+  @media (max-width: 30rem) {
+    .env-content {
+      grid-template-areas: "core" "sensors" "controls" "sparklines";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto auto;
+    }
+    .env-content.sensor-only {
+      grid-template-areas: "core" "sensors" "sparklines";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+    }
+    .atmoscrubber-container {
+      min-height: 6rem;
+    }
+    .atmoscrubber {
+      width: 100%;
+      height: 4rem;
+      min-height: 4rem;
+      border-radius: 2rem;
+    }
+    .env-controls {
+      border-left: none;
+      border-top: 2px solid var(--panel-frame-color);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .atmoscrubber::before,
     .atmoscrubber::after,

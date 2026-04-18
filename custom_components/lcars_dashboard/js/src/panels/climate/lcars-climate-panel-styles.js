@@ -248,6 +248,14 @@ export const climatePanelStyles = css`
   }
 
   /* Animation budget: all gated behind reduced-motion preference */
+  @media (max-width: 30rem) {
+    .climate-content {
+      grid-template-areas: "media" "sensors" "modes" "auxctrl";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto auto;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .arc-halo-active,
     .climate-action-bar {

@@ -2483,7 +2483,7 @@ class LcarsHomepageCard extends LitElement {
           .forecast-range-fill {
             position: absolute;
             height: 100%;
-            background: linear-gradient(90deg, var(--lcars-ice), var(--lcars-butterscotch));
+            background: var(--lcars-butterscotch);
             border-radius: 2px;
           }
           .forecast-precip { color: var(--lcars-gray); font-size: 0.75rem; }
@@ -3243,7 +3243,7 @@ class LcarsHomepageCard extends LitElement {
             animation-delay: var(--bar-delay, 0ms);
           }
           .lcars-audio-waveform .bar.peak {
-            background: linear-gradient(to top, var(--lcars-ice) 70%, var(--lcars-tomato) 100%);
+            background: var(--lcars-tomato);
           }
           .lcars-audio-waveform[data-paused] .bar {
             animation-play-state: paused;
@@ -3402,34 +3402,11 @@ class LcarsHomepageCard extends LitElement {
 
           /* ═══════ Phase 6: WEATHER v4.13.0 ═══════ */
 
-          /* ── 6.1 Condition Ambient Glow ── */
+          /* ── 6.1 Weather Condition Feedback ── */
           .weather-viewscreen {
             position: relative;
-          }
-          .weather-viewscreen::before {
-            content: '';
-            position: absolute; inset: 0;
-            border-radius: inherit;
-            background: radial-gradient(ellipse at 50% 80%, var(--weather-glow-color, transparent) 0%, transparent 70%);
-            opacity: var(--weather-glow-opacity, 0.15);
-            pointer-events: none;
-            z-index: 0;
-            transition: opacity 1s ease-out;
-          }
-          /* Storm flicker — 4s per Worf M2 */
-          .weather-viewscreen.storm::before {
-            animation: lcars-storm-flicker 4s steps(8, end) infinite;
-          }
-          @keyframes lcars-storm-flicker {
-            0%   { opacity: 0.12; }
-            12%  { opacity: 0.24; }
-            25%  { opacity: 0.10; }
-            37%  { opacity: 0.22; }
-            50%  { opacity: 0.14; }
-            62%  { opacity: 0.25; }
-            75%  { opacity: 0.11; }
-            87%  { opacity: 0.20; }
-            100% { opacity: 0.12; }
+            border-color: var(--weather-glow-color, var(--panel-frame-color));
+            transition: border-color 1s ease-out;
           }
 
           /* ── 6.2 Wind Compass Needle ── */
@@ -3507,30 +3484,6 @@ class LcarsHomepageCard extends LitElement {
           }
 
           /* ═══════ Phase 7: POOL/SPA v4.13.0 ═══════ */
-
-          /* ── 7.1 Water Caustic Shimmer ── */
-          .pool-viewscreen {
-            position: relative;
-            overflow: hidden;
-          }
-          .pool-viewscreen::after {
-            content: '';
-            position: absolute; inset: -50%;
-            width: 200%; height: 200%;
-            background:
-              radial-gradient(ellipse at 25% 25%, rgba(153,204,255,0.06), transparent 50%),
-              radial-gradient(ellipse at 75% 30%, rgba(153,204,255,0.04), transparent 50%),
-              radial-gradient(ellipse at 50% 75%, rgba(153,204,255,0.05), transparent 50%);
-            mix-blend-mode: screen;
-            pointer-events: none;
-            animation: lcars-caustic-drift 12s linear infinite;
-          }
-          @keyframes lcars-caustic-drift {
-            0%   { transform: translate(0, 0); }
-            33%  { transform: translate(-3%, 2%); }
-            66%  { transform: translate(2%, -1%); }
-            100% { transform: translate(0, 0); }
-          }
 
           /* ── 7.2 Heating Active Indicator ── */
           .pool-heat-bar {

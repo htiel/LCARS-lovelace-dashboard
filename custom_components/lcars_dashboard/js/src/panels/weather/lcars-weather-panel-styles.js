@@ -96,8 +96,19 @@ export const weatherPanelStyles = css`
   .forecast-hi { color: var(--lcars-butterscotch); }
   .forecast-lo { color: var(--lcars-ice); }
   .forecast-range-bar { width: 100%; height: 4px; background: var(--lcars-disabled); border-radius: 2px; position: relative; }
-  .forecast-range-fill { position: absolute; height: 100%; background: linear-gradient(90deg, var(--lcars-ice), var(--lcars-butterscotch)); border-radius: 2px; }
+  .forecast-range-fill { position: absolute; height: 100%; background: var(--lcars-butterscotch); border-radius: 2px; }
   .forecast-precip { color: var(--lcars-gray); font-size: 0.75rem; }
+
+  @media (max-width: 30rem) {
+    .weather-content {
+      grid-template-areas: "media" "sensors" "forecast";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+    }
+    .weather-forecast {
+      flex-wrap: wrap;
+    }
+  }
 
   .panel-pip-strip { position: absolute; bottom: 4px; right: 4px; width: 2rem; height: 3px; background: var(--panel-frame-color); border-radius: 1.5px; opacity: 0.3; }
 `;

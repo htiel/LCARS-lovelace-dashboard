@@ -74,7 +74,10 @@ class LcarsMediaPanel extends LcarsBasePanel {
     const deviceName = this._shortDeviceName(this.group.device) || 'Media';
 
     if (player.length === 0) return html``;
-    const primary = player[0];
+
+    // 4X-43: Designate primary player (playing > paused > first) and secondary speakers
+    const primary = this._selectPrimary(player);
+    const secondaries = player.filter(e => e !== primary);
     const ms = primary.state;
     const attrs = ms?.attributes || {};
     const playerState = ms?.state || 'unavailable';
@@ -183,6 +186,75 @@ class LcarsMediaPanel extends LcarsBasePanel {
             </div>
           ` : ''}
         </div>
+      </div>
+
+      ${secondaries.length > 0 ? this._renderSecondaryOutputs(secondaries) : ''}
+    `;
+  }
+
+  /* ─── 4X-43: Select primary player (playing > paused > most features > first) ─── */
+
+  _selectPrimary(players) {
+    const playing = players.find(e => e.state?.state === 'playing');
+    if (playing) return playing;
+    const paused = players.find(e => e.state?.state === 'paused');
+    if (paused) return paused;
+    // Prefer the one with the most supported features (Apple TV > HomePod)
+    return players.reduce((best, cur) => {
+      const bestFeatures = best.state?.attributes?.supported_features || 0;
+      const curFeatures = cur.state?.attributes?.supported_features || 0;
+      return curFeatures > bestFeatures ? cur : best;
+    }, players[0]);
+  }
+
+  /* ─── 4X-43: Render secondary speaker outputs (HomePods, etc.) ─── */
+
+  _renderSecondaryOutputs(secondaries) {
+    return html`
+      <div class="media-secondary-outputs" role="list" aria-label="Additional speakers">
+        ${secondaries.map(entry => {
+          const eid = entry.entity?.entity_id || '';
+          const name = entry.state?.attributes?.friendly_name || eid;
+          const state = entry.state?.state || 'unavailable';
+          const volume = entry.state?.attributes?.volume_level != null
+            ? Number(entry.state.attributes.volume_level) : 0;
+          const isMuted = entry.state?.attributes?.is_volume_muted || false;
+          const isPlaying = state === 'playing';
+          const isPaused = state === 'paused';
+          const supportsVolume = ((entry.state?.attributes?.supported_features || 0) & 4) !== 0;
+          const stateColor = getPlaybackStateColor(state);
+          const transportSymbol = this._getMediaTransportSymbol(state);
+
+          return html`
+            <div class="media-secondary-row" role="listitem"
+                 tabindex="0"
+                 aria-label="${name}: ${state}"
+                 @click=${() => this._handleEntityClick(eid)}
+                 @keydown=${(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), this._handleEntityClick(eid))}>
+              <span class="media-secondary-indicator" style="background:${stateColor}"></span>
+              <span class="media-secondary-name">${name}</span>
+              <span class="media-secondary-state" style="color:${stateColor}">${transportSymbol}</span>
+              ${isPlaying || isPaused ? html`
+                <button class="media-secondary-playpause"
+                        aria-label="${isPlaying ? 'Pause' : 'Play'} ${name}"
+                        @click=${(e) => { e.stopPropagation(); this._handleMediaService(eid, isPlaying ? 'media_pause' : 'media_play'); }}>
+                  ${isPlaying ? '❚❚' : '▶'}
+                </button>
+              ` : ''}
+              ${supportsVolume ? html`
+                <div class="media-secondary-volume">
+                  <div class="media-volume-bar" tabindex="0" role="slider"
+                    aria-label="${name} volume"
+                    aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(volume * 100)}"
+                    @click=${(e) => { e.stopPropagation(); this._handleVolumeChange(eid, e); }}>
+                    <div class="media-volume-fill" style="width:${Math.round(volume * 100)}%"></div>
+                  </div>
+                  <span class="media-volume-pct">${Math.round(volume * 100)}%</span>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        })}
       </div>
     `;
   }

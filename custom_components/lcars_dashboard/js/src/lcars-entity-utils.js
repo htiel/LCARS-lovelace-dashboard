@@ -425,5 +425,11 @@ export function classifyArea(hass, areaId, entityEntries) {
     types.add(PANEL_TYPE_VIEWPORT);
   }
 
+  // Media: ≥1 media_player entity — consolidate Apple TV + HomePods per room (4X-43)
+  const mediaCount = entityEntries.filter(e => MEDIA_DOMAINS.has(e.domain)).length;
+  if (mediaCount >= 1) {
+    types.add(PANEL_TYPE_MEDIA);
+  }
+
   return types;
 }

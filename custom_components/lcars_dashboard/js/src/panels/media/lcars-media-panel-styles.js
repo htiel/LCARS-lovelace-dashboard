@@ -131,6 +131,75 @@ export const mediaPanelStyles = css`
 
   .panel-pip-strip { position: absolute; bottom: 4px; right: 4px; width: 2rem; height: 3px; background: var(--panel-frame-color); border-radius: 1.5px; opacity: 0.3; }
 
+  /* ─── 4X-43: Secondary Speaker Outputs ─── */
+  .media-secondary-outputs {
+    border-top: 2px solid var(--lcars-gray);
+    padding-top: 0.5rem;
+    margin-top: 0.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .media-secondary-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background var(--lcars-transition);
+    min-height: 2rem;
+  }
+  .media-secondary-row:hover { background: rgba(255,255,255,0.05); }
+  .media-secondary-row:focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
+  }
+  .media-secondary-indicator {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .media-secondary-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--lcars-space-white);
+    font-size: 0.75rem;
+  }
+  .media-secondary-state {
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+  .media-secondary-playpause {
+    width: 1.75rem;
+    height: 1.75rem;
+    border: none;
+    border-radius: 50%;
+    background: var(--lcars-disabled);
+    color: var(--lcars-space-white);
+    font-size: 0.75rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 200ms;
+  }
+  .media-secondary-playpause:hover { background: var(--lcars-african-violet); color: var(--lcars-black); }
+  .media-secondary-playpause:focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
+  }
+  .media-secondary-volume {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex: 0 1 8rem;
+  }
+
   @media (max-width: 30rem) {
     .media-content {
       grid-template-areas: "media" "metadata" "waveform" "volume";

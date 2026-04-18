@@ -37,14 +37,12 @@ class LcarsMediaPanel extends LcarsBasePanel {
   }
 
   _partitionMediaEntities(entries) {
-    // 4X-46 fix: Only include entities sharing a device_id with a media_player entity.
-    // Prevents camera binary sensors, motion sensors, etc. from bleeding into the media panel.
-    const mediaDeviceIds = new Set();
-    for (const entry of entries) {
-      if (entry.domain === 'media_player' && entry.entity?.device_id) {
-        mediaDeviceIds.add(entry.entity.device_id);
-      }
-    }
+    // Only include media_player and remote entities, plus sensors from the same device
+    // that are NOT camera detection sensors (those belong on the camera panel).
+    const CAMERA_DETECTION_CLASSES = new Set([
+      'motion', 'occupancy', 'sound', 'tamper', 'safety',
+      'smoke', 'carbon_monoxide', 'gas', 'door', 'window',
+    ]);
 
     const player = [];
     const sensors = [];
@@ -52,10 +50,23 @@ class LcarsMediaPanel extends LcarsBasePanel {
     const remotes = [];
     for (const entry of entries) {
       if (entry.domain === 'media_player') { player.push(entry); continue; }
-      // Only include non-media_player entities if they belong to a media device
-      const did = entry.entity?.device_id;
-      if (!did || !mediaDeviceIds.has(did)) continue;
       if (entry.domain === 'remote') { remotes.push(entry); continue; }
+
+      // Skip camera-related binary sensors even if on same device
+      if (entry.domain === 'binary_sensor') {
+        const dc = entry.state?.attributes?.device_class || '';
+        const eid = entry.entity?.entity_id || '';
+        // Skip if it has a camera detection device_class
+        if (CAMERA_DETECTION_CLASSES.has(dc)) continue;
+        // Skip common camera entity patterns
+        if (/is_dark|doorbell|person_detected|vehicle_detected|animal_detected|smoke_alarm|co_alarm|baby_cry|speaking|glass_break|siren|car_horn|car_alarm/i.test(eid)) continue;
+        sensors.push(entry);
+        continue;
+      }
+
+      // Skip camera domain entirely
+      if (entry.domain === 'camera') continue;
+
       if (SENSOR_DOMAINS.has(entry.domain)) { sensors.push(entry); continue; }
       controls.push(entry);
     }

@@ -1,7 +1,7 @@
 ﻿# LCARS Dashboard - 4.x Backlog
 
 > Stable branch (`4.0`). Non-breaking feature additions, bug fixes, and optimizations.
-> Version: 4.18.9 (current stable)
+> Version: 4.19.0 (current stable)
 >
 > Completed items through 4.18.8 archived to `_archive/plans/backlog-4x.md`.
 >
@@ -98,7 +98,7 @@ When a room has both an environmental system (climate) and an air-aware / air pu
 
 ---
 
-### 4X-28 - Migrate remaining open() patterns to helpers - `TODO` - Priority: MEDIUM - Size: S - WSJF: 3.00
+### 4X-28 - Migrate remaining open() patterns to helpers - `DONE v4.19.0` - Priority: MEDIUM - Size: M (re-scoped) - WSJF: 3.00
 
 **GitHub Issue**: [#28](https://github.com/htiel/LCARS-lovelace-dashboard/issues/28)
 

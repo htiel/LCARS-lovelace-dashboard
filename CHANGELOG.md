@@ -2,6 +2,26 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.19.0] — 2026-04-17
+
+### Fixed — File I/O Hardening (4X-28)
+
+**Architecture (Data):**
+- **All 44 raw `open()` calls migrated** to `_read_yaml_file` / `_write_yaml_file` helpers — entire I/O lifecycle (open→read/write→close) now executes inside executor threads, eliminating event loop blocking.
+- **~25 blocking `os.path.exists()` calls removed** — replaced by helper's internal missing-file handling.
+- **~12 blocking `os.makedirs()` calls removed** — consolidated into `_write_yaml_file`'s internal `makedirs(exist_ok=True)`.
+- **4 blocking `os.path.isdir()` calls wrapped** in `async_add_executor_job` in card directory loaders.
+- **5 blocking `os.remove()` calls wrapped** in executor lambdas for delete handlers.
+- **Redundant `yaml.safe_load(json.dumps(...))` round-trips removed** from 6 card write handlers — data from `json.loads()` is already YAML-safe.
+- **Net reduction: ~200 lines** of boilerplate file I/O code.
+
+**Security (Worf):**
+- **`ws_handle_sort_entity` sortType validated** — changed from `vol.Required("sortType"): str` to `vol.In(ALLOWED_SORT_TYPES)`, preventing arbitrary YAML key injection. Consistent with existing `ws_handle_sort_area_button` validation.
+
+### Review Summary
+- Data: APPROVE (3 review rounds — caught async def closure bug and missing isdir fix)
+- Worf: APPROVE (all 5 security conditions met)
+
 ## [4.18.9] — 2026-04-17
 
 ### Fixed — Bug Fixes (4X-27, 4X-31, 4X-32, 4X-34)

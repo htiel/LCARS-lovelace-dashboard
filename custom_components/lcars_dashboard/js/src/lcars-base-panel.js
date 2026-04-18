@@ -249,9 +249,9 @@ export class LcarsBasePanel extends LitElement {
     return this._generatePanelCode(id);
   }
 
-  /* ─── Styles (base returns empty — subclasses spread with ...super.styles) ─── */
+  /* ─── Styles (base provides :host display — subclasses spread with ...super.styles) ─── */
 
-  static get styles() { return []; }
+  static get styles() { return [css`:host { display: block; }`]; }
 
   /* ─── Render lifecycle (spec §5.2 — base wraps in <lcars-panel-frame>) ─── */
 

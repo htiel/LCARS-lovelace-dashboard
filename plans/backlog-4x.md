@@ -138,26 +138,6 @@ Alarm panel (SimpliSafe, etc.) and security panel (locks like Schlage, door/wind
 
 ---
 
-### 4X-38 - Complex Life Support panel is cluttered with mixed device types - `TODO` - Priority: HIGH - Size: L - WSJF: 2.60
-
-**GitHub Issue**: [#38](https://github.com/htiel/LCARS-lovelace-dashboard/issues/38)
-
-When a room has many heterogeneous devices (thermostat, cameras, air quality sensors, ambient sensors), the Life Support panel dumps everything into a single scrolling column with no separation. Camera diagnostics (20+ entities) overwhelm the panel. Thermostat rendering differs from spec. See `localinfo/bugs/Complex lifesupport mess.png`, `Thermostat actual.png` vs `Thermostat render.png`.
-
-**Entity registry note** (from test house):
-- **Cameras** (platform: `unifiprotect`): 6+ camera devices with high/medium/low/insecure resolution channels each. Each camera device also generates 15–20+ diagnostic entities. All `area_id: null`.
-- **Climate**: The `climate.*_pool_heat` and `climate.*_spa_heat` entities (screenlogic) may be bleeding into the Life Support panel instead of routing to Cetacean Ops.
-- **WeatherFlow Tempest sensors**: 23 `weatherflow` platform sensors may also be dumping into Life Support when they should route to a weather panel.
-- Key issue: No entity filtering by `entity_category`, no platform-based panel routing, and no separation of device categories within the panel.
-
-**Acceptance criteria**:
-- Camera diagnostics excluded from Life Support / environmental panel
-- Device categories render in separate, properly framed panels
-- Thermostat matches LCARS climate panel spec (dual setpoints, humidity, fan)
-- Air quality and ambient sensors in organized sections
-- Raw diagnostic entities filtered or placed in device-specific panel
-
----
 
 ### 4X-45 - Thermostat rendering does not match LCARS climate panel spec - `TODO` - Priority: HIGH - Size: L - WSJF: 2.40
 

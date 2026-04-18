@@ -29,6 +29,7 @@ import {
   AQ_DEVICE_CLASSES, AQ_ENTITY_SUFFIX_RE,
   DOMAIN_LABELS, DOMAIN_ORDER,
   isLightingEntity, isClimateEntity, isEnvironmentEntity, isAmbientSensor,
+  isTacticalEntity, PANEL_TYPE_TACTICAL,
 } from './lcars-entity-utils.js';
 import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor, getCo2Color, getTempColor, getTempComfortClass, getSafeComfortColor, COMFORT_COLORS, getRainDelayInfo, getPowerColor, getPowerLabel, getGridBalanceColor } from './lcars-color-utils.js';
 import { clampSetpoint, clampValue, createRateLimiter, createDebouncer } from './lcars-service-utils.js';
@@ -56,6 +57,7 @@ import './panels/weather/lcars-weather-panel.js';
 import './panels/power/lcars-power-panel.js';
 import './panels/lifesupport/lcars-lifesupport-panel.js';
 import './panels/illumination/lcars-illumination-panel.js';
+import './panels/tactical/lcars-tactical-panel.js';
 
 const TAG = 'Homepage';
 
@@ -74,6 +76,7 @@ const PANEL_TAG_REGISTRY = new Map([
   [PANEL_TYPE_WEATHER,      (group, hass, editMode, config) => html`<lcars-weather-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-weather-panel>`],
   [PANEL_TYPE_LIFE_SUPPORT, (group, hass, editMode, config) => html`<lcars-lifesupport-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-lifesupport-panel>`],
   [PANEL_TYPE_ILLUMINATION, (group, hass, editMode, config) => html`<lcars-illumination-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-illumination-panel>`],
+  [PANEL_TYPE_TACTICAL,      (group, hass, editMode, config) => html`<lcars-tactical-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-tactical-panel>`],
 ]);
 
 /* Build a cache-busted camera image URL using last_updated timestamp */
@@ -7129,11 +7132,14 @@ class LcarsHomepageCard extends LitElement {
         ? noDevice.filter(e => !consumedByArea(e))
         : noDevice;
 
-      // Device panel types subsumed by area panels (e.g., climate → life_support)
+      // Device panel types subsumed by area panels (e.g., climate → life_support, alarm → tactical)
       const subsumedDeviceTypes = new Set();
       if (areaPanelTypes.has(PANEL_TYPE_LIFE_SUPPORT)) {
         subsumedDeviceTypes.add(PANEL_TYPE_CLIMATE);
         subsumedDeviceTypes.add(PANEL_TYPE_ENVIRONMENT);
+      }
+      if (areaPanelTypes.has(PANEL_TYPE_TACTICAL)) {
+        subsumedDeviceTypes.add(PANEL_TYPE_ALARM);
       }
 
       // Partition devices into panel-worthy, normal, and power
@@ -7247,6 +7253,7 @@ class LcarsHomepageCard extends LitElement {
       if (areaPanelTypes.has(PANEL_TYPE_LIFE_SUPPORT)) predicates.push(
         e => isClimateEntity(e) || isEnvironmentEntity(e) || isAmbientSensor(e)
       );
+      if (areaPanelTypes.has(PANEL_TYPE_TACTICAL)) predicates.push(isTacticalEntity);
       if (predicates.length === 0) return null;
       return entry => predicates.some(p => p(entry));
     }

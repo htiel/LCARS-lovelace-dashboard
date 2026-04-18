@@ -25,6 +25,7 @@ export const PANEL_TYPE_POWER       = 'power';
 // Area-level composite panel types (4X-17)
 export const PANEL_TYPE_LIFE_SUPPORT  = 'life_support';
 export const PANEL_TYPE_ILLUMINATION  = 'illumination';
+export const PANEL_TYPE_TACTICAL      = 'tactical'; // 4X-42: subsumes PANEL_TYPE_ALARM
 
 // ─── Panel Column Assignments ───────────────────────────────────────────────
 // 'left' = renders alongside entity groups; 'right' = opposite column
@@ -36,6 +37,7 @@ export const PANEL_COLUMN = {
   [PANEL_TYPE_ENVIRONMENT]:  'left',
   [PANEL_TYPE_POWER]:        'left',
   [PANEL_TYPE_ALARM]:        'right',
+  [PANEL_TYPE_TACTICAL]:      'right', // 4X-42: same column as alarm (mutual exclusion)
   [PANEL_TYPE_CAMERA]:       'right',
   [PANEL_TYPE_BATTERY]:      'right',
   [PANEL_TYPE_IRRIGATION]:   'right',
@@ -54,7 +56,8 @@ export const PANEL_TYPE_ORDER = {
   [PANEL_TYPE_ENVIRONMENT]:  4,
   [PANEL_TYPE_POWER]:        5,
   // Right column
-  [PANEL_TYPE_ALARM]:        0,
+  [PANEL_TYPE_ALARM]:        0, // subsumed by tactical when both present
+  [PANEL_TYPE_TACTICAL]:     0, // 4X-42: replaces alarm at priority 0 (mutual exclusion)
   [PANEL_TYPE_CAMERA]:       1,
   [PANEL_TYPE_BATTERY]:      2,
   [PANEL_TYPE_IRRIGATION]:   3,
@@ -353,6 +356,18 @@ export function isSecurityEntity(entry) {
   return false;
 }
 
+/** Named predicate: is this a tactical panel entity? (security minus cameras) */
+const TACTICAL_BINARY_CLASSES = new Set(['door', 'window', 'opening', 'garage_door', 'motion', 'occupancy', 'tamper', 'safety']);
+const TACTICAL_COVER_CLASSES = new Set(['garage_door', 'gate', 'door']);
+export function isTacticalEntity(entry) {
+  if (ALARM_DOMAINS.has(entry.domain)) return true;
+  if (entry.domain === 'lock') return true;
+  const dc = entry.state?.attributes?.device_class || '';
+  if (entry.domain === 'binary_sensor' && TACTICAL_BINARY_CLASSES.has(dc)) return true;
+  if (entry.domain === 'cover' && TACTICAL_COVER_CLASSES.has(dc)) return true;
+  return false;
+}
+
 /** Named predicate: is this a standalone temperature or humidity sensor? */
 export function isAmbientSensor(entry) {
   if (entry.domain !== 'sensor') return false;
@@ -387,6 +402,12 @@ export function classifyArea(hass, areaId, entityEntries) {
   const lightCount = entityEntries.filter(isLightingEntity).length;
   if (lightCount >= 1) {
     types.add(PANEL_TYPE_ILLUMINATION);
+  }
+
+  // Tactical: any alarm, lock, or security binary/cover sensor (4X-42)
+  const hasTactical = entityEntries.some(isTacticalEntity);
+  if (hasTactical) {
+    types.add(PANEL_TYPE_TACTICAL);
   }
 
   return types;

@@ -2,6 +2,13 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.21.0-rc.4] — 2026-04-17
+
+### Fixed — Media Panel Camera Sensor Bleeding (#46 continued)
+
+- **Root cause**: UniFi Protect doorbell cameras are also `media_player` entities (they have speakers), so camera detection binary sensors shared the same `device_id` and passed the rc.3 filter.
+- **Fix**: Media panel now explicitly excludes camera detection binary sensors by `device_class` (motion, occupancy, sound, tamper, smoke, etc.) and entity_id patterns (is_dark, doorbell, person_detected, vehicle_detected, etc.). Also excludes `camera` domain entirely.
+
 ## [4.21.0-rc.3] — 2026-04-17
 
 ### Fixed — Media Panel Entity Bleeding (#46)

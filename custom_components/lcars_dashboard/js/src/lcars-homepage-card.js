@@ -7144,6 +7144,9 @@ class LcarsHomepageCard extends LitElement {
       if (areaPanelTypes.has(PANEL_TYPE_TACTICAL)) {
         subsumedDeviceTypes.add(PANEL_TYPE_ALARM);
       }
+      if (areaPanelTypes.has(PANEL_TYPE_MEDIA)) {
+        subsumedDeviceTypes.add(PANEL_TYPE_MEDIA);
+      }
 
       // Partition devices into panel-worthy, normal, and power
       const panelDevices = [];
@@ -7257,6 +7260,7 @@ class LcarsHomepageCard extends LitElement {
         e => isClimateEntity(e) || isEnvironmentEntity(e) || isAmbientSensor(e)
       );
       if (areaPanelTypes.has(PANEL_TYPE_TACTICAL)) predicates.push(isTacticalEntity);
+      if (areaPanelTypes.has(PANEL_TYPE_MEDIA)) predicates.push(e => MEDIA_DOMAINS.has(e.domain));
       if (predicates.length === 0) return null;
       return entry => predicates.some(p => p(entry));
     }

@@ -4125,6 +4125,75 @@
 
   .panel-pip-strip { position: absolute; bottom: 4px; right: 4px; width: 2rem; height: 3px; background: var(--panel-frame-color); border-radius: 1.5px; opacity: 0.3; }
 
+  /* ─── 4X-43: Secondary Speaker Outputs ─── */
+  .media-secondary-outputs {
+    border-top: 2px solid var(--lcars-gray);
+    padding-top: 0.5rem;
+    margin-top: 0.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .media-secondary-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background var(--lcars-transition);
+    min-height: 2rem;
+  }
+  .media-secondary-row:hover { background: rgba(255,255,255,0.05); }
+  .media-secondary-row:focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
+  }
+  .media-secondary-indicator {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .media-secondary-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--lcars-space-white);
+    font-size: 0.75rem;
+  }
+  .media-secondary-state {
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+  .media-secondary-playpause {
+    width: 1.75rem;
+    height: 1.75rem;
+    border: none;
+    border-radius: 50%;
+    background: var(--lcars-disabled);
+    color: var(--lcars-space-white);
+    font-size: 0.75rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 200ms;
+  }
+  .media-secondary-playpause:hover { background: var(--lcars-african-violet); color: var(--lcars-black); }
+  .media-secondary-playpause:focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
+  }
+  .media-secondary-volume {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex: 0 1 8rem;
+  }
+
   @media (max-width: 30rem) {
     .media-content {
       grid-template-areas: "media" "metadata" "waveform" "volume";
@@ -4137,13 +4206,13 @@
     .lcars-audio-waveform .bar { animation: none !important; transform: scaleY(0.17); }
     .media-viewscreen-glow { animation: none; }
   }
-`;customElements.get("lcars-media-panel")||customElements.define("lcars-media-panel",class extends me{get panelType(){return"media"}get defaultPanelTitle(){return"Media"}get frameColor(){return"var(--lcars-african-violet)"}static get styles(){return[...super.styles,ee,te,$e]}_isValidArtworkUrl(e){return!!e&&(e.startsWith("/api/")||e.startsWith("/local/"))}_getMediaTransportSymbol(e){switch(e){case"playing":return"▶";case"paused":return"❚❚";default:return"■"}}_partitionMediaEntities(e){const t=[],a=[],r=[],i=[];for(const s of e)"media_player"!==s.domain?"remote"!==s.domain?E.has(s.domain)?a.push(s):r.push(s):i.push(s):t.push(s);return{player:t,sensors:a,controls:r,remotes:i}}_handleMediaService(e,t,a={}){this.hass.callService("media_player",t,{entity_id:e,...a})}_handleVolumeChange(e,t){const a=t.currentTarget.getBoundingClientRect(),r=Math.max(0,Math.min(1,(t.clientX-a.left)/a.width));this._handleMediaService(e,"volume_set",{volume_level:Math.round(100*r)/100})}renderBadge(){const t=this.group?.entities?.find(e=>"media_player"===e.domain);if(!t)return e.qy``;const a=t.state?.state||"unavailable",r=(0,j.uT)(a),i=this._getMediaTransportSymbol(a);return e.qy`<span style="color:${r}">${i} ${a.toUpperCase()}</span>`}renderContent(){const{player:t,sensors:a}=this._partitionMediaEntities(this.group.entities),r=this._shortDeviceName(this.group.device)||"Media";if(0===t.length)return e.qy``;const i=t[0],s=i.state,n=s?.attributes||{},o=s?.state||"unavailable",l=((0,j.uT)(o),this._getMediaTransportSymbol(o),"playing"===o),c=!(l||"paused"===o),d=n.entity_picture,p=this._isValidArtworkUrl(d),u=n.media_title||"",m=n.media_artist||"",h=n.source||"",v=null!=n.volume_level?Number(n.volume_level):0,f=n.is_volume_muted||!1,g=n.supported_features||0,b=!!(16&g),y=!!(32&g),w=!!(4&g),_=!!(32768&g),x=!!(262144&g),$=n.shuffle||!1,k=n.repeat||"off";return e.qy`
-      <div class="media-content ${c?"media-idle":""}">
+`;customElements.get("lcars-media-panel")||customElements.define("lcars-media-panel",class extends me{get panelType(){return"media"}get defaultPanelTitle(){return"Media"}get frameColor(){return"var(--lcars-african-violet)"}static get styles(){return[...super.styles,ee,te,$e]}_isValidArtworkUrl(e){return!!e&&(e.startsWith("/api/")||e.startsWith("/local/"))}_getMediaTransportSymbol(e){switch(e){case"playing":return"▶";case"paused":return"❚❚";default:return"■"}}_partitionMediaEntities(e){const t=[],a=[],r=[],i=[];for(const s of e)"media_player"!==s.domain?"remote"!==s.domain?E.has(s.domain)?a.push(s):r.push(s):i.push(s):t.push(s);return{player:t,sensors:a,controls:r,remotes:i}}_handleMediaService(e,t,a={}){this.hass.callService("media_player",t,{entity_id:e,...a})}_handleVolumeChange(e,t){const a=t.currentTarget.getBoundingClientRect(),r=Math.max(0,Math.min(1,(t.clientX-a.left)/a.width));this._handleMediaService(e,"volume_set",{volume_level:Math.round(100*r)/100})}renderBadge(){const t=this.group?.entities?.find(e=>"media_player"===e.domain);if(!t)return e.qy``;const a=t.state?.state||"unavailable",r=(0,j.uT)(a),i=this._getMediaTransportSymbol(a);return e.qy`<span style="color:${r}">${i} ${a.toUpperCase()}</span>`}renderContent(){const{player:t,sensors:a}=this._partitionMediaEntities(this.group.entities),r=this._shortDeviceName(this.group.device)||"Media";if(0===t.length)return e.qy``;const i=this._selectPrimary(t),s=t.filter(e=>e!==i),n=i.state,o=n?.attributes||{},l=n?.state||"unavailable",c=((0,j.uT)(l),this._getMediaTransportSymbol(l),"playing"===l),d=!(c||"paused"===l),p=o.entity_picture,u=this._isValidArtworkUrl(p),m=o.media_title||"",h=o.media_artist||"",v=o.source||"",f=null!=o.volume_level?Number(o.volume_level):0,g=o.is_volume_muted||!1,b=o.supported_features||0,y=!!(16&b),w=!!(32&b),_=!!(4&b),x=!!(32768&b),$=!!(262144&b),k=o.shuffle||!1,S=o.repeat||"off";return e.qy`
+      <div class="media-content ${d?"media-idle":""}">
 
         <div class="media-metadata" role="list" aria-label="${r} info">
-          ${h?e.qy`<div class="device-sensor-line" role="listitem"><div class="sensor-indicator" style="background:var(--lcars-african-violet)"></div><span class="sensor-label">Source</span><span class="sensor-state-value">${h}</span></div>`:""}
-          ${_?e.qy`<div class="device-sensor-line" role="listitem"><div class="sensor-indicator" style="background:${$?"var(--lcars-african-violet)":"var(--lcars-gray)"}"></div><span class="sensor-label">Shuffle</span><span class="sensor-state-value">${$?"ON":"OFF"}</span></div>`:""}
-          ${x?e.qy`<div class="device-sensor-line" role="listitem"><div class="sensor-indicator" style="background:${"off"!==k?"var(--lcars-african-violet)":"var(--lcars-gray)"}"></div><span class="sensor-label">Repeat</span><span class="sensor-state-value">${k.toUpperCase()}</span></div>`:""}
+          ${v?e.qy`<div class="device-sensor-line" role="listitem"><div class="sensor-indicator" style="background:var(--lcars-african-violet)"></div><span class="sensor-label">Source</span><span class="sensor-state-value">${v}</span></div>`:""}
+          ${x?e.qy`<div class="device-sensor-line" role="listitem"><div class="sensor-indicator" style="background:${k?"var(--lcars-african-violet)":"var(--lcars-gray)"}"></div><span class="sensor-label">Shuffle</span><span class="sensor-state-value">${k?"ON":"OFF"}</span></div>`:""}
+          ${$?e.qy`<div class="device-sensor-line" role="listitem"><div class="sensor-indicator" style="background:${"off"!==S?"var(--lcars-african-violet)":"var(--lcars-gray)"}"></div><span class="sensor-label">Repeat</span><span class="sensor-state-value">${S.toUpperCase()}</span></div>`:""}
           ${a.map(({entity:t,state:a})=>{const r=this._friendlyName(a,t),i=this._getSensorIndicatorColor(a);return e.qy`
               <div class="device-sensor-line" tabindex="0" role="listitem"
                 @click=${()=>this._handleEntityClick(t.entity_id)}
@@ -4155,9 +4224,9 @@
             `})}
         </div>
 
-        <div class="media-viewscreen ${l?"media-viewscreen-glow":""}" @click=${()=>this._handleEntityClick(i.entity.entity_id)}>
-          ${p&&!c?e.qy`
-            <img class="media-art" src="${d}" alt="Album art"
+        <div class="media-viewscreen ${c?"media-viewscreen-glow":""}" @click=${()=>this._handleEntityClick(i.entity.entity_id)}>
+          ${u&&!d?e.qy`
+            <img class="media-art" src="${p}" alt="Album art"
               crossorigin="anonymous" referrerpolicy="no-referrer" loading="lazy"
               @error=${e=>{e.target.style.display="none"}} />
           `:e.qy`
@@ -4166,46 +4235,80 @@
               <span class="media-idle-label">STANDBY</span>
             </div>
           `}
-          ${c?"":e.qy`
+          ${d?"":e.qy`
             <div class="media-now-playing">
-              ${u?e.qy`<div class="media-title">${u}</div>`:""}
-              ${m?e.qy`<div class="media-artist">${m}</div>`:""}
+              ${m?e.qy`<div class="media-title">${m}</div>`:""}
+              ${h?e.qy`<div class="media-artist">${h}</div>`:""}
             </div>
           `}
         </div>
 
-        <div class="lcars-audio-waveform" ?data-paused=${!l} aria-hidden="true">
+        <div class="lcars-audio-waveform" ?data-paused=${!c} aria-hidden="true">
           ${Array.from({length:12},(t,a)=>{const r=Math.floor(a/3),i=[380,420,350,460][r];return e.qy`<div class="bar ${2===a||8===a?"peak":""}"
               style="--bar-dur:${i+a%3*30}ms;--bar-delay:${50*a}ms;--bar-min-ratio:${.1+.05*r}"></div>`})}
         </div>
 
         <div class="media-controls">
           <div class="media-transport" role="toolbar" aria-label="Transport controls">
-            ${_?e.qy`<button class="media-transport-btn" aria-pressed="${$}" title="Shuffle" @click=${()=>this._handleMediaService(i.entity.entity_id,"shuffle_set",{shuffle:!$})}>⇄</button>`:""}
-            ${b?e.qy`<button class="media-transport-btn" title="Previous" @click=${()=>this._handleMediaService(i.entity.entity_id,"media_previous_track")}>⏮</button>`:""}
-            <button class="media-transport-btn media-play-btn" title="${l?"Pause":"Play"}"
-              @click=${()=>this._handleMediaService(i.entity.entity_id,l?"media_pause":"media_play")}>
-              ${l?"❚❚":"▶"}
+            ${x?e.qy`<button class="media-transport-btn" aria-pressed="${k}" title="Shuffle" @click=${()=>this._handleMediaService(i.entity.entity_id,"shuffle_set",{shuffle:!k})}>⇄</button>`:""}
+            ${y?e.qy`<button class="media-transport-btn" title="Previous" @click=${()=>this._handleMediaService(i.entity.entity_id,"media_previous_track")}>⏮</button>`:""}
+            <button class="media-transport-btn media-play-btn" title="${c?"Pause":"Play"}"
+              @click=${()=>this._handleMediaService(i.entity.entity_id,c?"media_pause":"media_play")}>
+              ${c?"❚❚":"▶"}
             </button>
-            ${y?e.qy`<button class="media-transport-btn" title="Next" @click=${()=>this._handleMediaService(i.entity.entity_id,"media_next_track")}>⏭</button>`:""}
-            ${x?e.qy`<button class="media-transport-btn" aria-pressed="${"off"!==k}" title="Repeat: ${k}" @click=${()=>this._handleMediaService(i.entity.entity_id,"repeat_set",{repeat:"off"===k?"all":"all"===k?"one":"off"})}>🔁</button>`:""}
+            ${w?e.qy`<button class="media-transport-btn" title="Next" @click=${()=>this._handleMediaService(i.entity.entity_id,"media_next_track")}>⏭</button>`:""}
+            ${$?e.qy`<button class="media-transport-btn" aria-pressed="${"off"!==S}" title="Repeat: ${S}" @click=${()=>this._handleMediaService(i.entity.entity_id,"repeat_set",{repeat:"off"===S?"all":"all"===S?"one":"off"})}>🔁</button>`:""}
           </div>
-          ${w?e.qy`
-            <div class="media-volume" aria-label="Volume: ${Math.round(100*v)}%">
-              <button class="media-mute-btn" aria-pressed="${f}" title="${f?"Unmute":"Mute"}"
-                @click=${()=>this._handleMediaService(i.entity.entity_id,"volume_mute",{is_volume_muted:!f})}>
-                ${f?"🔇":"🔊"}
+          ${_?e.qy`
+            <div class="media-volume" aria-label="Volume: ${Math.round(100*f)}%">
+              <button class="media-mute-btn" aria-pressed="${g}" title="${g?"Unmute":"Mute"}"
+                @click=${()=>this._handleMediaService(i.entity.entity_id,"volume_mute",{is_volume_muted:!g})}>
+                ${g?"🔇":"🔊"}
               </button>
               <div class="media-volume-bar" tabindex="0" role="slider"
-                aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*v)}"
+                aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*f)}"
                 @click=${e=>this._handleVolumeChange(i.entity.entity_id,e)}
-                @keydown=${e=>{"ArrowRight"===e.key&&(e.preventDefault(),this._handleMediaService(i.entity.entity_id,"volume_set",{volume_level:Math.min(1,v+.05)})),"ArrowLeft"===e.key&&(e.preventDefault(),this._handleMediaService(i.entity.entity_id,"volume_set",{volume_level:Math.max(0,v-.05)})),"Home"===e.key&&(e.preventDefault(),this._handleMediaService(i.entity.entity_id,"volume_set",{volume_level:0})),"End"===e.key&&(e.preventDefault(),this._handleMediaService(i.entity.entity_id,"volume_set",{volume_level:1})),"PageUp"===e.key&&(e.preventDefault(),this._handleMediaService(i.entity.entity_id,"volume_set",{volume_level:Math.min(1,v+.1)})),"PageDown"===e.key&&(e.preventDefault(),this._handleMediaService(i.entity.entity_id,"volume_set",{volume_level:Math.max(0,v-.1)}))}}>
-                <div class="media-volume-fill" style="width:${Math.round(100*v)}%"></div>
+                @keydown=${e=>{"ArrowRight"===e.key&&(e.preventDefault(),this._handleMediaService(i.entity.entity_id,"volume_set",{volume_level:Math.min(1,f+.05)})),"ArrowLeft"===e.key&&(e.preventDefault(),this._handleMediaService(i.entity.entity_id,"volume_set",{volume_level:Math.max(0,f-.05)})),"Home"===e.key&&(e.preventDefault(),this._handleMediaService(i.entity.entity_id,"volume_set",{volume_level:0})),"End"===e.key&&(e.preventDefault(),this._handleMediaService(i.entity.entity_id,"volume_set",{volume_level:1})),"PageUp"===e.key&&(e.preventDefault(),this._handleMediaService(i.entity.entity_id,"volume_set",{volume_level:Math.min(1,f+.1)})),"PageDown"===e.key&&(e.preventDefault(),this._handleMediaService(i.entity.entity_id,"volume_set",{volume_level:Math.max(0,f-.1)}))}}>
+                <div class="media-volume-fill" style="width:${Math.round(100*f)}%"></div>
               </div>
-              <span class="media-volume-pct">${Math.round(100*v)}%</span>
+              <span class="media-volume-pct">${Math.round(100*f)}%</span>
             </div>
           `:""}
         </div>
+      </div>
+
+      ${s.length>0?this._renderSecondaryOutputs(s):""}
+    `}_selectPrimary(e){const t=e.find(e=>"playing"===e.state?.state);if(t)return t;return e.find(e=>"paused"===e.state?.state)||e.reduce((e,t)=>{const a=e.state?.attributes?.supported_features||0;return(t.state?.attributes?.supported_features||0)>a?t:e},e[0])}_renderSecondaryOutputs(t){return e.qy`
+      <div class="media-secondary-outputs" role="list" aria-label="Additional speakers">
+        ${t.map(t=>{const a=t.entity?.entity_id||"",r=t.state?.attributes?.friendly_name||a,i=t.state?.state||"unavailable",s=null!=t.state?.attributes?.volume_level?Number(t.state.attributes.volume_level):0,n=(t.state,"playing"===i),o="paused"===i,l=!!(4&(t.state?.attributes?.supported_features||0)),c=(0,j.uT)(i),d=this._getMediaTransportSymbol(i);return e.qy`
+            <div class="media-secondary-row" role="listitem"
+                 tabindex="0"
+                 aria-label="${r}: ${i}"
+                 @click=${()=>this._handleEntityClick(a)}
+                 @keydown=${e=>("Enter"===e.key||" "===e.key)&&(e.preventDefault(),this._handleEntityClick(a))}>
+              <span class="media-secondary-indicator" style="background:${c}"></span>
+              <span class="media-secondary-name">${r}</span>
+              <span class="media-secondary-state" style="color:${c}">${d}</span>
+              ${n||o?e.qy`
+                <button class="media-secondary-playpause"
+                        aria-label="${n?"Pause":"Play"} ${r}"
+                        @click=${e=>{e.stopPropagation(),this._handleMediaService(a,n?"media_pause":"media_play")}}>
+                  ${n?"❚❚":"▶"}
+                </button>
+              `:""}
+              ${l?e.qy`
+                <div class="media-secondary-volume">
+                  <div class="media-volume-bar" tabindex="0" role="slider"
+                    aria-label="${r} volume"
+                    aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*s)}"
+                    @click=${e=>{e.stopPropagation(),this._handleVolumeChange(a,e)}}>
+                    <div class="media-volume-fill" style="width:${Math.round(100*s)}%"></div>
+                  </div>
+                  <span class="media-volume-pct">${Math.round(100*s)}%</span>
+                </div>
+              `:""}
+            </div>
+          `})}
       </div>
     `}});const ke=e.AH`
   :host { display: block; }
@@ -11491,8 +11594,8 @@
 
           <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
-      `}_renderAreaContent(t,a){if(0===t.length)return e.qy`<div class="lcars-empty" role="status">No entities in this area</div>`;const{byDevice:r,noDevice:i}=this._groupEntities(t),s=t.map(e=>{const t=e.entity_id.split(".")[0],a=this._hass?.states?.[e.entity_id];return{entity:e,domain:t,state:a}}).filter(e=>e.state),o=function(e,t,a){const r=new Set,i=a.some(R),s=a.some(L),n=a.some(V);(i||s&&n)&&r.add(v),a.filter(W).length>=1&&r.add(f),a.some(U)&&r.add(g);const o=new Set(["blind","shade","curtain","awning","shutter"]);return a.some(e=>{if("cover"!==e.domain)return!1;const t=e.state?.attributes?.device_class||"";return o.has(t)||""===t&&!H.has(t)})&&r.add(b),r}(this._hass,0,s),c=[];for(const e of o){const t=Ie.get(e);t&&c.push({panelType:e,template:t({entities:s,areaId:a},this._hass,this._editMode,this._config)})}const p=this._buildAreaPanelFilter(o);if(p)for(const[e,t]of r)t.entities=t.entities.filter(e=>!p(e)),0===t.entities.length&&r.delete(e);const u=p?i.filter(e=>!p(e)):i,m=new Set;o.has(v)&&(m.add(l),m.add(d)),o.has(g)&&m.add(n);const _=[],x=[],$=[];for(const e of r.values()){const t=this._getDevicePanelType(e.entities);t&&m.has(t)||(t===h?$.push({...e,panelType:t}):t?_.push({...e,panelType:t}):x.push(e))}const k=e.qy`
-        ${x.map(t=>e.qy`
+      `}_renderAreaContent(t,a){if(0===t.length)return e.qy`<div class="lcars-empty" role="status">No entities in this area</div>`;const{byDevice:r,noDevice:i}=this._groupEntities(t),s=t.map(e=>{const t=e.entity_id.split(".")[0],a=this._hass?.states?.[e.entity_id];return{entity:e,domain:t,state:a}}).filter(e=>e.state),o=function(e,t,a){const r=new Set,i=a.some(R),s=a.some(L),n=a.some(V);(i||s&&n)&&r.add(v),a.filter(W).length>=1&&r.add(f),a.some(U)&&r.add(g);const o=new Set(["blind","shade","curtain","awning","shutter"]);return a.some(e=>{if("cover"!==e.domain)return!1;const t=e.state?.attributes?.device_class||"";return o.has(t)||""===t&&!H.has(t)})&&r.add(b),a.filter(e=>$.has(e.domain)).length>=1&&r.add(c),r}(this._hass,0,s),p=[];for(const e of o){const t=Ie.get(e);t&&p.push({panelType:e,template:t({entities:s,areaId:a},this._hass,this._editMode,this._config)})}const u=this._buildAreaPanelFilter(o);if(u)for(const[e,t]of r)t.entities=t.entities.filter(e=>!u(e)),0===t.entities.length&&r.delete(e);const m=u?i.filter(e=>!u(e)):i,_=new Set;o.has(v)&&(_.add(l),_.add(d)),o.has(g)&&_.add(n),o.has(c)&&_.add(c);const x=[],k=[],S=[];for(const e of r.values()){const t=this._getDevicePanelType(e.entities);t&&_.has(t)||(t===h?S.push({...e,panelType:t}):t?x.push({...e,panelType:t}):k.push(e))}const C=e.qy`
+        ${k.map(t=>e.qy`
           <div class="device-group">
             <div class="device-header">
               <h3 class="device-name">${this._shortDeviceName(t.device)}</h3>
@@ -11506,33 +11609,33 @@
             ${this._renderDomainGroups(t.entities)}
           </div>
         `)}
-        ${u.length>0?e.qy`
+        ${m.length>0?e.qy`
           <div class="device-group">
             <div class="device-header">
               <h3 class="device-name">Other Entities</h3>
               <div class="device-line"></div>
             </div>
-            ${this._renderDomainGroups(u)}
+            ${this._renderDomainGroups(m)}
           </div>
         `:""}
-      `,S=$.length>0?e.qy`<lcars-power-panel .powerGroups=${$} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-power-panel>`:"",C=[..._.map(e=>({panelType:e.panelType,template:this._renderDevicePanel(e.panelType,e)})),...c];if(0===C.length&&0===$.length)return e.qy`${k}${S}`;const E=[],z=[];for(const e of C)"right"===y[e.panelType]?z.push(e):E.push(e);E.sort((e,t)=>(w[e.panelType]??99)-(w[t.panelType]??99)),z.sort((e,t)=>(w[e.panelType]??99)-(w[t.panelType]??99));const q=E.find(e=>e.panelType===f),A=E.filter(e=>e.panelType!==f),P=e.qy`
+      `,E=S.length>0?e.qy`<lcars-power-panel .powerGroups=${S} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-power-panel>`:"",z=[...x.map(e=>({panelType:e.panelType,template:this._renderDevicePanel(e.panelType,e)})),...p];if(0===z.length&&0===S.length)return e.qy`${C}${E}`;const q=[],A=[];for(const e of z)"right"===y[e.panelType]?A.push(e):q.push(e);q.sort((e,t)=>(w[e.panelType]??99)-(w[t.panelType]??99)),A.sort((e,t)=>(w[e.panelType]??99)-(w[t.panelType]??99));const P=q.find(e=>e.panelType===f),T=q.filter(e=>e.panelType!==f),N=e.qy`
         <div class="area-split-main" role="region" aria-label="Device controls">
-          ${k}
-          ${A.map(e=>e.template)}
-          ${S}
+          ${C}
+          ${T.map(e=>e.template)}
+          ${E}
         </div>
-      `;return 0===z.length?e.qy`
-        ${q?e.qy`<div class="area-illumination-full">${q.template}</div>`:""}
-        ${P}
+      `;return 0===A.length?e.qy`
+        ${P?e.qy`<div class="area-illumination-full">${P.template}</div>`:""}
+        ${N}
       `:e.qy`
-        ${q?e.qy`<div class="area-illumination-full">${q.template}</div>`:""}
+        ${P?e.qy`<div class="area-illumination-full">${P.template}</div>`:""}
         <div class="area-split-layout">
-          ${P}
+          ${N}
           <div class="area-split-panels" role="region" aria-label="System panels">
-            ${z.map(e=>e.template)}
+            ${A.map(e=>e.template)}
           </div>
         </div>
-      `}_buildAreaPanelFilter(e){if(0===e.size)return null;const t=[];return e.has(f)&&t.push(W),e.has(v)&&t.push(e=>R(e)||L(e)||V(e)),e.has(g)&&t.push(U),0===t.length?null:e=>t.some(t=>t(e))}_renderDomainGroups(t){const a=this._groupByDomain(t);return e.qy`${a.map(([t,a])=>e.qy`
+      `}_buildAreaPanelFilter(e){if(0===e.size)return null;const t=[];return e.has(f)&&t.push(W),e.has(v)&&t.push(e=>R(e)||L(e)||V(e)),e.has(g)&&t.push(U),e.has(c)&&t.push(e=>$.has(e.domain)),0===t.length?null:e=>t.some(t=>t(e))}_renderDomainGroups(t){const a=this._groupByDomain(t);return e.qy`${a.map(([t,a])=>e.qy`
         <div class="domain-label" role="heading" aria-level="4">${I[t]||t}</div>
         ${this._renderDomainEntities(t,a)}
       `)}`}_renderDomainEntities(e,t){return _.has(e)?this._renderCameras(t):C.has(e)?this._renderToggles(t):x.has(e)?this._renderClimates(t):z.has(e)?this._renderCovers(t):$.has(e)?this._renderMedia(t):E.has(e)?this._renderSensors(t):this._renderGeneric(t)}_renderCameras(t){return e.qy`<div class="camera-grid">

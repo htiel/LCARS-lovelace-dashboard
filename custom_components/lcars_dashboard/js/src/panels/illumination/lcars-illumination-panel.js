@@ -18,7 +18,7 @@
  */
 import { html, css } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
-import { isLightingEntity } from '../../lcars-entity-utils.js';
+import { isLightingEntity, classifyDevice } from '../../lcars-entity-utils.js';
 import { showMoreInfo, fireEvent, lcarsLog } from '../../lcars-helpers.js';
 import { createDebouncer, createRateLimiter, clampValue } from '../../lcars-service-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
@@ -115,17 +115,34 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
       }
     }
 
+    // Build set of device IDs claimed by non-illumination panels (battery, environment, etc.)
+    // classifyDevice returns null for uncategorized devices — only those are fair game.
+    const claimedDeviceIds = new Set();
+    const byDevice = new Map();
+    for (const entry of allEntries) {
+      const did = entry.entity?.device_id;
+      if (did && !coveredDeviceIds.has(did)) {
+        if (!byDevice.has(did)) byDevice.set(did, []);
+        byDevice.get(did).push(entry);
+      }
+    }
+    for (const [did, devEntries] of byDevice) {
+      if (classifyDevice(devEntries)) claimedDeviceIds.add(did);
+    }
+
     // Pass 2: collect circuits — switches controlling lights or power
     // Include: (a) switches matching lighting keywords (legacy behavior)
     //          (b) switch-domain entities in the room (plugs powering lights, etc.)
     // Exclude: devices already covered by a light entity (avoids duplicates)
     // Exclude: device_class: outlet (pure power monitoring — routes to power panel)
+    // Exclude: switches from devices claimed by another panel (4X-45)
     for (const entry of allEntries) {
       if (entry.domain === 'light' || entry.domain === 'scene') continue;
       if (entry.entity?.device_id && coveredDeviceIds.has(entry.entity.device_id)) continue;
       if (isLightingEntity(entry)) {
         circuits.push(entry);
       } else if (entry.domain === 'switch' && entry.state?.attributes?.device_class !== 'outlet') {
+        if (entry.entity?.device_id && claimedDeviceIds.has(entry.entity.device_id)) continue;
         circuits.push(entry);
       }
     }

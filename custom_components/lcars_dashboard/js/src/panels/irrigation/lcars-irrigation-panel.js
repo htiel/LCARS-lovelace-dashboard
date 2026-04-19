@@ -16,6 +16,7 @@ import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { getIrrigationZoneColor } from '../../lcars-color-utils.js';
 import { createRateLimiter, clampValue } from '../../lcars-service-utils.js';
 import { showMoreInfo } from '../../lcars-helpers.js';
+import { humanizeTimestamp } from '../../lcars-format-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { irrigationPanelStyles } from './lcars-irrigation-panel-styles.js';
 
@@ -216,6 +217,9 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
     const activeZone = zones.find(z => z.state?.state === 'on');
     const standbyEntry = this._findControllerSwitch(controller, 'standby');
     const isStandby = standbyEntry?.state?.state === 'on';
+    // GEORDI-022: Detect offline controller
+    const allUnavailable = zones.length > 0 && zones.every(z => z.state?.state === 'unavailable');
+    if (allUnavailable) return html`<span style="color:var(--lcars-gray)">OFFLINE</span>`;
     const color = activeZone ? 'var(--lcars-ice)' : isStandby ? 'var(--lcars-gray)' : 'var(--lcars-sunflower)';
     const label = activeZone ? `WATERING Z${this._getZoneNumber(activeZone.state)}` : isStandby ? 'STANDBY' : 'IDLE';
     return html`<span style="color:${color}">${label}</span>`;
@@ -239,6 +243,12 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
     const isOnline = connectivityEntry?.state?.state === 'on';
     const isRaining = rainEntry?.state?.state === 'on';
 
+    // GEORDI-022 / WESLEY-UX-007: Offline detection — all zones unavailable or connectivity off
+    const allUnavailable = zones.length > 0 && zones.every(z => z.state?.state === 'unavailable');
+    const isOffline = allUnavailable || (connectivityEntry && !isOnline);
+    const lastChanged = connectivityEntry?.state?.last_changed;
+    const lastKnownLabel = isOffline && lastChanged ? humanizeTimestamp(lastChanged) : null;
+
     // Start countdown timer when zone is active
     if (activeZone && !this._countdownTimer) {
       this._countdownTimer = setInterval(() => this.requestUpdate(), 1000);
@@ -248,10 +258,16 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
     }
 
     return html`
-      <div class="irr-content">
+      <div class="irr-content ${isOffline ? 'irr-offline' : ''}">
+
+        ${isOffline ? html`
+          <div class="irr-offline-banner" role="status" aria-live="polite">
+            CONTROLLER OFFLINE${lastKnownLabel ? html` · LAST SEEN ${lastKnownLabel}` : ''}
+          </div>
+        ` : ''}
 
         <!-- Rain Alert Banner (conditional) -->
-        ${this._renderRainAlert(isRainDelay, isRaining, rainDelayEntry)}
+        ${!isOffline ? this._renderRainAlert(isRainDelay, isRaining, rainDelayEntry) : ''}
 
         <!-- Left column: schedules + controller status -->
         <div class="irr-sidebar">
@@ -261,14 +277,14 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
 
         <!-- Right column: zone grid -->
         <div class="irr-zones" role="list" aria-label="Irrigation zones">
-          ${zones.map(entry => this._renderZoneRow(entry, isStandby))}
+          ${zones.map(entry => this._renderZoneRow(entry, isStandby || isOffline))}
         </div>
 
         <!-- Quick Run (collapsible) -->
-        ${this._renderQuickRun(zones, isStandby)}
+        ${this._renderQuickRun(zones, isStandby || isOffline)}
 
         <!-- Controls: standby + pause/resume -->
-        ${this._renderControls(standbyEntry, rainDelayEntry, activeZone)}
+        ${!isOffline ? this._renderControls(standbyEntry, rainDelayEntry, activeZone) : ''}
       </div>
     `;
   }
@@ -403,7 +419,7 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
              @click=${() => { this._expandedZone = isExpanded ? null : eid; }}>
           <span class="irr-zone-name">${name}</span>
           <span class="irr-zone-status" style="color:${zoneColor}">
-            ${isStandby ? 'STANDBY' : isOn ? 'WATERING' : 'IDLE'}
+            ${state.state === 'unavailable' ? 'OFFLINE' : isStandby ? 'STANDBY' : isOn ? 'WATERING' : 'IDLE'}
           </span>
         </div>
 

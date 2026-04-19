@@ -608,4 +608,21 @@ export const irrigationPanelStyles = css`
       background: var(--lcars-ice);
     }
   }
+
+  /* ─── Offline State (GEORDI-022, WESLEY-UX-007) ─── */
+  .irr-offline {
+    opacity: 0.6;
+    filter: grayscale(0.7);
+  }
+  .irr-offline-banner {
+    grid-column: 1 / -1;
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-gray);
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0.25rem;
+    border-bottom: 2px solid var(--lcars-gray);
+    margin-bottom: 0.25rem;
+  }
 `;

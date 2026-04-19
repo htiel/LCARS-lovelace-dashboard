@@ -11,6 +11,7 @@ import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { SENSOR_DOMAINS } from '../../lcars-entity-utils.js';
 import { getWeatherConditionColor } from '../../lcars-color-utils.js';
 import { fetchForecasts } from '../../lcars-weather-utils.js';
+import { humanizeTimestamp } from '../../lcars-format-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { weatherPanelStyles } from './lcars-weather-panel-styles.js';
 
@@ -20,7 +21,9 @@ class LcarsWeatherPanel extends LcarsBasePanel {
   get defaultPanelTitle() { return 'Weather'; }
   get frameColor() {
     const ws = this.group?.entities?.find(e => e.domain === 'weather')?.state;
-    return getWeatherConditionColor(ws?.state || 'unavailable');
+    const condition = ws?.state || 'unavailable';
+    if (condition === 'unavailable' || condition === 'unknown') return 'var(--lcars-gray)';
+    return getWeatherConditionColor(condition);
   }
 
   static get styles() {
@@ -142,9 +145,11 @@ class LcarsWeatherPanel extends LcarsBasePanel {
   renderBadge() {
     const ws = this.group?.entities?.find(e => e.domain === 'weather')?.state;
     const condition = ws?.state || 'unavailable';
-    const condColor = getWeatherConditionColor(condition);
-    const glyph = this._getWeatherGlyph(condition);
-    return html`<span style="color:${condColor}">${glyph} ${condition.toUpperCase().replace(/[_-]/g, ' ')}</span>`;
+    const isOffline = condition === 'unavailable' || condition === 'unknown';
+    const condColor = isOffline ? 'var(--lcars-gray)' : getWeatherConditionColor(condition);
+    const glyph = isOffline ? '○' : this._getWeatherGlyph(condition);
+    const label = isOffline ? 'OFFLINE' : condition.toUpperCase().replace(/[_-]/g, ' ');
+    return html`<span style="color:${condColor}">${glyph} ${label}</span>`;
   }
 
   renderContent() {
@@ -156,20 +161,29 @@ class LcarsWeatherPanel extends LcarsBasePanel {
     const ws = primary.state;
     const attrs = ws?.attributes || {};
     const condition = ws?.state || 'unavailable';
-    const condColor = getWeatherConditionColor(condition);
-    const glyph = this._getWeatherGlyph(condition);
+    const isOffline = condition === 'unavailable' || condition === 'unknown';
+    const condColor = isOffline ? 'var(--lcars-gray)' : getWeatherConditionColor(condition);
+    const glyph = isOffline ? '○' : this._getWeatherGlyph(condition);
     const currentTemp = attrs.temperature;
     const humidity = attrs.humidity;
     const pressure = attrs.pressure;
     const windSpeed = attrs.wind_speed;
     const windBearing = attrs.wind_bearing;
     const windUnit = attrs.wind_speed_unit || 'mph';
+    const lastChanged = ws?.last_changed || ws?.last_updated;
+    const lastKnownLabel = isOffline && lastChanged ? humanizeTimestamp(lastChanged) : null;
 
-    this._loadWeatherForecast(primary.entity.entity_id);
+    if (!isOffline) this._loadWeatherForecast(primary.entity.entity_id);
     const forecasts = this._weatherForecastCache[primary.entity.entity_id];
 
     return html`
-      <div class="weather-content">
+      <div class="weather-content ${isOffline ? 'weather-offline' : ''}">
+
+        ${isOffline ? html`
+          <div class="weather-offline-banner" role="status" aria-live="polite">
+            OFFLINE${lastKnownLabel ? html` · LAST DATA ${lastKnownLabel}` : ''}
+          </div>
+        ` : ''}
 
         <div class="weather-sensors" role="list" aria-label="${deviceName} readings">
           ${humidity != null ? html`

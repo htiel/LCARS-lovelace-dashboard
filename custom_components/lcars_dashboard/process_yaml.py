@@ -3,6 +3,7 @@ import yaml
 import os
 import json
 import io
+import re
 from collections import OrderedDict
 import jinja2
 from jinja2.sandbox import SandboxedEnvironment
@@ -40,6 +41,13 @@ def init_jinja_env(config_dir):
 
 lcars_dashboard_more_pages = {}
 llgen_config = {}
+
+# WORF-SEC-006: Subdirectory name validation for more_pages
+_SAFE_DIRNAME_RE = re.compile(r'^[a-zA-Z0-9_\-]+$')
+
+def _is_safe_dirname(name):
+    """Reject directory names with traversal or special characters."""
+    return bool(name) and '..' not in name and _SAFE_DIRNAME_RE.match(name)
 
 def _is_our_file(fname):
     """Check if a file belongs to LCARS Dashboard (skip noisy logging for other HA YAML)."""
@@ -162,6 +170,10 @@ async def process_yaml(hass: HomeAssistant, config_entry):
             more_pages_path = hass.config.path("lcars-dashboard/configs/more_pages")
             subdirs = await hass.async_add_executor_job(os.listdir, more_pages_path)
             for subdir in subdirs:
+                # WORF-SEC-006: Validate subdirectory names
+                if not _is_safe_dirname(subdir):
+                    _LOGGER.warning("Skipping invalid more_pages dirname: %r", subdir)
+                    continue
                 #Lets check if there is a page.yaml in the more_pages folder
                 if os.path.exists(hass.config.path("lcars-dashboard/configs/more_pages/"+subdir+"/page.yaml")):
                     # Page.yaml exists now check if there is a config.yaml otherwise create it
@@ -226,6 +238,10 @@ async def reload_configuration(hass):
             more_pages_path = hass.config.path("lcars-dashboard/configs/more_pages")
             subdirs = await hass.async_add_executor_job(os.listdir, more_pages_path)
             for subdir in subdirs:
+                # WORF-SEC-006: Validate subdirectory names
+                if not _is_safe_dirname(subdir):
+                    _LOGGER.warning("Skipping invalid more_pages dirname: %r", subdir)
+                    continue
                 #Lets check if there is a page.yaml in the more_pages folder
                 if os.path.exists(hass.config.path("lcars-dashboard/configs/more_pages/"+subdir+"/page.yaml")):
                     page_config = hass.config.path("lcars-dashboard/configs/more_pages/"+subdir+"/config.yaml")

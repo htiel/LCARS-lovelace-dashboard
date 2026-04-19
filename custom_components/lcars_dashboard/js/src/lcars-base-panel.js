@@ -126,18 +126,27 @@ export class LcarsBasePanel extends LitElement {
     if (!fullName) return fullName;
     const prefixes = [];
     const area = this.hass?.areas?.[this.areaId];
-    if (area?.name) prefixes.push(area.name);
+    if (area?.name) {
+      prefixes.push(area.name);
+      // QA-E09: Also strip possessive forms ("Leith's Office" → "Office")
+      prefixes.push(area.name.replace(/[''\u2019]s$/i, ''));
+    }
     if (entity?.device_id) {
       const dev = this.hass?.devices?.[entity.device_id];
       const dn = dev?.name_by_user || dev?.name;
-      if (dn) prefixes.push(dn);
+      if (dn) {
+        prefixes.push(dn);
+        prefixes.push(dn.replace(/[''\u2019]s$/i, ''));
+      }
     }
-    prefixes.sort((a, b) => b.length - a.length);
+    // Deduplicate and sort longest-first
+    const unique = [...new Set(prefixes)];
+    unique.sort((a, b) => b.length - a.length);
     let result = fullName;
     let changed = true;
     while (changed) {
       changed = false;
-      for (const p of prefixes) {
+      for (const p of unique) {
         if (result.toLowerCase().startsWith(p.toLowerCase())) {
           result = result.slice(p.length).trim().replace(/^[-–:]\s*/, '');
           changed = true;

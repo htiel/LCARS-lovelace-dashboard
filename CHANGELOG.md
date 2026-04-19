@@ -2,6 +2,49 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.22.0-rc.8] — 2026-04-19
+
+### Fixed — Consolidated P6b–P9: Formatting, Offline Degradation, Media Compaction, A11y, Security (17 items)
+
+**17 bugs implemented** across 6 stories, covering shared formatting utilities, offline panel degradation, media player compaction, accessibility polish, and security hardening. 13 items deferred to v5.x, 4 closed as HA-config-only, 3 monitored, 1 closed.
+
+#### Shared Formatting Foundation (RC8-1)
+1. **Data-size scaling (QA-E10):** Raw byte values (B) now auto-scale to KB/MB/GB/TB with appropriate decimal precision.
+2. **ISO timestamp humanization (QA-E11):** Raw ISO 8601 timestamps render as "JUST NOW", "5M AGO", "2H AGO", "3D AGO", or short date (e.g., "APR 15").
+3. **Possessive name stripping (QA-E09):** Area and device names with possessives (e.g., "Leith's Office") are now stripped correctly during entity name shortening.
+
+#### Weather Offline Degradation (RC8-2)
+4. **Gray offline skeleton (GEORDI-021):** Weather panel shows grayed-out frame, "OFFLINE" badge, and skeleton viewscreen when weather entity is unavailable/unknown.
+5. **Last-known data label (WESLEY-UX-012):** Offline weather banner displays humanized "LAST DATA X AGO" timestamp from entity's last_changed.
+
+#### Irrigation Offline Semantics (RC8-3)
+6. **Offline vs idle distinction (GEORDI-022):** Irrigation zones now show "OFFLINE" (gray) when unavailable, distinct from "IDLE" (sunflower). Controller offline banner with "LAST SEEN" timestamp.
+7. **Disabled offline controls (WESLEY-UX-007):** Zone start/stop buttons, quick-run, and control buttons are suppressed when controller is offline, preventing failing service calls.
+
+#### Media Compaction and Volume Warning (RC8-4)
+8. **Collapse unavailable players (WESLEY-UX-002):** All-unavailable media players show minimal "UNAVAILABLE" skeleton instead of broken controls.
+9. **Collapse standby siblings (GEORDI-017, WESLEY-UX-004):** When active players exist, unavailable players are filtered from the rendered list. Standby players remain visible.
+10. **100% volume warning (GEORDI-027):** Volume bar and percentage turn tomato-red when volume reaches 100%.
+
+#### A11y and Truncation Polish (RC8-5)
+11. **Sensor indicator contrast (GEORDI-030):** Indicator dots increased from 0.5rem to 0.625rem with subtle white ring (box-shadow) for improved visibility on dark backgrounds.
+12. **Label truncation floor (QA-E08):** Sensor labels now have 3rem minimum width to prevent premature truncation on narrow panels.
+
+#### Security Hardening (RC8-6)
+13. **innerHTML → textContent (WORF-SEC-001):** Card picker button in vendor/editor.js now uses textContent instead of innerHTML.
+14. **more_pages path validation (WORF-SEC-006):** Subdirectory names in more_pages are validated against `[a-zA-Z0-9_-]` regex in both process_yaml.py and __init__.py.
+15. **Blueprint size limit (WORF-SEC-007):** Blueprint YAML payloads are rejected if they exceed 256 KB. Blueprint name must be a non-empty string.
+16. **Template filename validation (WORF-SEC-008):** more_pages subdirectory enumeration in websocket_get_configuration now validates names via _validate_path_component.
+
+### Deferred to v5.x (13 items)
+- WESLEY-IDEA-003 (consolidated media hub), WESLEY-IDEA-007 (waveform personality), GEORDI-016 (sparse room shell), WESLEY-IDEA-001 (room vitals strip), WESLEY-IDEA-004 (empty-state copy), WESLEY-IDEA-008 (idle-room timestamp), WESLEY-IDEA-009 (View Transitions), WESLEY-IDEA-013 (boot sequence), WESLEY-IDEA-014 (adaptive climate arc), WESLEY-IDEA-015 (mobile haptics), WESLEY-IDEA-016 (trend arrows), WESLEY-IDEA-017 (universal LAST ACTIVE), WORF-SEC-002 (npm audit churn)
+
+### Closed / No-Code (4 items)
+- DATA-013, DATA-015, GEORDI-025, GEORDI-026 — HA configuration issues, not dashboard code
+
+### Monitoring (3 items)
+- GEORDI-029 (focus visibility), GEORDI-031 (reduced-motion), WORF-SEC-004 (color sanitization) — validated as acceptable, no code needed
+
 ## [4.22.0-rc.6] — 2026-04-19
 
 ### Fixed — Site Crawl Bug Fixes: Tactical, Camera, Viewport (P6)

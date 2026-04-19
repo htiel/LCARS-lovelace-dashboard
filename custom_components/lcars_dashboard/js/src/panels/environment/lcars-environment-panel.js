@@ -117,6 +117,10 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
     const { score, airQuality, telemetry, controls, diagnostics } = this._partitionEnvironmentEntities(this.group.entities, categoryEntities);
     const deviceName = this._shortDeviceName(this.group.device) || 'Environment';
     const showAtmoscrubber = score.length > 0 || airQuality.length > 0;
+    // P3 GEORDI-006: detect if all AQ sensors are unavailable
+    const allAQUnavailable = showAtmoscrubber && [...score, ...airQuality].every(
+      e => e.state?.state === 'unavailable' || e.state?.state === 'unknown'
+    );
 
     const scoreEntry = score[0];
     const scoreVal = scoreEntry ? parseFloat(scoreEntry.state.state) : null;
@@ -195,7 +199,7 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
         </div>
 
         <!-- Atmoscrubber Cylinder -->
-        ${showAtmoscrubber ? html`
+        ${showAtmoscrubber && !allAQUnavailable ? html`
           <div class="atmoscrubber-container" role="meter"
             aria-valuenow="${aqiEstimate != null ? Math.round(aqiEstimate) : ''}"
             aria-valuemin="0" aria-valuemax="300"
@@ -207,6 +211,13 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
               ` : pm25Entry ? html`
                 <div class="scrubber-score">${pm25Val != null && Number.isFinite(pm25Val) ? Math.round(pm25Val) : '—'}</div>
               ` : ''}
+            </div>
+          </div>
+        ` : showAtmoscrubber && allAQUnavailable ? html`
+          <div class="atmoscrubber-container atmoscrubber-offline"
+            role="img" aria-label="Air quality sensor offline">
+            <div class="atmoscrubber scrubber-idle scrubber-offline-state">
+              <div class="scrubber-score">OFFLINE</div>
             </div>
           </div>
         ` : ''}

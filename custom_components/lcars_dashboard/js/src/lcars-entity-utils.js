@@ -129,7 +129,13 @@ const WEATHER_SENSOR_CLASSES = new Set([
 // ─── Hazard Detection ───────────────────────────────────────────────────────
 // Safety-critical device classes (4X-39)
 const HAZARD_STATUS_CLASSES = new Set(['smoke', 'gas', 'carbon_monoxide', 'heat', 'safety']);
+// Strong hazard classes: 1 entity is enough (no false-positive risk)
+const HAZARD_STRONG_CLASSES = new Set(['smoke', 'carbon_monoxide', 'gas', 'heat']);
 const HAZARD_FALSE_POSITIVE_PLATFORMS = new Set(['tplink', 'kasa']);
+
+// ─── Presence Detection ─────────────────────────────────────────────────────
+// Known presence sensor platforms (P3 QA-E04)
+const PRESENCE_PLATFORMS = new Set(['aqara']);
 
 // ─── Galley/Appliance Detection ─────────────────────────────────────────────
 // Known appliance platforms (4X-40)
@@ -225,16 +231,28 @@ const DETECTORS = [
   (entries) => entries.some(e => ALARM_DOMAINS.has(e.domain))
     ? PANEL_TYPE_ALARM : null,
 
-  // Hazard Detection: nest_protect platform OR ≥1 smoke/CO/heat binary sensor (4X-39)
+  // Hazard Detection: nest_protect platform OR ≥1 strong hazard sensor OR ≥2 any hazard sensors (4X-39, P3 QA-E03)
   (entries) => {
     if (entries.some(e => e.entity?.platform === 'nest_protect')) return PANEL_TYPE_HAZARD;
-    const hazardCount = entries.filter(e =>
-      e.domain === 'binary_sensor' &&
-      !isDiagnosticEntity(e) &&
-      !HAZARD_FALSE_POSITIVE_PLATFORMS.has(e.entity?.platform || '') &&
-      HAZARD_STATUS_CLASSES.has(e.state?.attributes?.device_class || '')
-    ).length;
-    if (hazardCount >= 2) return PANEL_TYPE_HAZARD;
+    let strongCount = 0, weakCount = 0;
+    for (const e of entries) {
+      if (e.domain !== 'binary_sensor' || isDiagnosticEntity(e)) continue;
+      if (HAZARD_FALSE_POSITIVE_PLATFORMS.has(e.entity?.platform || '')) continue;
+      const dc = e.state?.attributes?.device_class || '';
+      if (HAZARD_STRONG_CLASSES.has(dc)) strongCount++;
+      else if (dc === 'safety') weakCount++;
+    }
+    if (strongCount >= 1 || (strongCount + weakCount) >= 2) return PANEL_TYPE_HAZARD;
+    return null;
+  },
+
+  // Presence Detection: Aqara FP2/FP1E → route to Tactical (P3 QA-E04)
+  (entries) => {
+    if (!entries.some(e => PRESENCE_PLATFORMS.has(e.entity?.platform))) return null;
+    if (entries.some(e => e.domain === 'binary_sensor' &&
+      ['occupancy', 'motion'].includes(e.state?.attributes?.device_class || ''))) {
+      return PANEL_TYPE_TACTICAL;
+    }
     return null;
   },
 
@@ -499,6 +517,29 @@ export function isAmbientSensor(entry) {
   if (entry.domain !== 'sensor') return false;
   const dc = entry.state?.attributes?.device_class || '';
   return dc === 'temperature' || dc === 'humidity';
+}
+
+// ─── Suppress Domains (P3 QA-E02) ──────────────────────────────────────────
+// Entities in these domains add zero dashboard value and are suppressed
+// from the "Auxiliary Systems" (formerly Other Entities) section.
+export const SUPPRESS_DOMAINS = new Set([
+  'update', 'device_tracker', 'event', 'conversation',
+  'input_datetime', 'input_text',
+]);
+
+// ─── Entity Tier Partitioning (P3 WESLEY-IDEA-011) ─────────────────────────
+// Partitions entities into hero / operational / diagnostic tiers.
+// heroFilter: (entry) => boolean — returns true for panel-relevant entities.
+// Entities with entity_category 'diagnostic' always go to diagnostic tier.
+// Everything else is operational (collapsed by default).
+export function tierEntities(entries, heroFilter) {
+  const hero = [], operational = [], diagnostic = [];
+  for (const e of entries) {
+    if (isDiagnosticEntity(e)) diagnostic.push(e);
+    else if (heroFilter(e)) hero.push(e);
+    else operational.push(e);
+  }
+  return { hero, operational, diagnostic };
 }
 
 // ─── Area-Level Classification (4X-17) ──────────────────────────────────────

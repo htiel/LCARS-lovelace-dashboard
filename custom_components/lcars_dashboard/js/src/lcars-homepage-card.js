@@ -33,6 +33,7 @@ import {
   PANEL_TYPE_VIEWPORT,
   PANEL_TYPE_HAZARD, PANEL_TYPE_GALLEY,
   isDiagnosticEntity,
+  SUPPRESS_DOMAINS,
 } from './lcars-entity-utils.js';
 import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor, getCo2Color, getTempColor, getTempComfortClass, getSafeComfortColor, COMFORT_COLORS, getRainDelayInfo, getPowerColor, getPowerLabel, getGridBalanceColor } from './lcars-color-utils.js';
 import { formatNumber, formatStateValue } from './lcars-format-utils.js';
@@ -474,6 +475,20 @@ class LcarsHomepageCard extends LitElement {
       return ['off', 'unavailable', 'unknown', 'idle', 'standby', 'locked'].includes(state?.state);
     }
 
+    /* P3 GEORDI-015: format "LAST SIGNAL: Xh Ym ago" for offline cameras */
+    _formatCamTimeSince(isoStr) {
+      if (!isoStr) return '';
+      const ms = Date.now() - new Date(isoStr).getTime();
+      if (ms < 0 || isNaN(ms)) return '';
+      const mins = Math.floor(ms / 60000);
+      if (mins < 5) return '';
+      const hours = Math.floor(mins / 60);
+      const days = Math.floor(hours / 24);
+      if (days > 0) return `LAST SIGNAL: ${days}D ${hours % 24}H AGO`;
+      if (hours > 0) return `LAST SIGNAL: ${hours}H ${mins % 60}M AGO`;
+      return `LAST SIGNAL: ${mins}M AGO`;
+    }
+
     /* ─── Segmented sensor bar for numeric values ─── */
     _renderSensorBar(state) {
       const val = parseFloat(state.state);
@@ -891,14 +906,26 @@ class LcarsHomepageCard extends LitElement {
           }
           .camera-offline-overlay ha-icon {
             --mdc-icon-size: 32px;
-            color: var(--lcars-tomato);
+            color: var(--lcars-gray);
           }
           .camera-offline-text {
             font-family: var(--lcars-font);
             font-size: var(--lcars-font-size-data);
-            color: var(--lcars-tomato);
+            color: var(--lcars-gray);
             text-transform: uppercase;
             letter-spacing: 0.1em;
+            animation: cam-text-breathe 4s ease-in-out infinite;
+          }
+          .camera-last-signal {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data, 0.875rem);
+            color: var(--lcars-gray);
+            text-transform: uppercase;
+            margin-top: 0.25rem;
+          }
+          @keyframes cam-text-breathe {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
           }
 
           /* State-driven visibility (D-4: opacity/visibility, not display:none) */
@@ -913,8 +940,21 @@ class LcarsHomepageCard extends LitElement {
             visibility: hidden;
           }
           .camera-frame[data-state="offline"] {
-            border-color: var(--lcars-tomato);
+            border-color: var(--lcars-gray);
             opacity: 1;
+          }
+          /* P3 WESLEY-IDEA-002: CRT static effect for offline cameras */
+          .camera-frame[data-state="offline"] .camera-offline-overlay {
+            background:
+              repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px),
+              repeating-linear-gradient(90deg, rgba(120,120,120,0.02) 0px, rgba(80,80,80,0.04) 1px, transparent 2px, transparent 3px),
+              linear-gradient(180deg, rgba(40,40,40,1) 0%, rgba(25,25,25,1) 100%);
+            will-change: background-position;
+            animation: cam-static-drift 8s linear infinite;
+          }
+          @keyframes cam-static-drift {
+            from { background-position: 0 0, 0 0, 0 0; }
+            to   { background-position: 0 0, 0 -100px, 0 0; }
           }
           .camera-frame[data-state="offline"]:hover { border-color: var(--lcars-gold); }
           /* Hide img during connecting so overlay text is visible */
@@ -4054,6 +4094,9 @@ class LcarsHomepageCard extends LitElement {
             .device-control-btn:active::after { animation-duration: 100ms !important; }
             .alarm-key:active::before { animation-duration: 100ms !important; }
             .zone-bar.completing { animation-duration: 1s !important; }
+            /* P3: Camera offline animations */
+            .camera-offline-text { animation: none; }
+            .camera-frame[data-state="offline"] .camera-offline-overlay { animation: none; }
           }
         `,
       ];
@@ -7149,6 +7192,7 @@ class LcarsHomepageCard extends LitElement {
       }
       if (areaPanelTypes.has(PANEL_TYPE_TACTICAL)) {
         subsumedDeviceTypes.add(PANEL_TYPE_ALARM);
+        subsumedDeviceTypes.add(PANEL_TYPE_TACTICAL); // P3 QA-E04: prevent duplicate tactical for FP2 devices
       }
       if (areaPanelTypes.has(PANEL_TYPE_MEDIA)) {
         subsumedDeviceTypes.add(PANEL_TYPE_MEDIA);
@@ -7173,8 +7217,15 @@ class LcarsHomepageCard extends LitElement {
       }
 
       // Build entity groups content (without power — power rendered in left column)
+      // P3 QA-E02: filter SUPPRESS_DOMAINS + diagnostic entities from fallback rendering
+      const _filterAux = (entries) => entries.filter(e =>
+        !SUPPRESS_DOMAINS.has(e.domain) && !isDiagnosticEntity(e)
+      );
       const entityContent = html`
-        ${normalDevices.map((group) => html`
+        ${normalDevices.map((group) => {
+          const filtered = _filterAux(group.entities);
+          if (filtered.length === 0) return '';
+          return html`
           <div class="device-group">
             <div class="device-header">
               <h3 class="device-name">${this._shortDeviceName(group.device)}</h3>
@@ -7185,18 +7236,19 @@ class LcarsHomepageCard extends LitElement {
                   @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEditDevice(e, group.device.id); } }}></div>
               ` : ''}
             </div>
-            ${this._renderDomainGroups(group.entities)}
+            ${this._renderDomainGroups(filtered)}
           </div>
-        `)}
-        ${filteredNoDevice.length > 0 ? html`
-          <div class="device-group">
-            <div class="device-header">
-              <h3 class="device-name">Other Entities</h3>
-              <div class="device-line"></div>
+        `;
+        })}
+        ${(() => {
+          const auxEntities = _filterAux(filteredNoDevice);
+          return auxEntities.length > 0 ? html`
+            <div class="device-group">
+              <lcars-section-divider label="AUXILIARY SYSTEMS" style="--divider-color: var(--lcars-gray)"></lcars-section-divider>
+              ${this._renderDomainGroups(auxEntities)}
             </div>
-            ${this._renderDomainGroups(filteredNoDevice)}
-          </div>
-        ` : ''}
+          ` : '';
+        })()}
       `;
 
       // Power panel template (left column, below environment)
@@ -7261,7 +7313,12 @@ class LcarsHomepageCard extends LitElement {
     _buildAreaPanelFilter(areaPanelTypes) {
       if (areaPanelTypes.size === 0) return null;
       const predicates = [];
-      if (areaPanelTypes.has(PANEL_TYPE_ILLUMINATION)) predicates.push(isLightingEntity);
+      if (areaPanelTypes.has(PANEL_TYPE_ILLUMINATION)) {
+        predicates.push(isLightingEntity);
+        // P3 QA-E01: suppress fan-domain entities when illumination panel is active
+        // Fan lights already route to illumination; fan speed entities shouldn't dump to fallback
+        predicates.push(e => e.domain === 'fan');
+      }
       if (areaPanelTypes.has(PANEL_TYPE_LIFE_SUPPORT)) predicates.push(
         e => isClimateEntity(e) || isEnvironmentEntity(e) || isAmbientSensor(e)
       );
@@ -7299,6 +7356,8 @@ class LcarsHomepageCard extends LitElement {
           const off = this._isOff(state);
           const imgUrl = cameraImageUrl(state);
           const initialState = (off || !imgUrl) ? 'offline' : 'connecting';
+          // P3 GEORDI-015: last signal for offline cameras
+          const lastSignal = off ? this._formatCamTimeSince(state?.last_changed) : '';
           return html`
             <div class="camera-frame" data-state="${initialState}" style="--i:${i}"
               role="button"
@@ -7313,6 +7372,7 @@ class LcarsHomepageCard extends LitElement {
               <div class="camera-offline-overlay" aria-hidden="true">
                 <ha-icon icon="mdi:video-off"></ha-icon>
                 <span class="camera-offline-text">VIEWSCREEN OFFLINE</span>
+                ${lastSignal ? html`<span class="camera-last-signal">${lastSignal}</span>` : ''}
               </div>
               ${imgUrl
                 ? html`<img src="${imgUrl}" alt="${name}"
@@ -7374,8 +7434,9 @@ class LcarsHomepageCard extends LitElement {
           const name = this._friendlyName(state, entity);
           const off = this._isOff(state);
           const unit = state.attributes?.unit_of_measurement || '';
-          const val = state.state;
-          const numVal = parseFloat(val);
+          // P3 QA-E07: route through shared formatter for device-class-aware rounding
+          const { text: fmtVal } = formatStateValue(state, entity?.entity_category || '');
+          const numVal = parseFloat(state.state);
           // Warn if battery < 20% or any numeric > threshold patterns
           const isBattery = entity.entity_id.includes('battery') ||
             state.attributes?.device_class === 'battery';
@@ -7384,11 +7445,11 @@ class LcarsHomepageCard extends LitElement {
           return this._withEditPip(entity.entity_id, html`
             <button class="sensor-readout" ?data-off=${off} ?data-warn=${warn} style="--i:${i}"
               @click=${() => this._handleEntityClick(entity.entity_id)}
-              title="${name}: ${val} ${unit}">
+              title="${name}: ${fmtVal} ${unit}">
               <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
               <span class="sensor-name">${name}</span>
               ${this._renderSensorBar(state)}
-              <span class="sensor-value">${val}</span>
+              <span class="sensor-value">${fmtVal}</span>
               ${unit ? html`<span class="sensor-unit">${unit}</span>` : ''}
             </button>
           `);

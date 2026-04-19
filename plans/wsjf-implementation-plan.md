@@ -1,6 +1,6 @@
 # WSJF Implementation Plan
 
-Date: 2026-04-18
+Date: 2026-04-19
 Owner: Riker
 
 This plan scores every unique work item from the four QA reports plus Worf's security findings, then groups them into the minimum practical number of implementation passes based on file affinity.
@@ -9,6 +9,7 @@ Assumptions:
 - Removed Geordi items GEORDI-011, GEORDI-020, and GEORDI-023 are excluded because the report itself closes them.
 - Worf's commentary on WESLEY-IDEA-009, WESLEY-IDEA-010, and WESLEY-IDEA-015 is treated as implementation constraint input, not separate backlog items.
 - External Home Assistant configuration issues still receive a pass assignment so they have an explicit disposition.
+- Eric's post-P2 visual QA findings are assigned only to P3-P9 because P1 and P2 already shipped; those passes are updated for status only, not rescoping.
 - Aggregate pass WSJF is computed as `sum(BV + TC + RR) / sum(JS)` across the items assigned to that pass.
 
 ## SECTION 1: WSJF Scoring Table
@@ -65,6 +66,17 @@ Assumptions:
 | GEORDI-030 | Geordi | Audit | Increase low-contrast sensor indicator visibility | `lcars-styles.js`, panel styles, sensor-row | 5 | 5 | 8 | 3 | 6.00 | P8 |
 | GEORDI-031 | Geordi | Audit | Verify reduced-motion compliance everywhere | shared animations, panel styles | 3 | 3 | 8 | 3 | 4.67 | P8 |
 | GEORDI-032 | Geordi | Enabler | Standardize canonical short sensor labels | new label utility, base panel | 8 | 5 | 5 | 3 | 6.00 | P2 |
+| QA-E01 | Eric QA | Bug | Route ceiling fans to illumination or suppress generic fan fallback | `lcars-entity-utils.js::classifyDevice`, `lcars-illumination-panel.js`, `lcars-homepage-card.js` | 13 | 8 | 8 | 3 | 9.67 | P3 |
+| QA-E02 | Eric QA | Bug | Replace `OTHER ENTITIES` catch-all dumps with LCARS-aware suppression or routing | `lcars-homepage-card.js` fallback renderer, `lcars-entity-utils.js` | 13 | 13 | 13 | 5 | 7.80 | P3 |
+| QA-E03 | Eric QA | Bug | Make standalone smoke detectors consistently classify as HAZARD DETECTION | `lcars-entity-utils.js::classifyDevice`, hazard detector logic | 8 | 13 | 8 | 3 | 9.67 | P3 |
+| QA-E04 | Eric QA | Bug | Filter or reroute FP2 and presence devices instead of raw device-card fallback | `lcars-entity-utils.js`, tactical routing, `lcars-homepage-card.js` | 8 | 8 | 8 | 3 | 8.00 | P3 |
+| QA-E05 | Eric QA | Bug | Deduplicate sparkline tray labels before truncation rules apply | `lcars-lifesupport-panel.js::_renderSparklineTray`, `lcars-format-utils.js` | 8 | 8 | 5 | 2 | 10.50 | P3 |
+| QA-E06 | Eric QA | Bug | Filter Nest Protect diagnostic entities from default Life Support views | `lcars-lifesupport-panel.js`, `lcars-environment-panel.js` | 8 | 8 | 8 | 3 | 8.00 | P3 |
+| QA-E07 | Eric QA | Bug | Route generic device-card sensors through the shared numeric formatter | `lcars-homepage-card.js`, `lcars-format-utils.js` | 8 | 8 | 8 | 2 | 12.00 | P3 |
+| QA-E08 | Eric QA | Bug | Remove cross-panel sensor and circuit label truncation | panel CSS files, `lcars-styles.js`, pool/power/camera styles | 8 | 5 | 5 | 5 | 3.60 | P8 |
+| QA-E09 | Eric QA | Bug | Strip possessive area names without leaving orphan punctuation | `lcars-base-panel.js::_shortenName`, `lcars-format-utils.js::canonicalLabel` | 3 | 2 | 3 | 1 | 8.00 | P8 |
+| QA-E10 | Eric QA | Bug | Humanize large storage and data-size values with unit scaling | `lcars-format-utils.js::formatNumber`, `lcars-base-panel.js` | 5 | 5 | 8 | 2 | 9.00 | P7 |
+| QA-E11 | Eric QA | Bug | Format raw ISO timestamps into human-readable date or relative-time output | `lcars-format-utils.js`, `lcars-base-panel.js`, sensor row rendering | 8 | 8 | 8 | 3 | 8.00 | P7 |
 | WESLEY-UX-001 | Wesley | UX | Replace Adopt Device ambiguity with actionable guidance | `lcars-camera-panel.js`, empty-state CTA helper | 5 | 5 | 3 | 2 | 6.50 | P3 |
 | WESLEY-UX-002 | Wesley | UX | Collapse unavailable media players | `lcars-media-panel.js` | 8 | 5 | 3 | 5 | 3.20 | P6 |
 | WESLEY-UX-003 | Wesley | UX | Show READY / NO DATA instead of red UNKNOWN | `lcars-base-panel.js`, `lcars-color-utils.js` | 8 | 8 | 8 | 2 | 12.00 | P2 |
@@ -110,6 +122,8 @@ Assumptions:
 
 Description: Fix the systemic classification defects first so the dashboard stops sending the wrong entities into the wrong panels. This is the highest-leverage pass because it automatically resolves multiple downstream Geordi symptoms.
 
+- Status: ✅ COMPLETE (shipped in `v4.22.0-rc.1`)
+
 - Included bugs: DATA-001, DATA-002, DATA-003, DATA-004, DATA-005, DATA-011, DATA-016, DATA-017, DATA-019, DATA-020, DATA-021, GEORDI-002, GEORDI-004, GEORDI-005, GEORDI-010, GEORDI-012
 - Files modified:
   - `custom_components/lcars_dashboard/js/src/lcars-entity-utils.js`
@@ -146,6 +160,8 @@ Description: Fix the systemic classification defects first so the dashboard stop
 
 Description: Centralize how values, labels, and idle/error states render. This removes raw decimals, false-red READY states, and label sprawl in one pass through the base rendering pipeline.
 
+- Status: ✅ COMPLETE (shipped in `v4.22.0-rc.2`)
+
 - Included bugs: DATA-008, DATA-012, DATA-018, GEORDI-001, GEORDI-003, GEORDI-014, GEORDI-032, WESLEY-UX-003, WESLEY-UX-010
 - Files modified:
   - `custom_components/lcars_dashboard/js/src/lcars-base-panel.js`
@@ -174,28 +190,49 @@ Description: Centralize how values, labels, and idle/error states render. This r
     - Add canonical label map for `PM2.5`, `PM10`, `PM1`, `CO₂`, `VOC`, `AQI`, `TEMP`, `RH`, plus pool chemistry abbreviations.
   - `lcars-sensor-row.js`
     - Ensure the component receives already-formatted label/value pairs and preserves focusability for dynamic rows.
+- GitHub issue overlap after Eric QA:
+  - `#47` maps to DATA-008 and GEORDI-001. P2 addressed the shared formatter core, but battery-specific and generic-device-card coverage gaps remain open through QA-E07 and QA-E10.
+  - `#48` maps to DATA-008 and GEORDI-001. Treat it as a P2 regression check only; the implementation surface belongs to the shipped pass.
+  - `#49` maps to GEORDI-032 and WESLEY-UX-010. P2 addressed canonical sparkline labeling, but duplicated label selection remains open through QA-E05.
+  - `#50` maps to GEORDI-014. Treat it as addressed by the shipped P2 color-semantic work unless a fresh repro appears.
 
-### Pass P3 — Telemetry Relevance, Diagnostics Disclosure, and Camera Recovery UX
+### Pass P3 — Residual Classification Cleanup, Telemetry Relevance, Diagnostics Disclosure, and Camera Recovery UX
 
-Description: Fix the noisy sensor dumps and broken hazard/environment composition that remain after classification is corrected. This pass is about showing the right data, then presenting it with useful recovery states.
+Description: Fix the residual generic-device fallback leaks, noisy sensor dumps, and broken hazard/environment composition that remained after P1 and P2 shipped. This pass is about showing the right data, suppressing the wrong fallback surfaces, and then presenting the surviving telemetry with useful recovery states.
 
-- Included bugs: DATA-006, DATA-007, DATA-014, GEORDI-006, GEORDI-013, GEORDI-015, GEORDI-024, WESLEY-UX-001, WESLEY-UX-005, WESLEY-IDEA-002, WESLEY-IDEA-011
+- Included bugs: DATA-006, DATA-007, DATA-014, GEORDI-006, GEORDI-013, GEORDI-015, GEORDI-024, QA-E01, QA-E02, QA-E03, QA-E04, QA-E05, QA-E06, QA-E07, WESLEY-UX-001, WESLEY-UX-005, WESLEY-IDEA-002, WESLEY-IDEA-011
 - Files modified:
+  - `custom_components/lcars_dashboard/js/src/lcars-entity-utils.js`
+  - `custom_components/lcars_dashboard/js/src/lcars-homepage-card.js`
+  - `custom_components/lcars_dashboard/js/src/panels/illumination/lcars-illumination-panel.js`
   - `custom_components/lcars_dashboard/js/src/panels/environment/lcars-environment-panel.js`
   - `custom_components/lcars_dashboard/js/src/panels/camera/lcars-camera-panel.js`
   - `custom_components/lcars_dashboard/js/src/panels/lifesupport/lcars-lifesupport-panel.js`
   - likely touch: camera/environment style files
-  - likely helper touch: `custom_components/lcars_dashboard/js/src/lcars-base-panel.js`
-- Aggregate WSJF: 6.35
+  - likely helper touch: `custom_components/lcars_dashboard/js/src/lcars-base-panel.js`, `custom_components/lcars_dashboard/js/src/lcars-format-utils.js`
+- Aggregate WSJF: 7.87
 - Estimated scope: XL
 - Dependencies: P1, P2
 - Test after pass:
   - Build the JS bundle.
+  - Verify fan-heavy rooms no longer show generic `FANS` cards or `OTHER ENTITIES` dumps, and that fan-light entities route to Illumination while speed-only fan telemetry is suppressed until a dedicated fan surface exists.
+  - Verify standalone smoke detectors consistently render as HAZARD DETECTION, including binary-sensor-only Nest Protect cases.
+  - Verify FP2 and similar presence devices stop leaking raw illuminance/light diagnostics into generic device cards.
   - Verify Nest Protect and similar hazard devices no longer render empty atmoscrubbers or full diagnostics dumps.
+  - Verify sparkline trays deduplicate labels before truncation so `PM1`, `PM2.5`, `PM10`, and `AQI` each appear once with canonical labels.
+  - Verify generic device-card sensors now use shared numeric formatting instead of raw float precision.
   - Verify UniFi Protect cameras show only motion/status-relevant telemetry unless diagnostics are explicitly expanded.
   - Verify offline cameras show distinct offline visuals plus actionable guidance for unadopted devices.
   - Verify diagnostics sections default collapsed and can expand intentionally.
 - Implementation notes:
+  - `lcars-entity-utils.js`
+    - Add a residual post-P1 classification sweep for standalone fan entities, smoke-only hazard devices, and FP2-style presence devices so they stop falling through to the generic renderer.
+    - Keep the destination conservative: route fan-light-capable entities to Illumination, route true hazard signals to HAZARD DETECTION, and suppress unsupported fan/presence leftovers rather than minting misleading fallback cards.
+  - `lcars-homepage-card.js`
+    - Replace the generic `OTHER ENTITIES` dump path with LCARS-aware suppression or a narrower fallback that reuses shared formatter and category-label helpers.
+    - Ensure any residual fallback rows use `formatNumber()` and humanized labels instead of raw HA state strings and domain headings.
+  - `lcars-illumination-panel.js`
+    - Keep fan-adjacent lighting entities aligned with the classifier changes so fan lights land in Illumination without reintroducing switch catch-alls.
   - `lcars-environment-panel.js`
     - Rework `_partitionEnvironmentEntities()` near lines 31-55 so only true AQ/telemetry signals render as primary data and diagnostics are explicitly tiered.
     - Refine `_getAQColor()` near lines 77-84 so missing/unavailable AQ state resolves to disabled gray, not a misleading active hue.
@@ -207,8 +244,11 @@ Description: Fix the noisy sensor dumps and broken hazard/environment compositio
     - Improve offline/adopt-device states so `VIEWSCREEN OFFLINE` shows last-known context and the setup CTA points to the relevant integration/device page rather than a dead-end label.
   - `lcars-lifesupport-panel.js`
     - Ensure the environment substation only appears when valid environment content exists; otherwise the Life Support composite should stay climate-only or sensor-only.
+    - Deduplicate sparkline label candidates before canonicalization and truncation so duplicate PM/AQI rows cannot survive into the tray.
+    - Filter Nest Protect `entity_category=diagnostic` rows out of the default panel body and leave them to the explicit diagnostics disclosure path.
   - Base/helper changes
     - Add reusable disclosure-state and setup-CTA helpers so the same logic is not reimplemented in every panel.
+    - Extend shared formatting so generic fallback rows and non-panel sensor lists reuse the same numeric and label pipeline as panel content.
 
 ### Pass P4 — Power Naming, Circuit Correctness, and Progressive Disclosure
 
@@ -292,22 +332,26 @@ Description: Fix the media panels as a family. This pass collapses dead or stand
     - Add threshold colors to the volume fill and percentage label so extreme volume is visibly distinct.
     - Keep source-aware waveform behavior optional and behind reliable metadata checks; do not let it destabilize the main collapse work.
 
-### Pass P7 — Weather, Irrigation, and Universal Offline Recovery Context
+### Pass P7 — Weather, Irrigation, and Universal Offline, Time, and Telemetry Context
 
-Description: Standardize calm, useful offline states for long-running sensors and controllers. This is where LAST ACTIVE, cached last readings, and disabled-control semantics land for weather and irrigation.
+Description: Standardize calm, useful offline states plus human-readable time and telemetry formatting for long-running sensors and controllers. This is where LAST ACTIVE, cached last readings, disabled-control semantics, timestamp humanization, and large-value scaling land.
 
-- Included bugs: GEORDI-021, GEORDI-022, WESLEY-UX-007, WESLEY-UX-012, WESLEY-IDEA-017
+- Included bugs: GEORDI-021, GEORDI-022, QA-E10, QA-E11, WESLEY-UX-007, WESLEY-UX-012, WESLEY-IDEA-017
 - Files modified:
   - `custom_components/lcars_dashboard/js/src/panels/weather/lcars-weather-panel.js`
   - `custom_components/lcars_dashboard/js/src/panels/irrigation/lcars-irrigation-panel.js`
   - `custom_components/lcars_dashboard/js/src/lcars-base-panel.js`
-- Aggregate WSJF: 6.92
+  - `custom_components/lcars_dashboard/js/src/lcars-format-utils.js`
+  - likely touch: `custom_components/lcars_dashboard/js/src/components/lcars-sensor-row/lcars-sensor-row.js`
+- Aggregate WSJF: 7.81
 - Estimated scope: M
 - Dependencies: P2
 - Test after pass:
   - Build the JS bundle.
   - Verify Eric Outside and Utility rooms.
   - Confirm offline weather uses gray framing plus last-known readings; irrigation offline disables controls, clarifies controller state, and surfaces last active context.
+  - Verify storage, data-size, and similar telemetry values scale to readable units instead of exposing raw MB-sized magnitudes.
+  - Verify timestamp entities and vehicle activity rows render human-readable dates or relative-time strings instead of raw ISO payloads.
 - Implementation notes:
   - `lcars-weather-panel.js`
     - Add explicit unavailable branch in `renderContent()` near lines 150-242 instead of rendering an empty live layout.
@@ -317,39 +361,50 @@ Description: Standardize calm, useful offline states for long-running sensors an
     - Separate `IDLE` flow state from controller `OFFLINE` connectivity state so the panel never shows both as peers.
   - `lcars-base-panel.js`
     - Add a reusable `_getLastActive()` / relative-time helper so unavailable panels can show LAST ACTIVE without each panel reimplementing date math.
+  - `lcars-format-utils.js`
+    - Extend `formatNumber()` with storage and data-size scaling so `MB` and similar units can promote to `GB` or `TB` when the magnitude warrants it.
+    - Add timestamp detection and humanization helpers that can emit either a compact absolute date or a relative-time label depending on the surface.
+  - `lcars-sensor-row.js` and shared row consumers
+    - Ensure generic rows that currently print raw ISO strings or overscaled numeric values pick up the same new formatting helpers.
 
 ### Pass P8 — Shell Polish, Accessibility, Motion, and Lower-Risk UX Ideas
 
-Description: Finish the presentation layer after the core behavior is stable. This pass is where sparse-room polish, focus verification, reduced-motion cleanup, idle-room metadata, climate arc adaptation, and shell-level effects belong.
+Description: Finish the presentation layer after the core behavior is stable. This pass is where sparse-room polish, focus verification, reduced-motion cleanup, idle-room metadata, climate arc adaptation, shell-level effects, and the remaining cross-panel label-truncation cleanup belong.
 
-- Included bugs: GEORDI-016, GEORDI-029, GEORDI-030, GEORDI-031, WESLEY-IDEA-001, WESLEY-IDEA-004, WESLEY-IDEA-008, WESLEY-IDEA-009, WESLEY-IDEA-013, WESLEY-IDEA-014, WESLEY-IDEA-015, WESLEY-IDEA-016
+- Included bugs: GEORDI-016, GEORDI-029, GEORDI-030, GEORDI-031, QA-E08, QA-E09, WESLEY-IDEA-001, WESLEY-IDEA-004, WESLEY-IDEA-008, WESLEY-IDEA-009, WESLEY-IDEA-013, WESLEY-IDEA-014, WESLEY-IDEA-015, WESLEY-IDEA-016
 - Files modified:
   - `custom_components/lcars_dashboard/js/src/lcars-homepage-card.js`
   - `custom_components/lcars_dashboard/js/src/lcars-shared-animations.js`
   - `custom_components/lcars_dashboard/js/src/lcars-styles.js`
+  - `custom_components/lcars_dashboard/js/src/lcars-base-panel.js`
   - `custom_components/lcars_dashboard/js/src/panels/lifesupport/lcars-lifesupport-panel.js`
   - `custom_components/lcars_dashboard/js/src/panels/climate/lcars-climate-panel.js`
-  - likely touch: `components/lcars-sensor-row/*` and targeted panel style files
-- Aggregate WSJF: 2.80
+  - likely touch: `components/lcars-sensor-row/*`, `panels/pool-spa/*`, `panels/power/*`, `panels/camera/*`, and other targeted panel style files
+- Aggregate WSJF: 2.38
 - Estimated scope: XL
 - Dependencies: P2, P3, P5, P7
 - Test after pass:
   - Build the JS bundle.
   - Keyboard-only QA across dynamic panels.
   - Reduced-motion QA with OS-level preference enabled.
-  - Visual QA for sparse rooms, idle-room metadata, and any boot / transition / haptic enhancements on supported devices.
+  - Visual QA for sparse rooms, idle-room metadata, possessive room names, long pool chemistry labels, camera/power label widths, and any boot / transition / haptic enhancements on supported devices.
 - Implementation notes:
   - `lcars-homepage-card.js`
     - Add room vitals / last-activity shell treatment only after the core layouts are stable.
     - Prototype View Transitions and boot animation behind feature detection; do not make them required for navigation.
+  - `lcars-base-panel.js`
+    - Tighten `_shortenName()` so possessive area prefixes like `Alex's` strip cleanly instead of leaving orphan punctuation behind.
   - `lcars-styles.js` and component styles
     - Increase or outline low-contrast indicator dots and verify focus rings through shadow DOM.
+    - Audit cross-panel label containers so long chemistry, circuit, and person/device labels either wrap, abbreviate intentionally, or get wider containers instead of ellipsis-by-default.
   - `lcars-shared-animations.js`
     - Audit every animation token and panel-specific override against `prefers-reduced-motion`.
   - `lcars-climate-panel.js`
     - Adapt arc range logic to legitimate nonstandard climate ranges only after fridge/pool misrouting is already fixed by P1.
   - `lcars-lifesupport-panel.js`
     - Add trend arrows only where sparkline data already exists; keep it scoped to Life Support.
+  - Targeted panel style files
+    - Fix the panel-specific truncation hotspots in pool, power, camera, and other affected tiles without regressing the broader LCARS layout rhythm.
 
 ### Pass P9 — Security Hardening and Explicit No-Code Dispositions
 
@@ -386,29 +441,31 @@ Description: Finish the backend and tooling hardening work in one pass, and expl
 
 ```text
 P1 Classification Core
- ├─> P3 Telemetry Relevance / Diagnostics Disclosure
+ ├─> P3 Residual Classification Cleanup / Telemetry Relevance / Diagnostics Disclosure
  └─> P8 Shell Polish (climate arc and sparse-room polish only after routing is correct)
 
 P2 Shared Formatting / Labels / State Semantics
- ├─> P3 Telemetry Relevance / Diagnostics Disclosure
+ ├─> P3 Residual Classification Cleanup / Telemetry Relevance / Diagnostics Disclosure
  ├─> P4 Power Naming / Disclosure
  ├─> P5 Tactical / Alarm / High-Impact Actions
  ├─> P6 Media Consolidation
- ├─> P7 Weather / Irrigation Offline Context
+ ├─> P7 Weather / Irrigation Offline / Time / Telemetry Context
  └─> P8 Shell Polish / Accessibility / Motion
 
-P3 Telemetry Relevance / Diagnostics Disclosure
+P3 Residual Classification Cleanup / Telemetry Relevance / Diagnostics Disclosure
  └─> P8 Shell Polish (empty-state copy and reduced-noise UX assume correct primary data)
 
 P5 Tactical / Alarm / High-Impact Actions
  └─> P8 Shell Polish (room-header badges and shell polish depend on final tactical behavior)
 
-P7 Weather / Irrigation Offline Context
+P7 Weather / Irrigation Offline / Time / Telemetry Context
  └─> P8 Shell Polish (shared empty-state copy and room-level quiet-state polish reuse the offline helper)
 
 P9 Security Hardening / No-Code Dispositions
  └─ independent of panel passes, but safest after any package.json churn is coordinated with completed UI work
 ```
+
+Eric's post-P2 QA does not justify a new pass. The new bugs cluster cleanly into P3 for residual classifier and fallback cleanup, P7 for time-and-telemetry humanization gaps, and P8 for cross-panel label and CSS polish.
 
 Recommended execution order with dependencies respected:
 
@@ -476,6 +533,17 @@ Recommended execution order with dependencies respected:
 | GEORDI-030 | P8 |
 | GEORDI-031 | P8 |
 | GEORDI-032 | P2 |
+| QA-E01 | P3 |
+| QA-E02 | P3 |
+| QA-E03 | P3 |
+| QA-E04 | P3 |
+| QA-E05 | P3 |
+| QA-E06 | P3 |
+| QA-E07 | P3 |
+| QA-E08 | P8 |
+| QA-E09 | P8 |
+| QA-E10 | P7 |
+| QA-E11 | P7 |
 | WESLEY-UX-001 | P3 |
 | WESLEY-UX-002 | P6 |
 | WESLEY-UX-003 | P2 |

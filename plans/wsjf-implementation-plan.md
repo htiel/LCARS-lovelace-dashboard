@@ -250,7 +250,7 @@ Description: Fix the residual generic-device fallback leaks, noisy sensor dumps,
     - Add reusable disclosure-state and setup-CTA helpers so the same logic is not reimplemented in every panel.
     - Extend shared formatting so generic fallback rows and non-panel sensor lists reuse the same numeric and label pipeline as panel content.
 
-### Pass P4 — Power Naming, Circuit Correctness, and Progressive Disclosure
+### Pass P4 — ✅ COMPLETE (v4.22.0-rc.4) — Power Naming, Circuit Correctness, and Progressive Disclosure
 
 Description: Clean up circuit identity, pairing, and load presentation in one pass through the power stack. This pass removes the unreadable raw IDs and the low-value full-size 0W experience.
 

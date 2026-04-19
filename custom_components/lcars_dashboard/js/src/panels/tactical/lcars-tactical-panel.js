@@ -17,6 +17,7 @@ import {
   isTacticalEntity, ALARM_DOMAINS,
   SENSOR_DOMAINS,
 } from '../../lcars-entity-utils.js';
+import { getAlarmStateColor } from '../../lcars-color-utils.js';
 import { showMoreInfo, lcarsLog } from '../../lcars-helpers.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { lcarsFocusRing } from '../../lcars-styles.js';
@@ -42,11 +43,7 @@ class LcarsTacticalPanel extends LcarsBasePanel {
   get frameColor() {
     const alarmEntry = this._getAlarmEntry();
     if (alarmEntry) {
-      const state = alarmEntry.state?.state || '';
-      if (state === 'triggered') return 'var(--lcars-tomato)';
-      if (state === 'armed_away' || state === 'armed_vacation') return 'var(--lcars-butterscotch)';
-      if (state === 'armed_home' || state === 'armed_night') return 'var(--lcars-sunflower)';
-      if (state === 'arming' || state === 'pending') return 'var(--lcars-gold)';
+      return getAlarmStateColor(alarmEntry.state?.state || 'unavailable');
     }
     // No alarm: check for breaches
     const accessEntries = this._getAccessEntries();
@@ -191,13 +188,57 @@ class LcarsTacticalPanel extends LcarsBasePanel {
           const eid = entry.entity?.entity_id || '';
           const name = entry.state?.attributes?.friendly_name || eid;
           const isLock = entry.domain === 'lock';
-          const isSecure = isLock
-            ? entry.state?.state === 'locked'
-            : entry.state?.state === 'closed';
-          const stateText = isLock
-            ? (isSecure ? 'LOCKED' : 'UNLOCKED')
-            : (entry.state?.state || '').toUpperCase();
-          const indicatorColor = isSecure ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+          const isCover = entry.domain === 'cover';
+
+          let isSecure, stateText, indicatorColor, actionHint = '', isTransitional = false;
+          if (isLock) {
+            isSecure = entry.state?.state === 'locked';
+            stateText = isSecure ? 'LOCKED' : 'UNLOCKED';
+            indicatorColor = isSecure ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+          } else if (isCover) {
+            const info = this._getCoverStateInfo(entry.state);
+            stateText = info.text;
+            actionHint = info.hint;
+            isSecure = entry.state?.state === 'closed';
+            indicatorColor = info.color;
+            isTransitional = info.transitional;
+          } else {
+            isSecure = entry.state?.state === 'closed' || entry.state?.state === 'locked';
+            stateText = (entry.state?.state || '').toUpperCase();
+            indicatorColor = isSecure ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+          }
+
+          const position = isCover ? (entry.state?.attributes?.current_position ?? null) : null;
+          const isConfirming = this._pendingConfirm?.entityId === eid;
+
+          const handleClick = () => {
+            if (isTransitional && isCover) {
+              this._callService('cover', 'stop_cover', { entity_id: eid });
+            } else if (isLock) {
+              this._toggleLock(eid, !isSecure);
+            } else if (isCover) {
+              this._toggleCover(eid, entry.state?.state);
+            } else {
+              showMoreInfo(eid);
+            }
+          };
+
+          if (isConfirming) {
+            return html`
+              <div class="tactical-access-row tactical-confirm-strip"
+                   role="alert"
+                   tabindex="0"
+                   aria-label="${this._pendingConfirm.label}"
+                   @click=${() => this._executeConfirm()}
+                   @keydown=${(e) => {
+                     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._executeConfirm(); }
+                     if (e.key === 'Escape') { e.preventDefault(); this._cancelConfirm(); }
+                   }}>
+                <span class="confirm-label">${this._pendingConfirm.label}</span>
+                <div class="confirm-countdown-bar"></div>
+              </div>
+            `;
+          }
 
           return html`
             <div class="tactical-access-row"
@@ -206,11 +247,21 @@ class LcarsTacticalPanel extends LcarsBasePanel {
                  aria-label="${name}: ${stateText}"
                  ?data-secure=${isSecure}
                  ?data-breach=${!isSecure}
-                 @click=${() => isLock ? this._toggleLock(eid, isSecure) : showMoreInfo(eid)}
-                 @keydown=${(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), isLock ? this._toggleLock(eid, isSecure) : showMoreInfo(eid))}>
+                 ?data-transitional=${isTransitional}
+                 @click=${handleClick}
+                 @keydown=${(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), handleClick())}>
               <span class="tactical-access-indicator" style="background:${indicatorColor}"></span>
               <span class="tactical-access-name">${name}</span>
+              ${position !== null ? html`
+                <span class="tactical-cover-position" aria-label="Position: ${position}%">
+                  <span class="cover-pos-track">
+                    <span class="cover-pos-fill" style="height:${position}%"></span>
+                  </span>
+                  <span class="cover-pos-value">${position}%</span>
+                </span>
+              ` : ''}
               <span class="tactical-access-state">${stateText}</span>
+              ${actionHint ? html`<span class="tactical-access-hint">${actionHint}</span>` : ''}
             </div>
           `;
         })}
@@ -282,11 +333,83 @@ class LcarsTacticalPanel extends LcarsBasePanel {
     `;
   }
 
-  /* ─── Lock Toggle ─── */
+  /* ─── Lock Toggle (confirm-gated) ─── */
 
   _toggleLock(entityId, isCurrentlyLocked) {
-    const service = isCurrentlyLocked ? 'unlock' : 'lock';
-    this._callService('lock', service, { entity_id: entityId });
+    if (isCurrentlyLocked) {
+      // Locking is safe — execute immediately
+      this._callService('lock', 'lock', { entity_id: entityId });
+    } else {
+      // Unlocking is risky — require confirmation
+      this._requestConfirm(entityId, (eid) => {
+        this._callService('lock', 'unlock', { entity_id: eid });
+      }, 'CONFIRM UNLOCK?');
+    }
+  }
+
+  /* ─── Cover Toggle (confirm-gated) ─── */
+
+  _toggleCover(entityId, currentState) {
+    if (currentState === 'closed') {
+      this._requestConfirm(entityId, (eid) => {
+        this._callService('cover', 'open_cover', { entity_id: eid });
+      }, 'CONFIRM OPEN?');
+    } else if (currentState === 'open') {
+      this._requestConfirm(entityId, (eid) => {
+        this._callService('cover', 'close_cover', { entity_id: eid });
+      }, 'CONFIRM CLOSE?');
+    } else if (currentState === 'opening' || currentState === 'closing') {
+      // Stopping is safe — immediate
+      this._callService('cover', 'stop_cover', { entity_id: entityId });
+    }
+  }
+
+  /* ─── Cover State Info ─── */
+
+  _getCoverStateInfo(state) {
+    const s = state?.state || '';
+    switch (s) {
+      case 'open':    return { text: 'OPEN',      hint: 'TAP TO CLOSE', color: 'var(--lcars-tomato)',       transitional: false };
+      case 'closed':  return { text: 'CLOSED',    hint: 'TAP TO OPEN',  color: 'var(--lcars-sunflower)',    transitional: false };
+      case 'opening': return { text: 'OPENING…',  hint: '',             color: 'var(--lcars-butterscotch)', transitional: true  };
+      case 'closing': return { text: 'CLOSING…',  hint: '',             color: 'var(--lcars-butterscotch)', transitional: true  };
+      case 'stopped': return { text: 'STOPPED',   hint: 'TAP TO OPEN',  color: 'var(--lcars-peach)',        transitional: false };
+      default:        return { text: 'UNKNOWN',   hint: '',             color: 'var(--lcars-disabled)',     transitional: false };
+    }
+  }
+
+  /* ─── Inline Confirmation Strip ─── */
+
+  _pendingConfirm = null; // { entityId, action, label, timer }
+
+  _requestConfirm(entityId, action, label) {
+    this._cancelConfirm();
+    this._pendingConfirm = { entityId, action, label };
+    this._pendingConfirm.timer = setTimeout(() => {
+      this._cancelConfirm();
+    }, 5000);
+    this.requestUpdate();
+  }
+
+  _executeConfirm() {
+    if (!this._pendingConfirm) return;
+    const { entityId, action } = this._pendingConfirm;
+    clearTimeout(this._pendingConfirm.timer);
+    this._pendingConfirm = null;
+    action(entityId);
+    this.requestUpdate();
+  }
+
+  _cancelConfirm() {
+    if (!this._pendingConfirm) return;
+    clearTimeout(this._pendingConfirm.timer);
+    this._pendingConfirm = null;
+    this.requestUpdate();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._cancelConfirm();
   }
 
   /* ─── Helper: build group object for alarm substation ─── */

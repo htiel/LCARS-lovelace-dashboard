@@ -157,6 +157,10 @@ class LcarsHomepageCard extends LitElement {
       lcarsEventBus.removeEventListener('lcars-edit-mode', this._onEditMode);
       this._stopCameraRefresh();
       document.removeEventListener('visibilitychange', this._onVisibilityChange);
+      if (this._alarmLockoutTimer) {
+        clearInterval(this._alarmLockoutTimer);
+        this._alarmLockoutTimer = null;
+      }
     }
 
     /* ─── Camera auto-refresh: pause/resume on tab visibility ─── */
@@ -542,6 +546,9 @@ class LcarsHomepageCard extends LitElement {
             padding: 0.25rem 0 0.5rem 0;
             border-left: 3px solid var(--lcars-gold);
             padding-left: 1rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.75rem;
           }
           .content-area-header::after {
             content: '';
@@ -549,6 +556,21 @@ class LcarsHomepageCard extends LitElement {
             height: 2px;
             background: var(--lcars-data-accent);
             margin-top: 0.5rem;
+          }
+          .room-alarm-badge {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            margin-left: auto;
+            white-space: nowrap;
+            transition: opacity 200ms;
+            text-decoration: none;
+          }
+          .room-alarm-badge:hover { opacity: 0.8; }
+          .room-alarm-badge:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
           }
 
           /* ─── Floor View ─── */
@@ -2201,23 +2223,54 @@ class LcarsHomepageCard extends LitElement {
           }
           .alarm-digit-grid {
             display: grid;
-            grid-template-columns: repeat(3, 3.5rem);
-            gap: var(--lcars-gap);
+            grid-template-columns: repeat(3, minmax(3.5rem, 4.5rem));
+            gap: 0.5rem;
+            justify-content: center;
           }
           .alarm-digit-btn {
-            height: 3.5rem;
+            height: 4rem;
+            min-width: 3.5rem;
             border: none;
             border-radius: var(--lcars-btn-radius);
             background: var(--lcars-sunflower);
             color: var(--lcars-black);
             font-family: var(--lcars-font);
-            font-size: 1.25rem;
+            font-size: 1.375rem;
             cursor: pointer;
             transition: background 200ms;
+            -webkit-tap-highlight-color: transparent;
           }
           .alarm-digit-btn:hover { filter: brightness(1.1); }
           .alarm-digit-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .alarm-digit-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+          }
           .alarm-action-btn { background: var(--lcars-disabled); }
+          .alarm-lockout-msg {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-tomato);
+            text-transform: uppercase;
+            text-align: center;
+            letter-spacing: 0.08em;
+            padding: 0.25rem 0;
+            animation: lockout-pulse 2s ease-in-out infinite;
+          }
+          .alarm-lockout-countdown {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-tomato);
+            text-transform: uppercase;
+            text-align: center;
+            letter-spacing: 0.08em;
+            opacity: 0.7;
+          }
+          @keyframes lockout-pulse {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.5; }
+          }
 
           /* ═══════ MEDIA PANEL ═══════ */
           .media-panel {
@@ -4130,9 +4183,23 @@ class LcarsHomepageCard extends LitElement {
             if (!area) return '';
             const entities = this._getAreaEntities(areaId);
             if (entities.length === 0) return '';
+            const alarmBadge = this._getAlarmBadgeForArea(areaId, entities);
             return html`
               <div class="content-area-panel floor-area-section">
-                <h3 class="content-area-header floor-area-subheader">${area.name}</h3>
+                <h3 class="content-area-header floor-area-subheader">
+                  ${area.name}
+                  ${alarmBadge ? html`
+                    <a class="room-alarm-badge"
+                       style="color:${getAlarmStateColor(alarmBadge.state?.state || 'unavailable')}"
+                       tabindex="0"
+                       role="link"
+                       aria-label="Alarm: ${(alarmBadge.state?.state || '').replace(/_/g, ' ')}. Tap to view."
+                       @click=${() => this._navigateToAlarmArea(alarmBadge)}
+                       @keydown=${(e) => e.key === 'Enter' && (e.preventDefault(), this._navigateToAlarmArea(alarmBadge))}>
+                      ◆ ${(alarmBadge.state?.state || '').toUpperCase().replace(/_/g, ' ')}
+                    </a>
+                  ` : ''}
+                </h3>
                 ${this._renderAreaContent(entities, areaId)}
               </div>
             `;
@@ -4147,6 +4214,9 @@ class LcarsHomepageCard extends LitElement {
         lcarsLog.debug(TAG, 'Render: waiting for hass');
         return html`<div class="lcars-empty">Initializing...</div>`;
       }
+
+      // Reset tactical dedupe tracking for this render cycle
+      this._renderedAlarmDeviceIds.clear();
 
       // Floor selected — combined view of all areas on that floor
       if (this.selectedFloor) {
@@ -5299,6 +5369,9 @@ class LcarsHomepageCard extends LitElement {
     _alarmCountdown = null;
     _alarmCountdownTimer = null;
     _alarmPinError = false;
+    _alarmLockoutSeconds = 0;
+    _alarmLockoutTimer = null;
+    _alarmLockoutAnnounced = false;
 
     _partitionAlarmEntities(entries, categoryEntities) {
       const alarm = [];
@@ -5356,8 +5429,10 @@ class LcarsHomepageCard extends LitElement {
     }
 
     _handleAlarmDisarm(entityId) {
+      // WORF-SEC-003: Client-side rate limiter is a UX safeguard only.
       if (!this._alarmPinLimiter.allow()) {
         this._alarmPinError = true;
+        this._startAlarmLockout();
         this.requestUpdate();
         return;
       }
@@ -5368,6 +5443,28 @@ class LcarsHomepageCard extends LitElement {
       });
       this._alarmPinCode = '';
       this.requestUpdate();
+    }
+
+    _startAlarmLockout() {
+      if (this._alarmLockoutTimer) clearInterval(this._alarmLockoutTimer);
+      this._alarmLockoutAnnounced = false;
+      const resetAt = this._alarmPinLimiter.resetTime();
+      const updateLockout = () => {
+        const remaining = Math.max(0, Math.ceil((resetAt - Date.now()) / 1000));
+        this._alarmLockoutSeconds = remaining;
+        this._alarmLockoutAnnounced = true;
+        this.requestUpdate();
+        if (remaining <= 0) {
+          clearInterval(this._alarmLockoutTimer);
+          this._alarmLockoutTimer = null;
+          this._alarmPinError = false;
+          this._alarmLockoutSeconds = 0;
+          this._alarmLockoutAnnounced = false;
+          this.requestUpdate();
+        }
+      };
+      updateLockout();
+      this._alarmLockoutTimer = setInterval(updateLockout, 1000);
     }
 
     _startAlarmCountdown(seconds) {
@@ -5535,16 +5632,24 @@ class LcarsHomepageCard extends LitElement {
                     style="background:${filled ? (this._alarmPinError ? 'var(--lcars-tomato)' : stateColor) : 'var(--lcars-disabled)'}"></div>
                 `)}
               </div>
+              ${this._alarmLockoutSeconds > 0 ? html`
+                ${this._alarmLockoutAnnounced ? html`<div class="alarm-lockout-msg" role="alert">LOCKED OUT</div>` : ''}
+                <div class="alarm-lockout-countdown" aria-live="off">${this._alarmLockoutSeconds}s</div>
+              ` : ''}
               <div class="alarm-digit-grid">
                 ${[1,2,3,4,5,6,7,8,9].map(d => html`
                   <button class="alarm-digit-btn" aria-label="Digit ${d}"
+                    ?disabled=${this._alarmLockoutSeconds > 0}
                     @click=${() => this._handleAlarmPinDigit(d)}>${d}</button>
                 `)}
                 <button class="alarm-digit-btn alarm-action-btn" aria-label="Clear code"
+                  ?disabled=${this._alarmLockoutSeconds > 0}
                   @click=${() => this._handleAlarmPinClear()}>⌫</button>
                 <button class="alarm-digit-btn" aria-label="Digit 0"
+                  ?disabled=${this._alarmLockoutSeconds > 0}
                   @click=${() => this._handleAlarmPinDigit(0)}>0</button>
                 <button class="alarm-digit-btn alarm-action-btn" aria-label="Disarm"
+                  ?disabled=${this._alarmLockoutSeconds > 0}
                   @click=${() => this._handleAlarmDisarm(primary.entity.entity_id)}>⏎</button>
               </div>
             </div>
@@ -7146,6 +7251,52 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
+    /* ─── Tactical Dedup: alarm badge for secondary rooms ─── */
+
+    _renderedAlarmDeviceIds = new Set();
+
+    _getAlarmBadgeForArea(areaId, entities) {
+      for (const e of entities) {
+        const domain = e.entity_id.split('.')[0];
+        if (!ALARM_DOMAINS.has(domain)) continue;
+        const state = this._hass?.states?.[e.entity_id];
+        if (!state) continue;
+        const deviceId = e.device_id;
+        if (!deviceId) continue;
+
+        // Check if this alarm device was already rendered as a full tactical panel
+        if (this._renderedAlarmDeviceIds.has(deviceId)) {
+          // This is a secondary room — return badge info
+          return { entity: e, domain, state };
+        }
+      }
+      return null;
+    }
+
+    _findAlarmPrimaryArea(deviceId) {
+      const entities = this._hass?.entities || {};
+      for (const [eid, e] of Object.entries(entities)) {
+        if (e.device_id === deviceId && eid.startsWith('alarm_control_panel.')) {
+          if (e.area_id) return e.area_id;
+          // Fall back to device area
+          const device = this._hass.devices?.[deviceId];
+          return device?.area_id || null;
+        }
+      }
+      return null;
+    }
+
+    _navigateToAlarmArea(badgeEntry) {
+      const deviceId = badgeEntry?.entity?.device_id;
+      if (!deviceId) return;
+      const primaryArea = this._findAlarmPrimaryArea(deviceId);
+      if (primaryArea) {
+        this.selectedArea = primaryArea;
+        this.selectedFloor = null;
+        this.requestUpdate();
+      }
+    }
+
     /* ─── Render area content: two-column when cameras present ─── */
     _renderAreaContent(entities, areaId) {
       if (entities.length === 0)
@@ -7167,6 +7318,14 @@ class LcarsHomepageCard extends LitElement {
       for (const pt of areaPanelTypes) {
         const factory = PANEL_TAG_REGISTRY.get(pt);
         if (factory) {
+          // Track alarm device IDs for tactical dedupe
+          if (pt === PANEL_TYPE_TACTICAL) {
+            for (const entry of hydratedEntries) {
+              if (ALARM_DOMAINS.has(entry.domain) && entry.entity?.device_id) {
+                this._renderedAlarmDeviceIds.add(entry.entity.device_id);
+              }
+            }
+          }
           // Build a synthetic group with areaId + all hydrated entries for this panel type
           areaPanels.push({ panelType: pt, template: factory({ entities: hydratedEntries, areaId }, this._hass, this._editMode, this._config) });
         }

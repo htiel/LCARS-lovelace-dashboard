@@ -8,7 +8,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-4.22.0--rc.1-blue)
+![Version](https://img.shields.io/badge/version-4.22.0--rc.2-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 [![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 

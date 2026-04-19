@@ -13,6 +13,7 @@
  */
 import { html, css } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
+import { canonicalLabel, ariaLabel, formatNumber } from '../../lcars-format-utils.js';
 import {
   isClimateEntity, isEnvironmentEntity, isAmbientSensor,
   classifyDevice, PANEL_TYPE_CLIMATE, PANEL_TYPE_ENVIRONMENT,
@@ -290,20 +291,22 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
     const humVal = humEntry ? parseFloat(humEntry.state?.state) : null;
     const tempUnit = tempEntry?.state?.attributes?.unit_of_measurement || '°F';
     const tempColor = tempVal != null ? getTempColor(tempVal) : 'var(--lcars-butterscotch)';
+    const tempDisplay = tempVal != null ? formatNumber(String(tempVal), 'temperature') : null;
+    const humDisplay = humVal != null ? formatNumber(String(humVal), 'humidity') : null;
 
     return html`
       <div class="ls-content ls-sensor-hero" role="status" aria-live="polite">
-        ${tempVal != null ? html`
+        ${tempDisplay != null ? html`
           <div class="ls-hero-temp"
                style="color:${tempColor}"
-               aria-label="Temperature: ${tempVal} ${tempUnit}">
-            ${tempVal}<span class="ls-hero-unit">${tempUnit}</span>
+               aria-label="Temperature: ${tempDisplay} ${tempUnit}">
+            ${tempDisplay}<span class="ls-hero-unit">${tempUnit}</span>
           </div>
         ` : ''}
-        ${humVal != null ? html`
+        ${humDisplay != null ? html`
           <div class="ls-hero-humidity"
-               aria-label="Humidity: ${humVal} percent">
-            ${humVal}<span class="ls-hero-unit">%</span>
+               aria-label="Humidity: ${humDisplay} percent">
+            ${humDisplay}<span class="ls-hero-unit">%</span>
             <span class="ls-hero-label">HUMIDITY</span>
           </div>
         ` : ''}
@@ -326,18 +329,17 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
         <div class="ls-ambient-readings">
           ${entries.map(entry => {
             const name = this._shortEntityName(entry);
-            const val = entry.state?.state;
-            const unit = entry.state?.attributes?.unit_of_measurement || '';
+            const { text } = this._formatSensorValue(entry.state, entry.entity);
             const dc = entry.state?.attributes?.device_class || '';
-            const color = dc === 'temperature' ? getTempColor(parseFloat(val))
+            const color = dc === 'temperature' ? getTempColor(parseFloat(entry.state?.state))
                         : dc === 'humidity' ? 'var(--lcars-ice)'
                         : 'var(--lcars-butterscotch)';
             return html`
               <div class="ls-ambient-reading"
-                   aria-label="${name}: ${val} ${unit}">
+                   aria-label="${name}: ${text}">
                 <span class="ls-ambient-indicator" style="background:${color}"></span>
                 <span class="ls-ambient-name">${name}</span>
-                <span class="ls-ambient-value" style="color:${color}">${val}${unit}</span>
+                <span class="ls-ambient-value" style="color:${color}">${text}</span>
               </div>
             `;
           })}
@@ -368,10 +370,12 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
       if (!entry) continue;
       const dc = entry.state?.attributes?.device_class || '';
       const color = dcColors[dc] || 'var(--lcars-butterscotch)';
-      const label = (dc || eid.split('.')[1]).toUpperCase().replace(/_/g, ' ');
+      const rawFallback = (dc || eid.split('.')[1] || '').toUpperCase().replace(/_/g, ' ');
+      const label = canonicalLabel(dc, rawFallback, eid);
+      const ariaText = ariaLabel(label);
 
       sparklines.push(html`
-        <div class="ls-sparkline-slot" aria-hidden="true">
+        <div class="ls-sparkline-slot" aria-label="${ariaText}">
           <span class="ls-sparkline-label" style="color:${color}">${label}</span>
           ${renderSparkline(data, { color, width: 120, height: 24 })}
         </div>

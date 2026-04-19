@@ -13,6 +13,7 @@
 import { LitElement, html, css } from 'lit-element';
 import { getHass, showMoreInfo, lcarsLog } from './lcars-helpers.js';
 import { getStateColor, getCo2Color } from './lcars-color-utils.js';
+import { formatNumber, formatStateValue, canonicalLabel, ariaLabel } from './lcars-format-utils.js';
 import { createRateLimiter } from './lcars-service-utils.js';
 import { SENSOR_DOMAINS, TOGGLE_DOMAINS, CAMERA_DOMAINS } from './lcars-entity-utils.js';
 import './components/lcars-panel-frame/lcars-panel-frame.js';
@@ -80,12 +81,26 @@ export class LcarsBasePanel extends LitElement {
 
   /* ─── Sensor indicator color (Data must-fix: centralized in base) ─── */
 
-  _getSensorIndicatorColor(state) {
+  _getSensorIndicatorColor(state, entityCategory = '') {
     const dc = state?.attributes?.device_class || '';
     if (dc === 'carbon_dioxide') {
       return getCo2Color(state?.state);
     }
-    return getStateColor(state?.entity_id || '', state);
+    return getStateColor(state?.entity_id || '', state, entityCategory);
+  }
+
+  /* ─── Formatted sensor value (P2: centralized formatting) ─── */
+
+  _formatSensorValue(state, entity) {
+    const entityCategory = entity?.entity_category || '';
+    return formatStateValue(state, entityCategory);
+  }
+
+  _canonicalLabel(state, entity) {
+    const dc = state?.attributes?.device_class || '';
+    const shortName = this._friendlyName(state, entity);
+    const eid = entity?.entity_id || state?.entity_id || '';
+    return canonicalLabel(dc, shortName, eid);
   }
 
   /* ─── Device category entities (Data must-fix: battery/diagnostic) ─── */

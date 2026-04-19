@@ -17,7 +17,7 @@ import { canonicalLabel, ariaLabel, formatNumber } from '../../lcars-format-util
 import {
   isClimateEntity, isEnvironmentEntity, isAmbientSensor,
   classifyDevice, PANEL_TYPE_CLIMATE, PANEL_TYPE_ENVIRONMENT,
-  SENSOR_DOMAINS,
+  SENSOR_DOMAINS, isDiagnosticEntity,
 } from '../../lcars-entity-utils.js';
 import { getTempColor, getComfortColor } from '../../lcars-color-utils.js';
 import { renderSparkline, fetchSparklineData } from '../../lcars-sparkline.js';
@@ -78,6 +78,8 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
     const otherEntries = [];
 
     for (const entry of allEntries) {
+      // P3 QA-E06: filter diagnostic entities from life support panels
+      if (isDiagnosticEntity(entry)) continue;
       if (isClimateEntity(entry)) {
         climateEntries.push(entry);
       } else if (isEnvironmentEntity(entry)) {
@@ -365,9 +367,20 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
 
     const allEntities = this._getAllEntities();
 
+    // P3 QA-E05: deduplicate sparklines by device_class, keep most recent
+    const dcBestMap = new Map(); // device_class → { eid, entry, data, lastUpdated }
     for (const [eid, data] of this._sparklineData) {
       const entry = allEntities.find(e => e.entity?.entity_id === eid);
       if (!entry) continue;
+      const dc = entry.state?.attributes?.device_class || eid;
+      const lastUpdated = entry.state?.last_updated || '';
+      const existing = dcBestMap.get(dc);
+      if (!existing || lastUpdated > existing.lastUpdated) {
+        dcBestMap.set(dc, { eid, entry, data, lastUpdated });
+      }
+    }
+
+    for (const { eid, entry, data } of dcBestMap.values()) {
       const dc = entry.state?.attributes?.device_class || '';
       const color = dcColors[dc] || 'var(--lcars-butterscotch)';
       const rawFallback = (dc || eid.split('.')[1] || '').toUpperCase().replace(/_/g, ' ');

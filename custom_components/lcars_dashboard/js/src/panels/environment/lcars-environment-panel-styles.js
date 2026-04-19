@@ -392,9 +392,34 @@ export const environmentPanelStyles = css`
     }
   }
 
+  /* P3 GEORDI-006: Offline atmoscrubber — gray outline, no particles */
+  .atmoscrubber-offline .atmoscrubber,
+  .atmoscrubber-offline .scrubber-offline-state {
+    border-color: var(--lcars-gray);
+    box-shadow: none;
+    opacity: 1;
+    animation: scrubber-offline-pulse 4s ease-in-out infinite;
+  }
+  .atmoscrubber-offline .atmoscrubber::before,
+  .atmoscrubber-offline .atmoscrubber::after,
+  .scrubber-offline-state::before,
+  .scrubber-offline-state::after {
+    display: none;
+  }
+  .scrubber-offline-state .scrubber-score {
+    color: var(--lcars-gray);
+    font-size: var(--lcars-font-size-data, 0.875rem);
+    text-shadow: none;
+  }
+  @keyframes scrubber-offline-pulse {
+    0%, 100% { border-color: var(--lcars-gray); }
+    50% { border-color: rgba(102, 102, 136, 0.3); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .atmoscrubber::before,
     .atmoscrubber::after,
     .atmoscrubber.scrubber-idle { animation: none; }
+    .scrubber-offline-state { animation: none; }
   }
 `;

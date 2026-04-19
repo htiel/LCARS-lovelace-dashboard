@@ -2,6 +2,41 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.22.0-rc.3] — 2026-04-19
+
+### Fixed — Entity Routing, Diagnostics Disclosure, Camera UX (P3)
+
+**18 bugs fixed** spanning entity classification, sensor tiering, camera offline UX, and diagnostics management.
+
+#### Entity Classification & Routing
+1. **Standalone smoke detectors (QA-E03):** Split hazard threshold — strong classes (smoke, CO, gas, heat) trigger HAZARD at ≥1 entity; generic `safety` keeps ≥2 threshold to avoid TP-Link/Kasa false positives.
+2. **FP2 presence sensors (QA-E04):** New `PRESENCE_PLATFORMS` detector routes Aqara FP2/FP1E devices to Tactical panel (occupancy/motion). Illuminance entities stay hidden in operational tier.
+3. **Ceiling fans (QA-E01):** Fan lights already route to Illumination; fan speed entities now suppressed from fallback rendering when Illumination panel is active. No generic "fan" device cards.
+4. **"OTHER ENTITIES" → "AUXILIARY SYSTEMS" (QA-E02):** `SUPPRESS_DOMAINS` filters update, device_tracker, event, conversation, input_datetime, input_text. Remaining unclassified entities render under "AUXILIARY SYSTEMS" section-divider in gray. Empty sections produce no output.
+
+#### Diagnostics Disclosure (WESLEY-IDEA-011)
+5. **Three-tier entity partitioning:** New `tierEntities()` free function in entity-utils. Partitions sensors into hero (always visible), operational (collapsed), and diagnostic (collapsed). Per-panel hero filters determine relevance.
+6. **Camera sensor cleanup (DATA-007, GEORDI-013, GEORDI-024):** Camera panels now tier sensors — motion, occupancy, sound, connectivity, battery, recording stay hero; everything else collapses behind a `▸ N MORE` disclosure button with proper `aria-expanded`, keyboard handling, and 24px touch target.
+7. **Nest Protect diagnostics (QA-E06):** Life Support panel now explicitly filters `entity_category: diagnostic` entities before partitioning. Buzzer test, speaker test, PIR test, etc. no longer flood the panel.
+8. **Sparkline deduplication (QA-E05):** Life Support sparkline tray deduplicates by `device_class`, keeping the entity with the most recent `last_updated`. "PM₂.₅, PM₂.₅, AQI, AQI" duplicates eliminated.
+
+#### Camera Offline UX
+9. **Gray offline border (GEORDI-015):** Offline camera frames use `--lcars-gray` border instead of tomato red. Offline is dormant, not an alert.
+10. **CRT static effect (WESLEY-IDEA-002):** Offline camera viewscreens display CSS scanlines + noise strips with GPU-composited drift animation. `prefers-reduced-motion: reduce` freezes to static scanlines.
+11. **"VIEWSCREEN OFFLINE" breathing text:** Slow opacity pulse (0.6–1.0 at 4s). Plus "LAST SIGNAL: Xh Ym AGO" timestamp from `last_changed`. Suppressed for signals < 5 minutes old (likely rebooting).
+12. **"CONFIGURE IN [INTEGRATION]" CTA (DATA-014, WESLEY-UX-001, WESLEY-UX-005):** When all device entities are unavailable, gold button navigates to HA device configuration page. 3-entry platform humanization map (UniFi Protect, Blink, Nest). Fallback: "DEVICE REQUIRES SETUP".
+
+#### Environment Panel
+13. **Atmoscrubber offline state (GEORDI-006):** When all AQ sensors unavailable, cylinder renders as gray outline with "OFFLINE" label and gray distress pulse. `role="meter"` → `role="img"` when offline. `prefers-reduced-motion` freezes pulse. Non-AQ devices (Nest Protect) never render a cylinder.
+14. **Atmoscrubber guard verified (DATA-006):** `showAtmoscrubber` boolean already gates cylinder rendering correctly — confirmed, no code change needed.
+
+#### Device Card Formatting
+15. **Generic sensor formatting (QA-E07):** Homepage `_renderSensors()` now routes through `formatStateValue()` for device-class-aware rounding. Raw unformatted decimals eliminated from fallback device cards.
+
+**New exports from `lcars-entity-utils.js`:** `SUPPRESS_DOMAINS`, `tierEntities()`.
+
+**Bundle impact:** 693→703 KiB (+10 KiB) — disclosure CSS, static effect, tier logic, platform detection.
+
 ## [4.22.0-rc.2] — 2026-04-18
 
 ### Fixed — Shared Formatting, Labels, and State Semantics (P2)

@@ -166,14 +166,27 @@ export const cameraPanelStyles = css`
   }
   .camera-offline-overlay ha-icon {
     --mdc-icon-size: 32px;
-    color: var(--lcars-tomato);
+    color: var(--lcars-gray);
   }
   .camera-offline-text {
     font-family: var(--lcars-font);
     font-size: var(--lcars-font-size-data);
-    color: var(--lcars-tomato);
+    color: var(--lcars-gray);
     text-transform: uppercase;
     letter-spacing: 0.1em;
+    animation: cam-text-breathe 4s ease-in-out infinite;
+  }
+  /* P3 GEORDI-015: last signal timestamp */
+  .camera-last-signal {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data, 0.875rem);
+    color: var(--lcars-gray);
+    text-transform: uppercase;
+    margin-top: 0.25rem;
+  }
+  @keyframes cam-text-breathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
   }
 
   /* State-driven visibility */
@@ -188,8 +201,21 @@ export const cameraPanelStyles = css`
     visibility: hidden;
   }
   .camera-frame[data-state="offline"] {
-    border-color: var(--lcars-tomato);
+    border-color: var(--lcars-gray);
     opacity: 1;
+  }
+  /* P3 WESLEY-IDEA-002: CRT static effect for offline cameras */
+  .camera-frame[data-state="offline"] .camera-offline-overlay {
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px),
+      repeating-linear-gradient(90deg, rgba(120,120,120,0.02) 0px, rgba(80,80,80,0.04) 1px, transparent 2px, transparent 3px),
+      linear-gradient(180deg, rgba(40,40,40,1) 0%, rgba(25,25,25,1) 100%);
+    will-change: background-position;
+    animation: cam-static-drift 8s linear infinite;
+  }
+  @keyframes cam-static-drift {
+    from { background-position: 0 0, 0 0, 0 0; }
+    to   { background-position: 0 0, 0 -100px, 0 0; }
   }
   .camera-frame[data-state="offline"]:hover { border-color: var(--lcars-gold); }
   .camera-frame[data-state="connecting"] img { opacity: 0; }
@@ -236,5 +262,63 @@ export const cameraPanelStyles = css`
     .camera-connecting-text { animation: none; }
     .camera-frame[data-state="live"] img { animation: none; }
     .device-panel-media img { animation: none; }
+    .camera-frame[data-state="offline"] .camera-offline-overlay { animation: none; }
+    .camera-offline-text { animation: none; }
   }
+
+  /* P3 WESLEY-IDEA-011: Disclosure button for hidden sensor tiers */
+  .camera-disclosure-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    width: 100%;
+    min-height: 24px;
+    padding: 0.25rem 0.5rem;
+    background: none;
+    border: none;
+    border-top: 1px solid var(--lcars-gray);
+    color: var(--lcars-gray);
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-label, 0.75rem);
+    text-transform: uppercase;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+  }
+  .camera-disclosure-btn:hover { color: var(--lcars-ice); }
+  .camera-disclosure-btn:focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
+  }
+  .disclosure-triangle {
+    display: inline-block;
+    transition: transform var(--lcars-transition, 200ms);
+  }
+  .disclosure-triangle[data-open] {
+    transform: rotate(90deg);
+  }
+  .camera-disclosure-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height var(--lcars-transition, 200ms) ease;
+  }
+  .camera-disclosure-content[data-open] {
+    max-height: 50rem;
+  }
+  .camera-diag-divider {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-label, 0.75rem);
+    color: var(--lcars-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--lcars-gray);
+    margin: 0.25rem 0;
+  }
+
+  /* P3 DATA-014 / WESLEY-UX-001: Configure CTA for long-unavailable cameras */
+  .camera-config-cta {
+    background: var(--lcars-gold);
+    color: var(--lcars-black);
+  }
+  .camera-config-cta:hover { filter: brightness(1.15); }
 `;

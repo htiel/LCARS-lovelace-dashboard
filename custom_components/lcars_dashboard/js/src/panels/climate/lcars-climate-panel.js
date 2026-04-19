@@ -21,6 +21,14 @@ class LcarsClimatePanel extends LcarsBasePanel {
 
   _climateSetpointDebouncer = null;
 
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._climateSetpointDebouncer) {
+      this._climateSetpointDebouncer.cancel();
+      this._climateSetpointDebouncer = null;
+    }
+  }
+
   get panelType() { return 'climate'; }
   get defaultPanelTitle() { return 'Thermostat'; }
   get frameColor() {

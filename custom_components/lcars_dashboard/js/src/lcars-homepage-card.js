@@ -157,10 +157,6 @@ class LcarsHomepageCard extends LitElement {
       lcarsEventBus.removeEventListener('lcars-edit-mode', this._onEditMode);
       this._stopCameraRefresh();
       document.removeEventListener('visibilitychange', this._onVisibilityChange);
-      if (this._alarmLockoutTimer) {
-        clearInterval(this._alarmLockoutTimer);
-        this._alarmLockoutTimer = null;
-      }
     }
 
     /* ─── Camera auto-refresh: pause/resume on tab visibility ─── */

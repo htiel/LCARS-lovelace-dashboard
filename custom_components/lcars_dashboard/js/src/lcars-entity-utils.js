@@ -455,6 +455,20 @@ export function isEnvironmentEntity(entry) {
   return false;
 }
 
+/** Named predicate: is this an active air purifier fan entity? (4X-46) */
+export function isAirPurifierEntity(entry) {
+  return entry.domain === 'fan' && AQ_FAN_PLATFORMS.has(entry.entity?.platform || '');
+}
+
+/** Named predicate: is this a passive AQ sensor entity (not a purifier fan)? (4X-46) */
+export function isAQSensorEntity(entry) {
+  if (entry.domain === 'fan') return false;
+  const dc = entry.state?.attributes?.device_class || '';
+  if (AQ_DEVICE_CLASSES.has(dc)) return true;
+  if (entry.domain === 'sensor' && AQ_ENTITY_SUFFIX_RE.test(entry.entity?.entity_id || '')) return true;
+  return false;
+}
+
 // ─── Infrastructure LED Detection ───────────────────────────────────────────
 
 const INFRA_LED_PLATFORMS = new Set(['unifi']);

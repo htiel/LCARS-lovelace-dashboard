@@ -2,6 +2,25 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.22.0-rc.10] — 2026-04-19
+
+### Fixed — 4X-46: Life Support Restructure — Sensor/Purifier Classification Split
+
+Resolves issue #44: Life Support panel clipping by un-nesting passive AQ monitors from the atmoscrubber substation path.
+
+#### Architecture Change
+- **Sensor/purifier split** — Life Support now distinguishes active air purifiers (VeSync, Blueair — devices with `fan` entity) from passive AQ monitors (Awair — sensor-only devices). Previously both were treated identically as atmoscrubber panels.
+- **4-group partitioning** — `_partitionEntities()` rewritten from 3 groups (climate/environment/ambient) to 4 groups (climate/scrubber/sensor-array/ambient). Environment entities are split by device-level fan presence.
+- **New predicates** — Added `isAirPurifierEntity()` and `isAQSensorEntity()` to `lcars-entity-utils.js` for Life Support's internal classification boundary.
+
+#### Rendering Changes
+- **Sensor Array layout** — Passive AQ monitors (Awair) render as a compact inline metric grid with color-coded CO₂/VOC/PM2.5 values and Awair Score badge. No cylinder animation, no fan controls.
+- **5 layout configs** — Life Support now supports: `full` (climate+scrubber+sensor-array+ambient), `atmos-only` (active purifier), `climate-only` (thermostat+sensors), `sensor-array-only` (passive AQ monitor), `sensors-only` (ambient temp/humidity hero).
+- **Clipping resolved** — Passive AQ monitors no longer nest inside the environment panel substation, eliminating the triple-nested width overflow.
+
+#### Spec Updates
+- **Atmoscrubber spec §8** — Sensor-only adaptation marked as deprecated. Atmoscrubber panel is now exclusively for active air purifiers. Passive AQ monitors handled by Life Support sensor array.
+
 ## [4.22.0-rc.9] — 2026-04-19
 
 ### Fixed — Code Review: Critical, High & Medium Bug Fixes

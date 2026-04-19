@@ -1092,11 +1092,27 @@ Each sparkline has an `aria-label` describing the metric, time range, and curren
 
 ---
 
-## 8. Sensor-Only Adaptation (Awair Element)
+## 8. Sensor-Only Adaptation — DEPRECATED (4X-46)
 
-The Awair Element has sensors but no fan entity and no controls. The panel must gracefully adapt.
+> **Deprecated as of v4.22.0-rc.10.** Passive AQ monitors (e.g. Awair) are no longer
+> rendered through the atmoscrubber panel. The atmoscrubber panel is exclusively for
+> **active air purifiers** — devices with a fan entity on `AQ_FAN_PLATFORMS` (VeSync,
+> Blueair, LG ThinQ, etc.) that actively treat air.
+>
+> Passive AQ monitoring devices are now handled by Life Support's **Sensor Array**
+> layout — a compact, inline AQ metric grid with color-coded values and sparklines.
+> No cylinder animation, no particle effects, no fan controls.
+>
+> **Migration path:** The `isAirPurifierEntity()` and `isAQSensorEntity()` predicates
+> in `lcars-entity-utils.js` provide the classification boundary. Life Support's
+> `_partitionEntities()` uses device-level fan presence to route environment entities
+> to either the scrubber substation (this panel) or the sensor array (inline in Life Support).
 
-### Grid Change: 2-Column Mode
+### Historical Context (pre-4X-46)
+
+The Awair Element has sensors but no fan entity and no controls. Previously, this panel adapted with a 2-column grid, inverted AQI cylinder fill, and slow ambient particle drift. This adaptation was architecturally misleading — the cylinder metaphor implies active air treatment, which passive monitors cannot perform.
+
+### Grid Change: 2-Column Mode (DEPRECATED)
 
 ```css
 /* When no controls exist, collapse to 2 columns */
@@ -1109,23 +1125,23 @@ The Awair Element has sensors but no fan entity and no controls. The panel must 
 }
 ```
 
-### Behavioral Differences
+### Behavioral Differences (DEPRECATED)
 
-| Aspect                | Purifier (VeSync)            | Sensor-Only (Awair)                     |
-|-----------------------|------------------------------|-----------------------------------------|
-| Grid columns          | 3 (sensors / core / controls)| 2 (sensors / core)                      |
-| Controls column       | Preset mode, toggles, filter | **Hidden** (empty, not rendered)        |
-| Cylinder fill         | Fan speed %                  | Inverted AQI % (good=high, bad=low)    |
-| Particle speed        | Tied to fan speed %          | Slow ambient drift (6s)                 |
-| Particle color        | AQI color                    | AQI color                               |
-| AQI source            | `device_class: aqi` entity   | Derived from PM2.5 if no AQI entity    |
-| Header badge          | `AQI: ${value} ${label}`     | `AQI: ${value} ${label}`               |
-| Sparklines            | PM2.5 + AQI (if available)   | PM2.5 + CO₂ + VOC + Humidity           |
+| Aspect                | Purifier (VeSync)            | Sensor-Only (Awair) — NOW IN LIFE SUPPORT |
+|-----------------------|------------------------------|-------------------------------------------|
+| Grid columns          | 3 (sensors / core / controls)| N/A — rendered as Life Support sensor array |
+| Controls column       | Preset mode, toggles, filter | N/A — no controls for passive monitors    |
+| Cylinder fill         | Fan speed %                  | N/A — no cylinder for passive monitors    |
+| Particle speed        | Tied to fan speed %          | N/A                                       |
+| AQI source            | `device_class: aqi` entity   | Color-coded inline metrics in sensor array |
 
-### Awair Cylinder Fill Logic
+### Awair Cylinder Fill Logic (DEPRECATED)
 
 ```javascript
 /**
+ * DEPRECATED: Passive AQ monitors no longer use cylinder rendering.
+ * Retained for historical reference only.
+ *
  * For sensor-only devices, fill the cylinder inversely from AQI:
  * AQI 0 (perfect) = 100% fill (scrubber fully effective)
  * AQI 300+ (hazardous) = ~5% fill (scrubber overwhelmed)
@@ -1137,18 +1153,13 @@ function getSensorOnlyFill(aqi) {
 }
 ```
 
-### Detection Logic
+### Detection Logic (DEPRECATED — replaced by entity-utils predicates)
 
 ```javascript
 /**
- * Determine if this is a sensor-only device (no fan entity).
+ * DEPRECATED: Use isAirPurifierEntity() and isAQSensorEntity() from lcars-entity-utils.js.
+ * The split now happens in Life Support's _partitionEntities(), not in this panel.
  */
-function isSensorOnly(entities) {
-  return !entities.some(e => {
-    const domain = e.entity_id.split('.')[0];
-    return domain === 'fan';
-  });
-}
 ```
 
 ---

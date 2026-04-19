@@ -63,8 +63,8 @@ export const mediaPanelStyles = css`
   .device-sensor-line { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0; transition: background var(--lcars-transition); font-size: var(--lcars-font-size-data); text-transform: uppercase; }
   .device-sensor-line:hover { background: rgba(255,255,255,0.05); }
   .device-sensor-line:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
-  .sensor-indicator { width: 0.5rem; height: 0.5rem; border-radius: 50%; flex-shrink: 0; }
-  .sensor-label { flex: 1; color: var(--lcars-space-white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; }
+  .sensor-indicator { width: 0.625rem; height: 0.625rem; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15); }
+  .sensor-label { flex: 1; color: var(--lcars-space-white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; min-width: 3rem; }
   .sensor-state-value { flex-shrink: 0; font-weight: 700; font-size: var(--lcars-font-size-data); }
 
   /* Viewscreen */
@@ -128,6 +128,10 @@ export const mediaPanelStyles = css`
   .media-volume-bar:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
   .media-volume-fill { height: 100%; background: var(--lcars-african-violet); border-radius: inherit; transition: width 200ms; }
   .media-volume-pct { font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); color: var(--lcars-data-accent); min-width: 3rem; text-align: right; }
+
+  /* GEORDI-027: Volume at 100% warning */
+  .media-volume-warn .media-volume-fill { background: var(--lcars-tomato); }
+  .media-volume-warn .media-volume-pct { color: var(--lcars-tomato); }
 
   .panel-pip-strip { position: absolute; bottom: 4px; right: 4px; width: 2rem; height: 3px; background: var(--panel-frame-color); border-radius: 1.5px; opacity: 0.3; }
 

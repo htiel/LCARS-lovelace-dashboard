@@ -212,6 +212,12 @@ async def websocket_get_configuration(
         if await hass.async_add_executor_job(os.path.isdir, hass.config.path("lcars-dashboard/configs/more_pages")):
             subdirs = await hass.async_add_executor_job(os.listdir, hass.config.path("lcars-dashboard/configs/more_pages"))
             for subdir in subdirs:
+                # WORF-SEC-008: Validate subdirectory names
+                try:
+                    _validate_path_component(subdir)
+                except vol.Invalid:
+                    _LOGGER.warning("Skipping invalid more_pages dirname: %r", subdir)
+                    continue
                 page_path = hass.config.path(f"lcars-dashboard/configs/more_pages/{subdir}/page.yaml")
                 config_path = f"lcars-dashboard/configs/more_pages/{subdir}/config.yaml"
                 if await hass.async_add_executor_job(os.path.exists, page_path):
@@ -321,8 +327,15 @@ async def ws_handle_install_blueprint(
     """Handle save new blueprint."""
 
     _LOGGER.debug("install_blueprint called")
-    #filecontent = yaml.safe_load(json.loads(msg["yamlCode"]))
-    filecontent = yaml.safe_load(msg["yamlCode"])
+
+    # WORF-SEC-007: Size limit — reject payloads over 256 KB
+    raw_yaml = msg["yamlCode"]
+    if len(raw_yaml) > 262144:
+        _LOGGER.warning("Blueprint payload too large: %d bytes", len(raw_yaml))
+        connection.send_result(msg["id"], {"error": "Blueprint payload exceeds 256 KB limit"})
+        return
+
+    filecontent = yaml.safe_load(raw_yaml)
 
     if not filecontent.get("blueprint"):
         _LOGGER.warning('no blueprint data')
@@ -344,7 +357,13 @@ async def ws_handle_install_blueprint(
         )
         return
 
-    filename = slugify(filecontent["blueprint"]["name"])+".yaml"
+    # WORF-SEC-007: Validate blueprint name is a non-empty string
+    bp_name = filecontent.get("blueprint", {}).get("name")
+    if not bp_name or not isinstance(bp_name, str) or not bp_name.strip():
+        connection.send_result(msg["id"], {"error": "Blueprint name is required and must be a string"})
+        return
+
+    filename = slugify(bp_name)+".yaml"
 
     if filecontent.get("button_card_templates"):
         await _write_yaml_file(hass, f"lcars-dashboard/button_card_templates/blueprints/{filename}", filecontent.get("button_card_templates"))

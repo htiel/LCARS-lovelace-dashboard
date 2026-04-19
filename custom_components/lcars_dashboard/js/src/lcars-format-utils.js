@@ -137,6 +137,54 @@ export function ariaLabel(label) {
     .replace(/\u2089/g, '9');
 }
 
+// ─── Data-Size Scaling (QA-E10) ─────────────────────────────────────────────
+
+const DATA_SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
+
+/**
+ * Scale raw bytes to the most readable unit.
+ * @param {number} bytes - Raw byte count
+ * @returns {{ value: string, unit: string }}
+ */
+export function scaleDataSize(bytes) {
+  if (!Number.isFinite(bytes) || bytes === 0) return { value: '0', unit: 'B' };
+  const abs = Math.abs(bytes);
+  let idx = 0;
+  let scaled = abs;
+  while (scaled >= 1024 && idx < DATA_SIZE_UNITS.length - 1) {
+    scaled /= 1024;
+    idx++;
+  }
+  const sign = bytes < 0 ? '-' : '';
+  const decimals = scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2;
+  return { value: `${sign}${scaled.toFixed(decimals)}`, unit: DATA_SIZE_UNITS[idx] };
+}
+
+// ─── ISO Timestamp Humanization (QA-E11) ────────────────────────────────────
+
+/**
+ * Humanize an ISO 8601 timestamp into a relative or short absolute string.
+ * Returns null for non-ISO strings so callers can fall through.
+ *
+ * @param {string} isoStr - ISO 8601 date string
+ * @returns {string|null} Humanized string or null
+ */
+export function humanizeTimestamp(isoStr) {
+  if (!isoStr || typeof isoStr !== 'string') return null;
+  // Quick check for ISO-like pattern before parsing
+  if (!/^\d{4}-\d{2}-\d{2}[T ]/.test(isoStr)) return null;
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return null;
+  const now = Date.now();
+  const diffMs = now - d.getTime();
+  const absDiff = Math.abs(diffMs);
+  if (absDiff < 60000) return 'JUST NOW';
+  if (absDiff < 3600000) return `${Math.floor(absDiff / 60000)}M AGO`;
+  if (absDiff < 86400000) return `${Math.floor(absDiff / 3600000)}H AGO`;
+  if (absDiff < 604800000) return `${Math.floor(absDiff / 86400000)}D AGO`;
+  return d.toLocaleDateString('en', { month: 'short', day: 'numeric' }).toUpperCase();
+}
+
 // ─── State Text Formatting ──────────────────────────────────────────────────
 
 const IDLE_DOMAINS = new Set(['button', 'input_button', 'scene', 'script']);
@@ -188,6 +236,15 @@ export function formatStateValue(state, entityCategory = '') {
     const n = Number(s);
     if (Number.isFinite(n) && Math.abs(n) >= 10000) {
       return { text: `${(n / 1000).toFixed(1)} kW`, isIdle: false };
+    }
+  }
+
+  // QA-E10: Data-size scaling (B → KB → MB → GB → TB)
+  if (unit === 'B' || unit === 'bytes') {
+    const n = Number(s);
+    if (Number.isFinite(n)) {
+      const scaled = scaleDataSize(n);
+      return { text: `${scaled.value} ${scaled.unit}`, isIdle: false };
     }
   }
 

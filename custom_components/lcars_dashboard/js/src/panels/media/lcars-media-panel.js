@@ -81,6 +81,10 @@ class LcarsMediaPanel extends LcarsBasePanel {
     const mp = this.group?.entities?.find(e => e.domain === 'media_player');
     if (!mp) return html``;
     const playerState = mp.state?.state || 'unavailable';
+    // WESLEY-UX-002: Show OFFLINE for unavailable players
+    if (playerState === 'unavailable') {
+      return html`<span style="color:var(--lcars-gray)">■ OFFLINE</span>`;
+    }
     const stateColor = getPlaybackStateColor(playerState);
     const transportSymbol = this._getMediaTransportSymbol(playerState);
     return html`<span style="color:${stateColor}">${transportSymbol} ${playerState.toUpperCase()}</span>`;
@@ -92,9 +96,29 @@ class LcarsMediaPanel extends LcarsBasePanel {
 
     if (player.length === 0) return html``;
 
+    // GEORDI-017 / WESLEY-UX-002 / WESLEY-UX-004: Collapse unavailable & standby players
+    // Keep active (playing/paused) players plus the primary standby selection
+    const activePlayers = player.filter(e => e.state?.state === 'playing' || e.state?.state === 'paused');
+    const availablePlayers = player.filter(e => e.state?.state !== 'unavailable');
+    const effectivePlayers = activePlayers.length > 0 ? availablePlayers : player;
+
+    if (effectivePlayers.length === 0) {
+      // All players unavailable — show minimal offline state
+      return html`
+        <div class="media-content media-idle">
+          <div class="media-viewscreen">
+            <div class="media-idle-display">
+              <span class="media-idle-glyph" style="color:var(--lcars-gray)">&#9834;</span>
+              <span class="media-idle-label" style="color:var(--lcars-gray)">UNAVAILABLE</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     // 4X-43: Designate primary player (playing > paused > first) and secondary speakers
-    const primary = this._selectPrimary(player);
-    const secondaries = player.filter(e => e !== primary);
+    const primary = this._selectPrimary(effectivePlayers);
+    const secondaries = effectivePlayers.filter(e => e !== primary);
     const ms = primary.state;
     const attrs = ms?.attributes || {};
     const playerState = ms?.state || 'unavailable';
@@ -181,7 +205,7 @@ class LcarsMediaPanel extends LcarsBasePanel {
             ${supportsRepeat ? html`<button class="media-transport-btn" aria-pressed="${repeat !== 'off'}" title="Repeat: ${repeat}" @click=${() => this._handleMediaService(primary.entity.entity_id, 'repeat_set', { repeat: repeat === 'off' ? 'all' : repeat === 'all' ? 'one' : 'off' })}>🔁</button>` : ''}
           </div>
           ${supportsVolume ? html`
-            <div class="media-volume" aria-label="Volume: ${Math.round(volume * 100)}%">
+            <div class="media-volume ${volume >= 1.0 ? 'media-volume-warn' : ''}" aria-label="Volume: ${Math.round(volume * 100)}%">
               <button class="media-mute-btn" aria-pressed="${isMuted}" title="${isMuted ? 'Unmute' : 'Mute'}"
                 @click=${() => this._handleMediaService(primary.entity.entity_id, 'volume_mute', { is_volume_muted: !isMuted })}>
                 ${isMuted ? '🔇' : '🔊'}

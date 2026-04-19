@@ -2,6 +2,28 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.22.0-rc.4] — 2026-04-19
+
+### Fixed — Power Naming, Circuit Correctness, Progressive Disclosure (P4)
+
+**10 bugs fixed** spanning power circuit naming, 240V pair detection, pool disambiguation, and progressive power panel rendering.
+
+#### Circuit Name Humanization
+1. **Emporia Vue raw names (DATA-009, GEORDI-009):** New 6-stage `_humanizePowerName()` pipeline strips manufacturer prefixes (Vue, Emporia, Pentair, ScreenLogic), hex/serial codes, orphan separators, converts snake_case to title case. `VUEG3_MAINLOAD1` → `MAIN LOAD 1`.
+2. **`-- Dryer` artifacts (DATA-010):** Fixed 240V pair detection baseName cleanup — leading/trailing separators stripped. Entity-level dedup ensures circuits claimed by 240V combined entries don't also appear standalone.
+3. **Duplicate laundry circuits (GEORDI-008):** Two-pass entity dedup in `_detect240VPairs()` — 240V combined entries take priority, standalone entries with already-claimed entities are dropped.
+4. **Pentair hex names (GEORDI-028):** Pipeline strips MAC addresses, serial numbers, and `Pentair:` prefix. Empty result falls back to `POOL CONTROLLER` for Pentair/ScreenLogic devices.
+5. **Identical pool circuits (GEORDI-007):** Post-humanization `_deduplicateCircuitNames()` extracts smart keywords from entity_id (PUMP, HEATER, etc.) before falling back to numeric suffixes.
+
+#### Progressive Power Panel
+6. **0W standby collapse (WESLEY-UX-008):** Rooms with power monitoring at 0W draw now show compact `○ ALL CIRCUITS STANDBY — N MONITORED` instead of full empty panel. Uses `--lcars-sunflower` label + `--lcars-gray` detail per WCAG contrast requirements.
+7. **Low-activity mode (WESLEY-IDEA-005):** Rooms ≤100W show summary card + top 3 active circuits with "ACTIVE CIRCUITS" header. No arc, no section dividers. Threshold configurable via `power_thresholds.lowActivity`.
+8. **Hidden wattage pill (WESLEY-UX-006):** Truncated circuit grid pill now reads `EXPAND GRID — N MORE (X W)` with butterscotch alert dot when any hidden circuit exceeds 500W.
+
+#### Visual Enhancements
+9. **Wattage color tiers (WESLEY-IDEA-012):** Circuit tiles now carry tier classes (standby/low/moderate/high/critical) matching existing `getPowerColor()` palette. Standby tiles dim indicator dot only (not text) per Geordi WCAG review.
+10. **Collection cache (Data refinement):** `_buildPowerCollection()` now caches by reference equality, preventing 3× rebuild per render cycle (frameColor + renderBadge + render).
+
 ## [4.22.0-rc.3] — 2026-04-19
 
 ### Fixed — Entity Routing, Diagnostics Disclosure, Camera UX (P3)

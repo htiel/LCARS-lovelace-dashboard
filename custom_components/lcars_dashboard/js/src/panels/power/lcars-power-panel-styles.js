@@ -217,7 +217,8 @@ export const powerPanelStyles = css`
 
   /* Truncation pill */
   .power-show-all-pill {
-    display: block; margin: 0.5rem auto 0; padding: 0.25rem 1rem;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    margin: 0.5rem auto 0; padding: 0.25rem 1rem; min-height: 1.5rem;
     border: 1px solid var(--lcars-gray, #666688);
     border-radius: 0 1.5rem 1.5rem 0;
     background: rgba(153, 153, 153, 0.15); color: var(--lcars-gray, #666688);
@@ -229,6 +230,42 @@ export const powerPanelStyles = css`
   .power-show-all-pill:focus-visible { outline: 2px solid var(--lcars-sunflower, #ffcc99); outline-offset: 2px; }
 
   .panel-pip-strip { position: absolute; bottom: 4px; right: 4px; width: 2rem; height: 3px; background: var(--panel-frame-color, var(--lcars-butterscotch)); border-radius: 1.5px; opacity: 0.3; }
+
+  /* P4: Pill alert dot */
+  .pill-alert-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--lcars-butterscotch, #ffcc99); flex-shrink: 0;
+  }
+
+  /* P4: Standby summary (0W collapse) */
+  .power-standby-summary {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+  .standby-indicator { color: var(--lcars-gray, #666688); font-size: 1.25rem; }
+  .standby-label {
+    color: var(--lcars-sunflower, #ffcc99);
+    font-family: var(--lcars-font, 'Antonio', sans-serif);
+    font-size: var(--lcars-font-size-label, 0.75rem);
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .standby-detail {
+    color: var(--lcars-gray, #666688);
+    font-family: var(--lcars-font, 'Antonio', sans-serif);
+    font-size: var(--lcars-font-size-label, 0.75rem);
+    margin-left: auto;
+  }
+
+  /* P4: Low-activity compact mode */
+  .power-low-activity-content { display: flex; flex-direction: column; gap: var(--lcars-gap, 12px); }
+  .power-circuits-compact { grid-template-columns: 1fr !important; gap: var(--lcars-gap, 0.25rem); }
+
+  /* P4: Wattage tier classes (WESLEY-IDEA-012) */
+  .power-circuit-tile.tier-standby .power-circuit-indicator { opacity: 0.5; }
+  .power-circuit-tile.tier-low {}
+  .power-circuit-tile.tier-moderate {}
+  .power-circuit-tile.tier-high {}
+  .power-circuit-tile.tier-critical {}
 
   /* Scroll-driven tile animations */
   @supports (animation-timeline: view()) {
@@ -265,7 +302,7 @@ export const powerPanelStyles = css`
   @media (prefers-reduced-motion: reduce) {
     .power-panel[data-alert="critical"] { animation: none; border-color: var(--lcars-tomato); }
     .lcars-consolidated-power-panel[data-alert="critical"] { animation: none; border-color: var(--lcars-tomato); }
-    .power-circuit-tile { animation: none !important; opacity: 1; }
+    .power-circuit-tile { animation: none !important; opacity: 1; transition: none !important; }
     .power-circuit-tile, .power-device-row { transition-duration: 0.01ms !important; }
   }
 `;

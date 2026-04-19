@@ -30,7 +30,7 @@ import {
   DOMAIN_LABELS, DOMAIN_ORDER,
   isLightingEntity, isClimateEntity, isEnvironmentEntity, isAmbientSensor,
   isTacticalEntity, PANEL_TYPE_TACTICAL,
-  PANEL_TYPE_VIEWPORT,
+  isViewportEntity, PANEL_TYPE_VIEWPORT,
   PANEL_TYPE_HAZARD, PANEL_TYPE_GALLEY,
   isDiagnosticEntity,
   SUPPRESS_DOMAINS,
@@ -7332,7 +7332,7 @@ class LcarsHomepageCard extends LitElement {
       }
 
       // ── Exclude entities consumed by area panels from standalone rendering ──
-      const consumedByArea = this._buildAreaPanelFilter(areaPanelTypes);
+      const consumedByArea = this._buildAreaPanelFilter(areaPanelTypes, hydratedEntries);
       if (consumedByArea) {
         for (const [devId, group] of byDevice) {
           group.entities = group.entities.filter(e => !consumedByArea(e));
@@ -7469,7 +7469,7 @@ class LcarsHomepageCard extends LitElement {
     }
 
     /* ─── Build predicate for entities consumed by area-level panels ─── */
-    _buildAreaPanelFilter(areaPanelTypes) {
+    _buildAreaPanelFilter(areaPanelTypes, entityEntries) {
       if (areaPanelTypes.size === 0) return null;
       const predicates = [];
       if (areaPanelTypes.has(PANEL_TYPE_ILLUMINATION)) {
@@ -7481,8 +7481,23 @@ class LcarsHomepageCard extends LitElement {
       if (areaPanelTypes.has(PANEL_TYPE_LIFE_SUPPORT)) predicates.push(
         e => isClimateEntity(e) || isEnvironmentEntity(e) || isAmbientSensor(e)
       );
-      if (areaPanelTypes.has(PANEL_TYPE_TACTICAL)) predicates.push(isTacticalEntity);
+      if (areaPanelTypes.has(PANEL_TYPE_TACTICAL)) {
+        // Exclude camera-device motion/occupancy from tactical consumption
+        // so those sensors stay with their camera panel (hero tier).
+        const camDevIds = new Set();
+        for (const e of entityEntries) {
+          if (CAMERA_DOMAINS.has(e.domain) && e.entity?.device_id) camDevIds.add(e.entity.device_id);
+        }
+        predicates.push(e => {
+          if (e.entity?.device_id && camDevIds.has(e.entity.device_id)) {
+            const dc = e.state?.attributes?.device_class || '';
+            if (['motion', 'occupancy'].includes(dc)) return false;
+          }
+          return isTacticalEntity(e);
+        });
+      }
       if (areaPanelTypes.has(PANEL_TYPE_MEDIA)) predicates.push(e => MEDIA_DOMAINS.has(e.domain) || e.domain === 'remote');
+      if (areaPanelTypes.has(PANEL_TYPE_VIEWPORT)) predicates.push(isViewportEntity); // P6 CRAWL-003
       if (predicates.length === 0) return null;
       return entry => predicates.some(p => p(entry));
     }

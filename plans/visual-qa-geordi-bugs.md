@@ -11,6 +11,37 @@
 
 ---
 
+## Re-Review Notes (2026-04-18)
+
+Re-reviewed by Geordi with fresh perspective. Cross-referenced against Data's report
+(`visual-qa-data-bugs.md`) and Wesley's report (`visual-qa-wesley-ideas.md`).
+
+### Changes Made
+
+| Action | Bug ID | Reason |
+|--------|--------|--------|
+| KEEP | GEORDI-001, 003, 006, 007, 008, 009, 014, 015, 016, 017, 018, 019, 021, 022, 024, 027, 028, 029, 030, 031 | Valid and well-described |
+| REVISE | GEORDI-002 | Added cross-ref to DATA-002 (root cause) |
+| REVISE | GEORDI-004, 005 | Added cross-ref to DATA-001 (root cause) |
+| REVISE | GEORDI-010 | Reframed as visual impact only; entity classification is DATA-004 |
+| REVISE | GEORDI-012 | Marked as duplicate visual manifestation of GEORDI-002 |
+| REVISE | GEORDI-025, 026 | Noted as HA config issues, not code bugs |
+| REMOVE | GEORDI-011 | Entity routing bug, not visual design — DATA-013 owns this |
+| REMOVE | GEORDI-020 | Duplicate of GEORDI-001 |
+| REMOVE | GEORDI-023 | Speculative — no actual inconsistency observed |
+| ADD | GEORDI-032 | New: Sensor label standardization needed |
+
+### Key Cross-References
+
+- **Raw decimals**: GEORDI-001 (visual) ↔ DATA-008 (formatting root cause)
+- **Illumination leakage**: GEORDI-004/005 (visual) ↔ DATA-001 (catch-all switch bug)
+- **Empty atmoscrubber**: GEORDI-002 (visual) ↔ DATA-002 (hazard detector bug)
+- **Camera diagnostics**: GEORDI-013 (visual) ↔ DATA-007 (filter root cause)
+- **Media panels**: GEORDI-017 (visual) ↔ WESLEY-UX-004/IDEA-003 (UX solution)
+- **Offline cameras**: GEORDI-015 (visual) ↔ WESLEY-UX-005/IDEA-002 (static effect)
+
+---
+
 ## Severity Definitions
 
 | Severity | Meaning |
@@ -71,6 +102,8 @@
   empty green cylinder with no data is not beautiful, it's a broken instrument.
   Bracer Jack manifesto §5 — "Don't add decorative elements that interfere with
   function."
+- **Cross-ref**: **DATA-002** — Root cause is hazard detector triggering on TP-Link
+  Kasa diagnostic CO sensors. Data owns the entity classification fix.
 - **Source files**: `panels/environment/lcars-environment-panel.js` (always renders
   `.atmoscrubber-container`), `panels/lifesupport/lcars-lifesupport-panel.js`
   (entity partitioning routes non-AQ devices to envGroup), `lcars-entity-utils.js`
@@ -124,6 +157,8 @@
   domains. Bracer Jack color theory — the sunflower (warm/lighting) frame color
   conveys a specific semantic meaning. Putting irrigation data inside a lighting
   frame violates color semantics.
+- **Cross-ref**: **DATA-001** — Root cause is catch-all switch absorption in
+  `_partitionLightingEntities()`. Data owns the entity classification fix.
 - **Source files**: `lcars-illumination-panel.js` (`_partitionLightingEntities`),
   `lcars-entity-utils.js` (`isLightingEntity` classifier)
 
@@ -141,6 +176,8 @@
 - **What it should look like**: Same as GEORDI-004 — only lighting entities in the
   Illumination panel.
 - **LCARS rule**: Same as GEORDI-004.
+- **Cross-ref**: **DATA-001** — Same root cause as GEORDI-004. Also **DATA-020** for
+  EcoFlow platform missing from PLATFORM_PANEL_MAP.
 - **Source files**: Same as GEORDI-004.
 
 ---
@@ -234,53 +271,38 @@
 
 ## GEORDI-010 — Fridge Rendered as Climate Panel with Arc at Extreme Cold
 
-- **Severity**: MEDIUM
+- **Severity**: MEDIUM *(visual impact only — entity classification is DATA-004)*
 - **Home**: Eric
 - **Room(s)**: Kitchen (5°F Kitchen Refrigerator), Garage (34°F Garage Refrigerator)
 - **Panel type**: Life Support → Climate substation
-- **What's wrong**: Refrigerators are being rendered through the climate panel
-  pipeline, showing a temperature arc designed for HVAC comfort ranges (55°F–84°F).
-  A 5°F reading pins the arc to the extreme cold end, making it look broken. A 34°F
-  target is reasonable for a fridge but the HVAC-style arc, setpoint controls, and
-  mode strip (OFF/HEAT/COOL/AUTO) are inappropriate for an appliance.
-- **What it should look like**: This is primarily an entity classification bug
-  (Data's domain), but the visual impact is significant: the climate arc's
-  temperature color bands (`getTempColor`) show `--lcars-blue` for <55°F which is
-  correct for "dangerously cold room" but wrong for "working fridge." If the entity
-  routing can't be fixed immediately, the climate panel should at minimum handle
-  the appliance use case with a linear gauge instead of the comfort arc.
+- **Visual impact**: Refrigerators rendered through the climate panel show a
+  temperature arc designed for HVAC comfort ranges (55°F–84°F). A 5°F reading pins
+  the arc to the extreme cold end, making it look broken. The HVAC-style arc,
+  setpoint controls, and mode strip (OFF/HEAT/COOL/AUTO) are inappropriate for an
+  appliance. The arc's `getTempColor` shows `--lcars-blue` for <55°F — correct for
+  "dangerously cold room" but wrong for "working fridge."
+- **Visual mitigation** (if entity routing can't be fixed): The climate panel could
+  detect appliance-range temperatures (<40°F) and render a linear gauge instead of
+  the comfort arc.
 - **LCARS rule**: Bracer Jack §5 — "Don't add decorative elements that interfere
-  with function." An HVAC comfort arc for a refrigerator interferes with
-  understanding the actual appliance state.
-- **Source files**: `panels/climate/lcars-climate-panel.js`,
-  `lcars-entity-utils.js` (`isClimateEntity`)
+  with function."
+- **Cross-ref**: **DATA-004** — Root cause is GE Home refrigerators classified as
+  climate instead of galley. Data owns the entity classification fix.
+- **Source files**: `panels/climate/lcars-climate-panel.js`
 
 ---
 
-## GEORDI-011 — Wrong Room Name Displayed in Panel (Master Bath → Kitchen Table Light)
+## ~~GEORDI-011 — Wrong Room Name Displayed in Panel (Master Bath → Kitchen Table Light)~~
 
-- **Severity**: HIGH
-- **Home**: Eric
-- **Room(s)**: Master Bath
-- **Panel type**: Life Support
-- **What's wrong**: The Life Support panel in Master Bath shows "Kitchen Table
-  Light" — an entity from the wrong room entirely. This is a data/routing bug
-  but it manifests as a critical visual trust issue: the user sees a panel
-  claiming to monitor their bathroom air quality, but it's actually showing
-  a kitchen light.
-- **What it should look like**: Panels should only contain entities assigned to
-  their respective area. Cross-room entity leakage undermines the entire
-  room-based navigation model.
-- **LCARS rule**: WCAG 2.4.6 (Headings and Labels) — labels must describe the
-  content. A panel headed "Life Support" in "Master Bath" showing kitchen
-  entities is mislabeled.
-- **Source files**: Entity routing in `lcars-homepage-card.js` area partitioning
+**REMOVED**: This is an entity routing/data bug, not a visual design violation.
+The root cause is HA entity area assignment or device-area inheritance.
+See **DATA-013** for cross-room entity leakage analysis.
 
 ---
 
 ## GEORDI-012 — Smart Outlet Rendered as Life Support with Empty Atmoscrubber
 
-- **Severity**: HIGH
+- **Severity**: HIGH *(duplicate visual manifestation of GEORDI-002)*
 - **Home**: Eric
 - **Room(s)**: Master Bed ("Master Bed Side Outlet" showing CO Status)
 - **Panel type**: Life Support → Environment substation
@@ -292,6 +314,8 @@
   as simple toggle circuits. The empty atmoscrubber and CO Status readout from a
   power outlet is visually confusing and wastes precious panel space.
 - **LCARS rule**: Same as GEORDI-002.
+- **Cross-ref**: This is another instance of **GEORDI-002** / **DATA-002** — TP-Link
+  Kasa diagnostic CO sensor triggering hazard classification.
 - **Source files**: Same as GEORDI-002.
 
 ---
@@ -460,23 +484,10 @@
 
 ---
 
-## GEORDI-020 — Ambient Sensor Values with Excessive Decimal Precision
+## ~~GEORDI-020 — Ambient Sensor Values with Excessive Decimal Precision~~
 
-- **Severity**: HIGH
-- **Home**: Eric
-- **Room(s)**: Outside (Dew Point 56.1379529460026°F, Wet Bulb 67.3054447465789°F),
-  Garage (Ambient Sensors -2.74°F, -0.759999999999998°F)
-- **Panel type**: Ambient Sensors / Life Support
-- **What's wrong**: Same root cause as GEORDI-001 but specifically for ambient
-  sensor readings displayed in the temperature/humidity grid and Life Support
-  ambient row. The `-0.759999999999998°F` value is a classic IEEE 754
-  floating-point representation error that should never be visible to users.
-- **What it should look like**: All temperature values rounded to 1 decimal
-  place maximum. All humidity values rounded to integers. Negative temperatures
-  should display cleanly: "-0.8°F" not "-0.759999999999998°F".
-- **LCARS rule**: Same as GEORDI-001.
-- **Source files**: `lcars-internal-sensors-grid.js` (tile rendering),
-  `panels/lifesupport/lcars-lifesupport-panel.js` (ambient row)
+**REMOVED**: Duplicate of **GEORDI-001**. Same root cause (missing centralized
+number formatter), same fix.
 
 ---
 
@@ -519,25 +530,13 @@
 
 ---
 
-## GEORDI-023 — Inconsistent Panel Frame Border Thickness Across Panel Types
+## ~~GEORDI-023 — Inconsistent Panel Frame Border Thickness Across Panel Types~~
 
-- **Severity**: MEDIUM
-- **Home**: Both
-- **Room(s)**: All
-- **Panel type**: All
-- **What's wrong**: Reviewing the CSS, the panel frame uses asymmetric borders:
-  `border-left: 4px`, `border-bottom: 4px`, `border-top: 2px`, `border-right: 2px`.
-  This is LCARS-correct (thick→thin rule). However, the environment panel styles
-  duplicate the frame definition in `lcars-environment-panel-styles.js` separately
-  from the base `<lcars-panel-frame>` component, which could lead to inconsistency
-  if either is updated independently.
-- **What it should look like**: All panels should use the shared
-  `<lcars-panel-frame>` component for frame rendering. Frame border definitions
-  should exist in exactly one place.
-- **LCARS rule**: Bracer Jack §2 — "The LCARS Frame goes thick→thin or thin→thick."
-  This must be consistent and maintainable. DRY principle.
-- **Source files**: `lcars-environment-panel-styles.js` (`.lcars-device-panel`
-  frame definition duplicated from base), `components/lcars-panel-frame/`
+**REMOVED**: Speculative. The codebase correctly implements asymmetric borders
+(`border-left: 4px`, `border-bottom: 4px`, `border-top: 2px`, `border-right: 2px`)
+per LCARS thick→thin rule. While the environment panel does have its own frame
+CSS, no actual rendering inconsistency was observed. If inconsistency is found
+later, re-file with specific evidence.
 
 ---
 
@@ -567,7 +566,7 @@
 
 ## GEORDI-025 — Upstairs Bathroom Label Styling: "Link Color 100%"
 
-- **Severity**: LOW
+- **Severity**: LOW *(HA configuration issue)*
 - **Home**: Leith
 - **Room(s)**: Upstairs Bathroom
 - **Panel type**: Illumination Control
@@ -579,13 +578,15 @@
   entity configuration, but the dashboard shouldn't expose raw attribute names.
 - **LCARS rule**: LCARS typography — all labels should be meaningful and human-
   readable.
+- **Note**: This is primarily a Home Assistant entity naming issue, not a
+  dashboard code bug. The user should rename this entity in HA.
 - **Source files**: `lcars-base-panel.js` (`_friendlyName`)
 
 ---
 
 ## GEORDI-026 — Room Name Mismatch: "Ephraim" Room Shows "Elysia" Entities
 
-- **Severity**: LOW
+- **Severity**: LOW *(HA configuration issue)*
 - **Home**: Eric
 - **Room(s)**: Ephraim
 - **Panel type**: Illumination, Life Support
@@ -598,6 +599,9 @@
   the entity says "Elysia" and the room is "Ephraim", the prefix stripping
   won't match, so the full "Elysia Light" is shown instead of just "Light".
 - **LCARS rule**: WCAG 2.4.6 (Headings and Labels) — consistent naming.
+- **Note**: This is a Home Assistant entity naming issue, not a dashboard code
+  bug. The user should update entity friendly_names after renaming areas.
+  Cross-ref: **DATA-015** documents the same issue.
 - **Source files**: `lcars-base-panel.js` (`_shortenName` — prefix must match
   area name to strip)
 
@@ -706,20 +710,64 @@
 
 ---
 
+## GEORDI-032 — Sensor Labels Need Canonical Short-Form Standardization (NEW)
+
+- **Severity**: MEDIUM
+- **Home**: Both
+- **Room(s)**: All rooms with environment/ambient sensors
+- **Panel type**: Environment, Life Support, Ambient Sensors
+- **What's wrong**: Sensor labels vary in format and length across panels. The
+  gallery shows canonical short labels: `PM2.5`, `CO₂`, `VOC`, `Temp`, `Humidity`.
+  But the dashboard displays full entity names like "Particulate Matter 2.5",
+  "Carbon Dioxide", "Volatile Organic Compounds", "Temperature", which then
+  truncate inconsistently: "Particulate M...", "Carbon Dio...", etc.
+  (see GEORDI-003 for Pool WaterGuru truncation).
+- **What it should look like**: The dashboard should normalize sensor labels to
+  canonical scientific/LCARS abbreviations:
+  - `PM2.5`, `PM10`, `PM1` (not "Particulate Matter 2.5 Microns")
+  - `CO₂` (not "Carbon Dioxide") — use subscript ₂ character
+  - `VOC` (not "Volatile Organic Compounds")
+  - `AQI` (not "Air Quality Index")
+  - `TEMP` or `°F` (not "Temperature")
+  - `RH` or `%` (not "Humidity" — or just the % symbol)
+  - For pool: `CA HARD`, `CYA`, `FREE CL`, `TOTAL ALK` (not full chemical names)
+  This requires a label normalization map keyed by `device_class` and
+  `unit_of_measurement`.
+- **LCARS rule**: Gallery reference — all sensor labels in the gallery panels
+  use short canonical forms. Bracer Jack §6 — "three font sizes only" — long
+  labels force text shrinkage. LCARS aesthetic — data should be dense, readable,
+  and instantly scannable.
+- **Source files**: Need new `lcars-label-utils.js` or extend `lcars-base-panel.js`
+  with `_canonicalLabel(state)` method
+
+---
+
 ## Summary
 
 | Severity | Count | Key Themes |
 |----------|-------|------------|
 | CRITICAL | 2 | Raw decimals in readouts, empty atmoscrubber on non-AQ devices |
-| HIGH | 8 | Entity leaking, label truncation, wrong room data, diagnostics overflow, alarm color |
-| MEDIUM | 11 | Graceful degradation, color semantics, accessibility verification, frame consistency |
+| HIGH | 5 | Entity leaking, label truncation, camera diagnostics overflow |
+| MEDIUM | 9 | Graceful degradation, color semantics, accessibility, sensor labels |
 | LOW | 6 | Sparse rooms, naming, volume warning, reduced-motion |
-| **Total** | **31** | |
+| REMOVED | 3 | GEORDI-011 (routing bug), GEORDI-020 (duplicate), GEORDI-023 (speculative) |
+| **Active Total** | **22** | |
 
 ### Top 5 Highest-Impact Fixes (ROI)
 
 1. **GEORDI-001** — Centralized number formatter (fixes raw decimals everywhere)
 2. **GEORDI-002** — Atmoscrubber visibility guard (fixes empty cylinders in 8+ rooms)
+   *— blocked by DATA-002 entity classification fix*
 3. **GEORDI-014** — Entity-category-aware color resolver (fixes false red alerts)
-4. **GEORDI-003/007** — Label truncation + deduplication (fixes Pool, WaterGuru)
+4. **GEORDI-003/032** — Label truncation + canonical labels (fixes Pool, WaterGuru, all sensors)
 5. **GEORDI-004/005** — Entity classifier refinement (fixes irrigation/battery leak)
+   *— blocked by DATA-001 entity classification fix*
+
+### Cross-Team Dependencies
+
+| Geordi Bug | Blocked By | Owner |
+|------------|------------|-------|
+| GEORDI-002, 012 | DATA-002 (hazard detector) | Data |
+| GEORDI-004, 005 | DATA-001 (switch catch-all) | Data |
+| GEORDI-010 | DATA-004 (galley classifier) | Data |
+| GEORDI-013 | DATA-007 (camera filter) | Data |

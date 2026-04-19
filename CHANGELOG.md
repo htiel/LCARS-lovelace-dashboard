@@ -2,6 +2,21 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.22.0-rc.6] — 2026-04-19
+
+### Fixed — Site Crawl Bug Fixes: Tactical, Camera, Viewport (P6)
+
+**3 bugs fixed** from full 19-room site crawl of ha.malick.us.
+
+#### Tactical Panel
+1. **Camera motion bleed (CRAWL-001):** Camera-device motion/occupancy sensors no longer appear in the Tactical MOTION section. Filter applied at area classification, entity consumption, and tactical partition levels. Standalone motion sensors (e.g., Aqara) still route correctly to Tactical.
+
+#### Camera Panel
+2. **Sensor hero tier expansion (CRAWL-002):** All non-diagnostic binary_sensors on camera devices now render inline as hero-tier data instead of collapsing behind "X MORE" disclosure. Detection events (person, vehicle, animal, glass break, etc.) are all visible by default. Diagnostic/config entities remain collapsed.
+
+#### Viewport Panel
+3. **Duplicate cover rendering (CRAWL-003):** Cover entities consumed by the Viewport Controls panel are now excluded from standalone device-group rendering. Added `isViewportEntity` predicate to area consumption filter.
+
 ## [4.22.0-rc.5] — 2026-04-19
 
 ### Fixed — Tactical, Alarm, Garage Door, High-Impact Action Safety (P5)

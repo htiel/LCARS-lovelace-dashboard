@@ -14,7 +14,7 @@
 import { html, css } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import {
-  isTacticalEntity, ALARM_DOMAINS,
+  isTacticalEntity, ALARM_DOMAINS, CAMERA_DOMAINS,
   SENSOR_DOMAINS,
 } from '../../lcars-entity-utils.js';
 import { getAlarmStateColor } from '../../lcars-color-utils.js';
@@ -73,6 +73,14 @@ class LcarsTacticalPanel extends LcarsBasePanel {
     const perimeterEntries = []; // door/window/opening sensors
     const motionEntries = [];    // motion/occupancy sensors
 
+    // Camera-device motion/occupancy stays with the camera panel, not tactical
+    const cameraDeviceIds = new Set();
+    for (const e of allEntries) {
+      if (CAMERA_DOMAINS.has(e.domain) && e.entity?.device_id) {
+        cameraDeviceIds.add(e.entity.device_id);
+      }
+    }
+
     for (const entry of allEntries) {
       if (ALARM_DOMAINS.has(entry.domain)) {
         alarmEntries.push(entry);
@@ -88,6 +96,8 @@ class LcarsTacticalPanel extends LcarsBasePanel {
         if (['door', 'window', 'opening', 'garage_door'].includes(dc)) {
           perimeterEntries.push(entry);
         } else if (['motion', 'occupancy'].includes(dc)) {
+          // Skip motion/occupancy owned by camera devices
+          if (entry.entity?.device_id && cameraDeviceIds.has(entry.entity.device_id)) continue;
           motionEntries.push(entry);
         } else if (['tamper', 'safety'].includes(dc)) {
           perimeterEntries.push(entry); // tamper/safety in perimeter section

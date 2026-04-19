@@ -23,11 +23,14 @@ function cameraImageUrl(state) {
   return `${base}${sep}_cb=${encodeURIComponent(ts)}`;
 }
 
-/* ── Camera hero filter for tier partitioning (P3 DATA-007) ── */
+/* ── Camera hero filter for tier partitioning (P3 DATA-007, P6 CRAWL-002) ── */
 const CAMERA_HERO_CLASSES = new Set([
   'motion', 'occupancy', 'sound', 'connectivity', 'battery', 'recording',
 ]);
 function isCameraHero(entry) {
+  // All binary_sensors on a camera device are detection-relevant hero data
+  // (diagnostics already filtered by tierEntities before this runs)
+  if (entry.domain === 'binary_sensor') return true;
   const dc = entry.state?.attributes?.device_class || '';
   return CAMERA_HERO_CLASSES.has(dc);
 }

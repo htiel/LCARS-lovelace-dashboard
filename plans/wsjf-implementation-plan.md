@@ -3,19 +3,23 @@
 Date: 2026-04-19
 Owner: Riker
 
-This plan scores every unique work item from the four QA reports plus Worf's security findings, then groups them into the minimum practical number of implementation passes based on file affinity.
+This plan scores every unique work item from the four QA reports, the April 19 site crawl findings, and Worf's security findings, then groups them into the minimum practical number of implementation passes based on file affinity.
 
 Assumptions:
 - Removed Geordi items GEORDI-011, GEORDI-020, and GEORDI-023 are excluded because the report itself closes them.
 - Worf's commentary on WESLEY-IDEA-009, WESLEY-IDEA-010, and WESLEY-IDEA-015 is treated as implementation constraint input, not separate backlog items.
 - External Home Assistant configuration issues still receive a pass assignment so they have an explicit disposition.
 - Eric's post-P2 visual QA findings are assigned only to P3-P9 because P1 and P2 already shipped; those passes are updated for status only, not rescoping.
+- The April 19 crawl bugs are re-scored against the live backlog; because they cluster around tactical, camera, entity-utils, and homepage-card work, they form a standalone patch-focused P6 and the existing media pass slides to P6b.
 - Aggregate pass WSJF is computed as `sum(BV + TC + RR) / sum(JS)` across the items assigned to that pass.
 
 ## SECTION 1: WSJF Scoring Table
 
 | ID | Source | Type | Summary | Primary files / functions | BV | TC | RR | JS | WSJF | Pass |
 |---|---|---|---|---|---:|---:|---:|---:|---:|---|
+| CRAWL-001 | Crawl | Bug | Exclude camera-device motion and occupancy from Tactical motion routing | `lcars-entity-utils.js::tierEntities/classifyDevice`, `lcars-homepage-card.js::_buildAreaPanelFilter`, `lcars-tactical-panel.js::renderContent` | 13 | 13 | 8 | 3 | 11.33 | P6 |
+| CRAWL-002 | Crawl | Bug | Expand camera hero-tier sensor disclosure before collapsing overflow | `lcars-camera-panel.js::CAMERA_HERO_CLASSES`, `lcars-entity-utils.js::tierEntities` | 8 | 8 | 5 | 2 | 10.50 | P6 |
+| CRAWL-003 | Crawl | Bug | Consume viewport covers from standalone area rendering | `lcars-homepage-card.js::_buildAreaPanelFilter` | 8 | 8 | 5 | 1 | 21.00 | P6 |
 | DATA-001 | Data | Bug | Remove illumination switch catch-all | `lcars-illumination-panel.js::_partitionLightingEntities`, `lcars-entity-utils.js::isLightingEntity` | 13 | 13 | 13 | 3 | 13.00 | P1 |
 | DATA-002 | Data | Bug | Filter diagnostic CO false positives from hazard classification | `lcars-entity-utils.js::DETECTORS[hazard]` | 13 | 13 | 13 | 3 | 13.00 | P1 |
 | DATA-003 | Data | Enabler | Add detector weighting guardrails after root fixes | `lcars-entity-utils.js::classifyDevice` | 5 | 3 | 8 | 8 | 2.00 | P1 |
@@ -52,7 +56,7 @@ Assumptions:
 | GEORDI-014 | Geordi | Bug | Stop using alert red for non-alert unknown/unavailable | `lcars-color-utils.js::getStateColor`, panel display helpers | 8 | 8 | 8 | 2 | 12.00 | P2 |
 | GEORDI-015 | Geordi | Bug | Give offline camera viewscreen a distinct state | `lcars-camera-panel.js`, camera styles | 8 | 5 | 5 | 3 | 6.00 | P3 |
 | GEORDI-016 | Geordi | Bug | Make sparse rooms feel intentional | `lcars-homepage-card.js` room layout | 3 | 2 | 2 | 3 | 2.33 | P8 |
-| GEORDI-017 | Geordi | Bug | Collapse redundant standby media panels | `lcars-media-panel.js` | 5 | 5 | 3 | 5 | 2.60 | P6 |
+| GEORDI-017 | Geordi | Bug | Collapse redundant standby media panels | `lcars-media-panel.js` | 5 | 5 | 3 | 5 | 2.60 | P6b |
 | GEORDI-018 | Geordi | Bug | Ensure DISARMED alarm uses ice semantics | `lcars-alarm-panel.js`, tactical badge surfaces | 8 | 8 | 8 | 2 | 12.00 | P5 |
 | GEORDI-019 | Geordi | Bug | Increase alarm keypad spacing | `lcars-alarm-panel-styles.js` | 5 | 5 | 5 | 2 | 7.50 | P5 |
 | GEORDI-021 | Geordi | Bug | Give weather offline state graceful gray skeleton | `lcars-weather-panel.js` | 8 | 5 | 5 | 2 | 9.00 | P7 |
@@ -60,7 +64,7 @@ Assumptions:
 | GEORDI-024 | Geordi | Bug | Collapse or limit diagnostics flood | `lcars-environment-panel.js`, disclosure helpers | 8 | 5 | 8 | 3 | 7.00 | P3 |
 | GEORDI-025 | Geordi | Ops | Link Color label is HA naming issue | HA config, optional alias mapping | 2 | 1 | 1 | 1 | 4.00 | P9 |
 | GEORDI-026 | Geordi | Ops | Ephraim/Elysia mismatch is HA naming drift | HA config, optional alias mapping | 2 | 1 | 1 | 1 | 4.00 | P9 |
-| GEORDI-027 | Geordi | Bug | Warn at 100% media volume | `lcars-media-panel.js` volume fill | 3 | 3 | 2 | 1 | 8.00 | P6 |
+| GEORDI-027 | Geordi | Bug | Warn at 100% media volume | `lcars-media-panel.js` volume fill | 3 | 3 | 2 | 1 | 8.00 | P6b |
 | GEORDI-028 | Geordi | Bug | Humanize Pentair hex/model names | `lcars-base-panel.js::_shortDeviceName`, pool/power naming | 3 | 2 | 2 | 2 | 3.50 | P4 |
 | GEORDI-029 | Geordi | Audit | Verify focus visibility on dynamic content | panel styles, sensor-row shadow focus, shell interactions | 5 | 5 | 8 | 5 | 3.60 | P8 |
 | GEORDI-030 | Geordi | Audit | Increase low-contrast sensor indicator visibility | `lcars-styles.js`, panel styles, sensor-row | 5 | 5 | 8 | 3 | 6.00 | P8 |
@@ -78,9 +82,9 @@ Assumptions:
 | QA-E10 | Eric QA | Bug | Humanize large storage and data-size values with unit scaling | `lcars-format-utils.js::formatNumber`, `lcars-base-panel.js` | 5 | 5 | 8 | 2 | 9.00 | P7 |
 | QA-E11 | Eric QA | Bug | Format raw ISO timestamps into human-readable date or relative-time output | `lcars-format-utils.js`, `lcars-base-panel.js`, sensor row rendering | 8 | 8 | 8 | 3 | 8.00 | P7 |
 | WESLEY-UX-001 | Wesley | UX | Replace Adopt Device ambiguity with actionable guidance | `lcars-camera-panel.js`, empty-state CTA helper | 5 | 5 | 3 | 2 | 6.50 | P3 |
-| WESLEY-UX-002 | Wesley | UX | Collapse unavailable media players | `lcars-media-panel.js` | 8 | 5 | 3 | 5 | 3.20 | P6 |
+| WESLEY-UX-002 | Wesley | UX | Collapse unavailable media players | `lcars-media-panel.js` | 8 | 5 | 3 | 5 | 3.20 | P6b |
 | WESLEY-UX-003 | Wesley | UX | Show READY / NO DATA instead of red UNKNOWN | `lcars-base-panel.js`, `lcars-color-utils.js` | 8 | 8 | 8 | 2 | 12.00 | P2 |
-| WESLEY-UX-004 | Wesley | UX | Collapse redundant standby media players | `lcars-media-panel.js` | 5 | 3 | 2 | 5 | 2.00 | P6 |
+| WESLEY-UX-004 | Wesley | UX | Collapse redundant standby media players | `lcars-media-panel.js` | 5 | 3 | 2 | 5 | 2.00 | P6b |
 | WESLEY-UX-005 | Wesley | UX | Add recovery path to offline cameras | `lcars-camera-panel.js`, offline helper | 5 | 5 | 3 | 3 | 4.33 | P3 |
 | WESLEY-UX-006 | Wesley | UX | Show hidden circuit count and hidden wattage | `lcars-power-panel.js::_renderConsolidatedPowerContent` | 5 | 5 | 3 | 2 | 6.50 | P4 |
 | WESLEY-UX-007 | Wesley | UX | Explain irrigation offline vs idle states | `lcars-irrigation-panel.js` | 5 | 5 | 3 | 2 | 6.50 | P7 |
@@ -92,11 +96,11 @@ Assumptions:
 | WESLEY-UX-013 | Wesley | UX | Add undo/confirm flows for risky actions | `lcars-base-panel.js`, tactical/alarm/power/media entry points | 8 | 8 | 8 | 5 | 4.80 | P5 |
 | WESLEY-IDEA-001 | Wesley | Idea | Add room vitals strip for sparse rooms | `lcars-homepage-card.js` room shell | 5 | 2 | 3 | 5 | 2.00 | P8 |
 | WESLEY-IDEA-002 | Wesley | Idea | Add CSS static effect for offline cameras | `lcars-camera-panel.js`, camera styles | 5 | 3 | 2 | 3 | 3.33 | P3 |
-| WESLEY-IDEA-003 | Wesley | Idea | Build consolidated media hub | `lcars-media-panel.js` | 8 | 5 | 5 | 8 | 2.25 | P6 |
+| WESLEY-IDEA-003 | Wesley | Idea | Build consolidated media hub | `lcars-media-panel.js` | 8 | 5 | 5 | 8 | 2.25 | P6b |
 | WESLEY-IDEA-004 | Wesley | Idea | Shared contextual empty-state copy system | base empty-state copy module, panel offline branches | 5 | 3 | 5 | 5 | 2.60 | P8 |
 | WESLEY-IDEA-005 | Wesley | Idea | Progressive power panel by load threshold | `lcars-power-panel.js` | 5 | 3 | 5 | 5 | 2.60 | P4 |
 | WESLEY-IDEA-006 | Wesley | Idea | Visual garage-door position indicator | `lcars-tactical-panel.js` or `lcars-homepage-card.js::_renderCovers` | 5 | 3 | 3 | 3 | 3.67 | P5 |
-| WESLEY-IDEA-007 | Wesley | Idea | Vary waveform by media source type | `lcars-media-panel.js` waveform renderer | 2 | 1 | 1 | 3 | 1.33 | P6 |
+| WESLEY-IDEA-007 | Wesley | Idea | Vary waveform by media source type | `lcars-media-panel.js` waveform renderer | 2 | 1 | 1 | 3 | 1.33 | P6b |
 | WESLEY-IDEA-008 | Wesley | Idea | Show last-activity timestamp for idle rooms | `lcars-homepage-card.js` room header | 3 | 2 | 3 | 3 | 2.67 | P8 |
 | WESLEY-IDEA-009 | Wesley | Idea | Prototype View Transitions room navigation | `lcars-homepage-card.js`, shell navigation | 3 | 1 | 2 | 8 | 0.75 | P8 |
 | WESLEY-IDEA-010 | Wesley | Idea | Use room-header alarm badge instead of duplicate panels | `lcars-homepage-card.js`, tactical/alarm handoff | 8 | 5 | 5 | 5 | 3.60 | P5 |
@@ -309,10 +313,54 @@ Description: Consolidate the security-facing UX into one pass. This includes ala
   - Shared action layer
     - Add confirm/undo primitives in the base panel or shell so power, covers, and climate can reuse one pattern.
 
-### Pass P6 — Media Consolidation and Communication-System States
+### Pass P6 — Site Crawl Routing Fixes, Camera Hero Disclosure, and Viewport Consumption
 
-Description: Fix the media panels as a family. This pass collapses dead or standby clutter, adds high-volume semantics, and builds the consolidated comm-array behavior for multi-speaker rooms.
+Description: Ship the three April 19 crawl bugs as their own patch-focused pass. These items have higher WSJF than the deferred media consolidation work, cluster tightly around tactical, camera, and area-orchestration surfaces, and fit the `v4.22.0-rc.6` pre-release without reopening the broader media slice.
 
+- Status: READY FOR EXECUTION (target `v4.22.0-rc.6`; patch exception auto-approved because all items are bug fixes and the pass is scoped as S)
+- Included bugs: CRAWL-001, CRAWL-002, CRAWL-003
+- WSJF scoring:
+
+| ID | Title | BV | TC | RR | CoD | Size | WSJF | Priority |
+|---|---|---:|---:|---:|---:|---|---:|---|
+| CRAWL-003 | Viewport duplicate rendering | 8 | 8 | 5 | 21 | XS | 21.00 | CRITICAL |
+| CRAWL-001 | Camera motion bleeds into Tactical | 13 | 13 | 8 | 34 | M | 11.33 | CRITICAL |
+| CRAWL-002 | Camera sensor collapse UX | 8 | 8 | 5 | 21 | S | 10.50 | CRITICAL |
+
+- Files modified:
+  - `custom_components/lcars_dashboard/js/src/lcars-entity-utils.js`
+  - `custom_components/lcars_dashboard/js/src/lcars-homepage-card.js`
+  - `custom_components/lcars_dashboard/js/src/panels/camera/lcars-camera-panel.js`
+  - `custom_components/lcars_dashboard/js/src/panels/tactical/lcars-tactical-panel.js`
+- Aggregate WSJF: 12.67
+- Estimated scope: S
+- Dependencies: P3, P5
+- Release note: `CRAWL-001` is already fixed in code and rolls forward with this pass; the remaining implementation work for `v4.22.0-rc.6` is `CRAWL-002` and `CRAWL-003`.
+- Test after pass:
+  - Build the JS bundle.
+  - Verify Entrance, Front Yard, Garage, Back Yard, Server Room, and Game Room no longer show camera-owned motion or occupancy binary sensors in Tactical `MOTION` while those entities remain visible on the owning camera panel.
+  - Verify camera panels fill visible sensor capacity with hero-tier rows before collapsing overflow; UniFi Protect-style cameras should keep motion, occupancy, sound, connectivity, battery, recording, person-detected, vehicle-detected, and dark-state signals visible when present.
+  - Verify the Office cover entities render only in Viewport Controls when the viewport panel is active and no longer duplicate as standalone device groups.
+  - Regression check rooms with legitimate non-camera tactical motion sensors to confirm the Tactical panel still shows true room motion sources.
+- Implementation notes:
+  - `lcars-entity-utils.js`
+    - Keep the existing `CRAWL-001` exclusion logic so camera-device motion and occupancy stay out of tactical routing.
+    - Align `tierEntities()` with the expanded camera hero policy so camera-relevant binary sensors fill the visible panel before disclosure instead of being collapsed prematurely.
+  - `lcars-homepage-card.js`
+    - Ship the existing `CRAWL-001` tactical-area filter fix.
+    - Add a `PANEL_TYPE_VIEWPORT` predicate to `_buildAreaPanelFilter()` so cover entities are consumed when Viewport Controls is active, matching the existing tactical, illumination, and life-support consumption behavior.
+    - Preserve legitimate standalone motion routing for non-camera devices while excluding camera-owned motion from tactical aggregation.
+  - `lcars-camera-panel.js`
+    - Expand `CAMERA_HERO_CLASSES` beyond the current six-class set so camera detection rows like person, vehicle, and dark-state signals stay visible instead of dropping behind `X MORE` before the panel is full.
+    - Keep camera hero ordering camera-specific rather than broadening the generic disclosure policy for every panel.
+  - `lcars-tactical-panel.js`
+    - Preserve the defensive `CRAWL-001` rendering guard so Tactical ignores camera-owned motion or occupancy even if an upstream routing regression reappears.
+
+### Pass P6b — Media Consolidation and Communication-System States
+
+Description: Fix the media panels as a family. This pass collapses dead or standby clutter, adds high-volume semantics, and builds the consolidated comm-array behavior for multi-speaker rooms. It remains intact, but it now follows the higher-WSJF crawl patch pass because its work is isolated to `lcars-media-panel.js` and is not required for `v4.22.0-rc.6`.
+
+- Status: Deferred behind `P6`; next media-focused pass after the crawl fixes ship
 - Included bugs: GEORDI-017, GEORDI-027, WESLEY-UX-002, WESLEY-UX-004, WESLEY-IDEA-003, WESLEY-IDEA-007
 - Files modified:
   - `custom_components/lcars_dashboard/js/src/panels/media/lcars-media-panel.js`
@@ -448,15 +496,19 @@ P2 Shared Formatting / Labels / State Semantics
  ├─> P3 Residual Classification Cleanup / Telemetry Relevance / Diagnostics Disclosure
  ├─> P4 Power Naming / Disclosure
  ├─> P5 Tactical / Alarm / High-Impact Actions
- ├─> P6 Media Consolidation
+ ├─> P6b Media Consolidation
  ├─> P7 Weather / Irrigation Offline / Time / Telemetry Context
  └─> P8 Shell Polish / Accessibility / Motion
 
 P3 Residual Classification Cleanup / Telemetry Relevance / Diagnostics Disclosure
- └─> P8 Shell Polish (empty-state copy and reduced-noise UX assume correct primary data)
+ └─> P6 Site Crawl Routing / Camera Disclosure / Viewport Consumption
 
 P5 Tactical / Alarm / High-Impact Actions
+ ├─> P6 Site Crawl Routing / Camera Disclosure / Viewport Consumption
  └─> P8 Shell Polish (room-header badges and shell polish depend on final tactical behavior)
+
+P6 Site Crawl Routing / Camera Disclosure / Viewport Consumption
+ └─> P8 Shell Polish (empty-state copy and reduced-noise UX assume correct primary data)
 
 P7 Weather / Irrigation Offline / Time / Telemetry Context
  └─> P8 Shell Polish (shared empty-state copy and room-level quiet-state polish reuse the offline helper)
@@ -465,7 +517,7 @@ P9 Security Hardening / No-Code Dispositions
  └─ independent of panel passes, but safest after any package.json churn is coordinated with completed UI work
 ```
 
-Eric's post-P2 QA does not justify a new pass. The new bugs cluster cleanly into P3 for residual classifier and fallback cleanup, P7 for time-and-telemetry humanization gaps, and P8 for cross-panel label and CSS polish.
+The April 19 crawl does justify a new pass. Those bugs cluster cleanly into a higher-WSJF patch pass around tactical, camera, and homepage orchestration, while the existing media work remains a separate lower-affinity pass.
 
 Recommended execution order with dependencies respected:
 
@@ -473,16 +525,20 @@ Recommended execution order with dependencies respected:
 2. P2 Shared Formatting, Labels, and State Semantics
 3. P3 Telemetry Relevance, Diagnostics Disclosure, and Camera Recovery UX
 4. P4 Power Naming, Circuit Correctness, and Progressive Disclosure
-5. P7 Weather, Irrigation, and Universal Offline Recovery Context
-6. P5 Tactical, Alarm, Garage Door, and High-Impact Action Safety
-7. P6 Media Consolidation and Communication-System States
-8. P8 Shell Polish, Accessibility, Motion, and Lower-Risk UX Ideas
-9. P9 Security Hardening and Explicit No-Code Dispositions
+5. P5 Tactical, Alarm, Garage Door, and High-Impact Action Safety
+6. P6 Site Crawl Routing Fixes, Camera Hero Disclosure, and Viewport Consumption
+7. P7 Weather, Irrigation, and Universal Offline Recovery Context
+8. P6b Media Consolidation and Communication-System States
+9. P8 Shell Polish, Accessibility, Motion, and Lower-Risk UX Ideas
+10. P9 Security Hardening and Explicit No-Code Dispositions
 
 ## SECTION 4: Quick Reference
 
 | ID | Pass |
 |---|---|
+| CRAWL-001 | P6 |
+| CRAWL-002 | P6 |
+| CRAWL-003 | P6 |
 | DATA-001 | P1 |
 | DATA-002 | P1 |
 | DATA-003 | P1 |
@@ -519,7 +575,7 @@ Recommended execution order with dependencies respected:
 | GEORDI-014 | P2 |
 | GEORDI-015 | P3 |
 | GEORDI-016 | P8 |
-| GEORDI-017 | P6 |
+| GEORDI-017 | P6b |
 | GEORDI-018 | P5 |
 | GEORDI-019 | P5 |
 | GEORDI-021 | P7 |
@@ -527,7 +583,7 @@ Recommended execution order with dependencies respected:
 | GEORDI-024 | P3 |
 | GEORDI-025 | P9 |
 | GEORDI-026 | P9 |
-| GEORDI-027 | P6 |
+| GEORDI-027 | P6b |
 | GEORDI-028 | P4 |
 | GEORDI-029 | P8 |
 | GEORDI-030 | P8 |
@@ -545,9 +601,9 @@ Recommended execution order with dependencies respected:
 | QA-E10 | P7 |
 | QA-E11 | P7 |
 | WESLEY-UX-001 | P3 |
-| WESLEY-UX-002 | P6 |
+| WESLEY-UX-002 | P6b |
 | WESLEY-UX-003 | P2 |
-| WESLEY-UX-004 | P6 |
+| WESLEY-UX-004 | P6b |
 | WESLEY-UX-005 | P3 |
 | WESLEY-UX-006 | P4 |
 | WESLEY-UX-007 | P7 |
@@ -559,11 +615,11 @@ Recommended execution order with dependencies respected:
 | WESLEY-UX-013 | P5 |
 | WESLEY-IDEA-001 | P8 |
 | WESLEY-IDEA-002 | P3 |
-| WESLEY-IDEA-003 | P6 |
+| WESLEY-IDEA-003 | P6b |
 | WESLEY-IDEA-004 | P8 |
 | WESLEY-IDEA-005 | P4 |
 | WESLEY-IDEA-006 | P5 |
-| WESLEY-IDEA-007 | P6 |
+| WESLEY-IDEA-007 | P6b |
 | WESLEY-IDEA-008 | P8 |
 | WESLEY-IDEA-009 | P8 |
 | WESLEY-IDEA-010 | P5 |
@@ -615,10 +671,16 @@ Recommended execution order with dependencies respected:
 - Mitigation: Keep room-header alarm badges read-only, require confirmation for high-impact actions, and test with keyboard plus touch.
 - Rollback: Disable header-badge interactivity first and fall back to the existing full Tactical panel if shell-level dedupe misbehaves.
 
-### P6 — Media Consolidation and Communication-System States
+### P6 — Site Crawl Routing Fixes, Camera Hero Disclosure, and Viewport Consumption
+
+- Risk: Tightening tactical and viewport consumption rules could suppress a legitimate room motion or cover entity if the predicates are too broad.
+- Mitigation: Keep camera exclusions device-scoped, add the viewport consume rule only when the viewport panel is active, and regression-test both camera-heavy and non-camera rooms.
+- Rollback: Revert the new viewport consume predicate and camera-specific disclosure expansion independently while keeping the already-validated tactical bleed fix in place.
+
+### P6b — Media Consolidation and Communication-System States
 
 - Risk: Consolidation logic may hide a player the user expects to see independently.
-- Mitigation: Keep one clear hero player, preserve direct secondary row access, and only collapse when siblings are genuinely idle/unavailable.
+- Mitigation: Keep one clear hero player, preserve direct secondary row access, and only collapse when siblings are genuinely idle or unavailable.
 - Rollback: Re-enable one-panel-per-player while preserving volume warning colors and other low-risk improvements.
 
 ### P7 — Weather, Irrigation, and Universal Offline Recovery Context

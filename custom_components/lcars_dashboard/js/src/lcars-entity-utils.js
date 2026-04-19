@@ -512,6 +512,13 @@ export function isTacticalEntity(entry) {
   return false;
 }
 
+/** Named predicate: is this a viewport (blinds/shades/covers) entity? (P6 CRAWL-003) */
+export function isViewportEntity(entry) {
+  if (entry.domain !== 'cover') return false;
+  const dc = entry.state?.attributes?.device_class || '';
+  return VIEWPORT_COVER_CLASSES.has(dc) || (dc === '' && !TACTICAL_COVER_CLASSES.has(dc));
+}
+
 /** Named predicate: is this a standalone temperature or humidity sensor? */
 export function isAmbientSensor(entry) {
   if (entry.domain !== 'sensor') return false;
@@ -574,8 +581,23 @@ export function classifyArea(hass, areaId, entityEntries) {
     types.add(PANEL_TYPE_ILLUMINATION);
   }
 
+  // Build camera device ID set — reused for tactical + media exclusion
+  const cameraDeviceIds = new Set();
+  for (const e of entityEntries) {
+    if (CAMERA_DOMAINS.has(e.domain) && e.entity?.device_id) {
+      cameraDeviceIds.add(e.entity.device_id);
+    }
+  }
+
   // Tactical: any alarm, lock, or security binary/cover sensor (4X-42)
-  const hasTactical = entityEntries.some(isTacticalEntity);
+  // Exclude motion/occupancy sensors owned by camera devices — those stay with the camera panel.
+  const hasTactical = entityEntries.some(e => {
+    if (e.entity?.device_id && cameraDeviceIds.has(e.entity.device_id)) {
+      const dc = e.state?.attributes?.device_class || '';
+      if (['motion', 'occupancy'].includes(dc)) return false;
+    }
+    return isTacticalEntity(e);
+  });
   if (hasTactical) {
     types.add(PANEL_TYPE_TACTICAL);
   }
@@ -590,16 +612,9 @@ export function classifyArea(hass, areaId, entityEntries) {
   if (hasViewport) {
     types.add(PANEL_TYPE_VIEWPORT);
   }
-
   // Media: ≥1 media_player entity that isn't a camera doorbell (4X-43)
   // Camera doorbells register as media_player (they have speakers) but shouldn't trigger a media panel.
   // Exclude media_players whose device_id also has a camera entity.
-  const cameraDeviceIds = new Set();
-  for (const e of entityEntries) {
-    if (CAMERA_DOMAINS.has(e.domain) && e.entity?.device_id) {
-      cameraDeviceIds.add(e.entity.device_id);
-    }
-  }
   const realMediaCount = entityEntries.filter(e => {
     if (!MEDIA_DOMAINS.has(e.domain)) return false;
     // Skip if this media_player's device also has a camera entity

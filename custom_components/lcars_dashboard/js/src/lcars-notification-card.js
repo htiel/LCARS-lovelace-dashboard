@@ -32,7 +32,7 @@ import { lcarsBaseStyles } from './lcars-styles.js';
       if (!this._hass) return;
       try {
         const result = await this._hass.callWS({
-          type: 'lcars_dashboard/notification/get',
+          type: 'lcars_dashboard_notification/get',
         });
         if (Array.isArray(result)) {
           this._notifications = result;

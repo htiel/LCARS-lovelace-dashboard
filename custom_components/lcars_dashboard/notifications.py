@@ -174,6 +174,10 @@ def notifications(hass, name):
             ATTR_CREATED_AT: dt_util.utcnow(),
         }
 
+        # M5: Evict oldest notifications to prevent unbounded growth
+        while len(lcars_dashboard_notifications) > 100:
+            lcars_dashboard_notifications.popitem(last=False)
+
         hass.bus.async_fire(EVENT_lcars_dashboard_NOTIFICATIONS_UPDATED)
 
     @callback

@@ -52,6 +52,27 @@ ALLOWED_BOOL_KEYS = frozenset({"disabled", "hidden", "favorite", "hide_in_sideba
 ALLOWED_SORT_TYPES = frozenset({"sort_order", "sort_order_floor"})
 
 
+# ─── H4: Per-file YAML lock to prevent concurrent read-modify-write races ───
+_yaml_locks = {}
+
+def _get_yaml_lock(rel_path):
+    """Get or create an asyncio.Lock for a given YAML file path."""
+    if rel_path not in _yaml_locks:
+        _yaml_locks[rel_path] = asyncio.Lock()
+    return _yaml_locks[rel_path]
+
+
+# ─── JSON parse helper (C2: guard all json.loads calls) ───
+def _safe_json_loads(connection, msg_id, raw, label="data"):
+    """Parse JSON string, send error result and return None on failure."""
+    try:
+        return json.loads(raw)
+    except (json.JSONDecodeError, ValueError, TypeError) as e:
+        _LOGGER.warning("Invalid JSON in %s: %s", label, e)
+        connection.send_result(msg_id, {"error": f"Invalid JSON in {label}"})
+        return None
+
+
 # ─── File I/O helpers (proper handle management) ───
 async def _read_yaml_file(hass, rel_path):
     """Read a YAML config file safely with proper file handle management."""
@@ -616,7 +637,8 @@ async def ws_handle_edit_device_card(
 
     _LOGGER.debug("edit_device_card called: domain=%s", msg.get("domain"))
 
-    filecontent = json.loads(msg["cardData"])
+    filecontent = _safe_json_loads(connection, msg["id"], msg["cardData"], "cardData")
+    if filecontent is None: return
 
     path = "lcars-dashboard/configs/cards/devices_card/"
     filename = hass.config.path(path+"/"+msg['domain']+".yaml")
@@ -690,7 +712,8 @@ async def ws_handle_edit_device_popup(
 
     _LOGGER.debug("edit_device_popup called: domain=%s", msg.get("domain"))
 
-    filecontent = json.loads(msg["cardData"])
+    filecontent = _safe_json_loads(connection, msg["id"], msg["cardData"], "cardData")
+    if filecontent is None: return
 
     path = "lcars-dashboard/configs/cards/devices_popup/"
     filename = hass.config.path(path+"/"+msg['domain']+".yaml")
@@ -836,29 +859,30 @@ async def ws_handle_edit_entity(
 
     _LOGGER.debug("edit_entity called: entity=%s", msg.get("entity"))
 
-    entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
+    async with _get_yaml_lock("lcars-dashboard/configs/entities.yaml"):
+        entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
 
-    entity = entities.get(msg["entity"])
+        entity = entities.get(msg["entity"])
 
-    if not entity:
-        entities[msg["entity"]] = OrderedDict()
+        if not entity:
+            entities[msg["entity"]] = OrderedDict()
 
-    entities[msg["entity"]].update({
-            "hidden": msg["hideEntity"],
-            "excluded": msg["excludeEntity"],
-            "disabled": msg["disableEntity"],
-            "friendly_name": msg["friendlyName"],
-            "col_span": msg["colSpan"],
-            "row_span": msg["rowSpan"],
-            "col_span_lg": msg["colSpanLg"],
-            "row_span_lg": msg["rowSpanLg"],
-            "col_span_xl": msg["colSpanXl"],
-            "row_span_xl": msg["rowSpanXl"],
-            "custom_card": msg["customCard"],
-            "custom_popup": msg["customPopup"],
-        })
+        entities[msg["entity"]].update({
+                "hidden": msg["hideEntity"],
+                "excluded": msg["excludeEntity"],
+                "disabled": msg["disableEntity"],
+                "friendly_name": msg["friendlyName"],
+                "col_span": msg["colSpan"],
+                "row_span": msg["rowSpan"],
+                "col_span_lg": msg["colSpanLg"],
+                "row_span_lg": msg["rowSpanLg"],
+                "col_span_xl": msg["colSpanXl"],
+                "row_span_xl": msg["rowSpanXl"],
+                "custom_card": msg["customCard"],
+                "custom_popup": msg["customPopup"],
+            })
 
-    await _write_yaml_file(hass, "lcars-dashboard/configs/entities.yaml", entities)
+        await _write_yaml_file(hass, "lcars-dashboard/configs/entities.yaml", entities)
 
 
     hass.bus.async_fire("lcars_dashboard_homepage_card_reload")
@@ -888,7 +912,8 @@ async def ws_handle_edit_entity_card(
 ) -> None:
     """Handle edit entity card command."""
 
-    filecontent = json.loads(msg["cardData"])
+    filecontent = _safe_json_loads(connection, msg["id"], msg["cardData"], "cardData")
+    if filecontent is None: return
 
     path = "lcars-dashboard/configs/cards/entities/"
     filename = hass.config.path(path+"/"+msg['entityId']+".yaml")
@@ -945,7 +970,8 @@ async def ws_handle_edit_entity_popup(
 ) -> None:
     """Handle edit entity popup command."""
 
-    filecontent = json.loads(msg["cardData"])
+    filecontent = _safe_json_loads(connection, msg["id"], msg["cardData"], "cardData")
+    if filecontent is None: return
 
     path = "lcars-dashboard/configs/cards/entities_popup/"
     filename = hass.config.path(path+"/"+msg['entityId']+".yaml")
@@ -1086,7 +1112,11 @@ async def ws_handle_edit_entities_bool_value(
 
     entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
 
-    entitiesInput = json.loads(msg["entities"])
+    entitiesInput = _safe_json_loads(connection, msg["id"], msg["entities"], "entities")
+    if entitiesInput is None: return
+    if not isinstance(entitiesInput, list):
+        connection.send_result(msg["id"], {"error": "Expected a JSON array of entity IDs"})
+        return
 
     _LOGGER.debug("edit_entity_bool_value entities input: %s", entitiesInput)
 
@@ -1142,13 +1172,16 @@ async def ws_handle_add_card(
 
     _LOGGER.debug("add_card called: page=%s, area_id=%s, domain=%s", msg.get("page"), msg.get("area_id"), msg.get("domain"))
 
+    card_parsed = _safe_json_loads(connection, msg["id"], msg.get("card_data", ""), "card_data")
+    if card_parsed is None: return
+
     if not msg["filename"]:
-        type = json.loads(msg["card_data"])['type']
+        type = card_parsed.get('type')
     else:
         type = msg["filename"]
 
     if type:
-        filecontent = json.loads(msg["card_data"])
+        filecontent = card_parsed
 
         #filecontent.update({"position": msg["position"]})
         filecontent["col_span"] = msg["colSpan"]
@@ -1294,7 +1327,8 @@ async def ws_handle_edit_more_page(
     else:
         more_page_folder = msg["foldername"]
 
-    filecontent = json.loads(msg["card_data"])
+    filecontent = _safe_json_loads(connection, msg["id"], msg.get("card_data", ""), "card_data")
+    if filecontent is None: return
 
     path_to_more_page = hass.config.path("lcars-dashboard/configs/more_pages/"+more_page_folder+"/page.yaml")
 
@@ -1435,7 +1469,8 @@ async def ws_handle_sort_area_button(
 ) -> None:
     """Handle sort area buttons command."""
 
-    sortData = json.loads(msg["sortData"])
+    sortData = _safe_json_loads(connection, msg["id"], msg["sortData"], "sortData")
+    if sortData is None: return
 
     sortType = msg["sortType"]
 
@@ -1517,7 +1552,8 @@ async def ws_handle_sort_device_button(
 ) -> None:
     """Handle sort device buttons command."""
 
-    sortData = json.loads(msg["sortData"])
+    sortData = _safe_json_loads(connection, msg["id"], msg["sortData"], "sortData")
+    if sortData is None: return
 
     devices = await _read_yaml_file(hass, "lcars-dashboard/configs/devices.yaml")
 
@@ -1555,7 +1591,8 @@ async def ws_handle_sort_entity(
 ) -> None:
     """Handle sort entity cards."""
 
-    sortData = json.loads(msg["sortData"])
+    sortData = _safe_json_loads(connection, msg["id"], msg["sortData"], "sortData")
+    if sortData is None: return
 
     sortType = msg["sortType"]
 
@@ -1596,7 +1633,8 @@ async def ws_handle_sort_more_page(
 ) -> None:
     """Handle sort more pages command."""
 
-    sortData = json.loads(msg["sortData"])
+    sortData = _safe_json_loads(connection, msg["id"], msg["sortData"], "sortData")
+    if sortData is None: return
 
     for item in sortData:
         _validate_path_component(item)

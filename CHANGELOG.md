@@ -2,6 +2,29 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.22.0-rc.9] — 2026-04-19
+
+### Fixed — Code Review: Critical, High & Medium Bug Fixes
+
+Full Data subagent code review identified 23 issues across all Python and JS files. This RC addresses the most impactful findings.
+
+#### Critical
+- **C1: Blocking I/O in process_yaml.py** — Rewrote `process_yaml()` and `reload_configuration()` to use async executor for all file system operations. Added `_read_yaml_safe()`/`_write_yaml_safe()` helpers replacing raw `open()` calls.
+- **C2: Unguarded json.loads in WS handlers** — Added `_safe_json_loads()` helper wrapping all 12 `json.loads()` call sites across `__init__.py` WS handlers. Invalid JSON now returns error response instead of crashing.
+
+#### High
+- **H1: Notification WS type mismatch** — Fixed `_loadNotifications()` WS type from `lcars_dashboard/notification/get` to `lcars_dashboard_notification/get`.
+- **H2: Reload crash on empty YAML** — `_read_yaml_safe()` now returns None for empty/missing files; callers check before processing.
+- **H3: File handle leak** — All raw `open()` calls replaced with `_read_yaml_safe()`/`_write_yaml_safe()` context-managed helpers.
+- **H4: YAML write race condition** — Added per-file `asyncio.Lock` infrastructure (`_get_yaml_lock()`) protecting concurrent read-modify-write on entity YAML.
+- **H5: Climate debouncer leak** — Added `disconnectedCallback()` to `LcarsClimatePanel` that cancels the setpoint debouncer timer on disconnect.
+
+#### Medium
+- **M1: Variable shadowing** — Fixed `page_config` variable shadowing in `process_yaml()` (renamed to `page_data`).
+- **M2: Entities list validation** — Added `isinstance(list)` check for entities boolean value WS handler.
+- **M4: Dead alarm timer cleanup** — Removed orphaned `_alarmLockoutTimer` cleanup from homepage card `disconnectedCallback`.
+- **M5: Unbounded notifications** — Added FIFO eviction (max 100) in notification create service to prevent memory growth.
+
 ## [4.22.0-rc.8] — 2026-04-19
 
 ### Fixed — Consolidated P6b–P9: Formatting, Offline Degradation, Media Compaction, A11y, Security (17 items)

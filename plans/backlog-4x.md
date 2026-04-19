@@ -10,11 +10,13 @@
 
 ## Open Bugs
 
-### 4X-46 - Life Support horizontal clipping - `TODO` - Priority: HIGH - Size: M
+### 4X-46 - Life Support: un-nest Awair + sensor/purifier classification split - `TODO` - Priority: HIGH - Size: L
 
 **GitHub Issue**: [#44](https://github.com/htiel/LCARS-lovelace-dashboard/issues/44)
 
-Horizontal clipping on nested environment panel's atmoscrubber cylinder. Vertical clipping fixed (flex-basis auto + :host display:block). Horizontal overflow persists. Parked pending further CSS investigation.
+Originally: horizontal clipping on nested environment panel. Expanded to full design change after Geordi + Data review.
+
+**Design direction**: Un-nest Awair from Life Support. Restructure `_partitionEntities()` into 4 groups: climate (thermostats, stays nested), scrubber (active purifiers with fan — full cylinder), sensor array (passive AQ monitors like Awair — compact grid, no cylinder), ambient (temp/humidity row). Add `isAirPurifier()` and `isAQSensorOnly()` predicates. Awair's dormant cylinder animation is misleading for a device that can't treat air.
 
 ---
 

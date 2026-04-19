@@ -16,6 +16,8 @@ import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { canonicalLabel, ariaLabel, formatNumber } from '../../lcars-format-utils.js';
 import {
   isClimateEntity, isEnvironmentEntity, isAmbientSensor,
+  isAirPurifierEntity, isAQSensorEntity,
+  AQ_DEVICE_CLASSES, AQ_ENTITY_SUFFIX_RE,
   classifyDevice, PANEL_TYPE_CLIMATE, PANEL_TYPE_ENVIRONMENT,
   SENSOR_DOMAINS, isDiagnosticEntity,
 } from '../../lcars-entity-utils.js';
@@ -64,14 +66,18 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
   /* ─── Entity Partitioning ─── */
 
   /**
-   * Partition all entities into functional groups for substations.
-   * Returns { climateGroup, envGroup, ambientEntries, config }.
+   * Partition all entities into functional groups for substations. (4X-46)
+   * Returns { climateGroup, scrubberGroup, sensorArrayEntries, ambientEntries, otherEntries, config }.
+   *
+   * Environment entities are split into two buckets:
+   * - scrubberEntries: from devices that include an active purifier fan (AQ_FAN_PLATFORMS)
+   * - sensorArrayEntries: passive AQ monitors with no purifier fan (e.g. Awair)
    */
   _partitionEntities() {
     const allEntries = this._getAllEntities();
     const devices = this.hass?.devices || {};
 
-    // Separate climate device entities, environment device entities, and standalone sensors
+    // First pass: partition by function
     const climateEntries = [];
     const envEntries = [];
     const ambientEntries = [];
@@ -91,22 +97,45 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
       }
     }
 
-    // Build device groups for climate and environment substations
+    // Second pass: split environment entries into scrubber vs sensor-array (4X-46)
+    // A device with ANY purifier fan entity → all its env entities go to scrubber
+    // A device with ONLY passive AQ sensors → sensor array
+    const scrubberEntries = [];
+    const sensorArrayEntries = [];
+
+    const envByDevice = new Map();
+    for (const entry of envEntries) {
+      const devId = entry.entity?.device_id || '_ungrouped';
+      if (!envByDevice.has(devId)) envByDevice.set(devId, []);
+      envByDevice.get(devId).push(entry);
+    }
+
+    for (const [devId, entries] of envByDevice) {
+      const hasPurifierFan = entries.some(e => isAirPurifierEntity(e));
+      if (hasPurifierFan) {
+        scrubberEntries.push(...entries);
+      } else {
+        sensorArrayEntries.push(...entries);
+      }
+    }
+
+    // Build device groups
     const climateGroup = this._buildDeviceGroup(climateEntries, devices);
-    const envGroup = this._buildDeviceGroup(envEntries, devices);
+    const scrubberGroup = this._buildDeviceGroup(scrubberEntries, devices);
 
     // Determine configuration
     const hasClimate = climateEntries.length > 0;
-    const hasEnvironment = envEntries.length > 0;
-    const hasAmbient = ambientEntries.length > 0;
+    const hasScrubber = scrubberEntries.length > 0;
+    const hasSensorArray = sensorArrayEntries.length > 0;
 
     let config;
-    if (hasClimate && hasEnvironment) config = 'full';
-    else if (!hasClimate && hasEnvironment) config = 'atmos-only';
-    else if (hasClimate && !hasEnvironment) config = 'climate-only';
+    if (hasClimate && hasScrubber) config = 'full';
+    else if (!hasClimate && hasScrubber) config = 'atmos-only';
+    else if (hasClimate && !hasScrubber) config = 'climate-only';
+    else if (hasSensorArray) config = 'sensor-array-only';
     else config = 'sensors-only';
 
-    return { climateGroup, envGroup, ambientEntries, otherEntries, config };
+    return { climateGroup, scrubberGroup, sensorArrayEntries, ambientEntries, otherEntries, config };
   }
 
   /**
@@ -198,15 +227,17 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
   }
 
   renderContent() {
-    const { climateGroup, envGroup, ambientEntries, config } = this._partitionEntities();
+    const { climateGroup, scrubberGroup, sensorArrayEntries, ambientEntries, config } = this._partitionEntities();
 
     switch (config) {
       case 'full':
-        return this._renderFullLayout(climateGroup, envGroup, ambientEntries);
+        return this._renderFullLayout(climateGroup, scrubberGroup, sensorArrayEntries, ambientEntries);
       case 'atmos-only':
-        return this._renderAtmosOnly(envGroup);
+        return this._renderAtmosOnly(scrubberGroup);
       case 'climate-only':
-        return this._renderClimateOnly(climateGroup, ambientEntries);
+        return this._renderClimateOnly(climateGroup, sensorArrayEntries, ambientEntries);
+      case 'sensor-array-only':
+        return this._renderSensorArrayOnly(sensorArrayEntries, ambientEntries);
       case 'sensors-only':
         return this._renderSensorHero(ambientEntries);
       default:
@@ -214,9 +245,9 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
     }
   }
 
-  /* ─── Full Layout: Climate + Environment substations + ambient + sparklines ─── */
+  /* ─── Full Layout: Climate + Scrubber substations + sensor array + ambient + sparklines ─── */
 
-  _renderFullLayout(climateGroup, envGroup, ambientEntries) {
+  _renderFullLayout(climateGroup, scrubberGroup, sensorArrayEntries, ambientEntries) {
     return html`
       <div class="ls-content ls-full">
         <div class="ls-substations">
@@ -231,7 +262,7 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
           </div>
           <div class="ls-substation ls-env-sub">
             <lcars-environment-panel
-              .group=${envGroup}
+              .group=${scrubberGroup}
               .hass=${this.hass}
               .editMode=${this.editMode}
               .config=${this.config}
@@ -239,19 +270,20 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
             </lcars-environment-panel>
           </div>
         </div>
+        ${this._renderSensorArray(sensorArrayEntries)}
         ${this._renderAmbientRow(ambientEntries)}
         ${this._renderSparklineTray()}
       </div>
     `;
   }
 
-  /* ─── Atmos Only: Single environment panel ─── */
+  /* ─── Atmos Only: Single environment panel (active purifier) ─── */
 
-  _renderAtmosOnly(envGroup) {
+  _renderAtmosOnly(scrubberGroup) {
     return html`
       <div class="ls-content ls-atmos-only">
         <lcars-environment-panel
-          .group=${envGroup}
+          .group=${scrubberGroup}
           .hass=${this.hass}
           .editMode=${this.editMode}
           .config=${this.config}
@@ -261,9 +293,9 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
     `;
   }
 
-  /* ─── Climate Only: Single climate + ambient + sparklines ─── */
+  /* ─── Climate Only: Single climate + sensor array + ambient + sparklines ─── */
 
-  _renderClimateOnly(climateGroup, ambientEntries) {
+  _renderClimateOnly(climateGroup, sensorArrayEntries, ambientEntries) {
     return html`
       <div class="ls-content ls-climate-only">
         <lcars-climate-panel
@@ -273,6 +305,19 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
           .config=${this.config}
           frame-mode="nested">
         </lcars-climate-panel>
+        ${this._renderSensorArray(sensorArrayEntries)}
+        ${this._renderAmbientRow(ambientEntries)}
+        ${this._renderSparklineTray()}
+      </div>
+    `;
+  }
+
+  /* ─── Sensor Array Only: passive AQ monitors with no thermostat/purifier (4X-46) ─── */
+
+  _renderSensorArrayOnly(sensorArrayEntries, ambientEntries) {
+    return html`
+      <div class="ls-content ls-sensor-array-only">
+        ${this._renderSensorArray(sensorArrayEntries)}
         ${this._renderAmbientRow(ambientEntries)}
         ${this._renderSparklineTray()}
       </div>
@@ -317,6 +362,87 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
           return dc !== 'temperature' && dc !== 'humidity';
         }))}
         ${this._renderSparklineTray()}
+      </div>
+    `;
+  }
+
+  /* ─── Sensor Array: compact AQ readout for passive monitors (4X-46) ─── */
+
+  _getAQMetricColor(deviceClass, value) {
+    const v = parseFloat(value);
+    if (isNaN(v)) return 'var(--lcars-gray, #666688)';
+    switch (deviceClass) {
+      case 'carbon_dioxide':
+        return v <= 600 ? 'var(--lcars-ice)' : v <= 1000 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+      case 'volatile_organic_compounds':
+      case 'volatile_organic_compounds_parts':
+        return v <= 150 ? 'var(--lcars-ice)' : v <= 500 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+      case 'pm25':
+        return v <= 12 ? 'var(--lcars-ice)' : v <= 35 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+      case 'pm10':
+        return v <= 54 ? 'var(--lcars-ice)' : v <= 154 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+      case 'aqi':
+        return v <= 50 ? 'var(--lcars-ice)' : v <= 100 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+      default:
+        return 'var(--lcars-butterscotch)';
+    }
+  }
+
+  _renderSensorArray(entries) {
+    if (!entries?.length) return html``;
+
+    // Separate score entries from AQ metric entries
+    const scoreEntries = entries.filter(e =>
+      !e.state?.attributes?.device_class &&
+      e.domain === 'sensor' &&
+      AQ_ENTITY_SUFFIX_RE.test(e.entity?.entity_id || '')
+    );
+    const aqEntries = entries.filter(e =>
+      AQ_DEVICE_CLASSES.has(e.state?.attributes?.device_class || '')
+    );
+
+    // Order AQ metrics: PM2.5, CO2, VOC, PM10, then rest
+    const AQ_ORDER = ['pm25', 'carbon_dioxide', 'volatile_organic_compounds', 'volatile_organic_compounds_parts', 'pm10', 'aqi'];
+    aqEntries.sort((a, b) => {
+      const dcA = a.state?.attributes?.device_class || '';
+      const dcB = b.state?.attributes?.device_class || '';
+      const iA = AQ_ORDER.indexOf(dcA);
+      const iB = AQ_ORDER.indexOf(dcB);
+      return (iA === -1 ? 99 : iA) - (iB === -1 ? 99 : iB);
+    });
+
+    const scoreEntry = scoreEntries[0];
+    const scoreVal = scoreEntry ? parseFloat(scoreEntry.state?.state) : null;
+    const scoreColor = scoreVal != null && Number.isFinite(scoreVal)
+      ? (scoreVal >= 80 ? 'var(--lcars-ice)' : scoreVal >= 60 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)')
+      : 'var(--lcars-gray)';
+
+    return html`
+      <div class="ls-sensor-array" role="region" aria-label="Air Quality Sensor Array">
+        <div class="ls-sensor-array-header">
+          <span class="ls-sensor-array-label">SENSOR ARRAY</span>
+          ${scoreEntry && scoreVal != null && Number.isFinite(scoreVal) ? html`
+            <span class="ls-sensor-array-score" style="color:${scoreColor}"
+                  aria-label="Air quality score: ${Math.round(scoreVal)}">
+              ${Math.round(scoreVal)}
+            </span>
+          ` : ''}
+        </div>
+        <div class="ls-sensor-array-grid">
+          ${aqEntries.map(entry => {
+            const dc = entry.state?.attributes?.device_class || '';
+            const name = this._shortEntityName(entry);
+            const { text } = this._formatSensorValue(entry.state, entry.entity);
+            const color = this._getAQMetricColor(dc, entry.state?.state);
+            return html`
+              <div class="ls-aq-metric" aria-label="${name}: ${text}">
+                <span class="ls-aq-indicator" style="background:${color}"></span>
+                <span class="ls-aq-name">${name}</span>
+                <span class="ls-aq-value" style="color:${color}">${text}</span>
+              </div>
+            `;
+          })}
+        </div>
       </div>
     `;
   }

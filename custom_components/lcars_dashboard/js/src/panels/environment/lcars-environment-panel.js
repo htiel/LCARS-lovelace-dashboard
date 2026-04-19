@@ -9,7 +9,6 @@
 import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { AQ_DEVICE_CLASSES, AQ_ENTITY_SUFFIX_RE } from '../../lcars-entity-utils.js';
-import { getStateColor, getCo2Color } from '../../lcars-color-utils.js';
 import { renderSparkline, fetchSparklineData } from '../../lcars-sparkline.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { environmentPanelStyles } from './lcars-environment-panel-styles.js';
@@ -153,13 +152,12 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
         <div class="env-sensors" role="list" aria-label="${deviceName} sensors">
           ${airQuality.map(({ entity, state }) => {
             const name = this._friendlyName(state, entity);
-            const val = state.state;
-            const unit = state.attributes?.unit_of_measurement || '';
-            const color = this._getSensorIndicatorColor(state);
+            const { text } = this._formatSensorValue(state, entity);
+            const color = this._getSensorIndicatorColor(state, entity?.entity_category);
             return html`
               <lcars-sensor-row
                 label="${name}"
-                value="${val}${unit ? ' ' + unit : ''}"
+                value="${text}"
                 color="${color}"
                 entity-id="${entity.entity_id}">
               </lcars-sensor-row>
@@ -167,13 +165,12 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
           })}
           ${telemetry.map(({ entity, state }) => {
             const name = this._friendlyName(state, entity);
-            const val = state.state;
-            const unit = state.attributes?.unit_of_measurement || '';
-            const color = this._getSensorIndicatorColor(state);
+            const { text } = this._formatSensorValue(state, entity);
+            const color = this._getSensorIndicatorColor(state, entity?.entity_category);
             return html`
               <lcars-sensor-row
                 label="${name}"
-                value="${val}${unit ? ' ' + unit : ''}"
+                value="${text}"
                 color="${color}"
                 entity-id="${entity.entity_id}">
               </lcars-sensor-row>
@@ -183,13 +180,12 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
             <lcars-section-divider label="DIAGNOSTICS"></lcars-section-divider>
             ${diagnostics.map(({ entity, state }) => {
               const name = this._friendlyName(state, entity);
-              const val = state.state;
-              const unit = state.attributes?.unit_of_measurement || '';
-              const color = this._getSensorIndicatorColor(state);
+              const { text } = this._formatSensorValue(state, entity);
+              const color = this._getSensorIndicatorColor(state, entity?.entity_category);
               return html`
                 <lcars-sensor-row
                   label="${name}"
-                  value="${val}${unit ? ' ' + unit : ''}"
+                  value="${text}"
                   color="${color}"
                   entity-id="${entity.entity_id}">
                 </lcars-sensor-row>

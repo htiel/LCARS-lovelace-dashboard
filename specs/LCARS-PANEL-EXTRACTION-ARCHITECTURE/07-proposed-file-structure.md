@@ -13,6 +13,13 @@ js/src/
   │                                      - LcarsBasePanel class
   │                                      - render() wraps content in <lcars-panel-frame>
   │                                      - Shared entity helpers, panel code generator
+  │                                      - _formatSensorValue() / _canonicalLabel() (v4.22.0 P2)
+  │
+  ├── lcars-format-utils.js           ← NEW (v4.22.0): centralized formatting (~180 lines)
+  │                                      - formatNumber() — device-class-aware rounding
+  │                                      - formatStateValue() — domain-aware state text
+  │                                      - canonicalLabel() — short LCARS labels
+  │                                      - ariaLabel() — screen-reader-safe label text
   │
   ├── components/                     ← NEW: shared UI primitives (custom elements)
   │   ├── lcars-panel-frame/

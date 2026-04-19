@@ -20,11 +20,28 @@
  * sensor (battery threshold), and event domains.
  * @param {string} entityId - Full entity_id (e.g. 'binary_sensor.motion_front')
  * @param {Object|null} state - HA state object { state, attributes, entity_id }
+ * @param {string} [entityCategory=''] - Entity category (diagnostic, config, '')
  * @returns {string} CSS variable string
  */
-export function getStateColor(entityId, state) {
+export function getStateColor(entityId, state, entityCategory = '') {
   const s = state?.state;
-  if (s === 'unavailable' || s === 'unknown') return 'var(--lcars-alert)';
+  if (s === 'unavailable' || s === 'unknown') {
+    const domain = entityId.split('.')[0];
+    // Idle domains (buttons, scenes, scripts) — dormant, not alarming
+    if (domain === 'button' || domain === 'input_button' || domain === 'scene' || domain === 'script') {
+      return 'var(--lcars-disabled)';
+    }
+    // Diagnostic/config entities — informational, not alarming
+    if (entityCategory === 'diagnostic' || entityCategory === 'config') {
+      return 'var(--lcars-disabled)';
+    }
+    // Sensors — data missing, not operational failure
+    if (domain === 'sensor' || domain === 'binary_sensor') {
+      return 'var(--lcars-disabled)';
+    }
+    // Genuinely offline operational entities — keep alert
+    return 'var(--lcars-alert)';
+  }
 
   const dc = state?.attributes?.device_class || '';
   const domain = entityId.split('.')[0];

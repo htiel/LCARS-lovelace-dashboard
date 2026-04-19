@@ -35,6 +35,7 @@ import {
   isDiagnosticEntity,
 } from './lcars-entity-utils.js';
 import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor, getCo2Color, getTempColor, getTempComfortClass, getSafeComfortColor, COMFORT_COLORS, getRainDelayInfo, getPowerColor, getPowerLabel, getGridBalanceColor } from './lcars-color-utils.js';
+import { formatNumber, formatStateValue } from './lcars-format-utils.js';
 import { clampSetpoint, clampValue, createRateLimiter, createDebouncer } from './lcars-service-utils.js';
 import { renderSparkline, fetchSparklineData } from './lcars-sparkline.js';
 import { fetchForecasts } from './lcars-weather-utils.js';
@@ -4170,13 +4171,18 @@ class LcarsHomepageCard extends LitElement {
     }
 
     /* ─── Sensor indicator color per state (Geordi spec) ─── */
-    _getSensorIndicatorColor(state) {
+    _getSensorIndicatorColor(state, entityCategory = '') {
       // 4X-1: CO₂-specific 3-tier coloring (D-C2 — wire getCo2Color into rendering)
       const dc = state?.attributes?.device_class || '';
       if (dc === 'carbon_dioxide') {
         return getCo2Color(state?.state);
       }
-      return getStateColor(state?.entity_id || '', state);
+      return getStateColor(state?.entity_id || '', state, entityCategory);
+    }
+
+    /* ─── Formatted sensor value (P2: centralized formatting) ─── */
+    _fmtSensor(state, entity) {
+      return formatStateValue(state, entity?.entity_category || '');
     }
 
     /* ═══ CAMERA DEVICE PANEL RENDERER ═══ */
@@ -4195,17 +4201,16 @@ class LcarsHomepageCard extends LitElement {
           <div class="device-panel-sensors" role="list" aria-label="${deviceName} sensors">
             ${sensors.map(({ entity, state }) => {
               const name = this._friendlyName(state, entity);
-              const val = state.state;
-              const unit = state.attributes?.unit_of_measurement || '';
-              const color = this._getSensorIndicatorColor(state);
+              const { text } = this._fmtSensor(state, entity);
+              const color = this._getSensorIndicatorColor(state, entity?.entity_category);
               return html`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
-                  aria-label="${name}: ${val}${unit ? ' ' + unit : ''}"
+                  aria-label="${name}: ${text}"
                   @click=${() => this._handleEntityClick(entity.entity_id)}
                   @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                   <div class="sensor-indicator" style="background:${color}"></div>
                   <span class="sensor-label">${name}</span>
-                  <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                  <span class="sensor-state-value" style="color:${color}">${text}</span>
                 </div>
               `;
             })}
@@ -4493,33 +4498,31 @@ class LcarsHomepageCard extends LitElement {
           <div class="env-sensors" role="list" aria-label="${deviceName} sensors">
             ${airQuality.map(({ entity, state }) => {
               const name = this._friendlyName(state, entity);
-              const val = state.state;
-              const unit = state.attributes?.unit_of_measurement || '';
-              const color = this._getSensorIndicatorColor(state);
+              const { text } = this._fmtSensor(state, entity);
+              const color = this._getSensorIndicatorColor(state, entity?.entity_category);
               return html`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
-                  aria-label="${name}: ${val}${unit ? ' ' + unit : ''}"
+                  aria-label="${name}: ${text}"
                   @click=${() => this._handleEntityClick(entity.entity_id)}
                   @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                   <div class="sensor-indicator" style="background:${color}"></div>
                   <span class="sensor-label">${name}</span>
-                  <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                  <span class="sensor-state-value" style="color:${color}">${text}</span>
                 </div>
               `;
             })}
             ${telemetry.map(({ entity, state }) => {
               const name = this._friendlyName(state, entity);
-              const val = state.state;
-              const unit = state.attributes?.unit_of_measurement || '';
-              const color = this._getSensorIndicatorColor(state);
+              const { text } = this._fmtSensor(state, entity);
+              const color = this._getSensorIndicatorColor(state, entity?.entity_category);
               return html`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
-                  aria-label="${name}: ${val}${unit ? ' ' + unit : ''}"
+                  aria-label="${name}: ${text}"
                   @click=${() => this._handleEntityClick(entity.entity_id)}
                   @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                   <div class="sensor-indicator" style="background:${color}"></div>
                   <span class="sensor-label">${name}</span>
-                  <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                  <span class="sensor-state-value" style="color:${color}">${text}</span>
                 </div>
               `;
             })}
@@ -4528,16 +4531,15 @@ class LcarsHomepageCard extends LitElement {
               <div class="battery-section-label">DIAGNOSTICS</div>
               ${diagnostics.map(({ entity, state }) => {
                 const name = this._friendlyName(state, entity);
-                const val = state.state;
-                const unit = state.attributes?.unit_of_measurement || '';
-                const color = this._getSensorIndicatorColor(state);
+                const { text } = this._fmtSensor(state, entity);
+                const color = this._getSensorIndicatorColor(state, 'diagnostic');
                 return html`
                   <div class="device-sensor-line" tabindex="0" role="listitem"
                     @click=${() => this._handleEntityClick(entity.entity_id)}
                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                     <div class="sensor-indicator" style="background:${color}"></div>
                     <span class="sensor-label">${name}</span>
-                    <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                    <span class="sensor-state-value" style="color:${color}">${text}</span>
                   </div>
                 `;
               })}
@@ -4732,16 +4734,15 @@ class LcarsHomepageCard extends LitElement {
             ` : ''}
             ${keyTelemetry.map(({ entity, state }) => {
               const name = this._friendlyName(state, entity);
-              const val = state.state;
-              const unit = state.attributes?.unit_of_measurement || '';
-              const color = this._getSensorIndicatorColor(state);
+              const { text } = this._fmtSensor(state, entity);
+              const color = this._getSensorIndicatorColor(state, entity?.entity_category);
               return html`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
                   @click=${() => this._handleEntityClick(entity.entity_id)}
                   @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                   <div class="sensor-indicator" style="background:${color}"></div>
                   <span class="sensor-label">${name}</span>
-                  <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                  <span class="sensor-state-value" style="color:${color}">${text}</span>
                 </div>
               `;
             })}
@@ -4750,16 +4751,15 @@ class LcarsHomepageCard extends LitElement {
               <div class="battery-section-label">DIAGNOSTICS</div>
               ${keyDiagnostics.map(({ entity, state }) => {
                 const name = this._friendlyName(state, entity);
-                const val = state.state;
-                const unit = state.attributes?.unit_of_measurement || '';
-                const color = this._getSensorIndicatorColor(state);
+                const { text } = this._fmtSensor(state, entity);
+                const color = this._getSensorIndicatorColor(state, 'diagnostic');
                 return html`
                   <div class="device-sensor-line" tabindex="0" role="listitem"
                     @click=${() => this._handleEntityClick(entity.entity_id)}
                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                     <div class="sensor-indicator" style="background:${color}"></div>
                     <span class="sensor-label">${name}</span>
-                    <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                    <span class="sensor-state-value" style="color:${color}">${text}</span>
                   </div>
                 `;
               })}
@@ -4817,7 +4817,7 @@ class LcarsHomepageCard extends LitElement {
                       <div class="battery-slider-fill" style="width:${pct}%"></div>
                       <div class="battery-slider-thumb" style="left:${pct}%"></div>
                     </div>
-                    <span class="battery-slider-value">${val}${unit ? ' ' + unit : ''}</span>
+                    <span class="battery-slider-value">${formatNumber(String(val), state.attributes?.device_class || '')}${unit ? ' ' + unit : ''}</span>
                   </div>
                 `;
               }
@@ -4875,7 +4875,7 @@ class LcarsHomepageCard extends LitElement {
                         <div class="battery-slider-fill" style="width:${pct}%"></div>
                         <div class="battery-slider-thumb" style="left:${pct}%"></div>
                       </div>
-                      <span class="battery-slider-value">${val}${unit ? ' ' + unit : ''}</span>
+                      <span class="battery-slider-value">${formatNumber(String(val), state.attributes?.device_class || '')}${unit ? ' ' + unit : ''}</span>
                     </div>
                   `;
                 }
@@ -5830,17 +5830,16 @@ class LcarsHomepageCard extends LitElement {
             <div class="pool-chemistry" role="list" aria-label="Water chemistry">
               ${chemistry.map(({ entity, state }) => {
                 const name = this._friendlyName(state, entity);
-                const val = state.state;
-                const unit = state.attributes?.unit_of_measurement || '';
-                const color = this._getSensorIndicatorColor(state);
+                const { text } = this._fmtSensor(state, entity);
+                const color = this._getSensorIndicatorColor(state, entity?.entity_category);
                 return html`
                   <div class="device-sensor-line" tabindex="0" role="listitem"
-                    aria-label="${name}: ${val}${unit ? ' ' + unit : ''}"
+                    aria-label="${name}: ${text}"
                     @click=${() => this._handleEntityClick(entity.entity_id)}
                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                     <div class="sensor-indicator" style="background:${color}"></div>
                     <span class="sensor-label">${name}</span>
-                    <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                    <span class="sensor-state-value" style="color:${color}">${text}</span>
                   </div>
                 `;
               })}

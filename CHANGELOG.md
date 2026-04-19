@@ -2,6 +2,40 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.22.0-rc.2] — 2026-04-18
+
+### Fixed — Shared Formatting, Labels, and State Semantics (P2)
+
+**New module: `lcars-format-utils.js`** — Centralized sensor value formatting, state text, and canonical labels. 9 bugs fixed.
+
+1. **Device-class-aware rounding (DATA-008, DATA-018, GEORDI-001):** All sensor values now format through `formatNumber()` with per-device-class decimal rules: temperature→1dp, humidity→0dp, power→0dp, CO₂→0dp, VOC→0dp, etc. Raw decimals like `2.1594203157...` no longer appear in sensor rows, sparkline trays, or ambient readings.
+
+2. **Domain-aware state semantics (DATA-012, WESLEY-UX-003, GEORDI-014):** `formatStateValue()` returns context-appropriate text for unknown/unavailable states:
+   - Button/scene/script `unknown` → **READY** (gray, not red)
+   - Sensor `unknown` → **NO DATA** (gray)
+   - Sensor `unavailable` → **OFFLINE** (gray)
+   - Diagnostic/config → **—** (em dash, gray)
+   - Only genuinely offline operational entities (lights, covers, locks) remain alert red
+
+3. **Canonical short labels (GEORDI-032, GEORDI-003, WESLEY-UX-010):** `canonicalLabel()` maps device classes to LCARS-appropriate abbreviations: PM₂.₅, CO₂, VOC, AQI, RH, TEMP, PRESS, BATT, RSSI. Sparkline tray labels like "VOLATILE ORGANIC COMPOUNDS" (truncated) now display as "VOC". Pool chemistry suffix matching: ORP, pH, SALT, ALK, CYA, FREE CL.
+
+4. **Accessibility:** `ariaLabel()` strips Unicode subscripts for screen-reader-safe announcements. Sparkline slots upgraded from `aria-hidden` to descriptive `aria-label`.
+
+**Integration:** All sensor rendering sites in environment panel, lifesupport panel (sparklines, ambient, hero), and homepage card (camera, environment, battery, pool chemistry) routed through centralized formatters. Slider display values use `formatNumber()` for consistent rounding.
+
+**Bundle impact:** +3 KiB (690→693 KiB) — consistent with architectural estimate.
+
+### Phase 6 Team Review
+
+| Reviewer | Verdict |
+|----------|---------|
+| Geordi La Forge (Design) | APPROVED WITH CONDITIONS — 2 non-blocking (sparkline SVG a11y pre-existing, current 2dp) |
+| Data (Architecture) | APPROVED — M1/M2/M3 verified resolved, 3 advisory (dead import fixed, sensor hero fixed, ariaLabel micro-opt) |
+| Worf (Security) | APPROVED — 0 findings, pipeline confirmed XSS-safe |
+| Wesley Crusher (Creative) | APPROVED WITH CONDITIONS — sentinel guard added, unconverted panels tracked for P3+ |
+
+---
+
 ## [4.22.0-rc.1] — 2026-04-18
 
 ### Fixed — Classification Core (P1)

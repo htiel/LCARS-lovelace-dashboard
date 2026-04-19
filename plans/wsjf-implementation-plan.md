@@ -196,7 +196,7 @@ Description: Centralize how values, labels, and idle/error states render. This r
   - `#49` maps to GEORDI-032 and WESLEY-UX-010. P2 addressed canonical sparkline labeling, but duplicated label selection remains open through QA-E05.
   - `#50` maps to GEORDI-014. Treat it as addressed by the shipped P2 color-semantic work unless a fresh repro appears.
 
-### Pass P3 — Residual Classification Cleanup, Telemetry Relevance, Diagnostics Disclosure, and Camera Recovery UX
+### Pass P3 — ✅ COMPLETE (v4.22.0-rc.3) — Residual Classification Cleanup, Telemetry Relevance, Diagnostics Disclosure, and Camera Recovery UX
 
 Description: Fix the residual generic-device fallback leaks, noisy sensor dumps, and broken hazard/environment composition that remained after P1 and P2 shipped. This pass is about showing the right data, suppressing the wrong fallback surfaces, and then presenting the surviving telemetry with useful recovery states.
 

@@ -47,7 +47,7 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
         airQuality.push(entry);
         continue;
       }
-      if (!dc && domain === 'sensor' && AQ_ENTITY_SUFFIX_RE.test(entry.entity.entity_id)) {
+      if (!dc && domain === 'sensor' && AQ_ENTITY_SUFFIX_RE.test(entry.entity?.entity_id || '')) {
         score.push(entry);
         continue;
       }
@@ -117,6 +117,7 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
     const categoryEntities = this._getDeviceCategoryEntities(this.group.device.id);
     const { score, airQuality, telemetry, controls, diagnostics } = this._partitionEnvironmentEntities(this.group.entities, categoryEntities);
     const deviceName = this._shortDeviceName(this.group.device) || 'Environment';
+    const showAtmoscrubber = score.length > 0 || airQuality.length > 0;
 
     const scoreEntry = score[0];
     const scoreVal = scoreEntry ? parseFloat(scoreEntry.state.state) : null;
@@ -198,19 +199,21 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
         </div>
 
         <!-- Atmoscrubber Cylinder -->
-        <div class="atmoscrubber-container" role="meter"
-          aria-valuenow="${aqiEstimate != null ? Math.round(aqiEstimate) : ''}"
-          aria-valuemin="0" aria-valuemax="300"
-          aria-label="Air quality: ${aqiEstimate != null ? Math.round(aqiEstimate) : 'unknown'}">
-          <div class="atmoscrubber ${isIdle ? 'scrubber-idle' : ''}"
-            style="--scrubber-hue:${Math.round(hue)};--scrubber-speed:${scrubberSpeed.toFixed(1)}s;--atmos-quality-color:${aqColor}">
-            ${scoreEntry ? html`
-              <div class="scrubber-score">${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : '—'}</div>
-            ` : pm25Entry ? html`
-              <div class="scrubber-score">${pm25Val != null && Number.isFinite(pm25Val) ? Math.round(pm25Val) : '—'}</div>
-            ` : ''}
+        ${showAtmoscrubber ? html`
+          <div class="atmoscrubber-container" role="meter"
+            aria-valuenow="${aqiEstimate != null ? Math.round(aqiEstimate) : ''}"
+            aria-valuemin="0" aria-valuemax="300"
+            aria-label="Air quality: ${aqiEstimate != null ? Math.round(aqiEstimate) : 'unknown'}">
+            <div class="atmoscrubber ${isIdle ? 'scrubber-idle' : ''}"
+              style="--scrubber-hue:${Math.round(hue)};--scrubber-speed:${scrubberSpeed.toFixed(1)}s;--atmos-quality-color:${aqColor}">
+              ${scoreEntry ? html`
+                <div class="scrubber-score">${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : '—'}</div>
+              ` : pm25Entry ? html`
+                <div class="scrubber-score">${pm25Val != null && Number.isFinite(pm25Val) ? Math.round(pm25Val) : '—'}</div>
+              ` : ''}
+            </div>
           </div>
-        </div>
+        ` : ''}
 
         <!-- Controls (right) — only for purifiers -->
         ${!sensorOnly ? html`

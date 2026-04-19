@@ -2,6 +2,8 @@
 
 The centerpiece visualization: a vertical cylinder representing the air filtration column. Particles drift upward through it — dirty air enters the bottom, clean air exits the top.
 
+**Visibility Guard (v4.22.0+):** The cylinder only renders when the device has actual AQ data (`score.length > 0 || airQuality.length > 0`). Devices routed to the environment panel without AQ sensors (e.g., during classification edge cases) will not show an empty cylinder. Per Bracer Jack manifesto §3 — "Empty space is beautiful" — an empty green cylinder with no data is worse than no cylinder at all.
+
 ### Cylinder CSS
 
 ```css

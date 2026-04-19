@@ -129,10 +129,13 @@ const WEATHER_SENSOR_CLASSES = new Set([
 // ─── Hazard Detection ───────────────────────────────────────────────────────
 // Safety-critical device classes (4X-39)
 const HAZARD_STATUS_CLASSES = new Set(['smoke', 'gas', 'carbon_monoxide', 'heat', 'safety']);
+const HAZARD_FALSE_POSITIVE_PLATFORMS = new Set(['tplink', 'kasa']);
 
 // ─── Galley/Appliance Detection ─────────────────────────────────────────────
 // Known appliance platforms (4X-40)
 const GALLEY_PLATFORMS = new Set(['ge_home', 'smartthinq_sensors']);
+const AQ_FAN_PLATFORMS = new Set(['ha_blueair', 'vesync', 'smartthinq_sensors']);
+const LIGHTING_NEGATIVE_RE = /irrigation|watering|sprinkler|\bzone\b|ecoflow|backup|reserve|boost|\bdc(?:\s|_|-|\()?(?:mode|12v)\b|\bac(?:\s|_|-|\()?(?:mode|enabled)\b|humidifier|purifier|battery|inverter|charger|filter|pump|heater/i;
 
 // ─── Platform-to-Panel Routing Map (4X-44) ──────────────────────────────────
 // Master map of known HA integration platforms → LCARS panel types.
@@ -166,6 +169,7 @@ const PLATFORM_PANEL_MAP = new Map([
   ['vesync', PANEL_TYPE_ENVIRONMENT],
   // Power monitoring
   ['emporia_vue', PANEL_TYPE_POWER],
+  ['ecoflow_cloud', PANEL_TYPE_BATTERY],
 ]);
 
 // ─── Diagnostic Entity Filter (4X-44) ───────────────────────────────────────
@@ -225,9 +229,12 @@ const DETECTORS = [
   (entries) => {
     if (entries.some(e => e.entity?.platform === 'nest_protect')) return PANEL_TYPE_HAZARD;
     const hazardCount = entries.filter(e =>
-      e.domain === 'binary_sensor' && HAZARD_STATUS_CLASSES.has(e.state?.attributes?.device_class || '')
+      e.domain === 'binary_sensor' &&
+      !isDiagnosticEntity(e) &&
+      !HAZARD_FALSE_POSITIVE_PLATFORMS.has(e.entity?.platform || '') &&
+      HAZARD_STATUS_CLASSES.has(e.state?.attributes?.device_class || '')
     ).length;
-    if (hazardCount >= 1) return PANEL_TYPE_HAZARD;
+    if (hazardCount >= 2) return PANEL_TYPE_HAZARD;
     return null;
   },
 
@@ -414,15 +421,18 @@ export function createCompositeFilter(...predicates) {
 
 /** Named predicate: is this a climate/HVAC entity? */
 export function isClimateEntity(entry) {
-  return CLIMATE_DOMAINS.has(entry.domain);
+  if (!CLIMATE_DOMAINS.has(entry.domain)) return false;
+  const platform = entry.entity?.platform || '';
+  if (GALLEY_PLATFORMS.has(platform)) return false;
+  if (POOL_SPA_PLATFORMS.has(platform)) return false;
+  return true;
 }
 
 /** Named predicate: is this an air quality / environment entity? */
 export function isEnvironmentEntity(entry) {
   const dc = entry.state?.attributes?.device_class || '';
   if (AQ_DEVICE_CLASSES.has(dc)) return true;
-  // Only fans with no device_class (air purifier fans) — ceiling/exhaust fans are not environment
-  if (entry.domain === 'fan' && !dc) return true;
+  if (entry.domain === 'fan' && AQ_FAN_PLATFORMS.has(entry.entity?.platform || '')) return true;
   if (entry.domain === 'sensor' && AQ_ENTITY_SUFFIX_RE.test(entry.entity?.entity_id || '')) return true;
   return false;
 }
@@ -454,6 +464,7 @@ export function isLightingEntity(entry) {
     const eid = entry.entity?.entity_id || '';
     const name = (entry.state?.attributes?.friendly_name || '').toLowerCase();
     if (entry.state?.attributes?.device_class === 'outlet') return false;
+    if (LIGHTING_NEGATIVE_RE.test(name) || LIGHTING_NEGATIVE_RE.test(eid)) return false;
     return /light|lamp|sconce|chandelier|pendant|fixture|dimmer|illuminat/i.test(name) ||
            /light|lamp|sconce|chandelier|switchlinc|lamplinc|togglelinc/i.test(eid);
   }
@@ -473,6 +484,7 @@ export function isSecurityEntity(entry) {
 /** Named predicate: is this a tactical panel entity? (security minus cameras) */
 const TACTICAL_BINARY_CLASSES = new Set(['door', 'window', 'opening', 'garage_door', 'motion', 'occupancy', 'tamper', 'safety']);
 const TACTICAL_COVER_CLASSES = new Set(['garage_door', 'gate', 'door']);
+const VIEWPORT_COVER_CLASSES = new Set(['blind', 'shade', 'curtain', 'awning', 'shutter']);
 export function isTacticalEntity(entry) {
   if (ALARM_DOMAINS.has(entry.domain)) return true;
   if (entry.domain === 'lock') return true;
@@ -504,16 +516,19 @@ export function isAmbientSensor(entry) {
 export function classifyArea(hass, areaId, entityEntries) {
   const types = new Set();
 
-  // Life Support: climate entity OR (environment entity AND ambient sensors)
-  const hasClimate = entityEntries.some(isClimateEntity);
-  const hasEnvironment = entityEntries.some(isEnvironmentEntity);
+  // Area-level routing works on the non-diagnostic room entity set.
+  const primaryEntries = entityEntries.filter(entry => !isDiagnosticEntity(entry));
+
+  // Life Support: valid climate entity OR (valid environment entity AND ambient sensors)
+  const hasClimate = primaryEntries.some(isClimateEntity);
+  const hasEnvironment = primaryEntries.some(isEnvironmentEntity);
   const hasAmbient = entityEntries.some(isAmbientSensor);
   if (hasClimate || (hasEnvironment && hasAmbient)) {
     types.add(PANEL_TYPE_LIFE_SUPPORT);
   }
 
   // Illumination: ≥1 lighting entity in the area
-  const lightCount = entityEntries.filter(isLightingEntity).length;
+  const lightCount = primaryEntries.filter(isLightingEntity).length;
   if (lightCount >= 1) {
     types.add(PANEL_TYPE_ILLUMINATION);
   }
@@ -525,7 +540,6 @@ export function classifyArea(hass, areaId, entityEntries) {
   }
 
   // Viewport: any cover entity that's a blind/shade/curtain (4X-41)
-  const VIEWPORT_COVER_CLASSES = new Set(['blind', 'shade', 'curtain', 'awning', 'shutter']);
   const hasViewport = entityEntries.some(e => {
     if (e.domain !== 'cover') return false;
     const dc = e.state?.attributes?.device_class || '';

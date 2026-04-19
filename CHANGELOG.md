@@ -2,6 +2,40 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.22.0-rc.1] — 2026-04-18
+
+### Fixed — Classification Core (P1)
+
+**Entity Classification Overhaul** — 16 bugs fixed across entity routing, panel assignment, and classifier logic. Two root causes addressed:
+
+1. **Illumination switch catch-all removed (DATA-001, GEORDI-004, GEORDI-005):** The illumination panel no longer absorbs every unclaimed `switch` entity into "Circuits." Only switches matching `isLightingEntity()` appear. Fixes irrigation zones (Rachio), EcoFlow config switches, appliance controls, and cross-domain switches leaking into lighting panels across ~15 rooms in both homes.
+
+2. **Diagnostic entity_category filtering (DATA-002, DATA-011, GEORDI-002, GEORDI-012):** Hazard detector now ignores `entity_category: diagnostic/config` binary sensors. TP-Link Kasa devices (HS200, KP200) with diagnostic CO Status sensors no longer misclassify ceiling fans, outlets, and switches as hazard/life-support devices. Fixes ~7 rooms in Eric's home.
+
+**Additional classification fixes:**
+- GE Home refrigerator climate entities excluded from area-level Life Support (DATA-004, GEORDI-010) — fridges route to Galley panel instead of rendering HVAC arcs at 5°F
+- ScreenLogic pool/spa climate entities excluded from Life Support (DATA-005) — pool temp routes to Pool/Spa panel
+- EcoFlow `ecoflow_cloud` platform added to `PLATFORM_PANEL_MAP` → battery routing (DATA-020) — EcoFlow config switches no longer pollute illumination
+- `isEnvironmentEntity()` fan matching restricted to AQ platforms only (DATA-017, DATA-021) — ceiling fans (Bond, Kasa, Insteon) no longer trigger Life Support/environment panels
+- `isLightingEntity()` negative keyword hardening (DATA-016) — defense-in-depth exclusion of irrigation, battery, HVAC, and appliance terms
+- Empty atmoscrubber cylinder hidden when device has no AQ data (GEORDI-002) — no more green outlines on non-air-quality devices
+- `VIEWPORT_COVER_CLASSES` lifted to module-level constant for consistency
+- Optional chaining added to environment panel entity_id access
+
+### Phase 6 Team Review
+
+| Reviewer | Verdict |
+|----------|---------|
+| Geordi La Forge (Design) | APPROVED — 0 blocking, 2 non-blocking |
+| Data (Architecture) | APPROVED — 0 blocking, 0 non-blocking |
+| Worf (Security) | APPROVED — 0 blocking, 2 recommendations |
+| Wesley Crusher (UX) | APPROVED WITH CONDITIONS — 2 conditions fixed |
+
+### Files Modified
+- `lcars-entity-utils.js` — PLATFORM_PANEL_MAP, hazard detector, isClimateEntity, isEnvironmentEntity, isLightingEntity, classifyArea
+- `lcars-illumination-panel.js` — _partitionLightingEntities circuit collection
+- `lcars-environment-panel.js` — atmoscrubber visibility guard
+
 ## [4.21.0] — 2026-04-17
 
 ### Added — 4 New Panel Types

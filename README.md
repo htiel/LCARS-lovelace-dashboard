@@ -8,7 +8,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-4.18.8-blue)
+![Version](https://img.shields.io/badge/version-4.22.0--rc.1-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 [![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 
@@ -23,7 +23,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 ### Auto-Detected Panels
 
-The dashboard auto-discovers devices and routes them to the correct panel using a priority-ordered classifier: camera → alarm → pool/spa → climate → media → environment → irrigation → weather → power → battery. Area-level composite panels (life support, illumination) aggregate entities across devices.
+The dashboard auto-discovers devices and routes them to the correct panel using a priority-ordered classifier: camera → alarm → pool/spa → climate → media → environment → irrigation → weather → power → battery. Area-level composite panels (life support, illumination) aggregate entities across devices. Diagnostic and config entities (`entity_category`) are filtered from classification signals to prevent false positives (e.g., TP-Link CO Status sensors no longer trigger hazard detection). Platform-aware exclusions prevent galley appliances and pool equipment from being absorbed by Life Support.
 
 #### Camera Panel
 Live camera feeds with LCARS-framed viewscreen and activation animation. Three-state display: ESTABLISHING LINK (connecting), live feed, VIEWSCREEN OFFLINE (error/timeout). Stale image prevention via forced src binding on room switch.
@@ -73,7 +73,7 @@ Area-level composite panel aggregating climate, environment (air quality), and a
 - **Integrations**: Any combination of climate entities, air quality devices, and ambient sensors in an area
 
 #### Illumination Control Panel
-Area-level lighting panel spanning full width as the primary room control. Multi-column responsive grid (2-3 lights per row). Full-width brightness bars with color temperature awareness (warm amber to cool white). **Effect strip**: 2-column LCARS pill grid for Nanoleaf/Govee/smart light effects — active effect shown in bar value. **Color presets**: 6 LCARS palette pills (Warm, Cool, Red, Green, Blue, Purple) for HS/RGB color lights. Toggle-only lights show ON/OFF without slider. Scene activation strip and lighting circuit toggles. Inline brightness slider with keyboard navigation. Drag-and-drop reorder in edit mode with FLIP animation. Custom order persisted per area via localStorage.
+Area-level lighting panel spanning full width as the primary room control. Multi-column responsive grid (2-3 lights per row). Full-width brightness bars with color temperature awareness (warm amber to cool white). **Effect strip**: 2-column LCARS pill grid for Nanoleaf/Govee/smart light effects — active effect shown in bar value. **Color presets**: 6 LCARS palette pills (Warm, Cool, Red, Green, Blue, Purple) for HS/RGB color lights. Toggle-only lights show ON/OFF without slider. Scene activation strip and lighting circuit toggles (explicit `isLightingEntity()` match required — irrigation, battery, HVAC, and appliance switches excluded). Inline brightness slider with keyboard navigation. Drag-and-drop reorder in edit mode with FLIP animation. Custom order persisted per area via localStorage.
 - **Entity detection**: Insteon dimmers (SwitchLinc/LampLinc/ToggleLinc), infrastructure LED exclusion (UniFi, ESPHome status), device-level dedup
 - **Integrations**: Any `light` domain entities, Nanoleaf, Govee, lighting switches (auto-detected by name heuristic), HA scenes
 

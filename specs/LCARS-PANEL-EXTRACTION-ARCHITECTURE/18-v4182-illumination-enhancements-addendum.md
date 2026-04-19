@@ -39,9 +39,18 @@ These Insteon dimmers register as `switch` domain via `switch_as_x` but have pro
 
 ### B4. Device-Level Dedup in Partition
 
-**v4.18.9 update**: Pass 2 of `_partitionLightingEntities()` now also includes all `switch` domain entities in the room (excluding `device_class: outlet`) in the Circuits section, even if they don't match lighting keywords. This ensures smart plugs powering lamps, fans controlled by switches, and other switch-domain devices appear in the Illumination panel. The `coveredDeviceIds` dedup still prevents duplicates for devices that expose both a `light` and `switch` entity. Data's review identified that the `device_class: outlet` exclusion from `isLightingEntity()` must be preserved in the catch-all branch — applied.
+**v4.22.0-rc.1 update**: The v4.18.9 catch-all switch absorption has been **removed**. Pass 2 of `_partitionLightingEntities()` now requires every circuit candidate to pass the explicit `isLightingEntity()` predicate. Switches that don't match lighting keywords (e.g., irrigation zones, EcoFlow config, appliances, HVAC controls) are no longer absorbed into the Illumination panel.
 
-`_partitionLightingEntities()` now performs two-pass device dedup:
+**Previous behavior (v4.18.9–v4.21.0)**: ~~Pass 2 included all `switch` domain entities in the room (excluding `device_class: outlet`) in the Circuits section, even if they don't match lighting keywords.~~ This catch-all caused irrigation, battery management, and appliance switches to leak into Illumination across ~15 rooms.
+
+**Current behavior (v4.22.0+)**: Pass 2 gate:
+```javascript
+if (!isLightingEntity(entry)) continue;
+```
+
+`isLightingEntity()` now includes a `LIGHTING_NEGATIVE_RE` regex that excludes irrigation, EcoFlow, battery, HVAC, and appliance keywords as defense-in-depth.
+
+`_partitionLightingEntities()` still performs two-pass device dedup:
 
 1. **Group by `device_id`**: Entities sharing a device are collected together
 2. **Select best representative**: Prefers `light` domain over `switch`, then picks highest-brightness entity

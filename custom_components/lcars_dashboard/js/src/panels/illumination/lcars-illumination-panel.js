@@ -116,10 +116,7 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     }
 
     // Build set of device IDs claimed by non-illumination panels (battery, environment, etc.)
-    // classifyDevice returns null for uncategorized devices — only those are fair game.
-    // NOTE: allEntries excludes entity_category (diagnostic/config) entities, but
-    // classifyDevice needs the full picture (e.g. battery % sensor is diagnostic).
-    // We augment each device's entries with its diagnostic/config entities from hass.
+    // using the same non-diagnostic entity set the orchestrator routes with.
     const claimedDeviceIds = new Set();
     const byDevice = new Map();
     for (const entry of allEntries) {
@@ -130,39 +127,16 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
       }
     }
     for (const [did, devEntries] of byDevice) {
-      // Augment with diagnostic/config entities so classifyDevice can detect battery devices
-      let augmented = devEntries;
-      if (this.hass) {
-        const extraEntries = [];
-        const entityReg = Object.values(this.hass.entities || {});
-        for (const e of entityReg) {
-          if (e.device_id !== did) continue;
-          if (e.disabled_by || e.hidden_by) continue;
-          if (!e.entity_category) continue; // already in devEntries
-          const state = this.hass.states?.[e.entity_id];
-          if (!state) continue;
-          extraEntries.push({ entity: e, domain: e.entity_id.split('.')[0], state });
-        }
-        if (extraEntries.length) augmented = [...devEntries, ...extraEntries];
-      }
-      if (classifyDevice(augmented)) claimedDeviceIds.add(did);
+      if (classifyDevice(devEntries)) claimedDeviceIds.add(did);
     }
 
-    // Pass 2: collect circuits — switches controlling lights or power
-    // Include: (a) switches matching lighting keywords (legacy behavior)
-    //          (b) switch-domain entities in the room (plugs powering lights, etc.)
-    // Exclude: devices already covered by a light entity (avoids duplicates)
-    // Exclude: device_class: outlet (pure power monitoring — routes to power panel)
-    // Exclude: switches from devices claimed by another panel (4X-45)
+    // Pass 2: collect only explicit lighting circuits.
     for (const entry of allEntries) {
       if (entry.domain === 'light' || entry.domain === 'scene') continue;
       if (entry.entity?.device_id && coveredDeviceIds.has(entry.entity.device_id)) continue;
-      if (isLightingEntity(entry)) {
-        circuits.push(entry);
-      } else if (entry.domain === 'switch' && entry.state?.attributes?.device_class !== 'outlet') {
-        if (entry.entity?.device_id && claimedDeviceIds.has(entry.entity.device_id)) continue;
-        circuits.push(entry);
-      }
+      if (!isLightingEntity(entry)) continue;
+      if (entry.entity?.device_id && claimedDeviceIds.has(entry.entity.device_id)) continue;
+      circuits.push(entry);
     }
 
     // Stable sort: custom order (localStorage) → alphabetical fallback

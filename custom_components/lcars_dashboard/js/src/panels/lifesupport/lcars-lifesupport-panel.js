@@ -233,7 +233,7 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
       case 'full':
         return this._renderFullLayout(climateGroup, scrubberGroup, sensorArrayEntries, ambientEntries);
       case 'atmos-only':
-        return this._renderAtmosOnly(scrubberGroup);
+        return this._renderAtmosOnly(scrubberGroup, sensorArrayEntries, ambientEntries);
       case 'climate-only':
         return this._renderClimateOnly(climateGroup, sensorArrayEntries, ambientEntries);
       case 'sensor-array-only':
@@ -277,9 +277,9 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
     `;
   }
 
-  /* ─── Atmos Only: Single environment panel (active purifier) ─── */
+  /* ─── Atmos Only: Scrubber + optional sensor array + ambient (4X-46 fix) ─── */
 
-  _renderAtmosOnly(scrubberGroup) {
+  _renderAtmosOnly(scrubberGroup, sensorArrayEntries, ambientEntries) {
     return html`
       <div class="ls-content ls-atmos-only">
         <lcars-environment-panel
@@ -289,6 +289,9 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
           .config=${this.config}
           frame-mode="nested">
         </lcars-environment-panel>
+        ${this._renderSensorArray(sensorArrayEntries)}
+        ${this._renderAmbientRow(ambientEntries)}
+        ${this._renderSparklineTray()}
       </div>
     `;
   }

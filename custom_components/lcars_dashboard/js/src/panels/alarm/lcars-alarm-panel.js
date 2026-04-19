@@ -20,6 +20,9 @@ class LcarsAlarmPanel extends LcarsBasePanel {
   _alarmCountdown = null;
   _alarmCountdownTimer = null;
   _alarmPinError = false;
+  _alarmLockoutSeconds = 0;
+  _alarmLockoutTimer = null;
+  _alarmLockoutAnnounced = false;
 
   get panelType() { return 'alarm'; }
   get defaultPanelTitle() { return 'Alarm'; }
@@ -35,6 +38,10 @@ class LcarsAlarmPanel extends LcarsBasePanel {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._stopAlarmCountdown();
+    if (this._alarmLockoutTimer) {
+      clearInterval(this._alarmLockoutTimer);
+      this._alarmLockoutTimer = null;
+    }
   }
 
   updated(changedProps) {
@@ -97,8 +104,11 @@ class LcarsAlarmPanel extends LcarsBasePanel {
   }
 
   _handleAlarmDisarm(entityId) {
+    // WORF-SEC-003: Client-side rate limiter is a UX safeguard only.
+    // Server-side alarm PIN validation is authoritative.
     if (!this._alarmPinLimiter.allow()) {
       this._alarmPinError = true;
+      this._startLockoutCountdown();
       this.requestUpdate();
       return;
     }
@@ -108,6 +118,28 @@ class LcarsAlarmPanel extends LcarsBasePanel {
     });
     this._alarmPinCode = '';
     this.requestUpdate();
+  }
+
+  _startLockoutCountdown() {
+    if (this._alarmLockoutTimer) clearInterval(this._alarmLockoutTimer);
+    this._alarmLockoutAnnounced = false;
+    const resetAt = this._alarmPinLimiter.resetTime();
+    const updateLockout = () => {
+      const remaining = Math.max(0, Math.ceil((resetAt - Date.now()) / 1000));
+      this._alarmLockoutSeconds = remaining;
+      this._alarmLockoutAnnounced = true;
+      this.requestUpdate();
+      if (remaining <= 0) {
+        clearInterval(this._alarmLockoutTimer);
+        this._alarmLockoutTimer = null;
+        this._alarmPinError = false;
+        this._alarmLockoutSeconds = 0;
+        this._alarmLockoutAnnounced = false;
+        this.requestUpdate();
+      }
+    };
+    updateLockout();
+    this._alarmLockoutTimer = setInterval(updateLockout, 1000);
   }
 
   _startAlarmCountdown(seconds) {
@@ -245,13 +277,17 @@ class LcarsAlarmPanel extends LcarsBasePanel {
                 <div class="alarm-code-dot" style="background:${filled ? (this._alarmPinError ? 'var(--lcars-tomato)' : stateColor) : 'var(--lcars-disabled)'}"></div>
               `)}
             </div>
+            ${this._alarmLockoutSeconds > 0 ? html`
+              ${!this._alarmLockoutAnnounced ? '' : html`<div class="alarm-lockout-msg" role="alert">LOCKED OUT</div>`}
+              <div class="alarm-lockout-countdown" aria-live="off">${this._alarmLockoutSeconds}s</div>
+            ` : ''}
             <div class="alarm-digit-grid">
               ${[1,2,3,4,5,6,7,8,9].map(d => html`
-                <button class="alarm-digit-btn" aria-label="Digit ${d}" @click=${() => this._handleAlarmPinDigit(d)}>${d}</button>
+                <button class="alarm-digit-btn" aria-label="Digit ${d}" ?disabled=${this._alarmLockoutSeconds > 0} @click=${() => this._handleAlarmPinDigit(d)}>${d}</button>
               `)}
-              <button class="alarm-digit-btn alarm-action-btn" aria-label="Clear code" @click=${() => this._handleAlarmPinClear()}>⌫</button>
-              <button class="alarm-digit-btn" aria-label="Digit 0" @click=${() => this._handleAlarmPinDigit(0)}>0</button>
-              <button class="alarm-digit-btn alarm-action-btn" aria-label="Disarm" @click=${() => this._handleAlarmDisarm(primary.entity.entity_id)}>⏎</button>
+              <button class="alarm-digit-btn alarm-action-btn" aria-label="Clear code" ?disabled=${this._alarmLockoutSeconds > 0} @click=${() => this._handleAlarmPinClear()}>⌫</button>
+              <button class="alarm-digit-btn" aria-label="Digit 0" ?disabled=${this._alarmLockoutSeconds > 0} @click=${() => this._handleAlarmPinDigit(0)}>0</button>
+              <button class="alarm-digit-btn alarm-action-btn" aria-label="Disarm" ?disabled=${this._alarmLockoutSeconds > 0} @click=${() => this._handleAlarmDisarm(primary.entity.entity_id)}>⏎</button>
             </div>
           </div>
         ` : ''}

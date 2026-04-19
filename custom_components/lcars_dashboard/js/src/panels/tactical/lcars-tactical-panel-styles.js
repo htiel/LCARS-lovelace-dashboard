@@ -126,6 +126,94 @@ export const tacticalPanelStyles = css`
     font-weight: 700;
   }
 
+  .tactical-access-hint {
+    font-size: var(--lcars-font-size-data);
+    opacity: 0.6;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ─── Transitional State (opening/closing) ─── */
+
+  .tactical-access-row[data-transitional] {
+    pointer-events: none;
+    opacity: 0.7;
+    cursor: default;
+  }
+
+  /* ─── Inline Confirmation Strip ─── */
+
+  .tactical-confirm-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--lcars-tomato);
+    color: var(--lcars-black);
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    text-transform: uppercase;
+    font-weight: 700;
+    cursor: pointer;
+    min-height: var(--lcars-btn-height, 2rem);
+    position: relative;
+    overflow: hidden;
+    animation: confirm-flash 300ms ease-out;
+  }
+  .tactical-confirm-strip:focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
+  }
+  .confirm-countdown-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--lcars-black);
+    animation: confirm-drain 5s linear forwards;
+    opacity: 0.6;
+  }
+  @keyframes confirm-drain {
+    from { transform: scaleX(1); transform-origin: left; }
+    to   { transform: scaleX(0); transform-origin: left; }
+  }
+  @keyframes confirm-flash {
+    0%   { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  /* ─── Cover Position Indicator ─── */
+
+  .tactical-cover-position {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+  .cover-pos-track {
+    width: 0.5rem;
+    height: 1.25rem;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column-reverse;
+  }
+  .cover-pos-fill {
+    width: 100%;
+    background: currentColor;
+    border-radius: 2px;
+    transition: height 500ms ease;
+  }
+  .cover-pos-value {
+    font-size: var(--lcars-font-size-data);
+    opacity: 0.8;
+    min-width: 2.5em;
+    text-align: right;
+  }
+
   /* ─── Perimeter (door/window sensors) ─── */
 
   .tactical-perimeter {
@@ -245,5 +333,8 @@ export const tacticalPanelStyles = css`
     .tactical-motion-chip {
       transition-duration: 0.01ms !important;
     }
+    .tactical-confirm-strip { animation: none; }
+    .confirm-countdown-bar { animation-duration: 0.01ms; }
+    .cover-pos-fill { transition-duration: 0.01ms; }
   }
 `;

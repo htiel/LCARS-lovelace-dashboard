@@ -2,6 +2,29 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.22.0-rc.5] — 2026-04-19
+
+### Fixed — Tactical, Alarm, Garage Door, High-Impact Action Safety (P5)
+
+**8 bugs fixed** spanning alarm state color, keypad sizing, garage door UX, tactical dedup, inline confirmation, and lockout feedback.
+
+#### Alarm Panel
+1. **Disarmed ice semantics (GEORDI-018):** Tactical panel `frameColor` now delegates to canonical `getAlarmStateColor()` — disarmed alarm correctly shows ice regardless of unlocked doors.
+2. **Keypad spacing (GEORDI-019):** Alarm keypad buttons enlarged to 4rem height with `minmax(3.5rem, 4.5rem)` columns and 0.5rem/0.75rem gap (desktop/mobile). Exceeds WCAG 2.5.8 44px minimum tap target. Code dots enlarged to 14px.
+3. **Lockout feedback (WORF-SEC-003):** Rate-limited PIN attempts now show "LOCKED OUT" alert (announced once) + silent countdown timer. Keypad buttons disabled during lockout. Timer cleanup in `disconnectedCallback`.
+
+#### Garage Door & Covers
+4. **Contextual state labels (WESLEY-UX-009):** Garage doors in tactical access section show contextual labels — OPEN/TAP TO CLOSE, CLOSED/TAP TO OPEN, OPENING…, CLOSING…. Transitional states disable interaction.
+5. **Position indicator (WESLEY-IDEA-006):** Covers with `current_position` show an 8px vertical fill bar with percentage label. Bottom-up fill, 500ms CSS transition.
+6. **Confirm flow for risky actions (WESLEY-UX-013):** Lock unlock, garage open, and garage close now require inline confirmation strip (5s timeout, auto-cancel). `role="alert"`, keyboard accessible (Enter/Space confirms, Escape cancels), reduced-motion safe.
+
+#### Tactical Dedup & Room Badge
+7. **Deduplicate tactical across rooms (WESLEY-UX-011):** Per-render-cycle tracking of rendered alarm device IDs prevents duplicate tactical panels across rooms sharing the same alarm.
+8. **Room-header alarm badge (WESLEY-IDEA-010):** Secondary rooms show inline `◆ STATE` badge in room header (alarm-state-colored, link semantics, Enter-only activation). Tap navigates to the alarm's primary area.
+
+### Bundle
+- 721 KiB (+12 KiB / +1.7% from rc.4)
+
 ## [4.22.0-rc.4] — 2026-04-19
 
 ### Fixed — Power Naming, Circuit Correctness, Progressive Disclosure (P4)

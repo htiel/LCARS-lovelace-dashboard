@@ -2,9 +2,9 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
-## [4.22.0-rc.10] — 2026-04-19
+## [4.22.0-rc.11] — 2026-04-19
 
-### Fixed — 4X-46: Life Support Restructure — Sensor/Purifier Classification Split
+### Fixed — 4X-46: Life Support Sensor/Purifier Split + Hotfix
 
 Resolves issue #44: Life Support panel clipping by un-nesting passive AQ monitors from the atmoscrubber substation path.
 

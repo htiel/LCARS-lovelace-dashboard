@@ -33,6 +33,7 @@ export const lifeSupportPanelStyles = css`
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
     overflow: visible;
+    align-items: start;
   }
 
   @media (max-width: 56rem) {

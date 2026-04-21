@@ -37,7 +37,6 @@ export const PANEL_TYPE_EV_CHARGER    = 'ev_charger'; // 4X-55: EV chargers
 export const PANEL_COLUMN = {
   [PANEL_TYPE_ILLUMINATION]: 'left',
   [PANEL_TYPE_CLIMATE]:      'left',
-  [PANEL_TYPE_LIFE_SUPPORT]: 'left',
   [PANEL_TYPE_ENVIRONMENT]:  'left',
   [PANEL_TYPE_POWER]:        'left',
   [PANEL_TYPE_ALARM]:        'right',
@@ -60,7 +59,6 @@ export const PANEL_TYPE_ORDER = {
   // Left column: illumination above entities, rest below
   [PANEL_TYPE_ILLUMINATION]: 0,
   [PANEL_TYPE_CLIMATE]:      2,
-  [PANEL_TYPE_LIFE_SUPPORT]: 3,
   [PANEL_TYPE_ENVIRONMENT]:  4,
   [PANEL_TYPE_VIEWPORT]:     4.5, // 4X-41: between environment and power
   [PANEL_TYPE_GALLEY]:        4.7, // 4X-40: near power
@@ -143,7 +141,11 @@ const PRESENCE_PLATFORMS = new Set(['aqara']);
 // ─── Galley/Appliance Detection ─────────────────────────────────────────────
 // Known appliance platforms (4X-40)
 const GALLEY_PLATFORMS = new Set(['ge_home', 'smartthinq_sensors']);
-const AQ_FAN_PLATFORMS = new Set(['ha_blueair', 'vesync', 'smartthinq_sensors']);
+const AQ_FAN_PLATFORMS = new Set([
+  'ha_blueair', 'vesync', 'smartthinq_sensors',
+  'xiaomi_miio', 'xiaomi_home',           // Xiaomi/Zhimi purifiers
+  'philips_airpurifier', 'coway', 'winix', // Dedicated purifier integrations
+]);
 const LIGHTING_NEGATIVE_RE = /irrigation|watering|sprinkler|\bzone\b|ecoflow|backup|reserve|boost|\bdc(?:\s|_|-|\()?(?:mode|12v)\b|\bac(?:\s|_|-|\()?(?:mode|enabled)\b|humidifier|purifier|battery|inverter|charger|filter|pump|heater/i;
 
 // ─── Platform-to-Panel Routing Map (4X-44) ──────────────────────────────────
@@ -176,6 +178,9 @@ const PLATFORM_PANEL_MAP = new Map([
   // Air purifiers → environment/atmoscrubber
   ['ha_blueair', PANEL_TYPE_ENVIRONMENT],
   ['vesync', PANEL_TYPE_ENVIRONMENT],
+  ['philips_airpurifier', PANEL_TYPE_ENVIRONMENT],
+  ['coway', PANEL_TYPE_ENVIRONMENT],
+  ['winix', PANEL_TYPE_ENVIRONMENT],
   // Power monitoring
   ['emporia_vue', PANEL_TYPE_POWER],
   ['ecoflow_cloud', PANEL_TYPE_BATTERY],
@@ -608,14 +613,6 @@ export function classifyArea(hass, areaId, entityEntries) {
 
   // Area-level routing works on the non-diagnostic room entity set.
   const primaryEntries = entityEntries.filter(entry => !isDiagnosticEntity(entry));
-
-  // Life Support: valid climate entity OR (valid environment entity AND ambient sensors)
-  const hasClimate = primaryEntries.some(isClimateEntity);
-  const hasEnvironment = primaryEntries.some(isEnvironmentEntity);
-  const hasAmbient = entityEntries.some(isAmbientSensor);
-  if (hasClimate || (hasEnvironment && hasAmbient)) {
-    types.add(PANEL_TYPE_LIFE_SUPPORT);
-  }
 
   // Illumination: ≥1 lighting entity in the area
   const lightCount = primaryEntries.filter(isLightingEntity).length;

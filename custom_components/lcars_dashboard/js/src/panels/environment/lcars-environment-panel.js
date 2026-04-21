@@ -44,10 +44,11 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
         controls.push(entry);
         continue;
       }
-      // 4X-54: BlueAir registers filter_life with device_class: battery.
-      // Detect filter/wick life sensors before AQ routing to avoid misclassification.
-      if (dc === 'battery' && domain === 'sensor' &&
-          /filter|wick/i.test(entry.entity?.entity_id || '')) {
+      // 4X-54/4X-59: Detect filter/wick life sensors before AQ routing.
+      // BlueAir uses device_class: battery; Xiaomi has no device_class.
+      // Match by entity_id pattern + percentage unit for any sensor.
+      if (domain === 'sensor' && /filter|wick/i.test(entry.entity?.entity_id || '') &&
+          (dc === 'battery' || dc === '' || !dc)) {
         filterLife.push(entry);
         continue;
       }
@@ -193,10 +194,12 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
             const name = this._friendlyName(state, entity);
             const pct = Math.min(100, Math.max(0, parseFloat(state.state) || 0));
             const litCount = Math.round(pct / 10);
+            // 4X-59: Color the percentage text to match filter status
+            const pctColor = pct < 25 ? 'var(--lcars-tomato)' : pct < 75 ? 'var(--lcars-golden-orange)' : 'var(--lcars-ice)';
             return html`
               <div class="filter-life-row">
                 <span class="filter-life-label">${name}</span>
-                <span class="filter-life-pct">${Math.round(pct)}%</span>
+                <span class="filter-life-pct" style="color:${pctColor}">${Math.round(pct)}%</span>
               </div>
               <div class="filter-segments" aria-label="Filter life: ${Math.round(pct)}%">
                 ${Array.from({ length: 10 }, (_, i) => {

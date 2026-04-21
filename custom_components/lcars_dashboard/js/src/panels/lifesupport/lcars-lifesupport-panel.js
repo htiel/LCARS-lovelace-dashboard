@@ -67,7 +67,7 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
 
   /**
    * Partition all entities into functional groups for substations. (4X-46)
-   * Returns { climateGroup, scrubberGroup, sensorArrayEntries, ambientEntries, otherEntries, config }.
+   * Returns { climateGroup, scrubberGroups, sensorArrayEntries, ambientEntries, otherEntries, config }.
    *
    * Environment entities are split into two buckets:
    * - scrubberEntries: from devices that include an active purifier fan (AQ_FAN_PLATFORMS)
@@ -100,7 +100,7 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
     // Second pass: split environment entries into scrubber vs sensor-array (4X-46)
     // A device with ANY purifier fan entity → all its env entities go to scrubber
     // A device with ONLY passive AQ sensors → sensor array
-    const scrubberEntries = [];
+    const scrubberEntriesByDevice = new Map();
     const sensorArrayEntries = [];
 
     const envByDevice = new Map();
@@ -118,20 +118,47 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
       const hasHomeKitPurifier = !hasPurifierFan && entries.some(e =>
         e.domain === 'fan' && e.entity?.platform === 'homekit_controller'
       ) && entries.some(e => AQ_DEVICE_CLASSES.has(e.state?.attributes?.device_class || ''));
-      if (hasPurifierFan || hasHomeKitPurifier) {
-        scrubberEntries.push(...entries);
+      // 4X-59: Dynamic purifier fan detection — if a device has AQ sensors in
+      // envEntries but its fan entity wasn't recognized by AQ_FAN_PLATFORMS
+      // (landed in otherEntries), check otherEntries for a fan on the same device.
+      // This catches unlisted platforms without false positives (AQ_DEVICE_CLASSES
+      // gate excludes ceiling/desk fans that only have temp/humidity sensors).
+      const hasDynamicPurifier = !hasPurifierFan && !hasHomeKitPurifier &&
+        entries.some(e => AQ_DEVICE_CLASSES.has(e.state?.attributes?.device_class || '')) &&
+        otherEntries.some(e => e.domain === 'fan' && (e.entity?.device_id || '_x') === devId);
+      if (hasPurifierFan || hasHomeKitPurifier || hasDynamicPurifier) {
+        if (!scrubberEntriesByDevice.has(devId)) scrubberEntriesByDevice.set(devId, []);
+        scrubberEntriesByDevice.get(devId).push(...entries);
+        // Pull the dynamically-detected fan and filter/wick sensors from otherEntries into scrubber
+        if (hasDynamicPurifier || hasPurifierFan || hasHomeKitPurifier) {
+          for (let i = otherEntries.length - 1; i >= 0; i--) {
+            const oe = otherEntries[i];
+            const oeDevId = oe.entity?.device_id || '_x';
+            if (oeDevId !== devId) continue;
+            // Pull fan entities and filter/wick life sensors from this purifier device
+            if (oe.domain === 'fan' ||
+                (oe.domain === 'sensor' && /filter|wick/i.test(oe.entity?.entity_id || ''))) {
+              scrubberEntriesByDevice.get(devId).push(oe);
+              otherEntries.splice(i, 1);
+            }
+          }
+        }
       } else {
         sensorArrayEntries.push(...entries);
       }
     }
 
-    // Build device groups
+    // Build device groups — one per scrubber device
     const climateGroup = this._buildDeviceGroup(climateEntries, devices);
-    const scrubberGroup = this._buildDeviceGroup(scrubberEntries, devices);
+    const scrubberGroups = [];
+    for (const [, entries] of scrubberEntriesByDevice) {
+      const group = this._buildDeviceGroup(entries, devices);
+      if (group) scrubberGroups.push(group);
+    }
 
     // Determine configuration
     const hasClimate = climateEntries.length > 0;
-    const hasScrubber = scrubberEntries.length > 0;
+    const hasScrubber = scrubberGroups.length > 0;
     const hasSensorArray = sensorArrayEntries.length > 0;
 
     let config;
@@ -141,7 +168,7 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
     else if (hasSensorArray) config = 'sensor-array-only';
     else config = 'sensors-only';
 
-    return { climateGroup, scrubberGroup, sensorArrayEntries, ambientEntries, otherEntries, config };
+    return { climateGroup, scrubberGroups, sensorArrayEntries, ambientEntries, otherEntries, config };
   }
 
   /**
@@ -238,13 +265,13 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
   }
 
   renderContent() {
-    const { climateGroup, scrubberGroup, sensorArrayEntries, ambientEntries, config } = this._partitionEntities();
+    const { climateGroup, scrubberGroups, sensorArrayEntries, ambientEntries, config } = this._partitionEntities();
 
     switch (config) {
       case 'full':
-        return this._renderFullLayout(climateGroup, scrubberGroup, sensorArrayEntries, ambientEntries);
+        return this._renderFullLayout(climateGroup, scrubberGroups, sensorArrayEntries, ambientEntries);
       case 'atmos-only':
-        return this._renderAtmosOnly(scrubberGroup, sensorArrayEntries, ambientEntries);
+        return this._renderAtmosOnly(scrubberGroups, sensorArrayEntries, ambientEntries);
       case 'climate-only':
         return this._renderClimateOnly(climateGroup, sensorArrayEntries, ambientEntries);
       case 'sensor-array-only':
@@ -258,7 +285,7 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
 
   /* ─── Full Layout: Climate + Scrubber substations + sensor array + ambient + sparklines ─── */
 
-  _renderFullLayout(climateGroup, scrubberGroup, sensorArrayEntries, ambientEntries) {
+  _renderFullLayout(climateGroup, scrubberGroups, sensorArrayEntries, ambientEntries) {
     return html`
       <div class="ls-content ls-full">
         <div class="ls-substations">
@@ -271,15 +298,17 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
               frame-mode="nested">
             </lcars-climate-panel>
           </div>
-          <div class="ls-substation ls-env-sub">
-            <lcars-environment-panel
-              .group=${scrubberGroup}
-              .hass=${this.hass}
-              .editMode=${this.editMode}
-              .config=${this.config}
-              frame-mode="nested">
-            </lcars-environment-panel>
-          </div>
+          ${scrubberGroups.map(group => html`
+            <div class="ls-substation ls-env-sub">
+              <lcars-environment-panel
+                .group=${group}
+                .hass=${this.hass}
+                .editMode=${this.editMode}
+                .config=${this.config}
+                frame-mode="nested">
+              </lcars-environment-panel>
+            </div>
+          `)}
         </div>
         ${this._renderSensorArray(sensorArrayEntries)}
         ${this._renderAmbientRow(ambientEntries)}
@@ -290,16 +319,32 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
 
   /* ─── Atmos Only: Scrubber + optional sensor array + ambient (4X-46 fix) ─── */
 
-  _renderAtmosOnly(scrubberGroup, sensorArrayEntries, ambientEntries) {
+  _renderAtmosOnly(scrubberGroups, sensorArrayEntries, ambientEntries) {
     return html`
       <div class="ls-content ls-atmos-only">
-        <lcars-environment-panel
-          .group=${scrubberGroup}
-          .hass=${this.hass}
-          .editMode=${this.editMode}
-          .config=${this.config}
-          frame-mode="nested">
-        </lcars-environment-panel>
+        ${scrubberGroups.length > 1 ? html`
+          <div class="ls-substations">
+            ${scrubberGroups.map(group => html`
+              <div class="ls-substation ls-env-sub">
+                <lcars-environment-panel
+                  .group=${group}
+                  .hass=${this.hass}
+                  .editMode=${this.editMode}
+                  .config=${this.config}
+                  frame-mode="nested">
+                </lcars-environment-panel>
+              </div>
+            `)}
+          </div>
+        ` : html`
+          <lcars-environment-panel
+            .group=${scrubberGroups[0]}
+            .hass=${this.hass}
+            .editMode=${this.editMode}
+            .config=${this.config}
+            frame-mode="nested">
+          </lcars-environment-panel>
+        `}
         ${this._renderSensorArray(sensorArrayEntries)}
         ${this._renderAmbientRow(ambientEntries)}
         ${this._renderSparklineTray()}

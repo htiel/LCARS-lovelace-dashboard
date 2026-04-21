@@ -22,7 +22,7 @@ import {
   PANEL_TYPE_CAMERA, PANEL_TYPE_ALARM, PANEL_TYPE_AQUATICS,
   PANEL_TYPE_CLIMATE, PANEL_TYPE_MEDIA, PANEL_TYPE_ENVIRONMENT,
   PANEL_TYPE_IRRIGATION, PANEL_TYPE_WEATHER, PANEL_TYPE_BATTERY,
-  PANEL_TYPE_POWER, PANEL_TYPE_LIFE_SUPPORT, PANEL_TYPE_ILLUMINATION,
+  PANEL_TYPE_POWER, PANEL_TYPE_ILLUMINATION,
   PANEL_TYPE_ORDER, PANEL_COLUMN,
   CAMERA_DOMAINS, CLIMATE_DOMAINS, MEDIA_DOMAINS, ALARM_DOMAINS, WEATHER_DOMAINS,
   TOGGLE_DOMAINS, SENSOR_DOMAINS, COVER_DOMAINS,
@@ -60,7 +60,6 @@ import './panels/media/lcars-media-panel.js';
 import './panels/pool-spa/lcars-pool-spa-panel.js';
 import './panels/weather/lcars-weather-panel.js';
 import './panels/power/lcars-power-panel.js';
-import './panels/lifesupport/lcars-lifesupport-panel.js';
 import './panels/illumination/lcars-illumination-panel.js';
 import './panels/tactical/lcars-tactical-panel.js';
 import './panels/viewport/lcars-viewport-panel.js';
@@ -83,7 +82,6 @@ const PANEL_TAG_REGISTRY = new Map([
   [PANEL_TYPE_MEDIA,        (group, hass, editMode, config) => html`<lcars-media-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-media-panel>`],
   [PANEL_TYPE_AQUATICS,     (group, hass, editMode, config) => html`<lcars-pool-spa-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-pool-spa-panel>`],
   [PANEL_TYPE_WEATHER,      (group, hass, editMode, config) => html`<lcars-weather-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-weather-panel>`],
-  [PANEL_TYPE_LIFE_SUPPORT, (group, hass, editMode, config) => html`<lcars-lifesupport-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-lifesupport-panel>`],
   [PANEL_TYPE_ILLUMINATION, (group, hass, editMode, config) => html`<lcars-illumination-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-illumination-panel>`],
   [PANEL_TYPE_TACTICAL,      (group, hass, editMode, config) => html`<lcars-tactical-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-tactical-panel>`],
   [PANEL_TYPE_VIEWPORT,       (group, hass, editMode, config) => html`<lcars-viewport-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-viewport-panel>`],
@@ -4520,10 +4518,10 @@ class LcarsHomepageCard extends LitElement {
           continue;
         }
 
-        // 4X-54: BlueAir registers filter_life with device_class: battery.
-        // Detect filter/wick life sensors before AQ routing.
-        if (dc === 'battery' && domain === 'sensor' &&
-            /filter|wick/i.test(entry.entity?.entity_id || '')) {
+        // 4X-54/4X-59: Detect filter/wick life sensors before AQ routing.
+        // BlueAir uses device_class: battery; Xiaomi has no device_class.
+        if (domain === 'sensor' && /filter|wick/i.test(entry.entity?.entity_id || '') &&
+            (dc === 'battery' || dc === '' || !dc)) {
           filterLife.push(entry);
           continue;
         }
@@ -7385,7 +7383,7 @@ class LcarsHomepageCard extends LitElement {
 
       const { byDevice, noDevice } = this._groupEntities(entities);
 
-      // ── Area-level composite panels (4X-17): life_support, illumination ──
+      // ── Area-level composite panels (4X-17): illumination, tactical, etc. ──
       // Hydrate flat entities for classifyArea (need domain + state)
       const hydratedEntries = entities.map(e => {
         const domain = e.entity_id.split('.')[0];
@@ -7424,12 +7422,8 @@ class LcarsHomepageCard extends LitElement {
         ? noDevice.filter(e => !consumedByArea(e))
         : noDevice;
 
-      // Device panel types subsumed by area panels (e.g., climate → life_support, alarm → tactical)
+      // Device panel types subsumed by area panels (e.g., alarm → tactical)
       const subsumedDeviceTypes = new Set();
-      if (areaPanelTypes.has(PANEL_TYPE_LIFE_SUPPORT)) {
-        subsumedDeviceTypes.add(PANEL_TYPE_CLIMATE);
-        subsumedDeviceTypes.add(PANEL_TYPE_ENVIRONMENT);
-      }
       if (areaPanelTypes.has(PANEL_TYPE_TACTICAL)) {
         subsumedDeviceTypes.add(PANEL_TYPE_ALARM);
         subsumedDeviceTypes.add(PANEL_TYPE_TACTICAL); // P3 QA-E04: prevent duplicate tactical for FP2 devices
@@ -7586,11 +7580,18 @@ class LcarsHomepageCard extends LitElement {
         predicates.push(isLightingEntity);
         // P3 QA-E01: suppress fan-domain entities when illumination panel is active
         // Fan lights already route to illumination; fan speed entities shouldn't dump to fallback
-        predicates.push(e => e.domain === 'fan');
+        // 4X-59: EXCEPT air purifier fans — exclude fans whose device has AQ sensors
+        const aqDeviceIds = new Set();
+        for (const e of entityEntries) {
+          const dc = e.state?.attributes?.device_class || '';
+          const eid = e.entity?.entity_id || '';
+          if ((AQ_DEVICE_CLASSES.has(dc) || (e.domain === 'sensor' && AQ_ENTITY_SUFFIX_RE.test(eid)))
+              && e.entity?.device_id) {
+            aqDeviceIds.add(e.entity.device_id);
+          }
+        }
+        predicates.push(e => e.domain === 'fan' && !aqDeviceIds.has(e.entity?.device_id));
       }
-      if (areaPanelTypes.has(PANEL_TYPE_LIFE_SUPPORT)) predicates.push(
-        e => isClimateEntity(e) || isEnvironmentEntity(e) || isAmbientSensor(e)
-      );
       if (areaPanelTypes.has(PANEL_TYPE_TACTICAL)) {
         // Exclude camera-device motion/occupancy from tactical consumption
         // so those sensors stay with their camera panel (hero tier).

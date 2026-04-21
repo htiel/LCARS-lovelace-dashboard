@@ -33,7 +33,80 @@
 
 ## Open Bugs
 
-*None*
+### 4X-59 · Midea AC climate entity missing from HA — `TODO` · Priority: HIGH · Size: S
+
+**Area**: Quinn's Room
+**Source**: Visual QA crawl (v4.23.0-beta.1)
+
+The Midea AC LAN integration is installed (`update.midea_ac_lan_update` exists) but **no `climate.*midea*` entity** is registered in the entity registry. The portable AC climate panel built in 4X-56 (Batch I — swing mode strip, eco/turbo/swing toggles, timer stepper) is code-complete but has no entity to render against.
+
+**Action**: Verify the Midea portable AC is configured/discovered in HA. Once a `climate.midea_*` entity exists and is assigned to Quinn's Room area, the panel should auto-render.
+
+**Note**: This is a HA integration config issue, not a dashboard code bug. The code path is ready.
+
+---
+
+### 4X-60 · HomeKit purifier (Smartmi P1) renders as standalone device card — `TODO` · Priority: HIGH · Size: M
+
+**Area**: Quinn's Room
+**Source**: Visual QA crawl (v4.23.0-beta.1)
+
+`fan.quinn_s_air_purifier` (homekit_controller, Smartmi P1) renders as a generic HA device card showing just "Sensors: Filter lifetime 0%" instead of being absorbed into an LCARS Life Support purifier sub-panel.
+
+**Entities**:
+- `fan.quinn_s_air_purifier` — main fan entity → **not absorbed** → standalone card
+- `sensor.quinn_s_air_purifier_filter_lifetime` — **in standalone card**, not in Life Support
+- `sensor.quinn_s_air_purifier_pm2_5_density` — in Life Support sensor array ✓
+- `sensor.quinn_s_air_purifier_air_quality` — in Life Support sensor array ✓
+- `select.quinn_s_air_purifier_air_purifier_mode` — not visible anywhere
+
+4X-57 (HomeKit Air Purifier Detection) was supposed to detect the `fan` + AQ sensor pattern and absorb into Life Support. The AQ sensor data IS in the sensor array, but the `fan` entity and its filter/mode controls are not.
+
+**Expected**: Smartmi P1 should render as a Life Support purifier sub-panel with fan control, mode select, filter bar, and AQ sensor data — similar to the BlueAir purifier panels.
+
+---
+
+### 4X-61 · Insteon motion sensor Light/Battery siblings not absorbed — `TODO` · Priority: MEDIUM · Size: M
+
+**Areas**: Back Yard, Garage
+**Source**: Visual QA crawl (v4.23.0-beta.1)
+
+Insteon motion sensor devices have 3 `binary_sensor` entities each: `motion`, `light` (ambient light detection), `battery` (low battery indicator). The `motion` entity is correctly absorbed into the Tactical panel. But:
+
+1. **Light** (`binary_sensor.motion_sensor_ii_41_65_fe_light`) → falls through to standalone HA device card
+2. **Battery** (`binary_sensor.motion_sensor_ii_41_65_fe_battery`) → not visible anywhere — no pip in Tactical
+
+**Affected devices**:
+- Back Yard: Motion Sensor II 41.65.FE (3 entities: motion ✓, light ✗, battery ✗)
+- Garage: Motion Sensor II 41.64.48 (3 entities: motion ✓, light ✗, battery ✗)
+
+4X-7 (alarm zone sibling absorption) should have absorbed these siblings. Either the sibling detection doesn't match `binary_sensor` entities with `light`/`battery` device_class, or the Insteon device structure differs from what the absorption logic expects.
+
+**Expected**: Light and battery binary_sensors should render as small pips/indicators within the Tactical panel entry for each motion sensor. The standalone device card should not appear.
+
+---
+
+### 4X-62 · Tactical motion sensor name redundancy — `TODO` · Priority: LOW · Size: S
+
+**Area**: Back Yard
+**Source**: Visual QA crawl (v4.23.0-beta.1)
+
+Tactical panel shows: `BACKYARD MOTION SENSOR MOTION SENSOR II 41.65.FE MOTION CLEAR`
+
+The label concatenates device name + entity friendly name, creating an extremely long redundant string. Should display a cleaner label like "BACKYARD MOTION" or just the device name.
+
+---
+
+### 4X-63 · Master Bedroom media transport visible in apparent standby — `TODO` · Priority: MEDIUM · Size: S
+
+**Area**: Master Bedroom
+**Source**: Visual QA crawl (v4.23.0-beta.1)
+
+The media panel badge shows "■ OFF" and center label says "STANDBY", but transport controls (shuffle, prev, pause, next, repeat), waveform visualization, and last-played info ("She Didn't Like the Show... Then Asked for a Refund" / More Jimmy Carr) are all visible. The Office media panel correctly hides transport in the same state.
+
+4X-53 (standby compaction) hides transport/waveform for `standby`, `off`, and `idle` states. The Master Bedroom Sonos may actually be in `paused` state (not covered by compaction) while the badge incorrectly reports "OFF".
+
+**Investigate**: Check actual `media_player.master_bedroom_*` state vs. what the badge computes. Either expand compaction to include `paused`, or fix badge text to accurately reflect the real state.
 
 ---
 

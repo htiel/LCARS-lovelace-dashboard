@@ -9,6 +9,7 @@
 import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { TOGGLE_DOMAINS } from '../../lcars-entity-utils.js';
+import { formatNumber } from '../../lcars-format-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { batteryPanelStyles } from './lcars-battery-panel-styles.js';
 
@@ -331,7 +332,7 @@ class LcarsBatteryPanel extends LcarsBasePanel {
               @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(totalIn.entity.entity_id); } }}>
               <ha-icon icon="mdi:transmission-tower-import" style="--mdc-icon-size:14px;color:var(--lcars-ice)"></ha-icon>
               <span class="sensor-label">Total In</span>
-              <span class="sensor-state-value" style="color:var(--lcars-ice)">${totalIn.state.state} W</span>
+              <span class="sensor-state-value" style="color:var(--lcars-ice)">${formatNumber(totalIn.state.state, 'power')} W</span>
             </div>
           ` : ''}
           ${!this._nutStatus && totalOut ? html`
@@ -340,12 +341,12 @@ class LcarsBatteryPanel extends LcarsBasePanel {
               @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(totalOut.entity.entity_id); } }}>
               <ha-icon icon="mdi:transmission-tower-export" style="--mdc-icon-size:14px;color:var(--lcars-butterscotch)"></ha-icon>
               <span class="sensor-label">Total Out</span>
-              <span class="sensor-state-value" style="color:var(--lcars-butterscotch)">${totalOut.state.state} W</span>
+              <span class="sensor-state-value" style="color:var(--lcars-butterscotch)">${formatNumber(totalOut.state.state, 'power')} W</span>
             </div>
           ` : ''}
           ${keyTelemetry.map(({ entity, state }) => {
             const name = this._friendlyName(state, entity);
-            const val = state.state;
+            const val = formatNumber(state.state, state.attributes?.device_class || '');
             const unit = state.attributes?.unit_of_measurement || '';
             const color = this._getSensorIndicatorColor(state);
             return html`
@@ -361,7 +362,7 @@ class LcarsBatteryPanel extends LcarsBasePanel {
             <lcars-section-divider label="DIAGNOSTICS"></lcars-section-divider>
             ${keyDiagnostics.map(({ entity, state }) => {
               const name = this._friendlyName(state, entity);
-              const val = state.state;
+              const val = formatNumber(state.state, state.attributes?.device_class || '');
               const unit = state.attributes?.unit_of_measurement || '';
               const color = this._getSensorIndicatorColor(state);
               return html`
@@ -427,7 +428,7 @@ class LcarsBatteryPanel extends LcarsBasePanel {
                     <div class="battery-slider-fill" style="width:${pct}%"></div>
                     <div class="battery-slider-thumb" style="left:${pct}%"></div>
                   </div>
-                  <span class="battery-slider-value">${val}${unit ? ' ' + unit : ''}</span>
+                  <span class="battery-slider-value">${formatNumber(String(val), state.attributes?.device_class || '')}${unit ? ' ' + unit : ''}</span>
                 </div>
               `;
             }
@@ -484,7 +485,7 @@ class LcarsBatteryPanel extends LcarsBasePanel {
                       <div class="battery-slider-fill" style="width:${pct}%"></div>
                       <div class="battery-slider-thumb" style="left:${pct}%"></div>
                     </div>
-                    <span class="battery-slider-value">${val}${unit ? ' ' + unit : ''}</span>
+                    <span class="battery-slider-value">${formatNumber(String(val), state.attributes?.device_class || '')}${unit ? ' ' + unit : ''}</span>
                   </div>
                 `;
               }

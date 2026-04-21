@@ -237,7 +237,16 @@ export const climatePanelStyles = css`
     grid-area: auxctrl;
     display: flex; flex-direction: column; gap: var(--lcars-gap);
   }
-  .climate-aux-strip { display: flex; gap: 1px; flex-wrap: wrap; }
+  .climate-aux-strip { display: flex; gap: 1px; flex-wrap: wrap; align-items: center; }
+
+  /* 4X-56: Toggle-style aux button for portable AC switches */
+  .climate-toggle-btn { display: flex; align-items: center; gap: 0.375rem; }
+  .climate-toggle-btn ha-icon { --mdc-icon-size: 14px; flex-shrink: 0; }
+  .climate-toggle-btn[data-active] { background: var(--toggle-active-bg, var(--lcars-gold)); color: var(--lcars-black); }
+
+  /* 4X-56: Inline label for aux number controls */
+  .climate-aux-inline-label { font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); color: var(--lcars-text-heading, var(--lcars-sunflower)); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; margin-right: 0.5rem; }
+  .climate-timer-value { font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); color: var(--lcars-gold, var(--lcars-sunflower)); text-transform: uppercase; font-weight: 700; min-width: 3rem; text-align: center; }
 
   .panel-pip-strip {
     position: absolute;

@@ -326,6 +326,17 @@ export const environmentPanelStyles = css`
     text-shadow: 0 0 4px rgba(0,0,0,0.8);
   }
 
+  /* 4X-54: Filter Life Segment Bar */
+  .filter-life-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.5rem; }
+  .filter-life-label { flex: 1; font-size: 0.75rem; color: var(--lcars-space-white); text-transform: uppercase; }
+  .filter-life-pct { font-size: var(--lcars-font-size-data); font-weight: 700; color: var(--lcars-ice); }
+  .filter-segments { display: flex; gap: 2px; padding: 0 0.5rem 0.375rem; }
+  .filter-seg { flex: 1; height: 6px; border-radius: 1px; background: var(--lcars-gray); opacity: 0.3; }
+  .filter-seg.lit { background: var(--lcars-ice); opacity: 1; }
+  .filter-seg.warn { background: var(--lcars-golden-orange); opacity: 1; }
+  .filter-seg.critical { background: var(--lcars-tomato); opacity: 1; animation: lcars-filter-critical 1.5s ease-in-out infinite; }
+  @keyframes lcars-filter-critical { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
   /* Sparklines (bottom row) */
   .env-sparklines {
     grid-area: sparklines;
@@ -421,5 +432,6 @@ export const environmentPanelStyles = css`
     .atmoscrubber::after,
     .atmoscrubber.scrubber-idle { animation: none; }
     .scrubber-offline-state { animation: none; }
+    .filter-seg.critical { animation: none; }
   }
 `;

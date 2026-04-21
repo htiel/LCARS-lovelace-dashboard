@@ -153,7 +153,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         "homepage_header": OrderedDict(),
     }
 
-    _LOGGER.debug("Registering %d websocket commands", 26)
+    _LOGGER.debug("Registering %d websocket commands", 28)
     websocket_api.async_register_command(hass, websocket_get_configuration)
     websocket_api.async_register_command(hass, websocket_get_blueprints)
 
@@ -193,11 +193,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     websocket_api.async_register_command(hass, ws_handle_sort_entity)
     websocket_api.async_register_command(hass, ws_handle_sort_more_page)
 
+    websocket_api.async_register_command(hass, ws_handle_panel_order_get)
+    websocket_api.async_register_command(hass, ws_handle_panel_order_set)
+
     await load_plugins(hass, DOMAIN)
 
     notifications(hass, DOMAIN)
 
-    _LOGGER.info("LCARS Dashboard v%s setup complete — %d WS commands registered", VERSION, 26)
+    _LOGGER.info("LCARS Dashboard v%s setup complete — %d WS commands registered", VERSION, 28)
     
     return True
 
@@ -221,6 +224,7 @@ async def websocket_get_configuration(
         hass.data[DOMAIN]["entities"] = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
         hass.data[DOMAIN]["devices"] = await _read_yaml_file(hass, "lcars-dashboard/configs/devices.yaml")
         hass.data[DOMAIN]["homepage_header"] = await _read_yaml_file(hass, "lcars-dashboard/configs/settings.yaml")
+        panel_overrides = await _read_yaml_file(hass, "lcars-dashboard/configs/panel_overrides.yaml")
 
         area_cards = await _load_card_dir_nested(hass, "lcars-dashboard/configs/cards/areas")
         device_cards = await _load_card_dir_nested(hass, "lcars-dashboard/configs/cards/devices")
@@ -270,6 +274,7 @@ async def websocket_get_configuration(
                 "installed_version": VERSION,
                 "devices_card": devices_card,
                 "devices_popup": devices_popup,
+                "panel_overrides": panel_overrides,
                 "debug": logging.getLogger("custom_components.lcars_dashboard").getEffectiveLevel() <= logging.DEBUG,
             }
         )
@@ -291,6 +296,7 @@ async def websocket_get_configuration(
                 "installed_version": VERSION,
                 "devices_card": {},
                 "devices_popup": {},
+                "panel_overrides": {},
                 "debug": logging.getLogger("custom_components.lcars_dashboard").getEffectiveLevel() <= logging.DEBUG,
             }
         )
@@ -1655,6 +1661,70 @@ async def ws_handle_sort_more_page(
             "succesfull": "More pages sorted succesfully"
         },
     )
+
+
+#panel_order_get
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "lcars_dashboard/panel_order/get",
+    }
+)
+@websocket_api.async_response
+async def ws_handle_panel_order_get(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Return panel order overrides for all areas."""
+    overrides = await _read_yaml_file(hass, "lcars-dashboard/configs/panel_overrides.yaml")
+    connection.send_result(msg["id"], {"panel_overrides": overrides})
+
+
+#panel_order_set
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "lcars_dashboard/panel_order/set",
+        vol.Required("area_id"): _validate_path_component,
+        vol.Required("panel_order"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_handle_panel_order_set(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Save panel order override for a specific area."""
+    area_id = msg["area_id"]
+    panel_order = _safe_json_loads(connection, msg["id"], msg["panel_order"], "panel_order")
+    if panel_order is None:
+        return
+    if not isinstance(panel_order, list):
+        connection.send_error(msg["id"], "invalid_format", "panel_order must be a JSON array of panel type strings")
+        return
+    if len(panel_order) > 50:
+        connection.send_error(msg["id"], "invalid_format", "panel_order exceeds maximum of 50 entries")
+        return
+    # Validate entries are lowercase alpha + underscore, max 30 chars
+    import re
+    _PANEL_TYPE_RE = re.compile(r'^[a-z_]{1,30}$')
+    for item in panel_order:
+        if not isinstance(item, str) or not _PANEL_TYPE_RE.match(item):
+            connection.send_error(msg["id"], "invalid_format", "Each panel_order entry must be a lowercase panel type string (a-z, underscore, max 30 chars)")
+            return
+
+    async with _get_yaml_lock("lcars-dashboard/configs/panel_overrides.yaml"):
+        overrides = await _read_yaml_file(hass, "lcars-dashboard/configs/panel_overrides.yaml")
+        if not isinstance(overrides, dict):
+            overrides = OrderedDict()
+
+        if len(panel_order) == 0:
+            # Clear override for this area
+            overrides.pop(area_id, None)
+        else:
+            overrides[area_id] = panel_order
+
+        await _write_yaml_file(hass, "lcars-dashboard/configs/panel_overrides.yaml", overrides)
+
+    connection.send_result(msg["id"], {"successful": "Panel order saved"})
 
 
 async def async_setup_entry(hass, config_entry):

@@ -52,6 +52,12 @@ export const mediaPanelStyles = css`
     transition: border-color 600ms;
   }
   .media-idle { opacity: 0.7; }
+  /* 4X-53: Compact idle — hide transport, waveform, compact metadata, dim volume */
+  .media-idle .media-transport { display: none; }
+  .media-idle .lcars-audio-waveform { display: none; }
+  .media-idle .media-volume-fill { background: var(--lcars-gray); width: 0% !important; }
+  .media-idle .media-volume-pct { color: var(--lcars-gray); }
+  .media-idle .media-metadata-extra { display: none; }
 
   .media-header { grid-area: header; display: flex; align-items: center; gap: 0.5rem; }
   .device-panel-name { font-size: var(--lcars-font-size-sub); color: var(--panel-frame-color); text-transform: uppercase; white-space: nowrap; }

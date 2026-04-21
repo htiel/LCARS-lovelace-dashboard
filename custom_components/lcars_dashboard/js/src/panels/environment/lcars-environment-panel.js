@@ -9,6 +9,7 @@
 import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { AQ_DEVICE_CLASSES, AQ_ENTITY_SUFFIX_RE } from '../../lcars-entity-utils.js';
+import { canonicalLabel } from '../../lcars-format-utils.js';
 import { renderSparkline, fetchSparklineData } from '../../lcars-sparkline.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { environmentPanelStyles } from './lcars-environment-panel-styles.js';
@@ -31,6 +32,7 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
     const score = [];
     const airQuality = [];
     const telemetry = [];
+    const filterLife = [];
     const controls = [];
     const diagnostics = [];
 
@@ -40,6 +42,13 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
 
       if (['fan', 'switch', 'button', 'number', 'select', 'light'].includes(domain)) {
         controls.push(entry);
+        continue;
+      }
+      // 4X-54: BlueAir registers filter_life with device_class: battery.
+      // Detect filter/wick life sensors before AQ routing to avoid misclassification.
+      if (dc === 'battery' && domain === 'sensor' &&
+          /filter|wick/i.test(entry.entity?.entity_id || '')) {
+        filterLife.push(entry);
         continue;
       }
       if (AQ_DEVICE_CLASSES.has(dc)) {
@@ -61,7 +70,7 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
       }
     }
 
-    return { score, airQuality, telemetry, controls, diagnostics };
+    return { score, airQuality, telemetry, filterLife, controls, diagnostics };
   }
 
   /* ─── Atmoscrubber helpers ─── */
@@ -114,7 +123,7 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
 
   renderContent() {
     const categoryEntities = this._getDeviceCategoryEntities(this.group.device.id);
-    const { score, airQuality, telemetry, controls, diagnostics } = this._partitionEnvironmentEntities(this.group.entities, categoryEntities);
+    const { score, airQuality, telemetry, filterLife, controls, diagnostics } = this._partitionEnvironmentEntities(this.group.entities, categoryEntities);
     const deviceName = this._shortDeviceName(this.group.device) || 'Environment';
     const showAtmoscrubber = score.length > 0 || airQuality.length > 0;
     // P3 GEORDI-006: detect if all AQ sensors are unavailable
@@ -178,6 +187,24 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
                 color="${color}"
                 entity-id="${entity.entity_id}">
               </lcars-sensor-row>
+            `;
+          })}
+          ${filterLife.map(({ entity, state }) => {
+            const name = this._friendlyName(state, entity);
+            const pct = Math.min(100, Math.max(0, parseFloat(state.state) || 0));
+            const litCount = Math.round(pct / 10);
+            return html`
+              <div class="filter-life-row">
+                <span class="filter-life-label">${name}</span>
+                <span class="filter-life-pct">${Math.round(pct)}%</span>
+              </div>
+              <div class="filter-segments" aria-label="Filter life: ${Math.round(pct)}%">
+                ${Array.from({ length: 10 }, (_, i) => {
+                  const seg = i < litCount;
+                  const cls = seg ? (pct < 25 ? 'lit critical' : pct < 75 ? 'lit warn' : 'lit') : '';
+                  return html`<div class="filter-seg ${cls}"></div>`;
+                })}
+              </div>
             `;
           })}
           ${diagnostics.length > 0 ? html`
@@ -276,9 +303,9 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
         <!-- Sparklines -->
         <div class="env-sparklines" aria-label="24-hour history">
           ${[...score, ...airQuality].map(({ entity, state }) => {
-            const name = this._friendlyName(state, entity);
-            const points = sparkData[entity.entity_id];
             const dc = state.attributes?.device_class || '';
+            const name = canonicalLabel(dc, this._friendlyName(state, entity), entity.entity_id);
+            const points = sparkData[entity.entity_id];
             const color = dc === 'pm25' ? 'var(--lcars-peach)'
               : dc === 'carbon_dioxide' ? 'var(--lcars-sunflower)'
               : dc === 'volatile_organic_compounds_parts' || dc === 'volatile_organic_compounds' ? 'var(--lcars-african-violet)'

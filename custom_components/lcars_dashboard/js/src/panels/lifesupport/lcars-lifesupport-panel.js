@@ -112,7 +112,13 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
 
     for (const [devId, entries] of envByDevice) {
       const hasPurifierFan = entries.some(e => isAirPurifierEntity(e));
-      if (hasPurifierFan) {
+      // 4X-57: HomeKit air purifier detection — a homekit_controller fan qualifies
+      // as a purifier ONLY if the same device has an AQ sensor (PM2.5, etc.).
+      // Prevents generic HomeKit ceiling/desk fans from being misclassified.
+      const hasHomeKitPurifier = !hasPurifierFan && entries.some(e =>
+        e.domain === 'fan' && e.entity?.platform === 'homekit_controller'
+      ) && entries.some(e => AQ_DEVICE_CLASSES.has(e.state?.attributes?.device_class || ''));
+      if (hasPurifierFan || hasHomeKitPurifier) {
         scrubberEntries.push(...entries);
       } else {
         sensorArrayEntries.push(...entries);
@@ -219,11 +225,16 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
       e.state?.attributes?.device_class === 'temperature'
     );
     if (!tempEntry) return html``;
-    const val = parseFloat(tempEntry.state?.state);
-    if (isNaN(val)) return html``;
+    const raw = tempEntry.state?.state;
+    // 4X-52: Show gray placeholder when temperature sensor is unavailable
+    if (raw === 'unavailable' || raw === 'unknown') {
+      return html`<lcars-summary-badge value="\u2014" color="var(--lcars-gray)"></lcars-summary-badge>`;
+    }
+    const val = parseFloat(raw);
+    if (isNaN(val)) return html`<lcars-summary-badge value="\u2014" color="var(--lcars-gray)"></lcars-summary-badge>`;
     const unit = tempEntry.state?.attributes?.unit_of_measurement || '°F';
     const color = getTempColor(val);
-    return html`<lcars-summary-badge value="${val}${unit}" color="${color}"></lcars-summary-badge>`;
+    return html`<lcars-summary-badge value="${formatNumber(String(val), 'temperature')}${unit}" color="${color}"></lcars-summary-badge>`;
   }
 
   renderContent() {

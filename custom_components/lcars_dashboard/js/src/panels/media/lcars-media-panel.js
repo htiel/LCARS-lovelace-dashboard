@@ -148,6 +148,7 @@ class LcarsMediaPanel extends LcarsBasePanel {
 
         <div class="media-metadata" role="list" aria-label="${deviceName} info">
           ${source ? html`<div class="device-sensor-line" role="listitem"><div class="sensor-indicator" style="background:var(--lcars-african-violet)"></div><span class="sensor-label">Source</span><span class="sensor-state-value">${source}</span></div>` : ''}
+          <div class="media-metadata-extra" role="presentation">
           ${supportsShuffle ? html`<div class="device-sensor-line" role="listitem"><div class="sensor-indicator" style="background:${shuffle ? 'var(--lcars-african-violet)' : 'var(--lcars-gray)'}"></div><span class="sensor-label">Shuffle</span><span class="sensor-state-value">${shuffle ? 'ON' : 'OFF'}</span></div>` : ''}
           ${supportsRepeat ? html`<div class="device-sensor-line" role="listitem"><div class="sensor-indicator" style="background:${repeat !== 'off' ? 'var(--lcars-african-violet)' : 'var(--lcars-gray)'}"></div><span class="sensor-label">Repeat</span><span class="sensor-state-value">${repeat.toUpperCase()}</span></div>` : ''}
           ${sensors.map(({ entity, state }) => {
@@ -163,6 +164,7 @@ class LcarsMediaPanel extends LcarsBasePanel {
               </div>
             `;
           })}
+          </div>
         </div>
 
         <div class="media-viewscreen ${isPlaying ? 'media-viewscreen-glow' : ''}" @click=${() => this._handleEntityClick(primary.entity.entity_id)}>

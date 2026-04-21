@@ -1025,6 +1025,37 @@ function hasPresetModes(stateObj) {
 
 ---
 
+## 7.1 Swing Mode Strip (v4.23.0)
+
+When the climate entity exposes `swing_modes` with 2+ options, a swing mode radiogroup strip renders below the fan/preset strips.
+
+- Pattern: Identical to fan mode strip (connected buttons, `role="radiogroup"`, `aria-checked`)
+- Service: `climate.set_swing_mode`
+- Live state guard: Checks `this.hass.states[entityId]?.attributes?.swing_modes` before calling service
+
+## 7.2 Portable AC Auxiliary Controls (v4.23.0)
+
+For devices with companion `switch` and `number` entities (e.g., Midea portable AC via `midea_ac_lan`):
+
+### Auxiliary Switch Toggles
+- Detection: `switch` entities with entity_id matching `eco_mode`, `turbo_mode`, or `swing_mode`
+- Rendering: `role="switch"` buttons with per-switch active colors:
+  - ECO: `var(--lcars-sunflower)` + `mdi:leaf`
+  - TURBO: `var(--lcars-ice)` + `mdi:rocket-launch`
+  - SWING: `var(--lcars-african-violet)` + `mdi:arrow-oscillating`
+- Service: `switch.toggle`
+- Beep switches routed to diagnostics (hidden from controls)
+
+### Timer Stepper
+- Detection: `number` entities with entity_id matching `timer`
+- Rendering: −/value/+ stepper with `number.set_value` service
+- Display: `{val}H` when > 0, `OFF` when 0, `—` when unavailable
+- Bounds: Uses `min`/`max`/`step` from entity attributes
+
+See also: `specs/LCARS-PORTABLE-AC-ADDENDUM.md` for full Midea integration details.
+
+---
+
 ## 8. HVAC Action Animation
 
 The current HVAC action is communicated through subtle ambient animation on the temperature arc. This provides an additional visual channel beyond color.

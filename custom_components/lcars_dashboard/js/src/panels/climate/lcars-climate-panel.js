@@ -47,7 +47,11 @@ class LcarsClimatePanel extends LcarsBasePanel {
     const sensors = [];
     const faults = [];
     const diagnostics = [];
+    const auxSwitches = [];
+    const auxNumbers = [];
     const FAULT_CLASSES = new Set(['problem', 'heat', 'cold', 'connectivity', 'battery', 'tamper', 'smoke', 'safety']);
+    const AUX_SWITCH_PATTERNS = ['eco_mode', 'turbo_mode', 'swing_mode'];
+    const HIDDEN_SWITCHES = ['beep'];
 
     for (const entry of entries) {
       const domain = entry.domain;
@@ -56,6 +60,14 @@ class LcarsClimatePanel extends LcarsBasePanel {
         const dc = entry.state?.attributes?.device_class || '';
         if (FAULT_CLASSES.has(dc)) { faults.push(entry); continue; }
       }
+      // 4X-56: Portable AC auxiliary switches (eco, turbo, swing)
+      if (domain === 'switch') {
+        const eid = entry.entity?.entity_id || '';
+        if (HIDDEN_SWITCHES.some(p => eid.includes(p))) { diagnostics.push(entry); continue; }
+        if (AUX_SWITCH_PATTERNS.some(p => eid.includes(p))) { auxSwitches.push(entry); continue; }
+      }
+      // 4X-56: Timer / number entities
+      if (domain === 'number') { auxNumbers.push(entry); continue; }
       if (SENSOR_DOMAINS.has(domain)) { sensors.push(entry); continue; }
       sensors.push(entry);
     }
@@ -67,7 +79,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
         diagnostics.push({ entity: e, domain: e.entity_id.split('.')[0], state });
       }
     }
-    return { climate, sensors, faults, diagnostics };
+    return { climate, sensors, faults, diagnostics, auxSwitches, auxNumbers };
   }
 
   _isDualSetpoint(cs) {
@@ -187,7 +199,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
 
   renderContent() {
     const categoryEntities = this._getDeviceCategoryEntities(this.group.device.id);
-    const { climate, sensors, faults, diagnostics } = this._partitionClimateEntities(this.group.entities, categoryEntities);
+    const { climate, sensors, faults, diagnostics, auxSwitches, auxNumbers } = this._partitionClimateEntities(this.group.entities, categoryEntities);
     const deviceName = this._shortDeviceName(this.group.device) || 'Thermostat';
 
     if (climate.length === 0) return html``;
@@ -212,6 +224,9 @@ class LcarsClimatePanel extends LcarsBasePanel {
     const humidity = sensors.find(e => (e.state?.attributes?.device_class || '') === 'humidity');
     const step = attrs.target_temp_step || 1;
     const isActive = hvacAction !== 'off' && hvacAction !== 'idle';
+    // 4X-56: Swing mode support (climate attribute)
+    const swingModes = attrs.swing_modes || [];
+    const currentSwingMode = attrs.swing_mode || '';
 
     // Multi-zone awareness: sibling areas' thermostats (4X-12 prep)
     const siblingZones = this._getSiblingZoneTemps();
@@ -375,6 +390,60 @@ class LcarsClimatePanel extends LcarsBasePanel {
               `)}
             </div>
           ` : ''}
+          ${swingModes.length > 1 ? html`
+            <div class="climate-aux-strip" role="radiogroup" aria-label="Swing mode">
+              ${swingModes.map((sm, i) => html`
+                <button class="climate-mode-btn ${i === 0 ? 'mode-first' : ''} ${i === swingModes.length - 1 ? 'mode-last' : ''}" role="radio"
+                  aria-checked="${sm === currentSwingMode}" ?data-active=${sm === currentSwingMode}
+                  @click=${() => { if (!this.hass) return; const live = this.hass.states[primary.entity.entity_id]?.attributes?.swing_modes; if (!live?.includes(sm)) return; this.hass.callService('climate', 'set_swing_mode', { entity_id: primary.entity.entity_id, swing_mode: sm }); }}>
+                  ${sm.toUpperCase().replace(/_/g, ' ')}
+                </button>
+              `)}
+            </div>
+          ` : ''}
+          ${auxSwitches.length > 0 ? html`
+            <div class="climate-aux-strip" role="group" aria-label="System controls">
+              ${auxSwitches.map(entry => {
+                const eid = entry.entity?.entity_id || '';
+                const isOn = entry.state?.state === 'on';
+                const label = eid.includes('eco_mode') ? 'ECO' : eid.includes('turbo_mode') ? 'TURBO' : eid.includes('swing_mode') ? 'SWING' : (entry.state?.attributes?.friendly_name || 'SWITCH').toUpperCase();
+                const icon = eid.includes('eco_mode') ? 'mdi:leaf' : eid.includes('turbo_mode') ? 'mdi:rocket-launch' : eid.includes('swing_mode') ? 'mdi:arrow-oscillating' : 'mdi:toggle-switch-outline';
+                const activeColor = eid.includes('eco_mode') ? 'var(--lcars-sunflower)' : eid.includes('turbo_mode') ? 'var(--lcars-ice)' : 'var(--lcars-african-violet)';
+                return html`
+                  <button class="climate-mode-btn climate-toggle-btn" role="switch"
+                    aria-checked="${String(isOn)}" ?data-active=${isOn}
+                    style="${isOn ? `--toggle-active-bg: ${activeColor}` : ''}"
+                    @click=${() => { if (!this.hass) return; this.hass.callService('switch', 'toggle', { entity_id: eid }); }}>
+                    <ha-icon icon="${icon}" aria-hidden="true"></ha-icon>
+                    ${label}
+                  </button>
+                `;
+              })}
+            </div>
+          ` : ''}
+          ${auxNumbers.length > 0 ? auxNumbers.map(entry => {
+            const eid = entry.entity?.entity_id || '';
+            const raw = entry.state?.state;
+            const val = raw != null && !isNaN(raw) ? Number(raw) : null;
+            const nAttrs = entry.state?.attributes || {};
+            const min = nAttrs.min ?? 0;
+            const max = nAttrs.max ?? 24;
+            const nStep = nAttrs.step ?? 1;
+            const isTimer = /timer/i.test(eid);
+            const label = isTimer ? 'TIMER' : (nAttrs.friendly_name || 'SETTING').toUpperCase();
+            return html`
+              <div class="climate-aux-strip" role="group" aria-label="${label}">
+                <span class="climate-aux-inline-label">${label}</span>
+                <button class="climate-sp-btn sp-decrement" aria-label="Decrease ${label}"
+                  ?disabled=${val == null || val <= min}
+                  @click=${() => { if (!this.hass || val == null) return; this.hass.callService('number', 'set_value', { entity_id: eid, value: Math.max(min, val - nStep) }); }}>−</button>
+                <span class="climate-timer-value">${val != null ? (isTimer ? (val > 0 ? `${val}H` : 'OFF') : `${val}`) : '—'}</span>
+                <button class="climate-sp-btn sp-increment" aria-label="Increase ${label}"
+                  ?disabled=${val == null || val >= max}
+                  @click=${() => { if (!this.hass || val == null) return; this.hass.callService('number', 'set_value', { entity_id: eid, value: Math.min(max, val + nStep) }); }}>+</button>
+              </div>
+            `;
+          }) : ''}
         </div>
       </div>
     `;

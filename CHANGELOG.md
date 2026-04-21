@@ -2,6 +2,80 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.23.0-beta.1] — 2026-04-20
+
+### New — EV Charger Panel (4X-55, 4X-58)
+Full EV charger panel for Wallbox Vilya V2G bidirectional chargers.
+- **SVG energy flow visualization** — Animated chevron cascade for charging/V2G, directional flip, idle dashes
+- **15-row sensor telemetry** — Status, session (power/speed/energy/range/cost), energy balance (green/grid/discharged), vehicle (SoC/depot price), charger (max available/current/energy price)
+- **Solar mode strip** — Radio group with `select.select_option` for Full Solar, Eco, Full Grid, Off
+- **Max current adjuster** — ±stepper with `number.set_value`, clamped to entity min/max
+- **Cable lock toggle** — `lock.lock`/`lock.unlock` with `role="switch"`
+- **Wallbox lock excluded from tactical** — `LOCK_EXCLUSION_PLATFORMS` prevents cable lock from appearing in Tactical panel
+- **Integrations**: Wallbox (wallbox platform)
+
+### New — Panel Placement Override (4X-8)
+Persistent panel reorder per area, accessible via edit-mode gear pip.
+- **Backend**: `lcars_dashboard/panel_order/get` and `panel_order/set` WebSocket commands with YAML persistence, admin-only auth, `_get_yaml_lock` for concurrent safety, `_validate_path_component` for area_id, panel type whitelist validation
+- **Frontend**: `lcars-edit-panel-order-card.js` editor popup with numbered list, move up/down/save/reset
+- **Edit mode**: 24px lilac gear pip on each panel with `mdi:swap-vertical` icon
+
+### Enhanced — Climate Panel: Portable AC Support (4X-56)
+Extended `_partitionClimateEntities()` for Midea portable AC companion entities.
+- **Swing mode strip** — Radio group from climate entity `swing_modes` attribute, live state guard
+- **Auxiliary switch toggles** — ECO (sunflower/leaf), TURBO (ice/rocket), SWING (african-violet/oscillating) with per-switch active colors
+- **Timer stepper** — `number.set_value` with OFF/hours display
+- **Integrations**: midea_ac_lan (Midea portable AC)
+
+### Enhanced — Alarm Panel: Zone Sibling Pips (4X-7)
+Battery and illuminance sensors on zone devices now render inline on zone rows.
+- **Same-device absorption** — `zoneSiblings` Map routes battery/illuminance sensors to their parent zone row
+- **Inline pips** — `BAT 85%`, `LUX 200 lx` in `var(--lcars-sky)` with `role="img"` + `aria-label`
+- **Tactical consumption** — Sibling entities consumed by area filter predicate to prevent orphan button rendering
+
+### Enhanced — Environment Panel: Filter Life Recovery (4X-54)
+BlueAir filter_life sensors (misclassified as `device_class: battery`) now render as segmented bars.
+- **Filter life segment bar** — 10 segments: `var(--lcars-ice)` (healthy), `var(--lcars-golden-orange)` (warn <75%), `var(--lcars-tomato)` (critical <25% with pulse animation)
+- **prefers-reduced-motion** — Critical pulse animation disabled when reduced motion is preferred
+
+### Fixed — Display & Formatting Normalization
+- **4X-47**: Battery telemetry raw decimals → `formatNumber()` with domain-appropriate rounding (battery=0, temperature=1, current=2)
+- **4X-48**: Life Support header badge raw temperature → `formatNumber()` + unavailable placeholder ("—" in gray)
+- **4X-49**: Environment sparkline labels show device_class names → `canonicalLabel()` (PM₂.₅, CO₂, VOC, etc.)
+
+### Fixed — Offline State Normalization
+- **4X-50**: All `unavailable`/`unknown` entities now resolve to `var(--lcars-disabled)` — never alarming
+- **4X-52**: Life Support badge shows gray "—" when temperature sensor is offline
+
+### Fixed — Classification & Detection
+- **4X-51**: Insteon platform switches now correctly classified as lighting entities
+- **4X-57**: HomeKit air purifiers (fan + AQ sensor on same device) detected for Life Support atmoscrubber
+
+### Fixed — Media Standby Compaction (4X-53)
+- Idle/standby media players hide transport controls, waveform, and secondary metadata via `.media-idle` CSS cascade
+- Volume bar dimmed to gray; panel opacity reduced to 0.7
+- Source info remains visible for ambient awareness
+
+### Fixed — HACS Library Icon (4X-5)
+- Removed deprecated `icon` URL from `hacs.json` — HACS 2.x resolves icons from `brand/` directory automatically
+
+### Code Review Fixes
+- **DATA-1**: `panel_overrides` added to error fallback response in `configuration/get`
+- **DATA-2**: `customElements.get()` guard on EV charger panel registration
+- **DATA-6/WORF-3**: EV charger service calls now use `_callService()` from base panel (entity_id validation)
+- **DATA-13**: `this.hass` null guard added to all new climate panel click handlers
+- **DATA-16**: `||` → `??` for EV charger min/max/step (prevents falsy zero being replaced)
+- **GEORDI-1**: `prefers-reduced-motion` support for EV charger chevron animation
+- **GEORDI-2**: Zone sibling pip color upgraded from `var(--lcars-gray)` to `var(--lcars-sky)` (WCAG AA contrast)
+- **GEORDI-3**: EV media viewscreen bracket thickness corrected (thick→thin rule)
+- **GEORDI-4**: Zone sibling emoji replaced with text labels (BAT/LUX) + `aria-label` for accessibility
+- **GEORDI-5**: Panel order editor list uses `role="list"`/`role="listitem"` semantics
+- **GEORDI-6**: Edit-mode gear pip increased from 20→24px (WCAG 2.5.8 target size)
+- **GEORDI-7**: EV charger section labels upgraded from `var(--lcars-disabled)` to `var(--lcars-sky)` (contrast)
+- **GEORDI-8**: Filter life critical pulse added to `prefers-reduced-motion` block
+- **WORF-1**: Panel order array capped at 50 entries
+- **WORF-2**: Panel order strings validated against `^[a-z_]{1,30}$` regex
+
 ## [4.22.0-rc.11] — 2026-04-19
 
 ### Fixed — 4X-46: Life Support Sensor/Purifier Split + Hotfix

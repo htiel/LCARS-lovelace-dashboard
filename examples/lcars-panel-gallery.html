@@ -1107,6 +1107,66 @@ h1 {
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════ -->
+<!-- EV CHARGER PANEL (4X-55) -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-butterscotch)">
+  <div class="panel-header">
+    <span class="panel-name">EV Charger</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-butterscotch)">▼ CHARGING</span>
+    <span class="panel-code">8.2 KW</span>
+  </div>
+  <div class="content-grid two-col">
+    <!-- Sensor telemetry -->
+    <div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-butterscotch)"></span><span class="label">Status</span><span class="value" style="color:var(--lcars-butterscotch)">CHARGING</span></div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-sunflower)"></span><span class="label">Mode</span><span class="value" style="color:var(--lcars-sunflower)">ECO</span></div>
+      <div style="height:1px;background:var(--lcars-gray);opacity:0.3;margin:0.25rem 0"></div>
+      <div style="font-size:0.625rem;color:var(--lcars-sky);text-transform:uppercase;padding:0.25rem 0">SESSION</div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-butterscotch)"></span><span class="label">Power</span><span class="value" style="color:var(--lcars-butterscotch)">8.2 kW</span></div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-space-white)"></span><span class="label">Speed</span><span class="value">42 km/h</span></div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-space-white)"></span><span class="label">Added</span><span class="value">12.4 kWh</span></div>
+      <div style="height:1px;background:var(--lcars-gray);opacity:0.3;margin:0.25rem 0"></div>
+      <div style="font-size:0.625rem;color:var(--lcars-sky);text-transform:uppercase;padding:0.25rem 0">VEHICLE</div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-sunflower)"></span><span class="label">SoC</span><span class="value" style="color:var(--lcars-sunflower)">62%</span></div>
+    </div>
+    <!-- Flow visualization (static mockup) -->
+    <div style="border:3px solid var(--lcars-butterscotch);border-radius:0.5rem;padding:1rem;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:12rem;position:relative">
+      <div style="position:absolute;top:0.25rem;left:0.25rem;width:1.5rem;height:1.5rem;border-top:3px solid var(--lcars-butterscotch);border-left:3px solid var(--lcars-butterscotch);border-radius:0.25rem 0 0 0"></div>
+      <div style="position:absolute;bottom:0.25rem;right:0.25rem;width:1.5rem;height:1.5rem;border-bottom:1px solid var(--lcars-butterscotch);border-right:1px solid var(--lcars-butterscotch);border-radius:0 0 0.25rem 0"></div>
+      <div style="font-size:0.875rem;color:var(--lcars-butterscotch);opacity:0.6">▽ ▽ ▽</div>
+      <div style="font-size:2rem;font-weight:700;color:var(--lcars-butterscotch)">8.2 KW</div>
+      <div style="font-size:0.75rem;color:var(--lcars-space-white)">CHARGING</div>
+      <div style="font-size:1.5rem;font-weight:700;color:var(--lcars-sunflower);margin-top:0.5rem">62%</div>
+      <div style="width:80%;height:8px;background:var(--lcars-gray);border-radius:4px;margin-top:0.25rem;overflow:hidden"><div style="width:62%;height:100%;background:var(--lcars-sunflower);border-radius:4px"></div></div>
+    </div>
+  </div>
+  <!-- Solar mode strip -->
+  <div style="display:flex;gap:1px;margin-top:0.5rem;border-top:2px solid var(--lcars-butterscotch);padding-top:0.5rem;align-items:center">
+    <span style="font-size:0.75rem;color:var(--lcars-sunflower);text-transform:uppercase;margin-right:0.5rem">SOLAR MODE</span>
+    <div class="mode-btn">☀ FULL SOLAR</div>
+    <div class="mode-btn active">🌿 ECO</div>
+    <div class="mode-btn">⚡ FULL GRID</div>
+    <div class="mode-btn">⏻ OFF</div>
+  </div>
+  <!-- Aux controls -->
+  <div style="display:flex;gap:2rem;margin-top:0.5rem;border-top:2px solid var(--lcars-butterscotch);padding-top:0.5rem;align-items:center">
+    <div style="display:flex;align-items:center;gap:0.5rem">
+      <span style="font-size:0.75rem;color:var(--lcars-sunflower);text-transform:uppercase">MAX CURRENT</span>
+      <div style="display:flex;gap:0.25rem;align-items:center">
+        <div style="width:2rem;height:2rem;background:var(--lcars-sunflower);color:#000;display:flex;align-items:center;justify-content:center;border-radius:0.75rem 0 0 0.75rem;font-weight:700">–</div>
+        <span style="font-weight:700;min-width:2.5rem;text-align:center">16A</span>
+        <div style="width:2rem;height:2rem;background:var(--lcars-sunflower);color:#000;display:flex;align-items:center;justify-content:center;border-radius:0 0.75rem 0.75rem 0;font-weight:700">+</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:0.5rem">
+      <span style="font-size:0.75rem;color:var(--lcars-sunflower);text-transform:uppercase">🔒 CABLE LOCK</span>
+      <div style="height:2rem;padding:0 0.75rem;background:var(--lcars-ice);color:#000;display:flex;align-items:center;border-radius:0 0.75rem 0.75rem 0;font-weight:700;font-size:0.75rem;text-transform:uppercase">LOCKED</div>
+    </div>
+  </div>
+</div>
+
 </div><!-- gallery -->
 
 <style>

@@ -1117,31 +1117,20 @@ When the media player is `idle`, `standby`, or `off`, the panel simplifies drama
 | Frame border          | `--lcars-african-violet`      | `--lcars-gray` (dimmed)                 |
 | Min-height            | Full panel                    | Reduced (compact idle)                  |
 
-### Idle CSS
+### Idle CSS (v4.23.0 — Standby Compaction)
+
+The idle state uses a `.media-idle` class on the panel wrapper. Transport controls, waveform visualizer, and secondary metadata are hidden via CSS cascade — no JavaScript conditional rendering needed.
 
 ```css
-.lcars-media-panel.idle {
-  --panel-frame-color: var(--lcars-gray);
-  --media-state-color: var(--lcars-gray);
-}
-
-/* Hide elements in idle state */
-.lcars-media-panel.idle .media-now-playing,
-.lcars-media-panel.idle .media-progress-container,
-.lcars-media-panel.idle .media-transport {
-  display: none;
-}
-
-/* Dim the volume bar in idle */
-.lcars-media-panel.idle .media-volume-fill {
-  background: var(--lcars-gray);
-  width: 0% !important;
-}
-
-.lcars-media-panel.idle .media-volume-value {
-  color: var(--lcars-gray);
-}
+.media-idle { opacity: 0.7; }
+.media-idle .media-transport { display: none; }
+.media-idle .lcars-audio-waveform { display: none; }
+.media-idle .media-volume-fill { background: var(--lcars-gray); width: 0% !important; }
+.media-idle .media-volume-pct { color: var(--lcars-gray); }
+.media-idle .media-metadata-extra { display: none; }
 ```
+
+The `.media-metadata-extra` wrapper wraps shuffle/repeat/sensor metadata rows. The Source row renders *outside* this wrapper so it remains visible during standby — it's the most useful ambient information. The 0.7 opacity dims the entire panel, communicating dormancy without hiding the panel entirely.
 
 ### Transition from Idle to Active
 

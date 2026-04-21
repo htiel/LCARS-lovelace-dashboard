@@ -31,12 +31,12 @@ import {
   isLightingEntity, isClimateEntity, isEnvironmentEntity, isAmbientSensor,
   isTacticalEntity, PANEL_TYPE_TACTICAL,
   isViewportEntity, PANEL_TYPE_VIEWPORT,
-  PANEL_TYPE_HAZARD, PANEL_TYPE_GALLEY,
+  PANEL_TYPE_HAZARD, PANEL_TYPE_GALLEY, PANEL_TYPE_EV_CHARGER,
   isDiagnosticEntity,
   SUPPRESS_DOMAINS,
 } from './lcars-entity-utils.js';
 import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor, getCo2Color, getTempColor, getTempComfortClass, getSafeComfortColor, COMFORT_COLORS, getRainDelayInfo, getPowerColor, getPowerLabel, getGridBalanceColor } from './lcars-color-utils.js';
-import { formatNumber, formatStateValue } from './lcars-format-utils.js';
+import { formatNumber, formatStateValue, canonicalLabel } from './lcars-format-utils.js';
 import { clampSetpoint, clampValue, createRateLimiter, createDebouncer } from './lcars-service-utils.js';
 import { renderSparkline, fetchSparklineData } from './lcars-sparkline.js';
 import { fetchForecasts } from './lcars-weather-utils.js';
@@ -66,6 +66,7 @@ import './panels/tactical/lcars-tactical-panel.js';
 import './panels/viewport/lcars-viewport-panel.js';
 import './panels/hazard/lcars-hazard-panel.js';
 import './panels/galley/lcars-galley-panel.js';
+import './panels/ev-charger/lcars-ev-charger-panel.js';
 
 const TAG = 'Homepage';
 
@@ -88,6 +89,7 @@ const PANEL_TAG_REGISTRY = new Map([
   [PANEL_TYPE_VIEWPORT,       (group, hass, editMode, config) => html`<lcars-viewport-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-viewport-panel>`],
   [PANEL_TYPE_HAZARD,          (group, hass, editMode, config) => html`<lcars-hazard-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-hazard-panel>`],
   [PANEL_TYPE_GALLEY,          (group, hass, editMode, config) => html`<lcars-galley-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-galley-panel>`],
+  [PANEL_TYPE_EV_CHARGER,      (group, hass, editMode, config) => html`<lcars-ev-charger-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-ev-charger-panel>`],
 ]);
 
 /* Build a cache-busted camera image URL using last_updated timestamp */
@@ -333,6 +335,18 @@ class LcarsHomepageCard extends LitElement {
         name: name,
         icon: '',
       }, `Edit: ${name}`);
+    }
+
+    // 4X-8: Panel reorder handler — opens popup with move up/down/reset actions
+    _handlePanelReorder(e, areaId, panelType, allPanels) {
+      e.stopPropagation();
+      e.preventDefault();
+      if (!this._hass || !areaId) return;
+      openEditPopup(this._hass, 'lcars-edit-panel-order-card', {
+        area_id: areaId,
+        panel_type: panelType,
+        panel_types: allPanels.map(p => p.panelType),
+      }, `Panel Order: ${panelType.replace(/_/g, ' ').toUpperCase()}`);
     }
 
     /* ─── Toggle a light/switch/fan/etc ─── */
@@ -1146,6 +1160,9 @@ class LcarsHomepageCard extends LitElement {
             font-weight: 700;
             font-size: var(--lcars-font-size-data);
           }
+          /* 4X-7: zone sibling telemetry pips */
+          .zone-siblings { flex-shrink: 0; display: flex; gap: 0.375rem; margin: 0 0.25rem; }
+          .zone-sibling-pip { font-size: 0.625rem; color: var(--lcars-sky, #aaaaff); white-space: nowrap; }
 
           /* Media viewscreen — right column */
           .device-panel-media {
@@ -1860,6 +1877,21 @@ class LcarsHomepageCard extends LitElement {
           @media (prefers-reduced-motion: reduce) {
             .edit-pip, .device-edit-pip { animation: none; }
           }
+
+          /* 4X-8: Panel reorder affordance */
+          .panel-order-wrapper { position: relative; }
+          .panel-order-pip {
+            position: absolute; top: 0.25rem; right: 0.25rem;
+            width: 24px; height: 24px; border-radius: 50%;
+            background: var(--lcars-lilac); color: var(--lcars-black);
+            cursor: pointer; z-index: 5;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid rgba(0,0,0,0.3);
+            animation: edit-pip-pulse 2s ease-in-out infinite;
+            transition: transform var(--lcars-transition);
+          }
+          .panel-order-pip:hover { transform: scale(1.2); background: var(--lcars-gold); }
+          .panel-order-pip:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
 
           /* ═══════ ANIMATIONS (Wesley Crusher specials) ═══════ */
 
@@ -4474,6 +4506,7 @@ class LcarsHomepageCard extends LitElement {
       const score = [];
       const airQuality = [];
       const telemetry = [];
+      const filterLife = [];
       const controls = [];
       const diagnostics = [];
 
@@ -4484,6 +4517,14 @@ class LcarsHomepageCard extends LitElement {
         // Controls: fan, switch, button, number, select, light (4X-1: BlueAir LED)
         if (['fan', 'switch', 'button', 'number', 'select', 'light'].includes(domain)) {
           controls.push(entry);
+          continue;
+        }
+
+        // 4X-54: BlueAir registers filter_life with device_class: battery.
+        // Detect filter/wick life sensors before AQ routing.
+        if (dc === 'battery' && domain === 'sensor' &&
+            /filter|wick/i.test(entry.entity?.entity_id || '')) {
+          filterLife.push(entry);
           continue;
         }
 
@@ -4512,7 +4553,7 @@ class LcarsHomepageCard extends LitElement {
         }
       }
 
-      return { score, airQuality, telemetry, controls, diagnostics };
+      return { score, airQuality, telemetry, filterLife, controls, diagnostics };
     }
 
     /* Map AQI value → hue angle (120=green → 0=red) for atmoscrubber */
@@ -4552,7 +4593,7 @@ class LcarsHomepageCard extends LitElement {
     /* Render the environment panel */
     _renderEnvironmentPanel(group) {
       const categoryEntities = this._getDeviceCategoryEntities(group.device.id);
-      const { score, airQuality, telemetry, controls, diagnostics } = this._partitionEnvironmentEntities(group.entities, categoryEntities);
+      const { score, airQuality, telemetry, filterLife, controls, diagnostics } = this._partitionEnvironmentEntities(group.entities, categoryEntities);
       const deviceName = this._shortDeviceName(group.device) || 'Environment';
 
       // Find primary AQ reading for color mapping
@@ -4632,6 +4673,24 @@ class LcarsHomepageCard extends LitElement {
                   <div class="sensor-indicator" style="background:${color}"></div>
                   <span class="sensor-label">${name}</span>
                   <span class="sensor-state-value" style="color:${color}">${text}</span>
+                </div>
+              `;
+            })}
+            ${filterLife.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const pct = Math.min(100, Math.max(0, parseFloat(state.state) || 0));
+              const litCount = Math.round(pct / 10);
+              return html`
+                <div class="filter-life-row">
+                  <span class="filter-life-label">${name}</span>
+                  <span class="filter-life-pct">${Math.round(pct)}%</span>
+                </div>
+                <div class="filter-segments" aria-label="Filter life: ${Math.round(pct)}%">
+                  ${Array.from({ length: 10 }, (_, i) => {
+                    const seg = i < litCount;
+                    const cls = seg ? (pct < 25 ? 'lit critical' : pct < 75 ? 'lit warn' : 'lit') : '';
+                    return html`<div class="filter-seg ${cls}"></div>`;
+                  })}
                 </div>
               `;
             })}
@@ -4728,9 +4787,9 @@ class LcarsHomepageCard extends LitElement {
           <!-- Sparklines (bottom) -->
           <div class="env-sparklines" aria-label="24-hour history">
             ${[...score, ...airQuality].map(({ entity, state }) => {
-              const name = this._friendlyName(state, entity);
-              const points = sparkData[entity.entity_id];
               const dc = state.attributes?.device_class || '';
+              const name = canonicalLabel(dc, this._friendlyName(state, entity), entity.entity_id);
+              const points = sparkData[entity.entity_id];
               const color = dc === 'pm25' ? 'var(--lcars-peach)'
                 : dc === 'carbon_dioxide' ? 'var(--lcars-sunflower)'
                 : dc === 'volatile_organic_compounds_parts' || dc === 'volatile_organic_compounds' ? 'var(--lcars-african-violet)'
@@ -5389,6 +5448,23 @@ class LcarsHomepageCard extends LitElement {
         auxiliary.push(entry);
       }
 
+      // 4X-7: absorb same-device siblings into zone context
+      const zoneDevIds = new Set();
+      for (const z of zones) {
+        if (z.entity?.device_id) zoneDevIds.add(z.entity.device_id);
+      }
+      const zoneSiblings = new Map();
+      const remainingAux = [];
+      for (const a of auxiliary) {
+        const did = a.entity?.device_id;
+        if (did && zoneDevIds.has(did)) {
+          if (!zoneSiblings.has(did)) zoneSiblings.set(did, []);
+          zoneSiblings.get(did).push(a);
+        } else {
+          remainingAux.push(a);
+        }
+      }
+
       if (categoryEntities) {
         for (const e of categoryEntities.diagnostic || []) {
           const state = this._getEntityState(e.entity_id);
@@ -5397,7 +5473,7 @@ class LcarsHomepageCard extends LitElement {
         }
       }
 
-      return { alarm, zones, auxiliary, diagnostics };
+      return { alarm, zones, auxiliary: remainingAux, diagnostics, zoneSiblings };
     }
 
     _handleAlarmPinDigit(digit) {
@@ -5513,7 +5589,7 @@ class LcarsHomepageCard extends LitElement {
 
     _renderAlarmPanel(group) {
       const categoryEntities = this._getDeviceCategoryEntities(group.device.id);
-      const { alarm, zones, auxiliary, diagnostics } = this._partitionAlarmEntities(group.entities, categoryEntities);
+      const { alarm, zones, auxiliary, diagnostics, zoneSiblings } = this._partitionAlarmEntities(group.entities, categoryEntities);
       const deviceName = this._shortDeviceName(group.device) || 'Alarm';
 
       if (alarm.length === 0) return '';
@@ -5555,6 +5631,7 @@ class LcarsHomepageCard extends LitElement {
               const name = this._friendlyName(state, entity);
               const isOpen = state.state === 'on';
               const color = isOpen ? 'var(--lcars-butterscotch)' : 'var(--lcars-gray)';
+              const siblings = (entity.device_id && zoneSiblings.get(entity.device_id)) || [];
               return html`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
                   aria-label="${name}: ${isOpen ? 'open' : 'closed'}"
@@ -5562,6 +5639,14 @@ class LcarsHomepageCard extends LitElement {
                   @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                   <div class="sensor-indicator" style="background:${color}"></div>
                   <span class="sensor-label">${name}</span>
+                  ${siblings.length > 0 ? html`<span class="zone-siblings">${siblings.map(s => {
+                    const dc = s.state?.attributes?.device_class || '';
+                    const unit = s.state?.attributes?.unit_of_measurement || '';
+                    const { text: val } = formatStateValue(s.state, s.entity?.entity_category);
+                    const label = dc === 'battery' ? 'BAT' : dc === 'illuminance' ? 'LUX' : '';
+                    const ariaText = `${dc === 'battery' ? 'Battery' : dc === 'illuminance' ? 'Illuminance' : dc}: ${val}${unit ? ' ' + unit : ''}`;
+                    return html`<span class="zone-sibling-pip" role="img" aria-label="${ariaText}" title="${s.state?.attributes?.friendly_name || ''}">${label} ${val}${unit ? ' ' + unit : ''}</span>`;
+                  })}</span>` : ''}}
                   <span class="sensor-state-value" style="color:${color}">${isOpen ? 'OPEN' : 'CLOSED'}</span>
                 </div>
               `;
@@ -7417,13 +7502,31 @@ class LcarsHomepageCard extends LitElement {
         ...areaPanels,
       ];
 
+      // 4X-8: In edit mode, wrap each panel with a reorder gear pip
+      const wrappedPanels = this._editMode
+        ? allPanels.map(p => ({
+            ...p,
+            template: html`
+              <div class="panel-order-wrapper">
+                ${p.template}
+                <div class="panel-order-pip" tabindex="0" role="button"
+                  aria-label="Reorder ${p.panelType} panel"
+                  @click=${(e) => this._handlePanelReorder(e, areaId, p.panelType, allPanels)}
+                  @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handlePanelReorder(e, areaId, p.panelType, allPanels); } }}>
+                  <ha-icon icon="mdi:swap-vertical" style="--mdc-icon-size: 14px;"></ha-icon>
+                </div>
+              </div>
+            `,
+          }))
+        : allPanels;
+
       // No panels at all → single-column with entities + power
-      if (allPanels.length === 0 && powerGroups.length === 0) return html`${entityContent}${powerTemplate}`;
+      if (wrappedPanels.length === 0 && powerGroups.length === 0) return html`${entityContent}${powerTemplate}`;
 
       // Split panels into left and right columns
       const leftPanels = [];
       const rightPanels = [];
-      for (const p of allPanels) {
+      for (const p of wrappedPanels) {
         if (PANEL_COLUMN[p.panelType] === 'right') {
           rightPanels.push(p);
         } else {
@@ -7432,6 +7535,17 @@ class LcarsHomepageCard extends LitElement {
       }
       leftPanels.sort((a, b) => (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99));
       rightPanels.sort((a, b) => (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99));
+
+      // 4X-8: Apply panel order override for this area if present
+      const areaOverride = this.data?.panel_overrides?.[areaId];
+      if (Array.isArray(areaOverride) && areaOverride.length > 0) {
+        const overrideIndex = (pt) => {
+          const idx = areaOverride.indexOf(pt);
+          return idx >= 0 ? idx : 999;
+        };
+        leftPanels.sort((a, b) => overrideIndex(a.panelType) - overrideIndex(b.panelType));
+        rightPanels.sort((a, b) => overrideIndex(a.panelType) - overrideIndex(b.panelType));
+      }
 
       // Illumination renders FULL-WIDTH above both columns as primary room control
       const ilmPanel = leftPanels.find(p => p.panelType === PANEL_TYPE_ILLUMINATION);
@@ -7490,6 +7604,21 @@ class LcarsHomepageCard extends LitElement {
             if (['motion', 'occupancy'].includes(dc)) return false;
           }
           return isTacticalEntity(e);
+        });
+        // 4X-7: Also consume same-device siblings of tactical zone sensors.
+        // These are battery/illuminance sensors that the alarm panel renders
+        // as zone sibling pips rather than standalone buttons.
+        const tacticalDevIds = new Set();
+        for (const e of entityEntries) {
+          if (e.entity?.device_id && !camDevIds.has(e.entity.device_id) && isTacticalEntity(e)) {
+            tacticalDevIds.add(e.entity.device_id);
+          }
+        }
+        const SIBLING_CLASSES = new Set(['battery', 'illuminance']);
+        predicates.push(e => {
+          if (!e.entity?.device_id || !tacticalDevIds.has(e.entity.device_id)) return false;
+          const dc = e.state?.attributes?.device_class || '';
+          return SIBLING_CLASSES.has(dc);
         });
       }
       if (areaPanelTypes.has(PANEL_TYPE_MEDIA)) predicates.push(e => MEDIA_DOMAINS.has(e.domain) || e.domain === 'remote');

@@ -558,7 +558,23 @@ function getZoneValue(sensorState, alarmState) {
 }
 ```
 
-### 4.3 Last Event Badge
+### 4.3 Zone Sibling Telemetry Pips (v4.23.0)
+
+Zone sensors often share a device with battery and illuminance sensors (e.g., SimpliSafe door/window sensors). These "sibling" entities are absorbed into zone context instead of rendering as orphan auxiliary rows.
+
+**Detection**: `_partitionAlarmEntities()` collects `zoneDevIds` from zone binary_sensors, then routes auxiliary entries sharing those device_ids into a `zoneSiblings` Map keyed by device_id.
+
+**Rendering**: Each zone row appends inline sibling pips after the zone label:
+
+```
+FRONT DOOR  BAT 85%  LUX 200 lx  ●OPEN
+```
+
+- Font: `0.625rem`, color `var(--lcars-sky)` (WCAG AA: ~6.6:1 on black)
+- Text labels: `BAT` for battery, `LUX` for illuminance (replaces emoji for cross-platform consistency)
+- Each pip has `role="img"` and `aria-label` for screen reader accessibility
+
+### 4.4 Last Event Badge
 
 ```css
 .alarm-last-event {

@@ -71,6 +71,25 @@ class LcarsAlarmPanel extends LcarsBasePanel {
       auxiliary.push(entry);
     }
 
+    // 4X-7: absorb same-device siblings into zone context.
+    // Battery and illuminance sensors on zone devices become zone telemetry
+    // instead of orphan auxiliary rows.
+    const zoneDevIds = new Set();
+    for (const z of zones) {
+      if (z.entity?.device_id) zoneDevIds.add(z.entity.device_id);
+    }
+    const zoneSiblings = new Map(); // device_id → [entry, ...]
+    const remainingAux = [];
+    for (const a of auxiliary) {
+      const did = a.entity?.device_id;
+      if (did && zoneDevIds.has(did)) {
+        if (!zoneSiblings.has(did)) zoneSiblings.set(did, []);
+        zoneSiblings.get(did).push(a);
+      } else {
+        remainingAux.push(a);
+      }
+    }
+
     if (categoryEntities) {
       for (const e of categoryEntities.diagnostic || []) {
         const state = this._getEntityState(e.entity_id);
@@ -78,7 +97,7 @@ class LcarsAlarmPanel extends LcarsBasePanel {
         diagnostics.push({ entity: e, domain: e.entity_id.split('.')[0], state });
       }
     }
-    return { alarm, zones, auxiliary, diagnostics };
+    return { alarm, zones, auxiliary: remainingAux, diagnostics, zoneSiblings };
   }
 
   _handleAlarmPinDigit(digit) {
@@ -192,7 +211,7 @@ class LcarsAlarmPanel extends LcarsBasePanel {
 
   renderContent() {
     const categoryEntities = this._getDeviceCategoryEntities(this.group.device.id);
-    const { alarm, zones, auxiliary } = this._partitionAlarmEntities(this.group.entities, categoryEntities);
+    const { alarm, zones, auxiliary, zoneSiblings } = this._partitionAlarmEntities(this.group.entities, categoryEntities);
     const deviceName = this._shortDeviceName(this.group.device) || 'Alarm';
 
     if (alarm.length === 0) return html``;
@@ -216,6 +235,8 @@ class LcarsAlarmPanel extends LcarsBasePanel {
             const name = this._friendlyName(state, entity);
             const isOpen = state.state === 'on';
             const color = isOpen ? 'var(--lcars-butterscotch)' : 'var(--lcars-gray)';
+            // 4X-7: render same-device sibling telemetry (battery, illuminance) on zone row
+            const siblings = (entity.device_id && zoneSiblings.get(entity.device_id)) || [];
             return html`
               <div class="device-sensor-line" tabindex="0" role="listitem"
                 aria-label="${name}: ${isOpen ? 'open' : 'closed'}"
@@ -223,6 +244,14 @@ class LcarsAlarmPanel extends LcarsBasePanel {
                 @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                 <div class="sensor-indicator" style="background:${color}"></div>
                 <span class="sensor-label">${name}</span>
+                ${siblings.length > 0 ? html`<span class="zone-siblings">${siblings.map(s => {
+                  const dc = s.state?.attributes?.device_class || '';
+                  const unit = s.state?.attributes?.unit_of_measurement || '';
+                  const { text: val } = this._formatSensorValue(s.state, s.entity);
+                  const label = dc === 'battery' ? 'BAT' : dc === 'illuminance' ? 'LUX' : '';
+                  const ariaText = `${dc === 'battery' ? 'Battery' : dc === 'illuminance' ? 'Illuminance' : dc}: ${val}${unit ? ' ' + unit : ''}`;
+                  return html`<span class="zone-sibling-pip" role="img" aria-label="${ariaText}" title="${s.state?.attributes?.friendly_name || ''}">${label} ${val}${unit ? ' ' + unit : ''}</span>`;
+                })}</span>` : ''}
                 <span class="sensor-state-value" style="color:${color}">${isOpen ? 'OPEN' : 'CLOSED'}</span>
               </div>
             `;

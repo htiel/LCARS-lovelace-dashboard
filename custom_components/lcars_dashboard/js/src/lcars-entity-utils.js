@@ -29,6 +29,7 @@ export const PANEL_TYPE_TACTICAL      = 'tactical'; // 4X-42: subsumes PANEL_TYP
 export const PANEL_TYPE_VIEWPORT      = 'viewport'; // 4X-41: blinds/shades/covers
 export const PANEL_TYPE_HAZARD        = 'hazard'; // 4X-39: smoke/CO/heat detectors
 export const PANEL_TYPE_GALLEY        = 'galley'; // 4X-40: smart appliances
+export const PANEL_TYPE_EV_CHARGER    = 'ev_charger'; // 4X-55: EV chargers
 
 // ─── Panel Column Assignments ───────────────────────────────────────────────
 // 'left' = renders alongside entity groups; 'right' = opposite column
@@ -49,6 +50,7 @@ export const PANEL_COLUMN = {
   [PANEL_TYPE_WEATHER]:      'right',
   [PANEL_TYPE_VIEWPORT]:     'left', // 4X-41: blinds near illumination
   [PANEL_TYPE_GALLEY]:        'left', // 4X-40: appliances
+  [PANEL_TYPE_EV_CHARGER]:    'left', // 4X-55: EV charger near power
   [PANEL_TYPE_HAZARD]:        'right', // 4X-39: safety alerts
 };
 
@@ -62,6 +64,7 @@ export const PANEL_TYPE_ORDER = {
   [PANEL_TYPE_ENVIRONMENT]:  4,
   [PANEL_TYPE_VIEWPORT]:     4.5, // 4X-41: between environment and power
   [PANEL_TYPE_GALLEY]:        4.7, // 4X-40: near power
+  [PANEL_TYPE_EV_CHARGER]:    4.8, // 4X-55: energy-adjacent, near power
   [PANEL_TYPE_POWER]:        5,
   // Right column
   [PANEL_TYPE_ALARM]:        0, // subsumed by tactical when both present
@@ -337,6 +340,23 @@ const DETECTORS = [
     return null;
   },
 
+  // 4X-55: EV Charger: wallbox platform OR EV-charger entity patterns
+  // MUST run before power detector to claim wallbox entities first.
+  (entries) => {
+    if (entries.some(e => e.entity?.platform === 'wallbox')) return PANEL_TYPE_EV_CHARGER;
+    // Heuristic: require ≥2 EV charger naming patterns to avoid false positives
+    const EV_PATTERNS = [/charging_power/i, /state_of_charge/i, /added_energy/i, /charging_speed/i];
+    let matches = 0;
+    for (const e of entries) {
+      const eid = e.entity?.entity_id || '';
+      for (const pat of EV_PATTERNS) {
+        if (pat.test(eid)) { matches++; break; }
+      }
+      if (matches >= 2) return PANEL_TYPE_EV_CHARGER;
+    }
+    return null;
+  },
+
   // Power monitoring: ≥1 power/energy/voltage/current sensor, NO battery (4X-3)
   // MUST be last — lowest specificity. hasBattery gate prevents overlap with battery.
   (entries) => {
@@ -497,6 +517,8 @@ export function isLightingEntity(entry) {
     const name = (entry.state?.attributes?.friendly_name || '').toLowerCase();
     if (entry.state?.attributes?.device_class === 'outlet') return false;
     if (LIGHTING_NEGATIVE_RE.test(name) || LIGHTING_NEGATIVE_RE.test(eid)) return false;
+    // 4X-51: Insteon platform switches are lighting controls (dimmers, relays, on/off modules)
+    if (entry.entity?.platform === 'insteon') return true;
     return /light|lamp|sconce|chandelier|pendant|fixture|dimmer|illuminat/i.test(name) ||
            /light|lamp|sconce|chandelier|switchlinc|lamplinc|togglelinc/i.test(eid);
   }
@@ -517,9 +539,15 @@ export function isSecurityEntity(entry) {
 const TACTICAL_BINARY_CLASSES = new Set(['door', 'window', 'opening', 'garage_door', 'motion', 'occupancy', 'tamper', 'safety']);
 const TACTICAL_COVER_CLASSES = new Set(['garage_door', 'gate', 'door']);
 const VIEWPORT_COVER_CLASSES = new Set(['blind', 'shade', 'curtain', 'awning', 'shutter']);
+// 4X-58: Platforms whose lock entities belong to their device panel, not tactical
+const LOCK_EXCLUSION_PLATFORMS = new Set(['wallbox']);
 export function isTacticalEntity(entry) {
   if (ALARM_DOMAINS.has(entry.domain)) return true;
-  if (entry.domain === 'lock') return true;
+  if (entry.domain === 'lock') {
+    // 4X-58: wallbox cable lock belongs to EV charger panel, not tactical
+    if (LOCK_EXCLUSION_PLATFORMS.has(entry.entity?.platform || '')) return false;
+    return true;
+  }
   const dc = entry.state?.attributes?.device_class || '';
   if (entry.domain === 'binary_sensor' && TACTICAL_BINARY_CLASSES.has(dc)) return true;
   if (entry.domain === 'cover' && TACTICAL_COVER_CLASSES.has(dc)) return true;

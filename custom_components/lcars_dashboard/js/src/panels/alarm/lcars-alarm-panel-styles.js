@@ -70,6 +70,9 @@ export const alarmPanelStyles = css`
   .sensor-indicator { width: 0.5rem; height: 0.5rem; border-radius: 50%; flex-shrink: 0; }
   .sensor-label { flex: 1; color: var(--lcars-space-white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; }
   .sensor-state-value { flex-shrink: 0; font-weight: 700; font-size: var(--lcars-font-size-data); }
+  /* 4X-7: zone sibling telemetry (battery, illuminance) inline pips */
+  .zone-siblings { flex-shrink: 0; display: flex; gap: 0.375rem; margin: 0 0.25rem; }
+  .zone-sibling-pip { font-size: 0.625rem; color: var(--lcars-sky, #aaaaff); white-space: nowrap; }
   .battery-section-divider { height: 1px; background: var(--lcars-gray); opacity: 0.3; margin: 0.375rem 0; }
 
   .alarm-viewscreen { grid-area: media; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; }

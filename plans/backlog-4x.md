@@ -35,6 +35,7 @@
 
 ### 4X-59 · Midea AC climate entity missing from HA — `TODO` · Priority: HIGH · Size: S
 
+**GitHub**: [#77](https://github.com/htiel/LCARS-lovelace-dashboard/issues/77)
 **Area**: Quinn's Room
 **Source**: Visual QA crawl (v4.23.0-beta.1)
 
@@ -48,6 +49,7 @@ The Midea AC LAN integration is installed (`update.midea_ac_lan_update` exists) 
 
 ### 4X-60 · HomeKit purifier (Smartmi P1) renders as standalone device card — `TODO` · Priority: HIGH · Size: M
 
+**GitHub**: [#78](https://github.com/htiel/LCARS-lovelace-dashboard/issues/78)
 **Area**: Quinn's Room
 **Source**: Visual QA crawl (v4.23.0-beta.1)
 
@@ -68,6 +70,7 @@ The Midea AC LAN integration is installed (`update.midea_ac_lan_update` exists) 
 
 ### 4X-61 · Insteon motion sensor Light/Battery siblings not absorbed — `TODO` · Priority: MEDIUM · Size: M
 
+**GitHub**: [#79](https://github.com/htiel/LCARS-lovelace-dashboard/issues/79)
 **Areas**: Back Yard, Garage
 **Source**: Visual QA crawl (v4.23.0-beta.1)
 
@@ -88,6 +91,7 @@ Insteon motion sensor devices have 3 `binary_sensor` entities each: `motion`, `l
 
 ### 4X-62 · Tactical motion sensor name redundancy — `TODO` · Priority: LOW · Size: S
 
+**GitHub**: [#80](https://github.com/htiel/LCARS-lovelace-dashboard/issues/80)
 **Area**: Back Yard
 **Source**: Visual QA crawl (v4.23.0-beta.1)
 
@@ -99,6 +103,7 @@ The label concatenates device name + entity friendly name, creating an extremely
 
 ### 4X-63 · Master Bedroom media transport visible in apparent standby — `TODO` · Priority: MEDIUM · Size: S
 
+**GitHub**: [#81](https://github.com/htiel/LCARS-lovelace-dashboard/issues/81)
 **Area**: Master Bedroom
 **Source**: Visual QA crawl (v4.23.0-beta.1)
 

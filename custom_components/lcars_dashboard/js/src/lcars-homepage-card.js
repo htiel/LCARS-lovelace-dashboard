@@ -340,10 +340,12 @@ class LcarsHomepageCard extends LitElement {
       e.stopPropagation();
       e.preventDefault();
       if (!this._hass || !areaId) return;
+      const colOverrides = this.data?.panel_column_overrides?.[areaId] || {};
       openEditPopup(this._hass, 'lcars-edit-panel-order-card', {
         area_id: areaId,
         panel_type: panelType,
         panel_types: allPanels.map(p => p.panelType),
+        column_overrides: colOverrides,
       }, `Panel Order: ${panelType.replace(/_/g, ' ').toUpperCase()}`);
     }
 
@@ -7517,11 +7519,13 @@ class LcarsHomepageCard extends LitElement {
       // No panels at all → single-column with entities + power
       if (wrappedPanels.length === 0 && powerGroups.length === 0) return html`${entityContent}${powerTemplate}`;
 
-      // Split panels into left and right columns
+      // Split panels into left and right columns (with column overrides)
+      const colOverrides = this.data?.panel_column_overrides?.[areaId] || {};
       const leftPanels = [];
       const rightPanels = [];
       for (const p of wrappedPanels) {
-        if (PANEL_COLUMN[p.panelType] === 'right') {
+        const col = colOverrides[p.panelType] || PANEL_COLUMN[p.panelType] || 'left';
+        if (col === 'right') {
           rightPanels.push(p);
         } else {
           leftPanels.push(p);

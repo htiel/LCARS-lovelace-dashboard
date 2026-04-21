@@ -195,6 +195,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     websocket_api.async_register_command(hass, ws_handle_panel_order_get)
     websocket_api.async_register_command(hass, ws_handle_panel_order_set)
+    websocket_api.async_register_command(hass, ws_handle_panel_column_get)
+    websocket_api.async_register_command(hass, ws_handle_panel_column_set)
 
     await load_plugins(hass, DOMAIN)
 
@@ -225,6 +227,7 @@ async def websocket_get_configuration(
         hass.data[DOMAIN]["devices"] = await _read_yaml_file(hass, "lcars-dashboard/configs/devices.yaml")
         hass.data[DOMAIN]["homepage_header"] = await _read_yaml_file(hass, "lcars-dashboard/configs/settings.yaml")
         panel_overrides = await _read_yaml_file(hass, "lcars-dashboard/configs/panel_overrides.yaml")
+        panel_column_overrides = await _read_yaml_file(hass, "lcars-dashboard/configs/panel_column_overrides.yaml")
 
         area_cards = await _load_card_dir_nested(hass, "lcars-dashboard/configs/cards/areas")
         device_cards = await _load_card_dir_nested(hass, "lcars-dashboard/configs/cards/devices")
@@ -275,6 +278,7 @@ async def websocket_get_configuration(
                 "devices_card": devices_card,
                 "devices_popup": devices_popup,
                 "panel_overrides": panel_overrides,
+                "panel_column_overrides": panel_column_overrides if isinstance(panel_column_overrides, dict) else {},
                 "debug": logging.getLogger("custom_components.lcars_dashboard").getEffectiveLevel() <= logging.DEBUG,
             }
         )
@@ -297,6 +301,7 @@ async def websocket_get_configuration(
                 "devices_card": {},
                 "devices_popup": {},
                 "panel_overrides": {},
+                "panel_column_overrides": {},
                 "debug": logging.getLogger("custom_components.lcars_dashboard").getEffectiveLevel() <= logging.DEBUG,
             }
         )
@@ -1725,6 +1730,72 @@ async def ws_handle_panel_order_set(
         await _write_yaml_file(hass, "lcars-dashboard/configs/panel_overrides.yaml", overrides)
 
     connection.send_result(msg["id"], {"successful": "Panel order saved"})
+
+
+#panel_column_get
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "lcars_dashboard/panel_column/get",
+    }
+)
+@websocket_api.async_response
+async def ws_handle_panel_column_get(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Return panel column overrides for all areas."""
+    overrides = await _read_yaml_file(hass, "lcars-dashboard/configs/panel_column_overrides.yaml")
+    connection.send_result(msg["id"], {"panel_column_overrides": overrides if isinstance(overrides, dict) else {}})
+
+
+#panel_column_set
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "lcars_dashboard/panel_column/set",
+        vol.Required("area_id"): _validate_path_component,
+        vol.Required("panel_columns"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_handle_panel_column_set(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Save panel column overrides for a specific area."""
+    area_id = msg["area_id"]
+    panel_columns = _safe_json_loads(connection, msg["id"], msg["panel_columns"], "panel_columns")
+    if panel_columns is None:
+        return
+    if not isinstance(panel_columns, dict):
+        connection.send_error(msg["id"], "invalid_format", "panel_columns must be a JSON object mapping panel types to 'left' or 'right'")
+        return
+    if len(panel_columns) > 50:
+        connection.send_error(msg["id"], "invalid_format", "panel_columns exceeds maximum of 50 entries")
+        return
+    import re
+    _PANEL_TYPE_RE = re.compile(r'^[a-z_]{1,30}$')
+    _VALID_COLUMNS = {'left', 'right'}
+    for key, val in panel_columns.items():
+        if not isinstance(key, str) or not _PANEL_TYPE_RE.match(key):
+            connection.send_error(msg["id"], "invalid_format", "Each key must be a lowercase panel type string (a-z, underscore, max 30 chars)")
+            return
+        if val not in _VALID_COLUMNS:
+            connection.send_error(msg["id"], "invalid_format", "Each value must be 'left' or 'right'")
+            return
+
+    async with _get_yaml_lock("lcars-dashboard/configs/panel_column_overrides.yaml"):
+        overrides = await _read_yaml_file(hass, "lcars-dashboard/configs/panel_column_overrides.yaml")
+        if not isinstance(overrides, dict):
+            overrides = OrderedDict()
+
+        if len(panel_columns) == 0:
+            overrides.pop(area_id, None)
+        else:
+            overrides[area_id] = panel_columns
+
+        await _write_yaml_file(hass, "lcars-dashboard/configs/panel_column_overrides.yaml", overrides)
+
+    connection.send_result(msg["id"], {"successful": "Panel column overrides saved"})
 
 
 async def async_setup_entry(hass, config_entry):

@@ -335,6 +335,7 @@ class LcarsDashboardLayout extends LitElement {
           color: var(--lcars-black);
           text-transform: uppercase;
           flex-shrink: 0;
+          border-radius: 0 var(--lcars-btn-radius) 0 0;
         }
 
         /* ─── Sidebar Area Buttons ─── */

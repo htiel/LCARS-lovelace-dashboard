@@ -13,6 +13,7 @@ import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { SENSOR_DOMAINS } from '../../lcars-entity-utils.js';
 import { getHvacActionColor, getHvacModeColor } from '../../lcars-color-utils.js';
 import { clampSetpoint, createDebouncer } from '../../lcars-service-utils.js';
+import { lcarsAudio } from '../../lcars-audio.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { getSiblingAreas } from '../../lcars-hierarchy-utils.js';
 import { climatePanelStyles } from './lcars-climate-panel-styles.js';
@@ -176,6 +177,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
   }
 
   _handleClimateSetpoint(entityId, attrs, value, isDual, which) {
+    lcarsAudio.play('climateAdjust');
     const clamped = clampSetpoint(value, attrs);
     if (!this._climateSetpointDebouncer) {
       this._climateSetpointDebouncer = createDebouncer((eid, data) => {

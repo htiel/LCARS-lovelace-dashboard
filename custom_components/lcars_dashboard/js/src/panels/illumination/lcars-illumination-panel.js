@@ -23,6 +23,7 @@ import { showMoreInfo, fireEvent, lcarsLog } from '../../lcars-helpers.js';
 import { createDebouncer, createRateLimiter, clampValue } from '../../lcars-service-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { lcarsFocusRing } from '../../lcars-styles.js';
+import { lcarsAudio } from '../../lcars-audio.js';
 import { illuminationPanelStyles } from './lcars-illumination-panel-styles.js';
 
 import '../../components/lcars-summary-badge/lcars-summary-badge.js';
@@ -671,6 +672,7 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
 
   _toggleLight(entityId) {
     if (!this.hass || !entityId) return;
+    lcarsAudio.playForEntity(entityId);
     const domain = entityId.split('.')[0];
     this._callService(domain, 'toggle', { entity_id: entityId });
   }
@@ -685,6 +687,7 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
   _activateScene(entityId) {
     if (!this.hass || !entityId) return;
     if (!this._sceneRateLimiter.allow()) return;
+    lcarsAudio.play('scriptFire');
     this._callService('scene', 'turn_on', { entity_id: entityId });
   }
 

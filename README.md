@@ -8,7 +8,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-4.23.0--beta.1-blue)
+![Version](https://img.shields.io/badge/version-4.23.0-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 [![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 
@@ -109,13 +109,21 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 - **GPU-Composited** — All animations use `transform`/`opacity` for 60fps rendering
 - **`prefers-reduced-motion`** — Comprehensive overrides: ambient loops disabled, confirmations halved, static fallbacks
 
+### Audio System
+- **15 synthesized sounds** via Web Audio API (OscillatorNode → GainNode) — no external audio files
+- **All 14 panel types wired** — contextual feedback for toggles, adjustments, alerts, navigation, and state transitions
+- **Mute toggle** in header endcap, persisted to localStorage
+- **Accessibility** — Respects `prefers-reduced-motion`, soft volumes (0.10–0.15 gain)
+
 ### Security & Accessibility
 - **Alarm PIN** — Rate-limited (3 attempts/60s), never logged or in DOM attributes, digit-only sanitization
 - **Media artwork** — URL validation restricts to `/api/` or `/local/` paths
 - **Setpoint clamping** — Temperature controls validated against entity min/max with absolute bounds
 - **Service call throttling** — Token-bucket rate limiter on all device control calls
+- **YAML concurrency** — All read-modify-write WebSocket handlers protected by per-file `asyncio.Lock`
+- **Skip-nav link** — Hidden link jumps to `<main>` on first Tab press
 - **ARIA landmarks** — Full keyboard navigation, `role` structure, `aria-live` announcements
-- **WCAG 2.2 AA** — Color-blind safe indicators, focus-visible outlines, 24×24px minimum targets
+- **WCAG 2.2 AA** — Color-blind safe indicators, `focus-visible` outlines (ice), 24×24px minimum targets
 - **Self-contained** — All fonts (Antonio) and dependencies vendored locally, no external CDN calls
 
 ## Panel Gallery
@@ -264,7 +272,7 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 |-------|-----------|
 | HA Integration | Python custom component (`lcars_dashboard`) |
 | Frontend | Lit Element v2 web components — 12 extracted panel elements + shared base class |
-| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~651 KiB) |
+| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~763 KiB) |
 | Styling | 3-tier CSS composition: base variables → component shadow DOM → panel-specific modules |
 | Components | 7 shared components: `<lcars-panel-frame>`, `<lcars-sensor-row>`, `<lcars-section-divider>`, `<lcars-option-strip>`, `<lcars-setpoint>`, `<lcars-segmented-bar>`, `<lcars-summary-badge>` |
 | Communication | WebSocket API + window custom events |

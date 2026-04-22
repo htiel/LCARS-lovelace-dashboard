@@ -313,22 +313,89 @@ class LcarsTacticalPanel extends LcarsBasePanel {
 
   /* ─── Motion Sensors ─── */
 
+  /**
+   * Find sibling entities (battery, light/illuminance) for motion sensor devices.
+   * Returns Map<deviceId, { motion, battery, ambient }>.
+   */
+  _groupMotionDevices(motionEntries) {
+    const hassEntities = this.hass?.entities || {};
+    const hassStates = this.hass?.states || {};
+    const deviceMap = new Map();
+
+    // Build groups keyed by device_id (or entity_id for orphans)
+    for (const entry of motionEntries) {
+      const devId = entry.entity?.device_id;
+      const key = devId || entry.entity?.entity_id || '';
+      if (!deviceMap.has(key)) {
+        deviceMap.set(key, { motion: null, battery: null, ambient: null, deviceId: devId });
+      }
+      deviceMap.get(key).motion = entry;
+    }
+
+    // For each device with a device_id, find battery and light/illuminance siblings
+    const motionDeviceIds = new Set();
+    for (const [, group] of deviceMap) {
+      if (group.deviceId) motionDeviceIds.add(group.deviceId);
+    }
+
+    if (motionDeviceIds.size > 0) {
+      for (const [entityId, regEntry] of Object.entries(hassEntities)) {
+        const devId = regEntry.device_id;
+        if (!devId || !motionDeviceIds.has(devId)) continue;
+
+        const stateObj = hassStates[entityId];
+        if (!stateObj) continue;
+
+        const dc = stateObj.attributes?.device_class || '';
+        const group = [...deviceMap.values()].find(g => g.deviceId === devId);
+        if (!group) continue;
+
+        if (dc === 'battery' && !group.battery) {
+          group.battery = { entity: regEntry, state: stateObj };
+        } else if ((dc === 'light' || dc === 'illuminance') && !group.ambient) {
+          group.ambient = { entity: regEntry, state: stateObj };
+        }
+      }
+    }
+
+    return deviceMap;
+  }
+
   _renderMotionSection(motionEntries) {
+    const deviceMap = this._groupMotionDevices(motionEntries);
+
     return html`
       <div class="tactical-motion" role="list" aria-label="Motion sensors" aria-live="polite">
         <div class="tactical-section-label" style="width:100%">MOTION</div>
-        ${motionEntries.map(entry => {
-          const eid = entry.entity?.entity_id || '';
-          const name = entry.state?.attributes?.friendly_name || eid;
-          const isDetected = entry.state?.state === 'on';
+        ${[...deviceMap.values()].map(({ motion, battery, ambient }) => {
+          if (!motion) return '';
+          const eid = motion.entity?.entity_id || '';
+          const name = motion.state?.attributes?.friendly_name || eid;
+          const isDetected = motion.state?.state === 'on';
           const stateText = isDetected ? 'DETECTED' : 'CLEAR';
-          const indicatorColor = isDetected ? 'var(--lcars-butterscotch)' : 'var(--lcars-gray)';
+          const indicatorColor = isDetected ? 'var(--lcars-butterscotch)' : 'var(--lcars-ice)';
+          const hasMeta = battery || ambient;
+
+          // Battery
+          const battLevel = battery ? Number(battery.state?.state) || 0 : null;
+          const battColor = battLevel !== null ? this._batteryColor(battLevel) : null;
+
+          // Ambient light (binary_sensor light: on=bright, or sensor illuminance)
+          const isBright = ambient
+            ? (ambient.state?.attributes?.device_class === 'illuminance'
+              ? Number(ambient.state?.state) > 10
+              : ambient.state?.state === 'on')
+            : null;
+
+          const ariaLabel = `${name}: ${stateText}`
+            + (battLevel !== null ? `, battery ${battLevel}%` : '')
+            + (isBright !== null ? `, ${isBright ? 'bright' : 'dark'}` : '');
 
           return html`
-            <div class="tactical-motion-chip"
+            <div class="tactical-motion-chip ${hasMeta ? 'composite' : ''}"
                  role="listitem"
                  tabindex="0"
-                 aria-label="${name}: ${stateText}"
+                 aria-label="${ariaLabel}"
                  ?data-detected=${isDetected}
                  ?data-clear=${!isDetected}
                  @click=${() => showMoreInfo(eid)}
@@ -336,11 +403,44 @@ class LcarsTacticalPanel extends LcarsBasePanel {
               <span class="chip-indicator" style="background:${indicatorColor}"></span>
               <span class="chip-name">${name}</span>
               <span class="chip-state">${stateText}</span>
+              ${hasMeta ? html`
+                <span class="chip-meta">
+                  ${isBright !== null ? html`
+                    <span class="chip-ambient ${isBright ? 'bright' : 'dark'}"
+                          aria-hidden="true"
+                          title="${isBright ? 'Bright' : 'Dark'}"></span>
+                  ` : ''}
+                  ${battLevel !== null ? html`
+                    <span class="chip-battery" aria-hidden="true"
+                          title="Battery: ${battLevel}%">
+                      <span class="chip-battery-bar"
+                            style="--battery-color: ${battColor}">
+                        ${[1,2,3,4,5].map(seg => html`
+                          <span class="chip-battery-seg ${this._batterySegFilled(battLevel, seg) ? 'filled' : ''}"></span>
+                        `)}
+                      </span>
+                      <span class="chip-battery-pct">${battLevel}%</span>
+                    </span>
+                  ` : ''}
+                </span>
+              ` : ''}
             </div>
           `;
         })}
       </div>
     `;
+  }
+
+  _batterySegFilled(level, seg) {
+    const thresholds = [0, 11, 26, 51, 76];
+    return level >= thresholds[seg - 1];
+  }
+
+  _batteryColor(level) {
+    if (level <= 10) return 'var(--lcars-tomato)';
+    if (level <= 25) return 'var(--lcars-peach)';
+    if (level <= 50) return 'var(--lcars-butterscotch)';
+    return 'var(--lcars-sunflower)';
   }
 
   /* ─── Lock Toggle (confirm-gated) ─── */

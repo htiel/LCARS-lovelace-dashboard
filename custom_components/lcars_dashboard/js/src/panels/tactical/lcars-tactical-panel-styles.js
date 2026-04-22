@@ -275,7 +275,11 @@ export const tacticalPanelStyles = css`
     transition: background var(--lcars-transition);
   }
 
-  .tactical-motion-chip:hover { background: rgba(255,255,255,0.05); }
+  .tactical-motion-chip.composite {
+    min-width: 14rem;
+  }
+
+  .tactical-motion-chip:hover { filter: brightness(1.15); }
   .tactical-motion-chip:focus-visible {
     outline: 2px solid var(--lcars-ice);
     outline-offset: 2px;
@@ -310,6 +314,80 @@ export const tacticalPanelStyles = css`
     font-size: var(--lcars-font-size-data);
   }
 
+  /* ─── Composite Sub-indicators ─── */
+
+  .chip-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .chip-ambient {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .chip-ambient.bright {
+    background: var(--lcars-sunflower);
+  }
+  [data-detected] .chip-ambient.dark {
+    background: transparent;
+    border: 1.5px solid var(--lcars-gray);
+  }
+  [data-clear] .chip-ambient.dark {
+    background: transparent;
+    border: 1.5px solid var(--lcars-ice);
+  }
+
+  .chip-battery {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .chip-battery-bar {
+    display: flex;
+    gap: 1px;
+    align-items: flex-end;
+  }
+
+  .chip-battery-seg {
+    width: 0.25rem;
+    height: 0.5rem;
+    border-radius: 1px;
+  }
+  [data-detected] .chip-battery-seg {
+    background: rgba(0, 0, 0, 0.3);
+  }
+  [data-clear] .chip-battery-seg {
+    background: rgba(255, 255, 255, 0.15);
+  }
+  .chip-battery-seg.filled {
+    background: var(--battery-color, var(--lcars-sunflower));
+  }
+
+  .chip-battery-pct {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    min-width: 2rem;
+    text-align: right;
+  }
+
+  @media (max-width: 480px) {
+    .tactical-motion-chip.composite {
+      min-width: 10rem;
+      flex-wrap: wrap;
+    }
+    .chip-meta {
+      width: 100%;
+      margin-left: 0.875rem;
+      margin-top: 0.125rem;
+    }
+  }
+
   /* ─── Keypad (from alarm substation) ─── */
 
   .tactical-keypad {
@@ -330,7 +408,8 @@ export const tacticalPanelStyles = css`
   @media (prefers-reduced-motion: reduce) {
     .tactical-access-row,
     .tactical-perim-chip,
-    .tactical-motion-chip {
+    .tactical-motion-chip,
+    .chip-battery-seg {
       transition-duration: 0.01ms !important;
     }
     .tactical-confirm-strip { animation: none; }

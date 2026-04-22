@@ -220,7 +220,9 @@ class LcarsDashboardLayout extends LitElement {
       css`
         :host {
           display: block;
-          min-height: 100vh;
+          height: 100vh;
+          overflow: hidden;
+          box-sizing: border-box;
           background: var(--lcars-bg);
           padding: var(--lcars-gap);
         }
@@ -231,7 +233,7 @@ class LcarsDashboardLayout extends LitElement {
           grid-template-columns: var(--lcars-sidebar-w) 1fr;
           grid-template-rows: var(--lcars-elbow-h) 1fr var(--lcars-elbow-h);
           gap: var(--lcars-gap) var(--lcars-gap);
-          min-height: calc(100vh - 0.5rem);
+          height: 100%;
         }
 
         /* ─── Top-Left Elbow ─── */

@@ -19,6 +19,7 @@ import { showMoreInfo } from '../../lcars-helpers.js';
 import { humanizeTimestamp } from '../../lcars-format-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { irrigationPanelStyles } from './lcars-irrigation-panel-styles.js';
+import { lcarsAudio } from '../../lcars-audio.js';
 
 /* ─── Zone attribute icon map ─── */
 const SHADE_ICONS = {
@@ -164,26 +165,31 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
 
   _handleIrrigationZone(entityId, turnOn) {
     if (!this.#irrigationLimiter.allow()) return;
+    lcarsAudio.play('switchToggle');
     this._callService('switch', turnOn ? 'turn_on' : 'turn_off', { entity_id: entityId });
   }
 
   _handleIrrigationToggle(entityId) {
     if (!this.#irrigationLimiter.allow()) return;
+    lcarsAudio.play('switchToggle');
     this._callService('homeassistant', 'toggle', { entity_id: entityId });
   }
 
   _handlePause() {
     if (!this.#irrigationLimiter.allow()) return;
+    lcarsAudio.play('acknowledge');
     this._callService('rachio', 'pause_watering', { duration: 60 });
   }
 
   _handleResume() {
     if (!this.#irrigationLimiter.allow()) return;
+    lcarsAudio.play('acknowledge');
     this._callService('rachio', 'resume_watering', {});
   }
 
   _handleStopAll() {
     if (!this.#irrigationLimiter.allow()) return;
+    lcarsAudio.play('acknowledge');
     this._callService('rachio', 'stop_watering', {});
   }
 
@@ -200,6 +206,7 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
     if (!this.#irrigationLimiter.allow()) return;
     if (!this._quickRunZones.length || !this._quickRunDuration) return;
     if (!this.hass) return;
+    lcarsAudio.play('scriptFire');
     const duration = clampValue(this._quickRunDuration, 1, 30);
     // Bypass base _callService — Rachio expects array entity_id
     this.hass.callService('rachio', 'start_multiple_zone_schedule', {

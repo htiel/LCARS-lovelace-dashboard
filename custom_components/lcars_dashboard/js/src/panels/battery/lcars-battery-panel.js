@@ -12,6 +12,7 @@ import { TOGGLE_DOMAINS } from '../../lcars-entity-utils.js';
 import { formatNumber } from '../../lcars-format-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { batteryPanelStyles } from './lcars-battery-panel-styles.js';
+import { lcarsAudio } from '../../lcars-audio.js';
 
 class LcarsBatteryPanel extends LcarsBasePanel {
 
@@ -501,9 +502,9 @@ class LcarsBatteryPanel extends LcarsBasePanel {
                           role="radio"
                           aria-checked="${opt === current}"
                           ?data-selected=${opt === current}
-                          @click=${() => this.hass.callService('select', 'select_option', {
+                          @click=${() => { lcarsAudio.play('switchToggle'); this.hass.callService('select', 'select_option', {
                             entity_id: entity.entity_id, option: opt
-                          })}>
+                          }); }}>
                           ${opt}
                         </button>
                       `)}

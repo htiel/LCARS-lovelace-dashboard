@@ -322,9 +322,8 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
       : 'OFF';
 
     return html`
-      <div class="ilm-light-item">
+      <div class="ilm-light-item" role="listitem">
         <div class="ilm-light-bar ${isOn ? 'on' : 'off'} ${isDragging ? 'dragging' : ''}"
-           role="listitem"
            tabindex="0"
            data-entity-id="${eid}"
            style="--brightness:${isOn && !hasBrightness ? 100 : brightness}%; --bar-color:${barColor}"
@@ -625,7 +624,7 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     if (hue < 30)  return 'var(--lcars-tomato)';
     if (hue < 60)  return 'var(--lcars-butterscotch)';
     if (hue < 90)  return 'var(--lcars-sunflower)';
-    if (hue < 160) return '#66bb6a';
+    if (hue < 160) return 'var(--lcars-green, #66bb6a)';
     if (hue < 220) return 'var(--lcars-ice)';
     if (hue < 270) return 'var(--lcars-bluey)';
     if (hue < 330) return 'var(--lcars-lilac)';
@@ -639,8 +638,8 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
       { name: 'WARM',   hs: [30, 80],   color: 'var(--lcars-butterscotch, #ff9966)' },
       { name: 'COOL',   hs: [210, 20],  color: 'var(--lcars-ice, #99ccff)' },
       { name: 'RED',    hs: [0, 100],   color: 'var(--lcars-tomato, #ff5555)' },
-      { name: 'GREEN',  hs: [120, 100], color: '#66bb6a' },
-      { name: 'BLUE',   hs: [240, 100], color: 'var(--lcars-bluey, #3366cc)' },
+      { name: 'GREEN',  hs: [120, 100], color: 'var(--lcars-green, #66bb6a)' },
+      { name: 'BLUE',   hs: [240, 100], color: 'var(--lcars-bluey, #8899ff)' },
       { name: 'PURPLE', hs: [280, 80],  color: 'var(--lcars-lilac, #cc55ff)' },
     ];
   }
@@ -655,16 +654,19 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
 
   _setEffect(entityId, effect) {
     if (!this.hass || !entityId) return;
+    lcarsAudio.play('lightToggle');
     this._callService('light', 'turn_on', { entity_id: entityId, effect });
   }
 
   _clearEffect(entityId) {
     if (!this.hass || !entityId) return;
+    lcarsAudio.play('lightToggle');
     this._callService('light', 'turn_on', { entity_id: entityId, effect: 'none' });
   }
 
   _setColor(entityId, hs) {
     if (!this.hass || !entityId) return;
+    lcarsAudio.play('lightToggle');
     this._callService('light', 'turn_on', { entity_id: entityId, hs_color: hs });
   }
 
@@ -679,6 +681,7 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
 
   _setBrightness(entityId, pct) {
     if (!this.hass || !entityId) return;
+    lcarsAudio.play('climateAdjust');
     const safePct = clampValue(pct, 1, 100);
     const brightness = Math.round(safePct / 100 * 255);
     this._callService('light', 'turn_on', { entity_id: entityId, brightness });

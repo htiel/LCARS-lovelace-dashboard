@@ -34,6 +34,7 @@ class LcarsDashboardLayout extends LitElement {
     this._audioMuted = lcarsAudio.isMuted;
     this._elbowPressTimer = null;
     this._siteName = window.location.hostname.toUpperCase().replace(/\.LOCAL$/, '');
+    this._readyPlayed = false;
     this._resizeHandler = () => {
       this._narrow = window.innerWidth < 768;
     };
@@ -82,6 +83,10 @@ class LcarsDashboardLayout extends LitElement {
     if (!prev) {
       lcarsLog.debug(TAG, 'First hass received — cards:', this.cards?.length || 0);
     }
+    // Update site name from HA config if available (GEO-015/DATA-006)
+    if (hass?.config?.location_name) {
+      this._siteName = hass.config.location_name.toUpperCase();
+    }
     // Auto-deselect area if it was deleted from HA
     if (prev && prev.areas !== hass.areas && this._selectedArea) {
       if (!hass.areas?.[this._selectedArea]) {
@@ -115,7 +120,12 @@ class LcarsDashboardLayout extends LitElement {
   }
 
   _selectArea(areaId) {
-    lcarsAudio.play('navAcknowledge');
+    if (!this._readyPlayed) {
+      this._readyPlayed = true;
+      lcarsAudio.play('ready');
+    } else {
+      lcarsAudio.play('navAcknowledge');
+    }
     // Deselect floor when an area is picked directly
     if (this._selectedFloor) {
       this._selectedFloor = null;
@@ -163,6 +173,7 @@ class LcarsDashboardLayout extends LitElement {
 
   _handleElbowPointerDown(e) {
     if (!this._hass?.user?.is_admin) return;
+    e.preventDefault();
     this._elbowPressTimer = setTimeout(() => {
       this._toggleEditMode();
       this._elbowPressTimer = null;
@@ -240,6 +251,33 @@ class LcarsDashboardLayout extends LitElement {
           padding: var(--lcars-gap);
         }
 
+        /* ─── Skip Navigation Link (GEO-006) ─── */
+        .skip-nav {
+          position: absolute;
+          left: -9999px;
+          top: auto;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          z-index: 1000;
+          background: var(--lcars-gold);
+          color: var(--lcars-black);
+          padding: 0.5rem 1rem;
+          font-family: var(--lcars-font);
+          font-size: var(--lcars-font-size-data);
+          text-decoration: none;
+          border-radius: 0 0 var(--lcars-btn-radius) var(--lcars-btn-radius);
+        }
+        .skip-nav:focus {
+          position: fixed;
+          left: 50%;
+          top: 0;
+          transform: translateX(-50%);
+          width: auto;
+          height: auto;
+          z-index: 1000;
+        }
+
         /* ─── LCARS Frame Grid ─── */
         .lcars-frame {
           display: grid;
@@ -304,31 +342,8 @@ class LcarsDashboardLayout extends LitElement {
           line-height: var(--lcars-bar-h);
         }
 
-        /* ─── Configure Button (in header endcap) ─── */
-        .configure-btn {
-          background: none;
-          border: none;
-          color: var(--lcars-black);
-          cursor: pointer;
-          padding: 0 0.25rem;
-          display: flex;
-          align-items: center;
-          font-family: var(--lcars-font);
-          font-size: 0.65rem;
-          text-transform: uppercase;
-          user-select: none;
-          gap: 0.25rem;
-          white-space: nowrap;
-          transition: filter var(--lcars-transition);
-        }
-        .configure-btn:hover { filter: brightness(0.8); }
-        .configure-btn:focus-visible {
-          outline: 2px solid var(--lcars-ice);
-          outline-offset: 2px;
-        }
-        .configure-btn ha-icon { --mdc-icon-size: 16px; }
-
-        /* ─── Mute Button (in header endcap) ─── */
+        /* ─── Header Action Buttons (shared) ─── */
+        .configure-btn,
         .mute-btn {
           background: none;
           border: none;
@@ -345,11 +360,14 @@ class LcarsDashboardLayout extends LitElement {
           white-space: nowrap;
           transition: filter var(--lcars-transition);
         }
+        .configure-btn:hover,
         .mute-btn:hover { filter: brightness(0.8); }
+        .configure-btn:focus-visible,
         .mute-btn:focus-visible {
           outline: 2px solid var(--lcars-ice);
           outline-offset: 2px;
         }
+        .configure-btn ha-icon,
         .mute-btn ha-icon { --mdc-icon-size: 16px; }
 
         /* ─── Sidebar ─── */
@@ -390,7 +408,9 @@ class LcarsDashboardLayout extends LitElement {
         .lcars-sidebar-areas::-webkit-scrollbar-track { background: transparent; }
         .lcars-sidebar-areas::-webkit-scrollbar-thumb { background: var(--lcars-gray); border-radius: 2px; }
 
-        /* Filler block — fills dead space below nav buttons with LCARS gray */
+        /* Structural filler — fills dead space below nav buttons with LCARS gray panel.
+           Grows to fill remaining sidebar height when buttons are few;
+           collapses to 0px when buttons overflow (scroll case). */
         .lcars-sidebar-areas::after {
           content: '';
           display: block;
@@ -399,16 +419,6 @@ class LcarsDashboardLayout extends LitElement {
           background: var(--lcars-gray);
           border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
           width: calc(100% - 0.25rem);
-        }
-
-        /* Structural filler — fills dead space below nav buttons with LCARS gray panel.
-           Grows to fill remaining sidebar height when buttons are few;
-           collapses to 0px when buttons overflow (scroll case). */
-        .lcars-sidebar-areas::after {
-          content: '';
-          display: block;
-          flex: 1 0 0px;
-          background: var(--lcars-gray);
         }
 
         .sidebar-area-btn {
@@ -644,6 +654,7 @@ class LcarsDashboardLayout extends LitElement {
     const floorGroups = this._getAreasGroupedByFloor();
 
     return html`
+      <a class="skip-nav" href="#lcars-main-content" @click=${(e) => { e.preventDefault(); this.shadowRoot.getElementById('lcars-main-content')?.focus(); }}>Skip to content</a>
       <div class="lcars-frame">
         <!-- Top-Left Elbow (long-press to toggle edit mode) -->
         <div class="lcars-elbow-top" aria-hidden="true"
@@ -662,7 +673,7 @@ class LcarsDashboardLayout extends LitElement {
             <button class="mute-btn"
               role="switch"
               aria-checked=${!this._audioMuted}
-              aria-label="${this._audioMuted ? 'Unmute dashboard sounds' : 'Mute dashboard sounds'}"
+              aria-label="Dashboard sounds"
               @click=${() => this._toggleMute()}>
               <ha-icon .icon=${this._audioMuted ? 'mdi:volume-off' : 'mdi:volume-high'}></ha-icon>
             </button>
@@ -714,7 +725,7 @@ class LcarsDashboardLayout extends LitElement {
         </nav>
 
         <!-- Main Content -->
-        <main class="lcars-content" aria-label="Dashboard content" aria-live="polite">
+        <main class="lcars-content" id="lcars-main-content" aria-label="Dashboard content">
           ${this.cards && this.cards.length > 0
             ? this.cards.map((card) => html`${card}`)
             : html`<div class="lcars-heading">No data available</div>`}
@@ -726,7 +737,7 @@ class LcarsDashboardLayout extends LitElement {
         <!-- Footer Bar -->
         <div class="lcars-footer" role="contentinfo">
           <div class="lcars-footer-bar" aria-hidden="true"></div>
-          <span class="lcars-footer-text">LCARS 47</span>
+          <span class="lcars-footer-text">LCARS ${require('../package.json').version}</span>
           <div class="lcars-footer-endcap" aria-hidden="true"></div>
         </div>
       </div>

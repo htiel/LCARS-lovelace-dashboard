@@ -12,6 +12,7 @@ import { SENSOR_DOMAINS } from '../../lcars-entity-utils.js';
 import { getPlaybackStateColor } from '../../lcars-color-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { mediaPanelStyles } from './lcars-media-panel-styles.js';
+import { lcarsAudio } from '../../lcars-audio.js';
 
 class LcarsMediaPanel extends LcarsBasePanel {
 
@@ -68,12 +69,14 @@ class LcarsMediaPanel extends LcarsBasePanel {
   }
 
   _handleMediaService(entityId, service, data = {}) {
+    lcarsAudio.play('mediaAction');
     this.hass.callService('media_player', service, { entity_id: entityId, ...data });
   }
 
   _handleVolumeChange(entityId, e) {
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    lcarsAudio.play('climateAdjust');
     this._handleMediaService(entityId, 'volume_set', { volume_level: Math.round(pct * 100) / 100 });
   }
 

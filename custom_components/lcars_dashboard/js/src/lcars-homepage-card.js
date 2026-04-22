@@ -335,18 +335,18 @@ class LcarsHomepageCard extends LitElement {
       }, `Edit: ${name}`);
     }
 
-    // 4X-8: Panel reorder handler — opens popup with move up/down/reset actions
-    _handlePanelReorder(e, areaId, panelType, allPanels) {
+    // 4X-8: Panel reorder handler — opens popup with visual layout editor
+    _handlePanelReorder(e, areaId, panelId, allPanels) {
       e.stopPropagation();
       e.preventDefault();
       if (!this._hass || !areaId) return;
       const colOverrides = this.data?.panel_column_overrides?.[areaId] || {};
       openEditPopup(this._hass, 'lcars-edit-panel-order-card', {
         area_id: areaId,
-        panel_type: panelType,
-        panel_types: allPanels.map(p => p.panelType),
+        panel_id: panelId,
+        panels: allPanels.map(p => ({ panelId: p.panelId, panelType: p.panelType, label: p.label, deviceId: p.deviceId })),
         column_overrides: colOverrides,
-      }, `Panel Order: ${panelType.replace(/_/g, ' ').toUpperCase()}`);
+      }, `Panel Layout: ${(areaId || '').replace(/_/g, ' ').toUpperCase()}`);
     }
 
     /* ─── Toggle a light/switch/fan/etc ─── */
@@ -7492,10 +7492,24 @@ class LcarsHomepageCard extends LitElement {
         ? html`<lcars-power-panel .powerGroups=${powerGroups} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-power-panel>`
         : '';
 
-      // Merge all panels (device + area)
+      // Merge all panels (device + area) with unique IDs and display labels
       const allPanels = [
-        ...panelDevices.map(g => ({ panelType: g.panelType, template: this._renderDevicePanel(g.panelType, g) })),
-        ...areaPanels,
+        ...panelDevices.map(g => {
+          const devName = g.device?.name_by_user || g.device?.name || '';
+          return {
+            panelType: g.panelType,
+            panelId: `${g.panelType}:${g.device?.id || ''}`,
+            label: devName || g.panelType.replace(/_/g, ' '),
+            deviceId: g.device?.id || null,
+            template: this._renderDevicePanel(g.panelType, g),
+          };
+        }),
+        ...areaPanels.map(p => ({
+          ...p,
+          panelId: p.panelType,
+          label: p.panelType.replace(/_/g, ' '),
+          deviceId: null,
+        })),
       ];
 
       // 4X-8: In edit mode, wrap each panel with a reorder gear pip
@@ -7506,9 +7520,9 @@ class LcarsHomepageCard extends LitElement {
               <div class="panel-order-wrapper">
                 ${p.template}
                 <div class="panel-order-pip" tabindex="0" role="button"
-                  aria-label="Reorder ${p.panelType} panel"
-                  @click=${(e) => this._handlePanelReorder(e, areaId, p.panelType, allPanels)}
-                  @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handlePanelReorder(e, areaId, p.panelType, allPanels); } }}>
+                  aria-label="Reorder ${p.label} panel"
+                  @click=${(e) => this._handlePanelReorder(e, areaId, p.panelId, allPanels)}
+                  @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handlePanelReorder(e, areaId, p.panelId, allPanels); } }}>
                   <ha-icon icon="mdi:swap-vertical" style="--mdc-icon-size: 14px;"></ha-icon>
                 </div>
               </div>
@@ -7519,12 +7533,12 @@ class LcarsHomepageCard extends LitElement {
       // No panels at all → single-column with entities + power
       if (wrappedPanels.length === 0 && powerGroups.length === 0) return html`${entityContent}${powerTemplate}`;
 
-      // Split panels into left and right columns (with column overrides)
+      // Split panels into left and right columns (with column overrides by panelId or panelType)
       const colOverrides = this.data?.panel_column_overrides?.[areaId] || {};
       const leftPanels = [];
       const rightPanels = [];
       for (const p of wrappedPanels) {
-        const col = colOverrides[p.panelType] || PANEL_COLUMN[p.panelType] || 'left';
+        const col = colOverrides[p.panelId] || colOverrides[p.panelType] || PANEL_COLUMN[p.panelType] || 'left';
         if (col === 'right') {
           rightPanels.push(p);
         } else {
@@ -7534,15 +7548,16 @@ class LcarsHomepageCard extends LitElement {
       leftPanels.sort((a, b) => (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99));
       rightPanels.sort((a, b) => (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99));
 
-      // 4X-8: Apply panel order override for this area if present
+      // 4X-8: Apply panel order override for this area if present (supports panelId or panelType keys)
       const areaOverride = this.data?.panel_overrides?.[areaId];
       if (Array.isArray(areaOverride) && areaOverride.length > 0) {
-        const overrideIndex = (pt) => {
-          const idx = areaOverride.indexOf(pt);
+        const overrideIndex = (panel) => {
+          let idx = areaOverride.indexOf(panel.panelId);
+          if (idx < 0) idx = areaOverride.indexOf(panel.panelType);
           return idx >= 0 ? idx : 999;
         };
-        leftPanels.sort((a, b) => overrideIndex(a.panelType) - overrideIndex(b.panelType));
-        rightPanels.sort((a, b) => overrideIndex(a.panelType) - overrideIndex(b.panelType));
+        leftPanels.sort((a, b) => overrideIndex(a) - overrideIndex(b));
+        rightPanels.sort((a, b) => overrideIndex(a) - overrideIndex(b));
       }
 
       // Illumination renders FULL-WIDTH above both columns as primary room control

@@ -1708,12 +1708,12 @@ async def ws_handle_panel_order_set(
     if len(panel_order) > 50:
         connection.send_error(msg["id"], "invalid_format", "panel_order exceeds maximum of 50 entries")
         return
-    # Validate entries are lowercase alpha + underscore, max 30 chars
+    # Validate entries: panel type (a-z_) or panelType:deviceId format, max 80 chars
     import re
-    _PANEL_TYPE_RE = re.compile(r'^[a-z_]{1,30}$')
+    _PANEL_ID_RE = re.compile(r'^[a-z_][a-z0-9_:]{0,79}$')
     for item in panel_order:
-        if not isinstance(item, str) or not _PANEL_TYPE_RE.match(item):
-            connection.send_error(msg["id"], "invalid_format", "Each panel_order entry must be a lowercase panel type string (a-z, underscore, max 30 chars)")
+        if not isinstance(item, str) or not _PANEL_ID_RE.match(item):
+            connection.send_error(msg["id"], "invalid_format", "Each panel_order entry must be a panel ID string (a-z, 0-9, underscore, colon, max 80 chars)")
             return
 
     async with _get_yaml_lock("lcars-dashboard/configs/panel_overrides.yaml"):
@@ -1773,11 +1773,11 @@ async def ws_handle_panel_column_set(
         connection.send_error(msg["id"], "invalid_format", "panel_columns exceeds maximum of 50 entries")
         return
     import re
-    _PANEL_TYPE_RE = re.compile(r'^[a-z_]{1,30}$')
+    _PANEL_ID_RE = re.compile(r'^[a-z_][a-z0-9_:]{0,79}$')
     _VALID_COLUMNS = {'left', 'right'}
     for key, val in panel_columns.items():
-        if not isinstance(key, str) or not _PANEL_TYPE_RE.match(key):
-            connection.send_error(msg["id"], "invalid_format", "Each key must be a lowercase panel type string (a-z, underscore, max 30 chars)")
+        if not isinstance(key, str) or not _PANEL_ID_RE.match(key):
+            connection.send_error(msg["id"], "invalid_format", "Each key must be a panel ID string (a-z, 0-9, underscore, colon, max 80 chars)")
             return
         if val not in _VALID_COLUMNS:
             connection.send_error(msg["id"], "invalid_format", "Each value must be 'left' or 'right'")

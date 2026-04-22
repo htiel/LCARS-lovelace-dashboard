@@ -1214,42 +1214,36 @@ setInterval(() => {
 
 ## 8. Audio Grammar
 
-LCARS has a formalized audio language. Each sound has a specific semantic meaning.
+> **Full specification**: See [LCARS-AUDIO-SPEC.md](LCARS-AUDIO-SPEC.md) for complete tone definitions, per-panel integration points, and implementation details.
 
-| Event                      | Sound                        | Trigger                                    |
-|----------------------------|------------------------------|--------------------------------------------|
-| Button press               | `TactileInputAcknowledge`    | Any button tap/click                       |
-| View navigation            | `TactileInputAlternateAcknowledge` | Nav button → view change (like pressing Enter) |
-| Action denied/disabled     | `TactileInputNegativeAcknowledge`  | Tap on disabled button or unauthorized action  |
-| Popup open                 | `TactileInputAcknowledge`    | Modal appearing                            |
-| Error notification         | `Alert`                      | Error toast / warning notification         |
-| Critical system alert      | `RedAlert`                   | HA system-level failure                    |
-| Dashboard loaded           | `Ready`                      | Initial page load complete                 |
+LCARS has a formalized audio language. All 15 sounds are synthesized at runtime via Web Audio API (`OscillatorNode` → `GainNode` → destination). Zero external audio files.
 
-### Implementation Approach
+| Category | Sound | Trigger |
+|----------|-------|---------|
+| Acknowledge | `acknowledge` | Button press, PIN digit |
+| Nav Acknowledge | `navAcknowledge` | Sidebar area/floor clicks |
+| Negative Acknowledge | `negativeAcknowledge` | Disabled/unavailable entity toggle |
+| Alert | `alert` | Warning notification, alarm arming |
+| Critical Alert | `criticalAlert` | Alarm triggered |
+| Ready | `ready` | First area selection after load |
+| Toggle | `toggle` | Mute/edit mode toggle |
+| Light Toggle | `lightToggle` | Light entity toggle, effect/color |
+| Switch Toggle | `switchToggle` | Switch/input_boolean toggle |
+| Fan Toggle | `fanToggle` | Fan entity toggle |
+| Lock Toggle | `lockToggle` | Lock/unlock, alarm arm/disarm |
+| Cover Action | `coverAction` | Cover open/close/stop |
+| Climate Adjust | `climateAdjust` | Setpoint ±, brightness, volume |
+| Script Fire | `scriptFire` | Script/automation execution |
+| Entity Info | `entityInfo` | More-info dialog, disclosure toggle |
+| Media Action | `mediaAction` | Media transport controls |
 
-```javascript
-// Audio files stored as small base64 WAV or loaded from /local/lcars-audio/
-const LCARS_AUDIO = {
-  acknowledge: new Audio('/local/lcars-audio/input_ok.mp3'),
-  alternateAcknowledge: new Audio('/local/lcars-audio/input_enter.mp3'),
-  negativeAcknowledge: new Audio('/local/lcars-audio/input_deny.mp3'),
-  alert: new Audio('/local/lcars-audio/alert.mp3'),
-  redAlert: new Audio('/local/lcars-audio/red_alert.mp3'),
-  ready: new Audio('/local/lcars-audio/ready.mp3'),
-};
+### Implementation
 
-// Play with catch — browsers may block autoplay
-function lcarsSound(name) {
-  const audio = LCARS_AUDIO[name];
-  if (audio) {
-    audio.currentTime = 0;
-    audio.play().catch(() => {});  // Silently fail if autoplay blocked
-  }
-}
-```
-
-**Note**: Audio should respect `prefers-reduced-motion` — if reduced motion is preferred, disable non-critical sounds (keep only `Alert` and `RedAlert`).
+- **File**: `lcars-audio.js` — standalone utility, no DOM dependencies
+- **AudioContext**: Created lazily on first user gesture (autoplay-policy compliant)
+- **GainNode cleanup**: `osc.onended` disconnects GainNode to prevent node leaks
+- **Mute**: Header endcap toggle, persisted to `localStorage`
+- **Accessibility**: Respects `prefers-reduced-motion` (suppresses non-critical sounds)
 
 ---
 
@@ -1262,9 +1256,9 @@ function lcarsSound(name) {
 | 1.4.3 Contrast (Minimum) | AA | All text meets 4.5:1 or 3:1 for large text on black background |
 | 1.4.11 Non-text Contrast | AA | UI components (buttons, elbows) have 3:1 contrast vs background |
 | 2.1.1 Keyboard | A | All interactive elements reachable and operable via keyboard |
-| 2.4.7 Focus Visible | AA | 2px white outline on `:focus-visible` |
+| 2.4.7 Focus Visible | AA | 2px solid `var(--lcars-ice, #99ccff)` outline on `:focus-visible` |
 | 2.4.11 Focus Not Obscured | AA | Sticky header/footer must not hide focused elements |
-| 2.4.13 Focus Appearance | AAA* | Focus ring 2px thick, `#f5f6fa` on `#000000` = well above 3:1 |
+| 2.4.13 Focus Appearance | AAA* | Focus ring 2px thick, `#99ccff` (ice) on `#000000` = 9.4:1, well above 3:1 |
 | 2.5.8 Target Size | AA | All buttons ≥ 48px height (3rem), minimum 24×24 for small controls |
 | 4.1.2 Name, Role, Value | A | ARIA labels on all custom elements |
 
@@ -1287,6 +1281,9 @@ function lcarsSound(name) {
 ### ARIA Patterns
 
 ```html
+<!-- Skip-nav link (hidden until focused) -->
+<a class="skip-nav" href="#lcars-main">Skip to main content</a>
+
 <!-- Layout landmark structure -->
 <div class="lcars-frame" role="application" aria-label="LCARS Dashboard">
   <header class="lcars-header" role="banner">...</header>
@@ -1294,7 +1291,7 @@ function lcarsSound(name) {
     <button aria-current="page">HOME</button>
     <button>DEVICES</button>
   </nav>
-  <main class="lcars-content" role="main" aria-live="polite">
+  <main id="lcars-main" class="lcars-content" role="main">
     <slot></slot>
   </main>
   <footer class="lcars-footer" role="contentinfo">...</footer>
@@ -1316,7 +1313,7 @@ function lcarsSound(name) {
 
 | Key | Action |
 |-----|--------|
-| `Tab` | Move focus through sidebar buttons, then content area |
+| `Tab` | First press reveals skip-nav link; subsequent presses move through sidebar, then content |
 | `Enter` / `Space` | Activate focused button |
 | `Escape` | Close popup/modal |
 | `Arrow Up/Down` | Navigate within sidebar button group |

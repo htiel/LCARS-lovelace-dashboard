@@ -1,9 +1,9 @@
 # LCARS Audio Grammar Specification
 
-**Version**: 1.0  
+**Version**: 1.1  
 **Date**: 2026-04-22  
 **Target**: Web Audio API synthesis for LCARS Dashboard (Home Assistant Lovelace)  
-**Author**: Geordi La Forge (LCARS Design Authority)  
+**Shipped**: v4.23.0  
 **References**:  
 - Michael Okuda / Gene Roddenberry — original LCARS design philosophy (minimalist, futuristic)  
 - Star Trek: The Next Generation Technical Manual (Sternbach & Okuda, 1991)  
@@ -63,6 +63,7 @@ LCARS audio follows the same principles as LCARS visual design:
 | **Climate Adjust** | Soft setpoint tick | Climate/number setpoint ± buttons |
 | **Script Fire** | Quick double-chirp | `script.*`, `automation.*` execution |
 | **Entity Info** | Subtle low info tone | Sensor/entity more-info dialog open |
+| **Media Action** | Warm ascending sweep | `media_player.*` transport controls (play/pause/next/prev) |
 
 ---
 
@@ -250,6 +251,17 @@ Subtle low info tone. Signals "detail view opening."
 | Duration | 60 ms |
 | Volume | 0.08 |
 
+### 3.16 Media Action (`mediaAction`)
+
+Warm ascending sweep for media transport controls.
+
+| Parameter | Value |
+|-----------|-------|
+| Waveform | `sine` |
+| Frequency sweep | 440 Hz → 550 Hz |
+| Duration | 80 ms |
+| Volume | 0.12 |
+
 ---
 
 ## 3.A Domain → Sound Mapping
@@ -270,7 +282,7 @@ The `playForEntity(entityId)` helper automatically selects the correct sound:
 | `number` | `climateAdjust` |
 | `sensor` | `entityInfo` |
 | `binary_sensor` | `entityInfo` |
-| `media_player` | `acknowledge` |
+| `media_player` | `mediaAction` |
 | `camera` | `entityInfo` |
 | *(unknown)* | `acknowledge` |
 
@@ -285,7 +297,7 @@ A mute toggle button in the **header endcap**, adjacent to the existing configur
 - **Icon (unmuted)**: `mdi:volume-high`
 - **Icon (muted)**: `mdi:volume-off`
 - **Style**: Same as `.configure-btn` — black icon on header bar background, no chrome
-- **ARIA**: `role="switch"`, `aria-checked`, `aria-label="Toggle dashboard sounds"`
+- **ARIA**: `role="switch"`, `aria-checked`, `aria-label="Dashboard sounds"`
 
 ### 4.2 Persistence
 
@@ -336,6 +348,7 @@ lcarsAudio.isMuted               — Current mute state (getter)
 - **Suspended** when tab hidden (`visibilitychange`)
 - **Resumed** when tab visible again
 - **Never auto-created** — compliant with Chrome/Safari autoplay policy
+- **GainNode cleanup** — `osc.onended` callback disconnects GainNode to prevent AudioContext node leaks
 
 ### 6.3 Bundle Impact
 
@@ -359,8 +372,9 @@ lcarsAudio.isMuted               — Current mute state (getter)
 | Header title edit | `acknowledge` | `@click` on `.lcars-header-title` (edit mode) |
 | Elbow long-press | `toggle` | Edit mode toggle via elbow |
 | Error notifications | `alert` | `lcars-notification` event with severity ≥ warning |
-| Dashboard ready | `ready` | `firstUpdated()` lifecycle (one-time) |
+| Dashboard ready | `ready` | First area selection after load (`_readyPlayed` flag) |
 | Disabled button | `negativeAcknowledge` | Click on `[disabled]` or `[data-locked]` element |
+| Unavailable entity toggle | `negativeAcknowledge` | Toggle on entity with state `unavailable` |
 
 ### Entity Interactions (via `playForEntity`)
 
@@ -373,6 +387,27 @@ lcarsAudio.isMuted               — Current mute state (getter)
 | Tactical `_toggleCover()` | `coverAction` | Cover open/close/stop (confirm-gated) |
 | Viewport cover controls | `coverAction` | Blind/shade open/close/stop buttons |
 | Climate setpoint ± | `climateAdjust` | Thermostat temperature adjust |
+
+### Panel-Specific Audio (v4.23.0)
+
+| Panel | Sound | Trigger |
+|-------|-------|---------|
+| Illumination | `lightToggle` | `_setEffect`, `_clearEffect`, `_setColor` |
+| Illumination | `climateAdjust` | `_setBrightness` |
+| EV Charger | `switchToggle` | `_setSolarMode` |
+| EV Charger | `climateAdjust` | `_adjustCurrent` |
+| EV Charger | `lockToggle` | `_toggleLock` |
+| Alarm | `acknowledge` | `_handleAlarmPinDigit` |
+| Alarm | `lockToggle` | `_handleAlarmArm`, `_handleAlarmDisarm` |
+| Alarm | `criticalAlert` | State transition to `triggered` |
+| Alarm | `alert` | State transition to `arming`/`pending` |
+| Irrigation | `switchToggle` | `_handleIrrigationZone`, `_handleIrrigationToggle` |
+| Irrigation | `acknowledge` | `_handlePause`, `_handleResume`, `_handleStopAll` |
+| Irrigation | `scriptFire` | `_handleQuickRun` |
+| Media | `mediaAction` | `_handleMediaService` |
+| Media | `climateAdjust` | `_handleVolumeChange` |
+| Battery | `switchToggle` | Sort option change |
+| Camera | `entityInfo` | Disclosure toggle |
 
 ---
 

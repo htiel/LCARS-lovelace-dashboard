@@ -11,7 +11,7 @@
 import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { SENSOR_DOMAINS } from '../../lcars-entity-utils.js';
-import { getHvacActionColor } from '../../lcars-color-utils.js';
+import { getHvacActionColor, getHvacModeColor } from '../../lcars-color-utils.js';
 import { clampSetpoint, createDebouncer } from '../../lcars-service-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { getSiblingAreas } from '../../lcars-hierarchy-utils.js';
@@ -360,6 +360,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
             ${hvacModes.map((mode, i) => html`
               <button class="climate-mode-btn ${i === 0 ? 'mode-first' : ''} ${i === hvacModes.length - 1 ? 'mode-last' : ''}" role="radio"
                 aria-checked="${mode === currentMode}" ?data-active=${mode === currentMode}
+                style="--mode-btn-color: ${getHvacModeColor(mode)}"
                 @click=${() => { const live = this.hass.states[primary.entity.entity_id]?.attributes?.hvac_modes; if (!live?.includes(mode)) return; this.hass.callService('climate', 'set_hvac_mode', { entity_id: primary.entity.entity_id, hvac_mode: mode }); }}>
                 ${mode.toUpperCase().replace(/_/g, ' ')}
               </button>
@@ -369,6 +370,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
 
         <div class="climate-aux-controls">
           ${fanModes.length > 1 ? html`
+            <span class="climate-aux-strip-label">FAN</span>
             <div class="climate-aux-strip" role="radiogroup" aria-label="Fan mode">
               ${fanModes.map((fm, i) => html`
                 <button class="climate-mode-btn ${i === 0 ? 'mode-first' : ''} ${i === fanModes.length - 1 ? 'mode-last' : ''}" role="radio"
@@ -380,6 +382,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
             </div>
           ` : ''}
           ${presetModes.length > 0 ? html`
+            <span class="climate-aux-strip-label">PRESET</span>
             <div class="climate-aux-strip" role="radiogroup" aria-label="Preset mode">
               ${presetModes.map((pm, i) => html`
                 <button class="climate-mode-btn ${i === 0 ? 'mode-first' : ''} ${i === presetModes.length - 1 ? 'mode-last' : ''}" role="radio"
@@ -391,6 +394,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
             </div>
           ` : ''}
           ${swingModes.length > 1 ? html`
+            <span class="climate-aux-strip-label">SWING</span>
             <div class="climate-aux-strip" role="radiogroup" aria-label="Swing mode">
               ${swingModes.map((sm, i) => html`
                 <button class="climate-mode-btn ${i === 0 ? 'mode-first' : ''} ${i === swingModes.length - 1 ? 'mode-last' : ''}" role="radio"

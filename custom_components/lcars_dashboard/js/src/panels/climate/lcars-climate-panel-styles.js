@@ -182,12 +182,12 @@ export const climatePanelStyles = css`
   .climate-sp-btn {
     width: 3rem; height: 2.5rem;
     border: none;
-    background: var(--lcars-disabled);
+    background: var(--panel-frame-color);
     color: var(--lcars-space-white);
     font-size: 1.25rem; font-family: var(--lcars-font);
-    cursor: pointer; transition: background 200ms;
+    cursor: pointer; transition: background 200ms, filter 200ms;
   }
-  .climate-sp-btn:hover { background: var(--panel-frame-color); }
+  .climate-sp-btn:hover { filter: brightness(1.2); }
   .climate-sp-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
   /* Decrement: rounded-left, flat-right */
   .climate-sp-btn.sp-decrement {
@@ -230,7 +230,10 @@ export const climatePanelStyles = css`
   .climate-mode-btn.mode-first.mode-last {
     border-radius: var(--lcars-btn-radius);
   }
-  .climate-mode-btn[data-active] { background: var(--panel-frame-color); }
+  /* HVAC mode strip: per-mode active color via inline --mode-btn-color */
+  .climate-modes .climate-mode-btn[data-active] { background: var(--mode-btn-color, var(--panel-frame-color)); }
+  /* Aux strips (fan, preset, swing): uniform gold active */
+  .climate-aux-strip .climate-mode-btn[data-active] { background: var(--lcars-gold); }
   .climate-mode-btn:hover:not([data-active]) { background: var(--lcars-gray); }
   .climate-mode-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
   .climate-aux-controls {
@@ -238,6 +241,15 @@ export const climatePanelStyles = css`
     display: flex; flex-direction: column; gap: var(--lcars-gap);
   }
   .climate-aux-strip { display: flex; gap: 1px; flex-wrap: wrap; align-items: center; }
+  .climate-aux-strip-label {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-sunflower);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    width: 100%;
+    margin-bottom: 0.125rem;
+  }
 
   /* 4X-56: Toggle-style aux button for portable AC switches */
   .climate-toggle-btn { display: flex; align-items: center; gap: 0.375rem; }

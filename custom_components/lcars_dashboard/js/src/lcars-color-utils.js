@@ -207,6 +207,25 @@ export function getHvacActionColor(hvacAction) {
   }
 }
 
+/**
+ * Resolve hvac_mode to active button color CSS variable.
+ * Per LCARS-CLIMATE-PANEL-SPEC §2 — Mode → Button Color mapping.
+ * @param {string|null} hvacMode - 'heat'|'cool'|'heat_cool'|'auto'|'dry'|'fan_only'|'off'
+ * @returns {string} CSS variable string
+ */
+export function getHvacModeColor(hvacMode) {
+  switch (hvacMode) {
+    case 'heat':      return 'var(--lcars-butterscotch)';
+    case 'cool':      return 'var(--lcars-ice)';
+    case 'heat_cool': return 'var(--lcars-gold)';
+    case 'auto':      return 'var(--lcars-gold)';
+    case 'dry':       return 'var(--lcars-almond)';
+    case 'fan_only':  return 'var(--lcars-african-violet)';
+    case 'off':       return 'var(--lcars-gray)';
+    default:          return 'var(--lcars-gray)';
+  }
+}
+
 // ─── Alarm Panel: Alarm State ───────────────────────────────────────────────
 
 /**

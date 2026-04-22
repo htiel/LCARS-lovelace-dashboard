@@ -35,10 +35,12 @@ export const sensorRowStyles = css`
   }
 
   .sensor-indicator {
-    width: 0.5rem;
-    height: 0.5rem;
+    width: 0.625rem;
+    height: 0.625rem;
     border-radius: 50%;
     flex-shrink: 0;
+    /* GEORDI-030: Boost indicator visibility — add subtle ring for low-contrast dots */
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
   }
 
   .sensor-label {
@@ -48,6 +50,7 @@ export const sensorRowStyles = css`
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 0.75rem;
+    min-width: 3rem;
   }
 
   .sensor-value {

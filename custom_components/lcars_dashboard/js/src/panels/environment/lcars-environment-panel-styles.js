@@ -13,41 +13,11 @@ export const environmentPanelStyles = css`
     display: block;
   }
 
-  /* ═══ Device Panel Frame (shared base) ═══ */
+  /* ═══ Device Panel Content ═══ */
   .lcars-device-panel {
     --panel-frame-color: var(--lcars-butterscotch);
     display: grid;
     gap: var(--lcars-gap);
-    width: 100%;
-    max-width: 42rem;
-    border-left: 4px solid var(--panel-frame-color);
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-top: 2px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
-    padding: var(--lcars-gap);
-    background: var(--lcars-black);
-    position: relative;
-  }
-  .lcars-device-panel::before {
-    content: '';
-    position: absolute;
-    top: -2px; left: -4px;
-    width: 1.5rem; height: 1.5rem;
-    border-top: 4px solid var(--panel-frame-color);
-    border-left: 4px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0 0 0;
-    pointer-events: none;
-  }
-  .lcars-device-panel::after {
-    content: '';
-    position: absolute;
-    bottom: -4px; right: -2px;
-    width: 1.5rem; height: 1.5rem;
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0 0 0.25rem 0;
-    pointer-events: none;
   }
 
   /* ═══ Environment Panel Grid ═══ */
@@ -57,8 +27,10 @@ export const environmentPanelStyles = css`
       "sensors core controls"
       "sparklines sparklines sparklines";
     grid-template-columns: 1fr auto 1fr;
-    grid-template-rows: 1fr auto;
+    grid-template-rows: auto auto;
     gap: var(--lcars-gap);
+    overflow: hidden;
+    min-width: 0;
   }
   .env-content.sensor-only {
     grid-template-areas:
@@ -173,6 +145,8 @@ export const environmentPanelStyles = css`
     gap: var(--lcars-gap);
     padding: 0.25rem 0.5rem;
     border-left: 2px solid var(--panel-frame-color);
+    min-width: 0;
+    overflow: hidden;
   }
   .device-control-btn {
     display: flex;
@@ -322,6 +296,17 @@ export const environmentPanelStyles = css`
     text-shadow: 0 0 4px rgba(0,0,0,0.8);
   }
 
+  /* 4X-54: Filter Life Segment Bar */
+  .filter-life-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.5rem; }
+  .filter-life-label { flex: 1; font-size: 0.75rem; color: var(--lcars-space-white); text-transform: uppercase; }
+  .filter-life-pct { font-size: var(--lcars-font-size-data); font-weight: 700; color: var(--lcars-ice); }
+  .filter-segments { display: flex; gap: 2px; padding: 0 0.5rem 0.375rem; }
+  .filter-seg { flex: 1; height: 6px; border-radius: 1px; background: var(--lcars-gray); opacity: 0.3; }
+  .filter-seg.lit { background: var(--lcars-ice); opacity: 1; }
+  .filter-seg.warn { background: var(--lcars-golden-orange); opacity: 1; }
+  .filter-seg.critical { background: var(--lcars-tomato); opacity: 1; animation: lcars-filter-critical 1.5s ease-in-out infinite; }
+  @keyframes lcars-filter-critical { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
   /* Sparklines (bottom row) */
   .env-sparklines {
     grid-area: sparklines;
@@ -362,9 +347,61 @@ export const environmentPanelStyles = css`
     opacity: 0.3;
   }
 
+  @media (max-width: 30rem) {
+    .env-content {
+      grid-template-areas: "core" "sensors" "controls" "sparklines";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto auto;
+    }
+    .env-content.sensor-only {
+      grid-template-areas: "core" "sensors" "sparklines";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+    }
+    .atmoscrubber-container {
+      min-height: 6rem;
+    }
+    .atmoscrubber {
+      width: 100%;
+      height: 4rem;
+      min-height: 4rem;
+      border-radius: 2rem;
+    }
+    .env-controls {
+      border-left: none;
+      border-top: 2px solid var(--panel-frame-color);
+    }
+  }
+
+  /* P3 GEORDI-006: Offline atmoscrubber — gray outline, no particles */
+  .atmoscrubber-offline .atmoscrubber,
+  .atmoscrubber-offline .scrubber-offline-state {
+    border-color: var(--lcars-gray);
+    box-shadow: none;
+    opacity: 1;
+    animation: scrubber-offline-pulse 4s ease-in-out infinite;
+  }
+  .atmoscrubber-offline .atmoscrubber::before,
+  .atmoscrubber-offline .atmoscrubber::after,
+  .scrubber-offline-state::before,
+  .scrubber-offline-state::after {
+    display: none;
+  }
+  .scrubber-offline-state .scrubber-score {
+    color: var(--lcars-gray);
+    font-size: var(--lcars-font-size-data, 0.875rem);
+    text-shadow: none;
+  }
+  @keyframes scrubber-offline-pulse {
+    0%, 100% { border-color: var(--lcars-gray); }
+    50% { border-color: rgba(102, 102, 136, 0.3); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .atmoscrubber::before,
     .atmoscrubber::after,
     .atmoscrubber.scrubber-idle { animation: none; }
+    .scrubber-offline-state { animation: none; }
+    .filter-seg.critical { animation: none; }
   }
 `;

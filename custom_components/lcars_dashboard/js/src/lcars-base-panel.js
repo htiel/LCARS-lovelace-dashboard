@@ -13,8 +13,10 @@
 import { LitElement, html, css } from 'lit-element';
 import { getHass, showMoreInfo, lcarsLog } from './lcars-helpers.js';
 import { getStateColor, getCo2Color } from './lcars-color-utils.js';
+import { formatNumber, formatStateValue, canonicalLabel, ariaLabel } from './lcars-format-utils.js';
 import { createRateLimiter } from './lcars-service-utils.js';
 import { SENSOR_DOMAINS, TOGGLE_DOMAINS, CAMERA_DOMAINS } from './lcars-entity-utils.js';
+import { lcarsAudio } from './lcars-audio.js';
 import './components/lcars-panel-frame/lcars-panel-frame.js';
 import './components/lcars-sensor-row/lcars-sensor-row.js';
 import './components/lcars-section-divider/lcars-section-divider.js';
@@ -80,12 +82,26 @@ export class LcarsBasePanel extends LitElement {
 
   /* ─── Sensor indicator color (Data must-fix: centralized in base) ─── */
 
-  _getSensorIndicatorColor(state) {
+  _getSensorIndicatorColor(state, entityCategory = '') {
     const dc = state?.attributes?.device_class || '';
     if (dc === 'carbon_dioxide') {
       return getCo2Color(state?.state);
     }
-    return getStateColor(state?.entity_id || '', state);
+    return getStateColor(state?.entity_id || '', state, entityCategory);
+  }
+
+  /* ─── Formatted sensor value (P2: centralized formatting) ─── */
+
+  _formatSensorValue(state, entity) {
+    const entityCategory = entity?.entity_category || '';
+    return formatStateValue(state, entityCategory);
+  }
+
+  _canonicalLabel(state, entity) {
+    const dc = state?.attributes?.device_class || '';
+    const shortName = this._friendlyName(state, entity);
+    const eid = entity?.entity_id || state?.entity_id || '';
+    return canonicalLabel(dc, shortName, eid);
   }
 
   /* ─── Device category entities (Data must-fix: battery/diagnostic) ─── */
@@ -111,18 +127,27 @@ export class LcarsBasePanel extends LitElement {
     if (!fullName) return fullName;
     const prefixes = [];
     const area = this.hass?.areas?.[this.areaId];
-    if (area?.name) prefixes.push(area.name);
+    if (area?.name) {
+      prefixes.push(area.name);
+      // QA-E09: Also strip possessive forms ("Leith's Office" → "Office")
+      prefixes.push(area.name.replace(/[''\u2019]s$/i, ''));
+    }
     if (entity?.device_id) {
       const dev = this.hass?.devices?.[entity.device_id];
       const dn = dev?.name_by_user || dev?.name;
-      if (dn) prefixes.push(dn);
+      if (dn) {
+        prefixes.push(dn);
+        prefixes.push(dn.replace(/[''\u2019]s$/i, ''));
+      }
     }
-    prefixes.sort((a, b) => b.length - a.length);
+    // Deduplicate and sort longest-first
+    const unique = [...new Set(prefixes)];
+    unique.sort((a, b) => b.length - a.length);
     let result = fullName;
     let changed = true;
     while (changed) {
       changed = false;
-      for (const p of prefixes) {
+      for (const p of unique) {
         if (result.toLowerCase().startsWith(p.toLowerCase())) {
           result = result.slice(p.length).trim().replace(/^[-–:]\s*/, '');
           changed = true;
@@ -169,8 +194,13 @@ export class LcarsBasePanel extends LitElement {
 
   _handleToggle(entityId) {
     const domain = entityId.split('.')[0];
+    const state = this._getEntityState(entityId);
+    if (state?.state === 'unavailable') {
+      lcarsAudio.play('negativeAcknowledge');
+      return;
+    }
+    lcarsAudio.playForEntity(entityId);
     if (domain === 'lock') {
-      const state = this._getEntityState(entityId);
       this._callService('lock', state?.state === 'locked' ? 'unlock' : 'lock', { entity_id: entityId });
     } else if (domain === 'script') {
       this._callService('script', 'turn_on', { entity_id: entityId });
@@ -249,9 +279,9 @@ export class LcarsBasePanel extends LitElement {
     return this._generatePanelCode(id);
   }
 
-  /* ─── Styles (base returns empty — subclasses spread with ...super.styles) ─── */
+  /* ─── Styles (base provides :host display — subclasses spread with ...super.styles) ─── */
 
-  static get styles() { return []; }
+  static get styles() { return [css`:host { display: block; }`]; }
 
   /* ─── Render lifecycle (spec §5.2 — base wraps in <lcars-panel-frame>) ─── */
 

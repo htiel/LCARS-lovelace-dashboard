@@ -7,6 +7,7 @@
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsEventBus, lcarsLog, openEditPopup } from './lcars-helpers.js';
+import { lcarsAudio } from './lcars-audio.js';
 
 const TAG = 'Layout';
 
@@ -19,6 +20,7 @@ class LcarsDashboardLayout extends LitElement {
       _selectedArea: { type: String },
       _selectedFloor: { type: String },
       _editMode: { type: Boolean },
+      _audioMuted: { type: Boolean },
     };
   }
 
@@ -29,7 +31,10 @@ class LcarsDashboardLayout extends LitElement {
     this._selectedArea = null;
     this._selectedFloor = null;
     this._editMode = false;
+    this._audioMuted = lcarsAudio.isMuted;
     this._elbowPressTimer = null;
+    this._siteName = window.location.hostname.toUpperCase().replace(/\.LOCAL$/, '');
+    this._readyPlayed = false;
     this._resizeHandler = () => {
       this._narrow = window.innerWidth < 768;
     };
@@ -78,6 +83,10 @@ class LcarsDashboardLayout extends LitElement {
     if (!prev) {
       lcarsLog.debug(TAG, 'First hass received — cards:', this.cards?.length || 0);
     }
+    // Update site name from HA config if available (GEO-015/DATA-006)
+    if (hass?.config?.location_name) {
+      this._siteName = hass.config.location_name.toUpperCase();
+    }
     // Auto-deselect area if it was deleted from HA
     if (prev && prev.areas !== hass.areas && this._selectedArea) {
       if (!hass.areas?.[this._selectedArea]) {
@@ -105,7 +114,18 @@ class LcarsDashboardLayout extends LitElement {
     }
   }
 
+  _toggleMute() {
+    lcarsAudio.toggle();
+    this._audioMuted = lcarsAudio.isMuted;
+  }
+
   _selectArea(areaId) {
+    if (!this._readyPlayed) {
+      this._readyPlayed = true;
+      lcarsAudio.play('ready');
+    } else {
+      lcarsAudio.play('navAcknowledge');
+    }
     // Deselect floor when an area is picked directly
     if (this._selectedFloor) {
       this._selectedFloor = null;
@@ -123,6 +143,7 @@ class LcarsDashboardLayout extends LitElement {
   }
 
   _selectFloor(floorId) {
+    lcarsAudio.play('navAcknowledge');
     // Deselect area when a floor is picked
     if (this._selectedArea) {
       this._selectedArea = null;
@@ -142,6 +163,7 @@ class LcarsDashboardLayout extends LitElement {
   /* ─── Edit Mode ─── */
   _toggleEditMode() {
     if (!this._hass?.user?.is_admin) return;
+    lcarsAudio.play('toggle');
     this._editMode = !this._editMode;
     lcarsLog.info(TAG, 'Edit mode:', this._editMode ? 'ENABLED' : 'DISABLED');
     lcarsEventBus.dispatchEvent(
@@ -151,6 +173,7 @@ class LcarsDashboardLayout extends LitElement {
 
   _handleElbowPointerDown(e) {
     if (!this._hass?.user?.is_admin) return;
+    e.preventDefault();
     this._elbowPressTimer = setTimeout(() => {
       this._toggleEditMode();
       this._elbowPressTimer = null;
@@ -166,6 +189,7 @@ class LcarsDashboardLayout extends LitElement {
 
   _editHeaderTitle() {
     if (!this._editMode || !this._hass) return;
+    lcarsAudio.play('acknowledge');
     openEditPopup(this._hass, 'lcars-edit-homepage-header-card', {}, 'Edit Header');
   }
 
@@ -220,9 +244,38 @@ class LcarsDashboardLayout extends LitElement {
       css`
         :host {
           display: block;
-          min-height: 100vh;
+          height: calc(100vh - var(--header-height, 0px));
+          overflow: hidden;
+          box-sizing: border-box;
           background: var(--lcars-bg);
           padding: var(--lcars-gap);
+        }
+
+        /* ─── Skip Navigation Link (GEO-006) ─── */
+        .skip-nav {
+          position: absolute;
+          left: -9999px;
+          top: auto;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          z-index: 1000;
+          background: var(--lcars-gold);
+          color: var(--lcars-black);
+          padding: 0.5rem 1rem;
+          font-family: var(--lcars-font);
+          font-size: var(--lcars-font-size-data);
+          text-decoration: none;
+          border-radius: 0 0 var(--lcars-btn-radius) var(--lcars-btn-radius);
+        }
+        .skip-nav:focus {
+          position: fixed;
+          left: 50%;
+          top: 0;
+          transform: translateX(-50%);
+          width: auto;
+          height: auto;
+          z-index: 1000;
         }
 
         /* ─── LCARS Frame Grid ─── */
@@ -231,7 +284,7 @@ class LcarsDashboardLayout extends LitElement {
           grid-template-columns: var(--lcars-sidebar-w) 1fr;
           grid-template-rows: var(--lcars-elbow-h) 1fr var(--lcars-elbow-h);
           gap: var(--lcars-gap) var(--lcars-gap);
-          min-height: calc(100vh - 0.5rem);
+          height: 100%;
         }
 
         /* ─── Top-Left Elbow ─── */
@@ -289,8 +342,9 @@ class LcarsDashboardLayout extends LitElement {
           line-height: var(--lcars-bar-h);
         }
 
-        /* ─── Configure Button (in header endcap) ─── */
-        .configure-btn {
+        /* ─── Header Action Buttons (shared) ─── */
+        .configure-btn,
+        .mute-btn {
           background: none;
           border: none;
           color: var(--lcars-black);
@@ -306,12 +360,15 @@ class LcarsDashboardLayout extends LitElement {
           white-space: nowrap;
           transition: filter var(--lcars-transition);
         }
-        .configure-btn:hover { filter: brightness(0.8); }
-        .configure-btn:focus-visible {
+        .configure-btn:hover,
+        .mute-btn:hover { filter: brightness(0.8); }
+        .configure-btn:focus-visible,
+        .mute-btn:focus-visible {
           outline: 2px solid var(--lcars-ice);
           outline-offset: 2px;
         }
-        .configure-btn ha-icon { --mdc-icon-size: 16px; }
+        .configure-btn ha-icon,
+        .mute-btn ha-icon { --mdc-icon-size: 16px; }
 
         /* ─── Sidebar ─── */
         .lcars-sidebar {
@@ -333,6 +390,7 @@ class LcarsDashboardLayout extends LitElement {
           color: var(--lcars-black);
           text-transform: uppercase;
           flex-shrink: 0;
+          border-radius: 0 var(--lcars-btn-radius) 0 0;
         }
 
         /* ─── Sidebar Area Buttons ─── */
@@ -344,13 +402,24 @@ class LcarsDashboardLayout extends LitElement {
           overflow-y: auto;
           overflow-x: hidden;
           min-height: 0;
-          mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
-          -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
         }
 
         .lcars-sidebar-areas::-webkit-scrollbar { width: 4px; }
         .lcars-sidebar-areas::-webkit-scrollbar-track { background: transparent; }
         .lcars-sidebar-areas::-webkit-scrollbar-thumb { background: var(--lcars-gray); border-radius: 2px; }
+
+        /* Structural filler — fills dead space below nav buttons with LCARS gray panel.
+           Grows to fill remaining sidebar height when buttons are few;
+           collapses to 0px when buttons overflow (scroll case). */
+        .lcars-sidebar-areas::after {
+          content: '';
+          display: block;
+          flex: 1 0 0px;
+          min-height: 0;
+          background: var(--lcars-gray);
+          border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+          width: calc(100% - 0.25rem);
+        }
 
         .sidebar-area-btn {
           display: flex;
@@ -538,6 +607,10 @@ class LcarsDashboardLayout extends LitElement {
             -webkit-mask-image: none;
           }
 
+          .lcars-sidebar-areas::after {
+            display: none;
+          }
+
           .sidebar-area-btn {
             flex-shrink: 0;
             width: auto;
@@ -552,6 +625,10 @@ class LcarsDashboardLayout extends LitElement {
           }
 
           .sidebar-unassigned-label {
+            display: none;
+          }
+
+          .lcars-sidebar-areas::after {
             display: none;
           }
 
@@ -577,6 +654,7 @@ class LcarsDashboardLayout extends LitElement {
     const floorGroups = this._getAreasGroupedByFloor();
 
     return html`
+      <a class="skip-nav" href="#lcars-main-content" @click=${(e) => { e.preventDefault(); this.shadowRoot.getElementById('lcars-main-content')?.focus(); }}>Skip to content</a>
       <div class="lcars-frame">
         <!-- Top-Left Elbow (long-press to toggle edit mode) -->
         <div class="lcars-elbow-top" aria-hidden="true"
@@ -589,9 +667,16 @@ class LcarsDashboardLayout extends LitElement {
           <span class="lcars-header-title"
             @click=${() => this._editHeaderTitle()}
             style="${this._editMode ? 'cursor:pointer' : ''}"
-            >${this._editMode ? 'LCARS \u00B7 CONFIGURATION MODE' : 'LCARS'}</span>
+            >${this._editMode ? `${this._siteName} \u00B7 CONFIGURATION MODE` : this._siteName}</span>
           <div class="lcars-header-bar" aria-hidden="true"></div>
           <div class="lcars-header-endcap">
+            <button class="mute-btn"
+              role="switch"
+              aria-checked=${!this._audioMuted}
+              aria-label="Dashboard sounds"
+              @click=${() => this._toggleMute()}>
+              <ha-icon .icon=${this._audioMuted ? 'mdi:volume-off' : 'mdi:volume-high'}></ha-icon>
+            </button>
             ${this._hass?.user?.is_admin ? html`
               <button class="configure-btn"
                 aria-pressed=${this._editMode}
@@ -640,7 +725,7 @@ class LcarsDashboardLayout extends LitElement {
         </nav>
 
         <!-- Main Content -->
-        <main class="lcars-content" aria-label="Dashboard content" aria-live="polite">
+        <main class="lcars-content" id="lcars-main-content" aria-label="Dashboard content">
           ${this.cards && this.cards.length > 0
             ? this.cards.map((card) => html`${card}`)
             : html`<div class="lcars-heading">No data available</div>`}
@@ -652,7 +737,7 @@ class LcarsDashboardLayout extends LitElement {
         <!-- Footer Bar -->
         <div class="lcars-footer" role="contentinfo">
           <div class="lcars-footer-bar" aria-hidden="true"></div>
-          <span class="lcars-footer-text">LCARS 47</span>
+          <span class="lcars-footer-text">LCARS ${require('../package.json').version}</span>
           <div class="lcars-footer-endcap" aria-hidden="true"></div>
         </div>
       </div>

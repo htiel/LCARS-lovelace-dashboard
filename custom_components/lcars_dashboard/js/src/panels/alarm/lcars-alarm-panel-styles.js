@@ -15,29 +15,6 @@ export const alarmPanelStyles = css`
     --panel-frame-color: var(--lcars-butterscotch);
     display: grid;
     gap: var(--lcars-gap);
-    width: 100%; max-width: 42rem;
-    border-left: 4px solid var(--panel-frame-color);
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-top: 2px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
-    padding: var(--lcars-gap);
-    background: var(--lcars-black);
-    position: relative;
-  }
-  .lcars-device-panel::before {
-    content: ''; position: absolute;
-    top: -2px; left: -4px; width: 1.5rem; height: 1.5rem;
-    border-top: 4px solid var(--panel-frame-color);
-    border-left: 4px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0 0 0; pointer-events: none;
-  }
-  .lcars-device-panel::after {
-    content: ''; position: absolute;
-    bottom: -4px; right: -2px; width: 1.5rem; height: 1.5rem;
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0 0 0.25rem 0; pointer-events: none;
   }
 
   .alarm-content {
@@ -70,6 +47,9 @@ export const alarmPanelStyles = css`
   .sensor-indicator { width: 0.5rem; height: 0.5rem; border-radius: 50%; flex-shrink: 0; }
   .sensor-label { flex: 1; color: var(--lcars-space-white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; }
   .sensor-state-value { flex-shrink: 0; font-weight: 700; font-size: var(--lcars-font-size-data); }
+  /* 4X-7: zone sibling telemetry (battery, illuminance) inline pips */
+  .zone-siblings { flex-shrink: 0; display: flex; gap: 0.375rem; margin: 0 0.25rem; }
+  .zone-sibling-pip { font-size: 0.625rem; color: var(--lcars-sky, #aaaaff); white-space: nowrap; }
   .battery-section-divider { height: 1px; background: var(--lcars-gray); opacity: 0.3; margin: 0.375rem 0; }
 
   .alarm-viewscreen { grid-area: media; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; }
@@ -91,24 +71,73 @@ export const alarmPanelStyles = css`
   .alarm-keypad { grid-area: keypad; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 0.5rem; }
   .alarm-keypad:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
   .alarm-code-display { display: flex; gap: 0.5rem; }
-  .alarm-code-dot { width: 12px; height: 12px; border-radius: 50%; transition: background 200ms; }
+  .alarm-code-dot { width: 14px; height: 14px; border-radius: 50%; transition: background 200ms; }
   .alarm-pin-error { animation: alarm-shake 400ms ease-out; }
   @keyframes alarm-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
-  .alarm-digit-grid { display: grid; grid-template-columns: repeat(3, 3.5rem); gap: var(--lcars-gap); }
+  .alarm-digit-grid { display: grid; grid-template-columns: repeat(3, minmax(3.5rem, 4.5rem)); gap: 0.5rem; justify-content: center; }
   .alarm-digit-btn {
-    height: 3.5rem; border: none; border-radius: var(--lcars-btn-radius);
+    height: 4rem; min-width: 3.5rem; border: none; border-radius: var(--lcars-btn-radius);
     background: var(--lcars-sunflower); color: var(--lcars-black);
-    font-family: var(--lcars-font); font-size: 1.25rem;
+    font-family: var(--lcars-font); font-size: 1.375rem;
     cursor: pointer; transition: background 200ms;
+    -webkit-tap-highlight-color: transparent; /* intentional: custom :active feedback provided */
   }
   .alarm-digit-btn:hover { filter: brightness(1.1); }
   .alarm-digit-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+  .alarm-digit-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
   .alarm-action-btn { background: var(--lcars-disabled); }
 
+  /* ─── Lockout Message ─── */
+  .alarm-lockout-msg {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-tomato);
+    text-transform: uppercase;
+    text-align: center;
+    letter-spacing: 0.08em;
+    padding: 0.25rem 0;
+    animation: lockout-pulse 2s ease-in-out infinite;
+  }
+  .alarm-lockout-countdown {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-tomato);
+    text-transform: uppercase;
+    text-align: center;
+    letter-spacing: 0.08em;
+    opacity: 0.7;
+  }
+  @keyframes lockout-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.5; }
+  }
+
   .panel-pip-strip { position: absolute; bottom: 4px; right: 4px; width: 2rem; height: 3px; background: var(--panel-frame-color); border-radius: 1.5px; opacity: 0.3; }
+
+  @media (max-width: 30rem) {
+    .alarm-content {
+      grid-template-areas: "media" "sensors" "keypad";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+    }
+    .alarm-digit-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      width: 100%;
+      max-width: 18rem;
+    }
+    .alarm-digit-btn {
+      height: 3.5rem;
+    }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .alarm-triggered { animation: none; }
     .alarm-pin-error { animation: none; }
+    .alarm-lockout-msg { animation: none; }
   }
 `;

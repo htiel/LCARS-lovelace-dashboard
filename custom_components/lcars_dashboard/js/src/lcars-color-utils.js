@@ -20,11 +20,16 @@
  * sensor (battery threshold), and event domains.
  * @param {string} entityId - Full entity_id (e.g. 'binary_sensor.motion_front')
  * @param {Object|null} state - HA state object { state, attributes, entity_id }
+ * @param {string} [entityCategory=''] - Entity category (diagnostic, config, '')
  * @returns {string} CSS variable string
  */
-export function getStateColor(entityId, state) {
+export function getStateColor(entityId, state, entityCategory = '') {
   const s = state?.state;
-  if (s === 'unavailable' || s === 'unknown') return 'var(--lcars-alert)';
+  if (s === 'unavailable' || s === 'unknown') {
+    // 4X-50: All unavailable/unknown entities resolve to the same disabled color.
+    // Offline state is never alarming — it indicates data absence, not an active alert.
+    return 'var(--lcars-disabled)';
+  }
 
   const dc = state?.attributes?.device_class || '';
   const domain = entityId.split('.')[0];
@@ -202,6 +207,25 @@ export function getHvacActionColor(hvacAction) {
   }
 }
 
+/**
+ * Resolve hvac_mode to active button color CSS variable.
+ * Per LCARS-CLIMATE-PANEL-SPEC §2 — Mode → Button Color mapping.
+ * @param {string|null} hvacMode - 'heat'|'cool'|'heat_cool'|'auto'|'dry'|'fan_only'|'off'
+ * @returns {string} CSS variable string
+ */
+export function getHvacModeColor(hvacMode) {
+  switch (hvacMode) {
+    case 'heat':      return 'var(--lcars-butterscotch)';
+    case 'cool':      return 'var(--lcars-ice)';
+    case 'heat_cool': return 'var(--lcars-gold)';
+    case 'auto':      return 'var(--lcars-gold)';
+    case 'dry':       return 'var(--lcars-almond)';
+    case 'fan_only':  return 'var(--lcars-african-violet)';
+    case 'off':       return 'var(--lcars-gray)';
+    default:          return 'var(--lcars-gray)';
+  }
+}
+
 // ─── Alarm Panel: Alarm State ───────────────────────────────────────────────
 
 /**
@@ -244,7 +268,7 @@ export function getPlaybackStateColor(state) {
     case 'standby':
     case 'off':          return 'var(--lcars-disabled)';
     case 'unavailable':
-    case 'unknown':      return 'var(--lcars-alert)';
+    case 'unknown':      return 'var(--lcars-disabled)';
     default:             return 'var(--lcars-disabled)';
   }
 }
@@ -493,4 +517,77 @@ export function getGridBalanceColor(watts, deadband = 50) {
   const w = Number(watts);
   if (Math.abs(w) <= deadband) return 'var(--lcars-sunflower)';
   return w > 0 ? 'var(--lcars-butterscotch)' : 'var(--lcars-ice)';
+}
+
+// ─── EV Charger Panel: Charger State (4X-55) ───────────────────────────────
+
+/**
+ * Resolve EV charger status description to LCARS color CSS variable.
+ * @param {string|null} statusDescription - sensor.wallbox_vilya_status_description
+ * @param {number|null} chargingPower - sensor.wallbox_vilya_charging_power (kW)
+ * @returns {string} CSS variable string
+ */
+export function getEvChargerColor(statusDescription, chargingPower = null) {
+  if (statusDescription == null || statusDescription === 'unavailable' || statusDescription === 'unknown') {
+    return 'var(--lcars-gray)';
+  }
+  const s = String(statusDescription).toLowerCase();
+  if (s.includes('error') || s.includes('locked by error')) return 'var(--lcars-tomato)';
+  if (s.includes('discharg') || s.includes('v2g')) return 'var(--lcars-ice)';
+  if (s.includes('charg') && !s.includes('waiting')) return 'var(--lcars-butterscotch)';
+  if (s.includes('schedul') || s.includes('paused')) return 'var(--lcars-sunflower)';
+  if (s.includes('disconnect') || s.includes('waiting for car')) return 'var(--lcars-gray)';
+  if (chargingPower != null && !isNaN(chargingPower)) {
+    const kw = Math.abs(Number(chargingPower));
+    if (kw > 0.1) return Number(chargingPower) < 0 ? 'var(--lcars-ice)' : 'var(--lcars-butterscotch)';
+  }
+  return 'var(--lcars-lilac)';
+}
+
+/**
+ * Resolve EV charger status to uppercase label for header badge.
+ * @param {string|null} statusDescription
+ * @returns {string} Uppercase label
+ */
+export function getEvChargerLabel(statusDescription) {
+  if (statusDescription == null || statusDescription === 'unavailable' || statusDescription === 'unknown') return 'UNAVAILABLE';
+  const s = String(statusDescription).toLowerCase();
+  if (s.includes('error')) return 'FAULT';
+  if (s.includes('discharg') || s.includes('v2g')) return 'V2G ACTIVE';
+  if (s.includes('charg') && !s.includes('waiting')) return 'CHARGING';
+  if (s.includes('schedul')) return 'SCHEDULED';
+  if (s.includes('paused')) return 'PAUSED';
+  if (s.includes('disconnect') || s.includes('waiting for car')) return 'DISCONNECTED';
+  if (s.includes('ready') || s.includes('waiting')) return 'STANDBY';
+  return 'IDLE';
+}
+
+/**
+ * Get shape indicator glyph for colorblind-accessible state display.
+ * @param {string|null} statusDescription
+ * @returns {string} Unicode glyph
+ */
+export function getEvChargerIndicator(statusDescription) {
+  if (statusDescription == null || statusDescription === 'unavailable') return '✕';
+  const s = String(statusDescription).toLowerCase();
+  if (s.includes('error')) return '✕';
+  if (s.includes('discharg') || s.includes('v2g')) return '▲';
+  if (s.includes('charg') && !s.includes('waiting')) return '▼';
+  if (s.includes('schedul') || s.includes('paused')) return '◷';
+  if (s.includes('disconnect') || s.includes('waiting for car')) return '○';
+  return '━';
+}
+
+/**
+ * Resolve vehicle SoC percentage to LCARS color CSS variable.
+ * @param {number|null} soc - State of charge (0-100)
+ * @returns {string} CSS variable string
+ */
+export function getEvSocColor(soc) {
+  if (soc == null || isNaN(soc)) return 'var(--lcars-gray)';
+  const s = Number(soc);
+  if (s <= 15) return 'var(--lcars-tomato)';
+  if (s <= 40) return 'var(--lcars-butterscotch)';
+  if (s <= 80) return 'var(--lcars-sunflower)';
+  return 'var(--lcars-ice)';
 }

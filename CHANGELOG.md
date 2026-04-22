@@ -2,6 +2,515 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [4.23.0] — 2026-04-22
+
+### New — Synthesized Audio System
+Spatial audio feedback across all 14 panel types using Web Audio API (OscillatorNode → GainNode).
+- **15 sound definitions** — acknowledge, navAcknowledge, negativeAcknowledge, alert, criticalAlert, ready, lightToggle, switchToggle, fanToggle, lockToggle, coverAction, climateAdjust, scriptFire, entityInfo, mediaAction
+- **All panels wired** — Illumination (toggle/effect/color/brightness), EV Charger (solar mode/current/lock), Alarm (PIN digit/arm/disarm/state transitions), Irrigation (zone/toggle/pause/resume/stop/quick run), Media (transport/volume), Battery (sort), Camera (disclosure)
+- **Ready sound** — Plays once on first area selection after load
+- **Unavailable entity feedback** — `negativeAcknowledge` sound when toggling unavailable entities
+- **Mute toggle** — Header endcap button with `aria-label="Dashboard sounds"`, persisted to localStorage
+- **GainNode cleanup** — `osc.onended` disconnects GainNode to prevent AudioContext leaks
+
+### New — EV Charger Panel (4X-55, 4X-58)
+Full EV charger panel for Wallbox Vilya V2G bidirectional chargers.
+- **SVG energy flow visualization** — Animated chevron cascade for charging/V2G, directional flip, idle dashes
+- **15-row sensor telemetry** — Status, session, energy balance, vehicle, charger metrics
+- **Solar mode strip** — Radio group with `select.select_option`
+- **Max current adjuster** — ±stepper with `number.set_value`, clamped to entity min/max
+- **Cable lock toggle** — `lock.lock`/`lock.unlock` with `role="switch"`
+- **Wallbox lock excluded from tactical** — `LOCK_EXCLUSION_PLATFORMS`
+
+### New — Panel Placement Override (4X-8)
+Persistent panel reorder per area via edit-mode gear pip.
+- **Backend**: `panel_order/get` and `panel_order/set` WebSocket commands with YAML persistence and validation
+- **Frontend**: `lcars-edit-panel-order-card.js` editor popup with numbered list, move up/down/save/reset
+
+### Enhanced — Climate Panel: Portable AC Support (4X-56)
+- Swing mode strip, auxiliary switch toggles (eco/turbo/swing) with per-switch colors, timer stepper
+- **Integrations**: midea_ac_lan (Midea portable AC)
+
+### Enhanced — Alarm Panel: Zone Sibling Pips (4X-7)
+- Battery and illuminance sensors on zone devices render inline as pips (BAT/LUX) with `role="img"` + `aria-label`
+- Sibling entities consumed by area filter predicate to prevent orphan button rendering
+
+### Enhanced — Environment Panel: Filter Life Recovery (4X-54)
+- BlueAir filter_life sensors render as 10-segment bars with critical pulse animation
+- `prefers-reduced-motion` disables pulse
+
+### Fixed — Display & Formatting
+- **4X-47**: Battery telemetry → `formatNumber()` with domain-appropriate rounding
+- **4X-48**: Life Support header badge → `formatNumber()` + unavailable placeholder
+- **4X-49**: Environment sparkline labels → `canonicalLabel()` (PM₂.₅, CO₂, VOC)
+
+### Fixed — Offline State Normalization
+- **4X-50**: All `unavailable`/`unknown` entities resolve to `var(--lcars-disabled)`
+- **4X-52**: Life Support badge shows gray "—" when temperature sensor is offline
+
+### Fixed — Classification & Detection
+- **4X-51**: Insteon platform switches correctly classified as lighting entities
+- **4X-57**: HomeKit air purifiers (fan + AQ sensor on same device) detected for Life Support
+
+### Fixed — Media Standby Compaction (4X-53)
+- Idle/standby media players hide transport controls, waveform, and secondary metadata
+- Volume bar dimmed; panel opacity reduced to 0.7
+
+### Fixed — HACS Library Icon (4X-5)
+- Removed deprecated `icon` URL from `hacs.json`
+
+### Fixed — Accessibility (QA Regression)
+- **GEO-001**: `:focus-visible` outlines (2px solid ice) on illumination light bars, circuits, scene buttons
+- **GEO-002/009**: Hardcoded hex colors → CSS custom properties in illumination panel
+- **GEO-003**: `role="listitem"` moved to correct wrapper element
+- **GEO-004**: Removed `aria-live="polite"` from `<main>`
+- **GEO-005**: Stable `aria-label="Dashboard sounds"` on mute button
+- **GEO-006**: Skip-nav link for keyboard accessibility
+- **GEO-007**: Scene hover uses `filter: brightness(1.2)` instead of opacity
+- **GEO-008**: Removed duplicate `.lcars-sidebar-areas::after` CSS rule
+- **GEO-010**: Scene `:first-child` pill targets listitem wrapper
+- **GEO-011**: `preventDefault` on elbow pointerdown
+- **GEO-013**: Merged configure/mute button CSS
+- **GEO-014**: Effect button focus ring uses ice instead of sunflower
+- **GEO-015**: Reactive `_siteName` from `hass.config.location_name`
+
+### Fixed — Camera (QA Regression)
+- **WES-010**: Skip `unknown` state cameras in refresh
+- **WES-012**: 500ms delay on "ESTABLISHING LINK" overlay to prevent flash
+
+### Fixed — Python Backend (QA Regression)
+- **DATA-005**: Module-level `_PANEL_ID_RE` regex, removed redundant inline `import re`
+- **DATA-008**: Fixed KeyError in `edit_homepage_header` (safe `.get()` access)
+- **DATA-009**: Fixed `areaId`/`device` truthy checks (`is not None` instead of falsy)
+- **DATA-010**: YAML locks (`_get_yaml_lock`) on all read-modify-write WebSocket handlers
+- **DATA-011**: Fixed all `succesfully` → `successfully` spelling errors
+- **DATA-016**: Corrected WebSocket command count (28 → 35)
+- **DATA-017**: Global state (`lcars_dashboard_more_pages`, `llgen_config`) reset on reload
+- **DATA-018**: Removed deprecated `bind_hass` from notifications.py
+
+### Fixed — Footer & Version Display (QA Regression)
+- **WES-016**: Footer shows `LCARS ${version}` from package.json instead of hardcoded `LCARS 47`
+
+### Code Review Fixes
+- **DATA-1**: `panel_overrides` in error fallback response
+- **DATA-2**: `customElements.get()` guard on EV charger registration
+- **DATA-6/WORF-3**: EV charger uses `_callService()` from base panel
+- **DATA-13**: `this.hass` null guard on climate panel handlers
+- **DATA-16**: `||` → `??` for EV charger min/max/step
+- **GEORDI-1**: `prefers-reduced-motion` for EV charger chevron animation
+- **GEORDI-2**: Zone sibling pip color → `var(--lcars-sky)` (WCAG AA)
+- **GEORDI-5**: Panel order editor uses `role="list"`/`role="listitem"` semantics
+- **GEORDI-6**: Edit-mode gear pip 20→24px (WCAG 2.5.8)
+- **WORF-1/2**: Panel order array capped at 50, strings validated against regex
+
+## [4.22.0-rc.11] — 2026-04-19
+
+### Fixed — 4X-46: Life Support Sensor/Purifier Split + Hotfix
+
+Resolves issue #44: Life Support panel clipping by un-nesting passive AQ monitors from the atmoscrubber substation path.
+
+#### Architecture Change
+- **Sensor/purifier split** — Life Support now distinguishes active air purifiers (VeSync, Blueair — devices with `fan` entity) from passive AQ monitors (Awair — sensor-only devices). Previously both were treated identically as atmoscrubber panels.
+- **4-group partitioning** — `_partitionEntities()` rewritten from 3 groups (climate/environment/ambient) to 4 groups (climate/scrubber/sensor-array/ambient). Environment entities are split by device-level fan presence.
+- **New predicates** — Added `isAirPurifierEntity()` and `isAQSensorEntity()` to `lcars-entity-utils.js` for Life Support's internal classification boundary.
+
+#### Rendering Changes
+- **Sensor Array layout** — Passive AQ monitors (Awair) render as a compact inline metric grid with color-coded CO₂/VOC/PM2.5 values and Awair Score badge. No cylinder animation, no fan controls.
+- **5 layout configs** — Life Support now supports: `full` (climate+scrubber+sensor-array+ambient), `atmos-only` (active purifier), `climate-only` (thermostat+sensors), `sensor-array-only` (passive AQ monitor), `sensors-only` (ambient temp/humidity hero).
+- **Clipping resolved** — Passive AQ monitors no longer nest inside the environment panel substation, eliminating the triple-nested width overflow.
+
+#### Spec Updates
+- **Atmoscrubber spec §8** — Sensor-only adaptation marked as deprecated. Atmoscrubber panel is now exclusively for active air purifiers. Passive AQ monitors handled by Life Support sensor array.
+
+## [4.22.0-rc.9] — 2026-04-19
+
+### Fixed — Code Review: Critical, High & Medium Bug Fixes
+
+Full Data subagent code review identified 23 issues across all Python and JS files. This RC addresses the most impactful findings.
+
+#### Critical
+- **C1: Blocking I/O in process_yaml.py** — Rewrote `process_yaml()` and `reload_configuration()` to use async executor for all file system operations. Added `_read_yaml_safe()`/`_write_yaml_safe()` helpers replacing raw `open()` calls.
+- **C2: Unguarded json.loads in WS handlers** — Added `_safe_json_loads()` helper wrapping all 12 `json.loads()` call sites across `__init__.py` WS handlers. Invalid JSON now returns error response instead of crashing.
+
+#### High
+- **H1: Notification WS type mismatch** — Fixed `_loadNotifications()` WS type from `lcars_dashboard/notification/get` to `lcars_dashboard_notification/get`.
+- **H2: Reload crash on empty YAML** — `_read_yaml_safe()` now returns None for empty/missing files; callers check before processing.
+- **H3: File handle leak** — All raw `open()` calls replaced with `_read_yaml_safe()`/`_write_yaml_safe()` context-managed helpers.
+- **H4: YAML write race condition** — Added per-file `asyncio.Lock` infrastructure (`_get_yaml_lock()`) protecting concurrent read-modify-write on entity YAML.
+- **H5: Climate debouncer leak** — Added `disconnectedCallback()` to `LcarsClimatePanel` that cancels the setpoint debouncer timer on disconnect.
+
+#### Medium
+- **M1: Variable shadowing** — Fixed `page_config` variable shadowing in `process_yaml()` (renamed to `page_data`).
+- **M2: Entities list validation** — Added `isinstance(list)` check for entities boolean value WS handler.
+- **M4: Dead alarm timer cleanup** — Removed orphaned `_alarmLockoutTimer` cleanup from homepage card `disconnectedCallback`.
+- **M5: Unbounded notifications** — Added FIFO eviction (max 100) in notification create service to prevent memory growth.
+
+## [4.22.0-rc.8] — 2026-04-19
+
+### Fixed — Consolidated P6b–P9: Formatting, Offline Degradation, Media Compaction, A11y, Security (17 items)
+
+**17 bugs implemented** across 6 stories, covering shared formatting utilities, offline panel degradation, media player compaction, accessibility polish, and security hardening. 13 items deferred to v5.x, 4 closed as HA-config-only, 3 monitored, 1 closed.
+
+#### Shared Formatting Foundation (RC8-1)
+1. **Data-size scaling (QA-E10):** Raw byte values (B) now auto-scale to KB/MB/GB/TB with appropriate decimal precision.
+2. **ISO timestamp humanization (QA-E11):** Raw ISO 8601 timestamps render as "JUST NOW", "5M AGO", "2H AGO", "3D AGO", or short date (e.g., "APR 15").
+3. **Possessive name stripping (QA-E09):** Area and device names with possessives (e.g., "Leith's Office") are now stripped correctly during entity name shortening.
+
+#### Weather Offline Degradation (RC8-2)
+4. **Gray offline skeleton (GEORDI-021):** Weather panel shows grayed-out frame, "OFFLINE" badge, and skeleton viewscreen when weather entity is unavailable/unknown.
+5. **Last-known data label (WESLEY-UX-012):** Offline weather banner displays humanized "LAST DATA X AGO" timestamp from entity's last_changed.
+
+#### Irrigation Offline Semantics (RC8-3)
+6. **Offline vs idle distinction (GEORDI-022):** Irrigation zones now show "OFFLINE" (gray) when unavailable, distinct from "IDLE" (sunflower). Controller offline banner with "LAST SEEN" timestamp.
+7. **Disabled offline controls (WESLEY-UX-007):** Zone start/stop buttons, quick-run, and control buttons are suppressed when controller is offline, preventing failing service calls.
+
+#### Media Compaction and Volume Warning (RC8-4)
+8. **Collapse unavailable players (WESLEY-UX-002):** All-unavailable media players show minimal "UNAVAILABLE" skeleton instead of broken controls.
+9. **Collapse standby siblings (GEORDI-017, WESLEY-UX-004):** When active players exist, unavailable players are filtered from the rendered list. Standby players remain visible.
+10. **100% volume warning (GEORDI-027):** Volume bar and percentage turn tomato-red when volume reaches 100%.
+
+#### A11y and Truncation Polish (RC8-5)
+11. **Sensor indicator contrast (GEORDI-030):** Indicator dots increased from 0.5rem to 0.625rem with subtle white ring (box-shadow) for improved visibility on dark backgrounds.
+12. **Label truncation floor (QA-E08):** Sensor labels now have 3rem minimum width to prevent premature truncation on narrow panels.
+
+#### Security Hardening (RC8-6)
+13. **innerHTML → textContent (WORF-SEC-001):** Card picker button in vendor/editor.js now uses textContent instead of innerHTML.
+14. **more_pages path validation (WORF-SEC-006):** Subdirectory names in more_pages are validated against `[a-zA-Z0-9_-]` regex in both process_yaml.py and __init__.py.
+15. **Blueprint size limit (WORF-SEC-007):** Blueprint YAML payloads are rejected if they exceed 256 KB. Blueprint name must be a non-empty string.
+16. **Template filename validation (WORF-SEC-008):** more_pages subdirectory enumeration in websocket_get_configuration now validates names via _validate_path_component.
+
+### Deferred to v5.x (13 items)
+- WESLEY-IDEA-003 (consolidated media hub), WESLEY-IDEA-007 (waveform personality), GEORDI-016 (sparse room shell), WESLEY-IDEA-001 (room vitals strip), WESLEY-IDEA-004 (empty-state copy), WESLEY-IDEA-008 (idle-room timestamp), WESLEY-IDEA-009 (View Transitions), WESLEY-IDEA-013 (boot sequence), WESLEY-IDEA-014 (adaptive climate arc), WESLEY-IDEA-015 (mobile haptics), WESLEY-IDEA-016 (trend arrows), WESLEY-IDEA-017 (universal LAST ACTIVE), WORF-SEC-002 (npm audit churn)
+
+### Closed / No-Code (4 items)
+- DATA-013, DATA-015, GEORDI-025, GEORDI-026 — HA configuration issues, not dashboard code
+
+### Monitoring (3 items)
+- GEORDI-029 (focus visibility), GEORDI-031 (reduced-motion), WORF-SEC-004 (color sanitization) — validated as acceptable, no code needed
+
+## [4.22.0-rc.6] — 2026-04-19
+
+### Fixed — Site Crawl Bug Fixes: Tactical, Camera, Viewport (P6)
+
+**3 bugs fixed** from full 19-room site crawl of ha.malick.us.
+
+#### Tactical Panel
+1. **Camera motion bleed (CRAWL-001):** Camera-device motion/occupancy sensors no longer appear in the Tactical MOTION section. Filter applied at area classification, entity consumption, and tactical partition levels. Standalone motion sensors (e.g., Aqara) still route correctly to Tactical.
+
+#### Camera Panel
+2. **Sensor hero tier expansion (CRAWL-002):** All non-diagnostic binary_sensors on camera devices now render inline as hero-tier data instead of collapsing behind "X MORE" disclosure. Detection events (person, vehicle, animal, glass break, etc.) are all visible by default. Diagnostic/config entities remain collapsed.
+
+#### Viewport Panel
+3. **Duplicate cover rendering (CRAWL-003):** Cover entities consumed by the Viewport Controls panel are now excluded from standalone device-group rendering. Added `isViewportEntity` predicate to area consumption filter.
+
+## [4.22.0-rc.5] — 2026-04-19
+
+### Fixed — Tactical, Alarm, Garage Door, High-Impact Action Safety (P5)
+
+**8 bugs fixed** spanning alarm state color, keypad sizing, garage door UX, tactical dedup, inline confirmation, and lockout feedback.
+
+#### Alarm Panel
+1. **Disarmed ice semantics (GEORDI-018):** Tactical panel `frameColor` now delegates to canonical `getAlarmStateColor()` — disarmed alarm correctly shows ice regardless of unlocked doors.
+2. **Keypad spacing (GEORDI-019):** Alarm keypad buttons enlarged to 4rem height with `minmax(3.5rem, 4.5rem)` columns and 0.5rem/0.75rem gap (desktop/mobile). Exceeds WCAG 2.5.8 44px minimum tap target. Code dots enlarged to 14px.
+3. **Lockout feedback (WORF-SEC-003):** Rate-limited PIN attempts now show "LOCKED OUT" alert (announced once) + silent countdown timer. Keypad buttons disabled during lockout. Timer cleanup in `disconnectedCallback`.
+
+#### Garage Door & Covers
+4. **Contextual state labels (WESLEY-UX-009):** Garage doors in tactical access section show contextual labels — OPEN/TAP TO CLOSE, CLOSED/TAP TO OPEN, OPENING…, CLOSING…. Transitional states disable interaction.
+5. **Position indicator (WESLEY-IDEA-006):** Covers with `current_position` show an 8px vertical fill bar with percentage label. Bottom-up fill, 500ms CSS transition.
+6. **Confirm flow for risky actions (WESLEY-UX-013):** Lock unlock, garage open, and garage close now require inline confirmation strip (5s timeout, auto-cancel). `role="alert"`, keyboard accessible (Enter/Space confirms, Escape cancels), reduced-motion safe.
+
+#### Tactical Dedup & Room Badge
+7. **Deduplicate tactical across rooms (WESLEY-UX-011):** Per-render-cycle tracking of rendered alarm device IDs prevents duplicate tactical panels across rooms sharing the same alarm.
+8. **Room-header alarm badge (WESLEY-IDEA-010):** Secondary rooms show inline `◆ STATE` badge in room header (alarm-state-colored, link semantics, Enter-only activation). Tap navigates to the alarm's primary area.
+
+### Bundle
+- 721 KiB (+12 KiB / +1.7% from rc.4)
+
+## [4.22.0-rc.4] — 2026-04-19
+
+### Fixed — Power Naming, Circuit Correctness, Progressive Disclosure (P4)
+
+**10 bugs fixed** spanning power circuit naming, 240V pair detection, pool disambiguation, and progressive power panel rendering.
+
+#### Circuit Name Humanization
+1. **Emporia Vue raw names (DATA-009, GEORDI-009):** New 6-stage `_humanizePowerName()` pipeline strips manufacturer prefixes (Vue, Emporia, Pentair, ScreenLogic), hex/serial codes, orphan separators, converts snake_case to title case. `VUEG3_MAINLOAD1` → `MAIN LOAD 1`.
+2. **`-- Dryer` artifacts (DATA-010):** Fixed 240V pair detection baseName cleanup — leading/trailing separators stripped. Entity-level dedup ensures circuits claimed by 240V combined entries don't also appear standalone.
+3. **Duplicate laundry circuits (GEORDI-008):** Two-pass entity dedup in `_detect240VPairs()` — 240V combined entries take priority, standalone entries with already-claimed entities are dropped.
+4. **Pentair hex names (GEORDI-028):** Pipeline strips MAC addresses, serial numbers, and `Pentair:` prefix. Empty result falls back to `POOL CONTROLLER` for Pentair/ScreenLogic devices.
+5. **Identical pool circuits (GEORDI-007):** Post-humanization `_deduplicateCircuitNames()` extracts smart keywords from entity_id (PUMP, HEATER, etc.) before falling back to numeric suffixes.
+
+#### Progressive Power Panel
+6. **0W standby collapse (WESLEY-UX-008):** Rooms with power monitoring at 0W draw now show compact `○ ALL CIRCUITS STANDBY — N MONITORED` instead of full empty panel. Uses `--lcars-sunflower` label + `--lcars-gray` detail per WCAG contrast requirements.
+7. **Low-activity mode (WESLEY-IDEA-005):** Rooms ≤100W show summary card + top 3 active circuits with "ACTIVE CIRCUITS" header. No arc, no section dividers. Threshold configurable via `power_thresholds.lowActivity`.
+8. **Hidden wattage pill (WESLEY-UX-006):** Truncated circuit grid pill now reads `EXPAND GRID — N MORE (X W)` with butterscotch alert dot when any hidden circuit exceeds 500W.
+
+#### Visual Enhancements
+9. **Wattage color tiers (WESLEY-IDEA-012):** Circuit tiles now carry tier classes (standby/low/moderate/high/critical) matching existing `getPowerColor()` palette. Standby tiles dim indicator dot only (not text) per Geordi WCAG review.
+10. **Collection cache (Data refinement):** `_buildPowerCollection()` now caches by reference equality, preventing 3× rebuild per render cycle (frameColor + renderBadge + render).
+
+## [4.22.0-rc.3] — 2026-04-19
+
+### Fixed — Entity Routing, Diagnostics Disclosure, Camera UX (P3)
+
+**18 bugs fixed** spanning entity classification, sensor tiering, camera offline UX, and diagnostics management.
+
+#### Entity Classification & Routing
+1. **Standalone smoke detectors (QA-E03):** Split hazard threshold — strong classes (smoke, CO, gas, heat) trigger HAZARD at ≥1 entity; generic `safety` keeps ≥2 threshold to avoid TP-Link/Kasa false positives.
+2. **FP2 presence sensors (QA-E04):** New `PRESENCE_PLATFORMS` detector routes Aqara FP2/FP1E devices to Tactical panel (occupancy/motion). Illuminance entities stay hidden in operational tier.
+3. **Ceiling fans (QA-E01):** Fan lights already route to Illumination; fan speed entities now suppressed from fallback rendering when Illumination panel is active. No generic "fan" device cards.
+4. **"OTHER ENTITIES" → "AUXILIARY SYSTEMS" (QA-E02):** `SUPPRESS_DOMAINS` filters update, device_tracker, event, conversation, input_datetime, input_text. Remaining unclassified entities render under "AUXILIARY SYSTEMS" section-divider in gray. Empty sections produce no output.
+
+#### Diagnostics Disclosure (WESLEY-IDEA-011)
+5. **Three-tier entity partitioning:** New `tierEntities()` free function in entity-utils. Partitions sensors into hero (always visible), operational (collapsed), and diagnostic (collapsed). Per-panel hero filters determine relevance.
+6. **Camera sensor cleanup (DATA-007, GEORDI-013, GEORDI-024):** Camera panels now tier sensors — motion, occupancy, sound, connectivity, battery, recording stay hero; everything else collapses behind a `▸ N MORE` disclosure button with proper `aria-expanded`, keyboard handling, and 24px touch target.
+7. **Nest Protect diagnostics (QA-E06):** Life Support panel now explicitly filters `entity_category: diagnostic` entities before partitioning. Buzzer test, speaker test, PIR test, etc. no longer flood the panel.
+8. **Sparkline deduplication (QA-E05):** Life Support sparkline tray deduplicates by `device_class`, keeping the entity with the most recent `last_updated`. "PM₂.₅, PM₂.₅, AQI, AQI" duplicates eliminated.
+
+#### Camera Offline UX
+9. **Gray offline border (GEORDI-015):** Offline camera frames use `--lcars-gray` border instead of tomato red. Offline is dormant, not an alert.
+10. **CRT static effect (WESLEY-IDEA-002):** Offline camera viewscreens display CSS scanlines + noise strips with GPU-composited drift animation. `prefers-reduced-motion: reduce` freezes to static scanlines.
+11. **"VIEWSCREEN OFFLINE" breathing text:** Slow opacity pulse (0.6–1.0 at 4s). Plus "LAST SIGNAL: Xh Ym AGO" timestamp from `last_changed`. Suppressed for signals < 5 minutes old (likely rebooting).
+12. **"CONFIGURE IN [INTEGRATION]" CTA (DATA-014, WESLEY-UX-001, WESLEY-UX-005):** When all device entities are unavailable, gold button navigates to HA device configuration page. 3-entry platform humanization map (UniFi Protect, Blink, Nest). Fallback: "DEVICE REQUIRES SETUP".
+
+#### Environment Panel
+13. **Atmoscrubber offline state (GEORDI-006):** When all AQ sensors unavailable, cylinder renders as gray outline with "OFFLINE" label and gray distress pulse. `role="meter"` → `role="img"` when offline. `prefers-reduced-motion` freezes pulse. Non-AQ devices (Nest Protect) never render a cylinder.
+14. **Atmoscrubber guard verified (DATA-006):** `showAtmoscrubber` boolean already gates cylinder rendering correctly — confirmed, no code change needed.
+
+#### Device Card Formatting
+15. **Generic sensor formatting (QA-E07):** Homepage `_renderSensors()` now routes through `formatStateValue()` for device-class-aware rounding. Raw unformatted decimals eliminated from fallback device cards.
+
+**New exports from `lcars-entity-utils.js`:** `SUPPRESS_DOMAINS`, `tierEntities()`.
+
+**Bundle impact:** 693→703 KiB (+10 KiB) — disclosure CSS, static effect, tier logic, platform detection.
+
+## [4.22.0-rc.2] — 2026-04-18
+
+### Fixed — Shared Formatting, Labels, and State Semantics (P2)
+
+**New module: `lcars-format-utils.js`** — Centralized sensor value formatting, state text, and canonical labels. 9 bugs fixed.
+
+1. **Device-class-aware rounding (DATA-008, DATA-018, GEORDI-001):** All sensor values now format through `formatNumber()` with per-device-class decimal rules: temperature→1dp, humidity→0dp, power→0dp, CO₂→0dp, VOC→0dp, etc. Raw decimals like `2.1594203157...` no longer appear in sensor rows, sparkline trays, or ambient readings.
+
+2. **Domain-aware state semantics (DATA-012, WESLEY-UX-003, GEORDI-014):** `formatStateValue()` returns context-appropriate text for unknown/unavailable states:
+   - Button/scene/script `unknown` → **READY** (gray, not red)
+   - Sensor `unknown` → **NO DATA** (gray)
+   - Sensor `unavailable` → **OFFLINE** (gray)
+   - Diagnostic/config → **—** (em dash, gray)
+   - Only genuinely offline operational entities (lights, covers, locks) remain alert red
+
+3. **Canonical short labels (GEORDI-032, GEORDI-003, WESLEY-UX-010):** `canonicalLabel()` maps device classes to LCARS-appropriate abbreviations: PM₂.₅, CO₂, VOC, AQI, RH, TEMP, PRESS, BATT, RSSI. Sparkline tray labels like "VOLATILE ORGANIC COMPOUNDS" (truncated) now display as "VOC". Pool chemistry suffix matching: ORP, pH, SALT, ALK, CYA, FREE CL.
+
+4. **Accessibility:** `ariaLabel()` strips Unicode subscripts for screen-reader-safe announcements. Sparkline slots upgraded from `aria-hidden` to descriptive `aria-label`.
+
+**Integration:** All sensor rendering sites in environment panel, lifesupport panel (sparklines, ambient, hero), and homepage card (camera, environment, battery, pool chemistry) routed through centralized formatters. Slider display values use `formatNumber()` for consistent rounding.
+
+**Bundle impact:** +3 KiB (690→693 KiB) — consistent with architectural estimate.
+
+### Phase 6 Team Review
+
+| Reviewer | Verdict |
+|----------|---------|
+| Geordi La Forge (Design) | APPROVED WITH CONDITIONS — 2 non-blocking (sparkline SVG a11y pre-existing, current 2dp) |
+| Data (Architecture) | APPROVED — M1/M2/M3 verified resolved, 3 advisory (dead import fixed, sensor hero fixed, ariaLabel micro-opt) |
+| Worf (Security) | APPROVED — 0 findings, pipeline confirmed XSS-safe |
+| Wesley Crusher (Creative) | APPROVED WITH CONDITIONS — sentinel guard added, unconverted panels tracked for P3+ |
+
+---
+
+## [4.22.0-rc.1] — 2026-04-18
+
+### Fixed — Classification Core (P1)
+
+**Entity Classification Overhaul** — 16 bugs fixed across entity routing, panel assignment, and classifier logic. Two root causes addressed:
+
+1. **Illumination switch catch-all removed (DATA-001, GEORDI-004, GEORDI-005):** The illumination panel no longer absorbs every unclaimed `switch` entity into "Circuits." Only switches matching `isLightingEntity()` appear. Fixes irrigation zones (Rachio), EcoFlow config switches, appliance controls, and cross-domain switches leaking into lighting panels across ~15 rooms in both homes.
+
+2. **Diagnostic entity_category filtering (DATA-002, DATA-011, GEORDI-002, GEORDI-012):** Hazard detector now ignores `entity_category: diagnostic/config` binary sensors. TP-Link Kasa devices (HS200, KP200) with diagnostic CO Status sensors no longer misclassify ceiling fans, outlets, and switches as hazard/life-support devices. Fixes ~7 rooms in Eric's home.
+
+**Additional classification fixes:**
+- GE Home refrigerator climate entities excluded from area-level Life Support (DATA-004, GEORDI-010) — fridges route to Galley panel instead of rendering HVAC arcs at 5°F
+- ScreenLogic pool/spa climate entities excluded from Life Support (DATA-005) — pool temp routes to Pool/Spa panel
+- EcoFlow `ecoflow_cloud` platform added to `PLATFORM_PANEL_MAP` → battery routing (DATA-020) — EcoFlow config switches no longer pollute illumination
+- `isEnvironmentEntity()` fan matching restricted to AQ platforms only (DATA-017, DATA-021) — ceiling fans (Bond, Kasa, Insteon) no longer trigger Life Support/environment panels
+- `isLightingEntity()` negative keyword hardening (DATA-016) — defense-in-depth exclusion of irrigation, battery, HVAC, and appliance terms
+- Empty atmoscrubber cylinder hidden when device has no AQ data (GEORDI-002) — no more green outlines on non-air-quality devices
+- `VIEWPORT_COVER_CLASSES` lifted to module-level constant for consistency
+- Optional chaining added to environment panel entity_id access
+
+### Phase 6 Team Review
+
+| Reviewer | Verdict |
+|----------|---------|
+| Geordi La Forge (Design) | APPROVED — 0 blocking, 2 non-blocking |
+| Data (Architecture) | APPROVED — 0 blocking, 0 non-blocking |
+| Worf (Security) | APPROVED — 0 blocking, 2 recommendations |
+| Wesley Crusher (UX) | APPROVED WITH CONDITIONS — 2 conditions fixed |
+
+### Files Modified
+- `lcars-entity-utils.js` — PLATFORM_PANEL_MAP, hazard detector, isClimateEntity, isEnvironmentEntity, isLightingEntity, classifyArea
+- `lcars-illumination-panel.js` — _partitionLightingEntities circuit collection
+- `lcars-environment-panel.js` — atmoscrubber visibility guard
+
+## [4.21.0] — 2026-04-17
+
+### Added — 4 New Panel Types
+
+**Tactical Panel (4X-42):** Composite security panel — alarm control, lock toggles, perimeter sensors, motion indicators. Subsumes alarm panel.
+
+**Viewport Controls (4X-41):** Blinds/shades/covers with open/close/stop controls and position display.
+
+**Hazard Detection (4X-39):** Smoke/CO/heat detector status grid (Nest Protect) with battery overview.
+
+**Galley Systems (4X-40):** Smart appliance cards (GE Home, LG SmartThinQ) with cook status, timers.
+
+### Added — Entity Routing
+
+**Media Consolidation (4X-43):** Area-level media panel with primary/secondary speaker layout. Camera doorbell media_players excluded.
+
+**Platform-to-Panel Routing (4X-44):** 20+ integration platforms mapped. Diagnostic entity filter.
+
+**Weather Detection (4X-36):** Platform + sensor class detection.
+
+**Pool/Spa Detection (4X-37):** Platform-based detection for screenlogic, iaqualink, waterguru, pentair.
+
+### Added — CSS Polish
+
+**Responsive Breakpoints (4X-29):** 9 panels, single-column below 30rem. Power panel px→rem.
+
+**Gradient Cleanup (4X-30):** 4 decorative gradients removed.
+
+### Fixed
+
+- **Life Support Clipping (4X-46):** flex-basis auto, :host display:block, overflow fixes.
+- **Device Ownership (#45):** claimedDeviceIds guard in illumination circuits.
+- **Media Entity Bleeding (#46):** Device-affinity scoping + camera doorbell exclusion.
+
+## [4.19.1] — 2026-04-17
+
+### Added — Entity Routing Improvements
+
+**Media Consolidation (4X-43):**
+- Media panel now operates at the area level — all `media_player` entities in a room render in a single panel.
+- Primary player selection: playing > paused > most features (Apple TV over HomePod).
+- Secondary speakers render as compact rows with play/pause + volume controls.
+
+**Platform-to-Panel Routing (4X-44):**
+- `PLATFORM_PANEL_MAP` — 20+ known HA integration platforms mapped to correct panel types.
+- Platform-based fallback detector in DETECTORS array catches devices missed by domain/device_class.
+- `isDiagnosticEntity()` filter — entities with `entity_category: diagnostic/config` excluded from all room panels.
+- Mappings: unifiprotect/blink→camera, screenlogic/waterguru→aquatics, weatherflow/weatherlink→weather, rachio/flume→irrigation, nest_protect→hazard, ge_home/smartthinq→galley, ha_blueair/vesync→environment, emporia_vue→power.
+
+**Weather Station Detection (4X-36):**
+- `WEATHER_PLATFORMS` set: weatherflow, weatherlink, met, openweathermap, accuweather, ecobee, environment_canada, nws, pirateweather.
+- `WEATHER_SENSOR_CLASSES` device_class matching: wind_speed, wind_direction, precipitation, pressure, irradiance.
+- ≥2 weather sensor classes on a device triggers weather panel.
+
+**Pool/Spa Detection (4X-37):**
+- `POOL_SPA_PLATFORMS` set: screenlogic, iaqualink, poolmath, waterguru, pentair.
+- Platform check runs before entity_id/preset heuristics for reliable detection.
+
+### Also includes from earlier pre-releases
+
+**Responsive Breakpoints (4X-29):**
+- 9 panels gain single-column fallback below 30rem (~480px).
+- Battery & environment cylinders rotate horizontal on narrow screens.
+- Power panel breakpoints normalized from px to rem.
+
+**Gradient Cleanup (4X-30):**
+- 4 decorative gradients removed (forecast fill, waveform peak, weather glow, pool caustic shimmer).
+- 10 functional gradients kept and documented.
+
+**Life Support Clipping Fix (4X-46):**
+- `.panel-content { flex: 1 1 auto }` — content-based sizing.
+- `:host { display: block }` in LcarsBasePanel for all panels.
+- `.env-content` overflow + min-width fixes.
+
+## [4.20.0-rc.1] — 2026-04-17
+
+### Added — Responsive Breakpoints (4X-29)
+
+- **9 panels gain mobile-first responsive layout**: Alarm, battery, camera, climate, environment, irrigation, media, weather, pool/spa panels all collapse to single-column layout below 30rem (~480px).
+- **Battery & environment cylinders rotate horizontal** on narrow screens — 4rem tall horizontal bar instead of vertical cylinder.
+- **Power panel breakpoints normalized** from px to rem units (64rem/48rem/30rem) per Data's architectural review.
+
+### Fixed — Gradient Cleanup (4X-30)
+
+- **4 decorative gradients removed** per Bracer Jack Rule 1:
+  - Forecast range fill → flat `var(--lcars-butterscotch)`
+  - Waveform peak bar → flat `var(--lcars-tomato)`
+  - Weather glow radial → replaced with `border-color` shift
+  - Pool caustic shimmer → removed entirely (thermal tint backgrounds sufficient)
+- **10 functional gradients documented and kept**: scroll fades, particle animations, scan sweeps, charge flow stripes.
+
+### Review Summary
+- Geordi: Designed all 9 breakpoint specs + classified 14 gradients
+- Data: APPROVE (condition met: power panel px→rem)
+- Worf: Auto-approve (pure CSS)
+
+## [4.19.1-rc.3] — 2026-04-17
+
+### Fixed — Environment panel horizontal clipping (4X-46 continued)
+
+- **Horizontal overflow on nested environment panel**: `.env-content` grid and `.env-controls` now have `overflow: hidden` and `min-width: 0` to prevent the atmoscrubber cylinder from overflowing the right side of the panel frame when nested inside Life Support.
+
+## [4.19.1-rc.2] — 2026-04-17
+
+### Fixed — Life Support Panel Clipping (4X-46) — continued
+
+- **Root cause #2 found**: `<lcars-lifesupport-panel>` had no `:host { display: block; }` — defaulted to `display: inline`, breaking height propagation through the Shadow DOM boundary. Every other panel had this rule.
+- **Fix**: Added `:host { display: block; }` to `LcarsBasePanel.static get styles()` — all panels now inherit it. No panel can miss it going forward.
+
+## [4.19.1-rc.1] — 2026-04-17
+
+### Fixed — Life Support Panel Clipping (4X-46)
+
+**UI (Geordi):**
+- **Root cause identified**: `flex: 1` on `.panel-content` expands to `flex-basis: 0%`, collapsing height to zero across nested Shadow DOM boundaries (Life Support → environment substation).
+- **Fix 1**: `.panel-content { flex: 1 1 auto }` — content-based initial sizing instead of zero-basis. Affects all 12 panels via shared `lcars-panel-frame` but zero visual change for standalone panels.
+- **Fix 2**: `.env-content { grid-template-rows: auto auto }` — explicit content sizing for environment panel grid, removing fragile `1fr` track dependency.
+
+### Review Summary
+- Geordi: APPROVE (diagnosed root cause, verified fix)
+- Data: APPROVE (confirmed zero regression for standalone panels)
+- Worf: APPROVE (pure CSS, no security surface)
+
+## [4.19.0] — 2026-04-17
+
+### Fixed — File I/O Hardening (4X-28)
+
+**Architecture (Data):**
+- **All 44 raw `open()` calls migrated** to `_read_yaml_file` / `_write_yaml_file` helpers — entire I/O lifecycle (open→read/write→close) now executes inside executor threads, eliminating event loop blocking.
+- **~25 blocking `os.path.exists()` calls removed** — replaced by helper's internal missing-file handling.
+- **~12 blocking `os.makedirs()` calls removed** — consolidated into `_write_yaml_file`'s internal `makedirs(exist_ok=True)`.
+- **4 blocking `os.path.isdir()` calls wrapped** in `async_add_executor_job` in card directory loaders.
+- **5 blocking `os.remove()` calls wrapped** in executor lambdas for delete handlers.
+- **Redundant `yaml.safe_load(json.dumps(...))` round-trips removed** from 6 card write handlers — data from `json.loads()` is already YAML-safe.
+- **Net reduction: ~200 lines** of boilerplate file I/O code.
+
+**Security (Worf):**
+- **`ws_handle_sort_entity` sortType validated** — changed from `vol.Required("sortType"): str` to `vol.In(ALLOWED_SORT_TYPES)`, preventing arbitrary YAML key injection. Consistent with existing `ws_handle_sort_area_button` validation.
+
+### Review Summary
+- Data: APPROVE (3 review rounds — caught async def closure bug and missing isdir fix)
+- Worf: APPROVE (all 5 security conditions met)
+
+## [4.18.9] — 2026-04-17
+
+### Fixed — Bug Fixes (4X-27, 4X-31, 4X-32, 4X-34)
+
+**Architecture (Data):**
+- **`async_unload_entry` cleanup (4X-27)** — `hass.data.pop(DOMAIN, None)` now cleans up stale data (4 OrderedDicts) on config entry unload. Returns actual `unload_ok` result instead of hardcoded `True`. Follows HA convention.
+
+**UI (Geordi):**
+- **Sidebar icon updated (4X-34)** — Default sidebar icon changed from legacy `mdi:alpha-d-box` (Dwains Dashboard holdover) to `mdi:star-four-points`. Consistent with config flow default.
+- **Life Support panel clipping fixed (4X-31)** — Added `overflow: visible` to panel frame content area, life support substations grid, and substation cells. Prevents clipping of nested climate + environment panels and LCARS corner bracket pseudo-elements.
+- **Switches now appear in Illumination Circuits (4X-32)** — All `switch` domain entities in a room (excluding `device_class: outlet`) now appear in the Illumination panel's Circuits section. Previously only switches matching lighting keywords were included, missing smart plugs powering lamps.
+
+### Review Summary
+- Data: APPROVE (4/4, one condition applied — outlet exclusion added)
+- Worf: APPROVE (4/4, no security concerns)
+- Geordi: APPROVE (4/4, brackets rendering correctly, accessible toggle-pills)
+
 ## [4.18.8] — 2026-04-17
 
 ### Fixed — Production Hardening (Team Review Pass)

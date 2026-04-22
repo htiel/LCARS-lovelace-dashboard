@@ -9,9 +9,10 @@
 import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { AQ_DEVICE_CLASSES, AQ_ENTITY_SUFFIX_RE } from '../../lcars-entity-utils.js';
-import { getStateColor, getCo2Color } from '../../lcars-color-utils.js';
+import { canonicalLabel } from '../../lcars-format-utils.js';
 import { renderSparkline, fetchSparklineData } from '../../lcars-sparkline.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
+import { lcarsAudio } from '../../lcars-audio.js';
 import { environmentPanelStyles } from './lcars-environment-panel-styles.js';
 
 class LcarsEnvironmentPanel extends LcarsBasePanel {
@@ -32,6 +33,7 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
     const score = [];
     const airQuality = [];
     const telemetry = [];
+    const filterLife = [];
     const controls = [];
     const diagnostics = [];
 
@@ -43,11 +45,19 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
         controls.push(entry);
         continue;
       }
+      // 4X-54/4X-59: Detect filter/wick life sensors before AQ routing.
+      // BlueAir uses device_class: battery; Xiaomi has no device_class.
+      // Match by entity_id pattern + percentage unit for any sensor.
+      if (domain === 'sensor' && /filter|wick/i.test(entry.entity?.entity_id || '') &&
+          (dc === 'battery' || dc === '' || !dc)) {
+        filterLife.push(entry);
+        continue;
+      }
       if (AQ_DEVICE_CLASSES.has(dc)) {
         airQuality.push(entry);
         continue;
       }
-      if (!dc && domain === 'sensor' && AQ_ENTITY_SUFFIX_RE.test(entry.entity.entity_id)) {
+      if (!dc && domain === 'sensor' && AQ_ENTITY_SUFFIX_RE.test(entry.entity?.entity_id || '')) {
         score.push(entry);
         continue;
       }
@@ -62,7 +72,7 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
       }
     }
 
-    return { score, airQuality, telemetry, controls, diagnostics };
+    return { score, airQuality, telemetry, filterLife, controls, diagnostics };
   }
 
   /* ─── Atmoscrubber helpers ─── */
@@ -115,8 +125,13 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
 
   renderContent() {
     const categoryEntities = this._getDeviceCategoryEntities(this.group.device.id);
-    const { score, airQuality, telemetry, controls, diagnostics } = this._partitionEnvironmentEntities(this.group.entities, categoryEntities);
+    const { score, airQuality, telemetry, filterLife, controls, diagnostics } = this._partitionEnvironmentEntities(this.group.entities, categoryEntities);
     const deviceName = this._shortDeviceName(this.group.device) || 'Environment';
+    const showAtmoscrubber = score.length > 0 || airQuality.length > 0;
+    // P3 GEORDI-006: detect if all AQ sensors are unavailable
+    const allAQUnavailable = showAtmoscrubber && [...score, ...airQuality].every(
+      e => e.state?.state === 'unavailable' || e.state?.state === 'unknown'
+    );
 
     const scoreEntry = score[0];
     const scoreVal = scoreEntry ? parseFloat(scoreEntry.state.state) : null;
@@ -152,13 +167,12 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
         <div class="env-sensors" role="list" aria-label="${deviceName} sensors">
           ${airQuality.map(({ entity, state }) => {
             const name = this._friendlyName(state, entity);
-            const val = state.state;
-            const unit = state.attributes?.unit_of_measurement || '';
-            const color = this._getSensorIndicatorColor(state);
+            const { text } = this._formatSensorValue(state, entity);
+            const color = this._getSensorIndicatorColor(state, entity?.entity_category);
             return html`
               <lcars-sensor-row
                 label="${name}"
-                value="${val}${unit ? ' ' + unit : ''}"
+                value="${text}"
                 color="${color}"
                 entity-id="${entity.entity_id}">
               </lcars-sensor-row>
@@ -166,29 +180,47 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
           })}
           ${telemetry.map(({ entity, state }) => {
             const name = this._friendlyName(state, entity);
-            const val = state.state;
-            const unit = state.attributes?.unit_of_measurement || '';
-            const color = this._getSensorIndicatorColor(state);
+            const { text } = this._formatSensorValue(state, entity);
+            const color = this._getSensorIndicatorColor(state, entity?.entity_category);
             return html`
               <lcars-sensor-row
                 label="${name}"
-                value="${val}${unit ? ' ' + unit : ''}"
+                value="${text}"
                 color="${color}"
                 entity-id="${entity.entity_id}">
               </lcars-sensor-row>
+            `;
+          })}
+          ${filterLife.map(({ entity, state }) => {
+            const name = this._friendlyName(state, entity);
+            const pct = Math.min(100, Math.max(0, parseFloat(state.state) || 0));
+            const litCount = Math.round(pct / 10);
+            // 4X-59: Color the percentage text to match filter status
+            const pctColor = pct < 25 ? 'var(--lcars-tomato)' : pct < 75 ? 'var(--lcars-golden-orange)' : 'var(--lcars-ice)';
+            return html`
+              <div class="filter-life-row">
+                <span class="filter-life-label">${name}</span>
+                <span class="filter-life-pct" style="color:${pctColor}">${Math.round(pct)}%</span>
+              </div>
+              <div class="filter-segments" aria-label="Filter life: ${Math.round(pct)}%">
+                ${Array.from({ length: 10 }, (_, i) => {
+                  const seg = i < litCount;
+                  const cls = seg ? (pct < 25 ? 'lit critical' : pct < 75 ? 'lit warn' : 'lit') : '';
+                  return html`<div class="filter-seg ${cls}"></div>`;
+                })}
+              </div>
             `;
           })}
           ${diagnostics.length > 0 ? html`
             <lcars-section-divider label="DIAGNOSTICS"></lcars-section-divider>
             ${diagnostics.map(({ entity, state }) => {
               const name = this._friendlyName(state, entity);
-              const val = state.state;
-              const unit = state.attributes?.unit_of_measurement || '';
-              const color = this._getSensorIndicatorColor(state);
+              const { text } = this._formatSensorValue(state, entity);
+              const color = this._getSensorIndicatorColor(state, entity?.entity_category);
               return html`
                 <lcars-sensor-row
                   label="${name}"
-                  value="${val}${unit ? ' ' + unit : ''}"
+                  value="${text}"
                   color="${color}"
                   entity-id="${entity.entity_id}">
                 </lcars-sensor-row>
@@ -198,19 +230,28 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
         </div>
 
         <!-- Atmoscrubber Cylinder -->
-        <div class="atmoscrubber-container" role="meter"
-          aria-valuenow="${aqiEstimate != null ? Math.round(aqiEstimate) : ''}"
-          aria-valuemin="0" aria-valuemax="300"
-          aria-label="Air quality: ${aqiEstimate != null ? Math.round(aqiEstimate) : 'unknown'}">
-          <div class="atmoscrubber ${isIdle ? 'scrubber-idle' : ''}"
-            style="--scrubber-hue:${Math.round(hue)};--scrubber-speed:${scrubberSpeed.toFixed(1)}s;--atmos-quality-color:${aqColor}">
-            ${scoreEntry ? html`
-              <div class="scrubber-score">${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : '—'}</div>
-            ` : pm25Entry ? html`
-              <div class="scrubber-score">${pm25Val != null && Number.isFinite(pm25Val) ? Math.round(pm25Val) : '—'}</div>
-            ` : ''}
+        ${showAtmoscrubber && !allAQUnavailable ? html`
+          <div class="atmoscrubber-container" role="meter"
+            aria-valuenow="${aqiEstimate != null ? Math.round(aqiEstimate) : ''}"
+            aria-valuemin="0" aria-valuemax="300"
+            aria-label="Air quality: ${aqiEstimate != null ? Math.round(aqiEstimate) : 'unknown'}">
+            <div class="atmoscrubber ${isIdle ? 'scrubber-idle' : ''}"
+              style="--scrubber-hue:${Math.round(hue)};--scrubber-speed:${scrubberSpeed.toFixed(1)}s;--atmos-quality-color:${aqColor}">
+              ${scoreEntry ? html`
+                <div class="scrubber-score">${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : '—'}</div>
+              ` : pm25Entry ? html`
+                <div class="scrubber-score">${pm25Val != null && Number.isFinite(pm25Val) ? Math.round(pm25Val) : '—'}</div>
+              ` : ''}
+            </div>
           </div>
-        </div>
+        ` : showAtmoscrubber && allAQUnavailable ? html`
+          <div class="atmoscrubber-container atmoscrubber-offline"
+            role="img" aria-label="Air quality sensor offline">
+            <div class="atmoscrubber scrubber-idle scrubber-offline-state">
+              <div class="scrubber-score">OFFLINE</div>
+            </div>
+          </div>
+        ` : ''}
 
         <!-- Controls (right) — only for purifiers -->
         ${!sensorOnly ? html`
@@ -236,6 +277,7 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
                         @click=${() => {
                           const validModes = this.hass.states[fanEntry.entity.entity_id]?.attributes?.preset_modes || [];
                           if (!validModes.includes(mode)) return;
+                          lcarsAudio.play('fanToggle');
                           this.hass.callService('fan', 'set_preset_mode', {
                             entity_id: fanEntry.entity.entity_id, preset_mode: mode
                           });
@@ -266,9 +308,9 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
         <!-- Sparklines -->
         <div class="env-sparklines" aria-label="24-hour history">
           ${[...score, ...airQuality].map(({ entity, state }) => {
-            const name = this._friendlyName(state, entity);
-            const points = sparkData[entity.entity_id];
             const dc = state.attributes?.device_class || '';
+            const name = canonicalLabel(dc, this._friendlyName(state, entity), entity.entity_id);
+            const points = sparkData[entity.entity_id];
             const color = dc === 'pm25' ? 'var(--lcars-peach)'
               : dc === 'carbon_dioxide' ? 'var(--lcars-sunflower)'
               : dc === 'volatile_organic_compounds_parts' || dc === 'volatile_organic_compounds' ? 'var(--lcars-african-violet)'

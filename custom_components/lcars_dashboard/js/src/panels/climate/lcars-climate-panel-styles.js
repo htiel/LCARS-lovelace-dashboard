@@ -19,35 +19,6 @@ export const climatePanelStyles = css`
     --panel-frame-color: var(--lcars-butterscotch);
     display: grid;
     gap: var(--lcars-gap);
-    width: 100%;
-    max-width: 42rem;
-    border-left: 4px solid var(--panel-frame-color);
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-top: 2px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
-    padding: var(--lcars-gap);
-    background: var(--lcars-black);
-    position: relative;
-  }
-  .lcars-device-panel::before {
-    content: '';
-    position: absolute;
-    top: -2px; left: -4px;
-    width: 1.5rem; height: 1.5rem;
-    border-top: 4px solid var(--panel-frame-color);
-    border-left: 4px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0 0 0;
-    pointer-events: none;
-  }
-  .lcars-device-panel::after {
-    content: '';
-    position: absolute;
-    bottom: -4px; right: -2px;
-    width: 1.5rem; height: 1.5rem;
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0 0 0.25rem 0;
     pointer-events: none;
   }
 
@@ -182,12 +153,12 @@ export const climatePanelStyles = css`
   .climate-sp-btn {
     width: 3rem; height: 2.5rem;
     border: none;
-    background: var(--lcars-disabled);
+    background: var(--panel-frame-color);
     color: var(--lcars-space-white);
     font-size: 1.25rem; font-family: var(--lcars-font);
-    cursor: pointer; transition: background 200ms;
+    cursor: pointer; transition: background 200ms, filter 200ms;
   }
-  .climate-sp-btn:hover { background: var(--panel-frame-color); }
+  .climate-sp-btn:hover { filter: brightness(1.2); }
   .climate-sp-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
   /* Decrement: rounded-left, flat-right */
   .climate-sp-btn.sp-decrement {
@@ -230,14 +201,35 @@ export const climatePanelStyles = css`
   .climate-mode-btn.mode-first.mode-last {
     border-radius: var(--lcars-btn-radius);
   }
-  .climate-mode-btn[data-active] { background: var(--panel-frame-color); }
+  /* HVAC mode strip: per-mode active color via inline --mode-btn-color */
+  .climate-modes .climate-mode-btn[data-active] { background: var(--mode-btn-color, var(--panel-frame-color)); }
+  /* Aux strips (fan, preset, swing): uniform gold active */
+  .climate-aux-strip .climate-mode-btn[data-active] { background: var(--lcars-gold); }
   .climate-mode-btn:hover:not([data-active]) { background: var(--lcars-gray); }
   .climate-mode-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
   .climate-aux-controls {
     grid-area: auxctrl;
     display: flex; flex-direction: column; gap: var(--lcars-gap);
   }
-  .climate-aux-strip { display: flex; gap: 1px; flex-wrap: wrap; }
+  .climate-aux-strip { display: flex; gap: 1px; flex-wrap: wrap; align-items: center; }
+  .climate-aux-strip-label {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-sunflower);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    width: 100%;
+    margin-bottom: 0.125rem;
+  }
+
+  /* 4X-56: Toggle-style aux button for portable AC switches */
+  .climate-toggle-btn { display: flex; align-items: center; gap: 0.375rem; }
+  .climate-toggle-btn ha-icon { --mdc-icon-size: 14px; flex-shrink: 0; }
+  .climate-toggle-btn[data-active] { background: var(--toggle-active-bg, var(--lcars-gold)); color: var(--lcars-black); }
+
+  /* 4X-56: Inline label for aux number controls */
+  .climate-aux-inline-label { font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); color: var(--lcars-text-heading, var(--lcars-sunflower)); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; margin-right: 0.5rem; }
+  .climate-timer-value { font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); color: var(--lcars-gold, var(--lcars-sunflower)); text-transform: uppercase; font-weight: 700; min-width: 3rem; text-align: center; }
 
   .panel-pip-strip {
     position: absolute;
@@ -248,6 +240,14 @@ export const climatePanelStyles = css`
   }
 
   /* Animation budget: all gated behind reduced-motion preference */
+  @media (max-width: 30rem) {
+    .climate-content {
+      grid-template-areas: "media" "sensors" "modes" "auxctrl";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto auto;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .arc-halo-active,
     .climate-action-bar {

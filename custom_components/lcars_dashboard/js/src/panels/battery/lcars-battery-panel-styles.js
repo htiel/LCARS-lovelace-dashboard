@@ -13,41 +13,11 @@ export const batteryPanelStyles = css`
     display: block;
   }
 
-  /* ═══ Device Panel Frame (shared base) ═══ */
+  /* ═══ Device Panel Content ═══ */
   .lcars-device-panel {
     --panel-frame-color: var(--lcars-butterscotch);
     display: grid;
     gap: var(--lcars-gap);
-    width: 100%;
-    max-width: 42rem;
-    border-left: 4px solid var(--panel-frame-color);
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-top: 2px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
-    padding: var(--lcars-gap);
-    background: var(--lcars-black);
-    position: relative;
-  }
-  .lcars-device-panel::before {
-    content: '';
-    position: absolute;
-    top: -2px; left: -4px;
-    width: 1.5rem; height: 1.5rem;
-    border-top: 4px solid var(--panel-frame-color);
-    border-left: 4px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0 0 0;
-    pointer-events: none;
-  }
-  .lcars-device-panel::after {
-    content: '';
-    position: absolute;
-    bottom: -4px; right: -2px;
-    width: 1.5rem; height: 1.5rem;
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0 0 0.25rem 0;
-    pointer-events: none;
   }
 
   /* ═══ Battery Panel Grid ═══ */
@@ -446,6 +416,30 @@ export const batteryPanelStyles = css`
     background: var(--panel-frame-color);
     border-radius: 1.5px;
     opacity: 0.3;
+  }
+
+  @media (max-width: 30rem) {
+    .battery-content {
+      grid-template-areas: "core" "sensors" "controls" "ioflow";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto auto;
+    }
+    .warp-core-container {
+      min-height: 6rem;
+      flex-direction: row;
+    }
+    .warp-core {
+      width: 100%;
+      height: 4rem;
+      min-height: 4rem;
+      border-radius: 2rem;
+    }
+    .warp-core-fill {
+      left: 0; bottom: 0; top: 0;
+      right: auto;
+      width: calc(var(--core-charge, 0) * 1%);
+      height: 100%;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -101,7 +101,8 @@ export const panelFrameStyles = css`
 
   /* Content area */
   .panel-content {
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
+    overflow: visible;
   }
 `;

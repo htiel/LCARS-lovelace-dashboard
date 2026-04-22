@@ -346,8 +346,6 @@ class LcarsDashboardLayout extends LitElement {
           overflow-y: auto;
           overflow-x: hidden;
           min-height: 0;
-          mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
-          -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
         }
 
         .lcars-sidebar-areas::-webkit-scrollbar { width: 4px; }

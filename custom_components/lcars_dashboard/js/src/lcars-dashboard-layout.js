@@ -352,6 +352,27 @@ class LcarsDashboardLayout extends LitElement {
         .lcars-sidebar-areas::-webkit-scrollbar-track { background: transparent; }
         .lcars-sidebar-areas::-webkit-scrollbar-thumb { background: var(--lcars-gray); border-radius: 2px; }
 
+        /* Filler block — fills dead space below nav buttons with LCARS gray */
+        .lcars-sidebar-areas::after {
+          content: '';
+          display: block;
+          flex: 1 0 0px;
+          min-height: 0;
+          background: var(--lcars-gray);
+          border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+          width: calc(100% - 0.25rem);
+        }
+
+        /* Structural filler — fills dead space below nav buttons with LCARS gray panel.
+           Grows to fill remaining sidebar height when buttons are few;
+           collapses to 0px when buttons overflow (scroll case). */
+        .lcars-sidebar-areas::after {
+          content: '';
+          display: block;
+          flex: 1 0 0px;
+          background: var(--lcars-gray);
+        }
+
         .sidebar-area-btn {
           display: flex;
           align-items: center;
@@ -538,6 +559,10 @@ class LcarsDashboardLayout extends LitElement {
             -webkit-mask-image: none;
           }
 
+          .lcars-sidebar-areas::after {
+            display: none;
+          }
+
           .sidebar-area-btn {
             flex-shrink: 0;
             width: auto;
@@ -552,6 +577,10 @@ class LcarsDashboardLayout extends LitElement {
           }
 
           .sidebar-unassigned-label {
+            display: none;
+          }
+
+          .lcars-sidebar-areas::after {
             display: none;
           }
 

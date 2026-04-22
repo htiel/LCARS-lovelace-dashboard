@@ -13,41 +13,11 @@ export const batteryPanelStyles = css`
     display: block;
   }
 
-  /* ═══ Device Panel Frame (shared base) ═══ */
+  /* ═══ Device Panel Content ═══ */
   .lcars-device-panel {
     --panel-frame-color: var(--lcars-butterscotch);
     display: grid;
     gap: var(--lcars-gap);
-    width: 100%;
-    max-width: 42rem;
-    border-left: 4px solid var(--panel-frame-color);
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-top: 2px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
-    padding: var(--lcars-gap);
-    background: var(--lcars-black);
-    position: relative;
-  }
-  .lcars-device-panel::before {
-    content: '';
-    position: absolute;
-    top: -2px; left: -4px;
-    width: 1.5rem; height: 1.5rem;
-    border-top: 4px solid var(--panel-frame-color);
-    border-left: 4px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0 0 0;
-    pointer-events: none;
-  }
-  .lcars-device-panel::after {
-    content: '';
-    position: absolute;
-    bottom: -4px; right: -2px;
-    width: 1.5rem; height: 1.5rem;
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0 0 0.25rem 0;
-    pointer-events: none;
   }
 
   /* ═══ Battery Panel Grid ═══ */

@@ -2397,41 +2397,11 @@
     display: block;
   }
 
-  /* ═══ Device Panel Frame (shared base) ═══ */
+  /* ═══ Device Panel Content ═══ */
   .lcars-device-panel {
     --panel-frame-color: var(--lcars-butterscotch);
     display: grid;
     gap: var(--lcars-gap);
-    width: 100%;
-    max-width: 42rem;
-    border-left: 4px solid var(--panel-frame-color);
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-top: 2px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
-    padding: var(--lcars-gap);
-    background: var(--lcars-black);
-    position: relative;
-  }
-  .lcars-device-panel::before {
-    content: '';
-    position: absolute;
-    top: -2px; left: -4px;
-    width: 1.5rem; height: 1.5rem;
-    border-top: 4px solid var(--panel-frame-color);
-    border-left: 4px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0 0 0;
-    pointer-events: none;
-  }
-  .lcars-device-panel::after {
-    content: '';
-    position: absolute;
-    bottom: -4px; right: -2px;
-    width: 1.5rem; height: 1.5rem;
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0 0 0.25rem 0;
-    pointer-events: none;
   }
 
   /* ═══ Environment Panel Grid ═══ */
@@ -2934,41 +2904,11 @@
     display: block;
   }
 
-  /* ═══ Device Panel Frame (shared base) ═══ */
+  /* ═══ Device Panel Content ═══ */
   .lcars-device-panel {
     --panel-frame-color: var(--lcars-butterscotch);
     display: grid;
     gap: var(--lcars-gap);
-    width: 100%;
-    max-width: 42rem;
-    border-left: 4px solid var(--panel-frame-color);
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-top: 2px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
-    padding: var(--lcars-gap);
-    background: var(--lcars-black);
-    position: relative;
-  }
-  .lcars-device-panel::before {
-    content: '';
-    position: absolute;
-    top: -2px; left: -4px;
-    width: 1.5rem; height: 1.5rem;
-    border-top: 4px solid var(--panel-frame-color);
-    border-left: 4px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0 0 0;
-    pointer-events: none;
-  }
-  .lcars-device-panel::after {
-    content: '';
-    position: absolute;
-    bottom: -4px; right: -2px;
-    width: 1.5rem; height: 1.5rem;
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0 0 0.25rem 0;
-    pointer-events: none;
   }
 
   /* ═══ Battery Panel Grid ═══ */
@@ -3593,35 +3533,6 @@
     --panel-frame-color: var(--lcars-butterscotch);
     display: grid;
     gap: var(--lcars-gap);
-    width: 100%;
-    max-width: 42rem;
-    border-left: 4px solid var(--panel-frame-color);
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-top: 2px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
-    padding: var(--lcars-gap);
-    background: var(--lcars-black);
-    position: relative;
-  }
-  .lcars-device-panel::before {
-    content: '';
-    position: absolute;
-    top: -2px; left: -4px;
-    width: 1.5rem; height: 1.5rem;
-    border-top: 4px solid var(--panel-frame-color);
-    border-left: 4px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0 0 0;
-    pointer-events: none;
-  }
-  .lcars-device-panel::after {
-    content: '';
-    position: absolute;
-    bottom: -4px; right: -2px;
-    width: 1.5rem; height: 1.5rem;
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0 0 0.25rem 0;
     pointer-events: none;
   }
 
@@ -4095,29 +4006,6 @@
     --panel-frame-color: var(--lcars-butterscotch);
     display: grid;
     gap: var(--lcars-gap);
-    width: 100%; max-width: 42rem;
-    border-left: 4px solid var(--panel-frame-color);
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-top: 2px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
-    padding: var(--lcars-gap);
-    background: var(--lcars-black);
-    position: relative;
-  }
-  .lcars-device-panel::before {
-    content: ''; position: absolute;
-    top: -2px; left: -4px; width: 1.5rem; height: 1.5rem;
-    border-top: 4px solid var(--panel-frame-color);
-    border-left: 4px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0 0 0; pointer-events: none;
-  }
-  .lcars-device-panel::after {
-    content: ''; position: absolute;
-    bottom: -4px; right: -2px; width: 1.5rem; height: 1.5rem;
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0 0 0.25rem 0; pointer-events: none;
   }
 
   .alarm-content {
@@ -4326,29 +4214,6 @@
     --panel-frame-color: var(--lcars-african-violet);
     display: grid;
     gap: var(--lcars-gap);
-    width: 100%; max-width: 42rem;
-    border-left: 4px solid var(--panel-frame-color);
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-top: 2px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
-    padding: var(--lcars-gap);
-    background: var(--lcars-black);
-    position: relative;
-  }
-  .lcars-device-panel::before {
-    content: ''; position: absolute;
-    top: -2px; left: -4px; width: 1.5rem; height: 1.5rem;
-    border-top: 4px solid var(--panel-frame-color);
-    border-left: 4px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0 0 0; pointer-events: none;
-  }
-  .lcars-device-panel::after {
-    content: ''; position: absolute;
-    bottom: -4px; right: -2px; width: 1.5rem; height: 1.5rem;
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0 0 0.25rem 0; pointer-events: none;
   }
 
   .media-content {
@@ -4654,29 +4519,6 @@
   .lcars-device-panel {
     display: grid;
     gap: var(--lcars-gap);
-    width: 100%; max-width: 42rem;
-    border-left: 4px solid var(--panel-frame-color);
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-top: 2px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
-    padding: var(--lcars-gap);
-    background: var(--lcars-black);
-    position: relative;
-  }
-  .lcars-device-panel::before {
-    content: ''; position: absolute;
-    top: -2px; left: -4px; width: 1.5rem; height: 1.5rem;
-    border-top: 4px solid var(--panel-frame-color);
-    border-left: 4px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0 0 0; pointer-events: none;
-  }
-  .lcars-device-panel::after {
-    content: ''; position: absolute;
-    bottom: -4px; right: -2px; width: 1.5rem; height: 1.5rem;
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0 0 0.25rem 0; pointer-events: none;
   }
 
   /* Freeze protection banner */
@@ -5092,30 +4934,6 @@
   .lcars-device-panel {
     display: grid;
     gap: var(--lcars-gap);
-    width: 100%; max-width: 42rem;
-    border-left: 4px solid var(--panel-frame-color);
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-top: 2px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
-    padding: var(--lcars-gap);
-    background: var(--lcars-black);
-    position: relative;
-    transition: border-color 600ms;
-  }
-  .lcars-device-panel::before {
-    content: ''; position: absolute;
-    top: -2px; left: -4px; width: 1.5rem; height: 1.5rem;
-    border-top: 4px solid var(--panel-frame-color);
-    border-left: 4px solid var(--panel-frame-color);
-    border-radius: 0.75rem 0 0 0; pointer-events: none;
-  }
-  .lcars-device-panel::after {
-    content: ''; position: absolute;
-    bottom: -4px; right: -2px; width: 1.5rem; height: 1.5rem;
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-radius: 0 0 0.25rem 0; pointer-events: none;
   }
 
   .weather-content {
@@ -7507,7 +7325,7 @@
     `}});const pe=e.AH`
   :host { display: block; }
 
-  /* ═══ Panel Frame ═══ */
+  /* ═══ Panel Content Grid ═══ */
   .lcars-device-panel {
     --panel-frame-color: var(--ev-charger-state-color, var(--lcars-lilac));
     display: grid;
@@ -7519,13 +7337,6 @@
     grid-template-columns: minmax(10rem, 1fr) minmax(14rem, 2fr);
     grid-template-rows: auto 1fr auto auto;
     gap: var(--lcars-gap);
-    border-left: 4px solid var(--panel-frame-color);
-    border-top: 2px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-radius: 0.75rem;
-    padding: var(--lcars-gap);
-    background: var(--lcars-black);
     min-height: calc(var(--lcars-vunit, 4rem) * 5);
     transition: border-color 600ms;
   }

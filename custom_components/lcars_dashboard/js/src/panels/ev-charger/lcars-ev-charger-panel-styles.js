@@ -11,7 +11,7 @@ import { css } from 'lit-element';
 export const evChargerPanelStyles = css`
   :host { display: block; }
 
-  /* ═══ Panel Frame ═══ */
+  /* ═══ Panel Content Grid ═══ */
   .lcars-device-panel {
     --panel-frame-color: var(--ev-charger-state-color, var(--lcars-lilac));
     display: grid;
@@ -23,13 +23,6 @@ export const evChargerPanelStyles = css`
     grid-template-columns: minmax(10rem, 1fr) minmax(14rem, 2fr);
     grid-template-rows: auto 1fr auto auto;
     gap: var(--lcars-gap);
-    border-left: 4px solid var(--panel-frame-color);
-    border-top: 2px solid var(--panel-frame-color);
-    border-right: 2px solid var(--panel-frame-color);
-    border-bottom: 4px solid var(--panel-frame-color);
-    border-radius: 0.75rem;
-    padding: var(--lcars-gap);
-    background: var(--lcars-black);
     min-height: calc(var(--lcars-vunit, 4rem) * 5);
     transition: border-color 600ms;
   }

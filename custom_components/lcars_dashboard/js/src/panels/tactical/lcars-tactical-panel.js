@@ -367,14 +367,27 @@ class LcarsTacticalPanel extends LcarsBasePanel {
     return html`
       <div class="tactical-motion" role="list" aria-label="Motion sensors" aria-live="polite">
         <div class="tactical-section-label" style="width:100%">MOTION</div>
-        ${[...deviceMap.values()].map(({ motion, battery, ambient }) => {
+        ${[...deviceMap.values()].map(({ motion, battery, ambient, deviceId }) => {
           if (!motion) return '';
           const eid = motion.entity?.entity_id || '';
-          const name = motion.state?.attributes?.friendly_name || eid;
+          // Composite chips: use short device name; standalone: use entity name
+          const hasMeta = battery || ambient;
+          let name;
+          if (hasMeta && deviceId) {
+            const device = this.hass?.devices?.[deviceId];
+            const rawName = device?.name_by_user || device?.name || '';
+            const area = this.hass?.areas?.[this.areaId];
+            if (area?.name && rawName.toLowerCase().startsWith(area.name.toLowerCase())) {
+              name = rawName.slice(area.name.length).trim().replace(/^[-–:]\s*/, '') || rawName;
+            } else {
+              name = rawName || motion.state?.attributes?.friendly_name || eid;
+            }
+          } else {
+            name = motion.state?.attributes?.friendly_name || eid;
+          }
           const isDetected = motion.state?.state === 'on';
           const stateText = isDetected ? 'DETECTED' : 'CLEAR';
           const indicatorColor = isDetected ? 'var(--lcars-butterscotch)' : 'var(--lcars-ice)';
-          const hasMeta = battery || ambient;
 
           // Battery
           const battLevel = battery ? Number(battery.state?.state) || 0 : null;

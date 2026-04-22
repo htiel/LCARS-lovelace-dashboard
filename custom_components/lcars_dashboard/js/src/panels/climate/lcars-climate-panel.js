@@ -11,8 +11,9 @@
 import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { SENSOR_DOMAINS } from '../../lcars-entity-utils.js';
-import { getHvacActionColor } from '../../lcars-color-utils.js';
+import { getHvacActionColor, getHvacModeColor } from '../../lcars-color-utils.js';
 import { clampSetpoint, createDebouncer } from '../../lcars-service-utils.js';
+import { lcarsAudio } from '../../lcars-audio.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { getSiblingAreas } from '../../lcars-hierarchy-utils.js';
 import { climatePanelStyles } from './lcars-climate-panel-styles.js';
@@ -20,6 +21,14 @@ import { climatePanelStyles } from './lcars-climate-panel-styles.js';
 class LcarsClimatePanel extends LcarsBasePanel {
 
   _climateSetpointDebouncer = null;
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._climateSetpointDebouncer) {
+      this._climateSetpointDebouncer.cancel();
+      this._climateSetpointDebouncer = null;
+    }
+  }
 
   get panelType() { return 'climate'; }
   get defaultPanelTitle() { return 'Thermostat'; }
@@ -39,7 +48,11 @@ class LcarsClimatePanel extends LcarsBasePanel {
     const sensors = [];
     const faults = [];
     const diagnostics = [];
+    const auxSwitches = [];
+    const auxNumbers = [];
     const FAULT_CLASSES = new Set(['problem', 'heat', 'cold', 'connectivity', 'battery', 'tamper', 'smoke', 'safety']);
+    const AUX_SWITCH_PATTERNS = ['eco_mode', 'turbo_mode', 'swing_mode'];
+    const HIDDEN_SWITCHES = ['beep'];
 
     for (const entry of entries) {
       const domain = entry.domain;
@@ -48,6 +61,14 @@ class LcarsClimatePanel extends LcarsBasePanel {
         const dc = entry.state?.attributes?.device_class || '';
         if (FAULT_CLASSES.has(dc)) { faults.push(entry); continue; }
       }
+      // 4X-56: Portable AC auxiliary switches (eco, turbo, swing)
+      if (domain === 'switch') {
+        const eid = entry.entity?.entity_id || '';
+        if (HIDDEN_SWITCHES.some(p => eid.includes(p))) { diagnostics.push(entry); continue; }
+        if (AUX_SWITCH_PATTERNS.some(p => eid.includes(p))) { auxSwitches.push(entry); continue; }
+      }
+      // 4X-56: Timer / number entities
+      if (domain === 'number') { auxNumbers.push(entry); continue; }
       if (SENSOR_DOMAINS.has(domain)) { sensors.push(entry); continue; }
       sensors.push(entry);
     }
@@ -59,7 +80,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
         diagnostics.push({ entity: e, domain: e.entity_id.split('.')[0], state });
       }
     }
-    return { climate, sensors, faults, diagnostics };
+    return { climate, sensors, faults, diagnostics, auxSwitches, auxNumbers };
   }
 
   _isDualSetpoint(cs) {
@@ -156,6 +177,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
   }
 
   _handleClimateSetpoint(entityId, attrs, value, isDual, which) {
+    lcarsAudio.play('climateAdjust');
     const clamped = clampSetpoint(value, attrs);
     if (!this._climateSetpointDebouncer) {
       this._climateSetpointDebouncer = createDebouncer((eid, data) => {
@@ -179,7 +201,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
 
   renderContent() {
     const categoryEntities = this._getDeviceCategoryEntities(this.group.device.id);
-    const { climate, sensors, faults, diagnostics } = this._partitionClimateEntities(this.group.entities, categoryEntities);
+    const { climate, sensors, faults, diagnostics, auxSwitches, auxNumbers } = this._partitionClimateEntities(this.group.entities, categoryEntities);
     const deviceName = this._shortDeviceName(this.group.device) || 'Thermostat';
 
     if (climate.length === 0) return html``;
@@ -204,6 +226,9 @@ class LcarsClimatePanel extends LcarsBasePanel {
     const humidity = sensors.find(e => (e.state?.attributes?.device_class || '') === 'humidity');
     const step = attrs.target_temp_step || 1;
     const isActive = hvacAction !== 'off' && hvacAction !== 'idle';
+    // 4X-56: Swing mode support (climate attribute)
+    const swingModes = attrs.swing_modes || [];
+    const currentSwingMode = attrs.swing_mode || '';
 
     // Multi-zone awareness: sibling areas' thermostats (4X-12 prep)
     const siblingZones = this._getSiblingZoneTemps();
@@ -337,7 +362,8 @@ class LcarsClimatePanel extends LcarsBasePanel {
             ${hvacModes.map((mode, i) => html`
               <button class="climate-mode-btn ${i === 0 ? 'mode-first' : ''} ${i === hvacModes.length - 1 ? 'mode-last' : ''}" role="radio"
                 aria-checked="${mode === currentMode}" ?data-active=${mode === currentMode}
-                @click=${() => { const live = this.hass.states[primary.entity.entity_id]?.attributes?.hvac_modes; if (!live?.includes(mode)) return; this.hass.callService('climate', 'set_hvac_mode', { entity_id: primary.entity.entity_id, hvac_mode: mode }); }}>
+                style="--mode-btn-color: ${getHvacModeColor(mode)}"
+                @click=${() => { const live = this.hass.states[primary.entity.entity_id]?.attributes?.hvac_modes; if (!live?.includes(mode)) return; lcarsAudio.play('climateAdjust'); this.hass.callService('climate', 'set_hvac_mode', { entity_id: primary.entity.entity_id, hvac_mode: mode }); }}>
                 ${mode.toUpperCase().replace(/_/g, ' ')}
               </button>
             `)}
@@ -346,27 +372,84 @@ class LcarsClimatePanel extends LcarsBasePanel {
 
         <div class="climate-aux-controls">
           ${fanModes.length > 1 ? html`
+            <span class="climate-aux-strip-label">FAN</span>
             <div class="climate-aux-strip" role="radiogroup" aria-label="Fan mode">
               ${fanModes.map((fm, i) => html`
                 <button class="climate-mode-btn ${i === 0 ? 'mode-first' : ''} ${i === fanModes.length - 1 ? 'mode-last' : ''}" role="radio"
                   aria-checked="${fm === currentFanMode}" ?data-active=${fm === currentFanMode}
-                  @click=${() => { const live = this.hass.states[primary.entity.entity_id]?.attributes?.fan_modes; if (!live?.includes(fm)) return; this.hass.callService('climate', 'set_fan_mode', { entity_id: primary.entity.entity_id, fan_mode: fm }); }}>
+                  @click=${() => { const live = this.hass.states[primary.entity.entity_id]?.attributes?.fan_modes; if (!live?.includes(fm)) return; lcarsAudio.play('climateAdjust'); this.hass.callService('climate', 'set_fan_mode', { entity_id: primary.entity.entity_id, fan_mode: fm }); }}>
                   ${fm.toUpperCase().replace(/_/g, ' ')}
                 </button>
               `)}
             </div>
           ` : ''}
           ${presetModes.length > 0 ? html`
+            <span class="climate-aux-strip-label">PRESET</span>
             <div class="climate-aux-strip" role="radiogroup" aria-label="Preset mode">
               ${presetModes.map((pm, i) => html`
                 <button class="climate-mode-btn ${i === 0 ? 'mode-first' : ''} ${i === presetModes.length - 1 ? 'mode-last' : ''}" role="radio"
                   aria-checked="${pm === currentPreset}" ?data-active=${pm === currentPreset}
-                  @click=${() => { const live = this.hass.states[primary.entity.entity_id]?.attributes?.preset_modes; if (!live?.includes(pm)) return; this.hass.callService('climate', 'set_preset_mode', { entity_id: primary.entity.entity_id, preset_mode: pm }); }}>
+                  @click=${() => { const live = this.hass.states[primary.entity.entity_id]?.attributes?.preset_modes; if (!live?.includes(pm)) return; lcarsAudio.play('climateAdjust'); this.hass.callService('climate', 'set_preset_mode', { entity_id: primary.entity.entity_id, preset_mode: pm }); }}>
                   ${pm.toUpperCase().replace(/_/g, ' ')}
                 </button>
               `)}
             </div>
           ` : ''}
+          ${swingModes.length > 1 ? html`
+            <span class="climate-aux-strip-label">SWING</span>
+            <div class="climate-aux-strip" role="radiogroup" aria-label="Swing mode">
+              ${swingModes.map((sm, i) => html`
+                <button class="climate-mode-btn ${i === 0 ? 'mode-first' : ''} ${i === swingModes.length - 1 ? 'mode-last' : ''}" role="radio"
+                  aria-checked="${sm === currentSwingMode}" ?data-active=${sm === currentSwingMode}
+                  @click=${() => { if (!this.hass) return; const live = this.hass.states[primary.entity.entity_id]?.attributes?.swing_modes; if (!live?.includes(sm)) return; lcarsAudio.play('climateAdjust'); this.hass.callService('climate', 'set_swing_mode', { entity_id: primary.entity.entity_id, swing_mode: sm }); }}>
+                  ${sm.toUpperCase().replace(/_/g, ' ')}
+                </button>
+              `)}
+            </div>
+          ` : ''}
+          ${auxSwitches.length > 0 ? html`
+            <div class="climate-aux-strip" role="group" aria-label="System controls">
+              ${auxSwitches.map(entry => {
+                const eid = entry.entity?.entity_id || '';
+                const isOn = entry.state?.state === 'on';
+                const label = eid.includes('eco_mode') ? 'ECO' : eid.includes('turbo_mode') ? 'TURBO' : eid.includes('swing_mode') ? 'SWING' : (entry.state?.attributes?.friendly_name || 'SWITCH').toUpperCase();
+                const icon = eid.includes('eco_mode') ? 'mdi:leaf' : eid.includes('turbo_mode') ? 'mdi:rocket-launch' : eid.includes('swing_mode') ? 'mdi:arrow-oscillating' : 'mdi:toggle-switch-outline';
+                const activeColor = eid.includes('eco_mode') ? 'var(--lcars-sunflower)' : eid.includes('turbo_mode') ? 'var(--lcars-ice)' : 'var(--lcars-african-violet)';
+                return html`
+                  <button class="climate-mode-btn climate-toggle-btn" role="switch"
+                    aria-checked="${String(isOn)}" ?data-active=${isOn}
+                    style="${isOn ? `--toggle-active-bg: ${activeColor}` : ''}"
+                    @click=${() => { if (!this.hass) return; lcarsAudio.play('switchToggle'); this.hass.callService('switch', 'toggle', { entity_id: eid }); }}>
+                    <ha-icon icon="${icon}" aria-hidden="true"></ha-icon>
+                    ${label}
+                  </button>
+                `;
+              })}
+            </div>
+          ` : ''}
+          ${auxNumbers.length > 0 ? auxNumbers.map(entry => {
+            const eid = entry.entity?.entity_id || '';
+            const raw = entry.state?.state;
+            const val = raw != null && !isNaN(raw) ? Number(raw) : null;
+            const nAttrs = entry.state?.attributes || {};
+            const min = nAttrs.min ?? 0;
+            const max = nAttrs.max ?? 24;
+            const nStep = nAttrs.step ?? 1;
+            const isTimer = /timer/i.test(eid);
+            const label = isTimer ? 'TIMER' : (nAttrs.friendly_name || 'SETTING').toUpperCase();
+            return html`
+              <div class="climate-aux-strip" role="group" aria-label="${label}">
+                <span class="climate-aux-inline-label">${label}</span>
+                <button class="climate-sp-btn sp-decrement" aria-label="Decrease ${label}"
+                  ?disabled=${val == null || val <= min}
+                  @click=${() => { if (!this.hass || val == null) return; this.hass.callService('number', 'set_value', { entity_id: eid, value: Math.max(min, val - nStep) }); }}>−</button>
+                <span class="climate-timer-value">${val != null ? (isTimer ? (val > 0 ? `${val}H` : 'OFF') : `${val}`) : '—'}</span>
+                <button class="climate-sp-btn sp-increment" aria-label="Increase ${label}"
+                  ?disabled=${val == null || val >= max}
+                  @click=${() => { if (!this.hass || val == null) return; this.hass.callService('number', 'set_value', { entity_id: eid, value: Math.min(max, val + nStep) }); }}>+</button>
+              </div>
+            `;
+          }) : ''}
         </div>
       </div>
     `;

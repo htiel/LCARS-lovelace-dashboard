@@ -12,6 +12,7 @@ import { SENSOR_DOMAINS } from '../../lcars-entity-utils.js';
 import { getPlaybackStateColor } from '../../lcars-color-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { mediaPanelStyles } from './lcars-media-panel-styles.js';
+import { lcarsAudio } from '../../lcars-audio.js';
 
 class LcarsMediaPanel extends LcarsBasePanel {
 
@@ -37,13 +38,30 @@ class LcarsMediaPanel extends LcarsBasePanel {
   }
 
   _partitionMediaEntities(entries) {
+    // Device-affinity scoping: only include entities from devices that have
+    // a media_player entity. Prevents stealing sensors from EcoFlow, weather
+    // stations, air purifiers, etc. that share the same area. (4X-43 fix)
+    const mediaDeviceIds = new Set();
+    for (const entry of entries) {
+      if (entry.domain === 'media_player' && entry.entity?.device_id) {
+        mediaDeviceIds.add(entry.entity.device_id);
+      }
+    }
+
     const player = [];
     const sensors = [];
     const controls = [];
     const remotes = [];
     for (const entry of entries) {
+      // Always accept media_player (even deviceless)
       if (entry.domain === 'media_player') { player.push(entry); continue; }
+      // Non-media_player entities must belong to a media player's device
+      const devId = entry.entity?.device_id;
+      if (!devId || !mediaDeviceIds.has(devId)) continue;
       if (entry.domain === 'remote') { remotes.push(entry); continue; }
+      // Exclude binary_sensors and cameras even from media devices
+      if (entry.domain === 'binary_sensor') continue;
+      if (entry.domain === 'camera') continue;
       if (SENSOR_DOMAINS.has(entry.domain)) { sensors.push(entry); continue; }
       controls.push(entry);
     }
@@ -51,12 +69,14 @@ class LcarsMediaPanel extends LcarsBasePanel {
   }
 
   _handleMediaService(entityId, service, data = {}) {
+    lcarsAudio.play('mediaAction');
     this.hass.callService('media_player', service, { entity_id: entityId, ...data });
   }
 
   _handleVolumeChange(entityId, e) {
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    lcarsAudio.play('climateAdjust');
     this._handleMediaService(entityId, 'volume_set', { volume_level: Math.round(pct * 100) / 100 });
   }
 
@@ -64,6 +84,10 @@ class LcarsMediaPanel extends LcarsBasePanel {
     const mp = this.group?.entities?.find(e => e.domain === 'media_player');
     if (!mp) return html``;
     const playerState = mp.state?.state || 'unavailable';
+    // WESLEY-UX-002: Show OFFLINE for unavailable players
+    if (playerState === 'unavailable') {
+      return html`<span style="color:var(--lcars-gray)">■ OFFLINE</span>`;
+    }
     const stateColor = getPlaybackStateColor(playerState);
     const transportSymbol = this._getMediaTransportSymbol(playerState);
     return html`<span style="color:${stateColor}">${transportSymbol} ${playerState.toUpperCase()}</span>`;
@@ -74,7 +98,30 @@ class LcarsMediaPanel extends LcarsBasePanel {
     const deviceName = this._shortDeviceName(this.group.device) || 'Media';
 
     if (player.length === 0) return html``;
-    const primary = player[0];
+
+    // GEORDI-017 / WESLEY-UX-002 / WESLEY-UX-004: Collapse unavailable & standby players
+    // Keep active (playing/paused) players plus the primary standby selection
+    const activePlayers = player.filter(e => e.state?.state === 'playing' || e.state?.state === 'paused');
+    const availablePlayers = player.filter(e => e.state?.state !== 'unavailable');
+    const effectivePlayers = activePlayers.length > 0 ? availablePlayers : player;
+
+    if (effectivePlayers.length === 0) {
+      // All players unavailable — show minimal offline state
+      return html`
+        <div class="media-content media-idle">
+          <div class="media-viewscreen">
+            <div class="media-idle-display">
+              <span class="media-idle-glyph" style="color:var(--lcars-gray)">&#9834;</span>
+              <span class="media-idle-label" style="color:var(--lcars-gray)">UNAVAILABLE</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 4X-43: Designate primary player (playing > paused > first) and secondary speakers
+    const primary = this._selectPrimary(effectivePlayers);
+    const secondaries = effectivePlayers.filter(e => e !== primary);
     const ms = primary.state;
     const attrs = ms?.attributes || {};
     const playerState = ms?.state || 'unavailable';
@@ -104,6 +151,7 @@ class LcarsMediaPanel extends LcarsBasePanel {
 
         <div class="media-metadata" role="list" aria-label="${deviceName} info">
           ${source ? html`<div class="device-sensor-line" role="listitem"><div class="sensor-indicator" style="background:var(--lcars-african-violet)"></div><span class="sensor-label">Source</span><span class="sensor-state-value">${source}</span></div>` : ''}
+          <div class="media-metadata-extra" role="presentation">
           ${supportsShuffle ? html`<div class="device-sensor-line" role="listitem"><div class="sensor-indicator" style="background:${shuffle ? 'var(--lcars-african-violet)' : 'var(--lcars-gray)'}"></div><span class="sensor-label">Shuffle</span><span class="sensor-state-value">${shuffle ? 'ON' : 'OFF'}</span></div>` : ''}
           ${supportsRepeat ? html`<div class="device-sensor-line" role="listitem"><div class="sensor-indicator" style="background:${repeat !== 'off' ? 'var(--lcars-african-violet)' : 'var(--lcars-gray)'}"></div><span class="sensor-label">Repeat</span><span class="sensor-state-value">${repeat.toUpperCase()}</span></div>` : ''}
           ${sensors.map(({ entity, state }) => {
@@ -119,6 +167,7 @@ class LcarsMediaPanel extends LcarsBasePanel {
               </div>
             `;
           })}
+          </div>
         </div>
 
         <div class="media-viewscreen ${isPlaying ? 'media-viewscreen-glow' : ''}" @click=${() => this._handleEntityClick(primary.entity.entity_id)}>
@@ -161,7 +210,7 @@ class LcarsMediaPanel extends LcarsBasePanel {
             ${supportsRepeat ? html`<button class="media-transport-btn" aria-pressed="${repeat !== 'off'}" title="Repeat: ${repeat}" @click=${() => this._handleMediaService(primary.entity.entity_id, 'repeat_set', { repeat: repeat === 'off' ? 'all' : repeat === 'all' ? 'one' : 'off' })}>🔁</button>` : ''}
           </div>
           ${supportsVolume ? html`
-            <div class="media-volume" aria-label="Volume: ${Math.round(volume * 100)}%">
+            <div class="media-volume ${volume >= 1.0 ? 'media-volume-warn' : ''}" aria-label="Volume: ${Math.round(volume * 100)}%">
               <button class="media-mute-btn" aria-pressed="${isMuted}" title="${isMuted ? 'Unmute' : 'Mute'}"
                 @click=${() => this._handleMediaService(primary.entity.entity_id, 'volume_mute', { is_volume_muted: !isMuted })}>
                 ${isMuted ? '🔇' : '🔊'}
@@ -183,6 +232,75 @@ class LcarsMediaPanel extends LcarsBasePanel {
             </div>
           ` : ''}
         </div>
+      </div>
+
+      ${secondaries.length > 0 ? this._renderSecondaryOutputs(secondaries) : ''}
+    `;
+  }
+
+  /* ─── 4X-43: Select primary player (playing > paused > most features > first) ─── */
+
+  _selectPrimary(players) {
+    const playing = players.find(e => e.state?.state === 'playing');
+    if (playing) return playing;
+    const paused = players.find(e => e.state?.state === 'paused');
+    if (paused) return paused;
+    // Prefer the one with the most supported features (Apple TV > HomePod)
+    return players.reduce((best, cur) => {
+      const bestFeatures = best.state?.attributes?.supported_features || 0;
+      const curFeatures = cur.state?.attributes?.supported_features || 0;
+      return curFeatures > bestFeatures ? cur : best;
+    }, players[0]);
+  }
+
+  /* ─── 4X-43: Render secondary speaker outputs (HomePods, etc.) ─── */
+
+  _renderSecondaryOutputs(secondaries) {
+    return html`
+      <div class="media-secondary-outputs" role="list" aria-label="Additional speakers">
+        ${secondaries.map(entry => {
+          const eid = entry.entity?.entity_id || '';
+          const name = entry.state?.attributes?.friendly_name || eid;
+          const state = entry.state?.state || 'unavailable';
+          const volume = entry.state?.attributes?.volume_level != null
+            ? Number(entry.state.attributes.volume_level) : 0;
+          const isMuted = entry.state?.attributes?.is_volume_muted || false;
+          const isPlaying = state === 'playing';
+          const isPaused = state === 'paused';
+          const supportsVolume = ((entry.state?.attributes?.supported_features || 0) & 4) !== 0;
+          const stateColor = getPlaybackStateColor(state);
+          const transportSymbol = this._getMediaTransportSymbol(state);
+
+          return html`
+            <div class="media-secondary-row" role="listitem"
+                 tabindex="0"
+                 aria-label="${name}: ${state}"
+                 @click=${() => this._handleEntityClick(eid)}
+                 @keydown=${(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), this._handleEntityClick(eid))}>
+              <span class="media-secondary-indicator" style="background:${stateColor}"></span>
+              <span class="media-secondary-name">${name}</span>
+              <span class="media-secondary-state" style="color:${stateColor}">${transportSymbol}</span>
+              ${isPlaying || isPaused ? html`
+                <button class="media-secondary-playpause"
+                        aria-label="${isPlaying ? 'Pause' : 'Play'} ${name}"
+                        @click=${(e) => { e.stopPropagation(); this._handleMediaService(eid, isPlaying ? 'media_pause' : 'media_play'); }}>
+                  ${isPlaying ? '❚❚' : '▶'}
+                </button>
+              ` : ''}
+              ${supportsVolume ? html`
+                <div class="media-secondary-volume">
+                  <div class="media-volume-bar" tabindex="0" role="slider"
+                    aria-label="${name} volume"
+                    aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(volume * 100)}"
+                    @click=${(e) => { e.stopPropagation(); this._handleVolumeChange(eid, e); }}>
+                    <div class="media-volume-fill" style="width:${Math.round(volume * 100)}%"></div>
+                  </div>
+                  <span class="media-volume-pct">${Math.round(volume * 100)}%</span>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        })}
       </div>
     `;
   }

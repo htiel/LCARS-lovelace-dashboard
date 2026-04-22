@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LCARS Dashboard — Panel Gallery</title>
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ─── LCARS Palette ─── */
+:root {
+  --lcars-black: #000;
+  --lcars-african-violet: #cc99ff;
+  --lcars-butterscotch: #ff9966;
+  --lcars-gold: #ffaa00;
+  --lcars-gray: #666688;
+  --lcars-ice: #99ccff;
+  --lcars-lilac: #cc55ff;
+  --lcars-sunflower: #ffcc99;
+  --lcars-tomato: #ff5555;
+  --lcars-bluey: #8899ff;
+  --lcars-sky: #aaaaff;
+  --lcars-peach: #ff8866;
+  --lcars-blue: #5566ff;
+  --lcars-space-white: #f5f6fa;
+  --lcars-orange: #ff8800;
+  --lcars-almond: #ffaa90;
+  --lcars-font: 'Antonio', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #000;
+  color: var(--lcars-space-white);
+  font-family: var(--lcars-font);
+  padding: 2rem;
+}
+
+h1 {
+  font-size: 2.5rem;
+  text-transform: uppercase;
+  color: var(--lcars-butterscotch);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.05em;
+}
+.subtitle {
+  font-size: 1rem;
+  color: var(--lcars-gray);
+  text-transform: uppercase;
+  margin-bottom: 2rem;
+}
+.gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* ─── Panel Frame ─── */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 42rem;
+  border-left: 4px solid var(--frame-color);
+  border-bottom: 4px solid var(--frame-color);
+  border-top: 2px solid var(--frame-color);
+  border-right: 2px solid var(--frame-color);
+  border-radius: 0.75rem 0.25rem 0.25rem 0.75rem;
+  padding: 1rem;
+  background: var(--lcars-black);
+  position: relative;
+}
+.panel.full-width { max-width: none; }
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.panel-name {
+  font-size: 1.25rem;
+  text-transform: uppercase;
+  color: var(--frame-color);
+  white-space: nowrap;
+}
+.panel-line {
+  flex: 1;
+  height: 0.375rem;
+  background: var(--frame-color);
+  border-radius: 0 1.5rem 1.5rem 0;
+}
+.panel-badge {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.panel-code {
+  font-size: 0.875rem;
+  color: var(--frame-color);
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+/* ─── Shared Elements ─── */
+.sensor-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+}
+.sensor-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sensor-label {
+  flex: 1;
+  color: var(--lcars-space-white);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+}
+.sensor-value {
+  font-weight: 700;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.375rem;
+}
+.section-label {
+  font-size: 0.75rem;
+  color: var(--lcars-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.section-line {
+  flex: 1;
+  height: 0.375rem;
+  background: var(--lcars-gray);
+  border-radius: 0 1.5rem 1.5rem 0;
+  opacity: 0.3;
+}
+.pill-btn {
+  font-family: var(--lcars-font);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  border: none;
+  padding: 0.375rem 1rem;
+  border-radius: 1.5rem;
+  cursor: pointer;
+  white-space: nowrap;
+  min-height: 2rem;
+}
+.pill-btn.active { background: var(--lcars-gold); color: #000; }
+.pill-btn.inactive { background: rgba(102,102,136,0.3); color: var(--lcars-space-white); }
+.content-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+.content-grid.three-col { grid-template-columns: minmax(10rem,1fr) auto minmax(10rem,1fr); }
+.content-grid.two-col { grid-template-columns: 1fr 1fr; }
+
+/* ─── Light Bars ─── */
+.light-bar {
+  display: flex;
+  align-items: center;
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  border-radius: 0 1.5rem 1.5rem 0;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
+  background: rgba(102,102,136,0.15);
+}
+.light-bar::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  width: var(--brightness);
+  background: var(--bar-color);
+  opacity: 0.35;
+}
+.light-bar .indicator {
+  width: 2px; height: 1rem;
+  border-radius: 1px;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.light-bar .name { flex: 1; z-index: 1; }
+.light-bar .value {
+  z-index: 1;
+  max-width: 8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.light-bar.off .name, .light-bar.off .value { color: var(--lcars-gray); }
+
+/* ─── Warp Core ─── */
+.warp-core {
+  width: 4rem;
+  height: 10rem;
+  border-radius: 2rem;
+  border: 2px solid var(--core-color);
+  background: #000;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--core-color) 30%, transparent);
+}
+.warp-core-fill {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: var(--fill);
+  background: var(--core-color);
+  opacity: 0.3;
+  transition: height 1s ease;
+}
+.warp-core-ticks {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  padding: 0.5rem;
+}
+.warp-core-tick {
+  height: 1px;
+  background: var(--core-color);
+  opacity: 0.4;
+}
+.warp-core-label {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--core-color);
+}
+
+/* ─── Atmoscrubber ─── */
+.atmoscrubber {
+  width: 4rem;
+  min-height: 10rem;
+  border-radius: 2rem;
+  border: 2px solid var(--scrubber-color);
+  background: #000;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--scrubber-color) 30%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.atmoscrubber .score {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--scrubber-color);
+  z-index: 1;
+}
+
+/* ─── SVG Arc ─── */
+.arc-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.arc-temp {
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+.arc-action {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.arc-setpoints {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+.setpoint {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+.sp-btn {
+  width: 2rem; height: 2rem;
+  border: none;
+  font-family: var(--lcars-font);
+  font-size: 1rem;
+  cursor: pointer;
+}
+.sp-btn.dec { border-radius: 1rem 0 0 1rem; }
+.sp-btn.inc { border-radius: 0 1rem 1rem 0; }
+
+/* ─── Mode Strip ─── */
+.mode-strip {
+  display: flex;
+  gap: 2px;
+}
+.mode-btn {
+  font-family: var(--lcars-font);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  padding: 0.375rem 0.75rem;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  color: var(--lcars-space-white);
+  background: rgba(102,102,136,0.25);
+}
+.mode-btn:first-child { border-radius: 1rem 0 0 1rem; }
+.mode-btn:last-child { border-radius: 0 1rem 1rem 0; }
+.mode-btn.active { background: var(--lcars-gold); color: #000; }
+
+/* ─── Transport Controls ─── */
+.transport {
+  display: flex;
+  gap: 0.375rem;
+  justify-content: center;
+}
+.transport-btn {
+  font-family: var(--lcars-font);
+  font-size: 1rem;
+  width: 2.5rem; height: 2.5rem;
+  border: none;
+  border-radius: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── Segmented Bar ─── */
+.seg-bar {
+  display: flex;
+  gap: 2px;
+  height: 1.5rem;
+  align-items: stretch;
+}
+.seg-bar .seg {
+  width: 4px;
+  border-radius: 1px;
+}
+.seg-bar .seg:last-child { border-radius: 1px 1rem 1rem 1px; }
+
+/* ─── Shield SVG ─── */
+.shield-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.shield-state {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 3.5rem);
+  gap: 0.375rem;
+}
+.keypad-btn {
+  font-family: var(--lcars-font);
+  font-size: 1.25rem;
+  height: 3rem;
+  border: none;
+  border-radius: 0 1rem 1rem 0;
+  background: rgba(102,102,136,0.3);
+  color: var(--lcars-space-white);
+  cursor: pointer;
+}
+.keypad-btn:nth-child(3n+1) { border-radius: 1rem 0 0 1rem; }
+.code-dots {
+  display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 0.5rem;
+}
+.code-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--lcars-gray);
+}
+.code-dot.filled { background: var(--lcars-gold); }
+
+/* ─── Effect Grid ─── */
+.effect-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.375rem;
+}
+
+/* ─── Circuit Row ─── */
+.circuit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  height: 2rem;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+}
+
+/* ─── Volume Slider ─── */
+.volume-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+.volume-track {
+  flex: 1;
+  height: 4px;
+  background: var(--lcars-gray);
+  border-radius: 2px;
+  position: relative;
+}
+.volume-fill {
+  height: 100%;
+  border-radius: 2px;
+  position: absolute;
+  top: 0; left: 0;
+}
+.volume-label {
+  font-size: 0.875rem;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+/* ─── Sparkline Placeholder ─── */
+.sparkline-tray {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+.sparkline {
+  flex: 1;
+  height: 2rem;
+  position: relative;
+}
+.sparkline-label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  color: var(--lcars-gray);
+  position: absolute;
+  top: 0; left: 0;
+}
+
+/* ─── Panel-specific widths ─── */
+.gallery-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+@media (max-width: 960px) {
+  .gallery-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<h1>LCARS Dashboard — Panel Gallery</h1>
+<p class="subtitle">Star Trek Lower Decks Edition • v4.18.8 • Sample Data</p>
+
+<div class="gallery">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- ILLUMINATION PANEL (full-width) -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel full-width" style="--frame-color: var(--lcars-sunflower)">
+  <div class="panel-header">
+    <span class="panel-name">Illumination Control</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-sunflower)">4/6 ON</span>
+    <span class="panel-code">472-881</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(20rem,100%),1fr));gap:0.375rem">
+    <div class="light-bar" style="--brightness:85%;--bar-color:var(--lcars-butterscotch)">
+      <span class="indicator" style="background:var(--lcars-sunflower)"></span>
+      <span class="name">Overhead Array</span>
+      <span class="value" style="color:var(--lcars-sunflower)">85%</span>
+    </div>
+    <div class="light-bar" style="--brightness:40%;--bar-color:var(--lcars-lilac)">
+      <span class="indicator" style="background:var(--lcars-sunflower)"></span>
+      <span class="name">Ambient Strip</span>
+      <span class="value" style="color:var(--lcars-sunflower)">NORTHERN LIGHTS</span>
+    </div>
+    <div class="light-bar off" style="--brightness:0%;--bar-color:var(--lcars-gray)">
+      <span class="indicator" style="background:var(--lcars-gray)"></span>
+      <span class="name">Desk Lamp</span>
+      <span class="value">OFF</span>
+    </div>
+    <div class="light-bar" style="--brightness:60%;--bar-color:var(--lcars-sunflower)">
+      <span class="indicator" style="background:var(--lcars-sunflower)"></span>
+      <span class="name">Floor Accent</span>
+      <span class="value" style="color:var(--lcars-sunflower)">60%</span>
+    </div>
+    <div class="light-bar" style="--brightness:100%;--bar-color:var(--lcars-ice)">
+      <span class="indicator" style="background:var(--lcars-sunflower)"></span>
+      <span class="name">Shapes Panel</span>
+      <span class="value" style="color:var(--lcars-sunflower)">COCOA BEACH</span>
+    </div>
+    <div class="light-bar off" style="--brightness:0%;--bar-color:var(--lcars-gray)">
+      <span class="indicator" style="background:var(--lcars-gray)"></span>
+      <span class="name">Reading Light</span>
+      <span class="value">OFF</span>
+    </div>
+  </div>
+  <div class="section-divider">
+    <span class="section-label">Scenes</span>
+    <span class="section-line"></span>
+  </div>
+  <div style="display:flex;gap:0.375rem;flex-wrap:wrap">
+    <span class="pill-btn active">Movie Night</span>
+    <span class="pill-btn inactive">Red Alert</span>
+    <span class="pill-btn inactive">Relaxation</span>
+    <span class="pill-btn inactive">Away</span>
+  </div>
+  <div class="section-divider">
+    <span class="section-label">Circuits</span>
+    <span class="section-line"></span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(20rem,100%),1fr));gap:0.375rem">
+    <div class="circuit-row">
+      <span class="indicator" style="background:var(--lcars-sunflower);width:2px;height:1rem;border-radius:1px"></span>
+      <span style="flex:1">Hallway Circuit</span>
+      <span style="color:var(--lcars-sunflower)">ON</span>
+    </div>
+    <div class="circuit-row">
+      <span class="indicator" style="background:var(--lcars-gray);width:2px;height:1rem;border-radius:1px"></span>
+      <span style="flex:1;color:var(--lcars-gray)">Closet Light</span>
+      <span style="color:var(--lcars-gray)">OFF</span>
+    </div>
+  </div>
+</div>
+
+<div class="gallery-row">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- CLIMATE PANEL -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-ice)">
+  <div class="panel-header">
+    <span class="panel-name">Boimler's Quarters</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-ice)">COOLING</span>
+    <span class="panel-code">338-721</span>
+  </div>
+  <div class="content-grid three-col">
+    <div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-ice)"></span><span class="sensor-label">Current</span><span class="sensor-value" style="color:var(--lcars-space-white)">72°F</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-ice)"></span><span class="sensor-label">Humidity</span><span class="sensor-value" style="color:var(--lcars-space-white)">45%</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-gray)"></span><span class="sensor-label">Mode</span><span class="sensor-value" style="color:var(--lcars-space-white)">COOL</span></div>
+    </div>
+    <div class="arc-container">
+      <svg width="160" height="100" viewBox="0 0 200 140">
+        <path d="M 30 130 A 85 85 0 0 1 170 130" fill="none" stroke="var(--lcars-gray)" stroke-width="8" stroke-dasharray="6 3" opacity="0.2"/>
+        <path d="M 30 130 A 85 85 0 0 1 130 40" fill="none" stroke="var(--lcars-ice)" stroke-width="8" stroke-dasharray="6 3"/>
+        <circle cx="130" cy="40" r="4" fill="var(--lcars-ice)" stroke="var(--lcars-space-white)" stroke-width="2"/>
+      </svg>
+      <span class="arc-temp" style="color:var(--lcars-ice)">72°</span>
+      <span class="arc-action" style="color:var(--lcars-ice)">COOLING</span>
+      <div class="arc-setpoints">
+        <div class="setpoint">
+          <span class="sp-btn dec" style="background:var(--lcars-butterscotch);color:#000">−</span>
+          <span style="color:var(--lcars-butterscotch)">68°</span>
+          <span class="sp-btn inc" style="background:var(--lcars-butterscotch);color:#000">+</span>
+        </div>
+        <div class="setpoint">
+          <span class="sp-btn dec" style="background:var(--lcars-ice);color:#000">−</span>
+          <span style="color:var(--lcars-ice)">74°</span>
+          <span class="sp-btn inc" style="background:var(--lcars-ice);color:#000">+</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-butterscotch)"></span><span class="sensor-label">Mariner</span><span class="sensor-value" style="color:var(--lcars-butterscotch)">74°F</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-ice)"></span><span class="sensor-label">Tendi</span><span class="sensor-value" style="color:var(--lcars-ice)">70°F</span></div>
+    </div>
+  </div>
+  <div class="mode-strip">
+    <span class="mode-btn">OFF</span>
+    <span class="mode-btn">HEAT</span>
+    <span class="mode-btn active">COOL</span>
+    <span class="mode-btn">AUTO</span>
+  </div>
+  <div class="mode-strip" style="margin-top:0.25rem">
+    <span class="mode-btn active">AUTO</span>
+    <span class="mode-btn">LOW</span>
+    <span class="mode-btn">MED</span>
+    <span class="mode-btn">HIGH</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- ENVIRONMENT PANEL -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-blue)">
+  <div class="panel-header">
+    <span class="panel-name">Tendi's Atmoscrubber</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-ice)">34</span>
+    <span class="panel-code">291-193</span>
+  </div>
+  <div class="content-grid three-col">
+    <div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-peach)"></span><span class="sensor-label">PM2.5</span><span class="sensor-value" style="color:var(--lcars-peach)">8 µg/m³</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-sunflower)"></span><span class="sensor-label">CO₂</span><span class="sensor-value" style="color:var(--lcars-sunflower)">620 PPM</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-african-violet)"></span><span class="sensor-label">VOC</span><span class="sensor-value" style="color:var(--lcars-african-violet)">142 PPB</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-butterscotch)"></span><span class="sensor-label">Temp</span><span class="sensor-value" style="color:var(--lcars-butterscotch)">72°F</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-ice)"></span><span class="sensor-label">Humidity</span><span class="sensor-value" style="color:var(--lcars-ice)">48%</span></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center">
+      <div class="atmoscrubber" style="--scrubber-color:var(--lcars-ice)">
+        <span class="score">34</span>
+      </div>
+    </div>
+    <div>
+      <div class="section-label" style="margin-bottom:0.5rem">Controls</div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-ice)"></span><span class="sensor-label">Fan</span><span class="sensor-value" style="color:var(--lcars-ice)">ON 45%</span></div>
+      <div class="mode-strip" style="margin-top:0.5rem">
+        <span class="mode-btn active">AUTO</span>
+        <span class="mode-btn">SLEEP</span>
+        <span class="mode-btn">TURBO</span>
+      </div>
+    </div>
+  </div>
+  <div class="sparkline-tray">
+    <div class="sparkline"><span class="sparkline-label">PM2.5</span><svg width="100%" height="100%" viewBox="0 0 100 20"><polyline points="0,15 10,14 20,12 30,13 40,10 50,8 60,9 70,7 80,8 90,6 100,7" fill="none" stroke="var(--lcars-peach)" stroke-width="1.5"/></svg></div>
+    <div class="sparkline"><span class="sparkline-label">CO₂</span><svg width="100%" height="100%" viewBox="0 0 100 20"><polyline points="0,10 10,12 20,11 30,14 40,13 50,12 60,15 70,14 80,13 90,12 100,11" fill="none" stroke="var(--lcars-sunflower)" stroke-width="1.5"/></svg></div>
+    <div class="sparkline"><span class="sparkline-label">VOC</span><svg width="100%" height="100%" viewBox="0 0 100 20"><polyline points="0,8 10,10 20,9 30,7 40,8 50,6 60,5 70,7 80,6 90,5 100,4" fill="none" stroke="var(--lcars-african-violet)" stroke-width="1.5"/></svg></div>
+  </div>
+</div>
+
+</div><!-- gallery-row -->
+
+<div class="gallery-row">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- BATTERY PANEL -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-ice)">
+  <div class="panel-header">
+    <span class="panel-name">Rutherford's Backup Core</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-sky)">78%</span>
+    <span class="panel-code">114-509</span>
+  </div>
+  <div class="content-grid three-col">
+    <div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-ice)"></span><span class="sensor-label">Total In</span><span class="sensor-value" style="color:var(--lcars-ice)">245 W</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-butterscotch)"></span><span class="sensor-label">Total Out</span><span class="sensor-value" style="color:var(--lcars-butterscotch)">180 W</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-sunflower)"></span><span class="sensor-label">Temperature</span><span class="sensor-value" style="color:var(--lcars-sunflower)">31°C</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-gray)"></span><span class="sensor-label">Cycles</span><span class="sensor-value" style="color:var(--lcars-gray)">142</span></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center">
+      <div class="warp-core" style="--core-color:var(--lcars-sky);--fill:78%">
+        <div class="warp-core-fill" style="height:78%;background:var(--lcars-sky)"></div>
+        <div class="warp-core-ticks">
+          <span class="warp-core-tick" style="background:var(--lcars-sky)"></span>
+          <span class="warp-core-tick" style="background:var(--lcars-sky)"></span>
+          <span class="warp-core-tick" style="background:var(--lcars-sky)"></span>
+        </div>
+        <span class="warp-core-label" style="color:var(--lcars-sky)">78</span>
+      </div>
+    </div>
+    <div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-ice)"></span><span class="sensor-label">Status</span><span class="sensor-value" style="color:var(--lcars-ice)">CHARGING</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-gray)"></span><span class="sensor-label">Runtime</span><span class="sensor-value" style="color:var(--lcars-gray)">4h 12m</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- ALARM PANEL -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-butterscotch)">
+  <div class="panel-header">
+    <span class="panel-name">Cerritos Shield Array</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-butterscotch)">ARMED HOME</span>
+    <span class="panel-code">771-042</span>
+  </div>
+  <div class="content-grid three-col">
+    <div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-gray)"></span><span class="sensor-label">Bridge Entry</span><span class="sensor-value" style="color:var(--lcars-gray)">CLOSED</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-gray)"></span><span class="sensor-label">Shuttlebay</span><span class="sensor-value" style="color:var(--lcars-gray)">CLOSED</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-butterscotch)"></span><span class="sensor-label">Cargo Bay</span><span class="sensor-value" style="color:var(--lcars-butterscotch)">OPEN</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-gray)"></span><span class="sensor-label">Armory</span><span class="sensor-value" style="color:var(--lcars-gray)">CLOSED</span></div>
+    </div>
+    <div class="shield-container">
+      <svg width="100" height="120" viewBox="0 0 160 180">
+        <path d="M80 10 L150 50 L150 110 Q150 170 80 170 Q10 170 10 110 L10 50 Z" fill="none" stroke="var(--lcars-butterscotch)" stroke-width="3"/>
+        <text x="80" y="100" text-anchor="middle" fill="var(--lcars-butterscotch)" font-family="Antonio" font-size="36">◉</text>
+      </svg>
+      <span class="shield-state" style="color:var(--lcars-butterscotch)">ARMED HOME</span>
+    </div>
+    <div>
+      <div class="code-dots">
+        <span class="code-dot filled"></span>
+        <span class="code-dot filled"></span>
+        <span class="code-dot"></span>
+        <span class="code-dot"></span>
+      </div>
+      <div class="keypad-grid">
+        <span class="keypad-btn">1</span><span class="keypad-btn">2</span><span class="keypad-btn">3</span>
+        <span class="keypad-btn">4</span><span class="keypad-btn">5</span><span class="keypad-btn">6</span>
+        <span class="keypad-btn">7</span><span class="keypad-btn">8</span><span class="keypad-btn">9</span>
+        <span class="keypad-btn">⌫</span><span class="keypad-btn">0</span><span class="keypad-btn">⏎</span>
+      </div>
+    </div>
+  </div>
+  <div class="mode-strip">
+    <span class="mode-btn active">HOME</span>
+    <span class="mode-btn">AWAY</span>
+    <span class="mode-btn">NIGHT</span>
+  </div>
+</div>
+
+</div><!-- gallery-row -->
+
+<div class="gallery-row">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- MEDIA PANEL -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-african-violet)">
+  <div class="panel-header">
+    <span class="panel-name">Ransom's Sound System</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-african-violet)">▶ PLAYING</span>
+    <span class="panel-code">992-447</span>
+  </div>
+  <div style="text-align:center;padding:1rem 0">
+    <div style="font-size:1.25rem;color:var(--lcars-space-white)">Klingon Opera No. 7</div>
+    <div style="font-size:0.875rem;color:var(--lcars-african-violet);margin-top:0.25rem">Chancellor Martok Ensemble</div>
+    <div style="font-size:0.75rem;color:var(--lcars-gray);margin-top:0.25rem">SUBSPACE RADIO</div>
+  </div>
+  <div style="display:flex;justify-content:center;gap:2px;height:2rem;align-items:flex-end;padding:0 2rem">
+    <div style="width:4px;height:60%;background:var(--lcars-african-violet);border-radius:1px"></div>
+    <div style="width:4px;height:90%;background:var(--lcars-african-violet);border-radius:1px"></div>
+    <div style="width:4px;height:40%;background:var(--lcars-african-violet);border-radius:1px"></div>
+    <div style="width:4px;height:70%;background:var(--lcars-african-violet);border-radius:1px"></div>
+    <div style="width:4px;height:50%;background:var(--lcars-african-violet);border-radius:1px"></div>
+    <div style="width:4px;height:80%;background:var(--lcars-african-violet);border-radius:1px"></div>
+    <div style="width:4px;height:35%;background:var(--lcars-african-violet);border-radius:1px"></div>
+    <div style="width:4px;height:95%;background:var(--lcars-african-violet);border-radius:1px"></div>
+    <div style="width:4px;height:55%;background:var(--lcars-african-violet);border-radius:1px"></div>
+    <div style="width:4px;height:75%;background:var(--lcars-african-violet);border-radius:1px"></div>
+    <div style="width:4px;height:45%;background:var(--lcars-african-violet);border-radius:1px"></div>
+    <div style="width:4px;height:65%;background:var(--lcars-african-violet);border-radius:1px"></div>
+  </div>
+  <div class="transport">
+    <span class="transport-btn" style="background:rgba(102,102,136,0.3);color:var(--lcars-african-violet)">⇄</span>
+    <span class="transport-btn" style="background:rgba(102,102,136,0.3);color:var(--lcars-space-white)">⏮</span>
+    <span class="transport-btn" style="background:var(--lcars-african-violet);color:#000">❚❚</span>
+    <span class="transport-btn" style="background:rgba(102,102,136,0.3);color:var(--lcars-space-white)">⏭</span>
+    <span class="transport-btn" style="background:rgba(102,102,136,0.3);color:var(--lcars-african-violet)">🔁</span>
+  </div>
+  <div class="volume-row">
+    <span style="font-size:1rem">🔊</span>
+    <div class="volume-track">
+      <div class="volume-fill" style="width:62%;background:var(--lcars-african-violet)"></div>
+    </div>
+    <span class="volume-label">62%</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- POWER PANEL -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-butterscotch)">
+  <div class="panel-header">
+    <span class="panel-name">Power Systems</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-butterscotch)">1,847 W</span>
+    <span class="panel-code">608-331</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(9rem,1fr));gap:0.5rem">
+    <div style="background:rgba(102,102,136,0.1);padding:0.5rem;border-radius:0 0.75rem 0.75rem 0;border-left:3px solid var(--lcars-butterscotch)">
+      <div style="font-size:0.75rem;color:var(--lcars-gray);text-transform:uppercase">Kitchen</div>
+      <div style="font-size:1rem;color:var(--lcars-butterscotch)">342 W</div>
+    </div>
+    <div style="background:rgba(102,102,136,0.1);padding:0.5rem;border-radius:0 0.75rem 0.75rem 0;border-left:3px solid var(--lcars-sunflower)">
+      <div style="font-size:0.75rem;color:var(--lcars-gray);text-transform:uppercase">Server Room</div>
+      <div style="font-size:1rem;color:var(--lcars-sunflower)">285 W</div>
+    </div>
+    <div style="background:rgba(102,102,136,0.1);padding:0.5rem;border-radius:0 0.75rem 0.75rem 0;border-left:3px solid var(--lcars-ice)">
+      <div style="font-size:0.75rem;color:var(--lcars-gray);text-transform:uppercase">Washer</div>
+      <div style="font-size:1rem;color:var(--lcars-ice)">180 W</div>
+    </div>
+    <div style="background:rgba(102,102,136,0.1);padding:0.5rem;border-radius:0 0.75rem 0.75rem 0;border-left:3px solid var(--lcars-tomato)">
+      <div style="font-size:0.75rem;color:var(--lcars-gray);text-transform:uppercase">Dryer</div>
+      <div style="font-size:1rem;color:var(--lcars-tomato)">4,200 W</div>
+    </div>
+    <div style="background:rgba(102,102,136,0.1);padding:0.5rem;border-radius:0 0.75rem 0.75rem 0;border-left:3px solid var(--lcars-ice)">
+      <div style="font-size:0.75rem;color:var(--lcars-gray);text-transform:uppercase">Water Heater</div>
+      <div style="font-size:1rem;color:var(--lcars-ice)">120 W</div>
+    </div>
+    <div style="background:rgba(102,102,136,0.1);padding:0.5rem;border-radius:0 0.75rem 0.75rem 0;border-left:3px solid var(--lcars-gray)">
+      <div style="font-size:0.75rem;color:var(--lcars-gray);text-transform:uppercase">Garage</div>
+      <div style="font-size:1rem;color:var(--lcars-gray)">0 W</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- gallery-row -->
+
+<div class="gallery-row">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- CAMERA PANEL -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-butterscotch)">
+  <div class="panel-header">
+    <span class="panel-name">Mariner's Quarters Cam</span>
+    <span class="panel-line"></span>
+    <span class="panel-code">445-089</span>
+  </div>
+  <div style="background:#111;border:2px solid var(--lcars-butterscotch);border-radius:0.25rem;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;position:relative">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(153,204,255,0.03) 0%,transparent 70%)"></div>
+    <span style="font-size:0.75rem;color:var(--lcars-ice);text-transform:uppercase;letter-spacing:0.1em;animation:pulse 2s ease infinite">ESTABLISHING LINK</span>
+  </div>
+  <div>
+    <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-gray)"></span><span class="sensor-label">Motion</span><span class="sensor-value" style="color:var(--lcars-gray)">CLEAR</span></div>
+    <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-ice)"></span><span class="sensor-label">Signal</span><span class="sensor-value" style="color:var(--lcars-ice)">-42 dBm</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- WEATHER PANEL -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-sky)">
+  <div class="panel-header">
+    <span class="panel-name">Cerritos Weather</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-sky)">☀ CLEAR</span>
+    <span class="panel-code">203-618</span>
+  </div>
+  <div class="content-grid" style="grid-template-columns:1fr 1fr">
+    <div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-butterscotch)"></span><span class="sensor-label">Temperature</span><span class="sensor-value" style="color:var(--lcars-butterscotch)">78°F</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-ice)"></span><span class="sensor-label">Humidity</span><span class="sensor-value" style="color:var(--lcars-ice)">52%</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-gray)"></span><span class="sensor-label">Wind</span><span class="sensor-value" style="color:var(--lcars-gray)">8 MPH NW</span></div>
+      <div class="sensor-row"><span class="sensor-dot" style="background:var(--lcars-gray)"></span><span class="sensor-label">Pressure</span><span class="sensor-value" style="color:var(--lcars-gray)">30.12 inHg</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0.25rem;padding:0.25rem">
+      <div style="display:flex;gap:0.5rem;text-align:center;font-size:0.75rem;text-transform:uppercase">
+        <div style="flex:1;padding:0.375rem;background:rgba(102,102,136,0.1);border-radius:0.25rem"><div style="color:var(--lcars-gray)">MON</div><div style="color:var(--lcars-butterscotch);font-size:0.875rem">74°</div><div style="color:var(--lcars-gray)">☁</div></div>
+        <div style="flex:1;padding:0.375rem;background:rgba(102,102,136,0.1);border-radius:0.25rem"><div style="color:var(--lcars-gray)">TUE</div><div style="color:var(--lcars-butterscotch);font-size:0.875rem">71°</div><div style="color:var(--lcars-gray)">🌧</div></div>
+        <div style="flex:1;padding:0.375rem;background:rgba(102,102,136,0.1);border-radius:0.25rem"><div style="color:var(--lcars-gray)">WED</div><div style="color:var(--lcars-butterscotch);font-size:0.875rem">76°</div><div style="color:var(--lcars-gray)">☀</div></div>
+        <div style="flex:1;padding:0.375rem;background:rgba(102,102,136,0.1);border-radius:0.25rem"><div style="color:var(--lcars-gray)">THU</div><div style="color:var(--lcars-butterscotch);font-size:0.875rem">79°</div><div style="color:var(--lcars-gray)">☀</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- gallery-row -->
+
+<div class="gallery-row">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- IRRIGATION PANEL -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-ice)">
+  <div class="panel-header">
+    <span class="panel-name">Arboretum Control</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-ice)">WATERING Z1</span>
+    <span class="panel-code">519-004</span>
+  </div>
+  <div>
+    <div class="sensor-row" style="background:rgba(153,204,255,0.08);border-radius:0 1rem 1rem 0">
+      <span style="background:var(--lcars-ice);width:0.5rem;height:0.5rem;border-radius:50%"></span>
+      <span class="sensor-label">Z1 — Freeman's Garden</span>
+      <span style="color:var(--lcars-ice);font-size:0.75rem">04:32</span>
+      <span class="sensor-value" style="color:var(--lcars-ice)">WATERING</span>
+    </div>
+    <div class="sensor-row">
+      <span style="background:var(--lcars-gray);width:0.5rem;height:0.5rem;border-radius:50%"></span>
+      <span class="sensor-label">Z2 — Boimler's Lawn</span>
+      <span class="sensor-value" style="color:var(--lcars-gray)">IDLE</span>
+    </div>
+    <div class="sensor-row">
+      <span style="background:var(--lcars-gray);width:0.5rem;height:0.5rem;border-radius:50%"></span>
+      <span class="sensor-label">Z3 — Shaxs Memorial</span>
+      <span class="sensor-value" style="color:var(--lcars-gray)">IDLE</span>
+    </div>
+    <div class="sensor-row">
+      <span style="background:var(--lcars-gray);width:0.5rem;height:0.5rem;border-radius:50%"></span>
+      <span class="sensor-label">Z4 — Tendi's Herbs</span>
+      <span class="sensor-value" style="color:var(--lcars-gray)">IDLE</span>
+    </div>
+  </div>
+  <div class="section-divider"><span class="section-label">Schedules</span><span class="section-line"></span></div>
+  <div>
+    <div class="sensor-row"><span style="background:var(--lcars-ice);width:0.5rem;height:0.5rem;border-radius:50%"></span><span class="sensor-label">Morning Cycle</span><span class="pill-btn active" style="font-size:0.625rem;padding:0.125rem 0.5rem;min-height:auto">FLEX</span><span class="sensor-value" style="color:var(--lcars-ice)">45 MIN</span></div>
+    <div class="sensor-row"><span style="background:var(--lcars-gray);width:0.5rem;height:0.5rem;border-radius:50%"></span><span class="sensor-label">Evening Soak</span><span class="pill-btn inactive" style="font-size:0.625rem;padding:0.125rem 0.5rem;min-height:auto">FIXED</span><span class="sensor-value" style="color:var(--lcars-gray)">20 MIN</span></div>
+  </div>
+  <div class="section-divider"><span class="section-label">Controller</span><span class="section-line"></span></div>
+  <div style="display:flex;gap:0.5rem;flex-wrap:wrap;font-size:0.75rem;text-transform:uppercase">
+    <span style="color:var(--lcars-ice)">● ONLINE</span>
+    <span style="color:var(--lcars-gray)">● STANDBY OFF</span>
+    <span style="color:var(--lcars-gray)">● RAIN DELAY OFF</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- POOL & SPA PANEL -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-bluey)">
+  <div class="panel-header">
+    <span class="panel-name">Cetacean Ops</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-bluey)">POOL 82° SPA 102°</span>
+    <span class="panel-code">774-221</span>
+  </div>
+  <div class="content-grid two-col">
+    <div style="border:2px solid var(--lcars-ice);border-radius:0.5rem;padding:0.75rem;text-align:center">
+      <div style="font-size:0.75rem;color:var(--lcars-ice);text-transform:uppercase">Pool</div>
+      <div style="font-size:2rem;color:var(--lcars-ice)">82°</div>
+      <div style="display:flex;gap:0.25rem;justify-content:center;margin-top:0.25rem">
+        <span class="sp-btn dec" style="background:var(--lcars-ice);color:#000;width:1.5rem;height:1.5rem;font-size:0.75rem">−</span>
+        <span style="font-size:0.875rem;color:var(--lcars-ice)">82°</span>
+        <span class="sp-btn inc" style="background:var(--lcars-ice);color:#000;width:1.5rem;height:1.5rem;font-size:0.75rem">+</span>
+      </div>
+    </div>
+    <div style="border:2px solid var(--lcars-butterscotch);border-radius:0.5rem;padding:0.75rem;text-align:center">
+      <div style="font-size:0.75rem;color:var(--lcars-butterscotch);text-transform:uppercase">Spa</div>
+      <div style="font-size:2rem;color:var(--lcars-butterscotch)">102°</div>
+      <div style="display:flex;gap:0.25rem;justify-content:center;margin-top:0.25rem">
+        <span class="sp-btn dec" style="background:var(--lcars-butterscotch);color:#000;width:1.5rem;height:1.5rem;font-size:0.75rem">−</span>
+        <span style="font-size:0.875rem;color:var(--lcars-butterscotch)">102°</span>
+        <span class="sp-btn inc" style="background:var(--lcars-butterscotch);color:#000;width:1.5rem;height:1.5rem;font-size:0.75rem">+</span>
+      </div>
+    </div>
+  </div>
+  <div class="section-divider"><span class="section-label">Chemistry</span><span class="section-line"></span></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.25rem 1rem;font-size:0.75rem;text-transform:uppercase">
+    <div class="sensor-row"><span class="sensor-label">pH</span><span class="sensor-value" style="color:var(--lcars-ice)">7.4</span></div>
+    <div class="sensor-row"><span class="sensor-label">Chlorine</span><span class="sensor-value" style="color:var(--lcars-ice)">2.1 PPM</span></div>
+    <div class="sensor-row"><span class="sensor-label">Alkalinity</span><span class="sensor-value" style="color:var(--lcars-ice)">95 PPM</span></div>
+    <div class="sensor-row"><span class="sensor-label">Salt</span><span class="sensor-value" style="color:var(--lcars-sunflower)">3200 PPM</span></div>
+  </div>
+  <div class="section-divider"><span class="section-label">Circuits</span><span class="section-line"></span></div>
+  <div style="display:flex;gap:0.375rem;flex-wrap:wrap">
+    <span class="pill-btn active">Pump</span>
+    <span class="pill-btn inactive">Waterfall</span>
+    <span class="pill-btn inactive">Spa Jets</span>
+    <span class="pill-btn active">Pool Light</span>
+    <span class="pill-btn inactive">Spa Light</span>
+  </div>
+</div>
+
+</div><!-- gallery-row -->
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TACTICAL PANEL (4X-42) -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-ice)">
+  <div class="panel-header">
+    <span class="panel-name">Tactical</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-ice)">ARMED AWAY</span>
+    <span class="panel-code">247-891</span>
+  </div>
+  <div class="content-grid two-col">
+    <div>
+      <div style="font-size:0.75rem;color:var(--lcars-gray);text-transform:uppercase;border-bottom:2px solid var(--lcars-gray);margin-bottom:0.25rem">ALARM CONTROL</div>
+      <div style="text-align:center;padding:1rem">
+        <div style="font-size:2rem;color:var(--lcars-ice)">🛡</div>
+        <div style="font-size:1rem;color:var(--lcars-ice);text-transform:uppercase">ARMED AWAY</div>
+      </div>
+      <div style="display:flex;gap:0.25rem">
+        <span class="pill" style="flex:1;background:var(--lcars-gray)">HOME</span>
+        <span class="pill" style="flex:1;background:var(--lcars-butterscotch);color:#000">AWAY</span>
+        <span class="pill" style="flex:1;background:var(--lcars-gray)">NIGHT</span>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:0.75rem;color:var(--lcars-gray);text-transform:uppercase;border-bottom:2px solid var(--lcars-gray);margin-bottom:0.25rem">ACCESS POINTS</div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-sunflower)"></span><span class="label">Front Door</span><span class="value" style="color:var(--lcars-sunflower)">LOCKED</span></div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-tomato)"></span><span class="label">Back Door</span><span class="value" style="color:var(--lcars-tomato)">UNLOCKED</span></div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-sunflower)"></span><span class="label">Garage Door</span><span class="value" style="color:var(--lcars-sunflower)">CLOSED</span></div>
+    </div>
+  </div>
+  <div>
+    <div style="font-size:0.75rem;color:var(--lcars-gray);text-transform:uppercase;border-bottom:2px solid var(--lcars-gray);margin:0.5rem 0 0.25rem">PERIMETER</div>
+    <div style="display:flex;flex-wrap:wrap;gap:0.25rem">
+      <span class="pill" style="background:var(--lcars-gray)">● Front Door: CLOSED</span>
+      <span class="pill" style="background:var(--lcars-butterscotch);color:#000">○ Back Door: OPEN</span>
+      <span class="pill" style="background:var(--lcars-gray)">● Kitchen: CLOSED</span>
+      <span class="pill" style="background:var(--lcars-gray)">● Garage: CLOSED</span>
+    </div>
+  </div>
+  <div>
+    <div style="font-size:0.75rem;color:var(--lcars-gray);text-transform:uppercase;border-bottom:2px solid var(--lcars-gray);margin:0.5rem 0 0.25rem">MOTION</div>
+    <div style="display:flex;flex-wrap:wrap;gap:0.25rem">
+      <span class="pill" style="background:var(--lcars-gray)">○ Living Room: CLEAR</span>
+      <span class="pill" style="background:var(--lcars-butterscotch);color:#000">● Hallway: DETECTED</span>
+      <span class="pill" style="background:var(--lcars-gray)">○ Foyer: CLEAR</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- VIEWPORT CONTROLS PANEL (4X-41) -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-sunflower)">
+  <div class="panel-header">
+    <span class="panel-name">Viewport Controls</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-sunflower)">1/2 OPEN</span>
+    <span class="panel-code">291-193</span>
+  </div>
+  <div>
+    <div class="sensor-row" style="padding:0.5rem 0.75rem;background:var(--lcars-sunflower);color:#000;border-radius:0 1rem 1rem 0;margin-bottom:0.25rem">
+      <span style="width:2px;height:1rem;background:var(--lcars-sunflower);border-radius:1px"></span>
+      <span class="label" style="color:#000">Large Window</span>
+      <span class="value" style="color:#000">75%</span>
+      <span style="display:flex;gap:0.125rem">
+        <span class="pill" style="background:var(--lcars-gold);color:#000;width:1.5rem;height:1.5rem;font-size:0.75rem;text-align:center;padding:0">▲</span>
+        <span class="pill" style="background:var(--lcars-sunflower);color:#000;width:1.5rem;height:1.5rem;font-size:0.75rem;text-align:center;padding:0">■</span>
+        <span class="pill" style="background:var(--lcars-sunflower);color:#000;width:1.5rem;height:1.5rem;font-size:0.75rem;text-align:center;padding:0">▼</span>
+      </span>
+    </div>
+    <div class="sensor-row" style="padding:0.5rem 0.75rem;background:var(--lcars-gray);border-radius:0 1rem 1rem 0">
+      <span style="width:2px;height:1rem;background:var(--lcars-gray);border-radius:1px"></span>
+      <span class="label">Small Window</span>
+      <span class="value">CLOSED</span>
+      <span style="display:flex;gap:0.125rem">
+        <span class="pill" style="background:var(--lcars-sunflower);color:#000;width:1.5rem;height:1.5rem;font-size:0.75rem;text-align:center;padding:0">▲</span>
+        <span class="pill" style="background:var(--lcars-sunflower);color:#000;width:1.5rem;height:1.5rem;font-size:0.75rem;text-align:center;padding:0">■</span>
+        <span class="pill" style="background:var(--lcars-sunflower);color:#000;width:1.5rem;height:1.5rem;font-size:0.75rem;text-align:center;padding:0">▼</span>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- HAZARD DETECTION PANEL (4X-39) -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-sunflower)">
+  <div class="panel-header">
+    <span class="panel-name">Hazard Detection</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-sunflower)">ALL CLEAR</span>
+    <span class="panel-code">119-447</span>
+  </div>
+  <div style="font-size:0.75rem;color:var(--lcars-gray);text-transform:uppercase;border-bottom:2px solid var(--lcars-gray);margin-bottom:0.25rem">DETECTORS</div>
+  <div class="content-grid two-col">
+    <div style="border-left:3px solid var(--lcars-sunflower);padding:0.5rem 0.75rem;border-radius:0 0.5rem 0.5rem 0">
+      <div style="font-size:0.875rem;color:var(--lcars-space-white);text-transform:uppercase">Master Bedroom</div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-sunflower)"></span><span class="label">SMOKE</span><span class="value" style="color:var(--lcars-sunflower)">CLEAR</span></div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-sunflower)"></span><span class="label">CO</span><span class="value" style="color:var(--lcars-sunflower)">CLEAR</span></div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-sunflower)"></span><span class="label">HEAT</span><span class="value" style="color:var(--lcars-sunflower)">CLEAR</span></div>
+    </div>
+    <div style="border-left:3px solid var(--lcars-sunflower);padding:0.5rem 0.75rem;border-radius:0 0.5rem 0.5rem 0">
+      <div style="font-size:0.875rem;color:var(--lcars-space-white);text-transform:uppercase">Kitchen</div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-sunflower)"></span><span class="label">SMOKE</span><span class="value" style="color:var(--lcars-sunflower)">CLEAR</span></div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-sunflower)"></span><span class="label">CO</span><span class="value" style="color:var(--lcars-sunflower)">CLEAR</span></div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-gray)"></span><span class="label">OCCUPANCY</span><span class="value" style="color:var(--lcars-gray)">CLEAR</span></div>
+    </div>
+  </div>
+  <div style="font-size:0.75rem;color:var(--lcars-gray);text-transform:uppercase;border-bottom:2px solid var(--lcars-gray);margin:0.5rem 0 0.25rem">BATTERY STATUS</div>
+  <div style="display:flex;flex-wrap:wrap;gap:0.5rem 1rem;font-size:0.875rem;text-transform:uppercase">
+    <span style="color:var(--lcars-gray)">Master: <span style="color:var(--lcars-sunflower)">92%</span></span>
+    <span style="color:var(--lcars-gray)">Kitchen: <span style="color:var(--lcars-sunflower)">87%</span></span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- GALLEY SYSTEMS PANEL (4X-40) -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-butterscotch)">
+  <div class="panel-header">
+    <span class="panel-name">Galley Systems</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-gold)">1 ACTIVE</span>
+    <span class="panel-code">553-882</span>
+  </div>
+  <div style="font-size:0.75rem;color:var(--lcars-gray);text-transform:uppercase;border-bottom:2px solid var(--lcars-gray);margin-bottom:0.25rem">APPLIANCES</div>
+  <div class="content-grid two-col">
+    <div style="border-left:3px solid var(--lcars-gold);padding:0.5rem 0.75rem;border-radius:0 0.5rem 0.5rem 0;background:rgba(255,170,0,0.06)">
+      <div style="font-size:0.875rem;color:var(--lcars-space-white);text-transform:uppercase">Oven</div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-gold)"></span><span class="label">Mode</span><span class="value" style="color:var(--lcars-gold)">BAKE</span></div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-butterscotch)"></span><span class="label">Temperature</span><span class="value" style="color:var(--lcars-butterscotch)">375°F</span></div>
+      <div style="font-size:1.25rem;color:var(--lcars-gold);font-weight:700">⏱ 0:22:14</div>
+    </div>
+    <div style="border-left:3px solid var(--lcars-gray);padding:0.5rem 0.75rem;border-radius:0 0.5rem 0.5rem 0">
+      <div style="font-size:0.875rem;color:var(--lcars-space-white);text-transform:uppercase">Refrigerator</div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-gray)"></span><span class="label">Status</span><span class="value" style="color:var(--lcars-gray)">STANDBY</span></div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-ice)"></span><span class="label">Temp</span><span class="value" style="color:var(--lcars-ice)">37°F</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- EV CHARGER PANEL (4X-55) -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" style="--frame-color: var(--lcars-butterscotch)">
+  <div class="panel-header">
+    <span class="panel-name">EV Charger</span>
+    <span class="panel-line"></span>
+    <span class="panel-badge" style="color:var(--lcars-butterscotch)">▼ CHARGING</span>
+    <span class="panel-code">8.2 KW</span>
+  </div>
+  <div class="content-grid two-col">
+    <!-- Sensor telemetry -->
+    <div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-butterscotch)"></span><span class="label">Status</span><span class="value" style="color:var(--lcars-butterscotch)">CHARGING</span></div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-sunflower)"></span><span class="label">Mode</span><span class="value" style="color:var(--lcars-sunflower)">ECO</span></div>
+      <div style="height:1px;background:var(--lcars-gray);opacity:0.3;margin:0.25rem 0"></div>
+      <div style="font-size:0.625rem;color:var(--lcars-sky);text-transform:uppercase;padding:0.25rem 0">SESSION</div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-butterscotch)"></span><span class="label">Power</span><span class="value" style="color:var(--lcars-butterscotch)">8.2 kW</span></div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-space-white)"></span><span class="label">Speed</span><span class="value">42 km/h</span></div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-space-white)"></span><span class="label">Added</span><span class="value">12.4 kWh</span></div>
+      <div style="height:1px;background:var(--lcars-gray);opacity:0.3;margin:0.25rem 0"></div>
+      <div style="font-size:0.625rem;color:var(--lcars-sky);text-transform:uppercase;padding:0.25rem 0">VEHICLE</div>
+      <div class="sensor-row"><span class="dot" style="background:var(--lcars-sunflower)"></span><span class="label">SoC</span><span class="value" style="color:var(--lcars-sunflower)">62%</span></div>
+    </div>
+    <!-- Flow visualization (static mockup) -->
+    <div style="border:3px solid var(--lcars-butterscotch);border-radius:0.5rem;padding:1rem;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:12rem;position:relative">
+      <div style="position:absolute;top:0.25rem;left:0.25rem;width:1.5rem;height:1.5rem;border-top:3px solid var(--lcars-butterscotch);border-left:3px solid var(--lcars-butterscotch);border-radius:0.25rem 0 0 0"></div>
+      <div style="position:absolute;bottom:0.25rem;right:0.25rem;width:1.5rem;height:1.5rem;border-bottom:1px solid var(--lcars-butterscotch);border-right:1px solid var(--lcars-butterscotch);border-radius:0 0 0.25rem 0"></div>
+      <div style="font-size:0.875rem;color:var(--lcars-butterscotch);opacity:0.6">▽ ▽ ▽</div>
+      <div style="font-size:2rem;font-weight:700;color:var(--lcars-butterscotch)">8.2 KW</div>
+      <div style="font-size:0.75rem;color:var(--lcars-space-white)">CHARGING</div>
+      <div style="font-size:1.5rem;font-weight:700;color:var(--lcars-sunflower);margin-top:0.5rem">62%</div>
+      <div style="width:80%;height:8px;background:var(--lcars-gray);border-radius:4px;margin-top:0.25rem;overflow:hidden"><div style="width:62%;height:100%;background:var(--lcars-sunflower);border-radius:4px"></div></div>
+    </div>
+  </div>
+  <!-- Solar mode strip -->
+  <div style="display:flex;gap:1px;margin-top:0.5rem;border-top:2px solid var(--lcars-butterscotch);padding-top:0.5rem;align-items:center">
+    <span style="font-size:0.75rem;color:var(--lcars-sunflower);text-transform:uppercase;margin-right:0.5rem">SOLAR MODE</span>
+    <div class="mode-btn">☀ FULL SOLAR</div>
+    <div class="mode-btn active">🌿 ECO</div>
+    <div class="mode-btn">⚡ FULL GRID</div>
+    <div class="mode-btn">⏻ OFF</div>
+  </div>
+  <!-- Aux controls -->
+  <div style="display:flex;gap:2rem;margin-top:0.5rem;border-top:2px solid var(--lcars-butterscotch);padding-top:0.5rem;align-items:center">
+    <div style="display:flex;align-items:center;gap:0.5rem">
+      <span style="font-size:0.75rem;color:var(--lcars-sunflower);text-transform:uppercase">MAX CURRENT</span>
+      <div style="display:flex;gap:0.25rem;align-items:center">
+        <div style="width:2rem;height:2rem;background:var(--lcars-sunflower);color:#000;display:flex;align-items:center;justify-content:center;border-radius:0.75rem 0 0 0.75rem;font-weight:700">–</div>
+        <span style="font-weight:700;min-width:2.5rem;text-align:center">16A</span>
+        <div style="width:2rem;height:2rem;background:var(--lcars-sunflower);color:#000;display:flex;align-items:center;justify-content:center;border-radius:0 0.75rem 0.75rem 0;font-weight:700">+</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:0.5rem">
+      <span style="font-size:0.75rem;color:var(--lcars-sunflower);text-transform:uppercase">🔒 CABLE LOCK</span>
+      <div style="height:2rem;padding:0 0.75rem;background:var(--lcars-ice);color:#000;display:flex;align-items:center;border-radius:0 0.75rem 0.75rem 0;font-weight:700;font-size:0.75rem;text-transform:uppercase">LOCKED</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- gallery -->
+
+<style>
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+</style>
+</body>
+</html>

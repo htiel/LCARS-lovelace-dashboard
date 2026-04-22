@@ -22,21 +22,28 @@ import {
   PANEL_TYPE_CAMERA, PANEL_TYPE_ALARM, PANEL_TYPE_AQUATICS,
   PANEL_TYPE_CLIMATE, PANEL_TYPE_MEDIA, PANEL_TYPE_ENVIRONMENT,
   PANEL_TYPE_IRRIGATION, PANEL_TYPE_WEATHER, PANEL_TYPE_BATTERY,
-  PANEL_TYPE_POWER, PANEL_TYPE_LIFE_SUPPORT, PANEL_TYPE_ILLUMINATION,
+  PANEL_TYPE_POWER, PANEL_TYPE_ILLUMINATION,
   PANEL_TYPE_ORDER, PANEL_COLUMN,
   CAMERA_DOMAINS, CLIMATE_DOMAINS, MEDIA_DOMAINS, ALARM_DOMAINS, WEATHER_DOMAINS,
   TOGGLE_DOMAINS, SENSOR_DOMAINS, COVER_DOMAINS,
   AQ_DEVICE_CLASSES, AQ_ENTITY_SUFFIX_RE,
   DOMAIN_LABELS, DOMAIN_ORDER,
   isLightingEntity, isClimateEntity, isEnvironmentEntity, isAmbientSensor,
+  isTacticalEntity, PANEL_TYPE_TACTICAL,
+  isViewportEntity, PANEL_TYPE_VIEWPORT,
+  PANEL_TYPE_HAZARD, PANEL_TYPE_GALLEY, PANEL_TYPE_EV_CHARGER,
+  isDiagnosticEntity,
+  SUPPRESS_DOMAINS,
 } from './lcars-entity-utils.js';
 import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor, getCo2Color, getTempColor, getTempComfortClass, getSafeComfortColor, COMFORT_COLORS, getRainDelayInfo, getPowerColor, getPowerLabel, getGridBalanceColor } from './lcars-color-utils.js';
+import { formatNumber, formatStateValue, canonicalLabel } from './lcars-format-utils.js';
 import { clampSetpoint, clampValue, createRateLimiter, createDebouncer } from './lcars-service-utils.js';
 import { renderSparkline, fetchSparklineData } from './lcars-sparkline.js';
 import { fetchForecasts } from './lcars-weather-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from './lcars-shared-animations.js';
 import { getFloorAreas } from './lcars-hierarchy-utils.js';
 import { getAreaEntities, groupEntities } from './lcars-entity-query.js';
+import { lcarsAudio } from './lcars-audio.js';
 
 /* ─── Side-effect imports: extracted components & panels (no webpack entry needed) ─── */
 import './components/lcars-panel-frame/lcars-panel-frame.js';
@@ -54,8 +61,12 @@ import './panels/media/lcars-media-panel.js';
 import './panels/pool-spa/lcars-pool-spa-panel.js';
 import './panels/weather/lcars-weather-panel.js';
 import './panels/power/lcars-power-panel.js';
-import './panels/lifesupport/lcars-lifesupport-panel.js';
 import './panels/illumination/lcars-illumination-panel.js';
+import './panels/tactical/lcars-tactical-panel.js';
+import './panels/viewport/lcars-viewport-panel.js';
+import './panels/hazard/lcars-hazard-panel.js';
+import './panels/galley/lcars-galley-panel.js';
+import './panels/ev-charger/lcars-ev-charger-panel.js';
 
 const TAG = 'Homepage';
 
@@ -72,8 +83,12 @@ const PANEL_TAG_REGISTRY = new Map([
   [PANEL_TYPE_MEDIA,        (group, hass, editMode, config) => html`<lcars-media-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-media-panel>`],
   [PANEL_TYPE_AQUATICS,     (group, hass, editMode, config) => html`<lcars-pool-spa-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-pool-spa-panel>`],
   [PANEL_TYPE_WEATHER,      (group, hass, editMode, config) => html`<lcars-weather-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config}></lcars-weather-panel>`],
-  [PANEL_TYPE_LIFE_SUPPORT, (group, hass, editMode, config) => html`<lcars-lifesupport-panel .group=${group} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-lifesupport-panel>`],
   [PANEL_TYPE_ILLUMINATION, (group, hass, editMode, config) => html`<lcars-illumination-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-illumination-panel>`],
+  [PANEL_TYPE_TACTICAL,      (group, hass, editMode, config) => html`<lcars-tactical-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-tactical-panel>`],
+  [PANEL_TYPE_VIEWPORT,       (group, hass, editMode, config) => html`<lcars-viewport-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-viewport-panel>`],
+  [PANEL_TYPE_HAZARD,          (group, hass, editMode, config) => html`<lcars-hazard-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-hazard-panel>`],
+  [PANEL_TYPE_GALLEY,          (group, hass, editMode, config) => html`<lcars-galley-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-galley-panel>`],
+  [PANEL_TYPE_EV_CHARGER,      (group, hass, editMode, config) => html`<lcars-ev-charger-panel .group=${group} .entities=${group.entities} .hass=${hass} .editMode=${editMode} .config=${config} area-id="${group.areaId || ''}"></lcars-ev-charger-panel>`],
 ]);
 
 /* Build a cache-busted camera image URL using last_updated timestamp */
@@ -203,7 +218,7 @@ class LcarsHomepageCard extends LitElement {
       for (const entityId of this._visibleCameras) {
         if (this._loadingCameras.has(entityId)) continue;
         const state = this._hass.states[entityId];
-        if (!state || state.state === 'unavailable') continue;
+        if (!state || state.state === 'unavailable' || state.state === 'unknown') continue;
         const base = state.attributes?.entity_picture;
         if (!base) continue;
         const img = this.shadowRoot?.querySelector(`img[data-entity="${CSS.escape(entityId)}"]`);
@@ -292,6 +307,7 @@ class LcarsHomepageCard extends LitElement {
 
     _handleEntityClick(entityId) {
       lcarsLog.debug(TAG, 'Entity click:', entityId);
+      lcarsAudio.playForEntity(entityId);
       showMoreInfo(entityId);
     }
 
@@ -321,10 +337,25 @@ class LcarsHomepageCard extends LitElement {
       }, `Edit: ${name}`);
     }
 
+    // 4X-8: Panel reorder handler — opens popup with visual layout editor
+    _handlePanelReorder(e, areaId, panelId, allPanels) {
+      e.stopPropagation();
+      e.preventDefault();
+      if (!this._hass || !areaId) return;
+      const colOverrides = this.data?.panel_column_overrides?.[areaId] || {};
+      openEditPopup(this._hass, 'lcars-edit-panel-order-card', {
+        area_id: areaId,
+        panel_id: panelId,
+        panels: allPanels.map(p => ({ panelId: p.panelId, panelType: p.panelType, label: p.label, deviceId: p.deviceId })),
+        column_overrides: colOverrides,
+      }, `Panel Layout: ${(areaId || '').replace(/_/g, ' ').toUpperCase()}`);
+    }
+
     /* ─── Toggle a light/switch/fan/etc ─── */
     _handleToggle(entityId) {
       const domain = entityId.split('.')[0];
       lcarsLog.debug(TAG, 'Toggle:', entityId, 'domain:', domain);
+      lcarsAudio.playForEntity(entityId);
       if (domain === 'lock') {
         const state = this._getEntityState(entityId);
         this._hass.callService('lock', state?.state === 'locked' ? 'unlock' : 'lock', { entity_id: entityId });
@@ -461,6 +492,20 @@ class LcarsHomepageCard extends LitElement {
       return ['off', 'unavailable', 'unknown', 'idle', 'standby', 'locked'].includes(state?.state);
     }
 
+    /* P3 GEORDI-015: format "LAST SIGNAL: Xh Ym ago" for offline cameras */
+    _formatCamTimeSince(isoStr) {
+      if (!isoStr) return '';
+      const ms = Date.now() - new Date(isoStr).getTime();
+      if (ms < 0 || isNaN(ms)) return '';
+      const mins = Math.floor(ms / 60000);
+      if (mins < 5) return '';
+      const hours = Math.floor(mins / 60);
+      const days = Math.floor(hours / 24);
+      if (days > 0) return `LAST SIGNAL: ${days}D ${hours % 24}H AGO`;
+      if (hours > 0) return `LAST SIGNAL: ${hours}H ${mins % 60}M AGO`;
+      return `LAST SIGNAL: ${mins}M AGO`;
+    }
+
     /* ─── Segmented sensor bar for numeric values ─── */
     _renderSensorBar(state) {
       const val = parseFloat(state.state);
@@ -514,6 +559,9 @@ class LcarsHomepageCard extends LitElement {
             padding: 0.25rem 0 0.5rem 0;
             border-left: 3px solid var(--lcars-gold);
             padding-left: 1rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.75rem;
           }
           .content-area-header::after {
             content: '';
@@ -521,6 +569,21 @@ class LcarsHomepageCard extends LitElement {
             height: 2px;
             background: var(--lcars-data-accent);
             margin-top: 0.5rem;
+          }
+          .room-alarm-badge {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            margin-left: auto;
+            white-space: nowrap;
+            transition: opacity 200ms;
+            text-decoration: none;
+          }
+          .room-alarm-badge:hover { opacity: 0.8; }
+          .room-alarm-badge:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
           }
 
           /* ─── Floor View ─── */
@@ -862,7 +925,24 @@ class LcarsHomepageCard extends LitElement {
             gap: 0.5rem;
             background: var(--lcars-black);
             z-index: 2;
+            opacity: 0;
+            visibility: hidden;
             transition: opacity 300ms ease-out, visibility 300ms ease-out;
+          }
+          /* WES-012: Delay showing connecting overlay to avoid flash */
+          .camera-frame[data-state="connecting"] .camera-connecting-overlay {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 300ms ease-out 500ms, visibility 300ms ease-out 500ms;
+          }
+          .camera-frame[data-state="connecting"] .camera-offline-overlay,
+          .camera-frame[data-state="offline"] .camera-connecting-overlay {
+            opacity: 0;
+            visibility: hidden;
+          }
+          .camera-frame[data-state="offline"] .camera-offline-overlay {
+            opacity: 1;
+            visibility: visible;
           }
           .camera-connecting-text {
             font-family: var(--lcars-font);
@@ -878,30 +958,51 @@ class LcarsHomepageCard extends LitElement {
           }
           .camera-offline-overlay ha-icon {
             --mdc-icon-size: 32px;
-            color: var(--lcars-tomato);
+            color: var(--lcars-gray);
           }
           .camera-offline-text {
             font-family: var(--lcars-font);
             font-size: var(--lcars-font-size-data);
-            color: var(--lcars-tomato);
+            color: var(--lcars-gray);
             text-transform: uppercase;
             letter-spacing: 0.1em;
+            animation: cam-text-breathe 4s ease-in-out infinite;
+          }
+          .camera-last-signal {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data, 0.875rem);
+            color: var(--lcars-gray);
+            text-transform: uppercase;
+            margin-top: 0.25rem;
+          }
+          @keyframes cam-text-breathe {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
           }
 
-          /* State-driven visibility (D-4: opacity/visibility, not display:none) */
+          /* State-driven visibility for live state */
           .camera-frame[data-state="live"] .camera-connecting-overlay,
-          .camera-frame[data-state="offline"] .camera-connecting-overlay {
-            opacity: 0;
-            visibility: hidden;
-          }
-          .camera-frame[data-state="connecting"] .camera-offline-overlay,
           .camera-frame[data-state="live"] .camera-offline-overlay {
             opacity: 0;
             visibility: hidden;
+            transition: opacity 300ms ease-out, visibility 300ms ease-out;
           }
           .camera-frame[data-state="offline"] {
-            border-color: var(--lcars-tomato);
+            border-color: var(--lcars-gray);
             opacity: 1;
+          }
+          /* P3 WESLEY-IDEA-002: CRT static effect for offline cameras */
+          .camera-frame[data-state="offline"] .camera-offline-overlay {
+            background:
+              repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px),
+              repeating-linear-gradient(90deg, rgba(120,120,120,0.02) 0px, rgba(80,80,80,0.04) 1px, transparent 2px, transparent 3px),
+              linear-gradient(180deg, rgba(40,40,40,1) 0%, rgba(25,25,25,1) 100%);
+            will-change: background-position;
+            animation: cam-static-drift 8s linear infinite;
+          }
+          @keyframes cam-static-drift {
+            from { background-position: 0 0, 0 0, 0 0; }
+            to   { background-position: 0 0, 0 -100px, 0 0; }
           }
           .camera-frame[data-state="offline"]:hover { border-color: var(--lcars-gold); }
           /* Hide img during connecting so overlay text is visible */
@@ -1075,6 +1176,9 @@ class LcarsHomepageCard extends LitElement {
             font-weight: 700;
             font-size: var(--lcars-font-size-data);
           }
+          /* 4X-7: zone sibling telemetry pips */
+          .zone-siblings { flex-shrink: 0; display: flex; gap: 0.375rem; margin: 0 0.25rem; }
+          .zone-sibling-pip { font-size: 0.625rem; color: var(--lcars-sky, #aaaaff); white-space: nowrap; }
 
           /* Media viewscreen — right column */
           .device-panel-media {
@@ -1790,6 +1894,21 @@ class LcarsHomepageCard extends LitElement {
             .edit-pip, .device-edit-pip { animation: none; }
           }
 
+          /* 4X-8: Panel reorder affordance */
+          .panel-order-wrapper { position: relative; }
+          .panel-order-pip {
+            position: absolute; top: 0.25rem; right: 0.25rem;
+            width: 24px; height: 24px; border-radius: 50%;
+            background: var(--lcars-lilac); color: var(--lcars-black);
+            cursor: pointer; z-index: 5;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid rgba(0,0,0,0.3);
+            animation: edit-pip-pulse 2s ease-in-out infinite;
+            transition: transform var(--lcars-transition);
+          }
+          .panel-order-pip:hover { transform: scale(1.2); background: var(--lcars-gold); }
+          .panel-order-pip:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+
           /* ═══════ ANIMATIONS (Wesley Crusher specials) ═══════ */
 
           /* ── 1. Staggered Cascade Reveal ── */
@@ -2148,23 +2267,54 @@ class LcarsHomepageCard extends LitElement {
           }
           .alarm-digit-grid {
             display: grid;
-            grid-template-columns: repeat(3, 3.5rem);
-            gap: var(--lcars-gap);
+            grid-template-columns: repeat(3, minmax(3.5rem, 4.5rem));
+            gap: 0.5rem;
+            justify-content: center;
           }
           .alarm-digit-btn {
-            height: 3.5rem;
+            height: 4rem;
+            min-width: 3.5rem;
             border: none;
             border-radius: var(--lcars-btn-radius);
             background: var(--lcars-sunflower);
             color: var(--lcars-black);
             font-family: var(--lcars-font);
-            font-size: 1.25rem;
+            font-size: 1.375rem;
             cursor: pointer;
             transition: background 200ms;
+            -webkit-tap-highlight-color: transparent;
           }
           .alarm-digit-btn:hover { filter: brightness(1.1); }
           .alarm-digit-btn:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+          .alarm-digit-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+          }
           .alarm-action-btn { background: var(--lcars-disabled); }
+          .alarm-lockout-msg {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-tomato);
+            text-transform: uppercase;
+            text-align: center;
+            letter-spacing: 0.08em;
+            padding: 0.25rem 0;
+            animation: lockout-pulse 2s ease-in-out infinite;
+          }
+          .alarm-lockout-countdown {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-tomato);
+            text-transform: uppercase;
+            text-align: center;
+            letter-spacing: 0.08em;
+            opacity: 0.7;
+          }
+          @keyframes lockout-pulse {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.5; }
+          }
 
           /* ═══════ MEDIA PANEL ═══════ */
           .media-panel {
@@ -2483,7 +2633,7 @@ class LcarsHomepageCard extends LitElement {
           .forecast-range-fill {
             position: absolute;
             height: 100%;
-            background: linear-gradient(90deg, var(--lcars-ice), var(--lcars-butterscotch));
+            background: var(--lcars-butterscotch);
             border-radius: 2px;
           }
           .forecast-precip { color: var(--lcars-gray); font-size: 0.75rem; }
@@ -3243,7 +3393,7 @@ class LcarsHomepageCard extends LitElement {
             animation-delay: var(--bar-delay, 0ms);
           }
           .lcars-audio-waveform .bar.peak {
-            background: linear-gradient(to top, var(--lcars-ice) 70%, var(--lcars-tomato) 100%);
+            background: var(--lcars-tomato);
           }
           .lcars-audio-waveform[data-paused] .bar {
             animation-play-state: paused;
@@ -3402,34 +3552,11 @@ class LcarsHomepageCard extends LitElement {
 
           /* ═══════ Phase 6: WEATHER v4.13.0 ═══════ */
 
-          /* ── 6.1 Condition Ambient Glow ── */
+          /* ── 6.1 Weather Condition Feedback ── */
           .weather-viewscreen {
             position: relative;
-          }
-          .weather-viewscreen::before {
-            content: '';
-            position: absolute; inset: 0;
-            border-radius: inherit;
-            background: radial-gradient(ellipse at 50% 80%, var(--weather-glow-color, transparent) 0%, transparent 70%);
-            opacity: var(--weather-glow-opacity, 0.15);
-            pointer-events: none;
-            z-index: 0;
-            transition: opacity 1s ease-out;
-          }
-          /* Storm flicker — 4s per Worf M2 */
-          .weather-viewscreen.storm::before {
-            animation: lcars-storm-flicker 4s steps(8, end) infinite;
-          }
-          @keyframes lcars-storm-flicker {
-            0%   { opacity: 0.12; }
-            12%  { opacity: 0.24; }
-            25%  { opacity: 0.10; }
-            37%  { opacity: 0.22; }
-            50%  { opacity: 0.14; }
-            62%  { opacity: 0.25; }
-            75%  { opacity: 0.11; }
-            87%  { opacity: 0.20; }
-            100% { opacity: 0.12; }
+            border-color: var(--weather-glow-color, var(--panel-frame-color));
+            transition: border-color 1s ease-out;
           }
 
           /* ── 6.2 Wind Compass Needle ── */
@@ -3507,30 +3634,6 @@ class LcarsHomepageCard extends LitElement {
           }
 
           /* ═══════ Phase 7: POOL/SPA v4.13.0 ═══════ */
-
-          /* ── 7.1 Water Caustic Shimmer ── */
-          .pool-viewscreen {
-            position: relative;
-            overflow: hidden;
-          }
-          .pool-viewscreen::after {
-            content: '';
-            position: absolute; inset: -50%;
-            width: 200%; height: 200%;
-            background:
-              radial-gradient(ellipse at 25% 25%, rgba(153,204,255,0.06), transparent 50%),
-              radial-gradient(ellipse at 75% 30%, rgba(153,204,255,0.04), transparent 50%),
-              radial-gradient(ellipse at 50% 75%, rgba(153,204,255,0.05), transparent 50%);
-            mix-blend-mode: screen;
-            pointer-events: none;
-            animation: lcars-caustic-drift 12s linear infinite;
-          }
-          @keyframes lcars-caustic-drift {
-            0%   { transform: translate(0, 0); }
-            33%  { transform: translate(-3%, 2%); }
-            66%  { transform: translate(2%, -1%); }
-            100% { transform: translate(0, 0); }
-          }
 
           /* ── 7.2 Heating Active Indicator ── */
           .pool-heat-bar {
@@ -4088,6 +4191,9 @@ class LcarsHomepageCard extends LitElement {
             .device-control-btn:active::after { animation-duration: 100ms !important; }
             .alarm-key:active::before { animation-duration: 100ms !important; }
             .zone-bar.completing { animation-duration: 1s !important; }
+            /* P3: Camera offline animations */
+            .camera-offline-text { animation: none; }
+            .camera-frame[data-state="offline"] .camera-offline-overlay { animation: none; }
           }
         `,
       ];
@@ -4121,9 +4227,23 @@ class LcarsHomepageCard extends LitElement {
             if (!area) return '';
             const entities = this._getAreaEntities(areaId);
             if (entities.length === 0) return '';
+            const alarmBadge = this._getAlarmBadgeForArea(areaId, entities);
             return html`
               <div class="content-area-panel floor-area-section">
-                <h3 class="content-area-header floor-area-subheader">${area.name}</h3>
+                <h3 class="content-area-header floor-area-subheader">
+                  ${area.name}
+                  ${alarmBadge ? html`
+                    <a class="room-alarm-badge"
+                       style="color:${getAlarmStateColor(alarmBadge.state?.state || 'unavailable')}"
+                       tabindex="0"
+                       role="link"
+                       aria-label="Alarm: ${(alarmBadge.state?.state || '').replace(/_/g, ' ')}. Tap to view."
+                       @click=${() => this._navigateToAlarmArea(alarmBadge)}
+                       @keydown=${(e) => e.key === 'Enter' && (e.preventDefault(), this._navigateToAlarmArea(alarmBadge))}>
+                      ◆ ${(alarmBadge.state?.state || '').toUpperCase().replace(/_/g, ' ')}
+                    </a>
+                  ` : ''}
+                </h3>
                 ${this._renderAreaContent(entities, areaId)}
               </div>
             `;
@@ -4138,6 +4258,9 @@ class LcarsHomepageCard extends LitElement {
         lcarsLog.debug(TAG, 'Render: waiting for hass');
         return html`<div class="lcars-empty">Initializing...</div>`;
       }
+
+      // Reset tactical dedupe tracking for this render cycle
+      this._renderedAlarmDeviceIds.clear();
 
       // Floor selected — combined view of all areas on that floor
       if (this.selectedFloor) {
@@ -4205,13 +4328,18 @@ class LcarsHomepageCard extends LitElement {
     }
 
     /* ─── Sensor indicator color per state (Geordi spec) ─── */
-    _getSensorIndicatorColor(state) {
+    _getSensorIndicatorColor(state, entityCategory = '') {
       // 4X-1: CO₂-specific 3-tier coloring (D-C2 — wire getCo2Color into rendering)
       const dc = state?.attributes?.device_class || '';
       if (dc === 'carbon_dioxide') {
         return getCo2Color(state?.state);
       }
-      return getStateColor(state?.entity_id || '', state);
+      return getStateColor(state?.entity_id || '', state, entityCategory);
+    }
+
+    /* ─── Formatted sensor value (P2: centralized formatting) ─── */
+    _fmtSensor(state, entity) {
+      return formatStateValue(state, entity?.entity_category || '');
     }
 
     /* ═══ CAMERA DEVICE PANEL RENDERER ═══ */
@@ -4230,17 +4358,16 @@ class LcarsHomepageCard extends LitElement {
           <div class="device-panel-sensors" role="list" aria-label="${deviceName} sensors">
             ${sensors.map(({ entity, state }) => {
               const name = this._friendlyName(state, entity);
-              const val = state.state;
-              const unit = state.attributes?.unit_of_measurement || '';
-              const color = this._getSensorIndicatorColor(state);
+              const { text } = this._fmtSensor(state, entity);
+              const color = this._getSensorIndicatorColor(state, entity?.entity_category);
               return html`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
-                  aria-label="${name}: ${val}${unit ? ' ' + unit : ''}"
+                  aria-label="${name}: ${text}"
                   @click=${() => this._handleEntityClick(entity.entity_id)}
                   @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                   <div class="sensor-indicator" style="background:${color}"></div>
                   <span class="sensor-label">${name}</span>
-                  <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                  <span class="sensor-state-value" style="color:${color}">${text}</span>
                 </div>
               `;
             })}
@@ -4395,6 +4522,7 @@ class LcarsHomepageCard extends LitElement {
       const score = [];
       const airQuality = [];
       const telemetry = [];
+      const filterLife = [];
       const controls = [];
       const diagnostics = [];
 
@@ -4405,6 +4533,14 @@ class LcarsHomepageCard extends LitElement {
         // Controls: fan, switch, button, number, select, light (4X-1: BlueAir LED)
         if (['fan', 'switch', 'button', 'number', 'select', 'light'].includes(domain)) {
           controls.push(entry);
+          continue;
+        }
+
+        // 4X-54/4X-59: Detect filter/wick life sensors before AQ routing.
+        // BlueAir uses device_class: battery; Xiaomi has no device_class.
+        if (domain === 'sensor' && /filter|wick/i.test(entry.entity?.entity_id || '') &&
+            (dc === 'battery' || dc === '' || !dc)) {
+          filterLife.push(entry);
           continue;
         }
 
@@ -4433,7 +4569,7 @@ class LcarsHomepageCard extends LitElement {
         }
       }
 
-      return { score, airQuality, telemetry, controls, diagnostics };
+      return { score, airQuality, telemetry, filterLife, controls, diagnostics };
     }
 
     /* Map AQI value → hue angle (120=green → 0=red) for atmoscrubber */
@@ -4473,7 +4609,7 @@ class LcarsHomepageCard extends LitElement {
     /* Render the environment panel */
     _renderEnvironmentPanel(group) {
       const categoryEntities = this._getDeviceCategoryEntities(group.device.id);
-      const { score, airQuality, telemetry, controls, diagnostics } = this._partitionEnvironmentEntities(group.entities, categoryEntities);
+      const { score, airQuality, telemetry, filterLife, controls, diagnostics } = this._partitionEnvironmentEntities(group.entities, categoryEntities);
       const deviceName = this._shortDeviceName(group.device) || 'Environment';
 
       // Find primary AQ reading for color mapping
@@ -4528,33 +4664,49 @@ class LcarsHomepageCard extends LitElement {
           <div class="env-sensors" role="list" aria-label="${deviceName} sensors">
             ${airQuality.map(({ entity, state }) => {
               const name = this._friendlyName(state, entity);
-              const val = state.state;
-              const unit = state.attributes?.unit_of_measurement || '';
-              const color = this._getSensorIndicatorColor(state);
+              const { text } = this._fmtSensor(state, entity);
+              const color = this._getSensorIndicatorColor(state, entity?.entity_category);
               return html`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
-                  aria-label="${name}: ${val}${unit ? ' ' + unit : ''}"
+                  aria-label="${name}: ${text}"
                   @click=${() => this._handleEntityClick(entity.entity_id)}
                   @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                   <div class="sensor-indicator" style="background:${color}"></div>
                   <span class="sensor-label">${name}</span>
-                  <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                  <span class="sensor-state-value" style="color:${color}">${text}</span>
                 </div>
               `;
             })}
             ${telemetry.map(({ entity, state }) => {
               const name = this._friendlyName(state, entity);
-              const val = state.state;
-              const unit = state.attributes?.unit_of_measurement || '';
-              const color = this._getSensorIndicatorColor(state);
+              const { text } = this._fmtSensor(state, entity);
+              const color = this._getSensorIndicatorColor(state, entity?.entity_category);
               return html`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
-                  aria-label="${name}: ${val}${unit ? ' ' + unit : ''}"
+                  aria-label="${name}: ${text}"
                   @click=${() => this._handleEntityClick(entity.entity_id)}
                   @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                   <div class="sensor-indicator" style="background:${color}"></div>
                   <span class="sensor-label">${name}</span>
-                  <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                  <span class="sensor-state-value" style="color:${color}">${text}</span>
+                </div>
+              `;
+            })}
+            ${filterLife.map(({ entity, state }) => {
+              const name = this._friendlyName(state, entity);
+              const pct = Math.min(100, Math.max(0, parseFloat(state.state) || 0));
+              const litCount = Math.round(pct / 10);
+              return html`
+                <div class="filter-life-row">
+                  <span class="filter-life-label">${name}</span>
+                  <span class="filter-life-pct">${Math.round(pct)}%</span>
+                </div>
+                <div class="filter-segments" aria-label="Filter life: ${Math.round(pct)}%">
+                  ${Array.from({ length: 10 }, (_, i) => {
+                    const seg = i < litCount;
+                    const cls = seg ? (pct < 25 ? 'lit critical' : pct < 75 ? 'lit warn' : 'lit') : '';
+                    return html`<div class="filter-seg ${cls}"></div>`;
+                  })}
                 </div>
               `;
             })}
@@ -4563,16 +4715,15 @@ class LcarsHomepageCard extends LitElement {
               <div class="battery-section-label">DIAGNOSTICS</div>
               ${diagnostics.map(({ entity, state }) => {
                 const name = this._friendlyName(state, entity);
-                const val = state.state;
-                const unit = state.attributes?.unit_of_measurement || '';
-                const color = this._getSensorIndicatorColor(state);
+                const { text } = this._fmtSensor(state, entity);
+                const color = this._getSensorIndicatorColor(state, 'diagnostic');
                 return html`
                   <div class="device-sensor-line" tabindex="0" role="listitem"
                     @click=${() => this._handleEntityClick(entity.entity_id)}
                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                     <div class="sensor-indicator" style="background:${color}"></div>
                     <span class="sensor-label">${name}</span>
-                    <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                    <span class="sensor-state-value" style="color:${color}">${text}</span>
                   </div>
                 `;
               })}
@@ -4652,9 +4803,9 @@ class LcarsHomepageCard extends LitElement {
           <!-- Sparklines (bottom) -->
           <div class="env-sparklines" aria-label="24-hour history">
             ${[...score, ...airQuality].map(({ entity, state }) => {
-              const name = this._friendlyName(state, entity);
-              const points = sparkData[entity.entity_id];
               const dc = state.attributes?.device_class || '';
+              const name = canonicalLabel(dc, this._friendlyName(state, entity), entity.entity_id);
+              const points = sparkData[entity.entity_id];
               const color = dc === 'pm25' ? 'var(--lcars-peach)'
                 : dc === 'carbon_dioxide' ? 'var(--lcars-sunflower)'
                 : dc === 'volatile_organic_compounds_parts' || dc === 'volatile_organic_compounds' ? 'var(--lcars-african-violet)'
@@ -4767,16 +4918,15 @@ class LcarsHomepageCard extends LitElement {
             ` : ''}
             ${keyTelemetry.map(({ entity, state }) => {
               const name = this._friendlyName(state, entity);
-              const val = state.state;
-              const unit = state.attributes?.unit_of_measurement || '';
-              const color = this._getSensorIndicatorColor(state);
+              const { text } = this._fmtSensor(state, entity);
+              const color = this._getSensorIndicatorColor(state, entity?.entity_category);
               return html`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
                   @click=${() => this._handleEntityClick(entity.entity_id)}
                   @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                   <div class="sensor-indicator" style="background:${color}"></div>
                   <span class="sensor-label">${name}</span>
-                  <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                  <span class="sensor-state-value" style="color:${color}">${text}</span>
                 </div>
               `;
             })}
@@ -4785,16 +4935,15 @@ class LcarsHomepageCard extends LitElement {
               <div class="battery-section-label">DIAGNOSTICS</div>
               ${keyDiagnostics.map(({ entity, state }) => {
                 const name = this._friendlyName(state, entity);
-                const val = state.state;
-                const unit = state.attributes?.unit_of_measurement || '';
-                const color = this._getSensorIndicatorColor(state);
+                const { text } = this._fmtSensor(state, entity);
+                const color = this._getSensorIndicatorColor(state, 'diagnostic');
                 return html`
                   <div class="device-sensor-line" tabindex="0" role="listitem"
                     @click=${() => this._handleEntityClick(entity.entity_id)}
                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                     <div class="sensor-indicator" style="background:${color}"></div>
                     <span class="sensor-label">${name}</span>
-                    <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                    <span class="sensor-state-value" style="color:${color}">${text}</span>
                   </div>
                 `;
               })}
@@ -4852,7 +5001,7 @@ class LcarsHomepageCard extends LitElement {
                       <div class="battery-slider-fill" style="width:${pct}%"></div>
                       <div class="battery-slider-thumb" style="left:${pct}%"></div>
                     </div>
-                    <span class="battery-slider-value">${val}${unit ? ' ' + unit : ''}</span>
+                    <span class="battery-slider-value">${formatNumber(String(val), state.attributes?.device_class || '')}${unit ? ' ' + unit : ''}</span>
                   </div>
                 `;
               }
@@ -4910,7 +5059,7 @@ class LcarsHomepageCard extends LitElement {
                         <div class="battery-slider-fill" style="width:${pct}%"></div>
                         <div class="battery-slider-thumb" style="left:${pct}%"></div>
                       </div>
-                      <span class="battery-slider-value">${val}${unit ? ' ' + unit : ''}</span>
+                      <span class="battery-slider-value">${formatNumber(String(val), state.attributes?.device_class || '')}${unit ? ' ' + unit : ''}</span>
                     </div>
                   `;
                 }
@@ -5291,6 +5440,9 @@ class LcarsHomepageCard extends LitElement {
     _alarmCountdown = null;
     _alarmCountdownTimer = null;
     _alarmPinError = false;
+    _alarmLockoutSeconds = 0;
+    _alarmLockoutTimer = null;
+    _alarmLockoutAnnounced = false;
 
     _partitionAlarmEntities(entries, categoryEntities) {
       const alarm = [];
@@ -5312,6 +5464,23 @@ class LcarsHomepageCard extends LitElement {
         auxiliary.push(entry);
       }
 
+      // 4X-7: absorb same-device siblings into zone context
+      const zoneDevIds = new Set();
+      for (const z of zones) {
+        if (z.entity?.device_id) zoneDevIds.add(z.entity.device_id);
+      }
+      const zoneSiblings = new Map();
+      const remainingAux = [];
+      for (const a of auxiliary) {
+        const did = a.entity?.device_id;
+        if (did && zoneDevIds.has(did)) {
+          if (!zoneSiblings.has(did)) zoneSiblings.set(did, []);
+          zoneSiblings.get(did).push(a);
+        } else {
+          remainingAux.push(a);
+        }
+      }
+
       if (categoryEntities) {
         for (const e of categoryEntities.diagnostic || []) {
           const state = this._getEntityState(e.entity_id);
@@ -5320,7 +5489,7 @@ class LcarsHomepageCard extends LitElement {
         }
       }
 
-      return { alarm, zones, auxiliary, diagnostics };
+      return { alarm, zones, auxiliary: remainingAux, diagnostics, zoneSiblings };
     }
 
     _handleAlarmPinDigit(digit) {
@@ -5348,8 +5517,10 @@ class LcarsHomepageCard extends LitElement {
     }
 
     _handleAlarmDisarm(entityId) {
+      // WORF-SEC-003: Client-side rate limiter is a UX safeguard only.
       if (!this._alarmPinLimiter.allow()) {
         this._alarmPinError = true;
+        this._startAlarmLockout();
         this.requestUpdate();
         return;
       }
@@ -5360,6 +5531,28 @@ class LcarsHomepageCard extends LitElement {
       });
       this._alarmPinCode = '';
       this.requestUpdate();
+    }
+
+    _startAlarmLockout() {
+      if (this._alarmLockoutTimer) clearInterval(this._alarmLockoutTimer);
+      this._alarmLockoutAnnounced = false;
+      const resetAt = this._alarmPinLimiter.resetTime();
+      const updateLockout = () => {
+        const remaining = Math.max(0, Math.ceil((resetAt - Date.now()) / 1000));
+        this._alarmLockoutSeconds = remaining;
+        this._alarmLockoutAnnounced = true;
+        this.requestUpdate();
+        if (remaining <= 0) {
+          clearInterval(this._alarmLockoutTimer);
+          this._alarmLockoutTimer = null;
+          this._alarmPinError = false;
+          this._alarmLockoutSeconds = 0;
+          this._alarmLockoutAnnounced = false;
+          this.requestUpdate();
+        }
+      };
+      updateLockout();
+      this._alarmLockoutTimer = setInterval(updateLockout, 1000);
     }
 
     _startAlarmCountdown(seconds) {
@@ -5412,7 +5605,7 @@ class LcarsHomepageCard extends LitElement {
 
     _renderAlarmPanel(group) {
       const categoryEntities = this._getDeviceCategoryEntities(group.device.id);
-      const { alarm, zones, auxiliary, diagnostics } = this._partitionAlarmEntities(group.entities, categoryEntities);
+      const { alarm, zones, auxiliary, diagnostics, zoneSiblings } = this._partitionAlarmEntities(group.entities, categoryEntities);
       const deviceName = this._shortDeviceName(group.device) || 'Alarm';
 
       if (alarm.length === 0) return '';
@@ -5454,6 +5647,7 @@ class LcarsHomepageCard extends LitElement {
               const name = this._friendlyName(state, entity);
               const isOpen = state.state === 'on';
               const color = isOpen ? 'var(--lcars-butterscotch)' : 'var(--lcars-gray)';
+              const siblings = (entity.device_id && zoneSiblings.get(entity.device_id)) || [];
               return html`
                 <div class="device-sensor-line" tabindex="0" role="listitem"
                   aria-label="${name}: ${isOpen ? 'open' : 'closed'}"
@@ -5461,6 +5655,14 @@ class LcarsHomepageCard extends LitElement {
                   @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                   <div class="sensor-indicator" style="background:${color}"></div>
                   <span class="sensor-label">${name}</span>
+                  ${siblings.length > 0 ? html`<span class="zone-siblings">${siblings.map(s => {
+                    const dc = s.state?.attributes?.device_class || '';
+                    const unit = s.state?.attributes?.unit_of_measurement || '';
+                    const { text: val } = formatStateValue(s.state, s.entity?.entity_category);
+                    const label = dc === 'battery' ? 'BAT' : dc === 'illuminance' ? 'LUX' : '';
+                    const ariaText = `${dc === 'battery' ? 'Battery' : dc === 'illuminance' ? 'Illuminance' : dc}: ${val}${unit ? ' ' + unit : ''}`;
+                    return html`<span class="zone-sibling-pip" role="img" aria-label="${ariaText}" title="${s.state?.attributes?.friendly_name || ''}">${label} ${val}${unit ? ' ' + unit : ''}</span>`;
+                  })}</span>` : ''}}
                   <span class="sensor-state-value" style="color:${color}">${isOpen ? 'OPEN' : 'CLOSED'}</span>
                 </div>
               `;
@@ -5527,16 +5729,24 @@ class LcarsHomepageCard extends LitElement {
                     style="background:${filled ? (this._alarmPinError ? 'var(--lcars-tomato)' : stateColor) : 'var(--lcars-disabled)'}"></div>
                 `)}
               </div>
+              ${this._alarmLockoutSeconds > 0 ? html`
+                ${this._alarmLockoutAnnounced ? html`<div class="alarm-lockout-msg" role="alert">LOCKED OUT</div>` : ''}
+                <div class="alarm-lockout-countdown" aria-live="off">${this._alarmLockoutSeconds}s</div>
+              ` : ''}
               <div class="alarm-digit-grid">
                 ${[1,2,3,4,5,6,7,8,9].map(d => html`
                   <button class="alarm-digit-btn" aria-label="Digit ${d}"
+                    ?disabled=${this._alarmLockoutSeconds > 0}
                     @click=${() => this._handleAlarmPinDigit(d)}>${d}</button>
                 `)}
                 <button class="alarm-digit-btn alarm-action-btn" aria-label="Clear code"
+                  ?disabled=${this._alarmLockoutSeconds > 0}
                   @click=${() => this._handleAlarmPinClear()}>⌫</button>
                 <button class="alarm-digit-btn" aria-label="Digit 0"
+                  ?disabled=${this._alarmLockoutSeconds > 0}
                   @click=${() => this._handleAlarmPinDigit(0)}>0</button>
                 <button class="alarm-digit-btn alarm-action-btn" aria-label="Disarm"
+                  ?disabled=${this._alarmLockoutSeconds > 0}
                   @click=${() => this._handleAlarmDisarm(primary.entity.entity_id)}>⏎</button>
               </div>
             </div>
@@ -5865,17 +6075,16 @@ class LcarsHomepageCard extends LitElement {
             <div class="pool-chemistry" role="list" aria-label="Water chemistry">
               ${chemistry.map(({ entity, state }) => {
                 const name = this._friendlyName(state, entity);
-                const val = state.state;
-                const unit = state.attributes?.unit_of_measurement || '';
-                const color = this._getSensorIndicatorColor(state);
+                const { text } = this._fmtSensor(state, entity);
+                const color = this._getSensorIndicatorColor(state, entity?.entity_category);
                 return html`
                   <div class="device-sensor-line" tabindex="0" role="listitem"
-                    aria-label="${name}: ${val}${unit ? ' ' + unit : ''}"
+                    aria-label="${name}: ${text}"
                     @click=${() => this._handleEntityClick(entity.entity_id)}
                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                     <div class="sensor-indicator" style="background:${color}"></div>
                     <span class="sensor-label">${name}</span>
-                    <span class="sensor-state-value" style="color:${color}">${val}${unit ? ' ' + unit : ''}</span>
+                    <span class="sensor-state-value" style="color:${color}">${text}</span>
                   </div>
                 `;
               })}
@@ -7139,6 +7348,52 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
+    /* ─── Tactical Dedup: alarm badge for secondary rooms ─── */
+
+    _renderedAlarmDeviceIds = new Set();
+
+    _getAlarmBadgeForArea(areaId, entities) {
+      for (const e of entities) {
+        const domain = e.entity_id.split('.')[0];
+        if (!ALARM_DOMAINS.has(domain)) continue;
+        const state = this._hass?.states?.[e.entity_id];
+        if (!state) continue;
+        const deviceId = e.device_id;
+        if (!deviceId) continue;
+
+        // Check if this alarm device was already rendered as a full tactical panel
+        if (this._renderedAlarmDeviceIds.has(deviceId)) {
+          // This is a secondary room — return badge info
+          return { entity: e, domain, state };
+        }
+      }
+      return null;
+    }
+
+    _findAlarmPrimaryArea(deviceId) {
+      const entities = this._hass?.entities || {};
+      for (const [eid, e] of Object.entries(entities)) {
+        if (e.device_id === deviceId && eid.startsWith('alarm_control_panel.')) {
+          if (e.area_id) return e.area_id;
+          // Fall back to device area
+          const device = this._hass.devices?.[deviceId];
+          return device?.area_id || null;
+        }
+      }
+      return null;
+    }
+
+    _navigateToAlarmArea(badgeEntry) {
+      const deviceId = badgeEntry?.entity?.device_id;
+      if (!deviceId) return;
+      const primaryArea = this._findAlarmPrimaryArea(deviceId);
+      if (primaryArea) {
+        this.selectedArea = primaryArea;
+        this.selectedFloor = null;
+        this.requestUpdate();
+      }
+    }
+
     /* ─── Render area content: two-column when cameras present ─── */
     _renderAreaContent(entities, areaId) {
       if (entities.length === 0)
@@ -7146,26 +7401,35 @@ class LcarsHomepageCard extends LitElement {
 
       const { byDevice, noDevice } = this._groupEntities(entities);
 
-      // ── Area-level composite panels (4X-17): life_support, illumination ──
+      // ── Area-level composite panels (4X-17): illumination, tactical, etc. ──
       // Hydrate flat entities for classifyArea (need domain + state)
       const hydratedEntries = entities.map(e => {
         const domain = e.entity_id.split('.')[0];
         const state = this._hass?.states?.[e.entity_id];
         return { entity: e, domain, state };
-      }).filter(e => e.state);
+      }).filter(e => e.state)
+        .filter(e => !isDiagnosticEntity(e)); // 4X-44: exclude diagnostic/config entities from panels
 
       const areaPanelTypes = classifyArea(this._hass, areaId, hydratedEntries);
       const areaPanels = [];
       for (const pt of areaPanelTypes) {
         const factory = PANEL_TAG_REGISTRY.get(pt);
         if (factory) {
+          // Track alarm device IDs for tactical dedupe
+          if (pt === PANEL_TYPE_TACTICAL) {
+            for (const entry of hydratedEntries) {
+              if (ALARM_DOMAINS.has(entry.domain) && entry.entity?.device_id) {
+                this._renderedAlarmDeviceIds.add(entry.entity.device_id);
+              }
+            }
+          }
           // Build a synthetic group with areaId + all hydrated entries for this panel type
           areaPanels.push({ panelType: pt, template: factory({ entities: hydratedEntries, areaId }, this._hass, this._editMode, this._config) });
         }
       }
 
       // ── Exclude entities consumed by area panels from standalone rendering ──
-      const consumedByArea = this._buildAreaPanelFilter(areaPanelTypes);
+      const consumedByArea = this._buildAreaPanelFilter(areaPanelTypes, hydratedEntries);
       if (consumedByArea) {
         for (const [devId, group] of byDevice) {
           group.entities = group.entities.filter(e => !consumedByArea(e));
@@ -7176,11 +7440,14 @@ class LcarsHomepageCard extends LitElement {
         ? noDevice.filter(e => !consumedByArea(e))
         : noDevice;
 
-      // Device panel types subsumed by area panels (e.g., climate → life_support)
+      // Device panel types subsumed by area panels (e.g., alarm → tactical)
       const subsumedDeviceTypes = new Set();
-      if (areaPanelTypes.has(PANEL_TYPE_LIFE_SUPPORT)) {
-        subsumedDeviceTypes.add(PANEL_TYPE_CLIMATE);
-        subsumedDeviceTypes.add(PANEL_TYPE_ENVIRONMENT);
+      if (areaPanelTypes.has(PANEL_TYPE_TACTICAL)) {
+        subsumedDeviceTypes.add(PANEL_TYPE_ALARM);
+        subsumedDeviceTypes.add(PANEL_TYPE_TACTICAL); // P3 QA-E04: prevent duplicate tactical for FP2 devices
+      }
+      if (areaPanelTypes.has(PANEL_TYPE_MEDIA)) {
+        subsumedDeviceTypes.add(PANEL_TYPE_MEDIA);
       }
 
       // Partition devices into panel-worthy, normal, and power
@@ -7202,8 +7469,15 @@ class LcarsHomepageCard extends LitElement {
       }
 
       // Build entity groups content (without power — power rendered in left column)
+      // P3 QA-E02: filter SUPPRESS_DOMAINS + diagnostic entities from fallback rendering
+      const _filterAux = (entries) => entries.filter(e =>
+        !SUPPRESS_DOMAINS.has(e.domain) && !isDiagnosticEntity(e)
+      );
       const entityContent = html`
-        ${normalDevices.map((group) => html`
+        ${normalDevices.map((group) => {
+          const filtered = _filterAux(group.entities);
+          if (filtered.length === 0) return '';
+          return html`
           <div class="device-group">
             <div class="device-header">
               <h3 class="device-name">${this._shortDeviceName(group.device)}</h3>
@@ -7214,18 +7488,19 @@ class LcarsHomepageCard extends LitElement {
                   @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEditDevice(e, group.device.id); } }}></div>
               ` : ''}
             </div>
-            ${this._renderDomainGroups(group.entities)}
+            ${this._renderDomainGroups(filtered)}
           </div>
-        `)}
-        ${filteredNoDevice.length > 0 ? html`
-          <div class="device-group">
-            <div class="device-header">
-              <h3 class="device-name">Other Entities</h3>
-              <div class="device-line"></div>
+        `;
+        })}
+        ${(() => {
+          const auxEntities = _filterAux(filteredNoDevice);
+          return auxEntities.length > 0 ? html`
+            <div class="device-group">
+              <lcars-section-divider label="AUXILIARY SYSTEMS" style="--divider-color: var(--lcars-gray)"></lcars-section-divider>
+              ${this._renderDomainGroups(auxEntities)}
             </div>
-            ${this._renderDomainGroups(filteredNoDevice)}
-          </div>
-        ` : ''}
+          ` : '';
+        })()}
       `;
 
       // Power panel template (left column, below environment)
@@ -7233,20 +7508,54 @@ class LcarsHomepageCard extends LitElement {
         ? html`<lcars-power-panel .powerGroups=${powerGroups} .hass=${this._hass} .editMode=${this._editMode} .config=${this._config}></lcars-power-panel>`
         : '';
 
-      // Merge all panels (device + area)
+      // Merge all panels (device + area) with unique IDs and display labels
       const allPanels = [
-        ...panelDevices.map(g => ({ panelType: g.panelType, template: this._renderDevicePanel(g.panelType, g) })),
-        ...areaPanels,
+        ...panelDevices.map(g => {
+          const devName = g.device?.name_by_user || g.device?.name || '';
+          return {
+            panelType: g.panelType,
+            panelId: `${g.panelType}:${g.device?.id || ''}`,
+            label: devName || g.panelType.replace(/_/g, ' '),
+            deviceId: g.device?.id || null,
+            template: this._renderDevicePanel(g.panelType, g),
+          };
+        }),
+        ...areaPanels.map(p => ({
+          ...p,
+          panelId: p.panelType,
+          label: p.panelType.replace(/_/g, ' '),
+          deviceId: null,
+        })),
       ];
 
-      // No panels at all → single-column with entities + power
-      if (allPanels.length === 0 && powerGroups.length === 0) return html`${entityContent}${powerTemplate}`;
+      // 4X-8: In edit mode, wrap each panel with a reorder gear pip
+      const wrappedPanels = this._editMode
+        ? allPanels.map(p => ({
+            ...p,
+            template: html`
+              <div class="panel-order-wrapper">
+                ${p.template}
+                <div class="panel-order-pip" tabindex="0" role="button"
+                  aria-label="Reorder ${p.label} panel"
+                  @click=${(e) => this._handlePanelReorder(e, areaId, p.panelId, allPanels)}
+                  @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handlePanelReorder(e, areaId, p.panelId, allPanels); } }}>
+                  <ha-icon icon="mdi:swap-vertical" style="--mdc-icon-size: 14px;"></ha-icon>
+                </div>
+              </div>
+            `,
+          }))
+        : allPanels;
 
-      // Split panels into left and right columns
+      // No panels at all → single-column with entities + power
+      if (wrappedPanels.length === 0 && powerGroups.length === 0) return html`${entityContent}${powerTemplate}`;
+
+      // Split panels into left and right columns (with column overrides by panelId or panelType)
+      const colOverrides = this.data?.panel_column_overrides?.[areaId] || {};
       const leftPanels = [];
       const rightPanels = [];
-      for (const p of allPanels) {
-        if (PANEL_COLUMN[p.panelType] === 'right') {
+      for (const p of wrappedPanels) {
+        const col = colOverrides[p.panelId] || colOverrides[p.panelType] || PANEL_COLUMN[p.panelType] || 'left';
+        if (col === 'right') {
           rightPanels.push(p);
         } else {
           leftPanels.push(p);
@@ -7254,6 +7563,18 @@ class LcarsHomepageCard extends LitElement {
       }
       leftPanels.sort((a, b) => (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99));
       rightPanels.sort((a, b) => (PANEL_TYPE_ORDER[a.panelType] ?? 99) - (PANEL_TYPE_ORDER[b.panelType] ?? 99));
+
+      // 4X-8: Apply panel order override for this area if present (supports panelId or panelType keys)
+      const areaOverride = this.data?.panel_overrides?.[areaId];
+      if (Array.isArray(areaOverride) && areaOverride.length > 0) {
+        const overrideIndex = (panel) => {
+          let idx = areaOverride.indexOf(panel.panelId);
+          if (idx < 0) idx = areaOverride.indexOf(panel.panelType);
+          return idx >= 0 ? idx : 999;
+        };
+        leftPanels.sort((a, b) => overrideIndex(a) - overrideIndex(b));
+        rightPanels.sort((a, b) => overrideIndex(a) - overrideIndex(b));
+      }
 
       // Illumination renders FULL-WIDTH above both columns as primary room control
       const ilmPanel = leftPanels.find(p => p.panelType === PANEL_TYPE_ILLUMINATION);
@@ -7287,13 +7608,57 @@ class LcarsHomepageCard extends LitElement {
     }
 
     /* ─── Build predicate for entities consumed by area-level panels ─── */
-    _buildAreaPanelFilter(areaPanelTypes) {
+    _buildAreaPanelFilter(areaPanelTypes, entityEntries) {
       if (areaPanelTypes.size === 0) return null;
       const predicates = [];
-      if (areaPanelTypes.has(PANEL_TYPE_ILLUMINATION)) predicates.push(isLightingEntity);
-      if (areaPanelTypes.has(PANEL_TYPE_LIFE_SUPPORT)) predicates.push(
-        e => isClimateEntity(e) || isEnvironmentEntity(e) || isAmbientSensor(e)
-      );
+      if (areaPanelTypes.has(PANEL_TYPE_ILLUMINATION)) {
+        predicates.push(isLightingEntity);
+        // P3 QA-E01: suppress fan-domain entities when illumination panel is active
+        // Fan lights already route to illumination; fan speed entities shouldn't dump to fallback
+        // 4X-59: EXCEPT air purifier fans — exclude fans whose device has AQ sensors
+        const aqDeviceIds = new Set();
+        for (const e of entityEntries) {
+          const dc = e.state?.attributes?.device_class || '';
+          const eid = e.entity?.entity_id || '';
+          if ((AQ_DEVICE_CLASSES.has(dc) || (e.domain === 'sensor' && AQ_ENTITY_SUFFIX_RE.test(eid)))
+              && e.entity?.device_id) {
+            aqDeviceIds.add(e.entity.device_id);
+          }
+        }
+        predicates.push(e => e.domain === 'fan' && !aqDeviceIds.has(e.entity?.device_id));
+      }
+      if (areaPanelTypes.has(PANEL_TYPE_TACTICAL)) {
+        // Exclude camera-device motion/occupancy from tactical consumption
+        // so those sensors stay with their camera panel (hero tier).
+        const camDevIds = new Set();
+        for (const e of entityEntries) {
+          if (CAMERA_DOMAINS.has(e.domain) && e.entity?.device_id) camDevIds.add(e.entity.device_id);
+        }
+        predicates.push(e => {
+          if (e.entity?.device_id && camDevIds.has(e.entity.device_id)) {
+            const dc = e.state?.attributes?.device_class || '';
+            if (['motion', 'occupancy'].includes(dc)) return false;
+          }
+          return isTacticalEntity(e);
+        });
+        // 4X-7: Also consume same-device siblings of tactical zone sensors.
+        // These are battery/illuminance sensors that the alarm panel renders
+        // as zone sibling pips rather than standalone buttons.
+        const tacticalDevIds = new Set();
+        for (const e of entityEntries) {
+          if (e.entity?.device_id && !camDevIds.has(e.entity.device_id) && isTacticalEntity(e)) {
+            tacticalDevIds.add(e.entity.device_id);
+          }
+        }
+        const SIBLING_CLASSES = new Set(['battery', 'illuminance', 'light']);
+        predicates.push(e => {
+          if (!e.entity?.device_id || !tacticalDevIds.has(e.entity.device_id)) return false;
+          const dc = e.state?.attributes?.device_class || '';
+          return SIBLING_CLASSES.has(dc);
+        });
+      }
+      if (areaPanelTypes.has(PANEL_TYPE_MEDIA)) predicates.push(e => MEDIA_DOMAINS.has(e.domain) || e.domain === 'remote');
+      if (areaPanelTypes.has(PANEL_TYPE_VIEWPORT)) predicates.push(isViewportEntity); // P6 CRAWL-003
       if (predicates.length === 0) return null;
       return entry => predicates.some(p => p(entry));
     }
@@ -7326,6 +7691,8 @@ class LcarsHomepageCard extends LitElement {
           const off = this._isOff(state);
           const imgUrl = cameraImageUrl(state);
           const initialState = (off || !imgUrl) ? 'offline' : 'connecting';
+          // P3 GEORDI-015: last signal for offline cameras
+          const lastSignal = off ? this._formatCamTimeSince(state?.last_changed) : '';
           return html`
             <div class="camera-frame" data-state="${initialState}" style="--i:${i}"
               role="button"
@@ -7340,6 +7707,7 @@ class LcarsHomepageCard extends LitElement {
               <div class="camera-offline-overlay" aria-hidden="true">
                 <ha-icon icon="mdi:video-off"></ha-icon>
                 <span class="camera-offline-text">VIEWSCREEN OFFLINE</span>
+                ${lastSignal ? html`<span class="camera-last-signal">${lastSignal}</span>` : ''}
               </div>
               ${imgUrl
                 ? html`<img src="${imgUrl}" alt="${name}"
@@ -7401,8 +7769,9 @@ class LcarsHomepageCard extends LitElement {
           const name = this._friendlyName(state, entity);
           const off = this._isOff(state);
           const unit = state.attributes?.unit_of_measurement || '';
-          const val = state.state;
-          const numVal = parseFloat(val);
+          // P3 QA-E07: route through shared formatter for device-class-aware rounding
+          const { text: fmtVal } = formatStateValue(state, entity?.entity_category || '');
+          const numVal = parseFloat(state.state);
           // Warn if battery < 20% or any numeric > threshold patterns
           const isBattery = entity.entity_id.includes('battery') ||
             state.attributes?.device_class === 'battery';
@@ -7411,11 +7780,11 @@ class LcarsHomepageCard extends LitElement {
           return this._withEditPip(entity.entity_id, html`
             <button class="sensor-readout" ?data-off=${off} ?data-warn=${warn} style="--i:${i}"
               @click=${() => this._handleEntityClick(entity.entity_id)}
-              title="${name}: ${val} ${unit}">
+              title="${name}: ${fmtVal} ${unit}">
               <ha-icon .icon=${this._getEntityIcon(state)}></ha-icon>
               <span class="sensor-name">${name}</span>
               ${this._renderSensorBar(state)}
-              <span class="sensor-value">${val}</span>
+              <span class="sensor-value">${fmtVal}</span>
               ${unit ? html`<span class="sensor-unit">${unit}</span>` : ''}
             </button>
           `);

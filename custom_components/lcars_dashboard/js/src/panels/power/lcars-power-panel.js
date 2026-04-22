@@ -48,6 +48,80 @@ class LcarsPowerPanel extends LcarsBasePanel {
 
   _powerToggleLimiter = createRateLimiter(10, 10000);
   _expandedPowerSections = new Set();
+  _cachedCollection = null;
+  _lastPowerGroups = null;
+
+  /* ── Name humanization pipeline (P4) ── */
+
+  static _MANUFACTURER_PREFIXES = [
+    { pattern: /^vue\s*g?\d*[_\s]*/i },
+    { pattern: /^emporia[_\s]*(vue)?[_\s]*/i },
+    { pattern: /^pentair[_:\s]*/i },
+    { pattern: /^screenlogic[_:\s]*/i },
+  ];
+
+  static _HEX_SERIAL_PATTERNS = [
+    /\b[0-9a-f]{2}(-[0-9a-f]{2}){2,}\b/gi,
+    /\b[0-9a-f]{6,}\b/gi,
+    /\b(sn|serial)[:\s]*[a-z0-9-]+\b/gi,
+    /\b(mac|addr)[:\s]+[a-z0-9.-][a-z0-9:.-]*\b/gi,
+  ];
+
+  static _POOL_KEYWORDS = /pool[_\s]?(pump|heater|cleaner|blower|light|spa|waterfall|spillover|circuit[_\s]?\d+)/i;
+
+  _humanizePowerName(rawName, device, entityId) {
+    let result = rawName || '';
+    const isUserNamed = !!device?.name_by_user;
+
+    // Stages 2-3: manufacturer + hex strip (skip if user-named)
+    if (!isUserNamed) {
+      for (const { pattern } of LcarsPowerPanel._MANUFACTURER_PREFIXES) {
+        result = result.replace(pattern, '');
+      }
+      for (const pattern of LcarsPowerPanel._HEX_SERIAL_PATTERNS) {
+        result = result.replace(pattern, '');
+      }
+    }
+
+    // Stage 4: separator cleanup
+    result = result.replace(/^[\s\-–_:]+/, '').replace(/[\s\-–_:]+$/, '').replace(/\s{2,}/g, ' ');
+
+    // Stage 5: underscore-to-space, camelCase split, letter-number split
+    result = result.replace(/_/g, ' ');
+    result = result.replace(/([a-z])([A-Z])/g, '$1 $2');
+    result = result.replace(/([A-Za-z])(\d)/g, '$1 $2');
+
+    // Stage 6: fallback
+    if (!result.trim()) {
+      if (entityId) {
+        const parts = entityId.split('.').pop().split('_');
+        result = parts.slice(-2).join(' ');
+      }
+      if (!result.trim()) {
+        const mfr = (device?.manufacturer || '').toLowerCase();
+        if (mfr.includes('pentair') || mfr.includes('screenlogic')) {
+          result = 'POOL CONTROLLER';
+        } else {
+          result = 'CIRCUIT';
+        }
+      }
+    }
+
+    // Numeric-only guard
+    if (/^\d+$/.test(result.trim())) {
+      result = 'CIRCUIT ' + result.trim();
+    }
+
+    return result.trim().toUpperCase();
+  }
+
+  _getCircuitDisplayName(circuit) {
+    return circuit._displayName || this._humanizePowerName(
+      this._shortDeviceName(circuit.device),
+      circuit.device,
+      circuit.entities?.[0]?.entity?.entity_id
+    );
+  }
 
   /* ── Format helpers ── */
 
@@ -170,7 +244,7 @@ class LcarsPowerPanel extends LcarsBasePanel {
       const name = this._shortDeviceName(c.device) || '';
       const match = name.match(L1L2_PATTERN);
       if (match) {
-        const baseName = match[1].trim();
+        const baseName = match[1].trim().replace(/^[\s\-–_:]+/, '').replace(/[\s\-–_:]+$/, '');
         if (!pairs.has(baseName)) pairs.set(baseName, []);
         pairs.get(baseName).push(c);
       } else {
@@ -184,7 +258,7 @@ class LcarsPowerPanel extends LcarsBasePanel {
         const watts = pair.reduce((sum, p) => sum + (this._getPrimaryPower(p) || 0), 0);
         const kwhToday = pair.reduce((sum, p) => sum + (this._getPrimaryEnergy(p) || 0), 0);
         result.push({
-          device: { ...pair[0].device, name },
+          device: { ...pair[0].device, name: name || 'CIRCUIT' },
           entities: pair.flatMap(p => p.entities),
           is240V: true,
           combinedWatts: watts,
@@ -195,7 +269,26 @@ class LcarsPowerPanel extends LcarsBasePanel {
       }
     }
 
-    return result;
+    // Entity-level dedup: 240V combined entries take priority
+    const claimedEntityIds = new Set();
+    const deduped = [];
+    for (const c of result) {
+      if (c.is240V) {
+        for (const e of c.entities) {
+          if (e.entity?.entity_id) claimedEntityIds.add(e.entity.entity_id);
+        }
+        deduped.push(c);
+      }
+    }
+    for (const c of result) {
+      if (c.is240V) continue;
+      const dominated = (c.entities || []).some(
+        e => e.entity?.entity_id && claimedEntityIds.has(e.entity.entity_id)
+      );
+      if (!dominated) deduped.push(c);
+    }
+
+    return deduped;
   }
 
   _sortCircuits(circuits) {
@@ -207,6 +300,36 @@ class LcarsPowerPanel extends LcarsBasePanel {
       const nB = (b.device?.name || '').toLowerCase();
       return nA.localeCompare(nB);
     });
+  }
+
+  /* ── Circuit name deduplication (P4: GEORDI-007) ── */
+
+  _deduplicateCircuitNames(circuits) {
+    const displayNames = circuits.map(c => this._humanizePowerName(
+      this._shortDeviceName(c.device), c.device, c.entities?.[0]?.entity?.entity_id
+    ));
+    const nameCounts = new Map();
+    for (const name of displayNames) {
+      nameCounts.set(name, (nameCounts.get(name) || 0) + 1);
+    }
+    const nameIndexes = new Map();
+    circuits.forEach((c, i) => {
+      const name = displayNames[i];
+      if (nameCounts.get(name) > 1) {
+        // Try smart suffix from entity_id
+        const eidMatch = (c.entities?.[0]?.entity?.entity_id || '').match(LcarsPowerPanel._POOL_KEYWORDS);
+        if (eidMatch) {
+          c._displayName = eidMatch[1].replace(/_/g, ' ').toUpperCase();
+        } else {
+          const idx = (nameIndexes.get(name) || 0) + 1;
+          nameIndexes.set(name, idx);
+          c._displayName = name + ' ' + idx;
+        }
+      } else {
+        c._displayName = name;
+      }
+    });
+    return circuits;
   }
 
   /* ── Power strip grouping ── */
@@ -244,7 +367,7 @@ class LcarsPowerPanel extends LcarsBasePanel {
     const thresholds = this.config?.power_thresholds || {};
     const sorted = circuits
       .map(c => ({
-        name: this._shortDeviceName(c.device) || 'Unknown',
+        name: this._getCircuitDisplayName(c) || 'CIRCUIT',
         watts: c.combinedWatts != null ? c.combinedWatts : (this._getPrimaryPower(c) || 0),
       }))
       .filter(c => c.watts > 0)
@@ -317,7 +440,7 @@ class LcarsPowerPanel extends LcarsBasePanel {
     const thresholds = this.config?.power_thresholds || {};
     const color = getPowerColor(watts, thresholds);
     const label = getPowerLabel(watts, thresholds);
-    const name = this._shortDeviceName(circuit.device) || 'Unknown';
+    const name = this._getCircuitDisplayName(circuit) || 'CIRCUIT';
     const entityId = circuit.entities?.[0]?.entity?.entity_id;
 
     const content = popover.querySelector('.popover-content');
@@ -392,14 +515,19 @@ class LcarsPowerPanel extends LcarsBasePanel {
     const color = getPowerColor(watts, thresholds);
     const tier = getPowerLabel(watts, thresholds);
     const indicator = this._getPowerIndicator(watts);
-    const name = this._shortDeviceName(circuit.device) || 'Unknown';
+    const name = this._getCircuitDisplayName(circuit) || 'CIRCUIT';
     const supportsPopover = typeof HTMLElement.prototype.showPopover === 'function';
     const { powerSensors, energySensors } = this._partitionPowerEntities(circuit.entities || []);
     const powerEntityId = powerSensors[0]?.entity?.entity_id;
     const energyEntityId = energySensors[0]?.entity?.entity_id;
 
+    // Wattage tier class for visual differentiation (P4: WESLEY-IDEA-012)
+    const tierClass = watts != null && watts > 0
+      ? (watts > (thresholds.highMax || 3000) ? 'tier-critical' : watts > (thresholds.moderateMax || 1500) ? 'tier-high' : watts > (thresholds.lowMax || 500) ? 'tier-moderate' : 'tier-low')
+      : 'tier-standby';
+
     return html`
-      <div class="power-circuit-tile" style="--circuit-color:${color}" role="listitem" tabindex="0"
+      <div class="power-circuit-tile ${tierClass}" style="--circuit-color:${color}" role="listitem" tabindex="0"
         aria-label="${name}: ${watts != null ? Math.round(watts) + ' watts, ' + tier.toLowerCase() : 'unavailable'}${energy != null ? ', ' + energy.toFixed(1) + ' kilowatt hours today' : ''}"
         @click=${() => supportsPopover ? this._showCircuitPopover(circuit) : showMoreInfo(circuit.entities?.[0]?.entity?.entity_id)}
         @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); supportsPopover ? this._showCircuitPopover(circuit) : showMoreInfo(circuit.entities?.[0]?.entity?.entity_id); } }}>
@@ -422,7 +550,7 @@ class LcarsPowerPanel extends LcarsBasePanel {
     const energy = energySensors[0] ? parseFloat(energySensors[0].state?.state) || null : null;
     const thresholds = this.config?.power_thresholds || {};
     const color = getPowerColor(watts, thresholds);
-    const name = this._shortDeviceName(group.device) || 'Unknown';
+    const name = this._getCircuitDisplayName(group) || 'DEVICE';
     const isOn = sw?.state?.state === 'on';
     const powerEntityId = powerSensors[0]?.entity?.entity_id;
     const energyEntityId = energySensors[0]?.entity?.entity_id;
@@ -443,7 +571,7 @@ class LcarsPowerPanel extends LcarsBasePanel {
   }
 
   _renderPowerStrip(parentGroup, children) {
-    const parentName = this._shortDeviceName(parentGroup.device) || 'Power Strip';
+    const parentName = this._getCircuitDisplayName(parentGroup) || 'POWER STRIP';
     const { powerSensors: parentPower, switches: parentSwitches } = this._partitionPowerEntities(parentGroup.entities);
     const totalWatts = parentPower.reduce((sum, e) => sum + (parseFloat(e.state?.state) || 0), 0);
     const thresholds = this.config?.power_thresholds || {};
@@ -469,7 +597,7 @@ class LcarsPowerPanel extends LcarsBasePanel {
   }
 
   _renderStripChild(childGroup, parentSwitches) {
-    const name = this._shortDeviceName(childGroup.device) || 'Outlet';
+    const name = this._getCircuitDisplayName(childGroup) || 'OUTLET';
     const { switches: childSwitches, powerSensors, energySensors } = this._partitionPowerEntities(childGroup.entities);
     const watts = powerSensors[0] ? parseFloat(powerSensors[0].state?.state) || 0 : 0;
     const energy = energySensors[0] ? parseFloat(energySensors[0].state?.state) || null : null;
@@ -531,6 +659,10 @@ class LcarsPowerPanel extends LcarsBasePanel {
   /* ── Build power collection from groups ── */
 
   _buildPowerCollection(powerGroups) {
+    // Cache guard: avoid rebuilding 3× per render cycle (frameColor, renderBadge, render)
+    if (this._cachedCollection && this._lastPowerGroups === powerGroups) return this._cachedCollection;
+    this._lastPowerGroups = powerGroups;
+
     const circuits = [];
     const plugs = [];
     const allStrips = [];
@@ -576,7 +708,7 @@ class LcarsPowerPanel extends LcarsBasePanel {
     const AGGREGATE_PATTERN = /^(balance|total|main[s]?|net|whole[\s_-]?home)$/i;
     const aggregateCircuitIds = new Set();
     for (const c of processedCircuits) {
-      const name = this._shortDeviceName(c.device) || '';
+      const name = this._getCircuitDisplayName(c);
       if (AGGREGATE_PATTERN.test(name.trim())) {
         if (c.device?.id) aggregateCircuitIds.add(c.device.id);
       }
@@ -611,7 +743,10 @@ class LcarsPowerPanel extends LcarsBasePanel {
       if (e != null) totalEnergy += e;
     }
 
-    return {
+    // Deduplicate circuit display names
+    this._deduplicateCircuitNames(processedCircuits);
+
+    this._cachedCollection = {
       circuits: processedCircuits,
       plugs: orphanPlugs,
       strips,
@@ -619,6 +754,7 @@ class LcarsPowerPanel extends LcarsBasePanel {
       totalEnergy: totalEnergy || null,
       deviceCount: powerGroups.length,
     };
+    return this._cachedCollection;
   }
 
   /* ── Arc adapter for consolidated panel ── */
@@ -700,6 +836,71 @@ class LcarsPowerPanel extends LcarsBasePanel {
   /* ── Consolidated Power Panel ── */
 
   _renderConsolidatedPowerContent(collection) {
+    const { totalWatts } = collection;
+
+    // Tier 1: Standby (0W)
+    if (totalWatts != null && totalWatts === 0) {
+      return this._renderStandbyPowerContent(collection);
+    }
+
+    // Tier 2: Low activity (≤100W)
+    const lowActivityThreshold = this.config?.power_thresholds?.lowActivity ?? 100;
+    if (totalWatts != null && totalWatts > 0 && totalWatts <= lowActivityThreshold) {
+      return this._renderLowActivityPowerContent(collection);
+    }
+
+    // Tier 3: Normal / High activity
+    return this._renderFullPowerContent(collection);
+  }
+
+  _renderStandbyPowerContent(collection) {
+    const circuitCount = collection.circuits.length + collection.plugs.length;
+    const stripCount = collection.strips.length;
+    const deviceLabel = circuitCount + stripCount;
+
+    return html`
+      <div class="power-standby-summary" role="status" aria-label="Power systems standby, all circuits idle, ${deviceLabel} monitored">
+        <span class="standby-indicator" aria-hidden="true">○</span>
+        <span class="standby-label">ALL CIRCUITS STANDBY</span>
+        <span class="standby-detail">${deviceLabel} MONITORED</span>
+      </div>
+    `;
+  }
+
+  _renderLowActivityPowerContent(collection) {
+    const { circuits, plugs, totalWatts, totalEnergy } = collection;
+    const thresholds = this.config?.power_thresholds || {};
+    const panelColor = getPowerColor(totalWatts, thresholds);
+
+    const activeCircuits = circuits
+      .filter(c => {
+        const w = c.combinedWatts != null ? c.combinedWatts : (this._getPrimaryPower(c) || 0);
+        return w > 0;
+      })
+      .slice(0, 3);
+    const activePlugs = plugs
+      .filter(p => (this._getPrimaryPower(p) || 0) > 0)
+      .slice(0, 3 - activeCircuits.length);
+
+    return html`
+      <div class="power-low-activity-content">
+        <div class="power-summary" role="group" aria-label="Power Summary">
+          ${this._renderPowerSummaryCard('TOTAL USAGE', totalWatts, totalEnergy, panelColor, 'mdi:sigma')}
+        </div>
+        ${activeCircuits.length > 0 || activePlugs.length > 0 ? html`
+          <div class="power-section-label" role="heading" aria-level="4">
+            <span class="power-section-label-text">ACTIVE CIRCUITS</span>
+          </div>
+          <div class="power-circuits power-circuits-compact" role="list">
+            ${activeCircuits.map(c => this._renderCircuitTile(c))}
+            ${activePlugs.map(p => this._renderPowerDeviceRow(p))}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  _renderFullPowerContent(collection) {
     const { circuits, plugs, strips, totalWatts, totalEnergy } = collection;
     const thresholds = this.config?.power_thresholds || {};
     const panelColor = getPowerColor(totalWatts, thresholds);
@@ -713,6 +914,20 @@ class LcarsPowerPanel extends LcarsBasePanel {
     const plugsExpanded = this._expandedPowerSections.has('plugs');
     const visiblePlugs = plugsExpanded ? plugs : plugs.slice(0, MAX_VISIBLE);
     const plugsHasMore = plugs.length > MAX_VISIBLE;
+
+    // Hidden circuit wattage (P4: WESLEY-UX-006)
+    const hiddenCircuits = circuitsHasMore ? circuits.slice(MAX_VISIBLE) : [];
+    const hiddenWatts = hiddenCircuits.reduce((sum, c) => {
+      const w = c.combinedWatts != null ? c.combinedWatts : (this._getPrimaryPower(c) || 0);
+      return sum + w;
+    }, 0);
+    const hiddenHasHigh = hiddenCircuits.some(c => {
+      const w = c.combinedWatts != null ? c.combinedWatts : (this._getPrimaryPower(c) || 0);
+      return w > (thresholds.lowMax || 500);
+    });
+
+    const hiddenPlugs = plugsHasMore ? plugs.slice(MAX_VISIBLE) : [];
+    const hiddenPlugWatts = hiddenPlugs.reduce((sum, p) => sum + (this._getPrimaryPower(p) || 0), 0);
 
     return html`
       <div class="consolidated-power-content" data-alert="${hasCritical ? 'critical' : ''}">
@@ -734,9 +949,10 @@ class LcarsPowerPanel extends LcarsBasePanel {
               ${visibleCircuits.map(c => this._renderCircuitTile(c))}
             </div>
             ${circuitsHasMore && !circuitsExpanded ? html`
-              <button class="power-show-all-pill" aria-label="Show all ${circuits.length} circuits"
+              <button class="power-show-all-pill" aria-label="Show ${hiddenCircuits.length} more circuits drawing ${Math.round(hiddenWatts)} watts total"
                 @click=${() => { this._expandedPowerSections.add('circuits'); this.requestUpdate(); }}>
-                SHOW ALL (${circuits.length})
+                <span class="pill-text">EXPAND GRID — ${hiddenCircuits.length} MORE (${this._formatWatts(hiddenWatts)})</span>
+                ${hiddenHasHigh ? html`<span class="pill-alert-dot" aria-hidden="true"></span>` : ''}
               </button>
             ` : ''}
           </div>
@@ -753,9 +969,9 @@ class LcarsPowerPanel extends LcarsBasePanel {
               ${visiblePlugs.map(p => this._renderPowerDeviceRow(p))}
             </div>
             ${plugsHasMore && !plugsExpanded ? html`
-              <button class="power-show-all-pill" aria-label="Show all ${plugs.length} devices"
+              <button class="power-show-all-pill" aria-label="Show ${hiddenPlugs.length} more devices drawing ${Math.round(hiddenPlugWatts)} watts total"
                 @click=${() => { this._expandedPowerSections.add('plugs'); this.requestUpdate(); }}>
-                SHOW ALL (${plugs.length})
+                <span class="pill-text">EXPAND GRID — ${hiddenPlugs.length} MORE (${this._formatWatts(hiddenPlugWatts)})</span>
               </button>
             ` : ''}
           </div>
@@ -786,7 +1002,7 @@ class LcarsPowerPanel extends LcarsBasePanel {
 
   _renderLegacyPowerContent(group) {
     const allEntries = group.entities || [];
-    const deviceName = this._shortDeviceName(group.device) || 'Power';
+    const deviceName = this._getCircuitDisplayName(group) || 'POWER';
     const thresholds = this.config?.power_thresholds || {};
 
     const deviceType = this._classifyPowerDevice(allEntries, group.device);
@@ -794,6 +1010,18 @@ class LcarsPowerPanel extends LcarsBasePanel {
 
     const watts = this._getPrimaryPower(group);
     const energy = this._getPrimaryEnergy(group);
+
+    // 0W standby collapse for legacy mode
+    if (watts != null && watts === 0) {
+      return html`
+        <div class="power-standby-summary" role="status" aria-label="Power standby, 0 watts">
+          <span class="standby-indicator" aria-hidden="true">○</span>
+          <span class="standby-label">STANDBY</span>
+          <span class="standby-detail">0 W</span>
+        </div>
+      `;
+    }
+
     const panelColor = getPowerColor(watts, thresholds);
     const hasCritical = watts != null && Math.abs(watts) > (thresholds.highMax || 3000);
 

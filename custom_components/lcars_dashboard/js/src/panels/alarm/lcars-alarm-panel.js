@@ -12,6 +12,7 @@ import { getAlarmStateColor } from '../../lcars-color-utils.js';
 import { createRateLimiter } from '../../lcars-service-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { alarmPanelStyles } from './lcars-alarm-panel-styles.js';
+import { lcarsAudio } from '../../lcars-audio.js';
 
 class LcarsAlarmPanel extends LcarsBasePanel {
 
@@ -20,6 +21,9 @@ class LcarsAlarmPanel extends LcarsBasePanel {
   _alarmCountdown = null;
   _alarmCountdownTimer = null;
   _alarmPinError = false;
+  _alarmLockoutSeconds = 0;
+  _alarmLockoutTimer = null;
+  _alarmLockoutAnnounced = false;
 
   get panelType() { return 'alarm'; }
   get defaultPanelTitle() { return 'Alarm'; }
@@ -35,6 +39,10 @@ class LcarsAlarmPanel extends LcarsBasePanel {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._stopAlarmCountdown();
+    if (this._alarmLockoutTimer) {
+      clearInterval(this._alarmLockoutTimer);
+      this._alarmLockoutTimer = null;
+    }
   }
 
   updated(changedProps) {
@@ -45,6 +53,16 @@ class LcarsAlarmPanel extends LcarsBasePanel {
       this._startAlarmCountdown(as?.attributes?.delay || 60);
     } else if (!isTransitional && this._alarmCountdown != null) {
       this._stopAlarmCountdown();
+    }
+    // WES-001: Play alert/criticalAlert on alarm state transitions
+    if (changedProps.has('group')) {
+      const prevGroup = changedProps.get('group');
+      const prevState = prevGroup?.entities?.find(e => e.domain === 'alarm_control_panel')?.state?.state;
+      const curState = as?.state;
+      if (prevState && curState && prevState !== curState) {
+        if (curState === 'triggered') lcarsAudio.play('criticalAlert');
+        else if (curState === 'arming' || curState === 'pending') lcarsAudio.play('alert');
+      }
     }
   }
 
@@ -64,6 +82,25 @@ class LcarsAlarmPanel extends LcarsBasePanel {
       auxiliary.push(entry);
     }
 
+    // 4X-7: absorb same-device siblings into zone context.
+    // Battery and illuminance sensors on zone devices become zone telemetry
+    // instead of orphan auxiliary rows.
+    const zoneDevIds = new Set();
+    for (const z of zones) {
+      if (z.entity?.device_id) zoneDevIds.add(z.entity.device_id);
+    }
+    const zoneSiblings = new Map(); // device_id → [entry, ...]
+    const remainingAux = [];
+    for (const a of auxiliary) {
+      const did = a.entity?.device_id;
+      if (did && zoneDevIds.has(did)) {
+        if (!zoneSiblings.has(did)) zoneSiblings.set(did, []);
+        zoneSiblings.get(did).push(a);
+      } else {
+        remainingAux.push(a);
+      }
+    }
+
     if (categoryEntities) {
       for (const e of categoryEntities.diagnostic || []) {
         const state = this._getEntityState(e.entity_id);
@@ -71,11 +108,12 @@ class LcarsAlarmPanel extends LcarsBasePanel {
         diagnostics.push({ entity: e, domain: e.entity_id.split('.')[0], state });
       }
     }
-    return { alarm, zones, auxiliary, diagnostics };
+    return { alarm, zones, auxiliary: remainingAux, diagnostics, zoneSiblings };
   }
 
   _handleAlarmPinDigit(digit) {
     if (this._alarmPinCode.length >= 6) return;
+    lcarsAudio.play('acknowledge');
     this._alarmPinCode += String(digit).replace(/\D/g, '').charAt(0) || '';
     this._alarmPinError = false;
     this.requestUpdate();
@@ -88,6 +126,7 @@ class LcarsAlarmPanel extends LcarsBasePanel {
   }
 
   _handleAlarmArm(entityId, mode) {
+    lcarsAudio.play('lockToggle');
     const code = this._alarmPinCode || undefined;
     this.hass.callService('alarm_control_panel', `alarm_arm_${mode}`, {
       entity_id: entityId, ...(code ? { code } : {}),
@@ -97,17 +136,44 @@ class LcarsAlarmPanel extends LcarsBasePanel {
   }
 
   _handleAlarmDisarm(entityId) {
+    // WORF-SEC-003: Client-side rate limiter is a UX safeguard only.
+    // Server-side alarm PIN validation is authoritative.
     if (!this._alarmPinLimiter.allow()) {
+      lcarsAudio.play('negativeAcknowledge');
       this._alarmPinError = true;
+      this._startLockoutCountdown();
       this.requestUpdate();
       return;
     }
+    lcarsAudio.play('lockToggle');
     const code = this._alarmPinCode || undefined;
     this.hass.callService('alarm_control_panel', 'alarm_disarm', {
       entity_id: entityId, ...(code ? { code } : {}),
     });
     this._alarmPinCode = '';
     this.requestUpdate();
+  }
+
+  _startLockoutCountdown() {
+    if (this._alarmLockoutTimer) clearInterval(this._alarmLockoutTimer);
+    this._alarmLockoutAnnounced = false;
+    const resetAt = this._alarmPinLimiter.resetTime();
+    const updateLockout = () => {
+      const remaining = Math.max(0, Math.ceil((resetAt - Date.now()) / 1000));
+      this._alarmLockoutSeconds = remaining;
+      this._alarmLockoutAnnounced = true;
+      this.requestUpdate();
+      if (remaining <= 0) {
+        clearInterval(this._alarmLockoutTimer);
+        this._alarmLockoutTimer = null;
+        this._alarmPinError = false;
+        this._alarmLockoutSeconds = 0;
+        this._alarmLockoutAnnounced = false;
+        this.requestUpdate();
+      }
+    };
+    updateLockout();
+    this._alarmLockoutTimer = setInterval(updateLockout, 1000);
   }
 
   _startAlarmCountdown(seconds) {
@@ -160,7 +226,7 @@ class LcarsAlarmPanel extends LcarsBasePanel {
 
   renderContent() {
     const categoryEntities = this._getDeviceCategoryEntities(this.group.device.id);
-    const { alarm, zones, auxiliary } = this._partitionAlarmEntities(this.group.entities, categoryEntities);
+    const { alarm, zones, auxiliary, zoneSiblings } = this._partitionAlarmEntities(this.group.entities, categoryEntities);
     const deviceName = this._shortDeviceName(this.group.device) || 'Alarm';
 
     if (alarm.length === 0) return html``;
@@ -184,6 +250,8 @@ class LcarsAlarmPanel extends LcarsBasePanel {
             const name = this._friendlyName(state, entity);
             const isOpen = state.state === 'on';
             const color = isOpen ? 'var(--lcars-butterscotch)' : 'var(--lcars-gray)';
+            // 4X-7: render same-device sibling telemetry (battery, illuminance) on zone row
+            const siblings = (entity.device_id && zoneSiblings.get(entity.device_id)) || [];
             return html`
               <div class="device-sensor-line" tabindex="0" role="listitem"
                 aria-label="${name}: ${isOpen ? 'open' : 'closed'}"
@@ -191,6 +259,14 @@ class LcarsAlarmPanel extends LcarsBasePanel {
                 @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                 <div class="sensor-indicator" style="background:${color}"></div>
                 <span class="sensor-label">${name}</span>
+                ${siblings.length > 0 ? html`<span class="zone-siblings">${siblings.map(s => {
+                  const dc = s.state?.attributes?.device_class || '';
+                  const unit = s.state?.attributes?.unit_of_measurement || '';
+                  const { text: val } = this._formatSensorValue(s.state, s.entity);
+                  const label = dc === 'battery' ? 'BAT' : dc === 'illuminance' ? 'LUX' : '';
+                  const ariaText = `${dc === 'battery' ? 'Battery' : dc === 'illuminance' ? 'Illuminance' : dc}: ${val}${unit ? ' ' + unit : ''}`;
+                  return html`<span class="zone-sibling-pip" role="img" aria-label="${ariaText}" title="${s.state?.attributes?.friendly_name || ''}">${label} ${val}${unit ? ' ' + unit : ''}</span>`;
+                })}</span>` : ''}
                 <span class="sensor-state-value" style="color:${color}">${isOpen ? 'OPEN' : 'CLOSED'}</span>
               </div>
             `;
@@ -245,13 +321,17 @@ class LcarsAlarmPanel extends LcarsBasePanel {
                 <div class="alarm-code-dot" style="background:${filled ? (this._alarmPinError ? 'var(--lcars-tomato)' : stateColor) : 'var(--lcars-disabled)'}"></div>
               `)}
             </div>
+            ${this._alarmLockoutSeconds > 0 ? html`
+              ${!this._alarmLockoutAnnounced ? '' : html`<div class="alarm-lockout-msg" role="alert">LOCKED OUT</div>`}
+              <div class="alarm-lockout-countdown" aria-live="off">${this._alarmLockoutSeconds}s</div>
+            ` : ''}
             <div class="alarm-digit-grid">
               ${[1,2,3,4,5,6,7,8,9].map(d => html`
-                <button class="alarm-digit-btn" aria-label="Digit ${d}" @click=${() => this._handleAlarmPinDigit(d)}>${d}</button>
+                <button class="alarm-digit-btn" aria-label="Digit ${d}" ?disabled=${this._alarmLockoutSeconds > 0} @click=${() => this._handleAlarmPinDigit(d)}>${d}</button>
               `)}
-              <button class="alarm-digit-btn alarm-action-btn" aria-label="Clear code" @click=${() => this._handleAlarmPinClear()}>⌫</button>
-              <button class="alarm-digit-btn" aria-label="Digit 0" @click=${() => this._handleAlarmPinDigit(0)}>0</button>
-              <button class="alarm-digit-btn alarm-action-btn" aria-label="Disarm" @click=${() => this._handleAlarmDisarm(primary.entity.entity_id)}>⏎</button>
+              <button class="alarm-digit-btn alarm-action-btn" aria-label="Clear code" ?disabled=${this._alarmLockoutSeconds > 0} @click=${() => this._handleAlarmPinClear()}>⌫</button>
+              <button class="alarm-digit-btn" aria-label="Digit 0" ?disabled=${this._alarmLockoutSeconds > 0} @click=${() => this._handleAlarmPinDigit(0)}>0</button>
+              <button class="alarm-digit-btn alarm-action-btn" aria-label="Disarm" ?disabled=${this._alarmLockoutSeconds > 0} @click=${() => this._handleAlarmDisarm(primary.entity.entity_id)}>⏎</button>
             </div>
           </div>
         ` : ''}

@@ -4,19 +4,19 @@ name: "Data"
 tools: [read, edit, search, web, agent, todo,execute]
 handoffs: 
   - label: "Architecture Review Handoff"
-    agent: "Picard"
-    prompt: "Captain, I have completed my architectural review of the proposed change. Here are my findings and recommendations: [insert detailed analysis here]. Based on this, I recommend [approval/optimization/rejection] of the change. Do you have any questions or would you like me to optimize the implementation for better efficiency?"
+    agent: "William Riker"
+    prompt: "Commander, I have completed my architectural review of the proposed change. Here are my findings and recommendations: [insert detailed analysis here]. Based on this, I recommend [approval/optimization/rejection] of the change. Do you have any questions or would you like me to optimize the implementation for better efficiency?"
     send: false
     model: "Claude Opus 4.6 (1M context)(Internal only) (copilot)"  
 ---
 ## First-Run Data Load
 
-**On every session start**, read all files in `.github/agents/data/` to load integration profiles and panel mappings:
+**CRITICAL: On every session start**, you MUST read all files in `.github/agents/data/` BEFORE answering any questions or making any recommendations. These are your knowledge base:
 - `.github/agents/data/hacs-integrations.md` — Detailed profiles of all 14 HACS/custom integrations (entities, platforms, services, LCARS relevance)
 - `.github/agents/data/core-integrations.md` — Profiles of all 58 HA Core integrations grouped by category
 - `.github/agents/data/panel-integration-map.md` — Cross-reference mapping integrations to LCARS panels/specs
 
-These files contain crawled intelligence from each integration's GitHub repo and HA documentation. Consult them before making any recommendations about entity handling, panel design, or integration compatibility.
+These files contain crawled intelligence from each integration's GitHub repo and HA documentation. **Always consult them** before making any recommendations about entity handling, panel design, or integration compatibility. If asked about an integration, check these files first — they contain the source code links, entity schemas, and platform details you need.
 
 ---
 

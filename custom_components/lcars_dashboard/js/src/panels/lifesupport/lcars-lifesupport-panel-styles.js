@@ -14,6 +14,7 @@ export const lifeSupportPanelStyles = css`
     flex-direction: column;
     gap: 0.75rem;
     width: 100%;
+    overflow: visible;
   }
 
   .ls-empty {
@@ -31,6 +32,8 @@ export const lifeSupportPanelStyles = css`
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
+    overflow: visible;
+    align-items: start;
   }
 
   @media (max-width: 56rem) {
@@ -41,6 +44,8 @@ export const lifeSupportPanelStyles = css`
 
   .ls-substation {
     min-width: 0;
+    min-height: 0;
+    overflow: visible;
   }
 
   /* Nested panels should fill their substation */
@@ -169,5 +174,79 @@ export const lifeSupportPanelStyles = css`
     width: 100%;
     max-width: 120px;
     height: 24px;
+  }
+
+  /* ─── Sensor Array: passive AQ monitors (4X-46) ─── */
+
+  .ls-sensor-array {
+    border-top: 2px solid var(--lcars-gray, #666688);
+    padding-top: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .ls-sensor-array-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .ls-sensor-array-label {
+    font-family: var(--lcars-font, 'Antonio', sans-serif);
+    font-size: var(--lcars-font-size-label, 0.75rem);
+    color: var(--lcars-gray, #666688);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .ls-sensor-array-score {
+    font-family: var(--lcars-font, 'Antonio', sans-serif);
+    font-size: var(--lcars-font-size-data, 0.875rem);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ls-sensor-array-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+  }
+
+  .ls-aq-metric {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-family: var(--lcars-font, 'Antonio', sans-serif);
+    font-size: var(--lcars-font-size-data, 0.875rem);
+    text-transform: uppercase;
+  }
+
+  .ls-aq-indicator {
+    display: inline-block;
+    width: 2px;
+    height: 1rem;
+    border-radius: 1px;
+    flex-shrink: 0;
+  }
+
+  .ls-aq-name {
+    color: var(--lcars-gray, #666688);
+    font-size: 0.85em;
+  }
+
+  .ls-aq-value {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Sensor-array-only layout: add some padding for standalone display */
+  .ls-sensor-array-only .ls-sensor-array {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+  }
+
+  @media (max-width: 32rem) {
+    .ls-sensor-array-grid {
+      gap: 0.375rem 1rem;
+    }
   }
 `;

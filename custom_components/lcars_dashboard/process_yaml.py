@@ -3,6 +3,7 @@ import yaml
 import os
 import json
 import io
+import re
 from collections import OrderedDict
 import jinja2
 from jinja2.sandbox import SandboxedEnvironment
@@ -40,6 +41,32 @@ def init_jinja_env(config_dir):
 
 lcars_dashboard_more_pages = {}
 llgen_config = {}
+
+# WORF-SEC-006: Subdirectory name validation for more_pages
+_SAFE_DIRNAME_RE = re.compile(r'^[a-zA-Z0-9_\-]+$')
+
+def _is_safe_dirname(name):
+    """Reject directory names with traversal or special characters."""
+    return bool(name) and '..' not in name and _SAFE_DIRNAME_RE.match(name)
+
+
+async def _read_yaml_safe(hass, full_path):
+    """Read a YAML file safely in the executor with proper handle management."""
+    def _read():
+        if not os.path.exists(full_path):
+            return None
+        with open(full_path, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f)
+    return await hass.async_add_executor_job(_read)
+
+
+async def _write_yaml_safe(hass, full_path, data):
+    """Write a YAML file safely in the executor with proper handle management."""
+    def _write():
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        with open(full_path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(data, f, default_flow_style=False)
+    await hass.async_add_executor_job(_write)
 
 def _is_our_file(fname):
     """Check if a file belongs to LCARS Dashboard (skip noisy logging for other HA YAML)."""
@@ -149,57 +176,50 @@ async def process_yaml(hass: HomeAssistant, config_entry):
     init_jinja_env(hass.config.config_dir)
 
     # Check for HKI installation
-    if os.path.exists(hass.config.path("hki-user/config")):
-        #_LOGGER.warning("HKI Installed!")
-        for fname in loader._find_files(hass.config.path("hki-user/config"), "*.yaml"):
+    hki_path = hass.config.path("hki-user/config")
+    if await hass.async_add_executor_job(os.path.exists, hki_path):
+        for fname in loader._find_files(hki_path, "*.yaml"):
             loaded_yaml = load_yamll(fname)
             if isinstance(loaded_yaml, dict):
                 llgen_config.update(loaded_yaml)
 
-    if os.path.exists(hass.config.path("lcars-dashboard/configs")):
-        if os.path.isdir(hass.config.path("lcars-dashboard/configs/more_pages")):
-            #for subdir in os.listdir(hass.config.path("lcars-dashboard/configs/more_pages")):
-            more_pages_path = hass.config.path("lcars-dashboard/configs/more_pages")
-            subdirs = await hass.async_add_executor_job(os.listdir, more_pages_path)
+    configs_path = hass.config.path("lcars-dashboard/configs")
+    if await hass.async_add_executor_job(os.path.exists, configs_path):
+        more_pages_dir = hass.config.path("lcars-dashboard/configs/more_pages")
+        if await hass.async_add_executor_job(os.path.isdir, more_pages_dir):
+            subdirs = await hass.async_add_executor_job(os.listdir, more_pages_dir)
             for subdir in subdirs:
-                #Lets check if there is a page.yaml in the more_pages folder
-                if os.path.exists(hass.config.path("lcars-dashboard/configs/more_pages/"+subdir+"/page.yaml")):
-                    # Page.yaml exists now check if there is a config.yaml otherwise create it
-                    if not os.path.exists(hass.config.path("lcars-dashboard/configs/more_pages/"+subdir+"/config.yaml")):
-                        #_LOGGER.warning(f"process_yaml() config.yaml does not exist, {subdir}")
-                        #with open(hass.config.path("lcars-dashboard/configs/more_pages/"+subdir+"/config.yaml"), 'w') as f:
-                        file_content = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/more_pages/"+subdir+"/config.yaml"), "w")
-                        with file_content as f:
-                            page_config = OrderedDict()
-                            page_config.update({
-                                "name": subdir,
-                                "icon": "mdi:puzzle"
-                            })
-                            yaml.safe_dump(page_config, f, default_flow_style=False)
+                # WORF-SEC-006: Validate subdirectory names
+                if not _is_safe_dirname(subdir):
+                    _LOGGER.warning("Skipping invalid more_pages dirname: %r", subdir)
+                    continue
+                page_path = hass.config.path(f"lcars-dashboard/configs/more_pages/{subdir}/page.yaml")
+                config_rel = f"lcars-dashboard/configs/more_pages/{subdir}/config.yaml"
+                config_path = hass.config.path(config_rel)
+                if not await hass.async_add_executor_job(os.path.exists, page_path):
+                    continue
+                if not await hass.async_add_executor_job(os.path.exists, config_path):
+                    # Create default config.yaml
+                    page_data = OrderedDict({"name": subdir, "icon": "mdi:puzzle"})
+                    await _write_yaml_safe(hass, config_path, page_data)
+                    lcars_dashboard_more_pages[subdir] = {
+                        "name": subdir,
+                        "icon": "mdi:puzzle",
+                        "path": f"lcars-dashboard/configs/more_pages/{subdir}/page.yaml",
+                    }
+                else:
+                    try:
+                        filecontent = await _read_yaml_safe(hass, config_path)
+                        if filecontent and "name" in filecontent and "icon" in filecontent:
                             lcars_dashboard_more_pages[subdir] = {
-                                "name": subdir,
-                                "icon": "mdi:puzzle",
-                                "path": "lcars-dashboard/configs/more_pages/"+subdir+"/page.yaml",
+                                "name": filecontent["name"],
+                                "icon": filecontent["icon"],
+                                "path": f"lcars-dashboard/configs/more_pages/{subdir}/page.yaml",
                             }
-                    else:
-                        #_LOGGER.warning(f"process_yaml() config.yaml exists, {subdir}")
-                        try:
-                            #with open(hass.config.path("lcars-dashboard/configs/more_pages/"+subdir+"/config.yaml")) as f:
-                            data = await hass.async_add_executor_job(open, hass.config.path("lcars-dashboard/configs/more_pages/"+subdir+"/config.yaml"), "r")
-                            with data as f:
-                                filecontent = yaml.safe_load(f)
-
-                                #_LOGGER.warning(f"FILE CONTENT: {filecontent}")
-                                if "name" in filecontent and "icon" in filecontent:
-                                    lcars_dashboard_more_pages[subdir] = {
-                                        "name": filecontent["name"],
-                                        "icon": filecontent["icon"],
-                                        "path": "lcars-dashboard/configs/more_pages/"+subdir+"/page.yaml",
-                                    }
-                                else:
-                                    _LOGGER.warning(f"Invalid config.yaml in {subdir}: Missing 'name' or 'icon'")
-                        except Exception as e:
-                            _LOGGER.error(f"Failed to read config.yaml in {subdir}: {e}")
+                        else:
+                            _LOGGER.warning("Invalid config.yaml in %s: Missing 'name' or 'icon'", subdir)
+                    except Exception as e:
+                        _LOGGER.error("Failed to read config.yaml in %s: %s", subdir, e)
 
         hass.bus.async_fire("lcars_dashboard_reload")
 
@@ -217,41 +237,46 @@ async def process_yaml(hass: HomeAssistant, config_entry):
 async def reload_configuration(hass):
     _LOGGER.warning('Reload YAML configuration files...!')
 
+    # DATA-017: Clear global mutable state to prevent stale entries on reload
+    global lcars_dashboard_more_pages, llgen_config
+    lcars_dashboard_more_pages = {}
+    llgen_config = {}
+
     # Ensure Jinja2 env is scoped to config dir
     init_jinja_env(hass.config.config_dir)
 
-    if os.path.exists(hass.config.path("lcars-dashboard/configs")):
-        if os.path.isdir(hass.config.path("lcars-dashboard/configs/more_pages")):
-            #for subdir in os.listdir(hass.config.path("lcars-dashboard/configs/more_pages")):
-            more_pages_path = hass.config.path("lcars-dashboard/configs/more_pages")
-            subdirs = await hass.async_add_executor_job(os.listdir, more_pages_path)
+    configs_path = hass.config.path("lcars-dashboard/configs")
+    if await hass.async_add_executor_job(os.path.exists, configs_path):
+        more_pages_dir = hass.config.path("lcars-dashboard/configs/more_pages")
+        if await hass.async_add_executor_job(os.path.isdir, more_pages_dir):
+            subdirs = await hass.async_add_executor_job(os.listdir, more_pages_dir)
             for subdir in subdirs:
-                #Lets check if there is a page.yaml in the more_pages folder
-                if os.path.exists(hass.config.path("lcars-dashboard/configs/more_pages/"+subdir+"/page.yaml")):
-                    page_config = hass.config.path("lcars-dashboard/configs/more_pages/"+subdir+"/config.yaml")
-                    #Page.yaml exists now check if there is a config.yaml otherwise create it
-                    if not os.path.exists(page_config):
-                        data = await hass.async_add_executor_job(open, page_config, "w")
-                        with data as f:
-                            page_config = OrderedDict()
-                            page_config.update({
-                                "name": subdir,
-                                "icon": "mdi:puzzle"
-                            })
-                            yaml.safe_dump(page_config, f, default_flow_style=False)
-                            lcars_dashboard_more_pages[subdir] = {
-                                "name": subdir,
-                                "icon": "mdi:puzzle",
-                                "path": "lcars-dashboard/configs/more_pages/"+subdir+"/page.yaml",
-                            }
+                # WORF-SEC-006: Validate subdirectory names
+                if not _is_safe_dirname(subdir):
+                    _LOGGER.warning("Skipping invalid more_pages dirname: %r", subdir)
+                    continue
+                page_path = hass.config.path(f"lcars-dashboard/configs/more_pages/{subdir}/page.yaml")
+                config_rel = f"lcars-dashboard/configs/more_pages/{subdir}/config.yaml"
+                config_path = hass.config.path(config_rel)
+                if not await hass.async_add_executor_job(os.path.exists, page_path):
+                    continue
+                if not await hass.async_add_executor_job(os.path.exists, config_path):
+                    page_data = OrderedDict({"name": subdir, "icon": "mdi:puzzle"})
+                    await _write_yaml_safe(hass, config_path, page_data)
+                    lcars_dashboard_more_pages[subdir] = {
+                        "name": subdir,
+                        "icon": "mdi:puzzle",
+                        "path": f"lcars-dashboard/configs/more_pages/{subdir}/page.yaml",
+                    }
+                else:
+                    filecontent = await _read_yaml_safe(hass, config_path)
+                    if filecontent and "name" in filecontent and "icon" in filecontent:
+                        lcars_dashboard_more_pages[subdir] = {
+                            "name": filecontent["name"],
+                            "icon": filecontent["icon"],
+                            "path": f"lcars-dashboard/configs/more_pages/{subdir}/page.yaml",
+                        }
                     else:
-                        data = await hass.async_add_executor_job(open, page_config, "r")
-                        with data as f:
-                            filecontent = yaml.safe_load(f)
-                            lcars_dashboard_more_pages[subdir] = {
-                                "name": filecontent["name"],
-                                "icon": filecontent["icon"],
-                                "path": "lcars-dashboard/configs/more_pages/"+subdir+"/page.yaml",
-                            }
+                        _LOGGER.warning("Invalid config.yaml in %s during reload", subdir)
 
     hass.bus.async_fire("lcars_dashboard_reload")

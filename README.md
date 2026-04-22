@@ -8,7 +8,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-4.18.8-blue)
+![Version](https://img.shields.io/badge/version-4.23.0-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 [![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 
@@ -20,21 +20,22 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 - **Smart Name Shortening** — Automatically strips area and device name prefixes from entity names for cleaner display
 - **Device-Grouped Layout** — Entities organized by device, then sorted by domain (cameras first, sensors last)
 - **Responsive** — Mobile-friendly with horizontal area scroll on narrow viewports
+- **Panel Reorder** — Edit mode gear pip on each panel for persistent reorder within an area (saved via WebSocket to YAML)
 
 ### Auto-Detected Panels
 
-The dashboard auto-discovers devices and routes them to the correct panel using a priority-ordered classifier: camera → alarm → pool/spa → climate → media → environment → irrigation → weather → power → battery. Area-level composite panels (life support, illumination) aggregate entities across devices.
+The dashboard auto-discovers devices and routes them to the correct panel using a priority-ordered classifier: camera → alarm → pool/spa → climate → media → environment → irrigation → weather → ev charger → power → battery. Area-level composite panels (life support, illumination) aggregate entities across devices. Diagnostic and config entities (`entity_category`) are filtered from classification signals to prevent false positives (e.g., TP-Link CO Status sensors no longer trigger hazard detection). Platform-aware exclusions prevent galley appliances, pool equipment, and wallbox cable locks from being absorbed by Life Support or Tactical.
 
 #### Camera Panel
 Live camera feeds with LCARS-framed viewscreen and activation animation. Three-state display: ESTABLISHING LINK (connecting), live feed, VIEWSCREEN OFFLINE (error/timeout). Stale image prevention via forced src binding on room switch.
 - **Integrations**: Any HA camera entity (UniFi Protect, Amcrest, ONVIF, Reolink, etc.)
 
 #### Climate Panel
-Thermostat control with SVG temperature arc, dynamic HVAC action colors (heating=butterscotch, cooling=ice), debounced setpoint controls with safety clamping, HVAC mode/fan mode/preset mode strips, and dual setpoint support for heat_cool mode.
-- **Integrations**: Nest, Ecobee, Honeywell, Z-Wave thermostats
+Thermostat control with SVG temperature arc, dynamic HVAC action colors (heating=butterscotch, cooling=ice), debounced setpoint controls with safety clamping, HVAC mode/fan mode/preset mode/swing mode strips, dual setpoint support for heat_cool mode. Portable AC support: auxiliary switch toggles (eco/turbo/swing) with per-switch colors, timer stepper.
+- **Integrations**: Nest, Ecobee, Honeywell, Z-Wave thermostats, Midea portable AC (midea_ac_lan)
 
 #### Alarm Panel
-Shield viewscreen with state-reactive glow, digit-only PIN keypad with 3-attempt/60s rate limiting, arm mode selector strip, zone sensor roster with micro-pip status, arming countdown with urgency escalation.
+Shield viewscreen with state-reactive glow, digit-only PIN keypad with 3-attempt/60s rate limiting, arm mode selector strip, zone sensor roster with micro-pip status and inline sibling telemetry (battery/illuminance), arming countdown with urgency escalation.
 - **Integrations**: SimpliSafe, Honeywell Home, Ring, Alarmo
 
 #### Media Panel
@@ -56,7 +57,7 @@ Full-featured irrigation control with zone photo thumbnails (from Rachio cloud, 
 - **Integrations**: Rachio, RainMachine, OpenSprinkler
 
 #### Environment / Atmoscrubber Panel
-Animated particle cylinder with AQI-mapped colors, 24h SVG sparklines, fan/preset controls, CO₂ 3-tier threshold coloring (ice/sunflower/tomato), filter life segments. Sensor-only mode for monitor-only devices (compact readout grid without cylinder).
+Animated particle cylinder with AQI-mapped colors, 24h SVG sparklines, fan/preset controls, CO₂ 3-tier threshold coloring (ice/sunflower/tomato), filter life segment bar (10 segments with critical pulse animation). Sensor-only mode for monitor-only devices (compact readout grid without cylinder). Sparkline labels use canonical device_class names (PM₂.₅, CO₂, VOC).
 - **Integrations**: Awair, VeSync purifiers, BlueAir (Blue Pure 311i Max), SwitchBot meters (WoTHP/WoTHPc)
 
 #### Power Systems Panel
@@ -68,13 +69,17 @@ Consolidated per-area power monitoring with three sections: CIRCUITS (tile grid)
 CSS reactor core with charge-level color, SOC gauge, power flow I/O arrows, telemetry sensors, integrated config/diagnostic entity controls with LCARS option strips. NUT UPS devices auto-detected with Grid→UPS→Load flow, load/runtime telemetry, and NUT status code parsing (OL/OB/CHRG/LB/FSD).
 - **Integrations**: EcoFlow (River, Delta), Victron, Tesla Powerwall, NUT (CyberPower, APC, Tripp Lite, Eaton)
 
+#### EV Charger Panel
+Bidirectional EV charger monitoring with SVG energy flow visualization (animated chevron cascade for charging/V2G, directional flip, idle dashes), 15-row sensor telemetry column (status, session, energy balance, vehicle, charger), solar mode radio strip, max charging current ±adjuster, and cable lock toggle. Dynamic frame color by charger state (charging=butterscotch, V2G=ice, error=tomato, idle=lilac). SoC progress bar with 4-tier color coding.
+- **Integrations**: Wallbox (Vilya V2G, Pulsar Plus)
+
 #### Life Support Panel
-Area-level composite panel aggregating climate, environment (air quality), and ambient sensor entities into a unified view. Four graceful degradation configurations: full (thermostat + purifier + sensors), atmos-only, climate-only, and sensor-hero (standalone temp/humidity). Composes existing climate and environment panels as nested substations. Adaptive sparkline tray shows 24-hour trends for temperature, humidity, AQI, PM2.5, CO₂, VOC.
-- **Integrations**: Any combination of climate entities, air quality devices, and ambient sensors in an area
+Area-level composite panel aggregating climate, environment (air quality), and ambient sensor entities into a unified view. Four graceful degradation configurations: full (thermostat + purifier + sensors), atmos-only, climate-only, and sensor-hero (standalone temp/humidity). Composes existing climate and environment panels as nested substations. Adaptive sparkline tray shows 24-hour trends for temperature, humidity, AQI, PM2.5, CO₂, VOC. HomeKit air purifiers (fan + AQ sensor on same device) auto-detected.
+- **Integrations**: Any combination of climate entities, air quality devices, and ambient sensors in an area, plus HomeKit Controller purifiers (Smartmi P1, etc.)
 
 #### Illumination Control Panel
-Area-level lighting panel spanning full width as the primary room control. Multi-column responsive grid (2-3 lights per row). Full-width brightness bars with color temperature awareness (warm amber to cool white). **Effect strip**: 2-column LCARS pill grid for Nanoleaf/Govee/smart light effects — active effect shown in bar value. **Color presets**: 6 LCARS palette pills (Warm, Cool, Red, Green, Blue, Purple) for HS/RGB color lights. Toggle-only lights show ON/OFF without slider. Scene activation strip and lighting circuit toggles. Inline brightness slider with keyboard navigation. Drag-and-drop reorder in edit mode with FLIP animation. Custom order persisted per area via localStorage.
-- **Entity detection**: Insteon dimmers (SwitchLinc/LampLinc/ToggleLinc), infrastructure LED exclusion (UniFi, ESPHome status), device-level dedup
+Area-level lighting panel spanning full width as the primary room control. Multi-column responsive grid (2-3 lights per row). Full-width brightness bars with color temperature awareness (warm amber to cool white). **Effect strip**: 2-column LCARS pill grid for Nanoleaf/Govee/smart light effects — active effect shown in bar value. **Color presets**: 6 LCARS palette pills (Warm, Cool, Red, Green, Blue, Purple) for HS/RGB color lights. Toggle-only lights show ON/OFF without slider. Scene activation strip and lighting circuit toggles (explicit `isLightingEntity()` match required — irrigation, battery, HVAC, and appliance switches excluded). Inline brightness slider with keyboard navigation. Drag-and-drop reorder in edit mode with FLIP animation. Custom order persisted per area via localStorage.
+- **Entity detection**: Insteon dimmers/relays (SwitchLinc/LampLinc/ToggleLinc — platform-level detection), infrastructure LED exclusion (UniFi, ESPHome status), device-level dedup
 - **Integrations**: Any `light` domain entities, Nanoleaf, Govee, lighting switches (auto-detected by name heuristic), HA scenes
 
 ### Domain-Specific Renderers
@@ -104,14 +109,136 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 - **GPU-Composited** — All animations use `transform`/`opacity` for 60fps rendering
 - **`prefers-reduced-motion`** — Comprehensive overrides: ambient loops disabled, confirmations halved, static fallbacks
 
+### Audio System
+- **15 synthesized sounds** via Web Audio API (OscillatorNode → GainNode) — no external audio files
+- **All 14 panel types wired** — contextual feedback for toggles, adjustments, alerts, navigation, and state transitions
+- **Mute toggle** in header endcap, persisted to localStorage
+- **Accessibility** — Respects `prefers-reduced-motion`, soft volumes (0.10–0.15 gain)
+
 ### Security & Accessibility
 - **Alarm PIN** — Rate-limited (3 attempts/60s), never logged or in DOM attributes, digit-only sanitization
 - **Media artwork** — URL validation restricts to `/api/` or `/local/` paths
 - **Setpoint clamping** — Temperature controls validated against entity min/max with absolute bounds
 - **Service call throttling** — Token-bucket rate limiter on all device control calls
+- **YAML concurrency** — All read-modify-write WebSocket handlers protected by per-file `asyncio.Lock`
+- **Skip-nav link** — Hidden link jumps to `<main>` on first Tab press
 - **ARIA landmarks** — Full keyboard navigation, `role` structure, `aria-live` announcements
-- **WCAG 2.2 AA** — Color-blind safe indicators, focus-visible outlines, 24×24px minimum targets
+- **WCAG 2.2 AA** — Color-blind safe indicators, `focus-visible` outlines (ice), 24×24px minimum targets
 - **Self-contained** — All fonts (Antonio) and dependencies vendored locally, no external CDN calls
+
+## Panel Gallery
+
+> **[View the interactive panel gallery →](https://htmlpreview.github.io/?https://github.com/htiel/LCARS-lovelace-dashboard/blob/4.0/examples/lcars-panel-gallery.html)**
+> Open `examples/lcars-panel-gallery.html` in a browser to see static mockups of all 17 panel types with sample data.
+
+<table>
+<tr>
+<td width="50%">
+
+**Illumination Control** — Full-width lighting panel with brightness bars, effect strip, color presets, scenes, and circuit toggles.
+
+</td>
+<td width="50%">
+
+**Climate** — SVG temperature arc with segmented fill, dual setpoints, HVAC/fan/preset mode strips, sibling zone summary.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Environment / Atmoscrubber** — AQI cylinder with particle animation, PM2.5/CO₂/VOC sensor rows, 24h sparkline tray, fan controls.
+
+</td>
+<td>
+
+**Battery / Warp Core** — Charge-level reactor core with SOC gauge, power flow telemetry, NUT UPS status parsing.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Alarm** — Shield viewscreen, zone sensor roster, rate-limited PIN keypad, arm mode strip with countdown.
+
+</td>
+<td>
+
+**Media** — Album art viewscreen, 12-bar audio waveform, transport toolbar, volume slider with keyboard support.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Power Systems** — Circuit tile grid with 5-tier color coding, smart plug toggles, power strip parent/child blocks, SVG arc chart.
+
+</td>
+<td>
+
+**Camera** — LCARS-framed viewscreen with three-state display (connecting, live, offline), sensor rows, privacy controls.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Weather** — Condition display with ambient glow, forecast strip with range bars, sun arc indicator, wind compass.
+
+</td>
+<td>
+
+**Irrigation** — Zone rows with photo thumbnails, barberpole progress, countdown timers, schedule strips, Quick Run builder.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Pool & Spa** — Dual body viewscreens, chemistry segmented bars (pH, chlorine, salt), circuit groups, freeze protection.
+
+</td>
+<td>
+
+**Life Support** — Composite panel composing climate + environment substations, ambient sensor row, adaptive sparkline tray.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Tactical** — Composite security panel: alarm control (nested substation), lock toggles, perimeter sensor chips, motion indicators. Subsumes alarm panel.
+
+</td>
+<td>
+
+**Viewport Controls** — Blinds/shades/covers with open/close/stop controls and position percentage display.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Hazard Detection** — Smoke/CO/heat detector status grid (Nest Protect), per-device cards with battery overview.
+
+</td>
+<td>
+
+**Galley Systems** — Smart appliance cards (GE Home, LG SmartThinQ) with cook status, temperature, and timer display.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**EV Charger** — SVG energy flow visualization with animated chevrons, 15-row sensor telemetry, solar mode strip, max current adjuster, cable lock toggle.
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
 
 ## Screenshots
 
@@ -145,7 +272,7 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 |-------|-----------|
 | HA Integration | Python custom component (`lcars_dashboard`) |
 | Frontend | Lit Element v2 web components — 12 extracted panel elements + shared base class |
-| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~566 KiB) |
+| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~763 KiB) |
 | Styling | 3-tier CSS composition: base variables → component shadow DOM → panel-specific modules |
 | Components | 7 shared components: `<lcars-panel-frame>`, `<lcars-sensor-row>`, `<lcars-section-divider>`, `<lcars-option-strip>`, `<lcars-setpoint>`, `<lcars-segmented-bar>`, `<lcars-summary-badge>` |
 | Communication | WebSocket API + window custom events |

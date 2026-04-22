@@ -21,7 +21,7 @@ export function registerCard(type, label) {
             window._customCardButtons.forEach(b => {
                 const button = document.createElement("mwc-button");
                 button.type = "custom:"+b.el;
-                button.innerHTML = b.name;
+                button.textContent = b.name;
                 button.addEventListener("click", this._cardPicked);
                 this._customCardButtons.appendChild(button);
             });

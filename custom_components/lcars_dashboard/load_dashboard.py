@@ -48,10 +48,10 @@ def load_dashboard(hass, config_entry):
 
     _LOGGER.debug("Loading dashboard panel: title=%s, icon=%s", 
                    config_entry.options.get("sidepanel_title", "LCARS Dashboard"),
-                   config_entry.options.get("sidepanel_icon", "mdi:alpha-d-box"))
+                   config_entry.options.get("sidepanel_icon", "mdi:star-four-points"))
 
     sidepanel_title = config_entry.options.get("sidepanel_title", "LCARS Dashboard")
-    sidepanel_icon = config_entry.options.get("sidepanel_icon", "mdi:alpha-d-box")
+    sidepanel_icon = config_entry.options.get("sidepanel_icon", "mdi:star-four-points")
 
     _register_single_dashboard(
         hass,

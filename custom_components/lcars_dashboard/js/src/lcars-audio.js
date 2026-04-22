@@ -217,6 +217,7 @@ const DOMAIN_SOUND_MAP = {
   number: 'climateAdjust',
   sensor: 'entityInfo',
   binary_sensor: 'entityInfo',
+  humidifier: 'fanToggle',
   media_player: 'acknowledge',
   camera: 'entityInfo',
 };

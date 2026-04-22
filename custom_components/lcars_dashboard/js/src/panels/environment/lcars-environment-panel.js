@@ -12,6 +12,7 @@ import { AQ_DEVICE_CLASSES, AQ_ENTITY_SUFFIX_RE } from '../../lcars-entity-utils
 import { canonicalLabel } from '../../lcars-format-utils.js';
 import { renderSparkline, fetchSparklineData } from '../../lcars-sparkline.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
+import { lcarsAudio } from '../../lcars-audio.js';
 import { environmentPanelStyles } from './lcars-environment-panel-styles.js';
 
 class LcarsEnvironmentPanel extends LcarsBasePanel {
@@ -276,6 +277,7 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
                         @click=${() => {
                           const validModes = this.hass.states[fanEntry.entity.entity_id]?.attributes?.preset_modes || [];
                           if (!validModes.includes(mode)) return;
+                          lcarsAudio.play('fanToggle');
                           this.hass.callService('fan', 'set_preset_mode', {
                             entity_id: fanEntry.entity.entity_id, preset_mode: mode
                           });

@@ -363,7 +363,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
               <button class="climate-mode-btn ${i === 0 ? 'mode-first' : ''} ${i === hvacModes.length - 1 ? 'mode-last' : ''}" role="radio"
                 aria-checked="${mode === currentMode}" ?data-active=${mode === currentMode}
                 style="--mode-btn-color: ${getHvacModeColor(mode)}"
-                @click=${() => { const live = this.hass.states[primary.entity.entity_id]?.attributes?.hvac_modes; if (!live?.includes(mode)) return; this.hass.callService('climate', 'set_hvac_mode', { entity_id: primary.entity.entity_id, hvac_mode: mode }); }}>
+                @click=${() => { const live = this.hass.states[primary.entity.entity_id]?.attributes?.hvac_modes; if (!live?.includes(mode)) return; lcarsAudio.play('climateAdjust'); this.hass.callService('climate', 'set_hvac_mode', { entity_id: primary.entity.entity_id, hvac_mode: mode }); }}>
                 ${mode.toUpperCase().replace(/_/g, ' ')}
               </button>
             `)}
@@ -377,7 +377,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
               ${fanModes.map((fm, i) => html`
                 <button class="climate-mode-btn ${i === 0 ? 'mode-first' : ''} ${i === fanModes.length - 1 ? 'mode-last' : ''}" role="radio"
                   aria-checked="${fm === currentFanMode}" ?data-active=${fm === currentFanMode}
-                  @click=${() => { const live = this.hass.states[primary.entity.entity_id]?.attributes?.fan_modes; if (!live?.includes(fm)) return; this.hass.callService('climate', 'set_fan_mode', { entity_id: primary.entity.entity_id, fan_mode: fm }); }}>
+                  @click=${() => { const live = this.hass.states[primary.entity.entity_id]?.attributes?.fan_modes; if (!live?.includes(fm)) return; lcarsAudio.play('climateAdjust'); this.hass.callService('climate', 'set_fan_mode', { entity_id: primary.entity.entity_id, fan_mode: fm }); }}>
                   ${fm.toUpperCase().replace(/_/g, ' ')}
                 </button>
               `)}
@@ -389,7 +389,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
               ${presetModes.map((pm, i) => html`
                 <button class="climate-mode-btn ${i === 0 ? 'mode-first' : ''} ${i === presetModes.length - 1 ? 'mode-last' : ''}" role="radio"
                   aria-checked="${pm === currentPreset}" ?data-active=${pm === currentPreset}
-                  @click=${() => { const live = this.hass.states[primary.entity.entity_id]?.attributes?.preset_modes; if (!live?.includes(pm)) return; this.hass.callService('climate', 'set_preset_mode', { entity_id: primary.entity.entity_id, preset_mode: pm }); }}>
+                  @click=${() => { const live = this.hass.states[primary.entity.entity_id]?.attributes?.preset_modes; if (!live?.includes(pm)) return; lcarsAudio.play('climateAdjust'); this.hass.callService('climate', 'set_preset_mode', { entity_id: primary.entity.entity_id, preset_mode: pm }); }}>
                   ${pm.toUpperCase().replace(/_/g, ' ')}
                 </button>
               `)}
@@ -401,7 +401,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
               ${swingModes.map((sm, i) => html`
                 <button class="climate-mode-btn ${i === 0 ? 'mode-first' : ''} ${i === swingModes.length - 1 ? 'mode-last' : ''}" role="radio"
                   aria-checked="${sm === currentSwingMode}" ?data-active=${sm === currentSwingMode}
-                  @click=${() => { if (!this.hass) return; const live = this.hass.states[primary.entity.entity_id]?.attributes?.swing_modes; if (!live?.includes(sm)) return; this.hass.callService('climate', 'set_swing_mode', { entity_id: primary.entity.entity_id, swing_mode: sm }); }}>
+                  @click=${() => { if (!this.hass) return; const live = this.hass.states[primary.entity.entity_id]?.attributes?.swing_modes; if (!live?.includes(sm)) return; lcarsAudio.play('climateAdjust'); this.hass.callService('climate', 'set_swing_mode', { entity_id: primary.entity.entity_id, swing_mode: sm }); }}>
                   ${sm.toUpperCase().replace(/_/g, ' ')}
                 </button>
               `)}
@@ -419,7 +419,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
                   <button class="climate-mode-btn climate-toggle-btn" role="switch"
                     aria-checked="${String(isOn)}" ?data-active=${isOn}
                     style="${isOn ? `--toggle-active-bg: ${activeColor}` : ''}"
-                    @click=${() => { if (!this.hass) return; this.hass.callService('switch', 'toggle', { entity_id: eid }); }}>
+                    @click=${() => { if (!this.hass) return; lcarsAudio.play('switchToggle'); this.hass.callService('switch', 'toggle', { entity_id: eid }); }}>
                     <ha-icon icon="${icon}" aria-hidden="true"></ha-icon>
                     ${label}
                   </button>

@@ -7,6 +7,7 @@
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsEventBus, lcarsLog, openEditPopup } from './lcars-helpers.js';
+import { lcarsAudio } from './lcars-audio.js';
 
 const TAG = 'Layout';
 
@@ -19,6 +20,7 @@ class LcarsDashboardLayout extends LitElement {
       _selectedArea: { type: String },
       _selectedFloor: { type: String },
       _editMode: { type: Boolean },
+      _audioMuted: { type: Boolean },
     };
   }
 
@@ -29,6 +31,7 @@ class LcarsDashboardLayout extends LitElement {
     this._selectedArea = null;
     this._selectedFloor = null;
     this._editMode = false;
+    this._audioMuted = lcarsAudio.isMuted;
     this._elbowPressTimer = null;
     this._resizeHandler = () => {
       this._narrow = window.innerWidth < 768;
@@ -105,7 +108,13 @@ class LcarsDashboardLayout extends LitElement {
     }
   }
 
+  _toggleMute() {
+    lcarsAudio.toggle();
+    this._audioMuted = lcarsAudio.isMuted;
+  }
+
   _selectArea(areaId) {
+    lcarsAudio.play('navAcknowledge');
     // Deselect floor when an area is picked directly
     if (this._selectedFloor) {
       this._selectedFloor = null;
@@ -123,6 +132,7 @@ class LcarsDashboardLayout extends LitElement {
   }
 
   _selectFloor(floorId) {
+    lcarsAudio.play('navAcknowledge');
     // Deselect area when a floor is picked
     if (this._selectedArea) {
       this._selectedArea = null;
@@ -142,6 +152,7 @@ class LcarsDashboardLayout extends LitElement {
   /* ─── Edit Mode ─── */
   _toggleEditMode() {
     if (!this._hass?.user?.is_admin) return;
+    lcarsAudio.play('toggle');
     this._editMode = !this._editMode;
     lcarsLog.info(TAG, 'Edit mode:', this._editMode ? 'ENABLED' : 'DISABLED');
     lcarsEventBus.dispatchEvent(
@@ -166,6 +177,7 @@ class LcarsDashboardLayout extends LitElement {
 
   _editHeaderTitle() {
     if (!this._editMode || !this._hass) return;
+    lcarsAudio.play('acknowledge');
     openEditPopup(this._hass, 'lcars-edit-homepage-header-card', {}, 'Edit Header');
   }
 
@@ -314,6 +326,30 @@ class LcarsDashboardLayout extends LitElement {
           outline-offset: 2px;
         }
         .configure-btn ha-icon { --mdc-icon-size: 16px; }
+
+        /* ─── Mute Button (in header endcap) ─── */
+        .mute-btn {
+          background: none;
+          border: none;
+          color: var(--lcars-black);
+          cursor: pointer;
+          padding: 0 0.25rem;
+          display: flex;
+          align-items: center;
+          font-family: var(--lcars-font);
+          font-size: 0.65rem;
+          text-transform: uppercase;
+          user-select: none;
+          gap: 0.25rem;
+          white-space: nowrap;
+          transition: filter var(--lcars-transition);
+        }
+        .mute-btn:hover { filter: brightness(0.8); }
+        .mute-btn:focus-visible {
+          outline: 2px solid var(--lcars-ice);
+          outline-offset: 2px;
+        }
+        .mute-btn ha-icon { --mdc-icon-size: 16px; }
 
         /* ─── Sidebar ─── */
         .lcars-sidebar {
@@ -622,6 +658,13 @@ class LcarsDashboardLayout extends LitElement {
             >${this._editMode ? 'LCARS \u00B7 CONFIGURATION MODE' : 'LCARS'}</span>
           <div class="lcars-header-bar" aria-hidden="true"></div>
           <div class="lcars-header-endcap">
+            <button class="mute-btn"
+              role="switch"
+              aria-checked=${!this._audioMuted}
+              aria-label="${this._audioMuted ? 'Unmute dashboard sounds' : 'Mute dashboard sounds'}"
+              @click=${() => this._toggleMute()}>
+              <ha-icon .icon=${this._audioMuted ? 'mdi:volume-off' : 'mdi:volume-high'}></ha-icon>
+            </button>
             ${this._hass?.user?.is_admin ? html`
               <button class="configure-btn"
                 aria-pressed=${this._editMode}

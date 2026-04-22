@@ -220,7 +220,7 @@ class LcarsDashboardLayout extends LitElement {
       css`
         :host {
           display: block;
-          height: 100vh;
+          height: calc(100vh - var(--header-height, 0px));
           overflow: hidden;
           box-sizing: border-box;
           background: var(--lcars-bg);

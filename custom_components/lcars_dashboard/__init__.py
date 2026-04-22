@@ -28,6 +28,9 @@ import asyncio
 
 _LOGGER = logging.getLogger(__name__)
 
+# Compiled once at module level (DATA-005: avoid redundant import re / re.compile in handlers)
+_PANEL_ID_RE = re.compile(r'^[a-z_][a-z0-9_:]{0,79}$')
+
 
 # ─── Security: Path component validation ───
 def _validate_path_component(value):
@@ -202,7 +205,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     notifications(hass, DOMAIN)
 
-    _LOGGER.info("LCARS Dashboard v%s setup complete — %d WS commands registered", VERSION, 28)
+    _LOGGER.info("LCARS Dashboard v%s setup complete — %d WS commands registered", VERSION, 35)
     
     return True
 
@@ -410,7 +413,7 @@ async def ws_handle_install_blueprint(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": filename
+            "successful": filename
         },
     )
 
@@ -443,7 +446,7 @@ async def ws_handle_delete_blueprint(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Blueprint deleted succesfull"
+            "successful": "Blueprint deleted succesfull"
         },
     )
 
@@ -468,22 +471,23 @@ async def ws_handle_edit_area_button(
 
     _LOGGER.debug("edit_area_button called: areaId=%s", msg.get("areaId"))
 
-    if(msg["areaId"]):
+    if msg.get("areaId") is not None:
 
-        areas = await _read_yaml_file(hass, "lcars-dashboard/configs/areas.yaml")
+        async with _get_yaml_lock("lcars-dashboard/configs/areas.yaml"):
+            areas = await _read_yaml_file(hass, "lcars-dashboard/configs/areas.yaml")
 
-        area = areas.get(msg["areaId"])
+            area = areas.get(msg["areaId"])
 
-        if not area:
-            areas[msg["areaId"]] = OrderedDict()
+            if not area:
+                areas[msg["areaId"]] = OrderedDict()
 
-        areas[msg["areaId"]].update({
-            "icon": msg["icon"],
-            "floor": msg["floor"],
-            "disabled": msg["disableArea"],
-        })
+            areas[msg["areaId"]].update({
+                "icon": msg["icon"],
+                "floor": msg["floor"],
+                "disabled": msg["disableArea"],
+            })
 
-        await _write_yaml_file(hass, "lcars-dashboard/configs/areas.yaml", areas)
+            await _write_yaml_file(hass, "lcars-dashboard/configs/areas.yaml", areas)
 
         
     hass.bus.async_fire("lcars_dashboard_homepage_card_reload")
@@ -491,7 +495,7 @@ async def ws_handle_edit_area_button(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Area button saved"
+            "successful": "Area button saved"
         },
     )
 
@@ -513,18 +517,19 @@ async def ws_handle_edit_area_bool_value(
 ) -> None:
     """Handle edit area bool value command."""
 
-    areas = await _read_yaml_file(hass, "lcars-dashboard/configs/areas.yaml")
+    async with _get_yaml_lock("lcars-dashboard/configs/areas.yaml"):
+        areas = await _read_yaml_file(hass, "lcars-dashboard/configs/areas.yaml")
 
-    area = areas.get(msg["areaId"])
+        area = areas.get(msg["areaId"])
 
-    if not area:
-        areas[msg["areaId"]] = OrderedDict()
+        if not area:
+            areas[msg["areaId"]] = OrderedDict()
 
-    areas[msg["areaId"]].update({
-            msg["key"]: msg["value"]
-        })
+        areas[msg["areaId"]].update({
+                msg["key"]: msg["value"]
+            })
 
-    await _write_yaml_file(hass, "lcars-dashboard/configs/areas.yaml", areas)
+        await _write_yaml_file(hass, "lcars-dashboard/configs/areas.yaml", areas)
 
 
     hass.bus.async_fire("lcars_dashboard_homepage_card_reload")
@@ -533,7 +538,7 @@ async def ws_handle_edit_area_bool_value(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Area bool value set succesfully"
+            "successful": "Area bool value set successfully"
         },
     )
 
@@ -562,27 +567,28 @@ async def ws_handle_edit_homepage_header(
 ) -> None:
     """Handle saving editing homepage header."""
     
-    homepage_header = await _read_yaml_file(hass, "lcars-dashboard/configs/settings.yaml")
+    async with _get_yaml_lock("lcars-dashboard/configs/settings.yaml"):
+        homepage_header = await _read_yaml_file(hass, "lcars-dashboard/configs/settings.yaml")
 
-    homepage_header.update({
-        "disable_clock": msg["disableClock"],
-        "am_pm_clock": msg["amPmClock"],
-        "disable_welcome_message": msg["disableWelcomeMessage"],
-        "v2_mode": msg["v2Mode"],
-        "disable_sensor_graph": msg["disableSensorGraph"],
-        "invert_cover": msg["invertCover"],
-        "weather_entity": msg["weatherEntity"],
-        "alarm_entity": msg["alarmEntity"],
-    })
+        homepage_header.update({k: v for k, v in {
+            "disable_clock": msg.get("disableClock"),
+            "am_pm_clock": msg.get("amPmClock"),
+            "disable_welcome_message": msg.get("disableWelcomeMessage"),
+            "v2_mode": msg.get("v2Mode"),
+            "disable_sensor_graph": msg.get("disableSensorGraph"),
+            "invert_cover": msg.get("invertCover"),
+            "weather_entity": msg.get("weatherEntity"),
+            "alarm_entity": msg.get("alarmEntity"),
+        }.items() if v is not None})
 
-    await _write_yaml_file(hass, "lcars-dashboard/configs/settings.yaml", homepage_header)
+        await _write_yaml_file(hass, "lcars-dashboard/configs/settings.yaml", homepage_header)
 
     hass.bus.async_fire("lcars_dashboard_homepage_card_reload")
 
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Homepage header saved"
+            "successful": "Homepage header saved"
         },
     )
 
@@ -603,20 +609,21 @@ async def ws_handle_edit_device_button(
 ) -> None:
     """Handle saving editing area button."""
     
-    if(msg["device"]):
-        devices = await _read_yaml_file(hass, "lcars-dashboard/configs/devices.yaml")
+    if msg.get("device") is not None:
+        async with _get_yaml_lock("lcars-dashboard/configs/devices.yaml"):
+            devices = await _read_yaml_file(hass, "lcars-dashboard/configs/devices.yaml")
 
-        device = devices.get(msg["device"])
+            device = devices.get(msg["device"])
 
-        if not device:
-            devices[msg["device"]] = OrderedDict()
+            if not device:
+                devices[msg["device"]] = OrderedDict()
 
-        devices[msg["device"]].update({
-            "icon": msg["icon"],
-            "show_in_navbar": msg["showInNavbar"],
-        })
+            devices[msg["device"]].update({
+                "icon": msg["icon"],
+                "show_in_navbar": msg["showInNavbar"],
+            })
 
-        await _write_yaml_file(hass, "lcars-dashboard/configs/devices.yaml", devices)
+            await _write_yaml_file(hass, "lcars-dashboard/configs/devices.yaml", devices)
 
     hass.bus.async_fire("lcars_dashboard_devicespage_card_reload")
     hass.bus.async_fire("lcars_dashboard_navigation_card_reload")
@@ -624,7 +631,7 @@ async def ws_handle_edit_device_button(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Device button saved"
+            "successful": "Device button saved"
         },
     )
 
@@ -671,7 +678,7 @@ async def ws_handle_edit_device_card(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Device card saved"
+            "successful": "Device card saved"
         },
     )
 
@@ -701,7 +708,7 @@ async def ws_handle_remove_device_card(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Entity card removed succesfully"
+            "successful": "Entity card removed successfully"
         },
     )
 
@@ -746,7 +753,7 @@ async def ws_handle_edit_device_popup(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Device popup saved"
+            "successful": "Device popup saved"
         },
     )
 
@@ -776,7 +783,7 @@ async def ws_handle_remove_device_popup(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Device popup removed succesfully"
+            "successful": "Device popup removed successfully"
         },
     )
 
@@ -807,7 +814,7 @@ async def ws_handle_remove_entity_card(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Entity card removed succesfully"
+            "successful": "Entity card removed successfully"
         },
     )
 
@@ -836,7 +843,7 @@ async def ws_handle_remove_entity_popup(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Entity card removed succesfully"
+            "successful": "Entity card removed successfully"
         },
     )
 
@@ -902,7 +909,7 @@ async def ws_handle_edit_entity(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Entity saved"
+            "successful": "Entity saved"
         },
     )
 
@@ -942,18 +949,19 @@ async def ws_handle_edit_entity_card(
     await hass.async_add_executor_job(_write_card)
 
     #Enable use custom card for the entity settings by default
-    entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
+    async with _get_yaml_lock("lcars-dashboard/configs/entities.yaml"):
+        entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
 
-    entity = entities.get(msg["entityId"])
+        entity = entities.get(msg["entityId"])
 
-    if not entity:
-        entities[msg["entityId"]] = OrderedDict()
+        if not entity:
+            entities[msg["entityId"]] = OrderedDict()
 
-    entities[msg["entityId"]].update({
-            "custom_card": True,
-        })
+        entities[msg["entityId"]].update({
+                "custom_card": True,
+            })
 
-    await _write_yaml_file(hass, "lcars-dashboard/configs/entities.yaml", entities)
+        await _write_yaml_file(hass, "lcars-dashboard/configs/entities.yaml", entities)
 
     hass.bus.async_fire("lcars_dashboard_homepage_card_reload")
     hass.bus.async_fire("lcars_dashboard_devicespage_card_reload")
@@ -961,7 +969,7 @@ async def ws_handle_edit_entity_card(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Card added succesfully"
+            "successful": "Card added successfully"
         },
     )
 
@@ -1000,25 +1008,26 @@ async def ws_handle_edit_entity_popup(
     await hass.async_add_executor_job(_write_card)
 
     #Enable use custom card for the entity settings by default
-    entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
+    async with _get_yaml_lock("lcars-dashboard/configs/entities.yaml"):
+        entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
 
-    entity = entities.get(msg["entityId"])
+        entity = entities.get(msg["entityId"])
 
-    if not entity:
-        entities[msg["entityId"]] = OrderedDict()
+        if not entity:
+            entities[msg["entityId"]] = OrderedDict()
 
-    entities[msg["entityId"]].update({
-            "custom_popup": True,
-        })
+        entities[msg["entityId"]].update({
+                "custom_popup": True,
+            })
 
-    await _write_yaml_file(hass, "lcars-dashboard/configs/entities.yaml", entities)
+        await _write_yaml_file(hass, "lcars-dashboard/configs/entities.yaml", entities)
 
     hass.bus.async_fire("lcars_dashboard_reload")
 
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Popup added succesfully"
+            "successful": "Popup added successfully"
         },
     )
 
@@ -1039,18 +1048,19 @@ async def ws_handle_edit_entity_favorite(
 ) -> None:
     """Handle edit entity favorite command."""
 
-    entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
+    async with _get_yaml_lock("lcars-dashboard/configs/entities.yaml"):
+        entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
 
-    entity = entities.get(msg["entityId"])
+        entity = entities.get(msg["entityId"])
 
-    if not entity:
-        entities[msg["entityId"]] = OrderedDict()
+        if not entity:
+            entities[msg["entityId"]] = OrderedDict()
 
-    entities[msg["entityId"]].update({
-            "favorite": msg["favorite"]
-        })
+        entities[msg["entityId"]].update({
+                "favorite": msg["favorite"]
+            })
 
-    await _write_yaml_file(hass, "lcars-dashboard/configs/entities.yaml", entities)
+        await _write_yaml_file(hass, "lcars-dashboard/configs/entities.yaml", entities)
 
 
     hass.bus.async_fire("lcars_dashboard_homepage_card_reload")
@@ -1058,7 +1068,7 @@ async def ws_handle_edit_entity_favorite(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Popup added succesfully"
+            "successful": "Popup added successfully"
         },
     )
 
@@ -1079,18 +1089,19 @@ async def ws_handle_edit_entity_bool_value(
 ) -> None:
     """Handle edit entity bool value command."""
 
-    entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
+    async with _get_yaml_lock("lcars-dashboard/configs/entities.yaml"):
+        entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
 
-    entity = entities.get(msg["entityId"])
+        entity = entities.get(msg["entityId"])
 
-    if not entity:
-        entities[msg["entityId"]] = OrderedDict()
+        if not entity:
+            entities[msg["entityId"]] = OrderedDict()
 
-    entities[msg["entityId"]].update({
-            msg["key"]: msg["value"]
-        })
+        entities[msg["entityId"]].update({
+                msg["key"]: msg["value"]
+            })
 
-    await _write_yaml_file(hass, "lcars-dashboard/configs/entities.yaml", entities)
+        await _write_yaml_file(hass, "lcars-dashboard/configs/entities.yaml", entities)
 
 
     hass.bus.async_fire("lcars_dashboard_homepage_card_reload")
@@ -1099,7 +1110,7 @@ async def ws_handle_edit_entity_bool_value(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Entity bool value set succesfully"
+            "successful": "Entity bool value set successfully"
         },
     )
 
@@ -1121,8 +1132,6 @@ async def ws_handle_edit_entities_bool_value(
 ) -> None:
     """Handle edit entities bool value command."""
 
-    entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
-
     entitiesInput = _safe_json_loads(connection, msg["id"], msg["entities"], "entities")
     if entitiesInput is None: return
     if not isinstance(entitiesInput, list):
@@ -1131,19 +1140,22 @@ async def ws_handle_edit_entities_bool_value(
 
     _LOGGER.debug("edit_entity_bool_value entities input: %s", entitiesInput)
 
-    for num, entityId in enumerate(entitiesInput, start=1):
-        entity = entities.get(entityId)
+    async with _get_yaml_lock("lcars-dashboard/configs/entities.yaml"):
+        entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
 
-        if not entity:
-            entities[entityId] = OrderedDict()
+        for num, entityId in enumerate(entitiesInput, start=1):
+            entity = entities.get(entityId)
 
-        entities[entityId].update({
-            msg["key"]: msg["value"]
-        })
+            if not entity:
+                entities[entityId] = OrderedDict()
 
-    _LOGGER.debug("edit_entity_bool_value entities result: %s", entities)
+            entities[entityId].update({
+                msg["key"]: msg["value"]
+            })
 
-    await _write_yaml_file(hass, "lcars-dashboard/configs/entities.yaml", entities)
+        _LOGGER.debug("edit_entity_bool_value entities result: %s", entities)
+
+        await _write_yaml_file(hass, "lcars-dashboard/configs/entities.yaml", entities)
 
     hass.bus.async_fire("lcars_dashboard_homepage_card_reload")
     hass.bus.async_fire("lcars_dashboard_devicespage_card_reload")
@@ -1151,7 +1163,7 @@ async def ws_handle_edit_entities_bool_value(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Entities bool value set succesfully"
+            "successful": "Entities bool value set successfully"
         },
     )
 
@@ -1229,7 +1241,7 @@ async def ws_handle_add_card(
         connection.send_result(
             msg["id"],
             {
-                "succesfull": "card added succesfully"
+                "successful": "card added successfully"
             },
         )
 
@@ -1267,7 +1279,7 @@ async def ws_handle_remove_card(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "card removed succesfully"
+            "successful": "card removed successfully"
         },
     )
 
@@ -1293,15 +1305,16 @@ async def ws_handle_edit_more_page_button(
     if (msg["more_page"]):
         config_rel_path = f"lcars-dashboard/configs/more_pages/{msg['more_page']}/config.yaml"
 
-        configFile = await _read_yaml_file(hass, config_rel_path)
+        async with _get_yaml_lock(config_rel_path):
+            configFile = await _read_yaml_file(hass, config_rel_path)
 
-        configFile.update({
-            "name": msg["name"],
-            "icon": msg["icon"],
-            "show_in_navbar": msg["showInNavbar"],
-        })
+            configFile.update({
+                "name": msg["name"],
+                "icon": msg["icon"],
+                "show_in_navbar": msg["showInNavbar"],
+            })
 
-        await _write_yaml_file(hass, config_rel_path, configFile)
+            await _write_yaml_file(hass, config_rel_path, configFile)
 
     # Trigger a reload event after saving
     hass.bus.async_fire("lcars_dashboard_homepage_card_reload")
@@ -1310,7 +1323,7 @@ async def ws_handle_edit_more_page_button(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "More page button saved"
+            "successful": "More page button saved"
         },
     )
 
@@ -1380,7 +1393,7 @@ async def ws_handle_edit_more_page(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "More page saved succesfully"
+            "successful": "More page saved successfully"
         },
     )
 
@@ -1418,7 +1431,7 @@ async def ws_handle_remove_more_page(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "More page removed succesfully"
+            "successful": "More page removed successfully"
         },
     )
 
@@ -1460,7 +1473,7 @@ async def ws_handle_add_more_page_to_navbar(
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "More page removed succesfully"
+            "successful": "More page removed successfully"
         },
     )
 
@@ -1485,24 +1498,25 @@ async def ws_handle_sort_area_button(
 
     sortType = msg["sortType"]
 
-    areas = await _read_yaml_file(hass, "lcars-dashboard/configs/areas.yaml")
+    async with _get_yaml_lock("lcars-dashboard/configs/areas.yaml"):
+        areas = await _read_yaml_file(hass, "lcars-dashboard/configs/areas.yaml")
 
-    for num, area_id in enumerate(sortData, start=1):
-        if areas.get(area_id):
-            areas[area_id].update({
-                sortType: num,
-            })
-        else:
-            areas[area_id] = OrderedDict({
-                sortType: num,
-            })
+        for num, area_id in enumerate(sortData, start=1):
+            if areas.get(area_id):
+                areas[area_id].update({
+                    sortType: num,
+                })
+            else:
+                areas[area_id] = OrderedDict({
+                    sortType: num,
+                })
 
-    await _write_yaml_file(hass, "lcars-dashboard/configs/areas.yaml", areas)
+        await _write_yaml_file(hass, "lcars-dashboard/configs/areas.yaml", areas)
 
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Area buttons sorted succesfully"
+            "successful": "Area buttons sorted successfully"
         },
     )
 
@@ -1525,25 +1539,26 @@ async def ws_handle_edit_device_bool_value(
 ) -> None:
     """Handle edit device bool value command."""
 
-    devices = await _read_yaml_file(hass, "lcars-dashboard/configs/devices.yaml")
+    async with _get_yaml_lock("lcars-dashboard/configs/devices.yaml"):
+        devices = await _read_yaml_file(hass, "lcars-dashboard/configs/devices.yaml")
 
-    entity = devices.get(msg["device"])
+        entity = devices.get(msg["device"])
 
-    if not entity:
-        devices[msg["device"]] = OrderedDict()
+        if not entity:
+            devices[msg["device"]] = OrderedDict()
 
-    devices[msg["device"]].update({
-            msg["key"]: msg["value"]
-        })
+        devices[msg["device"]].update({
+                msg["key"]: msg["value"]
+            })
 
-    await _write_yaml_file(hass, "lcars-dashboard/configs/devices.yaml", devices)
+        await _write_yaml_file(hass, "lcars-dashboard/configs/devices.yaml", devices)
 
     hass.bus.async_fire("lcars_dashboard_devicespage_card_reload")
 
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Device bool value set succesfully"
+            "successful": "Device bool value set successfully"
         },
     )
 
@@ -1566,24 +1581,25 @@ async def ws_handle_sort_device_button(
     sortData = _safe_json_loads(connection, msg["id"], msg["sortData"], "sortData")
     if sortData is None: return
 
-    devices = await _read_yaml_file(hass, "lcars-dashboard/configs/devices.yaml")
+    async with _get_yaml_lock("lcars-dashboard/configs/devices.yaml"):
+        devices = await _read_yaml_file(hass, "lcars-dashboard/configs/devices.yaml")
 
-    for num, device_id in enumerate(sortData, start=1):
-        if devices.get(device_id):
-            devices[device_id].update({
-                "sort_order": num,
-            })
-        else:
-            devices[device_id] = OrderedDict({
-                "sort_order": num,
-            })
+        for num, device_id in enumerate(sortData, start=1):
+            if devices.get(device_id):
+                devices[device_id].update({
+                    "sort_order": num,
+                })
+            else:
+                devices[device_id] = OrderedDict({
+                    "sort_order": num,
+                })
 
-    await _write_yaml_file(hass, "lcars-dashboard/configs/devices.yaml", devices)
+        await _write_yaml_file(hass, "lcars-dashboard/configs/devices.yaml", devices)
 
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Device buttons sorted succesfully"
+            "successful": "Device buttons sorted successfully"
         },
     )
 
@@ -1607,24 +1623,25 @@ async def ws_handle_sort_entity(
 
     sortType = msg["sortType"]
 
-    entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
+    async with _get_yaml_lock("lcars-dashboard/configs/entities.yaml"):
+        entities = await _read_yaml_file(hass, "lcars-dashboard/configs/entities.yaml")
 
-    for num, entity_id in enumerate(sortData, start=1):
-        if entities.get(entity_id):
-            entities[entity_id].update({
-                sortType: num,
-            })
-        else:
-            entities[entity_id] = OrderedDict({
-                sortType: num,
-            })
+        for num, entity_id in enumerate(sortData, start=1):
+            if entities.get(entity_id):
+                entities[entity_id].update({
+                    sortType: num,
+                })
+            else:
+                entities[entity_id] = OrderedDict({
+                    sortType: num,
+                })
 
-    await _write_yaml_file(hass, "lcars-dashboard/configs/entities.yaml", entities)
+        await _write_yaml_file(hass, "lcars-dashboard/configs/entities.yaml", entities)
 
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "Entity cards sorted succesfully"
+            "successful": "Entity cards sorted successfully"
         },
     )
 
@@ -1652,18 +1669,19 @@ async def ws_handle_sort_more_page(
 
     for num, more_page in enumerate(sortData, start=1):
         config_rel = f"lcars-dashboard/configs/more_pages/{more_page}/config.yaml"
-        configFile = await _read_yaml_file(hass, config_rel)
+        async with _get_yaml_lock(config_rel):
+            configFile = await _read_yaml_file(hass, config_rel)
 
-        configFile.update({
-            "sort_order": num,
-        })
+            configFile.update({
+                "sort_order": num,
+            })
 
-        await _write_yaml_file(hass, config_rel, configFile)
+            await _write_yaml_file(hass, config_rel, configFile)
 
     connection.send_result(
         msg["id"],
         {
-            "succesfull": "More pages sorted succesfully"
+            "successful": "More pages sorted successfully"
         },
     )
 
@@ -1709,8 +1727,6 @@ async def ws_handle_panel_order_set(
         connection.send_error(msg["id"], "invalid_format", "panel_order exceeds maximum of 50 entries")
         return
     # Validate entries: panel type (a-z_) or panelType:deviceId format, max 80 chars
-    import re
-    _PANEL_ID_RE = re.compile(r'^[a-z_][a-z0-9_:]{0,79}$')
     for item in panel_order:
         if not isinstance(item, str) or not _PANEL_ID_RE.match(item):
             connection.send_error(msg["id"], "invalid_format", "Each panel_order entry must be a panel ID string (a-z, 0-9, underscore, colon, max 80 chars)")
@@ -1772,8 +1788,6 @@ async def ws_handle_panel_column_set(
     if len(panel_columns) > 50:
         connection.send_error(msg["id"], "invalid_format", "panel_columns exceeds maximum of 50 entries")
         return
-    import re
-    _PANEL_ID_RE = re.compile(r'^[a-z_][a-z0-9_:]{0,79}$')
     _VALID_COLUMNS = {'left', 'right'}
     for key, val in panel_columns.items():
         if not isinstance(key, str) or not _PANEL_ID_RE.match(key):

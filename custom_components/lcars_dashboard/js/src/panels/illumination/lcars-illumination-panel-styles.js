@@ -85,6 +85,11 @@ export const illuminationPanelStyles = css`
     opacity: 0.7;
   }
 
+  .ilm-light-bar:focus-visible {
+    outline: 2px solid var(--lcars-ice, #99ccff);
+    outline-offset: 2px;
+  }
+
   /* ─── Indicator Dot ─── */
 
   .ilm-indicator {
@@ -232,16 +237,22 @@ export const illuminationPanelStyles = css`
     min-height: 2rem;
   }
 
-  .ilm-scene-btn:first-child {
+  /* GEO-010: Target wrapper :first-child since buttons are inside listitem divs */
+  .ilm-scenes > [role="listitem"]:first-child .ilm-scene-btn {
     border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 var(--lcars-btn-radius, 1.5rem);
   }
 
   .ilm-scene-btn:hover {
-    opacity: 0.8;
+    filter: brightness(1.2);
   }
 
   .ilm-scene-btn:active {
-    opacity: 0.6;
+    filter: brightness(0.8);
+  }
+
+  .ilm-scene-btn:focus-visible {
+    outline: 2px solid var(--lcars-ice, #99ccff);
+    outline-offset: 2px;
   }
 
   /* ─── Circuit Rows ─── */
@@ -266,6 +277,11 @@ export const illuminationPanelStyles = css`
 
   .ilm-circuit-row:hover {
     opacity: 0.8;
+  }
+
+  .ilm-circuit-row:focus-visible {
+    outline: 2px solid var(--lcars-ice, #99ccff);
+    outline-offset: 2px;
   }
 
   .ilm-circuit-name {
@@ -328,7 +344,7 @@ export const illuminationPanelStyles = css`
   }
 
   .ilm-effect-btn:focus-visible {
-    outline: 2px solid var(--lcars-sunflower, #ffcc99);
+    outline: 2px solid var(--lcars-ice, #99ccff);
     outline-offset: 2px;
   }
 

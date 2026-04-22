@@ -237,6 +237,11 @@ async def process_yaml(hass: HomeAssistant, config_entry):
 async def reload_configuration(hass):
     _LOGGER.warning('Reload YAML configuration files...!')
 
+    # DATA-017: Clear global mutable state to prevent stale entries on reload
+    global lcars_dashboard_more_pages, llgen_config
+    lcars_dashboard_more_pages = {}
+    llgen_config = {}
+
     # Ensure Jinja2 env is scoped to config dir
     init_jinja_env(hass.config.config_dir)
 

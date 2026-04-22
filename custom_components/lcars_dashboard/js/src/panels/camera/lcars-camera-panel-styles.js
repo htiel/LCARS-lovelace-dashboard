@@ -150,7 +150,24 @@ export const cameraPanelStyles = css`
     gap: 0.5rem;
     background: var(--lcars-black);
     z-index: 2;
+    opacity: 0;
+    visibility: hidden;
     transition: opacity 300ms ease-out, visibility 300ms ease-out;
+  }
+  /* WES-012: Delay showing connecting overlay to avoid flash when cameras load quickly */
+  .camera-frame[data-state="connecting"] .camera-connecting-overlay {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 300ms ease-out 500ms, visibility 300ms ease-out 500ms;
+  }
+  .camera-frame[data-state="connecting"] .camera-offline-overlay,
+  .camera-frame[data-state="offline"] .camera-connecting-overlay {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .camera-frame[data-state="offline"] .camera-offline-overlay {
+    opacity: 1;
+    visibility: visible;
   }
   .camera-connecting-text {
     font-family: var(--lcars-font);
@@ -189,16 +206,12 @@ export const cameraPanelStyles = css`
     50% { opacity: 0.6; }
   }
 
-  /* State-driven visibility */
+  /* State-driven visibility for live state */
   .camera-frame[data-state="live"] .camera-connecting-overlay,
-  .camera-frame[data-state="offline"] .camera-connecting-overlay {
-    opacity: 0;
-    visibility: hidden;
-  }
-  .camera-frame[data-state="connecting"] .camera-offline-overlay,
   .camera-frame[data-state="live"] .camera-offline-overlay {
     opacity: 0;
     visibility: hidden;
+    transition: opacity 300ms ease-out, visibility 300ms ease-out;
   }
   .camera-frame[data-state="offline"] {
     border-color: var(--lcars-gray);

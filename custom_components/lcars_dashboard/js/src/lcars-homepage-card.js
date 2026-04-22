@@ -218,7 +218,7 @@ class LcarsHomepageCard extends LitElement {
       for (const entityId of this._visibleCameras) {
         if (this._loadingCameras.has(entityId)) continue;
         const state = this._hass.states[entityId];
-        if (!state || state.state === 'unavailable') continue;
+        if (!state || state.state === 'unavailable' || state.state === 'unknown') continue;
         const base = state.attributes?.entity_picture;
         if (!base) continue;
         const img = this.shadowRoot?.querySelector(`img[data-entity="${CSS.escape(entityId)}"]`);
@@ -925,7 +925,24 @@ class LcarsHomepageCard extends LitElement {
             gap: 0.5rem;
             background: var(--lcars-black);
             z-index: 2;
+            opacity: 0;
+            visibility: hidden;
             transition: opacity 300ms ease-out, visibility 300ms ease-out;
+          }
+          /* WES-012: Delay showing connecting overlay to avoid flash */
+          .camera-frame[data-state="connecting"] .camera-connecting-overlay {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 300ms ease-out 500ms, visibility 300ms ease-out 500ms;
+          }
+          .camera-frame[data-state="connecting"] .camera-offline-overlay,
+          .camera-frame[data-state="offline"] .camera-connecting-overlay {
+            opacity: 0;
+            visibility: hidden;
+          }
+          .camera-frame[data-state="offline"] .camera-offline-overlay {
+            opacity: 1;
+            visibility: visible;
           }
           .camera-connecting-text {
             font-family: var(--lcars-font);
@@ -963,16 +980,12 @@ class LcarsHomepageCard extends LitElement {
             50% { opacity: 0.6; }
           }
 
-          /* State-driven visibility (D-4: opacity/visibility, not display:none) */
+          /* State-driven visibility for live state */
           .camera-frame[data-state="live"] .camera-connecting-overlay,
-          .camera-frame[data-state="offline"] .camera-connecting-overlay {
-            opacity: 0;
-            visibility: hidden;
-          }
-          .camera-frame[data-state="connecting"] .camera-offline-overlay,
           .camera-frame[data-state="live"] .camera-offline-overlay {
             opacity: 0;
             visibility: hidden;
+            transition: opacity 300ms ease-out, visibility 300ms ease-out;
           }
           .camera-frame[data-state="offline"] {
             border-color: var(--lcars-gray);

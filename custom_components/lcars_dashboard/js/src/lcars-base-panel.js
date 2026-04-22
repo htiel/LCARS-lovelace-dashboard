@@ -194,9 +194,13 @@ export class LcarsBasePanel extends LitElement {
 
   _handleToggle(entityId) {
     const domain = entityId.split('.')[0];
+    const state = this._getEntityState(entityId);
+    if (state?.state === 'unavailable') {
+      lcarsAudio.play('negativeAcknowledge');
+      return;
+    }
     lcarsAudio.playForEntity(entityId);
     if (domain === 'lock') {
-      const state = this._getEntityState(entityId);
       this._callService('lock', state?.state === 'locked' ? 'unlock' : 'lock', { entity_id: entityId });
     } else if (domain === 'script') {
       this._callService('script', 'turn_on', { entity_id: entityId });

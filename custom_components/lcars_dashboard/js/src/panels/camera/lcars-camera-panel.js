@@ -13,6 +13,7 @@ import { formatStateValue } from '../../lcars-format-utils.js';
 import { showMoreInfo } from '../../lcars-helpers.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { cameraPanelStyles } from './lcars-camera-panel-styles.js';
+import { lcarsAudio } from '../../lcars-audio.js';
 
 /* ── Build a cache-busted camera image URL ── */
 function cameraImageUrl(state) {
@@ -116,8 +117,8 @@ class LcarsCameraPanel extends LcarsBasePanel {
             <button class="camera-disclosure-btn"
               aria-expanded="${this._disclosureOpen}"
               aria-controls="cam-disclosure-${deviceId}"
-              @click=${() => { this._disclosureOpen = !this._disclosureOpen; }}
-              @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._disclosureOpen = !this._disclosureOpen; } }}>
+              @click=${() => { lcarsAudio.play('entityInfo'); this._disclosureOpen = !this._disclosureOpen; }}
+              @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); lcarsAudio.play('entityInfo'); this._disclosureOpen = !this._disclosureOpen; } }}>
               <span class="disclosure-triangle" ?data-open=${this._disclosureOpen}>▸</span>
               <span>${hiddenCount} ${diagnostic.length > 0 && operational.length === 0 ? 'DIAGNOSTIC' : 'MORE'}</span>
             </button>

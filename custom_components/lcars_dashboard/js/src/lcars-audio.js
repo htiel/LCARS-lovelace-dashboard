@@ -53,6 +53,7 @@ function _tone(ctx, waveform, freq, startTime, duration, gain) {
   vol.connect(ctx.destination);
   osc.start(startTime);
   osc.stop(startTime + duration);
+  osc.onended = () => { vol.disconnect(); };
   return startTime + duration;
 }
 
@@ -83,6 +84,7 @@ function _sweep(ctx, waveform, freqStart, freqEnd, startTime, duration, gain) {
   vol.connect(ctx.destination);
   osc.start(startTime);
   osc.stop(startTime + duration);
+  osc.onended = () => { vol.disconnect(); };
   return startTime + duration;
 }
 
@@ -191,6 +193,12 @@ const SOUNDS = {
     const t = ctx.currentTime;
     _tone(ctx, 'sine', 330, t, 0.06, 0.08);
   },
+
+  /** Media action — soft comm-channel two-tone (sine 440→550Hz, 80ms) */
+  mediaAction(ctx) {
+    const t = ctx.currentTime;
+    _sweep(ctx, 'sine', 440, 550, t, 0.08, 0.10);
+  },
 };
 
 /* ─── Reduced Motion Check ─── */
@@ -218,7 +226,7 @@ const DOMAIN_SOUND_MAP = {
   sensor: 'entityInfo',
   binary_sensor: 'entityInfo',
   humidifier: 'fanToggle',
-  media_player: 'acknowledge',
+  media_player: 'mediaAction',
   camera: 'entityInfo',
 };
 

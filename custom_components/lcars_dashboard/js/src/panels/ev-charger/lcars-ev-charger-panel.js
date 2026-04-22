@@ -13,6 +13,7 @@ import { lcarsFocusRing } from '../../lcars-styles.js';
 import { evChargerPanelStyles } from './lcars-ev-charger-panel-styles.js';
 import { formatNumber } from '../../lcars-format-utils.js';
 import { getEvChargerColor, getEvChargerLabel, getEvChargerIndicator, getEvSocColor } from '../../lcars-color-utils.js';
+import { lcarsAudio } from '../../lcars-audio.js';
 
 import '../../components/lcars-summary-badge/lcars-summary-badge.js';
 
@@ -346,6 +347,7 @@ class LcarsEvChargerPanel extends LcarsBasePanel {
 
   _setSolarMode(entityId, option) {
     if (!this.hass || !entityId) return;
+    lcarsAudio.play('switchToggle');
     this._callService('select', 'select_option', {
       entity_id: entityId,
       option: option,
@@ -399,6 +401,7 @@ class LcarsEvChargerPanel extends LcarsBasePanel {
 
   _adjustCurrent(entityId, currentVal, delta, min, max) {
     if (!this.hass || !entityId || currentVal == null) return;
+    lcarsAudio.play('climateAdjust');
     const newVal = Math.max(min, Math.min(max, currentVal + delta));
     this._callService('number', 'set_value', {
       entity_id: entityId,
@@ -426,6 +429,7 @@ class LcarsEvChargerPanel extends LcarsBasePanel {
 
   _toggleLock(entityId, isLocked) {
     if (!this.hass || !entityId) return;
+    lcarsAudio.play('lockToggle');
     this._callService('lock', isLocked ? 'unlock' : 'lock', {
       entity_id: entityId,
     });

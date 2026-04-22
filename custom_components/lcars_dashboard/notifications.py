@@ -14,7 +14,6 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import TemplateError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity import Entity, async_generate_entity_id
-from homeassistant.loader import bind_hass
 from homeassistant.util import slugify
 
 from .const import DOMAIN
@@ -52,18 +51,15 @@ STATUS_UNREAD = "unread"
 STATUS_READ = "read"
 
 #Notifications part
-@bind_hass
 def create(hass, message, title=None, notification_id=None):
     """Generate a notification."""
     hass.add_job(async_create, hass, message, title, notification_id)
 
-@bind_hass
 def dismiss(hass, notification_id):
     """Remove a notification."""
     hass.add_job(async_dismiss, hass, notification_id)
 
 @callback
-@bind_hass
 def async_create(
     hass: HomeAssistant,
     message: str,
@@ -84,7 +80,6 @@ def async_create(
     hass.async_create_task(hass.services.async_call(DOMAIN, SERVICE_CREATE, data))
 
 @callback
-@bind_hass
 def async_dismiss(hass: HomeAssistant, notification_id: str) -> None:
     """Remove a notification."""
     data = {ATTR_NOTIFICATION_ID: notification_id}

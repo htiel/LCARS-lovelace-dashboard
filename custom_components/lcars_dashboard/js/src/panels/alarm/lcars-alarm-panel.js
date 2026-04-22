@@ -12,6 +12,7 @@ import { getAlarmStateColor } from '../../lcars-color-utils.js';
 import { createRateLimiter } from '../../lcars-service-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { alarmPanelStyles } from './lcars-alarm-panel-styles.js';
+import { lcarsAudio } from '../../lcars-audio.js';
 
 class LcarsAlarmPanel extends LcarsBasePanel {
 
@@ -52,6 +53,16 @@ class LcarsAlarmPanel extends LcarsBasePanel {
       this._startAlarmCountdown(as?.attributes?.delay || 60);
     } else if (!isTransitional && this._alarmCountdown != null) {
       this._stopAlarmCountdown();
+    }
+    // WES-001: Play alert/criticalAlert on alarm state transitions
+    if (changedProps.has('group')) {
+      const prevGroup = changedProps.get('group');
+      const prevState = prevGroup?.entities?.find(e => e.domain === 'alarm_control_panel')?.state?.state;
+      const curState = as?.state;
+      if (prevState && curState && prevState !== curState) {
+        if (curState === 'triggered') lcarsAudio.play('criticalAlert');
+        else if (curState === 'arming' || curState === 'pending') lcarsAudio.play('alert');
+      }
     }
   }
 
@@ -102,6 +113,7 @@ class LcarsAlarmPanel extends LcarsBasePanel {
 
   _handleAlarmPinDigit(digit) {
     if (this._alarmPinCode.length >= 6) return;
+    lcarsAudio.play('acknowledge');
     this._alarmPinCode += String(digit).replace(/\D/g, '').charAt(0) || '';
     this._alarmPinError = false;
     this.requestUpdate();
@@ -114,6 +126,7 @@ class LcarsAlarmPanel extends LcarsBasePanel {
   }
 
   _handleAlarmArm(entityId, mode) {
+    lcarsAudio.play('lockToggle');
     const code = this._alarmPinCode || undefined;
     this.hass.callService('alarm_control_panel', `alarm_arm_${mode}`, {
       entity_id: entityId, ...(code ? { code } : {}),
@@ -126,11 +139,13 @@ class LcarsAlarmPanel extends LcarsBasePanel {
     // WORF-SEC-003: Client-side rate limiter is a UX safeguard only.
     // Server-side alarm PIN validation is authoritative.
     if (!this._alarmPinLimiter.allow()) {
+      lcarsAudio.play('negativeAcknowledge');
       this._alarmPinError = true;
       this._startLockoutCountdown();
       this.requestUpdate();
       return;
     }
+    lcarsAudio.play('lockToggle');
     const code = this._alarmPinCode || undefined;
     this.hass.callService('alarm_control_panel', 'alarm_disarm', {
       entity_id: entityId, ...(code ? { code } : {}),

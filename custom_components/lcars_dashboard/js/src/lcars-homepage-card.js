@@ -7634,7 +7634,7 @@ class LcarsHomepageCard extends LitElement {
             tacticalDevIds.add(e.entity.device_id);
           }
         }
-        const SIBLING_CLASSES = new Set(['battery', 'illuminance']);
+        const SIBLING_CLASSES = new Set(['battery', 'illuminance', 'light']);
         predicates.push(e => {
           if (!e.entity?.device_id || !tacticalDevIds.has(e.entity.device_id)) return false;
           const dc = e.state?.attributes?.device_class || '';

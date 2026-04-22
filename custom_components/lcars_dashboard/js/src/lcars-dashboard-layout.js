@@ -33,6 +33,7 @@ class LcarsDashboardLayout extends LitElement {
     this._editMode = false;
     this._audioMuted = lcarsAudio.isMuted;
     this._elbowPressTimer = null;
+    this._siteName = window.location.hostname.toUpperCase().replace(/\.LOCAL$/, '');
     this._resizeHandler = () => {
       this._narrow = window.innerWidth < 768;
     };
@@ -655,7 +656,7 @@ class LcarsDashboardLayout extends LitElement {
           <span class="lcars-header-title"
             @click=${() => this._editHeaderTitle()}
             style="${this._editMode ? 'cursor:pointer' : ''}"
-            >${this._editMode ? 'LCARS \u00B7 CONFIGURATION MODE' : 'LCARS'}</span>
+            >${this._editMode ? `${this._siteName} \u00B7 CONFIGURATION MODE` : this._siteName}</span>
           <div class="lcars-header-bar" aria-hidden="true"></div>
           <div class="lcars-header-endcap">
             <button class="mute-btn"

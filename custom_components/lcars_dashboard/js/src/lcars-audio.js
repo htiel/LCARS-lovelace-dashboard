@@ -139,6 +139,58 @@ const SOUNDS = {
     const t = ctx.currentTime;
     _sweep(ctx, 'sine', 550, 770, t, 0.08, 0.12);
   },
+
+  /* ─── Domain-Specific Interaction Sounds ─── */
+
+  /** Light toggle — warm soft tone (sine 720Hz, slightly longer for "glow") */
+  lightToggle(ctx) {
+    const t = ctx.currentTime;
+    _sweep(ctx, 'sine', 600, 800, t, 0.10, 0.12);
+  },
+
+  /** Switch toggle — crisp mechanical click (triangle 960Hz, very short) */
+  switchToggle(ctx) {
+    const t = ctx.currentTime;
+    _tone(ctx, 'triangle', 960, t, 0.04, 0.14);
+  },
+
+  /** Fan toggle — breathy whoosh-like sweep (sine 300→500Hz) */
+  fanToggle(ctx) {
+    const t = ctx.currentTime;
+    _sweep(ctx, 'sine', 300, 500, t, 0.12, 0.10);
+  },
+
+  /** Lock toggle — authoritative two-tone (square 440→660Hz, deliberate) */
+  lockToggle(ctx) {
+    const t = ctx.currentTime;
+    _tone(ctx, 'square', 440, t, 0.08, 0.10);
+    _tone(ctx, 'square', 660, t + 0.10, 0.06, 0.10);
+  },
+
+  /** Cover/blind control — descending sweep for mechanical motion (400→250Hz) */
+  coverAction(ctx) {
+    const t = ctx.currentTime;
+    _sweep(ctx, 'triangle', 400, 250, t, 0.14, 0.10);
+  },
+
+  /** Climate setpoint adjust — soft pulsing tick (sine 550Hz) */
+  climateAdjust(ctx) {
+    const t = ctx.currentTime;
+    _tone(ctx, 'sine', 550, t, 0.05, 0.08);
+  },
+
+  /** Script/automation fire — quick ascending double-chirp (sine 770→990Hz) */
+  scriptFire(ctx) {
+    const t = ctx.currentTime;
+    _tone(ctx, 'sine', 770, t, 0.04, 0.12);
+    _tone(ctx, 'sine', 990, t + 0.06, 0.04, 0.12);
+  },
+
+  /** Sensor/entity detail open — subtle low info tone (sine 330Hz) */
+  entityInfo(ctx) {
+    const t = ctx.currentTime;
+    _tone(ctx, 'sine', 330, t, 0.06, 0.08);
+  },
 };
 
 /* ─── Reduced Motion Check ─── */
@@ -149,6 +201,25 @@ function _prefersReducedMotion() {
 
 /** Sounds that are always allowed even with reduced motion */
 const CRITICAL_SOUNDS = new Set(['alert', 'criticalAlert']);
+
+/* ─── Domain → Sound Mapping ─── */
+
+const DOMAIN_SOUND_MAP = {
+  light: 'lightToggle',
+  switch: 'switchToggle',
+  fan: 'fanToggle',
+  input_boolean: 'switchToggle',
+  lock: 'lockToggle',
+  script: 'scriptFire',
+  automation: 'scriptFire',
+  cover: 'coverAction',
+  climate: 'climateAdjust',
+  number: 'climateAdjust',
+  sensor: 'entityInfo',
+  binary_sensor: 'entityInfo',
+  media_player: 'acknowledge',
+  camera: 'entityInfo',
+};
 
 /* ─── Public API ─── */
 
@@ -183,7 +254,7 @@ export const lcarsAudio = {
   /**
    * Play a named LCARS sound.
    * No-op if muted, if sound name is invalid, or if browser blocks audio.
-   * @param {string} name - One of: acknowledge, navAcknowledge, negativeAcknowledge, alert, criticalAlert, ready, toggle
+   * @param {string} name - Sound name (see SOUNDS object)
    */
   play(name) {
     if (this.isMuted) return;
@@ -196,5 +267,16 @@ export const lcarsAudio = {
     } catch {
       // Silently fail — browser may block audio
     }
+  },
+
+  /**
+   * Play the appropriate sound for an entity domain.
+   * Maps domains to their specific audio feedback.
+   * @param {string} entityId - Full entity_id (e.g. 'light.living_room')
+   */
+  playForEntity(entityId) {
+    const domain = entityId ? entityId.split('.')[0] : '';
+    const domainSound = DOMAIN_SOUND_MAP[domain];
+    this.play(domainSound || 'acknowledge');
   },
 };

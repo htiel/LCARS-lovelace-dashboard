@@ -22,6 +22,7 @@ import { showMoreInfo, lcarsLog } from '../../lcars-helpers.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { lcarsFocusRing } from '../../lcars-styles.js';
 import { tacticalPanelStyles } from './lcars-tactical-panel-styles.js';
+import { lcarsAudio } from '../../lcars-audio.js';
 
 /* Import alarm panel for composition */
 import '../alarm/lcars-alarm-panel.js';
@@ -459,6 +460,7 @@ class LcarsTacticalPanel extends LcarsBasePanel {
   /* ─── Lock Toggle (confirm-gated) ─── */
 
   _toggleLock(entityId, isCurrentlyLocked) {
+    lcarsAudio.play('lockToggle');
     if (isCurrentlyLocked) {
       // Locking is safe — execute immediately
       this._callService('lock', 'lock', { entity_id: entityId });
@@ -473,6 +475,7 @@ class LcarsTacticalPanel extends LcarsBasePanel {
   /* ─── Cover Toggle (confirm-gated) ─── */
 
   _toggleCover(entityId, currentState) {
+    lcarsAudio.play('coverAction');
     if (currentState === 'closed') {
       this._requestConfirm(entityId, (eid) => {
         this._callService('cover', 'open_cover', { entity_id: eid });

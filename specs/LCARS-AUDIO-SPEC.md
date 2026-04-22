@@ -51,6 +51,19 @@ LCARS audio follows the same principles as LCARS visual design:
 | **Ready** | System initialization complete | Dashboard first load after connection |
 | **Toggle** | State change confirmation | Mute toggle, edit mode toggle |
 
+### Domain-Specific Interaction Sounds
+
+| Category | Purpose | When Played |
+|----------|---------|-------------|
+| **Light Toggle** | Warm "glow on" confirmation | `light.*` entity toggle |
+| **Switch Toggle** | Crisp mechanical click | `switch.*`, `input_boolean.*` toggle |
+| **Fan Toggle** | Breathy whoosh-like sweep | `fan.*` entity toggle |
+| **Lock Toggle** | Authoritative deliberate tone | `lock.*` entity lock/unlock |
+| **Cover Action** | Mechanical motion sweep | `cover.*` open/close/stop |
+| **Climate Adjust** | Soft setpoint tick | Climate/number setpoint ± buttons |
+| **Script Fire** | Quick double-chirp | `script.*`, `automation.*` execution |
+| **Entity Info** | Subtle low info tone | Sensor/entity more-info dialog open |
+
 ---
 
 ## 3. Tone Specifications
@@ -147,6 +160,120 @@ Quick ascending sweep. Confirms a state change (mute on/off, edit mode).
 | Duration | 80 ms |
 | Volume | 0.12 |
 
+### 3.8 Light Toggle (`lightToggle`)
+
+Warm ascending sweep. Evokes the "glow" of a light coming on.
+
+| Parameter | Value |
+|-----------|-------|
+| Waveform | `sine` |
+| Frequency sweep | 600 Hz → 800 Hz |
+| Duration | 100 ms |
+| Volume | 0.12 |
+
+### 3.9 Switch Toggle (`switchToggle`)
+
+Crisp mechanical tick. Evokes a physical relay clicking.
+
+| Parameter | Value |
+|-----------|-------|
+| Waveform | `triangle` |
+| Frequency | 960 Hz |
+| Duration | 40 ms |
+| Volume | 0.14 |
+
+### 3.10 Fan Toggle (`fanToggle`)
+
+Breathy sweep. Evokes airflow.
+
+| Parameter | Value |
+|-----------|-------|
+| Waveform | `sine` |
+| Frequency sweep | 300 Hz → 500 Hz |
+| Duration | 120 ms |
+| Volume | 0.10 |
+
+### 3.11 Lock Toggle (`lockToggle`)
+
+Authoritative two-tone. Deliberate and weighty — locks are serious.
+
+| Parameter | Value |
+|-----------|-------|
+| Waveform | `square` |
+| Tone 1 | 440 Hz × 80ms |
+| Tone 2 | 660 Hz × 60ms |
+| Total Duration | 160 ms |
+| Volume | 0.10 |
+
+### 3.12 Cover Action (`coverAction`)
+
+Descending sweep. Evokes mechanical motion (blinds/shutters moving).
+
+| Parameter | Value |
+|-----------|-------|
+| Waveform | `triangle` |
+| Frequency sweep | 400 Hz → 250 Hz |
+| Duration | 140 ms |
+| Volume | 0.10 |
+
+### 3.13 Climate Adjust (`climateAdjust`)
+
+Soft tick. Subtle confirmation of setpoint increment/decrement.
+
+| Parameter | Value |
+|-----------|-------|
+| Waveform | `sine` |
+| Frequency | 550 Hz |
+| Duration | 50 ms |
+| Volume | 0.08 |
+
+### 3.14 Script Fire (`scriptFire`)
+
+Quick ascending double-chirp. Communicates "action dispatched."
+
+| Parameter | Value |
+|-----------|-------|
+| Waveform | `sine` |
+| Tone 1 | 770 Hz × 40ms |
+| Tone 2 | 990 Hz × 40ms |
+| Total Duration | 100 ms |
+| Volume | 0.12 |
+
+### 3.15 Entity Info (`entityInfo`)
+
+Subtle low info tone. Signals "detail view opening."
+
+| Parameter | Value |
+|-----------|-------|
+| Waveform | `sine` |
+| Frequency | 330 Hz |
+| Duration | 60 ms |
+| Volume | 0.08 |
+
+---
+
+## 3.A Domain → Sound Mapping
+
+The `playForEntity(entityId)` helper automatically selects the correct sound:
+
+| Entity Domain | Sound Name |
+|---------------|------------|
+| `light` | `lightToggle` |
+| `switch` | `switchToggle` |
+| `fan` | `fanToggle` |
+| `input_boolean` | `switchToggle` |
+| `lock` | `lockToggle` |
+| `script` | `scriptFire` |
+| `automation` | `scriptFire` |
+| `cover` | `coverAction` |
+| `climate` | `climateAdjust` |
+| `number` | `climateAdjust` |
+| `sensor` | `entityInfo` |
+| `binary_sensor` | `entityInfo` |
+| `media_player` | `acknowledge` |
+| `camera` | `entityInfo` |
+| *(unknown)* | `acknowledge` |
+
 ---
 
 ## 4. Mute Control
@@ -195,11 +322,12 @@ Mute state stored in `localStorage` under key `lcars-audio-muted`.
 A standalone utility module with no DOM dependencies. Exports:
 
 ```
-lcarsAudio.play(soundName)    — Play a named sound (no-op if muted)
-lcarsAudio.mute()             — Mute and persist
-lcarsAudio.unmute()           — Unmute and persist
-lcarsAudio.toggle()           — Toggle mute state
-lcarsAudio.isMuted            — Current mute state (getter)
+lcarsAudio.play(soundName)       — Play a named sound (no-op if muted)
+lcarsAudio.playForEntity(entityId) — Play domain-appropriate sound for an entity
+lcarsAudio.mute()                — Mute and persist
+lcarsAudio.unmute()              — Unmute and persist
+lcarsAudio.toggle()              — Toggle mute state
+lcarsAudio.isMuted               — Current mute state (getter)
 ```
 
 ### 6.2 AudioContext Lifecycle
@@ -219,6 +347,8 @@ lcarsAudio.isMuted            — Current mute state (getter)
 
 ## 7. Integration Points
 
+### Layout (lcars-dashboard-layout.js)
+
 | Location | Sound | Trigger |
 |----------|-------|---------|
 | Sidebar area buttons | `navAcknowledge` | `@click` on `.sidebar-area-btn` |
@@ -231,6 +361,18 @@ lcarsAudio.isMuted            — Current mute state (getter)
 | Error notifications | `alert` | `lcars-notification` event with severity ≥ warning |
 | Dashboard ready | `ready` | `firstUpdated()` lifecycle (one-time) |
 | Disabled button | `negativeAcknowledge` | Click on `[disabled]` or `[data-locked]` element |
+
+### Entity Interactions (via `playForEntity`)
+
+| Location | Sound | Trigger |
+|----------|-------|---------|
+| Homepage `_handleToggle()` | domain-mapped | Any entity toggle (light/switch/fan/lock/etc.) |
+| Base panel `_handleToggle()` | domain-mapped | Panel-level entity toggles |
+| Homepage `_handleEntityClick()` | domain-mapped | Sensor/entity more-info click |
+| Tactical `_toggleLock()` | `lockToggle` | Lock/unlock (confirm-gated) |
+| Tactical `_toggleCover()` | `coverAction` | Cover open/close/stop (confirm-gated) |
+| Viewport cover controls | `coverAction` | Blind/shade open/close/stop buttons |
+| Climate setpoint ± | `climateAdjust` | Thermostat temperature adjust |
 
 ---
 

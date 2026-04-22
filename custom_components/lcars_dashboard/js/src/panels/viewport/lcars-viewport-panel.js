@@ -12,6 +12,7 @@ import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { showMoreInfo, lcarsLog } from '../../lcars-helpers.js';
 import { lcarsFocusRing } from '../../lcars-styles.js';
 import { viewportPanelStyles } from './lcars-viewport-panel-styles.js';
+import { lcarsAudio } from '../../lcars-audio.js';
 
 import '../../components/lcars-summary-badge/lcars-summary-badge.js';
 
@@ -106,14 +107,14 @@ class LcarsViewportPanel extends LcarsBasePanel {
             <button class="viewport-btn"
                     ?data-active=${isOpen}
                     aria-label="Open ${name}"
-                    @click=${() => this._callService('cover', 'open_cover', { entity_id: eid })}>
+                    @click=${() => { lcarsAudio.play('coverAction'); this._callService('cover', 'open_cover', { entity_id: eid }); }}>
               ▲
             </button>
           ` : ''}
           ${supportsStop ? html`
             <button class="viewport-btn"
                     aria-label="Stop ${name}"
-                    @click=${() => this._callService('cover', 'stop_cover', { entity_id: eid })}>
+                    @click=${() => { lcarsAudio.play('coverAction'); this._callService('cover', 'stop_cover', { entity_id: eid }); }}>
               ■
             </button>
           ` : ''}
@@ -121,7 +122,7 @@ class LcarsViewportPanel extends LcarsBasePanel {
             <button class="viewport-btn"
                     ?data-active=${isClosed}
                     aria-label="Close ${name}"
-                    @click=${() => this._callService('cover', 'close_cover', { entity_id: eid })}>
+                    @click=${() => { lcarsAudio.play('coverAction'); this._callService('cover', 'close_cover', { entity_id: eid }); }}>
               ▼
             </button>
           ` : ''}

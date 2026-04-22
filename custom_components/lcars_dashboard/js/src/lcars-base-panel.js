@@ -16,6 +16,7 @@ import { getStateColor, getCo2Color } from './lcars-color-utils.js';
 import { formatNumber, formatStateValue, canonicalLabel, ariaLabel } from './lcars-format-utils.js';
 import { createRateLimiter } from './lcars-service-utils.js';
 import { SENSOR_DOMAINS, TOGGLE_DOMAINS, CAMERA_DOMAINS } from './lcars-entity-utils.js';
+import { lcarsAudio } from './lcars-audio.js';
 import './components/lcars-panel-frame/lcars-panel-frame.js';
 import './components/lcars-sensor-row/lcars-sensor-row.js';
 import './components/lcars-section-divider/lcars-section-divider.js';
@@ -193,6 +194,7 @@ export class LcarsBasePanel extends LitElement {
 
   _handleToggle(entityId) {
     const domain = entityId.split('.')[0];
+    lcarsAudio.playForEntity(entityId);
     if (domain === 'lock') {
       const state = this._getEntityState(entityId);
       this._callService('lock', state?.state === 'locked' ? 'unlock' : 'lock', { entity_id: entityId });

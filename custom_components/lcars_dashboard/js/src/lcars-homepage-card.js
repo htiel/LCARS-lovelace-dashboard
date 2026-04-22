@@ -43,6 +43,7 @@ import { fetchForecasts } from './lcars-weather-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from './lcars-shared-animations.js';
 import { getFloorAreas } from './lcars-hierarchy-utils.js';
 import { getAreaEntities, groupEntities } from './lcars-entity-query.js';
+import { lcarsAudio } from './lcars-audio.js';
 
 /* ─── Side-effect imports: extracted components & panels (no webpack entry needed) ─── */
 import './components/lcars-panel-frame/lcars-panel-frame.js';
@@ -306,6 +307,7 @@ class LcarsHomepageCard extends LitElement {
 
     _handleEntityClick(entityId) {
       lcarsLog.debug(TAG, 'Entity click:', entityId);
+      lcarsAudio.playForEntity(entityId);
       showMoreInfo(entityId);
     }
 
@@ -353,6 +355,7 @@ class LcarsHomepageCard extends LitElement {
     _handleToggle(entityId) {
       const domain = entityId.split('.')[0];
       lcarsLog.debug(TAG, 'Toggle:', entityId, 'domain:', domain);
+      lcarsAudio.playForEntity(entityId);
       if (domain === 'lock') {
         const state = this._getEntityState(entityId);
         this._hass.callService('lock', state?.state === 'locked' ? 'unlock' : 'lock', { entity_id: entityId });

@@ -32,7 +32,7 @@ class LcarsIlluminationCard extends LitElement {
     return {
       hass: { type: Object },
       _config: { type: Object },
-      _filter: { type: String },
+      filter: { type: String },
     };
   }
 
@@ -40,22 +40,13 @@ class LcarsIlluminationCard extends LitElement {
     super();
     this.hass = null;
     this._config = {};
-    this._filter = FILTER_ALL;
+    this.filter = FILTER_ALL;
     this._entityCache = new Map();
   }
 
   setConfig(config) {
     this._config = config || {};
   }
-
-  // Layout sets this to push filter state
-  set filter(val) {
-    const old = this._filter;
-    this._filter = val || FILTER_ALL;
-    if (old !== this._filter) this.requestUpdate('_filter', old);
-  }
-
-  get filter() { return this._filter; }
 
   set hass(val) {
     const old = this._hass;
@@ -134,12 +125,12 @@ class LcarsIlluminationCard extends LitElement {
   /* ─── Filtering ─── */
 
   _getFilteredEntities(areaData) {
-    if (this._filter === FILTER_LIGHTS) {
+    if (this.filter === FILTER_LIGHTS) {
       // Dimmable lights + scenes only
       const filtered = [...areaData.lights, ...areaData.scenes];
       return filtered.length > 0 ? filtered : null;
     }
-    if (this._filter === FILTER_CIRCUITS) {
+    if (this.filter === FILTER_CIRCUITS) {
       // Circuits (switches) only — no scenes
       return areaData.circuits.length > 0 ? areaData.circuits : null;
     }
@@ -238,7 +229,7 @@ class LcarsIlluminationCard extends LitElement {
                   <lcars-illumination-panel
                     .hass=${this._hass}
                     .entities=${filtered}
-                    .filter=${this._filter}
+                    .filter=${this.filter}
                     area-id="${areaData.area.area_id}">
                   </lcars-illumination-panel>
                 </div>
@@ -257,7 +248,7 @@ class LcarsIlluminationCard extends LitElement {
   }
 
   _setFilter(filter) {
-    this._filter = filter;
+    this.filter = filter;
     lcarsAudio.play('navAcknowledge');
   }
 

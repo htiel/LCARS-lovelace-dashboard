@@ -6,8 +6,8 @@ import shutil
 import re
 
 from .load_plugins import load_plugins
-from .load_dashboard import load_dashboard
-from .const import DOMAIN, VERSION
+from .load_dashboard import load_dashboards, unload_dashboards
+from .const import DOMAIN, VERSION, CONF_DASHBOARDS, DASHBOARD_REGISTRY, DEFAULT_DASHBOARDS
 from .process_yaml import process_yaml, reload_configuration
 from .notifications import notifications
 from datetime import datetime
@@ -1815,6 +1815,14 @@ async def ws_handle_panel_column_set(
 async def async_setup_entry(hass, config_entry):
     _LOGGER.debug("async_setup_entry starting for %s", config_entry.entry_id)
 
+    # Migrate v4.x options (sidepanel_title/icon → habitat_title/icon)
+    if "sidepanel_title" in config_entry.options and "habitat_title" not in config_entry.options:
+        new_options = dict(config_entry.options)
+        new_options["habitat_title"] = new_options.pop("sidepanel_title", "LCARS Dashboard")
+        new_options["habitat_icon"] = new_options.pop("sidepanel_icon", "mdi:star-four-points")
+        new_options.setdefault(CONF_DASHBOARDS, DEFAULT_DASHBOARDS)
+        hass.config_entries.async_update_entry(config_entry, options=new_options)
+
     try:
         await process_yaml(hass, config_entry)
         _LOGGER.debug("process_yaml completed successfully")
@@ -1823,15 +1831,15 @@ async def async_setup_entry(hass, config_entry):
         return False
 
     try:
-        load_dashboard(hass, config_entry)
-        _LOGGER.debug("load_dashboard completed successfully")
+        registered = load_dashboards(hass, config_entry)
+        hass.data.setdefault(DOMAIN, {})["registered_dashboards"] = registered
+        _LOGGER.debug("load_dashboards completed: %s", registered)
     except Exception as err:
-        _LOGGER.error("load_dashboard failed: %s", err, exc_info=True)
+        _LOGGER.error("load_dashboards failed: %s", err, exc_info=True)
         return False
 
     config_entry.add_update_listener(_update_listener)
 
-    #hass.async_add_job( # Deprecated, trying with hass.async_create_task() ...
     await hass.config_entries.async_forward_entry_setups(
         config_entry, ["sensor"]
     )
@@ -1841,22 +1849,25 @@ async def async_setup_entry(hass, config_entry):
 
 async def async_remove_entry(hass, config_entry):
     _LOGGER.info("LCARS Dashboard is being uninstalled")
-
-    frontend.async_remove_panel(hass, "lcars-dashboard")
+    unload_dashboards(hass)
 
 async def async_unload_entry(hass, config_entry):
-    """Unload a config entry."""
+    """Unload a config entry — remove all dashboard panels."""
     _LOGGER.debug("Unloading LCARS Dashboard")
     unload_ok = await hass.config_entries.async_unload_platforms(config_entry, ["sensor"])
     if unload_ok:
         hass.data.pop(DOMAIN, None)
-    frontend.async_remove_panel(hass, "lcars-dashboard")
+    unload_dashboards(hass)
     return unload_ok
 
 async def _update_listener(hass, config_entry):
-    _LOGGER.debug("Config entry update listener triggered")
+    _LOGGER.debug("Config entry update listener triggered — reloading dashboards")
 
+    # Unregister old dashboards, re-process YAML, register new ones
+    unload_dashboards(hass)
     await process_yaml(hass, config_entry)
+    registered = load_dashboards(hass, config_entry)
+    hass.data.setdefault(DOMAIN, {})["registered_dashboards"] = registered
 
     hass.bus.async_fire("lcars_dashboard_reload")
 

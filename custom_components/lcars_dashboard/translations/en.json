@@ -2,13 +2,9 @@
   "title": "LCARS Dashboard",
   "config": {
     "step": {
-      "init": {
-        "title": "LCARS Dashboard Settings",
-        "description": "",
-        "data": {
-          "sidepanel_icon": "Side panel icon",
-          "sidepanel_title": "Side panel title"
-        }
+      "user": {
+        "title": "LCARS Dashboard",
+        "description": "Install the LCARS Dashboard integration."
       }
     },
     "abort": {
@@ -18,13 +14,38 @@
   "options": {
     "step": {
       "init": {
-        "title": "LCARS Dashboard Settings",
-        "description": "",
+        "title": "Dashboard Selection",
+        "description": "Select which LCARS dashboards to enable in the sidebar.",
         "data": {
-          "sidepanel_icon": "Side panel icon",
-          "sidepanel_title": "Side panel title"
+          "dashboards": "Enabled dashboards"
+        }
+      },
+      "dashboard_config": {
+        "title": "Dashboard Configuration",
+        "description": "Customize the sidebar title and icon for each enabled dashboard.",
+        "data": {
+          "habitat_title": "Habitat sidebar title",
+          "habitat_icon": "Habitat sidebar icon",
+          "security_title": "Tactical sidebar title",
+          "security_icon": "Tactical sidebar icon",
+          "power_title": "Engineering sidebar title",
+          "power_icon": "Engineering sidebar icon",
+          "environmental_title": "Life Support sidebar title",
+          "environmental_icon": "Life Support sidebar icon",
+          "lighting_title": "Illumination sidebar title",
+          "lighting_icon": "Illumination sidebar icon"
+        },
+        "data_description": {
+          "habitat_icon": "MDI icon name (e.g., mdi:home)",
+          "security_icon": "MDI icon name (e.g., mdi:shield)",
+          "power_icon": "MDI icon name (e.g., mdi:flash)",
+          "environmental_icon": "MDI icon name (e.g., mdi:thermometer)",
+          "lighting_icon": "MDI icon name (e.g., mdi:lightbulb)"
         }
       }
+    },
+    "error": {
+      "no_dashboards_selected": "At least one dashboard must be enabled."
     }
   }
 }

@@ -1,123 +1,82 @@
-/**
- * lcars-illumination-panel.js (4X-11)
+﻿/**
+ * lcars-illumination-panel.js
  *
- * Area-level lighting control panel — aggregates all light domain entities,
- * lighting switches, and scenes into a unified LCARS console.
+ * Area-level device list for the Illumination dashboard.
+ * Renders individual device elements based on capability classification:
+ *   Type A (onoff)  â€” simple pill button
+ *   Type B (dimmer)  â€” LCARS segmented slider + on/off pill
+ *   Type C (full)    â€” slider + color/effect controls
+ *   Type D (circuit) â€” switch toggle pill
  *
- * Sections:
- *   1. Dimmable lights — full-width brightness bars with toggle + slider
- *   2. Scenes — horizontal strip of LCARS endcap activation buttons
- *   3. Switch circuits — simple on/off rows for non-dimmable lighting switches
- *
- * Badge: "3/5 ON" — active count / total count
- * Frame color: var(--lcars-sunflower) — warm light aesthetic
- *
- * Edit mode: drag-and-drop reorder via Pointer Events + FLIP animation.
- * Custom order persisted to localStorage keyed by area ID.
- * // TODO: 5.x — WS persistence for cross-device sync
+ * No panel frame â€” devices render directly under area dividers.
+ * v5.0.0-beta.12 â€” Illumination Device Elements
  */
-import { html, css } from 'lit-element';
-import { LcarsBasePanel } from '../../lcars-base-panel.js';
-import { isLightingEntity, classifyDevice } from '../../lcars-entity-utils.js';
-import { showMoreInfo, fireEvent, lcarsLog } from '../../lcars-helpers.js';
+import { LitElement, html, css } from 'lit-element';
+import { isLightingEntity, classifyDevice, classifyLightType } from '../../lcars-entity-utils.js';
+import { showMoreInfo, lcarsLog } from '../../lcars-helpers.js';
 import { createDebouncer, createRateLimiter, clampValue } from '../../lcars-service-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
-import { lcarsFocusRing } from '../../lcars-styles.js';
 import { lcarsAudio } from '../../lcars-audio.js';
-import { illuminationPanelStyles } from './lcars-illumination-panel-styles.js';
 
+import '../../components/lcars-slider/lcars-slider.js';
+import '../../components/lcars-panel-frame/lcars-panel-frame.js';
 import '../../components/lcars-summary-badge/lcars-summary-badge.js';
 
 const TAG = 'IlluminationPanel';
 
-class LcarsIlluminationPanel extends LcarsBasePanel {
+class LcarsIlluminationPanel extends LitElement {
 
   static get properties() {
     return {
-      ...super.properties,
-      _expandedLight: { type: String },  // entity_id of expanded brightness slider
-      _dragEntityId: { type: String },   // entity_id being dragged
+      hass:       { type: Object },
+      entities:   { type: Array },
+      group:      { type: Object },
+      config:     { type: Object },
+      areaId:     { type: String, attribute: 'area-id' },
+      editMode:   { type: Boolean, attribute: 'edit-mode', reflect: true },
     };
   }
 
   constructor() {
     super();
-    this._expandedLight = null;
-    this._dragEntityId = null;
-    this._dragState = null;
-    this._flipPositions = null;
+    this.hass = null;
+    this.entities = null;
+    this.group = null;
+    this.config = null;
+    this.areaId = null;
+    this.editMode = false;
     this._brightnessDebouncer = createDebouncer((eid, pct) => {
       const safePct = clampValue(pct, 1, 100);
       const brightness = Math.round(safePct / 100 * 255);
       this._callService('light', 'turn_on', { entity_id: eid, brightness });
     }, 300);
     this._sceneRateLimiter = createRateLimiter(3, 5000);
-    this._lastDragWasDrag = false;
-    // Bound handler for pointer capture events
-    this._boundPointerMove = this._handlePointerMove.bind(this);
-    this._boundPointerUp = this._handlePointerUp.bind(this);
-  }
-
-  get panelType() { return 'illumination'; }
-  get defaultPanelTitle() { return 'ILLUMINATION CONTROL'; }
-  get frameColor() { return 'var(--lcars-sunflower)'; }
-
-  static get styles() {
-    return [
-      ...super.styles,
-      sharedKeyframes,
-      sharedReducedMotion,
-      lcarsFocusRing,
-      illuminationPanelStyles,
-    ];
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    this._cancelDrag();
     this._brightnessDebouncer.cancel();
-    this._dragState = null;
-    this._flipPositions = null;
   }
 
-  willUpdate(changedProps) {
-    super.willUpdate(changedProps);
-    // Reset UI state when switching areas
-    if (changedProps.has('areaId') || changedProps.has('group') || changedProps.has('entities')) {
-      this._expandedLight = null;
-      this._cancelDrag();
-    }
-  }
-
-  /* ─── Entity Partitioning (recomputed each render — lightweight) ─── */
+  /* â”€â”€â”€ Entity Partitioning â”€â”€â”€ */
 
   _getPartition() {
-    return this._partitionLightingEntities();
-  }
+    const allEntries = this.entities || this.group?.entities || [];
+    const devices = [];  // lights + circuits
+    const scenes = [];
 
-  /**
-   * Partition area entities into lights, scenes, and circuits.
-   */
-  _partitionLightingEntities() {
-    const allEntries = this._getAllEntities();
-
-    const dimmableLights = [];  // light domain entities
-    const scenes = [];          // scene domain
-    const circuits = [];        // switches/booleans controlling lights
     const coveredDeviceIds = new Set();
 
-    // Pass 1: collect light-domain entities (highest fidelity control)
     for (const entry of allEntries) {
-      if (entry.domain === 'light' && isLightingEntity(entry)) {
-        dimmableLights.push(entry);
-        if (entry.entity?.device_id) coveredDeviceIds.add(entry.entity.device_id);
-      } else if (entry.domain === 'scene') {
+      if (entry.domain === 'scene') {
         scenes.push(entry);
+      } else if (entry.domain === 'light' && isLightingEntity(entry)) {
+        devices.push(entry);
+        if (entry.entity?.device_id) coveredDeviceIds.add(entry.entity.device_id);
       }
     }
 
-    // Build set of device IDs claimed by non-illumination panels (battery, environment, etc.)
-    // using the same non-diagnostic entity set the orchestrator routes with.
+    // Pass 2: circuits (switches that are lighting entities)
     const claimedDeviceIds = new Set();
     const byDevice = new Map();
     for (const entry of allEntries) {
@@ -131,247 +90,194 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
       if (classifyDevice(devEntries)) claimedDeviceIds.add(did);
     }
 
-    // Pass 2: collect only explicit lighting circuits.
     for (const entry of allEntries) {
       if (entry.domain === 'light' || entry.domain === 'scene') continue;
       if (entry.entity?.device_id && coveredDeviceIds.has(entry.entity.device_id)) continue;
       if (!isLightingEntity(entry)) continue;
       if (entry.entity?.device_id && claimedDeviceIds.has(entry.entity.device_id)) continue;
-      circuits.push(entry);
+      devices.push(entry);
     }
 
-    // Stable sort: custom order (localStorage) → alphabetical fallback
-    this._applyCustomOrder(dimmableLights);
-
-    return { dimmableLights, scenes, circuits };
+    return { devices, scenes };
   }
 
-  /* ─── Custom Order (localStorage) ─── */
+  /* â”€â”€â”€ Render â”€â”€â”€ */
 
-  _getOrderKey() {
-    return `lcars-ilm-order-${this.areaId || 'default'}`;
-  }
+  render() {
+    const { devices, scenes } = this._getPartition();
+    if (devices.length === 0) return html``;
 
-  _loadOrder(entityIds) {
-    try {
-      const stored = JSON.parse(localStorage.getItem(this._getOrderKey()));
-      if (!Array.isArray(stored)) return null;
-      const valid = new Set(entityIds);
-      const filtered = stored.filter(id => valid.has(id));
-      const missing = entityIds.filter(id => !stored.includes(id));
-      missing.sort(); // alphabetical for new entities
-      return [...filtered, ...missing];
-    } catch { return null; }
-  }
+    const content = html`
+      <div class="ilm-devices">
+        ${devices.map(entry => this._renderDevice(entry))}
+      </div>
+    `;
 
-  _saveOrder(orderedIds) {
-    try {
-      localStorage.setItem(this._getOrderKey(), JSON.stringify(orderedIds));
-    } catch (e) {
-      lcarsLog.warn(TAG, 'Failed to save light order:', e);
+    // Habitat mode: group present → wrap in panel frame
+    if (this.group) {
+      const all = devices;
+      const active = all.filter(e => {
+        const eid = e.entity?.entity_id;
+        return (this.hass?.states?.[eid] || e.state)?.state === 'on';
+      }).length;
+      const panelName = this._getPanelName();
+      const panelCode = this._getPanelCode();
+      return html`
+        <lcars-panel-frame
+          panel-name="${panelName}"
+          panel-code="${panelCode}"
+          frame-color="var(--lcars-sunflower)"
+          panel-type="illumination">
+          <span slot="badge">
+            <lcars-summary-badge value="${active}" total="${all.length}" label="ON" color="var(--lcars-sunflower)"></lcars-summary-badge>
+          </span>
+          ${content}
+        </lcars-panel-frame>
+      `;
     }
+
+    // Illumination dashboard mode: no frame
+    return content;
   }
 
-  _applyCustomOrder(lights) {
-    const ids = lights.map(e => e.entity?.entity_id);
-    const order = this._loadOrder(ids);
-    if (order) {
-      const orderMap = new Map(order.map((id, i) => [id, i]));
-      lights.sort((a, b) => {
-        const aIdx = orderMap.get(a.entity?.entity_id) ?? 999;
-        const bIdx = orderMap.get(b.entity?.entity_id) ?? 999;
-        if (aIdx !== bIdx) return aIdx - bIdx;
-        return (a.state?.attributes?.friendly_name || '')
-          .localeCompare(b.state?.attributes?.friendly_name || '');
-      });
-    } else {
-      // Default: alphabetical only (stable — no on-state or brightness sorting)
-      lights.sort((a, b) =>
-        (a.state?.attributes?.friendly_name || '')
-          .localeCompare(b.state?.attributes?.friendly_name || '')
-      );
+  _getPanelName() {
+    if (this.group?.device) {
+      const dev = this.group.device;
+      const raw = dev.name_by_user || dev.name || 'ILLUMINATION CONTROL';
+      const area = this.hass?.areas?.[this.areaId];
+      if (area?.name && raw.toLowerCase().startsWith(area.name.toLowerCase())) {
+        const stripped = raw.slice(area.name.length).trim().replace(/^[-–:]\s*/, '');
+        return stripped || raw;
+      }
+      return raw;
     }
+    return 'ILLUMINATION CONTROL';
   }
 
-  /* ─── Badge ─── */
+  _getPanelCode() {
+    const id = this.entities?.[0]?.entity?.entity_id
+      || this.group?.entities?.[0]?.entity?.entity_id
+      || this.group?.device?.id
+      || this.areaId || 'panel';
+    let h = 5381;
+    for (let i = 0; i < id.length; i++) {
+      h = ((h << 5) + h + id.charCodeAt(i)) | 0;
+    }
+    const code = String(Math.abs(h) % 1000000).padStart(6, '0');
+    return `${code.slice(0, 3)}-${code.slice(3)}`;
+  }
 
-  renderBadge() {
-    const { dimmableLights, circuits } = this._getPartition();
-    const all = [...dimmableLights, ...circuits];
-    const total = all.length;
-    // Read LIVE state from hass for accurate badge count
-    const active = all.filter(e => {
-      const eid = e.entity?.entity_id;
-      return (this.hass?.states?.[eid] || e.state)?.state === 'on';
-    }).length;
-    if (total === 0) return html``;
+  _renderDevice(entry) {
+    const eid = entry.entity?.entity_id;
+    const state = this.hass?.states?.[eid] || entry.state;
+    const isOn = state?.state === 'on';
+    const name = this._shortName(entry);
 
+    if (entry.domain === 'light') {
+      const lightType = classifyLightType(state);
+      switch (lightType) {
+        case 'onoff': return this._renderOnOffPill(eid, name, isOn);
+        case 'dimmer': return this._renderDimmer(eid, name, isOn, state);
+        case 'full':   return this._renderFullLight(eid, name, isOn, state);
+      }
+    }
+    // Circuit (switch/input_boolean)
+    return this._renderCircuitPill(eid, name, isOn);
+  }
+
+  /* â”€â”€â”€ Type A: On/Off Pill â”€â”€â”€ */
+
+  _renderOnOffPill(eid, name, isOn) {
     return html`
-      <lcars-summary-badge
-        value="${active}"
-        total="${total}"
-        label="ON"
-        color="var(--lcars-sunflower)">
-      </lcars-summary-badge>
+      <button class="ilm-pill ${isOn ? 'on' : 'off'}"
+              aria-pressed="${isOn ? 'true' : 'false'}"
+              aria-label="${name} â€” ${isOn ? 'ON' : 'OFF'}"
+              @click=${() => this._toggleEntity(eid)}
+              @contextmenu=${(e) => { e.preventDefault(); showMoreInfo(eid); }}>
+        <span class="ilm-pill__indicator ${isOn ? 'active' : ''}"></span>
+        <span class="ilm-pill__name">${name}</span>
+        <span class="ilm-pill__state">${isOn ? 'ON' : 'OFF'}</span>
+      </button>
     `;
   }
 
-  /* ─── Content ─── */
+  /* â”€â”€â”€ Type B: Dimmer â”€â”€â”€ */
 
-  renderContent() {
-    const { dimmableLights, scenes, circuits } = this._getPartition();
-
-    if (dimmableLights.length === 0 && circuits.length === 0) {
-      return html`<div class="ilm-empty">NO LIGHTING ENTITIES</div>`;
-    }
+  _renderDimmer(eid, name, isOn, state) {
+    const brightness = isOn ? Math.round((state?.attributes?.brightness || 0) / 255 * 100) : 0;
+    const barColor = this._getBarColor(state);
 
     return html`
-      <div class="ilm-content">
-        ${this.editMode ? html`
-          <div class="ilm-reorder-status" role="status" aria-live="polite">
-            ${this._dragEntityId ? '' : 'DRAG TO REORDER \u2022 ALT+ARROWS TO MOVE'}
-          </div>
-        ` : ''}
-        ${dimmableLights.length > 0 ? html`
-          <div class="ilm-lights" role="list" aria-label="Dimmable lights">
-            ${dimmableLights.map(entry => this._renderLightBar(entry))}
-          </div>
-        ` : ''}
-
-        ${scenes.length > 0 ? html`
-          <div class="ilm-section-divider">
-            <span class="ilm-section-label">SCENES</span>
-            <span class="ilm-section-line"></span>
-          </div>
-          <div class="ilm-scenes" role="list" aria-label="Scene presets">
-            ${scenes.map(entry => this._renderSceneButton(entry))}
-          </div>
-        ` : ''}
-
-        ${circuits.length > 0 ? html`
-          <div class="ilm-section-divider">
-            <span class="ilm-section-label">CIRCUITS</span>
-            <span class="ilm-section-line"></span>
-          </div>
-          <div class="ilm-circuits" role="list" aria-label="Lighting circuits">
-            ${circuits.map(entry => this._renderCircuitRow(entry))}
-          </div>
-        ` : ''}
+      <div class="ilm-dimmer">
+        <div class="ilm-dimmer__header">
+          <span class="ilm-dimmer__name">${name}</span>
+          <span class="ilm-dimmer__value">${isOn ? brightness + '%' : 'OFF'}</span>
+        </div>
+        <lcars-slider
+          .value=${brightness}
+          min="1"
+          max="100"
+          step="1"
+          color="${barColor}"
+          label="${name} brightness"
+          @lcars-slider-input=${(e) => { e.stopPropagation(); this._brightnessDebouncer.call(eid, e.detail.value); }}
+          @lcars-slider-change=${(e) => { e.stopPropagation(); this._setBrightness(eid, e.detail.value); }}
+          @click=${(e) => e.stopPropagation()}>
+        </lcars-slider>
+        <button class="ilm-pill compact ${isOn ? 'on' : 'off'}"
+                aria-pressed="${isOn ? 'true' : 'false'}"
+                aria-label="${name} power"
+                @click=${() => this._toggleEntity(eid)}
+                @contextmenu=${(e) => { e.preventDefault(); showMoreInfo(eid); }}>
+          <span class="ilm-pill__state">${isOn ? 'ON' : 'OFF'}</span>
+        </button>
       </div>
     `;
   }
 
-  /* ─── FLIP Animation (after render) ─── */
+  /* â”€â”€â”€ Type C: Full-Featured Light â”€â”€â”€ */
 
-  updated(changedProps) {
-    super.updated(changedProps);
-    if (!this._flipPositions) return;
-    const items = this.shadowRoot.querySelectorAll('.ilm-light-bar');
-    const flip = this._flipPositions;
-    this._flipPositions = null;
-    requestAnimationFrame(() => {
-      for (const el of items) {
-        const id = el.dataset.entityId;
-        const oldTop = flip.get(id);
-        if (oldTop == null) continue;
-        const newTop = el.getBoundingClientRect().top;
-        const deltaY = oldTop - newTop;
-        if (Math.abs(deltaY) < 1) continue;
-        el.style.transform = `translateY(${deltaY}px)`;
-        el.style.transition = 'none';
-        el.offsetHeight; // force reflow
-        el.style.transition = 'transform 200ms cubic-bezier(0.2, 0, 0.2, 1)';
-        el.style.transform = '';
-      }
-    });
-  }
-
-  /* ─── Light Brightness Bar ─── */
-
-  _renderLightBar(entry) {
-    const eid = entry.entity?.entity_id;
-    // Read LIVE state from hass — cached entry.state may be stale after toggle
-    const state = this.hass?.states?.[eid] || entry.state;
-    const isOn = state?.state === 'on';
+  _renderFullLight(eid, name, isOn, state) {
     const brightness = isOn ? Math.round((state?.attributes?.brightness || 0) / 255 * 100) : 0;
-    const name = this._shortEntityName(entry);
-    const expanded = this._expandedLight === eid;
-    const isDragging = this._dragEntityId === eid;
-
-    // Color temperature awareness
-    const colorTemp = state?.attributes?.color_temp_kelvin;
-    const barColor = this._getBarColor(colorTemp, isOn, state);
-
-    // Effect support
+    const barColor = this._getBarColor(state);
+    const supportedModes = state?.attributes?.supported_color_modes || [];
+    const hasColorControl = supportedModes.some(m => m === 'hs' || m === 'rgb' || m === 'xy');
     const effectList = state?.attributes?.effect_list;
     const activeEffect = state?.attributes?.effect;
     const hasEffects = Array.isArray(effectList) && effectList.length > 0;
-
-    // Color mode support
-    const supportedModes = state?.attributes?.supported_color_modes || [];
-    const hasColorControl = supportedModes.some(m => m === 'hs' || m === 'rgb' || m === 'xy');
-    const hasBrightness = supportedModes.some(m => m === 'brightness' || m === 'color_temp' || m === 'hs' || m === 'rgb' || m === 'xy');
     const activeHue = state?.attributes?.hs_color?.[0];
-    // Toggle-only lights (onoff only) don't get expanded controls
-    const isExpandable = hasBrightness || hasEffects || hasColorControl;
-
-    // Bar display: show effect name when active, brightness % for dimmable, ON/OFF for toggles
-    const barValueText = isOn
-      ? (activeEffect && activeEffect !== 'none' ? activeEffect.toUpperCase()
-         : hasBrightness ? `${brightness}%` : 'ON')
-      : 'OFF';
 
     return html`
-      <div class="ilm-light-item" role="listitem">
-        <div class="ilm-light-bar ${isOn ? 'on' : 'off'} ${isDragging ? 'dragging' : ''}"
-           tabindex="0"
-           data-entity-id="${eid}"
-           style="--brightness:${isOn && !hasBrightness ? 100 : brightness}%; --bar-color:${barColor}"
-           @click=${(e) => { if (!this._lastDragWasDrag && !this._dragState?.didDrag) this._toggleLight(eid); }}
-           @contextmenu=${(e) => { e.preventDefault(); showMoreInfo(eid); }}
-           @keydown=${(e) => this._handleLightKeydown(e, eid, brightness)}>
-        ${this.editMode ? html`
-          <span class="ilm-grip"
-                aria-label="Drag to reorder ${name}"
-                @pointerdown=${(e) => this._onPointerDown(e, eid)}>
-            <span></span><span></span><span></span>
-          </span>
-        ` : html`
-          <span class="ilm-indicator ${isOn ? 'active' : ''}"
-                aria-hidden="true"></span>
-        `}
-        <span class="ilm-light-name">${name}</span>
-        ${isExpandable ? html`
-          <span class="ilm-light-value"
-                tabindex="0"
-                role="button"
-                aria-expanded="${expanded}"
-                aria-label="${name} ${barValueText} — click to ${expanded ? 'collapse' : 'expand'} controls"
-                @click=${(e) => { e.stopPropagation(); this._expandedLight = expanded ? null : eid; }}>
-            ${barValueText}
-          </span>
-        ` : html`
-          <span class="ilm-light-value">${barValueText}</span>
-        `}
-      </div>
-      ${expanded && isExpandable ? html`
-        <div class="ilm-expanded-controls">
-          ${hasBrightness ? html`
-            <div class="ilm-slider-row">
-              <input type="range" min="1" max="100" .value=${String(brightness)}
-                     aria-label="${name} brightness slider"
-                     @input=${(e) => { e.stopPropagation(); this._brightnessDebouncer.call(eid, parseInt(e.target.value)); }}
-                     @click=${(e) => e.stopPropagation()}
-                     @change=${(e) => { e.stopPropagation(); this._setBrightness(eid, parseInt(e.target.value)); }}>
-            </div>
-          ` : ''}
+      <div class="ilm-full" role="group" aria-label="${name} controls">
+        <div class="ilm-dimmer__header">
+          <span class="ilm-dimmer__name">${name}</span>
+          <span class="ilm-dimmer__value">${isOn ? brightness + '%' : 'OFF'}</span>
+        </div>
+        <lcars-slider
+          .value=${brightness}
+          min="1"
+          max="100"
+          step="1"
+          color="${barColor}"
+          label="${name} brightness"
+          @lcars-slider-input=${(e) => { e.stopPropagation(); this._brightnessDebouncer.call(eid, e.detail.value); }}
+          @lcars-slider-change=${(e) => { e.stopPropagation(); this._setBrightness(eid, e.detail.value); }}
+          @click=${(e) => e.stopPropagation()}>
+        </lcars-slider>
+        <div class="ilm-full__controls">
+          <button class="ilm-pill compact ${isOn ? 'on' : 'off'}"
+                  aria-pressed="${isOn ? 'true' : 'false'}"
+                  aria-label="${name} power"
+                  @click=${() => this._toggleEntity(eid)}
+                  @contextmenu=${(e) => { e.preventDefault(); showMoreInfo(eid); }}>
+            <span class="ilm-pill__state">${isOn ? 'ON' : 'OFF'}</span>
+          </button>
           ${hasColorControl ? html`
-            <div class="ilm-color-presets" role="listbox" aria-label="${name} color presets">
+            <div class="ilm-color-presets">
               ${LcarsIlluminationPanel.COLOR_PRESETS.map(p => html`
-                <button class="ilm-color-preset ${this._isActivePreset(activeHue, p.hs[0]) ? 'active' : ''}"
+                <button class="ilm-color-btn ${this._isActivePreset(activeHue, p.hs[0]) ? 'active' : ''}"
                         style="--preset-color:${p.color}"
-                        role="option"
-                        aria-selected="${this._isActivePreset(activeHue, p.hs[0])}"
+                        aria-pressed="${this._isActivePreset(activeHue, p.hs[0]) ? 'true' : 'false'}"
                         aria-label="Set ${p.name.toLowerCase()} color"
                         @click=${(e) => { e.stopPropagation(); this._setColor(eid, p.hs); }}>
                   ${p.name}
@@ -380,17 +286,15 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
             </div>
           ` : ''}
           ${hasEffects ? html`
-            <div class="ilm-effects-strip" role="listbox" aria-label="${name} effects">
+            <div class="ilm-effect-strip">
               <button class="ilm-effect-btn ${!activeEffect || activeEffect === 'none' ? 'active' : ''}"
-                      role="option"
-                      aria-selected="${!activeEffect || activeEffect === 'none'}"
+                      aria-pressed="${!activeEffect || activeEffect === 'none' ? 'true' : 'false'}"
                       @click=${(e) => { e.stopPropagation(); this._clearEffect(eid); }}>
                 SOLID
               </button>
               ${effectList.map(fx => html`
                 <button class="ilm-effect-btn ${activeEffect === fx ? 'active' : ''}"
-                        role="option"
-                        aria-selected="${activeEffect === fx}"
+                        aria-pressed="${activeEffect === fx ? 'true' : 'false'}"
                         @click=${(e) => { e.stopPropagation(); this._setEffect(eid, fx); }}>
                   ${fx.toUpperCase()}
                 </button>
@@ -398,219 +302,37 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
             </div>
           ` : ''}
         </div>
-      ` : ''}
       </div>
     `;
   }
 
-  /* ─── Drag-and-Drop Reorder (Pointer Events + setPointerCapture) ─── */
+  /* â”€â”€â”€ Type D: Circuit/Switch Pill â”€â”€â”€ */
 
-  _onPointerDown(e, entityId) {
-    if (!this.editMode) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const bar = e.target.closest('.ilm-light-bar');
-    if (!bar) return;
-
-    bar.setPointerCapture(e.pointerId);
-    bar.addEventListener('pointermove', this._boundPointerMove);
-    bar.addEventListener('pointerup', this._boundPointerUp);
-    bar.addEventListener('pointercancel', this._boundPointerUp);
-
-    const { dimmableLights } = this._getPartition();
-    const orderedIds = dimmableLights.map(en => en.entity?.entity_id);
-
-    const currentIndex = orderedIds.indexOf(entityId);
-    this._dragState = {
-      entityId,
-      pointerId: e.pointerId,
-      startY: e.clientY,
-      barEl: bar,
-      currentIndex,
-      hoverIndex: currentIndex,
-      orderedIds: [...orderedIds],
-      didDrag: false,
-    };
-    this._dragEntityId = entityId;
-  }
-
-  _handlePointerMove(e) {
-    if (!this._dragState) return;
-    const dy = e.clientY - this._dragState.startY;
-    // Require minimum 8px movement before activating drag
-    if (!this._dragState.didDrag && Math.abs(dy) < 8) return;
-    this._dragState.didDrag = true;
-
-    const bars = this.shadowRoot.querySelectorAll('.ilm-light-bar');
-    if (!bars.length) return;
-    const itemHeight = bars[0].getBoundingClientRect().height + 4; // + gap
-    const indexShift = Math.round(dy / itemHeight);
-    const newIndex = clampValue(
-      this._dragState.currentIndex + indexShift,
-      0,
-      this._dragState.orderedIds.length - 1
-    );
-
-    if (newIndex !== this._dragState.hoverIndex) {
-      this._dragState.hoverIndex = newIndex;
-      // Capture FLIP positions before reorder
-      this._captureFlipPositions();
-      // Reorder the array
-      const ids = [...this._dragState.orderedIds];
-      const fromIdx = ids.indexOf(this._dragState.entityId);
-      ids.splice(fromIdx, 1);
-      ids.splice(newIndex, 0, this._dragState.entityId);
-      this._saveOrder(ids);
-      this.requestUpdate();
-    }
-  }
-
-  _handlePointerUp(e) {
-    if (!this._dragState) return;
-    const bar = this._dragState.barEl;
-    if (bar) {
-      try { bar.releasePointerCapture(this._dragState.pointerId); } catch {}
-      bar.removeEventListener('pointermove', this._boundPointerMove);
-      bar.removeEventListener('pointerup', this._boundPointerUp);
-      bar.removeEventListener('pointercancel', this._boundPointerUp);
-    }
-    const didDrag = this._dragState.didDrag;
-    this._lastDragWasDrag = didDrag;
-    this._dragState = null;
-    this._dragEntityId = null;
-    if (didDrag) {
-      requestAnimationFrame(() => { this._lastDragWasDrag = false; });
-      this.requestUpdate();
-    }
-  }
-
-  _cancelDrag() {
-    if (this._dragState?.barEl) {
-      const bar = this._dragState.barEl;
-      try { bar.releasePointerCapture(this._dragState.pointerId); } catch {}
-      bar.removeEventListener('pointermove', this._boundPointerMove);
-      bar.removeEventListener('pointerup', this._boundPointerUp);
-      bar.removeEventListener('pointercancel', this._boundPointerUp);
-    }
-    this._dragState = null;
-    this._dragEntityId = null;
-  }
-
-  _captureFlipPositions() {
-    this._flipPositions = new Map();
-    const bars = this.shadowRoot.querySelectorAll('.ilm-light-bar');
-    for (const bar of bars) {
-      const id = bar.dataset.entityId;
-      if (id) this._flipPositions.set(id, bar.getBoundingClientRect().top);
-    }
-  }
-
-  /* ─── Keyboard Reorder (Alt+Arrow — WCAG 2.5.7) ─── */
-
-  _handleLightKeydown(e, entityId, currentBrightness) {
-    // Edit mode: Alt+Arrow reorders
-    if (this.editMode && e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-      e.preventDefault();
-      this._keyboardReorder(entityId, e.key === 'ArrowUp' ? -1 : 1);
-      return;
-    }
-
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      this._toggleLight(entityId);
-    } else if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-      e.preventDefault();
-      if (currentBrightness > 0) {
-        this._setBrightness(entityId, Math.min(100, currentBrightness + 5));
-      }
-    } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-      e.preventDefault();
-      if (currentBrightness > 0) {
-        this._setBrightness(entityId, Math.max(1, currentBrightness - 5));
-      }
-    }
-  }
-
-  _keyboardReorder(entityId, direction) {
-    const { dimmableLights } = this._getPartition();
-    const ids = dimmableLights.map(e => e.entity?.entity_id);
-    const idx = ids.indexOf(entityId);
-    if (idx < 0) return;
-    const newIdx = clampValue(idx + direction, 0, ids.length - 1);
-    if (newIdx === idx) return;
-
-    this._captureFlipPositions();
-    ids.splice(idx, 1);
-    ids.splice(newIdx, 0, entityId);
-    this._saveOrder(ids);
-    this.requestUpdate();
-
-    // Announce position change
-    const status = this.shadowRoot.querySelector('.ilm-reorder-status');
-    if (status) {
-      const name = dimmableLights.find(e => e.entity?.entity_id === entityId);
-      const displayName = name ? this._shortEntityName(name) : entityId;
-      status.textContent = `${displayName} MOVED TO POSITION ${newIdx + 1} OF ${ids.length}`;
-    }
-
-    // Re-focus the moved element after render
-    this.updateComplete.then(() => {
-      const bar = this.shadowRoot.querySelector(`[data-entity-id="${CSS.escape(entityId)}"]`);
-      if (bar) bar.focus();
-    });
-  }
-
-  /* ─── Scene Button ─── */
-
-  _renderSceneButton(entry) {
-    const eid = entry.entity?.entity_id;
-    const name = this._shortEntityName(entry);
+  _renderCircuitPill(eid, name, isOn) {
     return html`
-      <div role="listitem">
-        <button class="ilm-scene-btn"
-                aria-label="Activate ${name} scene"
-                @click=${() => this._activateScene(eid)}>
-          ${name}
-        </button>
-      </div>
+      <button class="ilm-pill circuit ${isOn ? 'on' : 'off'}"
+              aria-pressed="${isOn ? 'true' : 'false'}"
+              aria-label="${name} â€” ${isOn ? 'ON' : 'OFF'}"
+              @click=${() => this._toggleEntity(eid)}
+              @contextmenu=${(e) => { e.preventDefault(); showMoreInfo(eid); }}>
+        <span class="ilm-pill__indicator ${isOn ? 'active' : ''}"></span>
+        <span class="ilm-pill__name">${name}</span>
+        <span class="ilm-pill__state">${isOn ? 'ON' : 'OFF'}</span>
+      </button>
     `;
   }
 
-  /* ─── Circuit Row ─── */
+  /* â”€â”€â”€ Color Temperature / Hue â”€â”€â”€ */
 
-  _renderCircuitRow(entry) {
-    const eid = entry.entity?.entity_id;
-    // Read LIVE state from hass — cached entry.state may be stale after toggle
-    const isOn = (this.hass?.states?.[eid] || entry.state)?.state === 'on';
-    const name = this._shortEntityName(entry);
-    return html`
-      <div class="ilm-circuit-row ${isOn ? 'on' : 'off'}"
-           role="listitem"
-           tabindex="0"
-           aria-label="${name} — ${isOn ? 'on' : 'off'}"
-           @click=${() => this._toggleLight(eid)}
-           @contextmenu=${(e) => { e.preventDefault(); showMoreInfo(eid); }}
-           @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._toggleLight(eid); } }}>
-        <span class="ilm-indicator ${isOn ? 'active' : ''}"
-              aria-hidden="true"></span>
-        <span class="ilm-circuit-name">${name}</span>
-        <span class="ilm-circuit-state">${isOn ? 'ON' : 'OFF'}</span>
-      </div>
-    `;
-  }
-
-  /* ─── Color Temperature Bar Color ─── */
-
-  _getBarColor(colorTempK, isOn, state) {
+  _getBarColor(state) {
+    const isOn = state?.state === 'on';
     if (!isOn) return 'var(--lcars-gray, #666688)';
-
-    // Priority: HS color mode → color_temp → default
     const colorMode = state?.attributes?.color_mode;
     if (colorMode === 'hs' || colorMode === 'rgb' || colorMode === 'xy') {
       const hs = state?.attributes?.hs_color;
       if (hs) return this._hueToLcarsColor(hs[0], hs[1]);
     }
-
+    const colorTempK = state?.attributes?.color_temp_kelvin;
     if (!colorTempK) return 'var(--lcars-sunflower)';
     const t = Math.max(0, Math.min(1, (colorTempK - 2000) / 4500));
     if (t < 0.5) return 'var(--lcars-butterscotch)';
@@ -618,7 +340,6 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     return 'var(--lcars-ice)';
   }
 
-  /** Map hue (0–360) to nearest LCARS palette color */
   _hueToLcarsColor(hue, saturation) {
     if (saturation != null && saturation < 15) return 'var(--lcars-sunflower)';
     if (hue < 30)  return 'var(--lcars-tomato)';
@@ -631,7 +352,7 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     return 'var(--lcars-tomato)';
   }
 
-  /* ─── Color Presets ─── */
+  /* â”€â”€â”€ Color Presets â”€â”€â”€ */
 
   static get COLOR_PRESETS() {
     return [
@@ -650,7 +371,27 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     return diff < 20 || diff > 340;
   }
 
-  /* ─── Effect & Color Actions ─── */
+  /* â”€â”€â”€ Service Calls â”€â”€â”€ */
+
+  _callService(domain, service, data) {
+    if (!this.hass) return;
+    return this.hass.callService(domain, service, data);
+  }
+
+  _toggleEntity(entityId) {
+    if (!this.hass || !entityId) return;
+    lcarsAudio.playForEntity(entityId);
+    const domain = entityId.split('.')[0];
+    this._callService(domain, 'toggle', { entity_id: entityId });
+  }
+
+  _setBrightness(entityId, pct) {
+    if (!this.hass || !entityId) return;
+    lcarsAudio.play('climateAdjust');
+    const safePct = clampValue(pct, 1, 100);
+    const brightness = Math.round(safePct / 100 * 255);
+    this._callService('light', 'turn_on', { entity_id: entityId, brightness });
+  }
 
   _setEffect(entityId, effect) {
     if (!this.hass || !entityId) return;
@@ -670,23 +411,6 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     this._callService('light', 'turn_on', { entity_id: entityId, hs_color: hs });
   }
 
-  /* ─── Actions ─── */
-
-  _toggleLight(entityId) {
-    if (!this.hass || !entityId) return;
-    lcarsAudio.playForEntity(entityId);
-    const domain = entityId.split('.')[0];
-    this._callService(domain, 'toggle', { entity_id: entityId });
-  }
-
-  _setBrightness(entityId, pct) {
-    if (!this.hass || !entityId) return;
-    lcarsAudio.play('climateAdjust');
-    const safePct = clampValue(pct, 1, 100);
-    const brightness = Math.round(safePct / 100 * 255);
-    this._callService('light', 'turn_on', { entity_id: entityId, brightness });
-  }
-
   _activateScene(entityId) {
     if (!this.hass || !entityId) return;
     if (!this._sceneRateLimiter.allow()) return;
@@ -694,11 +418,231 @@ class LcarsIlluminationPanel extends LcarsBasePanel {
     this._callService('scene', 'turn_on', { entity_id: entityId });
   }
 
-  /* ─── Utility ─── */
+  /* â”€â”€â”€ Utility â”€â”€â”€ */
 
-  _shortEntityName(entry) {
+  _shortName(entry) {
     const raw = entry.state?.attributes?.friendly_name || entry.entity?.entity_id || '';
-    return this._shortenName(raw, entry.entity).toUpperCase();
+    const area = this.hass?.areas?.[this.areaId];
+    if (!area?.name) return raw.toUpperCase();
+    let result = raw;
+    const prefixes = [area.name, area.name.replace(/[''']s$/i, '')];
+    for (const p of prefixes) {
+      if (result.toLowerCase().startsWith(p.toLowerCase())) {
+        result = result.slice(p.length).trim().replace(/^[-â€“:]\s*/, '');
+      }
+    }
+    return (result || raw).toUpperCase();
+  }
+
+  /* â”€â”€â”€ Styles â”€â”€â”€ */
+
+  static get styles() {
+    return [
+      sharedKeyframes,
+      sharedReducedMotion,
+      css`
+        :host { display: block; }
+
+        .ilm-devices {
+          display: flex;
+          flex-direction: column;
+          gap: 0.375rem;
+        }
+
+        /* â”€â”€â”€ Shared Pill Button (Type A & D) â”€â”€â”€ */
+
+        .ilm-pill {
+          display: flex;
+          align-items: center;
+          height: 3rem;
+          padding: 0 1rem 0 0.75rem;
+          border-radius: 0 var(--lcars-btn-radius, 1.5rem) var(--lcars-btn-radius, 1.5rem) 0;
+          background: var(--lcars-sunflower, #ffcc99);
+          color: var(--lcars-black, #000);
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 1rem;
+          text-transform: uppercase;
+          cursor: pointer;
+          border: none;
+          transition: filter 200ms ease;
+          width: 100%;
+          text-align: left;
+        }
+
+        .ilm-pill:hover { filter: brightness(1.2); }
+        .ilm-pill:active { background: var(--lcars-gold, #ffaa00); }
+        .ilm-pill:focus-visible {
+          outline: 2px solid var(--lcars-ice, #99ccff);
+          outline-offset: 2px;
+        }
+
+        .ilm-pill.off {
+          background: var(--lcars-gray, #666688);
+          color: var(--lcars-space-white, #f5f6fa);
+          animation: standbyPulse 4s ease-in-out infinite;
+        }
+
+        .ilm-pill.circuit { background: var(--lcars-almond-creme, #ffbbaa); }
+        .ilm-pill.circuit.off { background: var(--lcars-gray, #666688); }
+
+        .ilm-pill.compact {
+          height: 2rem;
+          width: auto;
+          min-width: 5rem;
+          padding: 0 0.75rem;
+          justify-content: center;
+          border-radius: var(--lcars-btn-radius, 1.5rem);
+        }
+
+        @keyframes standbyPulse {
+          0%, 100% { opacity: 0.5; }
+          50%      { opacity: 0.65; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .ilm-pill.off { animation: none; opacity: 0.55; }
+        }
+
+        .ilm-pill__indicator {
+          display: inline-block;
+          width: 3px;
+          height: 1.25rem;
+          border-radius: 1.5px;
+          background: var(--lcars-black, #000);
+          margin-right: 0.625rem;
+          flex-shrink: 0;
+          opacity: 0.3;
+        }
+
+        .ilm-pill__indicator.active { opacity: 1; }
+
+        .ilm-pill__name {
+          flex: 1;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .ilm-pill__state {
+          font-variant-numeric: tabular-nums;
+          min-width: 2.5rem;
+          text-align: right;
+          flex-shrink: 0;
+        }
+
+        /* â”€â”€â”€ Dimmer (Type B) â”€â”€â”€ */
+
+        .ilm-dimmer {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+
+        .ilm-dimmer__header {
+          display: flex;
+          align-items: center;
+          padding: 0 0.25rem;
+        }
+
+        .ilm-dimmer__name {
+          flex: 1;
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.875rem;
+          color: var(--lcars-sunflower, #ffcc99);
+          text-transform: uppercase;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .ilm-dimmer__value {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.875rem;
+          color: var(--lcars-sunflower, #ffcc99);
+          font-variant-numeric: tabular-nums;
+          min-width: 3rem;
+          text-align: right;
+        }
+
+        /* â”€â”€â”€ Full-Featured Light (Type C) â”€â”€â”€ */
+
+        .ilm-full {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+
+        .ilm-full__controls {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.375rem;
+          align-items: center;
+        }
+
+        /* â”€â”€â”€ Color Presets â”€â”€â”€ */
+
+        .ilm-color-presets {
+          display: flex;
+          gap: 0.25rem;
+          flex-wrap: wrap;
+        }
+
+        .ilm-color-btn {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          color: var(--lcars-black, #000);
+          background: var(--preset-color, var(--lcars-sunflower));
+          border: none;
+          padding: 0.25rem 0.5rem;
+          height: 2rem;
+          border-radius: var(--lcars-btn-radius, 1.5rem);
+          cursor: pointer;
+          transition: filter 150ms ease;
+          opacity: 0.6;
+        }
+
+        .ilm-color-btn.active { opacity: 1; }
+        .ilm-color-btn:hover { filter: brightness(1.2); }
+        .ilm-color-btn:focus-visible {
+          outline: 2px solid var(--lcars-ice, #99ccff);
+          outline-offset: 2px;
+        }
+
+        /* â”€â”€â”€ Effect Strip â”€â”€â”€ */
+
+        .ilm-effect-strip {
+          display: flex;
+          gap: 0.25rem;
+          flex-wrap: wrap;
+        }
+
+        .ilm-effect-btn {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          color: var(--lcars-space-white, #f5f6fa);
+          background: rgba(102, 102, 136, 0.3);
+          border: none;
+          padding: 0.25rem 0.5rem;
+          height: 2rem;
+          border-radius: var(--lcars-btn-radius, 1.5rem);
+          cursor: pointer;
+          transition: filter 150ms ease;
+        }
+
+        .ilm-effect-btn.active {
+          background: var(--lcars-gold, #ffaa00);
+          color: var(--lcars-black, #000);
+        }
+
+        .ilm-effect-btn:hover { filter: brightness(1.2); }
+        .ilm-effect-btn:focus-visible {
+          outline: 2px solid var(--lcars-ice, #99ccff);
+          outline-offset: 2px;
+        }
+      `,
+    ];
   }
 }
 

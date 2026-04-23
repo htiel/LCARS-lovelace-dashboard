@@ -77,18 +77,7 @@ class LcarsIlluminationLayout extends LitElement {
     this._audioMuted = lcarsAudio.isMuted;
   }
 
-  /* ─── Counts — ask child cards for their counts ─── */
-  _getCounts() {
-    // Try to read counts from the first card
-    const card = this.cards?.[0];
-    if (card && typeof card._getGlobalCountsForLayout === 'function') {
-      return card._getGlobalCountsForLayout();
-    }
-    return { totalActive: 0, totalAll: 0, lightsActive: 0, lightsTotal: 0, circuitsActive: 0, circuitsTotal: 0 };
-  }
-
   render() {
-    const counts = this._getCounts();
     const version = require('../package.json').version;
 
     return html`
@@ -120,21 +109,18 @@ class LcarsIlluminationLayout extends LitElement {
                     role="tab"
                     aria-selected="${this._filter === FILTER_ALL ? 'true' : 'false'}"
                     @click=${() => this._setFilter(FILTER_ALL)}>
-              <span class="filter-count">${counts.totalActive}/${counts.totalAll}</span>
               <span class="filter-label">ALL DEVICES</span>
             </button>
             <button class="sidebar-filter-btn ${this._filter === FILTER_LIGHTS ? 'active' : ''}"
                     role="tab"
                     aria-selected="${this._filter === FILTER_LIGHTS ? 'true' : 'false'}"
                     @click=${() => this._setFilter(FILTER_LIGHTS)}>
-              <span class="filter-count">${counts.lightsActive}/${counts.lightsTotal}</span>
               <span class="filter-label">LIGHTS</span>
             </button>
             <button class="sidebar-filter-btn ${this._filter === FILTER_CIRCUITS ? 'active' : ''}"
                     role="tab"
                     aria-selected="${this._filter === FILTER_CIRCUITS ? 'true' : 'false'}"
                     @click=${() => this._setFilter(FILTER_CIRCUITS)}>
-              <span class="filter-count">${counts.circuitsActive}/${counts.circuitsTotal}</span>
               <span class="filter-label">CIRCUITS</span>
             </button>
           </div>
@@ -217,7 +203,7 @@ class LcarsIlluminationLayout extends LitElement {
         .lcars-header-endcap {
           height: var(--lcars-bar-h, 1.5rem);
           background: var(--lcars-sunflower, #ffcc99);
-          border-radius: 0 var(--lcars-endcap-radius, 0.75rem) var(--lcars-endcap-radius, 0.75rem) 0;
+          border-radius: 0;
           display: flex; align-items: center; padding: 0 0.25rem;
         }
         .mute-btn {
@@ -274,11 +260,8 @@ class LcarsIlluminationLayout extends LitElement {
         }
         .sidebar-filter-btn.active { background: var(--lcars-gold, #ffaa00); }
 
-        .filter-count {
-          font-size: 2.5rem; font-variant-numeric: tabular-nums; line-height: 1;
-        }
         .filter-label {
-          font-size: 1rem; letter-spacing: 0.05em; text-align: center;
+          font-size: 1.25rem; letter-spacing: 0.08em; text-align: center;
         }
 
         /* ─── Content ─── */
@@ -323,7 +306,7 @@ class LcarsIlluminationLayout extends LitElement {
         .lcars-footer-endcap {
           width: var(--lcars-endcap-size, 1.5rem); height: var(--lcars-bar-h, 1.5rem);
           background: var(--lcars-african-violet, #cc99ff);
-          border-radius: 0 var(--lcars-endcap-radius, 0.75rem) var(--lcars-endcap-radius, 0.75rem) 0;
+          border-radius: 0;
           flex-shrink: 0;
         }
 

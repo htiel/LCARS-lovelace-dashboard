@@ -231,14 +231,14 @@ class LcarsIlluminationCard extends LitElement {
                 <div class="ilm-area-section" data-area-id="${areaData.area.area_id}">
                   <div class="ilm-area-header">
                     <span class="ilm-area-name">${areaData.area.name}</span>
-                    <span class="ilm-area-line"></span>
                     ${this._renderMasterToggle(filtered, areaData.area)}
+                    ${this._renderScenePills(areaData.scenes)}
+                    <span class="ilm-area-line"></span>
                   </div>
                   <lcars-illumination-panel
                     .hass=${this._hass}
                     .entities=${filtered}
-                    area-id="${areaData.area.area_id}"
-                    frame-mode="nested">
+                    area-id="${areaData.area.area_id}">
                   </lcars-illumination-panel>
                 </div>
               `;
@@ -264,21 +264,50 @@ class LcarsIlluminationCard extends LitElement {
     const areaState = this._getAreaLightState(entities);
     if (areaState === 'empty') return html``;
 
-    const label = areaState === 'on' ? 'ALL ON'
-      : areaState === 'off' ? 'ALL OFF'
-      : 'MIXED';
-    const isOn = areaState === 'on';
+    const isOn = areaState === 'on' || areaState === 'mixed';
 
     return html`
       <button
         class="ilm-master-btn ${isOn ? 'active' : ''}"
-        role="switch"
-        aria-checked="${isOn ? 'true' : 'false'}"
+        aria-pressed="${isOn ? 'true' : 'false'}"
         aria-label="Toggle all lights in ${area.name}"
         @click=${() => this._toggleAreaLights(entities)}>
-        <span class="ilm-master-dot ${areaState}"></span>
-        ${label}
+        ${isOn ? 'ALL ON' : 'ALL OFF'}
       </button>
+    `;
+  }
+
+  _renderScenePills(scenes) {
+    if (!scenes || scenes.length === 0) return html``;
+    return html`
+      <div class="ilm-scene-strip">
+        ${scenes.map(entry => {
+          const eid = entry.entity?.entity_id;
+          const name = (entry.state?.attributes?.friendly_name || eid || '').toUpperCase();
+          // Strip area name prefix
+          const area = this.hass?.areas;
+          let shortName = name;
+          if (area) {
+            for (const a of Object.values(area)) {
+              if (shortName.startsWith(a.name.toUpperCase())) {
+                shortName = shortName.slice(a.name.length).trim().replace(/^[-–:]\s*/, '');
+                break;
+              }
+            }
+          }
+          return html`
+            <button class="ilm-scene-pill"
+                    aria-label="Activate ${shortName || name} scene"
+                    @click=${() => {
+                      if (!this._hass) return;
+                      lcarsAudio.play('scriptFire');
+                      this._hass.callService('scene', 'turn_on', { entity_id: eid });
+                    }}>
+              ${shortName || name}
+            </button>
+          `;
+        })}
+      </div>
     `;
   }
 
@@ -322,28 +351,57 @@ class LcarsIlluminationCard extends LitElement {
 
         /* ─── Master Toggle ─── */
         .ilm-master-btn {
-          display: flex; align-items: center; gap: 0.375rem;
+          display: flex; align-items: center; justify-content: center;
           padding: 0.25rem 0.75rem; min-height: 2rem; border: none;
-          border-radius: 0 1rem 1rem 0;
-          background: rgba(102, 102, 136, 0.25);
+          border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 var(--lcars-btn-radius, 1.5rem);
+          background: var(--lcars-gray, #666688);
           color: var(--lcars-space-white, #f5f6fa);
           font-family: var(--lcars-font, 'Antonio', sans-serif);
           font-size: 0.875rem; text-transform: uppercase;
           cursor: pointer; white-space: nowrap;
           transition: background 200ms ease, color 200ms ease;
+          flex-shrink: 0;
         }
         .ilm-master-btn:hover { filter: brightness(1.2); }
         .ilm-master-btn:focus-visible {
           outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px;
         }
         .ilm-master-btn.active {
-          background: var(--lcars-sunflower, #ffcc99);
+          background: var(--lcars-butterscotch, #ff9966);
           color: var(--lcars-black, #000);
         }
-        .ilm-master-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-        .ilm-master-dot.on { background: var(--lcars-sunflower, #ffcc99); }
-        .ilm-master-dot.off { background: var(--lcars-gray, #666688); }
-        .ilm-master-dot.mixed { background: var(--lcars-butterscotch, #ff9966); }
+
+        /* ─── Scene Pill Strip ─── */
+        .ilm-scene-strip {
+          display: flex;
+          gap: 0.25rem;
+          flex-shrink: 1;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .ilm-scene-strip::-webkit-scrollbar { display: none; }
+
+        .ilm-scene-pill {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.875rem; text-transform: uppercase;
+          color: var(--lcars-black, #000);
+          background: var(--lcars-sunflower, #ffcc99);
+          border: none;
+          padding: 0.25rem 0.75rem;
+          min-height: 2rem;
+          border-radius: 0;
+          cursor: pointer; white-space: nowrap;
+          transition: filter 150ms ease;
+          flex-shrink: 0;
+        }
+        .ilm-scene-pill:last-child {
+          border-radius: 0 var(--lcars-btn-radius, 1.5rem) var(--lcars-btn-radius, 1.5rem) 0;
+        }
+        .ilm-scene-pill:hover { filter: brightness(1.2); }
+        .ilm-scene-pill:active { filter: brightness(0.8); }
+        .ilm-scene-pill:focus-visible {
+          outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px;
+        }
 
         lcars-illumination-panel { --lcars-panel-margin: 0; }
 

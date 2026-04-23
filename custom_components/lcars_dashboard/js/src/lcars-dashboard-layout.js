@@ -327,7 +327,7 @@ class LcarsDashboardLayout extends LitElement {
           height: var(--lcars-bar-h);
           min-width: var(--lcars-endcap);
           background: var(--lcars-header-bar);
-          border-radius: 0 var(--lcars-endcap) var(--lcars-endcap) 0;
+          border-radius: 0;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -389,8 +389,9 @@ class LcarsDashboardLayout extends LitElement {
           font-size: var(--lcars-font-size-data);
           color: var(--lcars-black);
           text-transform: uppercase;
+          text-align: right;
           flex-shrink: 0;
-          border-radius: 0 var(--lcars-btn-radius) 0 0;
+          border-radius: var(--lcars-btn-radius) 0 0 0;
         }
 
         /* ─── Sidebar Area Buttons ─── */
@@ -417,7 +418,7 @@ class LcarsDashboardLayout extends LitElement {
           flex: 1 0 0px;
           min-height: 0;
           background: var(--lcars-gray);
-          border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+          border-radius: var(--lcars-btn-radius) 0 0 var(--lcars-btn-radius);
           width: calc(100% - 0.25rem);
         }
 
@@ -428,9 +429,9 @@ class LcarsDashboardLayout extends LitElement {
           background: var(--lcars-almond-creme);
           color: var(--lcars-black);
           border: none;
-          border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+          border-radius: var(--lcars-btn-radius) 0 0 var(--lcars-btn-radius);
           height: var(--lcars-btn-height);
-          padding: 0 1rem 0 0.75rem;
+          padding: 0 0.75rem 0 1rem;
           font-family: var(--lcars-font);
           font-size: var(--lcars-font-size-data);
           text-transform: uppercase;
@@ -460,9 +461,9 @@ class LcarsDashboardLayout extends LitElement {
           background: var(--lcars-lilac, #cc55ff);
           color: var(--lcars-black);
           border: none;
-          border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+          border-radius: var(--lcars-btn-radius) 0 0 var(--lcars-btn-radius);
           height: calc(var(--lcars-btn-height) * 0.7);
-          padding: 0 1rem 0 0.75rem;
+          padding: 0 0.75rem 0 1rem;
           font-family: var(--lcars-font);
           font-size: calc(var(--lcars-font-size-data) * 0.85);
           text-transform: uppercase;
@@ -560,7 +561,7 @@ class LcarsDashboardLayout extends LitElement {
           min-width: var(--lcars-endcap);
           height: var(--lcars-bar-h);
           background: var(--lcars-footer-bar);
-          border-radius: 0 var(--lcars-endcap) var(--lcars-endcap) 0;
+          border-radius: 0;
         }
 
         .lcars-footer-text {

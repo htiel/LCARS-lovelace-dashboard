@@ -530,6 +530,22 @@ export function isLightingEntity(entry) {
   return false;
 }
 
+/**
+ * Classify a light entity into a device type for illumination rendering.
+ * Uses HA's supported_color_modes to determine capability tier.
+ *
+ * Returns: 'onoff' | 'dimmer' | 'full'
+ */
+export function classifyLightType(state) {
+  const modes = state?.attributes?.supported_color_modes || [];
+  if (modes.length === 0) return 'onoff';
+  if (modes.length === 1 && modes[0] === 'onoff') return 'onoff';
+  const hasColor = modes.some(m => m === 'hs' || m === 'rgb' || m === 'xy');
+  const hasEffects = (state?.attributes?.effect_list?.length || 0) > 0;
+  if (hasColor || hasEffects) return 'full';
+  return 'dimmer';
+}
+
 /** Named predicate: is this a security entity? */
 export function isSecurityEntity(entry) {
   if (ALARM_DOMAINS.has(entry.domain)) return true;

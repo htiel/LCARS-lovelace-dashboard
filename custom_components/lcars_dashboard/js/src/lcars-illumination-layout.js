@@ -29,6 +29,7 @@ class LcarsIlluminationLayout extends LitElement {
       _filter: { type: String },
       _siteName: { type: String },
       _audioMuted: { type: Boolean },
+      _editMode: { type: Boolean },
     };
   }
 
@@ -40,6 +41,7 @@ class LcarsIlluminationLayout extends LitElement {
     this._filter = FILTER_ALL;
     this._siteName = 'LCARS';
     this._audioMuted = lcarsAudio.isMuted;
+    this._editMode = false;
   }
 
   setConfig(config) {
@@ -77,6 +79,15 @@ class LcarsIlluminationLayout extends LitElement {
     this._audioMuted = lcarsAudio.isMuted;
   }
 
+  _toggleEditMode() {
+    this._editMode = !this._editMode;
+    if (this.cards) {
+      this.cards.forEach((card) => {
+        if (card) card.editMode = this._editMode;
+      });
+    }
+  }
+
   render() {
     const version = require('../package.json').version;
 
@@ -97,6 +108,14 @@ class LcarsIlluminationLayout extends LitElement {
               @click=${() => this._toggleMute()}>
               <ha-icon .icon=${this._audioMuted ? 'mdi:volume-off' : 'mdi:volume-high'}></ha-icon>
             </button>
+            ${this._hass?.user?.is_admin ? html`
+              <button class="mute-btn"
+                aria-pressed=${this._editMode}
+                aria-label="${this._editMode ? 'Exit configuration mode' : 'Enter configuration mode'}"
+                @click=${() => this._toggleEditMode()}>
+                <ha-icon .icon=${'mdi:cog-outline'}></ha-icon>
+              </button>
+            ` : ''}
           </div>
         </div>
 
@@ -175,7 +194,7 @@ class LcarsIlluminationLayout extends LitElement {
           position: relative; overflow: hidden;
         }
         .lcars-elbow-top::after {
-          content: ''; position: absolute; bottom: 0; right: 0;
+          content: ''; position: absolute; bottom: 0; left: 0;
           width: calc(var(--lcars-sidebar-w, 12rem) - var(--lcars-elbow-w, 9.5rem));
           height: calc(var(--lcars-elbow-h, 4.5rem) - var(--lcars-bar-h, 1.5rem));
           background: var(--lcars-bg, #000);
@@ -281,7 +300,7 @@ class LcarsIlluminationLayout extends LitElement {
           position: relative; overflow: hidden;
         }
         .lcars-elbow-bottom::after {
-          content: ''; position: absolute; top: 0; right: 0;
+          content: ''; position: absolute; top: 0; left: 0;
           width: calc(var(--lcars-sidebar-w, 12rem) - var(--lcars-elbow-w, 9.5rem));
           height: calc(var(--lcars-elbow-h, 4.5rem) - var(--lcars-bar-h, 1.5rem));
           background: var(--lcars-bg, #000);

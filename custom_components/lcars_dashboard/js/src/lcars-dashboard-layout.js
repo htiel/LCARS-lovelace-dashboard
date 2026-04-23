@@ -301,7 +301,7 @@ class LcarsDashboardLayout extends LitElement {
           content: '';
           position: absolute;
           bottom: 0;
-          right: 0;
+          left: 0;
           width: calc(var(--lcars-sidebar-w) - var(--lcars-elbow-w));
           height: calc(var(--lcars-elbow-h) - var(--lcars-bar-h));
           background: var(--lcars-bg);
@@ -535,7 +535,7 @@ class LcarsDashboardLayout extends LitElement {
           content: '';
           position: absolute;
           top: 0;
-          right: 0;
+          left: 0;
           width: calc(var(--lcars-sidebar-w) - var(--lcars-elbow-w));
           height: calc(var(--lcars-elbow-h) - var(--lcars-bar-h));
           background: var(--lcars-bg);

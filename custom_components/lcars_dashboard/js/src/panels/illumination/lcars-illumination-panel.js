@@ -62,7 +62,8 @@ class LcarsIlluminationPanel extends LitElement {
 
   _getPartition() {
     const allEntries = this.entities || this.group?.entities || [];
-    const devices = [];  // lights + circuits
+    const lights = [];   // light domain entities
+    const circuits = []; // switches/input_booleans
     const scenes = [];
 
     const coveredDeviceIds = new Set();
@@ -71,7 +72,7 @@ class LcarsIlluminationPanel extends LitElement {
       if (entry.domain === 'scene') {
         scenes.push(entry);
       } else if (entry.domain === 'light' && isLightingEntity(entry)) {
-        devices.push(entry);
+        lights.push(entry);
         if (entry.entity?.device_id) coveredDeviceIds.add(entry.entity.device_id);
       }
     }
@@ -95,27 +96,40 @@ class LcarsIlluminationPanel extends LitElement {
       if (entry.entity?.device_id && coveredDeviceIds.has(entry.entity.device_id)) continue;
       if (!isLightingEntity(entry)) continue;
       if (entry.entity?.device_id && claimedDeviceIds.has(entry.entity.device_id)) continue;
-      devices.push(entry);
+      circuits.push(entry);
     }
 
-    return { devices, scenes };
+    return { lights, circuits, scenes };
   }
 
-  /* â”€â”€â”€ Render â”€â”€â”€ */
+  /* ─── Render ─── */
 
   render() {
-    const { devices, scenes } = this._getPartition();
-    if (devices.length === 0) return html``;
+    const { lights, circuits, scenes } = this._getPartition();
+    if (lights.length === 0 && circuits.length === 0) return html``;
 
     const content = html`
-      <div class="ilm-devices">
-        ${devices.map(entry => this._renderDevice(entry))}
-      </div>
+      ${lights.length > 0 ? html`
+        <div class="ilm-devices">
+          ${lights.map(entry => this._renderDevice(entry))}
+        </div>
+      ` : ''}
+      ${lights.length > 0 && circuits.length > 0 ? html`
+        <div class="ilm-section-divider">
+          <span class="ilm-section-label">CIRCUITS</span>
+          <span class="ilm-section-line"></span>
+        </div>
+      ` : ''}
+      ${circuits.length > 0 ? html`
+        <div class="ilm-devices">
+          ${circuits.map(entry => this._renderDevice(entry))}
+        </div>
+      ` : ''}
     `;
 
     // Habitat mode: group present → wrap in panel frame
     if (this.group) {
-      const all = devices;
+      const all = [...lights, ...circuits];
       const active = all.filter(e => {
         const eid = e.entity?.entity_id;
         return (this.hass?.states?.[eid] || e.state)?.state === 'on';
@@ -442,6 +456,28 @@ class LcarsIlluminationPanel extends LitElement {
       sharedReducedMotion,
       css`
         :host { display: block; }
+
+        /* ─── Section Divider ─── */
+        .ilm-section-divider {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin: 0.5rem 0 0.25rem 0;
+        }
+        .ilm-section-label {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.75rem;
+          color: var(--lcars-gray, #666688);
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          white-space: nowrap;
+        }
+        .ilm-section-line {
+          flex: 1;
+          height: 1px;
+          background: var(--lcars-gray, #666688);
+          opacity: 0.3;
+        }
 
         .ilm-devices {
           display: grid;

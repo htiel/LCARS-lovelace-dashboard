@@ -231,9 +231,9 @@ class LcarsIlluminationCard extends LitElement {
                 <div class="ilm-area-section" data-area-id="${areaData.area.area_id}">
                   <div class="ilm-area-header">
                     <span class="ilm-area-name">${areaData.area.name}</span>
-                    ${this._renderMasterToggle(filtered, areaData.area)}
-                    ${this._renderScenePills(areaData.scenes)}
                     <span class="ilm-area-line"></span>
+                    ${this._renderScenePills(areaData.scenes)}
+                    ${this._renderMasterToggle(filtered, areaData.area)}
                   </div>
                   <lcars-illumination-panel
                     .hass=${this._hass}
@@ -347,16 +347,13 @@ class LcarsIlluminationCard extends LitElement {
         .ilm-area-line {
           flex: 1; height: 2px;
           background: var(--lcars-sunflower, #ffcc99); opacity: 0.3;
-          order: 1;
         }
-        .ilm-master-btn { order: 2; }
-        .ilm-scene-strip { order: 3; }
 
         /* ─── Master Toggle ─── */
         .ilm-master-btn {
           display: flex; align-items: center; justify-content: center;
           padding: 0.25rem 0.75rem; min-height: 2rem; border: none;
-          border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 var(--lcars-btn-radius, 1.5rem);
+          border-radius: 0 var(--lcars-btn-radius, 1.5rem) var(--lcars-btn-radius, 1.5rem) 0;
           background: var(--lcars-gray, #666688);
           color: var(--lcars-space-white, #f5f6fa);
           font-family: var(--lcars-font, 'Antonio', sans-serif);
@@ -397,8 +394,11 @@ class LcarsIlluminationCard extends LitElement {
           transition: filter 150ms ease;
           flex-shrink: 0;
         }
+        .ilm-scene-pill:first-child {
+          border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 var(--lcars-btn-radius, 1.5rem);
+        }
         .ilm-scene-pill:last-child {
-          border-radius: 0 var(--lcars-btn-radius, 1.5rem) var(--lcars-btn-radius, 1.5rem) 0;
+          border-radius: 0;
         }
         .ilm-scene-pill:hover { filter: brightness(1.2); }
         .ilm-scene-pill:active { filter: brightness(0.8); }

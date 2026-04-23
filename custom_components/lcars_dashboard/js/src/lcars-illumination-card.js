@@ -197,75 +197,98 @@ class LcarsIlluminationCard extends LitElement {
 
     const floorGroups = this._getAreasWithLighting();
     const counts = this._getGlobalCounts(floorGroups);
+    const version = require('../package.json').version;
 
     return html`
-      <div class="ilm-dashboard" role="main" aria-label="Illumination dashboard">
+      <div class="lcars-frame">
 
-        <!-- Filter Buttons -->
-        <div class="ilm-filter-bar" role="tablist" aria-label="Filter illumination devices">
-          <button class="ilm-filter-btn ${this._filter === FILTER_ALL ? 'active' : ''}"
+        <!-- Top-Left Elbow -->
+        <div class="lcars-elbow-top" aria-hidden="true">
+          <span class="lcars-elbow-label">${this._hass.config?.location_name || 'LCARS'}</span>
+        </div>
+
+        <!-- Header Bar -->
+        <div class="lcars-header" aria-hidden="true">
+          <div class="lcars-header-bar"></div>
+          <span class="lcars-header-title">ILLUMINATION CONTROL</span>
+          <div class="lcars-header-endcap"></div>
+        </div>
+
+        <!-- Sidebar: 3 filter buttons stacked vertically -->
+        <nav class="lcars-sidebar" role="tablist" aria-label="Filter illumination devices">
+          <button class="ilm-sidebar-btn ${this._filter === FILTER_ALL ? 'active' : ''}"
                   role="tab"
                   aria-selected="${this._filter === FILTER_ALL ? 'true' : 'false'}"
                   @click=${() => this._setFilter(FILTER_ALL)}>
-            <span class="ilm-filter-count">${counts.totalActive}/${counts.totalAll}</span>
-            <span class="ilm-filter-label">ALL DEVICES</span>
+            <span class="ilm-sidebar-count">${counts.totalActive}/${counts.totalAll}</span>
+            <span class="ilm-sidebar-label">ALL DEVICES</span>
           </button>
-          <button class="ilm-filter-btn ${this._filter === FILTER_LIGHTS ? 'active' : ''}"
+          <button class="ilm-sidebar-btn ${this._filter === FILTER_LIGHTS ? 'active' : ''}"
                   role="tab"
                   aria-selected="${this._filter === FILTER_LIGHTS ? 'true' : 'false'}"
                   @click=${() => this._setFilter(FILTER_LIGHTS)}>
-            <span class="ilm-filter-count">${counts.lightsActive}/${counts.lightsTotal}</span>
-            <span class="ilm-filter-label">LIGHTS</span>
+            <span class="ilm-sidebar-count">${counts.lightsActive}/${counts.lightsTotal}</span>
+            <span class="ilm-sidebar-label">LIGHTS</span>
           </button>
-          <button class="ilm-filter-btn ${this._filter === FILTER_CIRCUITS ? 'active' : ''}"
+          <button class="ilm-sidebar-btn ${this._filter === FILTER_CIRCUITS ? 'active' : ''}"
                   role="tab"
                   aria-selected="${this._filter === FILTER_CIRCUITS ? 'true' : 'false'}"
                   @click=${() => this._setFilter(FILTER_CIRCUITS)}>
-            <span class="ilm-filter-count">${counts.circuitsActive}/${counts.circuitsTotal}</span>
-            <span class="ilm-filter-label">CIRCUITS</span>
+            <span class="ilm-sidebar-count">${counts.circuitsActive}/${counts.circuitsTotal}</span>
+            <span class="ilm-sidebar-label">CIRCUITS</span>
           </button>
-        </div>
+        </nav>
 
-        <!-- Floor → Area sections -->
-        ${floorGroups.map(({ floor, areas }) => {
-          // Filter areas for current mode
-          const visibleAreas = areas.filter(a => this._getFilteredEntities(a) !== null);
-          if (visibleAreas.length === 0) return html``;
+        <!-- Main Content -->
+        <main class="lcars-content" role="main" aria-label="Illumination dashboard">
+          ${floorGroups.map(({ floor, areas }) => {
+            const visibleAreas = areas.filter(a => this._getFilteredEntities(a) !== null);
+            if (visibleAreas.length === 0) return html``;
 
-          return html`
-            ${floor ? html`
-              <div class="ilm-floor-header">
-                <span class="ilm-floor-name">${floor.name || 'FLOOR'}</span>
-                <span class="ilm-floor-line"></span>
-              </div>
-            ` : ''}
-            ${visibleAreas.map(areaData => {
-              const filtered = this._getFilteredEntities(areaData);
-              return html`
-                <div class="ilm-area-section" data-area-id="${areaData.area.area_id}">
-                  <div class="ilm-area-header">
-                    <span class="ilm-area-name">${areaData.area.name}</span>
-                    <span class="ilm-area-line"></span>
-                    ${this._renderMasterToggle(filtered, areaData.area)}
-                  </div>
-
-                  <lcars-illumination-panel
-                    .hass=${this._hass}
-                    .entities=${filtered}
-                    area-id="${areaData.area.area_id}"
-                    frame-mode="nested">
-                  </lcars-illumination-panel>
+            return html`
+              ${floor ? html`
+                <div class="ilm-floor-header">
+                  <span class="ilm-floor-name">${floor.name || 'FLOOR'}</span>
+                  <span class="ilm-floor-line"></span>
                 </div>
-              `;
-            })}
-          `;
-        })}
+              ` : ''}
+              ${visibleAreas.map(areaData => {
+                const filtered = this._getFilteredEntities(areaData);
+                return html`
+                  <div class="ilm-area-section" data-area-id="${areaData.area.area_id}">
+                    <div class="ilm-area-header">
+                      <span class="ilm-area-name">${areaData.area.name}</span>
+                      <span class="ilm-area-line"></span>
+                      ${this._renderMasterToggle(filtered, areaData.area)}
+                    </div>
+                    <lcars-illumination-panel
+                      .hass=${this._hass}
+                      .entities=${filtered}
+                      area-id="${areaData.area.area_id}"
+                      frame-mode="nested">
+                    </lcars-illumination-panel>
+                  </div>
+                `;
+              })}
+            `;
+          })}
 
-        ${floorGroups.length === 0 ? html`
-          <div class="ilm-empty">
-            <span>NO LIGHTING DEVICES DETECTED</span>
-          </div>
-        ` : ''}
+          ${floorGroups.length === 0 ? html`
+            <div class="ilm-empty">
+              <span>NO LIGHTING DEVICES DETECTED</span>
+            </div>
+          ` : ''}
+        </main>
+
+        <!-- Bottom-Left Elbow -->
+        <div class="lcars-elbow-bottom" aria-hidden="true"></div>
+
+        <!-- Footer Bar -->
+        <div class="lcars-footer" role="contentinfo">
+          <div class="lcars-footer-bar"></div>
+          <span class="lcars-footer-text">LCARS ${version}</span>
+          <div class="lcars-footer-endcap"></div>
+        </div>
       </div>
     `;
   }
@@ -303,73 +326,197 @@ class LcarsIlluminationCard extends LitElement {
       css`
         :host {
           display: block;
+          height: calc(100vh - var(--header-height, 0px));
+          overflow: hidden;
+          box-sizing: border-box;
+          background: var(--lcars-bg, #000);
+          padding: var(--lcars-gap, 0.25rem);
         }
 
-        .ilm-dashboard {
-          padding: 0.25rem;
+        /* ─── LCARS Frame Grid ─── */
+        .lcars-frame {
+          display: grid;
+          grid-template-columns: var(--lcars-sidebar-w, 12rem) 1fr;
+          grid-template-rows: var(--lcars-elbow-h, 4.5rem) 1fr var(--lcars-elbow-h, 4.5rem);
+          gap: var(--lcars-gap, 0.25rem);
+          height: 100%;
         }
 
-        /* ─── Filter Bar ─── */
-        .ilm-filter-bar {
+        /* ─── Top-Left Elbow ─── */
+        .lcars-elbow-top {
+          grid-column: 1;
+          grid-row: 1;
+          background: var(--lcars-sunflower, #ffcc99);
+          border-radius: var(--lcars-elbow-radius, 3.75rem) 0 0 0;
+          position: relative;
+          overflow: hidden;
           display: flex;
-          gap: 0.25rem;
-          margin-bottom: 0.75rem;
+          align-items: flex-end;
+          padding: 0.25rem 0.5rem;
+        }
+        .lcars-elbow-top::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          right: 0;
+          width: calc(var(--lcars-sidebar-w, 12rem) - var(--lcars-elbow-w, 9.5rem));
+          height: calc(var(--lcars-elbow-h, 4.5rem) - var(--lcars-bar-h, 1.5rem));
+          background: var(--lcars-bg, #000);
+          border-radius: 1.5rem 0 0 0;
+        }
+        .lcars-elbow-label {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.75rem;
+          color: var(--lcars-black, #000);
+          text-transform: uppercase;
+          position: relative;
+          z-index: 1;
         }
 
-        .ilm-filter-btn {
+        /* ─── Header Bar ─── */
+        .lcars-header {
+          grid-column: 2;
+          grid-row: 1;
+          display: flex;
+          align-items: flex-start;
+          gap: var(--lcars-gap, 0.25rem);
+        }
+        .lcars-header-bar {
+          flex: 1;
+          height: var(--lcars-bar-h, 1.5rem);
+          background: var(--lcars-sunflower, #ffcc99);
+        }
+        .lcars-header-title {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 1rem;
+          color: var(--lcars-sunflower, #ffcc99);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          white-space: nowrap;
+          line-height: var(--lcars-bar-h, 1.5rem);
+          padding: 0 0.5rem;
+        }
+        .lcars-header-endcap {
+          width: var(--lcars-endcap-size, 1.5rem);
+          height: var(--lcars-bar-h, 1.5rem);
+          background: var(--lcars-sunflower, #ffcc99);
+          border-radius: 0 var(--lcars-endcap-radius, 0.75rem) var(--lcars-endcap-radius, 0.75rem) 0;
+          flex-shrink: 0;
+        }
+
+        /* ─── Sidebar: 3 Filter Buttons ─── */
+        .lcars-sidebar {
+          grid-column: 1;
+          grid-row: 2;
+          display: flex;
+          flex-direction: column;
+          gap: var(--lcars-gap, 0.25rem);
+          padding-right: var(--lcars-gap, 0.25rem);
+        }
+
+        .ilm-sidebar-btn {
           flex: 1;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 0.125rem;
-          padding: 0.75rem 0.5rem;
-          min-height: 4rem;
+          gap: 0.25rem;
           border: none;
-          border-radius: 0 1.5rem 1.5rem 0;
-          background: rgba(102, 102, 136, 0.2);
-          color: var(--lcars-gray, #666688);
+          border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 var(--lcars-btn-radius, 1.5rem);
+          background: var(--lcars-african-violet, #cc99ff);
+          color: var(--lcars-black, #000);
           font-family: var(--lcars-font, 'Antonio', sans-serif);
           text-transform: uppercase;
           cursor: pointer;
           transition: background 200ms ease, color 200ms ease;
+          padding: 0.5rem;
+          min-width: 0;
         }
 
-        .ilm-filter-btn:first-child {
-          border-radius: 1.5rem 0 0 1.5rem;
-        }
-
-        .ilm-filter-btn:nth-child(2) {
-          border-radius: 0;
-        }
-
-        .ilm-filter-btn:hover {
+        .ilm-sidebar-btn:hover {
           filter: brightness(1.2);
         }
 
-        .ilm-filter-btn:focus-visible {
+        .ilm-sidebar-btn:focus-visible {
           outline: 2px solid var(--lcars-ice, #99ccff);
           outline-offset: 2px;
         }
 
-        .ilm-filter-btn.active {
-          background: var(--lcars-sunflower, #ffcc99);
-          color: var(--lcars-black, #000);
+        .ilm-sidebar-btn.active {
+          background: var(--lcars-gold, #ffaa00);
         }
 
-        .ilm-filter-count {
-          font-size: 1.75rem;
+        .ilm-sidebar-count {
+          font-size: 2rem;
           font-variant-numeric: tabular-nums;
           line-height: 1;
         }
 
-        .ilm-filter-label {
+        .ilm-sidebar-label {
           font-size: 0.875rem;
-          letter-spacing: 0.08em;
+          letter-spacing: 0.05em;
+          text-align: center;
         }
 
-        .ilm-filter-btn.active .ilm-filter-count {
-          color: var(--lcars-black, #000);
+        /* ─── Content Area ─── */
+        .lcars-content {
+          grid-column: 2;
+          grid-row: 2;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding: 0.25rem 0.5rem;
+          scrollbar-width: thin;
+          scrollbar-color: var(--lcars-gray, #666688) transparent;
+        }
+
+        /* ─── Bottom-Left Elbow ─── */
+        .lcars-elbow-bottom {
+          grid-column: 1;
+          grid-row: 3;
+          background: var(--lcars-african-violet, #cc99ff);
+          border-radius: 0 0 0 var(--lcars-elbow-radius, 3.75rem);
+          position: relative;
+          overflow: hidden;
+        }
+        .lcars-elbow-bottom::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: calc(var(--lcars-sidebar-w, 12rem) - var(--lcars-elbow-w, 9.5rem));
+          height: calc(var(--lcars-elbow-h, 4.5rem) - var(--lcars-bar-h, 1.5rem));
+          background: var(--lcars-bg, #000);
+          border-radius: 0 0 0 1.5rem;
+        }
+
+        /* ─── Footer Bar ─── */
+        .lcars-footer {
+          grid-column: 2;
+          grid-row: 3;
+          display: flex;
+          align-items: flex-end;
+          gap: var(--lcars-gap, 0.25rem);
+        }
+        .lcars-footer-bar {
+          flex: 1;
+          height: var(--lcars-bar-h, 1.5rem);
+          background: var(--lcars-african-violet, #cc99ff);
+        }
+        .lcars-footer-text {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.75rem;
+          color: var(--lcars-african-violet, #cc99ff);
+          text-transform: uppercase;
+          white-space: nowrap;
+          line-height: var(--lcars-bar-h, 1.5rem);
+          padding: 0 0.5rem;
+        }
+        .lcars-footer-endcap {
+          width: var(--lcars-endcap-size, 1.5rem);
+          height: var(--lcars-bar-h, 1.5rem);
+          background: var(--lcars-african-violet, #cc99ff);
+          border-radius: 0 var(--lcars-endcap-radius, 0.75rem) var(--lcars-endcap-radius, 0.75rem) 0;
+          flex-shrink: 0;
         }
 
         /* ─── Floor Header ─── */
@@ -379,7 +526,6 @@ class LcarsIlluminationCard extends LitElement {
           gap: 0.5rem;
           margin: 1rem 0 0.5rem 0;
         }
-
         .ilm-floor-name {
           font-family: var(--lcars-font, 'Antonio', sans-serif);
           font-size: 1.25rem;
@@ -388,7 +534,6 @@ class LcarsIlluminationCard extends LitElement {
           letter-spacing: 0.08em;
           white-space: nowrap;
         }
-
         .ilm-floor-line {
           flex: 1;
           height: 0.375rem;
@@ -401,14 +546,12 @@ class LcarsIlluminationCard extends LitElement {
         .ilm-area-section {
           margin-bottom: 0.75rem;
         }
-
         .ilm-area-header {
           display: flex;
           align-items: center;
           gap: 0.5rem;
           margin-bottom: 0.25rem;
         }
-
         .ilm-area-name {
           font-family: var(--lcars-font, 'Antonio', sans-serif);
           font-size: 1.25rem;
@@ -417,7 +560,6 @@ class LcarsIlluminationCard extends LitElement {
           letter-spacing: 0.05em;
           white-space: nowrap;
         }
-
         .ilm-area-line {
           flex: 1;
           height: 2px;
@@ -443,45 +585,27 @@ class LcarsIlluminationCard extends LitElement {
           white-space: nowrap;
           transition: background 200ms ease, color 200ms ease;
         }
-
-        .ilm-master-btn:hover {
-          filter: brightness(1.2);
-        }
-
+        .ilm-master-btn:hover { filter: brightness(1.2); }
         .ilm-master-btn:focus-visible {
           outline: 2px solid var(--lcars-ice, #99ccff);
           outline-offset: 2px;
         }
-
         .ilm-master-btn.active {
           background: var(--lcars-sunflower, #ffcc99);
           color: var(--lcars-black, #000);
         }
-
         .ilm-master-dot {
           width: 8px;
           height: 8px;
           border-radius: 50%;
           flex-shrink: 0;
-          transition: background 200ms ease;
         }
+        .ilm-master-dot.on { background: var(--lcars-sunflower, #ffcc99); }
+        .ilm-master-dot.off { background: var(--lcars-gray, #666688); }
+        .ilm-master-dot.mixed { background: var(--lcars-butterscotch, #ff9966); }
 
-        .ilm-master-dot.on {
-          background: var(--lcars-sunflower, #ffcc99);
-        }
-
-        .ilm-master-dot.off {
-          background: var(--lcars-gray, #666688);
-        }
-
-        .ilm-master-dot.mixed {
-          background: var(--lcars-butterscotch, #ff9966);
-        }
-
-        /* ─── Nested panels — reduce spacing ─── */
-        lcars-illumination-panel {
-          --lcars-panel-margin: 0;
-        }
+        /* ─── Nested panels ─── */
+        lcars-illumination-panel { --lcars-panel-margin: 0; }
 
         /* ─── Empty State ─── */
         .ilm-empty {
@@ -497,22 +621,28 @@ class LcarsIlluminationCard extends LitElement {
 
         /* ─── Mobile ─── */
         @media (max-width: 767px) {
-          .ilm-filter-btn {
+          .lcars-frame {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto 1fr auto;
+          }
+          .lcars-elbow-top, .lcars-elbow-bottom { display: none; }
+          .lcars-header { grid-column: 1; grid-row: 1; }
+          .lcars-sidebar {
+            grid-column: 1;
+            grid-row: 2;
+            flex-direction: row;
+            padding-right: 0;
+          }
+          .ilm-sidebar-btn {
+            border-radius: 0;
             min-height: 3rem;
-            padding: 0.5rem 0.25rem;
           }
-
-          .ilm-filter-count {
-            font-size: 1.25rem;
-          }
-
-          .ilm-filter-label {
-            font-size: 0.75rem;
-          }
-
-          .ilm-floor-name {
-            font-size: 1rem;
-          }
+          .ilm-sidebar-btn:first-child { border-radius: 1rem 0 0 1rem; }
+          .ilm-sidebar-btn:last-child { border-radius: 0 1rem 1rem 0; }
+          .ilm-sidebar-count { font-size: 1.25rem; }
+          .ilm-sidebar-label { font-size: 0.75rem; }
+          .lcars-content { grid-column: 1; grid-row: 3; }
+          .lcars-footer { grid-column: 1; grid-row: 4; }
         }
       `,
     ];

@@ -1,11 +1,11 @@
 # LCARS Illumination Dashboard — Lovelace YAML configuration
-# Standalone dashboard: all lighting and circuits across all areas.
-# Uses LCARS layout frame (elbows, header, footer, sidebar).
+# Standalone dashboard with own LCARS frame + 3 filter sidebar buttons.
+# Uses panel mode so the card renders its own full frame.
 
 views:
   - title: Illumination
     icon: mdi:lightbulb
     path: home
-    type: custom:lcars-dashboard-layout
+    panel: true
     cards:
       - type: custom:illumination-card

@@ -14111,65 +14111,88 @@
           .sensor-tile { animation: none !important; }
           .tile-battery-badge { animation: none !important; opacity: 1; }
         }
-      `]}getCardSize(){return Math.max(2,Math.ceil(this._sensorGroups.length/4)+1)}}customElements.get("lcars-internal-sensors-grid")||(customElements.define("lcars-internal-sensors-grid",p),r.g0.debug(n,"Custom element registered: lcars-internal-sensors-grid")),window.customCards=window.customCards||[],window.customCards.push({type:"lcars-internal-sensors-grid",name:"LCARS Internal Sensors Grid",description:"Ship-wide environmental monitoring grid",preview:!0})})(),(()=>{var e=a(7349),t=(a(8851),a(2622)),r=a(7597),i=a(6930),s=a(4867),n=a(6940);a(7292),a(58);const o="all",l="lights",c="circuits";class d extends e.WF{static get properties(){return{hass:{type:Object},_config:{type:Object},_filter:{type:String}}}constructor(){super(),this.hass=null,this._config={},this._filter=o,this._entityCache=new Map}setConfig(e){this._config=e||{}}set hass(e){const t=this._hass;this._hass=e,e&&t!==e&&(this._entityCache.clear(),this.requestUpdate("hass",t))}get hass(){return this._hass}getCardSize(){return 12}_getAreasWithLighting(){if(!this._hass)return[];const e=(0,r.Qn)(this._hass),t=(0,r.E3)(this._hass),a=[];for(const r of e){const e=t.get(r.floor_id)||[],i=[];for(const t of e){const e=this._resolveAreaEntities(t);e&&i.push(e)}i.length>0&&a.push({floor:r,areas:i})}const i=t.get(null)||[],s=[];for(const e of i){const t=this._resolveAreaEntities(e);t&&s.push(t)}return s.length>0&&a.push({floor:null,areas:s}),a}_resolveAreaEntities(e){const t=(0,i.d6)(this._hass,e.area_id,this._entityCache),a=[];for(const e of t){const t=e.entity_id.split(".")[0],r=this._hass.states?.[e.entity_id];if(!r)continue;const i={entity:e,domain:t,state:r};(0,s.JM)(i)||a.push(i)}const r=a.filter(e=>(0,s.eX)(e)||"scene"===e.domain);if(0===r.length)return null;const n=r.filter(e=>"light"===e.domain),o=r.filter(e=>"light"!==e.domain&&"scene"!==e.domain),l=r.filter(e=>"scene"===e.domain);return{area:e,lightEntities:r,lights:n,circuits:o,scenes:l}}_getFilteredEntities(e){if(this._filter===l){const t=[...e.lights,...e.scenes];return t.length>0?t:null}return this._filter===c?e.circuits.length>0?e.circuits:null:e.lightEntities}_getGlobalCounts(e){let t=0,a=0,r=0,i=0;for(const{areas:s}of e)for(const{lights:e,circuits:n}of s){for(const r of e)a++,"on"===r.state?.state&&t++;for(const e of n)i++,"on"===e.state?.state&&r++}return{lightsActive:t,lightsTotal:a,circuitsActive:r,circuitsTotal:i,totalActive:t+r,totalAll:a+i}}_getAreaLightState(e){const t=e.filter(e=>"scene"!==e.domain);if(0===t.length)return"empty";const a=t.filter(e=>"on"===e.state?.state).length;return 0===a?"off":a===t.length?"on":"mixed"}_toggleAreaLights(e){const t=e.filter(e=>"scene"!==e.domain);if(0===t.length)return;const a=t.every(e=>"on"===e.state?.state),r=a?"turn_off":"turn_on";for(const e of t)this._hass.callService("homeassistant",r,{entity_id:e.entity.entity_id});n.e.play(a?"switchToggle":"lightToggle")}render(){if(!this._hass)return e.qy``;const t=this._getAreasWithLighting(),a=this._getGlobalCounts(t);return e.qy`
-      <div class="ilm-dashboard" role="main" aria-label="Illumination dashboard">
+      `]}getCardSize(){return Math.max(2,Math.ceil(this._sensorGroups.length/4)+1)}}customElements.get("lcars-internal-sensors-grid")||(customElements.define("lcars-internal-sensors-grid",p),r.g0.debug(n,"Custom element registered: lcars-internal-sensors-grid")),window.customCards=window.customCards||[],window.customCards.push({type:"lcars-internal-sensors-grid",name:"LCARS Internal Sensors Grid",description:"Ship-wide environmental monitoring grid",preview:!0})})(),(()=>{var e=a(7349),t=(a(8851),a(2622)),r=a(7597),i=a(6930),s=a(4867),n=a(6940);a(7292),a(58);const o="all",l="lights",c="circuits";class d extends e.WF{static get properties(){return{hass:{type:Object},_config:{type:Object},_filter:{type:String}}}constructor(){super(),this.hass=null,this._config={},this._filter=o,this._entityCache=new Map}setConfig(e){this._config=e||{}}set hass(e){const t=this._hass;this._hass=e,e&&t!==e&&(this._entityCache.clear(),this.requestUpdate("hass",t))}get hass(){return this._hass}getCardSize(){return 12}_getAreasWithLighting(){if(!this._hass)return[];const e=(0,r.Qn)(this._hass),t=(0,r.E3)(this._hass),a=[];for(const r of e){const e=t.get(r.floor_id)||[],i=[];for(const t of e){const e=this._resolveAreaEntities(t);e&&i.push(e)}i.length>0&&a.push({floor:r,areas:i})}const i=t.get(null)||[],s=[];for(const e of i){const t=this._resolveAreaEntities(e);t&&s.push(t)}return s.length>0&&a.push({floor:null,areas:s}),a}_resolveAreaEntities(e){const t=(0,i.d6)(this._hass,e.area_id,this._entityCache),a=[];for(const e of t){const t=e.entity_id.split(".")[0],r=this._hass.states?.[e.entity_id];if(!r)continue;const i={entity:e,domain:t,state:r};(0,s.JM)(i)||a.push(i)}const r=a.filter(e=>(0,s.eX)(e)||"scene"===e.domain);if(0===r.length)return null;const n=r.filter(e=>"light"===e.domain),o=r.filter(e=>"light"!==e.domain&&"scene"!==e.domain),l=r.filter(e=>"scene"===e.domain);return{area:e,lightEntities:r,lights:n,circuits:o,scenes:l}}_getFilteredEntities(e){if(this._filter===l){const t=[...e.lights,...e.scenes];return t.length>0?t:null}return this._filter===c?e.circuits.length>0?e.circuits:null:e.lightEntities}_getGlobalCounts(e){let t=0,a=0,r=0,i=0;for(const{areas:s}of e)for(const{lights:e,circuits:n}of s){for(const r of e)a++,"on"===r.state?.state&&t++;for(const e of n)i++,"on"===e.state?.state&&r++}return{lightsActive:t,lightsTotal:a,circuitsActive:r,circuitsTotal:i,totalActive:t+r,totalAll:a+i}}_getAreaLightState(e){const t=e.filter(e=>"scene"!==e.domain);if(0===t.length)return"empty";const a=t.filter(e=>"on"===e.state?.state).length;return 0===a?"off":a===t.length?"on":"mixed"}_toggleAreaLights(e){const t=e.filter(e=>"scene"!==e.domain);if(0===t.length)return;const a=t.every(e=>"on"===e.state?.state),r=a?"turn_off":"turn_on";for(const e of t)this._hass.callService("homeassistant",r,{entity_id:e.entity.entity_id});n.e.play(a?"switchToggle":"lightToggle")}render(){if(!this._hass)return e.qy``;const t=this._getAreasWithLighting(),r=this._getGlobalCounts(t),i=a(8330).version;return e.qy`
+      <div class="lcars-frame">
 
-        <!-- Filter Buttons -->
-        <div class="ilm-filter-bar" role="tablist" aria-label="Filter illumination devices">
-          <button class="ilm-filter-btn ${this._filter===o?"active":""}"
+        <!-- Top-Left Elbow -->
+        <div class="lcars-elbow-top" aria-hidden="true">
+          <span class="lcars-elbow-label">${this._hass.config?.location_name||"LCARS"}</span>
+        </div>
+
+        <!-- Header Bar -->
+        <div class="lcars-header" aria-hidden="true">
+          <div class="lcars-header-bar"></div>
+          <span class="lcars-header-title">ILLUMINATION CONTROL</span>
+          <div class="lcars-header-endcap"></div>
+        </div>
+
+        <!-- Sidebar: 3 filter buttons stacked vertically -->
+        <nav class="lcars-sidebar" role="tablist" aria-label="Filter illumination devices">
+          <button class="ilm-sidebar-btn ${this._filter===o?"active":""}"
                   role="tab"
                   aria-selected="${this._filter===o?"true":"false"}"
                   @click=${()=>this._setFilter(o)}>
-            <span class="ilm-filter-count">${a.totalActive}/${a.totalAll}</span>
-            <span class="ilm-filter-label">ALL DEVICES</span>
+            <span class="ilm-sidebar-count">${r.totalActive}/${r.totalAll}</span>
+            <span class="ilm-sidebar-label">ALL DEVICES</span>
           </button>
-          <button class="ilm-filter-btn ${this._filter===l?"active":""}"
+          <button class="ilm-sidebar-btn ${this._filter===l?"active":""}"
                   role="tab"
                   aria-selected="${this._filter===l?"true":"false"}"
                   @click=${()=>this._setFilter(l)}>
-            <span class="ilm-filter-count">${a.lightsActive}/${a.lightsTotal}</span>
-            <span class="ilm-filter-label">LIGHTS</span>
+            <span class="ilm-sidebar-count">${r.lightsActive}/${r.lightsTotal}</span>
+            <span class="ilm-sidebar-label">LIGHTS</span>
           </button>
-          <button class="ilm-filter-btn ${this._filter===c?"active":""}"
+          <button class="ilm-sidebar-btn ${this._filter===c?"active":""}"
                   role="tab"
                   aria-selected="${this._filter===c?"true":"false"}"
                   @click=${()=>this._setFilter(c)}>
-            <span class="ilm-filter-count">${a.circuitsActive}/${a.circuitsTotal}</span>
-            <span class="ilm-filter-label">CIRCUITS</span>
+            <span class="ilm-sidebar-count">${r.circuitsActive}/${r.circuitsTotal}</span>
+            <span class="ilm-sidebar-label">CIRCUITS</span>
           </button>
-        </div>
+        </nav>
 
-        <!-- Floor → Area sections -->
-        ${t.map(({floor:t,areas:a})=>{const r=a.filter(e=>null!==this._getFilteredEntities(e));return 0===r.length?e.qy``:e.qy`
-            ${t?e.qy`
-              <div class="ilm-floor-header">
-                <span class="ilm-floor-name">${t.name||"FLOOR"}</span>
-                <span class="ilm-floor-line"></span>
-              </div>
-            `:""}
-            ${r.map(t=>{const a=this._getFilteredEntities(t);return e.qy`
-                <div class="ilm-area-section" data-area-id="${t.area.area_id}">
-                  <div class="ilm-area-header">
-                    <span class="ilm-area-name">${t.area.name}</span>
-                    <span class="ilm-area-line"></span>
-                    ${this._renderMasterToggle(a,t.area)}
-                  </div>
-
-                  <lcars-illumination-panel
-                    .hass=${this._hass}
-                    .entities=${a}
-                    area-id="${t.area.area_id}"
-                    frame-mode="nested">
-                  </lcars-illumination-panel>
+        <!-- Main Content -->
+        <main class="lcars-content" role="main" aria-label="Illumination dashboard">
+          ${t.map(({floor:t,areas:a})=>{const r=a.filter(e=>null!==this._getFilteredEntities(e));return 0===r.length?e.qy``:e.qy`
+              ${t?e.qy`
+                <div class="ilm-floor-header">
+                  <span class="ilm-floor-name">${t.name||"FLOOR"}</span>
+                  <span class="ilm-floor-line"></span>
                 </div>
-              `})}
-          `})}
+              `:""}
+              ${r.map(t=>{const a=this._getFilteredEntities(t);return e.qy`
+                  <div class="ilm-area-section" data-area-id="${t.area.area_id}">
+                    <div class="ilm-area-header">
+                      <span class="ilm-area-name">${t.area.name}</span>
+                      <span class="ilm-area-line"></span>
+                      ${this._renderMasterToggle(a,t.area)}
+                    </div>
+                    <lcars-illumination-panel
+                      .hass=${this._hass}
+                      .entities=${a}
+                      area-id="${t.area.area_id}"
+                      frame-mode="nested">
+                    </lcars-illumination-panel>
+                  </div>
+                `})}
+            `})}
 
-        ${0===t.length?e.qy`
-          <div class="ilm-empty">
-            <span>NO LIGHTING DEVICES DETECTED</span>
-          </div>
-        `:""}
+          ${0===t.length?e.qy`
+            <div class="ilm-empty">
+              <span>NO LIGHTING DEVICES DETECTED</span>
+            </div>
+          `:""}
+        </main>
+
+        <!-- Bottom-Left Elbow -->
+        <div class="lcars-elbow-bottom" aria-hidden="true"></div>
+
+        <!-- Footer Bar -->
+        <div class="lcars-footer" role="contentinfo">
+          <div class="lcars-footer-bar"></div>
+          <span class="lcars-footer-text">LCARS ${i}</span>
+          <div class="lcars-footer-endcap"></div>
+        </div>
       </div>
     `}_setFilter(e){this._filter=e,n.e.play("navAcknowledge")}_renderMasterToggle(t,a){const r=this._getAreaLightState(t);if("empty"===r)return e.qy``;const i="on"===r?"ALL ON":"off"===r?"ALL OFF":"MIXED",s="on"===r;return e.qy`
       <button
@@ -14184,73 +14207,197 @@
     `}static get styles(){return[t.Bx,e.AH`
         :host {
           display: block;
+          height: calc(100vh - var(--header-height, 0px));
+          overflow: hidden;
+          box-sizing: border-box;
+          background: var(--lcars-bg, #000);
+          padding: var(--lcars-gap, 0.25rem);
         }
 
-        .ilm-dashboard {
-          padding: 0.25rem;
+        /* ─── LCARS Frame Grid ─── */
+        .lcars-frame {
+          display: grid;
+          grid-template-columns: var(--lcars-sidebar-w, 12rem) 1fr;
+          grid-template-rows: var(--lcars-elbow-h, 4.5rem) 1fr var(--lcars-elbow-h, 4.5rem);
+          gap: var(--lcars-gap, 0.25rem);
+          height: 100%;
         }
 
-        /* ─── Filter Bar ─── */
-        .ilm-filter-bar {
+        /* ─── Top-Left Elbow ─── */
+        .lcars-elbow-top {
+          grid-column: 1;
+          grid-row: 1;
+          background: var(--lcars-sunflower, #ffcc99);
+          border-radius: var(--lcars-elbow-radius, 3.75rem) 0 0 0;
+          position: relative;
+          overflow: hidden;
           display: flex;
-          gap: 0.25rem;
-          margin-bottom: 0.75rem;
+          align-items: flex-end;
+          padding: 0.25rem 0.5rem;
+        }
+        .lcars-elbow-top::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          right: 0;
+          width: calc(var(--lcars-sidebar-w, 12rem) - var(--lcars-elbow-w, 9.5rem));
+          height: calc(var(--lcars-elbow-h, 4.5rem) - var(--lcars-bar-h, 1.5rem));
+          background: var(--lcars-bg, #000);
+          border-radius: 1.5rem 0 0 0;
+        }
+        .lcars-elbow-label {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.75rem;
+          color: var(--lcars-black, #000);
+          text-transform: uppercase;
+          position: relative;
+          z-index: 1;
         }
 
-        .ilm-filter-btn {
+        /* ─── Header Bar ─── */
+        .lcars-header {
+          grid-column: 2;
+          grid-row: 1;
+          display: flex;
+          align-items: flex-start;
+          gap: var(--lcars-gap, 0.25rem);
+        }
+        .lcars-header-bar {
+          flex: 1;
+          height: var(--lcars-bar-h, 1.5rem);
+          background: var(--lcars-sunflower, #ffcc99);
+        }
+        .lcars-header-title {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 1rem;
+          color: var(--lcars-sunflower, #ffcc99);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          white-space: nowrap;
+          line-height: var(--lcars-bar-h, 1.5rem);
+          padding: 0 0.5rem;
+        }
+        .lcars-header-endcap {
+          width: var(--lcars-endcap-size, 1.5rem);
+          height: var(--lcars-bar-h, 1.5rem);
+          background: var(--lcars-sunflower, #ffcc99);
+          border-radius: 0 var(--lcars-endcap-radius, 0.75rem) var(--lcars-endcap-radius, 0.75rem) 0;
+          flex-shrink: 0;
+        }
+
+        /* ─── Sidebar: 3 Filter Buttons ─── */
+        .lcars-sidebar {
+          grid-column: 1;
+          grid-row: 2;
+          display: flex;
+          flex-direction: column;
+          gap: var(--lcars-gap, 0.25rem);
+          padding-right: var(--lcars-gap, 0.25rem);
+        }
+
+        .ilm-sidebar-btn {
           flex: 1;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 0.125rem;
-          padding: 0.75rem 0.5rem;
-          min-height: 4rem;
+          gap: 0.25rem;
           border: none;
-          border-radius: 0 1.5rem 1.5rem 0;
-          background: rgba(102, 102, 136, 0.2);
-          color: var(--lcars-gray, #666688);
+          border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 var(--lcars-btn-radius, 1.5rem);
+          background: var(--lcars-african-violet, #cc99ff);
+          color: var(--lcars-black, #000);
           font-family: var(--lcars-font, 'Antonio', sans-serif);
           text-transform: uppercase;
           cursor: pointer;
           transition: background 200ms ease, color 200ms ease;
+          padding: 0.5rem;
+          min-width: 0;
         }
 
-        .ilm-filter-btn:first-child {
-          border-radius: 1.5rem 0 0 1.5rem;
-        }
-
-        .ilm-filter-btn:nth-child(2) {
-          border-radius: 0;
-        }
-
-        .ilm-filter-btn:hover {
+        .ilm-sidebar-btn:hover {
           filter: brightness(1.2);
         }
 
-        .ilm-filter-btn:focus-visible {
+        .ilm-sidebar-btn:focus-visible {
           outline: 2px solid var(--lcars-ice, #99ccff);
           outline-offset: 2px;
         }
 
-        .ilm-filter-btn.active {
-          background: var(--lcars-sunflower, #ffcc99);
-          color: var(--lcars-black, #000);
+        .ilm-sidebar-btn.active {
+          background: var(--lcars-gold, #ffaa00);
         }
 
-        .ilm-filter-count {
-          font-size: 1.75rem;
+        .ilm-sidebar-count {
+          font-size: 2rem;
           font-variant-numeric: tabular-nums;
           line-height: 1;
         }
 
-        .ilm-filter-label {
+        .ilm-sidebar-label {
           font-size: 0.875rem;
-          letter-spacing: 0.08em;
+          letter-spacing: 0.05em;
+          text-align: center;
         }
 
-        .ilm-filter-btn.active .ilm-filter-count {
-          color: var(--lcars-black, #000);
+        /* ─── Content Area ─── */
+        .lcars-content {
+          grid-column: 2;
+          grid-row: 2;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding: 0.25rem 0.5rem;
+          scrollbar-width: thin;
+          scrollbar-color: var(--lcars-gray, #666688) transparent;
+        }
+
+        /* ─── Bottom-Left Elbow ─── */
+        .lcars-elbow-bottom {
+          grid-column: 1;
+          grid-row: 3;
+          background: var(--lcars-african-violet, #cc99ff);
+          border-radius: 0 0 0 var(--lcars-elbow-radius, 3.75rem);
+          position: relative;
+          overflow: hidden;
+        }
+        .lcars-elbow-bottom::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: calc(var(--lcars-sidebar-w, 12rem) - var(--lcars-elbow-w, 9.5rem));
+          height: calc(var(--lcars-elbow-h, 4.5rem) - var(--lcars-bar-h, 1.5rem));
+          background: var(--lcars-bg, #000);
+          border-radius: 0 0 0 1.5rem;
+        }
+
+        /* ─── Footer Bar ─── */
+        .lcars-footer {
+          grid-column: 2;
+          grid-row: 3;
+          display: flex;
+          align-items: flex-end;
+          gap: var(--lcars-gap, 0.25rem);
+        }
+        .lcars-footer-bar {
+          flex: 1;
+          height: var(--lcars-bar-h, 1.5rem);
+          background: var(--lcars-african-violet, #cc99ff);
+        }
+        .lcars-footer-text {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.75rem;
+          color: var(--lcars-african-violet, #cc99ff);
+          text-transform: uppercase;
+          white-space: nowrap;
+          line-height: var(--lcars-bar-h, 1.5rem);
+          padding: 0 0.5rem;
+        }
+        .lcars-footer-endcap {
+          width: var(--lcars-endcap-size, 1.5rem);
+          height: var(--lcars-bar-h, 1.5rem);
+          background: var(--lcars-african-violet, #cc99ff);
+          border-radius: 0 var(--lcars-endcap-radius, 0.75rem) var(--lcars-endcap-radius, 0.75rem) 0;
+          flex-shrink: 0;
         }
 
         /* ─── Floor Header ─── */
@@ -14260,7 +14407,6 @@
           gap: 0.5rem;
           margin: 1rem 0 0.5rem 0;
         }
-
         .ilm-floor-name {
           font-family: var(--lcars-font, 'Antonio', sans-serif);
           font-size: 1.25rem;
@@ -14269,7 +14415,6 @@
           letter-spacing: 0.08em;
           white-space: nowrap;
         }
-
         .ilm-floor-line {
           flex: 1;
           height: 0.375rem;
@@ -14282,14 +14427,12 @@
         .ilm-area-section {
           margin-bottom: 0.75rem;
         }
-
         .ilm-area-header {
           display: flex;
           align-items: center;
           gap: 0.5rem;
           margin-bottom: 0.25rem;
         }
-
         .ilm-area-name {
           font-family: var(--lcars-font, 'Antonio', sans-serif);
           font-size: 1.25rem;
@@ -14298,7 +14441,6 @@
           letter-spacing: 0.05em;
           white-space: nowrap;
         }
-
         .ilm-area-line {
           flex: 1;
           height: 2px;
@@ -14324,45 +14466,27 @@
           white-space: nowrap;
           transition: background 200ms ease, color 200ms ease;
         }
-
-        .ilm-master-btn:hover {
-          filter: brightness(1.2);
-        }
-
+        .ilm-master-btn:hover { filter: brightness(1.2); }
         .ilm-master-btn:focus-visible {
           outline: 2px solid var(--lcars-ice, #99ccff);
           outline-offset: 2px;
         }
-
         .ilm-master-btn.active {
           background: var(--lcars-sunflower, #ffcc99);
           color: var(--lcars-black, #000);
         }
-
         .ilm-master-dot {
           width: 8px;
           height: 8px;
           border-radius: 50%;
           flex-shrink: 0;
-          transition: background 200ms ease;
         }
+        .ilm-master-dot.on { background: var(--lcars-sunflower, #ffcc99); }
+        .ilm-master-dot.off { background: var(--lcars-gray, #666688); }
+        .ilm-master-dot.mixed { background: var(--lcars-butterscotch, #ff9966); }
 
-        .ilm-master-dot.on {
-          background: var(--lcars-sunflower, #ffcc99);
-        }
-
-        .ilm-master-dot.off {
-          background: var(--lcars-gray, #666688);
-        }
-
-        .ilm-master-dot.mixed {
-          background: var(--lcars-butterscotch, #ff9966);
-        }
-
-        /* ─── Nested panels — reduce spacing ─── */
-        lcars-illumination-panel {
-          --lcars-panel-margin: 0;
-        }
+        /* ─── Nested panels ─── */
+        lcars-illumination-panel { --lcars-panel-margin: 0; }
 
         /* ─── Empty State ─── */
         .ilm-empty {
@@ -14378,21 +14502,27 @@
 
         /* ─── Mobile ─── */
         @media (max-width: 767px) {
-          .ilm-filter-btn {
+          .lcars-frame {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto 1fr auto;
+          }
+          .lcars-elbow-top, .lcars-elbow-bottom { display: none; }
+          .lcars-header { grid-column: 1; grid-row: 1; }
+          .lcars-sidebar {
+            grid-column: 1;
+            grid-row: 2;
+            flex-direction: row;
+            padding-right: 0;
+          }
+          .ilm-sidebar-btn {
+            border-radius: 0;
             min-height: 3rem;
-            padding: 0.5rem 0.25rem;
           }
-
-          .ilm-filter-count {
-            font-size: 1.25rem;
-          }
-
-          .ilm-filter-label {
-            font-size: 0.75rem;
-          }
-
-          .ilm-floor-name {
-            font-size: 1rem;
-          }
+          .ilm-sidebar-btn:first-child { border-radius: 1rem 0 0 1rem; }
+          .ilm-sidebar-btn:last-child { border-radius: 0 1rem 1rem 0; }
+          .ilm-sidebar-count { font-size: 1.25rem; }
+          .ilm-sidebar-label { font-size: 0.75rem; }
+          .lcars-content { grid-column: 1; grid-row: 3; }
+          .lcars-footer { grid-column: 1; grid-row: 4; }
         }
       `]}}customElements.get("illumination-card")||customElements.define("illumination-card",d)})()})();

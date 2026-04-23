@@ -241,7 +241,7 @@ class LcarsIlluminationLayout extends LitElement {
           text-transform: uppercase;
           padding: 0.25rem 0.5rem;
           text-align: right;
-          border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 var(--lcars-btn-radius, 1.5rem);
+          border-radius: 0 0 0 var(--lcars-btn-radius, 1.5rem);
           flex-shrink: 0;
         }
 

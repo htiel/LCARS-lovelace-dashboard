@@ -103,7 +103,6 @@ import { getHass, navigate, fireEvent } from './lcars-helpers.js';
     render() {
       const navItems = [
         { path: 'home', icon: 'mdi:home', label: 'Home' },
-        { path: 'more', icon: 'mdi:dots-horizontal', label: 'More' },
       ];
 
       return html`

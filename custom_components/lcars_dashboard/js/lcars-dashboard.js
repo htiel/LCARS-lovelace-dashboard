@@ -274,7 +274,7 @@
           }
         `]}render(){return e.qy`
         <div class="nav-container" role="menubar" aria-label="Main navigation">
-          ${[{path:"home",icon:"mdi:home",label:"Home"},{path:"more",icon:"mdi:dots-horizontal",label:"More"}].map(t=>e.qy`
+          ${[{path:"home",icon:"mdi:home",label:"Home"}].map(t=>e.qy`
               <button
                 class="nav-btn"
                 role="menuitem"

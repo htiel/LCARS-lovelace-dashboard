@@ -10,7 +10,7 @@
  * v5.0.0 — 5X-2.5 Lighting Dashboard
  */
 import { LitElement, html, css } from 'lit-element';
-import { getHass, lcarsLog } from './lcars-helpers.js';
+import { getHass, lcarsLog, lcarsEventBus } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
@@ -33,6 +33,7 @@ class LcarsIlluminationCard extends LitElement {
       hass: { type: Object },
       _config: { type: Object },
       filter: { type: String },
+      editMode: { type: Boolean },
     };
   }
 
@@ -41,7 +42,22 @@ class LcarsIlluminationCard extends LitElement {
     this.hass = null;
     this._config = {};
     this.filter = FILTER_ALL;
+    this.editMode = false;
     this._entityCache = new Map();
+    this._onFilter = (e) => { this.filter = e.detail.filter; };
+    this._onEdit = (e) => { this.editMode = e.detail.enabled; };
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    lcarsEventBus.addEventListener('lcars-ilm-filter', this._onFilter);
+    lcarsEventBus.addEventListener('lcars-ilm-edit', this._onEdit);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    lcarsEventBus.removeEventListener('lcars-ilm-filter', this._onFilter);
+    lcarsEventBus.removeEventListener('lcars-ilm-edit', this._onEdit);
   }
 
   setConfig(config) {
@@ -230,6 +246,7 @@ class LcarsIlluminationCard extends LitElement {
                     .hass=${this._hass}
                     .entities=${filtered}
                     .filter=${this.filter}
+                    .editMode=${this.editMode}
                     area-id="${areaData.area.area_id}">
                   </lcars-illumination-panel>
                 </div>
@@ -245,11 +262,6 @@ class LcarsIlluminationCard extends LitElement {
         ` : ''}
       </div>
     `;
-  }
-
-  _setFilter(filter) {
-    this.filter = filter;
-    lcarsAudio.play('navAcknowledge');
   }
 
   _renderMasterToggle(entities, area) {

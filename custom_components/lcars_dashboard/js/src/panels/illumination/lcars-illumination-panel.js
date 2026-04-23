@@ -48,6 +48,10 @@ class LcarsIlluminationPanel extends LitElement {
     this.areaId = null;
     this.editMode = false;
     this._expandedEffects = new Set();
+    this._dragEntityId = null;
+    this._dragState = null;
+    this._boundPointerMove = this._onPointerMove.bind(this);
+    this._boundPointerUp = this._onPointerUp.bind(this);
     this._brightnessDebouncer = createDebouncer((eid, pct) => {
       const safePct = clampValue(pct, 1, 100);
       const brightness = Math.round(safePct / 100 * 255);
@@ -58,6 +62,7 @@ class LcarsIlluminationPanel extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    this._cancelDrag();
     this._brightnessDebouncer.cancel();
   }
 
@@ -119,15 +124,16 @@ class LcarsIlluminationPanel extends LitElement {
     if (filteredLights.length === 0 && filteredCircuits.length === 0) return html``;
 
     // Sub-partition lights: complex (dimmer/full) left, simple (onoff) right
-    const complexLights = filteredLights.filter(e => {
+    const complexLights = this._getOrderedEntities(filteredLights.filter(e => {
       const state = this.hass?.states?.[e.entity?.entity_id] || e.state;
       const t = classifyLightType(state);
       return t === 'dimmer' || t === 'full';
-    });
-    const simpleLights = filteredLights.filter(e => {
+    }));
+    const simpleLights = this._getOrderedEntities(filteredLights.filter(e => {
       const state = this.hass?.states?.[e.entity?.entity_id] || e.state;
       return classifyLightType(state) === 'onoff';
-    });
+    }));
+    const orderedCircuits = this._getOrderedEntities(filteredCircuits);
 
     const content = html`
       ${filteredLights.length > 0 ? html`
@@ -152,7 +158,7 @@ class LcarsIlluminationPanel extends LitElement {
       ` : ''}
       ${filteredCircuits.length > 0 ? html`
         <div class="ilm-devices">
-          ${filteredCircuits.map(entry => this._renderDevice(entry))}
+          ${orderedCircuits.map(entry => this._renderDevice(entry))}
         </div>
       ` : ''}
     `;
@@ -217,16 +223,32 @@ class LcarsIlluminationPanel extends LitElement {
     const isOn = state?.state === 'on';
     const name = this._shortName(entry);
 
+    let device;
     if (entry.domain === 'light') {
       const lightType = classifyLightType(state);
       switch (lightType) {
-        case 'onoff': return this._renderOnOffPill(eid, name, isOn);
-        case 'dimmer': return this._renderDimmer(eid, name, isOn, state);
-        case 'full':   return this._renderFullLight(eid, name, isOn, state);
+        case 'onoff': device = this._renderOnOffPill(eid, name, isOn); break;
+        case 'dimmer': device = this._renderDimmer(eid, name, isOn, state); break;
+        case 'full':   device = this._renderFullLight(eid, name, isOn, state); break;
+        default: device = this._renderOnOffPill(eid, name, isOn);
       }
+    } else {
+      device = this._renderCircuitPill(eid, name, isOn);
     }
-    // Circuit (switch/input_boolean)
-    return this._renderCircuitPill(eid, name, isOn);
+
+    if (this.editMode) {
+      return html`
+        <div class="ilm-drag-wrap ${this._dragEntityId === eid ? 'dragging' : ''}"
+             data-entity-id="${eid}">
+          <span class="ilm-grip"
+                @pointerdown=${(e) => this._onPointerDown(e, eid)}>
+            <span></span><span></span><span></span>
+          </span>
+          ${device}
+        </div>
+      `;
+    }
+    return device;
   }
 
   /* â”€â”€â”€ Type A: On/Off Pill â”€â”€â”€ */
@@ -384,6 +406,117 @@ class LcarsIlluminationPanel extends LitElement {
     this.requestUpdate();
   }
 
+  /* ─── Drag-and-Drop Reorder ─── */
+
+  _getOrderKey() {
+    return `lcars-ilm-order-${this.areaId || 'default'}`;
+  }
+
+  _loadOrder() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(this._getOrderKey()));
+      return Array.isArray(stored) ? stored : null;
+    } catch { return null; }
+  }
+
+  _saveOrder(orderedIds) {
+    try {
+      localStorage.setItem(this._getOrderKey(), JSON.stringify(orderedIds));
+    } catch (e) { /* ignore */ }
+  }
+
+  _getOrderedEntities(entries) {
+    const order = this._loadOrder();
+    if (!order) return entries;
+    const orderMap = new Map(order.map((id, i) => [id, i]));
+    return [...entries].sort((a, b) => {
+      const aIdx = orderMap.get(a.entity?.entity_id) ?? 999;
+      const bIdx = orderMap.get(b.entity?.entity_id) ?? 999;
+      return aIdx - bIdx;
+    });
+  }
+
+  _onPointerDown(e, entityId) {
+    if (!this.editMode) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const wrap = e.target.closest('.ilm-drag-wrap');
+    if (!wrap) return;
+    const container = wrap.parentElement;
+    if (!container) return;
+
+    wrap.setPointerCapture(e.pointerId);
+    wrap.addEventListener('pointermove', this._boundPointerMove);
+    wrap.addEventListener('pointerup', this._boundPointerUp);
+    wrap.addEventListener('pointercancel', this._boundPointerUp);
+
+    const items = [...container.querySelectorAll('.ilm-drag-wrap')];
+    const orderedIds = items.map(el => el.dataset.entityId);
+    const currentIndex = orderedIds.indexOf(entityId);
+
+    this._dragState = {
+      entityId,
+      pointerId: e.pointerId,
+      startY: e.clientY,
+      wrapEl: wrap,
+      container,
+      currentIndex,
+      orderedIds: [...orderedIds],
+      didDrag: false,
+    };
+    this._dragEntityId = entityId;
+  }
+
+  _onPointerMove(e) {
+    if (!this._dragState) return;
+    const dy = e.clientY - this._dragState.startY;
+    if (!this._dragState.didDrag && Math.abs(dy) < 8) return;
+    this._dragState.didDrag = true;
+
+    const items = [...this._dragState.container.querySelectorAll('.ilm-drag-wrap')];
+    if (!items.length) return;
+    const itemHeight = items[0].getBoundingClientRect().height + 6;
+    const indexShift = Math.round(dy / itemHeight);
+    const newIndex = clampValue(
+      this._dragState.currentIndex + indexShift,
+      0, this._dragState.orderedIds.length - 1
+    );
+
+    if (newIndex !== this._dragState.hoverIndex) {
+      this._dragState.hoverIndex = newIndex;
+      const ids = [...this._dragState.orderedIds];
+      const fromIdx = ids.indexOf(this._dragState.entityId);
+      ids.splice(fromIdx, 1);
+      ids.splice(newIndex, 0, this._dragState.entityId);
+      this._saveOrder(ids);
+      this.requestUpdate();
+    }
+  }
+
+  _onPointerUp(e) {
+    if (!this._dragState) return;
+    const wrap = this._dragState.wrapEl;
+    try { wrap.releasePointerCapture(this._dragState.pointerId); } catch {}
+    wrap.removeEventListener('pointermove', this._boundPointerMove);
+    wrap.removeEventListener('pointerup', this._boundPointerUp);
+    wrap.removeEventListener('pointercancel', this._boundPointerUp);
+    this._dragState = null;
+    this._dragEntityId = null;
+    this.requestUpdate();
+  }
+
+  _cancelDrag() {
+    if (this._dragState?.wrapEl) {
+      const wrap = this._dragState.wrapEl;
+      try { wrap.releasePointerCapture(this._dragState.pointerId); } catch {}
+      wrap.removeEventListener('pointermove', this._boundPointerMove);
+      wrap.removeEventListener('pointerup', this._boundPointerUp);
+      wrap.removeEventListener('pointercancel', this._boundPointerUp);
+    }
+    this._dragState = null;
+    this._dragEntityId = null;
+  }
+
   _getBarColor(state) {
     const isOn = state?.state === 'on';
     if (!isOn) return 'var(--lcars-gray, #666688)';
@@ -523,6 +656,37 @@ class LcarsIlluminationPanel extends LitElement {
           height: 1px;
           background: var(--lcars-gray, #666688);
           opacity: 0.3;
+        }
+
+        /* ─── Drag & Drop (Edit Mode) ─── */
+        .ilm-drag-wrap {
+          display: flex;
+          align-items: stretch;
+          gap: 0.25rem;
+          transition: opacity 150ms ease;
+        }
+        .ilm-drag-wrap.dragging { opacity: 0.5; }
+        .ilm-drag-wrap > :not(.ilm-grip) { flex: 1; min-width: 0; }
+
+        .ilm-grip {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 3px;
+          width: 1.25rem;
+          flex-shrink: 0;
+          cursor: grab;
+          touch-action: none;
+          padding: 0.25rem 0;
+        }
+        .ilm-grip:active { cursor: grabbing; }
+        .ilm-grip > span {
+          display: block;
+          width: 0.75rem;
+          height: 2px;
+          background: var(--lcars-gray, #666688);
+          border-radius: 1px;
         }
 
         .ilm-devices {

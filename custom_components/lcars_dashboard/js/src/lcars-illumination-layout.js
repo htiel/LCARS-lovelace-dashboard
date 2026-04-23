@@ -66,12 +66,7 @@ class LcarsIlluminationLayout extends LitElement {
   _setFilter(filter) {
     this._filter = filter;
     lcarsAudio.play('navAcknowledge');
-    // Push filter to child cards
-    if (this.cards) {
-      this.cards.forEach((card) => {
-        if (card) card.filter = filter;
-      });
-    }
+    lcarsEventBus.dispatchEvent(new CustomEvent('lcars-ilm-filter', { detail: { filter } }));
   }
 
   _toggleMute() {
@@ -81,11 +76,7 @@ class LcarsIlluminationLayout extends LitElement {
 
   _toggleEditMode() {
     this._editMode = !this._editMode;
-    if (this.cards) {
-      this.cards.forEach((card) => {
-        if (card) card.editMode = this._editMode;
-      });
-    }
+    lcarsEventBus.dispatchEvent(new CustomEvent('lcars-ilm-edit', { detail: { enabled: this._editMode } }));
   }
 
   render() {
@@ -194,11 +185,11 @@ class LcarsIlluminationLayout extends LitElement {
           position: relative; overflow: hidden;
         }
         .lcars-elbow-top::after {
-          content: ''; position: absolute; bottom: 0; left: 0;
+          content: ''; position: absolute; bottom: 0; right: 0;
           width: calc(var(--lcars-sidebar-w, 12rem) - var(--lcars-elbow-w, 9.5rem));
           height: calc(var(--lcars-elbow-h, 4.5rem) - var(--lcars-bar-h, 1.5rem));
           background: var(--lcars-bg, #000);
-          border-radius: 0 1.5rem 0 0;
+          border-radius: 1.5rem 0 0 0;
         }
 
         /* ─── Header Bar ─── */
@@ -300,11 +291,11 @@ class LcarsIlluminationLayout extends LitElement {
           position: relative; overflow: hidden;
         }
         .lcars-elbow-bottom::after {
-          content: ''; position: absolute; top: 0; left: 0;
+          content: ''; position: absolute; top: 0; right: 0;
           width: calc(var(--lcars-sidebar-w, 12rem) - var(--lcars-elbow-w, 9.5rem));
           height: calc(var(--lcars-elbow-h, 4.5rem) - var(--lcars-bar-h, 1.5rem));
           background: var(--lcars-bg, #000);
-          border-radius: 0 0 1.5rem 0;
+          border-radius: 0 0 0 1.5rem;
         }
 
         /* ─── Footer Bar ─── */

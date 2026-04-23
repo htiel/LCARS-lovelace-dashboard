@@ -103,7 +103,6 @@ import { getHass, navigate, fireEvent } from './lcars-helpers.js';
     render() {
       const navItems = [
         { path: 'home', icon: 'mdi:home', label: 'Home' },
-        { path: 'devices', icon: 'mdi:format-list-bulleted-type', label: 'Devices' },
         { path: 'more', icon: 'mdi:dots-horizontal', label: 'More' },
       ];
 

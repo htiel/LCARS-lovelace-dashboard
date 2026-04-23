@@ -1,0 +1,10 @@
+# LCARS Illumination Dashboard — Lovelace YAML configuration
+# Standalone dashboard: all lighting, switches, and covers across all areas.
+
+views:
+  - title: Illumination
+    icon: mdi:lightbulb
+    path: home
+    type: custom:lcars-dashboard-layout
+    cards:
+      - type: custom:illumination-card

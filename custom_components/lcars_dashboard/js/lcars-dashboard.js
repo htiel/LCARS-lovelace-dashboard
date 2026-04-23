@@ -14111,88 +14111,37 @@
           .sensor-tile { animation: none !important; }
           .tile-battery-badge { animation: none !important; opacity: 1; }
         }
-      `]}getCardSize(){return Math.max(2,Math.ceil(this._sensorGroups.length/4)+1)}}customElements.get("lcars-internal-sensors-grid")||(customElements.define("lcars-internal-sensors-grid",p),r.g0.debug(n,"Custom element registered: lcars-internal-sensors-grid")),window.customCards=window.customCards||[],window.customCards.push({type:"lcars-internal-sensors-grid",name:"LCARS Internal Sensors Grid",description:"Ship-wide environmental monitoring grid",preview:!0})})(),(()=>{var e=a(7349),t=(a(8851),a(2622)),r=a(7597),i=a(6930),s=a(4867),n=a(6940);a(7292),a(58);const o="all",l="lights",c="circuits";class d extends e.WF{static get properties(){return{hass:{type:Object},_config:{type:Object},_filter:{type:String}}}constructor(){super(),this.hass=null,this._config={},this._filter=o,this._entityCache=new Map}setConfig(e){this._config=e||{}}set hass(e){const t=this._hass;this._hass=e,e&&t!==e&&(this._entityCache.clear(),this.requestUpdate("hass",t))}get hass(){return this._hass}getCardSize(){return 12}_getAreasWithLighting(){if(!this._hass)return[];const e=(0,r.Qn)(this._hass),t=(0,r.E3)(this._hass),a=[];for(const r of e){const e=t.get(r.floor_id)||[],i=[];for(const t of e){const e=this._resolveAreaEntities(t);e&&i.push(e)}i.length>0&&a.push({floor:r,areas:i})}const i=t.get(null)||[],s=[];for(const e of i){const t=this._resolveAreaEntities(e);t&&s.push(t)}return s.length>0&&a.push({floor:null,areas:s}),a}_resolveAreaEntities(e){const t=(0,i.d6)(this._hass,e.area_id,this._entityCache),a=[];for(const e of t){const t=e.entity_id.split(".")[0],r=this._hass.states?.[e.entity_id];if(!r)continue;const i={entity:e,domain:t,state:r};(0,s.JM)(i)||a.push(i)}const r=a.filter(e=>(0,s.eX)(e)||"scene"===e.domain);if(0===r.length)return null;const n=r.filter(e=>"light"===e.domain),o=r.filter(e=>"light"!==e.domain&&"scene"!==e.domain),l=r.filter(e=>"scene"===e.domain);return{area:e,lightEntities:r,lights:n,circuits:o,scenes:l}}_getFilteredEntities(e){if(this._filter===l){const t=[...e.lights,...e.scenes];return t.length>0?t:null}return this._filter===c?e.circuits.length>0?e.circuits:null:e.lightEntities}_getGlobalCounts(e){let t=0,a=0,r=0,i=0;for(const{areas:s}of e)for(const{lights:e,circuits:n}of s){for(const r of e)a++,"on"===r.state?.state&&t++;for(const e of n)i++,"on"===e.state?.state&&r++}return{lightsActive:t,lightsTotal:a,circuitsActive:r,circuitsTotal:i,totalActive:t+r,totalAll:a+i}}_getAreaLightState(e){const t=e.filter(e=>"scene"!==e.domain);if(0===t.length)return"empty";const a=t.filter(e=>"on"===e.state?.state).length;return 0===a?"off":a===t.length?"on":"mixed"}_toggleAreaLights(e){const t=e.filter(e=>"scene"!==e.domain);if(0===t.length)return;const a=t.every(e=>"on"===e.state?.state),r=a?"turn_off":"turn_on";for(const e of t)this._hass.callService("homeassistant",r,{entity_id:e.entity.entity_id});n.e.play(a?"switchToggle":"lightToggle")}render(){if(!this._hass)return e.qy``;const t=this._getAreasWithLighting(),r=this._getGlobalCounts(t),i=a(8330).version;return e.qy`
-      <div class="lcars-frame">
-
-        <!-- Top-Left Elbow -->
-        <div class="lcars-elbow-top" aria-hidden="true">
-          <span class="lcars-elbow-label">${this._hass.config?.location_name||"LCARS"}</span>
-        </div>
-
-        <!-- Header Bar -->
-        <div class="lcars-header" aria-hidden="true">
-          <div class="lcars-header-bar"></div>
-          <span class="lcars-header-title">ILLUMINATION CONTROL</span>
-          <div class="lcars-header-endcap"></div>
-        </div>
-
-        <!-- Sidebar: 3 filter buttons stacked vertically -->
-        <nav class="lcars-sidebar" role="tablist" aria-label="Filter illumination devices">
-          <button class="ilm-sidebar-btn ${this._filter===o?"active":""}"
-                  role="tab"
-                  aria-selected="${this._filter===o?"true":"false"}"
-                  @click=${()=>this._setFilter(o)}>
-            <span class="ilm-sidebar-count">${r.totalActive}/${r.totalAll}</span>
-            <span class="ilm-sidebar-label">ALL DEVICES</span>
-          </button>
-          <button class="ilm-sidebar-btn ${this._filter===l?"active":""}"
-                  role="tab"
-                  aria-selected="${this._filter===l?"true":"false"}"
-                  @click=${()=>this._setFilter(l)}>
-            <span class="ilm-sidebar-count">${r.lightsActive}/${r.lightsTotal}</span>
-            <span class="ilm-sidebar-label">LIGHTS</span>
-          </button>
-          <button class="ilm-sidebar-btn ${this._filter===c?"active":""}"
-                  role="tab"
-                  aria-selected="${this._filter===c?"true":"false"}"
-                  @click=${()=>this._setFilter(c)}>
-            <span class="ilm-sidebar-count">${r.circuitsActive}/${r.circuitsTotal}</span>
-            <span class="ilm-sidebar-label">CIRCUITS</span>
-          </button>
-        </nav>
-
-        <!-- Main Content -->
-        <main class="lcars-content" role="main" aria-label="Illumination dashboard">
-          ${t.map(({floor:t,areas:a})=>{const r=a.filter(e=>null!==this._getFilteredEntities(e));return 0===r.length?e.qy``:e.qy`
-              ${t?e.qy`
-                <div class="ilm-floor-header">
-                  <span class="ilm-floor-name">${t.name||"FLOOR"}</span>
-                  <span class="ilm-floor-line"></span>
-                </div>
-              `:""}
-              ${r.map(t=>{const a=this._getFilteredEntities(t);return e.qy`
-                  <div class="ilm-area-section" data-area-id="${t.area.area_id}">
-                    <div class="ilm-area-header">
-                      <span class="ilm-area-name">${t.area.name}</span>
-                      <span class="ilm-area-line"></span>
-                      ${this._renderMasterToggle(a,t.area)}
-                    </div>
-                    <lcars-illumination-panel
-                      .hass=${this._hass}
-                      .entities=${a}
-                      area-id="${t.area.area_id}"
-                      frame-mode="nested">
-                    </lcars-illumination-panel>
+      `]}getCardSize(){return Math.max(2,Math.ceil(this._sensorGroups.length/4)+1)}}customElements.get("lcars-internal-sensors-grid")||(customElements.define("lcars-internal-sensors-grid",p),r.g0.debug(n,"Custom element registered: lcars-internal-sensors-grid")),window.customCards=window.customCards||[],window.customCards.push({type:"lcars-internal-sensors-grid",name:"LCARS Internal Sensors Grid",description:"Ship-wide environmental monitoring grid",preview:!0})})(),(()=>{var e=a(7349),t=(a(8851),a(2622)),r=a(7597),i=a(6930),s=a(4867),n=a(6940);a(7292),a(58);class o extends e.WF{static get properties(){return{hass:{type:Object},_config:{type:Object},_filter:{type:String}}}constructor(){super(),this.hass=null,this._config={},this._filter="all",this._entityCache=new Map}setConfig(e){this._config=e||{}}set filter(e){const t=this._filter;this._filter=e||"all",t!==this._filter&&this.requestUpdate("_filter",t)}get filter(){return this._filter}set hass(e){const t=this._hass;this._hass=e,e&&t!==e&&(this._entityCache.clear(),this.requestUpdate("hass",t))}get hass(){return this._hass}getCardSize(){return 12}_getAreasWithLighting(){if(!this._hass)return[];const e=(0,r.Qn)(this._hass),t=(0,r.E3)(this._hass),a=[];for(const r of e){const e=t.get(r.floor_id)||[],i=[];for(const t of e){const e=this._resolveAreaEntities(t);e&&i.push(e)}i.length>0&&a.push({floor:r,areas:i})}const i=t.get(null)||[],s=[];for(const e of i){const t=this._resolveAreaEntities(e);t&&s.push(t)}return s.length>0&&a.push({floor:null,areas:s}),a}_resolveAreaEntities(e){const t=(0,i.d6)(this._hass,e.area_id,this._entityCache),a=[];for(const e of t){const t=e.entity_id.split(".")[0],r=this._hass.states?.[e.entity_id];if(!r)continue;const i={entity:e,domain:t,state:r};(0,s.JM)(i)||a.push(i)}const r=a.filter(e=>(0,s.eX)(e)||"scene"===e.domain);if(0===r.length)return null;const n=r.filter(e=>"light"===e.domain),o=r.filter(e=>"light"!==e.domain&&"scene"!==e.domain),l=r.filter(e=>"scene"===e.domain);return{area:e,lightEntities:r,lights:n,circuits:o,scenes:l}}_getFilteredEntities(e){if("lights"===this._filter){const t=[...e.lights,...e.scenes];return t.length>0?t:null}return"circuits"===this._filter?e.circuits.length>0?e.circuits:null:e.lightEntities}_getGlobalCounts(e){let t=0,a=0,r=0,i=0;for(const{areas:s}of e)for(const{lights:e,circuits:n}of s){for(const r of e)a++,"on"===r.state?.state&&t++;for(const e of n)i++,"on"===e.state?.state&&r++}return{lightsActive:t,lightsTotal:a,circuitsActive:r,circuitsTotal:i,totalActive:t+r,totalAll:a+i}}_getGlobalCountsForLayout(){const e=this._getAreasWithLighting();return this._getGlobalCounts(e)}_getAreaLightState(e){const t=e.filter(e=>"scene"!==e.domain);if(0===t.length)return"empty";const a=t.filter(e=>"on"===e.state?.state).length;return 0===a?"off":a===t.length?"on":"mixed"}_toggleAreaLights(e){const t=e.filter(e=>"scene"!==e.domain);if(0===t.length)return;const a=t.every(e=>"on"===e.state?.state),r=a?"turn_off":"turn_on";for(const e of t)this._hass.callService("homeassistant",r,{entity_id:e.entity.entity_id});n.e.play(a?"switchToggle":"lightToggle")}render(){if(!this._hass)return e.qy``;const t=this._getAreasWithLighting();return e.qy`
+      <div class="ilm-dashboard">
+        ${t.map(({floor:t,areas:a})=>{const r=a.filter(e=>null!==this._getFilteredEntities(e));return 0===r.length?e.qy``:e.qy`
+            ${t?e.qy`
+              <div class="ilm-floor-header">
+                <span class="ilm-floor-name">${t.name||"FLOOR"}</span>
+                <span class="ilm-floor-line"></span>
+              </div>
+            `:""}
+            ${r.map(t=>{const a=this._getFilteredEntities(t);return e.qy`
+                <div class="ilm-area-section" data-area-id="${t.area.area_id}">
+                  <div class="ilm-area-header">
+                    <span class="ilm-area-name">${t.area.name}</span>
+                    <span class="ilm-area-line"></span>
+                    ${this._renderMasterToggle(a,t.area)}
                   </div>
-                `})}
-            `})}
+                  <lcars-illumination-panel
+                    .hass=${this._hass}
+                    .entities=${a}
+                    area-id="${t.area.area_id}"
+                    frame-mode="nested">
+                  </lcars-illumination-panel>
+                </div>
+              `})}
+          `})}
 
-          ${0===t.length?e.qy`
-            <div class="ilm-empty">
-              <span>NO LIGHTING DEVICES DETECTED</span>
-            </div>
-          `:""}
-        </main>
-
-        <!-- Bottom-Left Elbow -->
-        <div class="lcars-elbow-bottom" aria-hidden="true"></div>
-
-        <!-- Footer Bar -->
-        <div class="lcars-footer" role="contentinfo">
-          <div class="lcars-footer-bar"></div>
-          <span class="lcars-footer-text">LCARS ${i}</span>
-          <div class="lcars-footer-endcap"></div>
-        </div>
+        ${0===t.length?e.qy`
+          <div class="ilm-empty">
+            <span>NO LIGHTING DEVICES DETECTED</span>
+          </div>
+        `:""}
       </div>
     `}_setFilter(e){this._filter=e,n.e.play("navAcknowledge")}_renderMasterToggle(t,a){const r=this._getAreaLightState(t);if("empty"===r)return e.qy``;const i="on"===r?"ALL ON":"off"===r?"ALL OFF":"MIXED",s="on"===r;return e.qy`
       <button
@@ -14205,16 +14154,147 @@
         ${i}
       </button>
     `}static get styles(){return[t.Bx,e.AH`
+        :host { display: block; }
+        .ilm-dashboard { padding: 0.25rem; }
+
+        /* ─── Floor Header ─── */
+        .ilm-floor-header {
+          display: flex; align-items: center; gap: 0.5rem;
+          margin: 1rem 0 0.5rem 0;
+        }
+        .ilm-floor-name {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 1.25rem; color: var(--lcars-ice, #99ccff);
+          text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap;
+        }
+        .ilm-floor-line {
+          flex: 1; height: 0.375rem;
+          background: var(--lcars-ice, #99ccff);
+          border-radius: 0 1.5rem 1.5rem 0; opacity: 0.4;
+        }
+
+        /* ─── Area Section ─── */
+        .ilm-area-section { margin-bottom: 0.75rem; }
+        .ilm-area-header {
+          display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;
+        }
+        .ilm-area-name {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 1.25rem; color: var(--lcars-sunflower, #ffcc99);
+          text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;
+        }
+        .ilm-area-line {
+          flex: 1; height: 2px;
+          background: var(--lcars-sunflower, #ffcc99); opacity: 0.3;
+        }
+
+        /* ─── Master Toggle ─── */
+        .ilm-master-btn {
+          display: flex; align-items: center; gap: 0.375rem;
+          padding: 0.25rem 0.75rem; min-height: 2rem; border: none;
+          border-radius: 0 1rem 1rem 0;
+          background: rgba(102, 102, 136, 0.25);
+          color: var(--lcars-space-white, #f5f6fa);
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.875rem; text-transform: uppercase;
+          cursor: pointer; white-space: nowrap;
+          transition: background 200ms ease, color 200ms ease;
+        }
+        .ilm-master-btn:hover { filter: brightness(1.2); }
+        .ilm-master-btn:focus-visible {
+          outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px;
+        }
+        .ilm-master-btn.active {
+          background: var(--lcars-sunflower, #ffcc99);
+          color: var(--lcars-black, #000);
+        }
+        .ilm-master-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .ilm-master-dot.on { background: var(--lcars-sunflower, #ffcc99); }
+        .ilm-master-dot.off { background: var(--lcars-gray, #666688); }
+        .ilm-master-dot.mixed { background: var(--lcars-butterscotch, #ff9966); }
+
+        lcars-illumination-panel { --lcars-panel-margin: 0; }
+
+        .ilm-empty {
+          display: flex; align-items: center; justify-content: center;
+          min-height: 10rem; color: var(--lcars-gray, #666688);
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 1.25rem; text-transform: uppercase;
+        }
+      `]}}customElements.get("illumination-card")||customElements.define("illumination-card",o)})(),(()=>{var e=a(7349),t=a(2622),r=a(8851),i=a(6940);const s="all",n="lights",o="circuits";class l extends e.WF{static get properties(){return{cards:{type:Array},_hass:{type:Object},_config:{type:Object},_filter:{type:String},_siteName:{type:String},_audioMuted:{type:Boolean}}}constructor(){super(),this.cards=[],this._hass=null,this._config={},this._filter=s,this._siteName="LCARS",this._audioMuted=i.e.isMuted}setConfig(e){this._config=e}set hass(e){this._hass=e,e?.config?.location_name&&(this._siteName=e.config.location_name.toUpperCase()),this.cards&&this.cards.forEach(t=>{t&&(t.hass=e,t.filter=this._filter)})}_setFilter(e){this._filter=e,i.e.play("navAcknowledge"),this.cards&&this.cards.forEach(t=>{t&&(t.filter=e)})}_toggleMute(){i.e.toggle(),this._audioMuted=i.e.isMuted}_getCounts(){const e=this.cards?.[0];return e&&"function"==typeof e._getGlobalCountsForLayout?e._getGlobalCountsForLayout():{totalActive:0,totalAll:0,lightsActive:0,lightsTotal:0,circuitsActive:0,circuitsTotal:0}}render(){const t=this._getCounts(),r=a(8330).version;return e.qy`
+      <div class="lcars-frame">
+        <!-- Top-Left Elbow -->
+        <div class="lcars-elbow-top" aria-hidden="true"></div>
+
+        <!-- Header Bar -->
+        <div class="lcars-header" role="banner">
+          <span class="lcars-header-title">${this._siteName}</span>
+          <div class="lcars-header-bar" aria-hidden="true"></div>
+          <div class="lcars-header-endcap">
+            <button class="mute-btn"
+              role="switch"
+              aria-checked=${!this._audioMuted}
+              aria-label="Dashboard sounds"
+              @click=${()=>this._toggleMute()}>
+              <ha-icon .icon=${this._audioMuted?"mdi:volume-off":"mdi:volume-high"}></ha-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sidebar: 3 Filter Buttons -->
+        <nav class="lcars-sidebar" role="tablist" aria-label="Filter illumination devices">
+          <div class="lcars-sidebar-panel">Illumination</div>
+
+          <div class="lcars-sidebar-filters">
+            <button class="sidebar-filter-btn ${this._filter===s?"active":""}"
+                    role="tab"
+                    aria-selected="${this._filter===s?"true":"false"}"
+                    @click=${()=>this._setFilter(s)}>
+              <span class="filter-count">${t.totalActive}/${t.totalAll}</span>
+              <span class="filter-label">ALL DEVICES</span>
+            </button>
+            <button class="sidebar-filter-btn ${this._filter===n?"active":""}"
+                    role="tab"
+                    aria-selected="${this._filter===n?"true":"false"}"
+                    @click=${()=>this._setFilter(n)}>
+              <span class="filter-count">${t.lightsActive}/${t.lightsTotal}</span>
+              <span class="filter-label">LIGHTS</span>
+            </button>
+            <button class="sidebar-filter-btn ${this._filter===o?"active":""}"
+                    role="tab"
+                    aria-selected="${this._filter===o?"true":"false"}"
+                    @click=${()=>this._setFilter(o)}>
+              <span class="filter-count">${t.circuitsActive}/${t.circuitsTotal}</span>
+              <span class="filter-label">CIRCUITS</span>
+            </button>
+          </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="lcars-content" id="lcars-main-content" aria-label="Illumination dashboard">
+          ${this.cards&&this.cards.length>0?this.cards.map(t=>e.qy`${t}`):e.qy`<div class="lcars-heading">No data available</div>`}
+        </main>
+
+        <!-- Bottom-Left Elbow -->
+        <div class="lcars-elbow-bottom" aria-hidden="true"></div>
+
+        <!-- Footer Bar -->
+        <div class="lcars-footer" role="contentinfo">
+          <div class="lcars-footer-bar" aria-hidden="true"></div>
+          <span class="lcars-footer-text">LCARS ${r}</span>
+          <div class="lcars-footer-endcap" aria-hidden="true"></div>
+        </div>
+      </div>
+    `}static get styles(){return[t.Bx,e.AH`
         :host {
           display: block;
-          height: calc(100vh - 56px);
+          height: calc(100vh - var(--header-height, 0px));
           overflow: hidden;
           box-sizing: border-box;
           background: var(--lcars-bg, #000);
           padding: var(--lcars-gap, 0.25rem);
         }
 
-        /* ─── LCARS Frame Grid ─── */
         .lcars-frame {
           display: grid;
           grid-template-columns: var(--lcars-sidebar-w, 12rem) 1fr;
@@ -14225,145 +14305,122 @@
 
         /* ─── Top-Left Elbow ─── */
         .lcars-elbow-top {
-          grid-column: 1;
-          grid-row: 1;
+          grid-column: 1; grid-row: 1;
           background: var(--lcars-sunflower, #ffcc99);
           border-radius: var(--lcars-elbow-radius, 3.75rem) 0 0 0;
-          position: relative;
-          overflow: hidden;
-          display: flex;
-          align-items: flex-end;
-          padding: 0.25rem 0.5rem;
+          position: relative; overflow: hidden;
         }
         .lcars-elbow-top::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          right: 0;
+          content: ''; position: absolute; bottom: 0; right: 0;
           width: calc(var(--lcars-sidebar-w, 12rem) - var(--lcars-elbow-w, 9.5rem));
           height: calc(var(--lcars-elbow-h, 4.5rem) - var(--lcars-bar-h, 1.5rem));
           background: var(--lcars-bg, #000);
           border-radius: 1.5rem 0 0 0;
         }
-        .lcars-elbow-label {
-          font-family: var(--lcars-font, 'Antonio', sans-serif);
-          font-size: 0.75rem;
-          color: var(--lcars-black, #000);
-          text-transform: uppercase;
-          position: relative;
-          z-index: 1;
-        }
 
         /* ─── Header Bar ─── */
         .lcars-header {
-          grid-column: 2;
-          grid-row: 1;
-          display: flex;
-          align-items: flex-start;
-          gap: var(--lcars-gap, 0.25rem);
-        }
-        .lcars-header-bar {
-          flex: 1;
-          height: var(--lcars-bar-h, 1.5rem);
-          background: var(--lcars-sunflower, #ffcc99);
+          grid-column: 2; grid-row: 1;
+          display: flex; align-items: flex-start; gap: var(--lcars-gap, 0.25rem);
         }
         .lcars-header-title {
           font-family: var(--lcars-font, 'Antonio', sans-serif);
-          font-size: 1rem;
+          font-size: var(--lcars-font-size-sub, 1.25rem);
           color: var(--lcars-sunflower, #ffcc99);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
+          text-transform: uppercase; letter-spacing: 0.05em;
           white-space: nowrap;
           line-height: var(--lcars-bar-h, 1.5rem);
           padding: 0 0.5rem;
         }
+        .lcars-header-bar {
+          flex: 1; height: var(--lcars-bar-h, 1.5rem);
+          background: var(--lcars-sunflower, #ffcc99);
+        }
         .lcars-header-endcap {
-          width: var(--lcars-endcap-size, 1.5rem);
           height: var(--lcars-bar-h, 1.5rem);
           background: var(--lcars-sunflower, #ffcc99);
           border-radius: 0 var(--lcars-endcap-radius, 0.75rem) var(--lcars-endcap-radius, 0.75rem) 0;
+          display: flex; align-items: center; padding: 0 0.25rem;
+        }
+        .mute-btn {
+          background: none; border: none; cursor: pointer;
+          color: var(--lcars-black, #000); padding: 0 0.25rem;
+          display: flex; align-items: center;
+        }
+        .mute-btn:focus-visible {
+          outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px;
+        }
+        .mute-btn ha-icon { --mdc-icon-size: 18px; }
+
+        /* ─── Sidebar ─── */
+        .lcars-sidebar {
+          grid-column: 1; grid-row: 2;
+          display: flex; flex-direction: column;
+          gap: var(--lcars-gap, 0.25rem);
+          overflow: hidden;
+        }
+        .lcars-sidebar-panel {
+          background: var(--lcars-african-violet, #cc99ff);
+          color: var(--lcars-black, #000);
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: var(--lcars-font-size-data, 0.875rem);
+          text-transform: uppercase;
+          padding: 0.25rem 0.5rem;
+          text-align: right;
+          border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 var(--lcars-btn-radius, 1.5rem);
           flex-shrink: 0;
         }
 
-        /* ─── Sidebar: 3 Filter Buttons ─── */
-        .lcars-sidebar {
-          grid-column: 1;
-          grid-row: 2;
-          display: flex;
-          flex-direction: column;
+        /* ─── 3 Filter Buttons ─── */
+        .lcars-sidebar-filters {
+          display: flex; flex-direction: column;
           gap: var(--lcars-gap, 0.25rem);
-          padding-right: var(--lcars-gap, 0.25rem);
-        }
-
-        .ilm-sidebar-btn {
           flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 0.25rem;
-          border: none;
+        }
+        .sidebar-filter-btn {
+          flex: 1;
+          display: flex; flex-direction: column;
+          align-items: center; justify-content: center;
+          gap: 0.5rem; border: none;
           border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 var(--lcars-btn-radius, 1.5rem);
           background: var(--lcars-african-violet, #cc99ff);
           color: var(--lcars-black, #000);
           font-family: var(--lcars-font, 'Antonio', sans-serif);
-          text-transform: uppercase;
-          cursor: pointer;
-          transition: background 200ms ease, color 200ms ease;
+          text-transform: uppercase; cursor: pointer;
+          transition: background 200ms ease;
           padding: 0.5rem;
-          min-width: 0;
+        }
+        .sidebar-filter-btn:hover { filter: brightness(1.2); }
+        .sidebar-filter-btn:focus-visible {
+          outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px;
+        }
+        .sidebar-filter-btn.active { background: var(--lcars-gold, #ffaa00); }
+
+        .filter-count {
+          font-size: 2.5rem; font-variant-numeric: tabular-nums; line-height: 1;
+        }
+        .filter-label {
+          font-size: 1rem; letter-spacing: 0.05em; text-align: center;
         }
 
-        .ilm-sidebar-btn:hover {
-          filter: brightness(1.2);
-        }
-
-        .ilm-sidebar-btn:focus-visible {
-          outline: 2px solid var(--lcars-ice, #99ccff);
-          outline-offset: 2px;
-        }
-
-        .ilm-sidebar-btn.active {
-          background: var(--lcars-gold, #ffaa00);
-        }
-
-        .ilm-sidebar-count {
-          font-size: 2rem;
-          font-variant-numeric: tabular-nums;
-          line-height: 1;
-        }
-
-        .ilm-sidebar-label {
-          font-size: 0.875rem;
-          letter-spacing: 0.05em;
-          text-align: center;
-        }
-
-        /* ─── Content Area ─── */
+        /* ─── Content ─── */
         .lcars-content {
-          grid-column: 2;
-          grid-row: 2;
-          overflow-y: auto;
-          overflow-x: hidden;
-          padding: 0.25rem 0.5rem;
+          grid-column: 2; grid-row: 2;
+          overflow-y: auto; overflow-x: hidden;
+          padding: 0.5rem;
           scrollbar-width: thin;
           scrollbar-color: var(--lcars-gray, #666688) transparent;
         }
 
         /* ─── Bottom-Left Elbow ─── */
         .lcars-elbow-bottom {
-          grid-column: 1;
-          grid-row: 3;
+          grid-column: 1; grid-row: 3;
           background: var(--lcars-african-violet, #cc99ff);
           border-radius: 0 0 0 var(--lcars-elbow-radius, 3.75rem);
-          position: relative;
-          overflow: hidden;
+          position: relative; overflow: hidden;
         }
         .lcars-elbow-bottom::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          right: 0;
+          content: ''; position: absolute; top: 0; right: 0;
           width: calc(var(--lcars-sidebar-w, 12rem) - var(--lcars-elbow-w, 9.5rem));
           height: calc(var(--lcars-elbow-h, 4.5rem) - var(--lcars-bar-h, 1.5rem));
           background: var(--lcars-bg, #000);
@@ -14372,132 +14429,24 @@
 
         /* ─── Footer Bar ─── */
         .lcars-footer {
-          grid-column: 2;
-          grid-row: 3;
-          display: flex;
-          align-items: flex-end;
-          gap: var(--lcars-gap, 0.25rem);
+          grid-column: 2; grid-row: 3;
+          display: flex; align-items: flex-end; gap: var(--lcars-gap, 0.25rem);
         }
         .lcars-footer-bar {
-          flex: 1;
-          height: var(--lcars-bar-h, 1.5rem);
+          flex: 1; height: var(--lcars-bar-h, 1.5rem);
           background: var(--lcars-african-violet, #cc99ff);
         }
         .lcars-footer-text {
           font-family: var(--lcars-font, 'Antonio', sans-serif);
-          font-size: 0.75rem;
-          color: var(--lcars-african-violet, #cc99ff);
-          text-transform: uppercase;
-          white-space: nowrap;
-          line-height: var(--lcars-bar-h, 1.5rem);
-          padding: 0 0.5rem;
+          font-size: 0.75rem; color: var(--lcars-african-violet, #cc99ff);
+          text-transform: uppercase; white-space: nowrap;
+          line-height: var(--lcars-bar-h, 1.5rem); padding: 0 0.5rem;
         }
         .lcars-footer-endcap {
-          width: var(--lcars-endcap-size, 1.5rem);
-          height: var(--lcars-bar-h, 1.5rem);
+          width: var(--lcars-endcap-size, 1.5rem); height: var(--lcars-bar-h, 1.5rem);
           background: var(--lcars-african-violet, #cc99ff);
           border-radius: 0 var(--lcars-endcap-radius, 0.75rem) var(--lcars-endcap-radius, 0.75rem) 0;
           flex-shrink: 0;
-        }
-
-        /* ─── Floor Header ─── */
-        .ilm-floor-header {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          margin: 1rem 0 0.5rem 0;
-        }
-        .ilm-floor-name {
-          font-family: var(--lcars-font, 'Antonio', sans-serif);
-          font-size: 1.25rem;
-          color: var(--lcars-ice, #99ccff);
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          white-space: nowrap;
-        }
-        .ilm-floor-line {
-          flex: 1;
-          height: 0.375rem;
-          background: var(--lcars-ice, #99ccff);
-          border-radius: 0 1.5rem 1.5rem 0;
-          opacity: 0.4;
-        }
-
-        /* ─── Area Section ─── */
-        .ilm-area-section {
-          margin-bottom: 0.75rem;
-        }
-        .ilm-area-header {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          margin-bottom: 0.25rem;
-        }
-        .ilm-area-name {
-          font-family: var(--lcars-font, 'Antonio', sans-serif);
-          font-size: 1.25rem;
-          color: var(--lcars-sunflower, #ffcc99);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          white-space: nowrap;
-        }
-        .ilm-area-line {
-          flex: 1;
-          height: 2px;
-          background: var(--lcars-sunflower, #ffcc99);
-          opacity: 0.3;
-        }
-
-        /* ─── Master Toggle ─── */
-        .ilm-master-btn {
-          display: flex;
-          align-items: center;
-          gap: 0.375rem;
-          padding: 0.25rem 0.75rem;
-          min-height: 2rem;
-          border: none;
-          border-radius: 0 1rem 1rem 0;
-          background: rgba(102, 102, 136, 0.25);
-          color: var(--lcars-space-white, #f5f6fa);
-          font-family: var(--lcars-font, 'Antonio', sans-serif);
-          font-size: 0.875rem;
-          text-transform: uppercase;
-          cursor: pointer;
-          white-space: nowrap;
-          transition: background 200ms ease, color 200ms ease;
-        }
-        .ilm-master-btn:hover { filter: brightness(1.2); }
-        .ilm-master-btn:focus-visible {
-          outline: 2px solid var(--lcars-ice, #99ccff);
-          outline-offset: 2px;
-        }
-        .ilm-master-btn.active {
-          background: var(--lcars-sunflower, #ffcc99);
-          color: var(--lcars-black, #000);
-        }
-        .ilm-master-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          flex-shrink: 0;
-        }
-        .ilm-master-dot.on { background: var(--lcars-sunflower, #ffcc99); }
-        .ilm-master-dot.off { background: var(--lcars-gray, #666688); }
-        .ilm-master-dot.mixed { background: var(--lcars-butterscotch, #ff9966); }
-
-        /* ─── Nested panels ─── */
-        lcars-illumination-panel { --lcars-panel-margin: 0; }
-
-        /* ─── Empty State ─── */
-        .ilm-empty {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 10rem;
-          color: var(--lcars-gray, #666688);
-          font-family: var(--lcars-font, 'Antonio', sans-serif);
-          font-size: 1.25rem;
-          text-transform: uppercase;
         }
 
         /* ─── Mobile ─── */
@@ -14509,20 +14458,19 @@
           .lcars-elbow-top, .lcars-elbow-bottom { display: none; }
           .lcars-header { grid-column: 1; grid-row: 1; }
           .lcars-sidebar {
-            grid-column: 1;
-            grid-row: 2;
+            grid-column: 1; grid-row: 2;
             flex-direction: row;
-            padding-right: 0;
           }
-          .ilm-sidebar-btn {
-            border-radius: 0;
-            min-height: 3rem;
+          .lcars-sidebar-panel { display: none; }
+          .lcars-sidebar-filters { flex-direction: row; }
+          .sidebar-filter-btn {
+            border-radius: 0; min-height: 3.5rem;
           }
-          .ilm-sidebar-btn:first-child { border-radius: 1rem 0 0 1rem; }
-          .ilm-sidebar-btn:last-child { border-radius: 0 1rem 1rem 0; }
-          .ilm-sidebar-count { font-size: 1.25rem; }
-          .ilm-sidebar-label { font-size: 0.75rem; }
+          .sidebar-filter-btn:first-child { border-radius: 1rem 0 0 1rem; }
+          .sidebar-filter-btn:last-child { border-radius: 0 1rem 1rem 0; }
+          .filter-count { font-size: 1.5rem; }
+          .filter-label { font-size: 0.75rem; }
           .lcars-content { grid-column: 1; grid-row: 3; }
           .lcars-footer { grid-column: 1; grid-row: 4; }
         }
-      `]}}customElements.get("illumination-card")||customElements.define("illumination-card",d)})()})();
+      `]}}Promise.race([customElements.whenDefined("hui-masonry-view"),new Promise(e=>setTimeout(e,5e3))]).then(()=>{customElements.get("lcars-illumination-layout")||(customElements.define("lcars-illumination-layout",l),r.g0.info("IlluminationLayout","Illumination layout registered"))})})()})();

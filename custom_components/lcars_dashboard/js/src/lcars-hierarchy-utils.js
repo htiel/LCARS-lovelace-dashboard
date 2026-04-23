@@ -15,12 +15,11 @@
 export function getFloors(hass) {
   if (!hass?.floors) return [];
   return Object.values(hass.floors).sort((a, b) => {
+    const aOrder = a.sort_order ?? 999;
+    const bOrder = b.sort_order ?? 999;
+    if (aOrder !== bOrder) return aOrder - bOrder;
     const aId = a.floor_id || '';
     const bId = b.floor_id || '';
-    // Numeric sort if both are numeric, otherwise alphabetical
-    const aNum = parseInt(aId, 10);
-    const bNum = parseInt(bId, 10);
-    if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
     return aId.localeCompare(bId);
   });
 }
@@ -56,9 +55,14 @@ export function getAreasByFloor(hass) {
     result.get(floorId).push(area);
   }
 
-  // Sort areas within each floor by name
+  // Sort areas within each floor by HA sort_order (user-configured), fallback to name
   for (const [, areaList] of result) {
-    areaList.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    areaList.sort((a, b) => {
+      const aOrder = a.sort_order ?? 999;
+      const bOrder = b.sort_order ?? 999;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return (a.name || '').localeCompare(b.name || '');
+    });
   }
 
   return result;

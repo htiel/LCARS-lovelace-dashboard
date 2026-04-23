@@ -326,7 +326,7 @@ class LcarsIlluminationCard extends LitElement {
       css`
         :host {
           display: block;
-          height: calc(100vh - var(--header-height, 0px));
+          height: 100%;
           overflow: hidden;
           box-sizing: border-box;
           background: var(--lcars-bg, #000);

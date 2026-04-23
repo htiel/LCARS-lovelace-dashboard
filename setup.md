@@ -122,7 +122,43 @@ LCARS-lovelace-dashboard/
 | `npm run build` | `custom_components/lcars_dashboard/js/` | Production webpack build → `lcars-dashboard.js` |
 | `npm run watch` | `custom_components/lcars_dashboard/js/` | Dev mode with file watching |
 
-The webpack config bundles all entry points into a single `lcars-dashboard.js` file (~566 KiB).
+The webpack config bundles all entry points into a single `lcars-dashboard.js` file (~779 KiB).
+
+---
+
+## Testing (Local Deploy)
+
+For iterative testing without HACS releases, copy built files to the HA config repo:
+
+```powershell
+# Build
+cd custom_components\lcars_dashboard\js
+npm run build
+
+# Copy to HA config repo
+$src = "C:\Users\leith\LocalRepros\LCARS-lovelace-dashboard\custom_components\lcars_dashboard"
+$dst = "C:\Users\leith\LocalRepros\HomeAssistantConfig\custom_components\lcars_dashboard"
+Copy-Item "$src\js\lcars-dashboard.js" "$dst\js\" -Force
+Copy-Item "$src\const.py" "$dst\" -Force
+Copy-Item "$src\manifest.json" "$dst\" -Force
+Copy-Item "$src\config_flow.py" "$dst\" -Force
+Copy-Item "$src\load_dashboard.py" "$dst\" -Force
+Copy-Item "$src\lovelace\ui-lovelace-lighting.yaml" "$dst\lovelace\" -Force
+```
+
+Then sync the HA config repo to the server. **JS-only changes**: browser hard-refresh (Ctrl+Shift+R). **Python changes**: HA restart required.
+
+## Releasing (HACS)
+
+When ready for public testing, publish a GitHub pre-release:
+
+```powershell
+# Bump version in const.py, manifest.json, package.json
+# Build, commit, tag, push
+git tag v5.0.0-beta.N
+git push origin 5.0 --tags
+gh release create v5.0.0-beta.N --target 5.0 --prerelease --title "v5.0.0-beta.N" --notes "..."
+```
 
 ---
 
@@ -159,7 +195,7 @@ The webpack config bundles all entry points into a single `lcars-dashboard.js` f
 
 ## Current Version
 
-- **Integration**: v4.17.0
+- **Integration**: v5.0.0-beta.1 (5.0 branch) / v4.23.0 (stable, 4.0 branch)
 - **HA minimum**: 2025.4.0
-- **Architecture**: LitElement v2 web components, 10 extracted panel elements + shared base class, Webpack 5, single-bundle HACS distribution
-- **Bundle size**: ~566 KiB (production, minified)
+- **Architecture**: LitElement v2 web components, multi-dashboard (Habitat + Illumination), 10+ extracted panel elements + shared base class, Webpack 5, single-bundle HACS distribution
+- **Bundle size**: ~779 KiB (production, minified)

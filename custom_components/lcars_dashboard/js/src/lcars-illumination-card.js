@@ -347,7 +347,10 @@ class LcarsIlluminationCard extends LitElement {
         .ilm-area-line {
           flex: 1; height: 2px;
           background: var(--lcars-sunflower, #ffcc99); opacity: 0.3;
+          order: 1;
         }
+        .ilm-master-btn { order: 2; }
+        .ilm-scene-strip { order: 3; }
 
         /* ─── Master Toggle ─── */
         .ilm-master-btn {

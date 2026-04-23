@@ -179,7 +179,7 @@ class LcarsIlluminationLayout extends LitElement {
           width: calc(var(--lcars-sidebar-w, 12rem) - var(--lcars-elbow-w, 9.5rem));
           height: calc(var(--lcars-elbow-h, 4.5rem) - var(--lcars-bar-h, 1.5rem));
           background: var(--lcars-bg, #000);
-          border-radius: 1.5rem 0 0 0;
+          border-radius: 0 1.5rem 0 0;
         }
 
         /* ─── Header Bar ─── */
@@ -285,7 +285,7 @@ class LcarsIlluminationLayout extends LitElement {
           width: calc(var(--lcars-sidebar-w, 12rem) - var(--lcars-elbow-w, 9.5rem));
           height: calc(var(--lcars-elbow-h, 4.5rem) - var(--lcars-bar-h, 1.5rem));
           background: var(--lcars-bg, #000);
-          border-radius: 0 0 0 1.5rem;
+          border-radius: 0 0 1.5rem 0;
         }
 
         /* ─── Footer Bar ─── */

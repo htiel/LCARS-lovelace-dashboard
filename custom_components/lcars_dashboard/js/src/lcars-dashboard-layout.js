@@ -305,7 +305,7 @@ class LcarsDashboardLayout extends LitElement {
           width: calc(var(--lcars-sidebar-w) - var(--lcars-elbow-w));
           height: calc(var(--lcars-elbow-h) - var(--lcars-bar-h));
           background: var(--lcars-bg);
-          border-radius: 1.5rem 0 0 0;
+          border-radius: 0 1.5rem 0 0;
         }
 
         /* ─── Header Bar ─── */
@@ -539,7 +539,7 @@ class LcarsDashboardLayout extends LitElement {
           width: calc(var(--lcars-sidebar-w) - var(--lcars-elbow-w));
           height: calc(var(--lcars-elbow-h) - var(--lcars-bar-h));
           background: var(--lcars-bg);
-          border-radius: 0 0 0 1.5rem;
+          border-radius: 0 0 1.5rem 0;
         }
 
         /* ─── Footer Bar ─── */

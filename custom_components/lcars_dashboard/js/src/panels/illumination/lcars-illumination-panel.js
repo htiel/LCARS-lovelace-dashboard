@@ -444,8 +444,8 @@ class LcarsIlluminationPanel extends LitElement {
         :host { display: block; }
 
         .ilm-devices {
-          display: flex;
-          flex-direction: column;
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
           gap: 0.375rem;
         }
 
@@ -463,7 +463,7 @@ class LcarsIlluminationPanel extends LitElement {
           font-size: 1rem;
           text-transform: uppercase;
           cursor: pointer;
-          border: none;
+          border: 1px solid rgba(255, 204, 153, 0.2);
           transition: filter 200ms ease;
           width: 100%;
           text-align: left;
@@ -479,6 +479,7 @@ class LcarsIlluminationPanel extends LitElement {
         .ilm-pill.off {
           background: var(--lcars-gray, #666688);
           color: var(--lcars-space-white, #f5f6fa);
+          border-color: rgba(102, 102, 136, 0.3);
           animation: standbyPulse 4s ease-in-out infinite;
         }
 
@@ -536,6 +537,9 @@ class LcarsIlluminationPanel extends LitElement {
           display: flex;
           flex-direction: column;
           gap: 0.25rem;
+          border: 1px solid rgba(255, 204, 153, 0.15);
+          border-radius: 0.5rem;
+          padding: 0.375rem;
         }
 
         .ilm-dimmer__header {
@@ -570,6 +574,9 @@ class LcarsIlluminationPanel extends LitElement {
           display: flex;
           flex-direction: column;
           gap: 0.25rem;
+          border: 1px solid rgba(255, 204, 153, 0.15);
+          border-radius: 0.5rem;
+          padding: 0.375rem;
         }
 
         .ilm-full__controls {

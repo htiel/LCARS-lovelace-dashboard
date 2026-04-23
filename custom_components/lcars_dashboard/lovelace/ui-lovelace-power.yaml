@@ -1,0 +1,8 @@
+# LCARS Engineering Dashboard — Lovelace YAML configuration
+views:
+  - title: Engineering
+    icon: mdi:flash
+    path: home
+    type: custom:lcars-engineering-layout
+    cards:
+      - type: custom:engineering-card

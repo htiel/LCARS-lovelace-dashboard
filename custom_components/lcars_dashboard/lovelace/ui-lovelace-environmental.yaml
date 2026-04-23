@@ -1,0 +1,8 @@
+# LCARS Life Support Dashboard — Lovelace YAML configuration
+views:
+  - title: Life Support
+    icon: mdi:thermometer
+    path: home
+    type: custom:lcars-lifesupport-layout
+    cards:
+      - type: custom:lifesupport-card

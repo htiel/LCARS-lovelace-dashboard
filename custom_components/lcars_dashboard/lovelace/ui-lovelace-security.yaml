@@ -1,0 +1,8 @@
+# LCARS Tactical Dashboard — Lovelace YAML configuration
+views:
+  - title: Tactical
+    icon: mdi:shield
+    path: home
+    type: custom:lcars-tactical-layout
+    cards:
+      - type: custom:tactical-card

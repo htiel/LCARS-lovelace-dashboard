@@ -30,6 +30,12 @@ module.exports = {
     './src/lcars-internal-sensors-grid.js',  // 4X-2: Temp/Humidity Grid
     './src/lcars-illumination-card.js',      // 5X-2.5: Illumination Dashboard
     './src/lcars-illumination-layout.js',    // 5X-2.5: Illumination Layout (filter sidebar)
+    './src/lcars-tactical-card.js',          // 5X-2.2: Tactical (Security) Dashboard
+    './src/lcars-tactical-layout.js',        // 5X-2.2: Tactical Layout
+    './src/lcars-engineering-card.js',       // 5X-2.3: Engineering (Power) Dashboard
+    './src/lcars-engineering-layout.js',     // 5X-2.3: Engineering Layout
+    './src/lcars-lifesupport-card.js',       // 5X-2.4: Life Support (Environmental) Dashboard
+    './src/lcars-lifesupport-layout.js',     // 5X-2.4: Life Support Layout
   ],
   mode: 'production',
   output: {

@@ -1263,7 +1263,7 @@
           text-transform: uppercase;
           text-align: right;
           flex-shrink: 0;
-          border-radius: var(--lcars-btn-radius) 0 0 0;
+          border-radius: 0 0 0 var(--lcars-btn-radius);
         }
 
         /* ─── Sidebar Area Buttons ─── */
@@ -1290,7 +1290,7 @@
           flex: 1 0 0px;
           min-height: 0;
           background: var(--lcars-gray);
-          border-radius: var(--lcars-btn-radius) 0 0 var(--lcars-btn-radius);
+          border-radius: var(--lcars-btn-radius) 0 0 0;
           width: calc(100% - 0.25rem);
         }
 
@@ -14288,6 +14288,7 @@
               <span class="filter-label">CIRCUITS</span>
             </button>
           </div>
+          <div class="lcars-sidebar-filler" aria-hidden="true"></div>
         </nav>
 
         <!-- Main Content -->
@@ -14418,6 +14419,14 @@
 
         .filter-label {
           font-size: 1.25rem; letter-spacing: 0.08em; text-align: center;
+        }
+
+        /* ─── Sidebar Filler ─── */
+        .lcars-sidebar-filler {
+          flex: 1 0 0px;
+          min-height: 0;
+          background: var(--lcars-gray, #666688);
+          border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 0;
         }
 
         /* ─── Content ─── */

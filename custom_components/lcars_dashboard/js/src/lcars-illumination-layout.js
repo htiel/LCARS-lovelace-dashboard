@@ -134,6 +134,7 @@ class LcarsIlluminationLayout extends LitElement {
               <span class="filter-label">CIRCUITS</span>
             </button>
           </div>
+          <div class="lcars-sidebar-filler" aria-hidden="true"></div>
         </nav>
 
         <!-- Main Content -->
@@ -272,6 +273,14 @@ class LcarsIlluminationLayout extends LitElement {
 
         .filter-label {
           font-size: 1.25rem; letter-spacing: 0.08em; text-align: center;
+        }
+
+        /* ─── Sidebar Filler ─── */
+        .lcars-sidebar-filler {
+          flex: 1 0 0px;
+          min-height: 0;
+          background: var(--lcars-gray, #666688);
+          border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 0;
         }
 
         /* ─── Content ─── */

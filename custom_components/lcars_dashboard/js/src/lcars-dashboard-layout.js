@@ -391,7 +391,7 @@ class LcarsDashboardLayout extends LitElement {
           text-transform: uppercase;
           text-align: right;
           flex-shrink: 0;
-          border-radius: var(--lcars-btn-radius) 0 0 0;
+          border-radius: 0 0 0 var(--lcars-btn-radius);
         }
 
         /* ─── Sidebar Area Buttons ─── */
@@ -418,7 +418,7 @@ class LcarsDashboardLayout extends LitElement {
           flex: 1 0 0px;
           min-height: 0;
           background: var(--lcars-gray);
-          border-radius: var(--lcars-btn-radius) 0 0 var(--lcars-btn-radius);
+          border-radius: var(--lcars-btn-radius) 0 0 0;
           width: calc(100% - 0.25rem);
         }
 

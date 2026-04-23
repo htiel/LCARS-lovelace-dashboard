@@ -14367,7 +14367,7 @@
           text-transform: uppercase;
           padding: 0.25rem 0.5rem;
           text-align: right;
-          border-radius: 0 var(--lcars-btn-radius, 1.5rem) var(--lcars-btn-radius, 1.5rem) 0;
+          border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 var(--lcars-btn-radius, 1.5rem);
           flex-shrink: 0;
         }
 
@@ -14382,7 +14382,7 @@
           display: flex; flex-direction: column;
           align-items: center; justify-content: center;
           gap: 0.5rem; border: none;
-          border-radius: 0 var(--lcars-btn-radius, 1.5rem) var(--lcars-btn-radius, 1.5rem) 0;
+          border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 var(--lcars-btn-radius, 1.5rem);
           background: var(--lcars-african-violet, #cc99ff);
           color: var(--lcars-black, #000);
           font-family: var(--lcars-font, 'Antonio', sans-serif);

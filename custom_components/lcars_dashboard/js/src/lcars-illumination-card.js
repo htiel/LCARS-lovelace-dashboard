@@ -1,12 +1,11 @@
 /**
  * lcars-illumination-card.js
  *
- * Illumination Dashboard — standalone Lovelace card showing all lighting,
- * switches, and covers across all areas, grouped by floor → area.
+ * Illumination Dashboard — standalone Lovelace card showing all lighting
+ * and switches across all areas, grouped by floor → area.
  *
- * Thin orchestrator: reuses <lcars-illumination-panel> and <lcars-viewport-panel>
- * for per-area rendering. Adds global summary bar, floor headers, and
- * master toggle per area.
+ * Three filter modes: ALL DEVICES, LIGHTS (dimmable), CIRCUITS (switches).
+ * Reuses <lcars-illumination-panel> for per-area rendering.
  *
  * v5.0.0 — 5X-2.5 Lighting Dashboard
  */
@@ -15,15 +14,17 @@ import { getHass, lcarsLog } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
-import { isLightingEntity, isViewportEntity, isDiagnosticEntity } from './lcars-entity-utils.js';
+import { isLightingEntity, isDiagnosticEntity } from './lcars-entity-utils.js';
 import { lcarsAudio } from './lcars-audio.js';
 
 // Side-effect: register panel custom elements
 import './panels/illumination/lcars-illumination-panel.js';
-import './panels/viewport/lcars-viewport-panel.js';
 import './components/lcars-summary-badge/lcars-summary-badge.js';
 
 const TAG = 'IlluminationCard';
+const FILTER_ALL = 'all';
+const FILTER_LIGHTS = 'lights';
+const FILTER_CIRCUITS = 'circuits';
 
 class LcarsIlluminationCard extends LitElement {
 
@@ -31,6 +32,7 @@ class LcarsIlluminationCard extends LitElement {
     return {
       hass: { type: Object },
       _config: { type: Object },
+      _filter: { type: String },
     };
   }
 
@@ -38,6 +40,7 @@ class LcarsIlluminationCard extends LitElement {
     super();
     this.hass = null;
     this._config = {};
+    this._filter = FILTER_ALL;
     this._entityCache = new Map();
   }
 
@@ -107,43 +110,67 @@ class LcarsIlluminationCard extends LitElement {
       hydrated.push(entry);
     }
 
+    // Lighting entities (lights + lighting switches) and scenes
     const lightEntities = hydrated.filter(e => isLightingEntity(e) || e.domain === 'scene');
-    const viewportEntities = hydrated.filter(e => isViewportEntity(e));
+    if (lightEntities.length === 0) return null;
 
-    if (lightEntities.length === 0 && viewportEntities.length === 0) return null;
+    // Pre-partition for filter counts
+    const lights = lightEntities.filter(e => e.domain === 'light');
+    const circuits = lightEntities.filter(e => e.domain !== 'light' && e.domain !== 'scene');
+    const scenes = lightEntities.filter(e => e.domain === 'scene');
 
-    return { area, lightEntities, viewportEntities, allHydrated: hydrated };
+    return { area, lightEntities, lights, circuits, scenes };
+  }
+
+  /* ─── Filtering ─── */
+
+  _getFilteredEntities(areaData) {
+    if (this._filter === FILTER_LIGHTS) {
+      // Dimmable lights + scenes only
+      const filtered = [...areaData.lights, ...areaData.scenes];
+      return filtered.length > 0 ? filtered : null;
+    }
+    if (this._filter === FILTER_CIRCUITS) {
+      // Circuits (switches) only — no scenes
+      return areaData.circuits.length > 0 ? areaData.circuits : null;
+    }
+    // ALL — everything
+    return areaData.lightEntities;
   }
 
   /* ─── Summary counts ─── */
 
   _getGlobalCounts(floorGroups) {
-    let totalActive = 0;
-    let totalAll = 0;
-    let coversOpen = 0;
-    let coversTotal = 0;
+    let lightsActive = 0;
+    let lightsTotal = 0;
+    let circuitsActive = 0;
+    let circuitsTotal = 0;
 
     for (const { areas } of floorGroups) {
-      for (const { lightEntities, viewportEntities } of areas) {
-        for (const e of lightEntities) {
-          if (e.domain === 'scene') continue;
-          totalAll++;
-          if (e.state?.state === 'on') totalActive++;
+      for (const { lights, circuits } of areas) {
+        for (const e of lights) {
+          lightsTotal++;
+          if (e.state?.state === 'on') lightsActive++;
         }
-        for (const e of viewportEntities) {
-          coversTotal++;
-          if (e.state?.state === 'open') coversOpen++;
+        for (const e of circuits) {
+          circuitsTotal++;
+          if (e.state?.state === 'on') circuitsActive++;
         }
       }
     }
 
-    return { totalActive, totalAll, coversOpen, coversTotal };
+    return {
+      lightsActive, lightsTotal,
+      circuitsActive, circuitsTotal,
+      totalActive: lightsActive + circuitsActive,
+      totalAll: lightsTotal + circuitsTotal,
+    };
   }
 
   /* ─── Master toggle ─── */
 
-  _getAreaLightState(lightEntities) {
-    const toggleable = lightEntities.filter(e => e.domain !== 'scene');
+  _getAreaLightState(entities) {
+    const toggleable = entities.filter(e => e.domain !== 'scene');
     if (toggleable.length === 0) return 'empty';
     const onCount = toggleable.filter(e => e.state?.state === 'on').length;
     if (onCount === 0) return 'off';
@@ -151,15 +178,14 @@ class LcarsIlluminationCard extends LitElement {
     return 'mixed';
   }
 
-  _toggleAreaLights(lightEntities) {
-    const toggleable = lightEntities.filter(e => e.domain !== 'scene');
+  _toggleAreaLights(entities) {
+    const toggleable = entities.filter(e => e.domain !== 'scene');
     if (toggleable.length === 0) return;
     const allOn = toggleable.every(e => e.state?.state === 'on');
     const service = allOn ? 'turn_off' : 'turn_on';
-    const domain = 'homeassistant';
 
     for (const e of toggleable) {
-      this._hass.callService(domain, service, { entity_id: e.entity.entity_id });
+      this._hass.callService('homeassistant', service, { entity_id: e.entity.entity_id });
     }
     lcarsAudio.play(allOn ? 'switchToggle' : 'lightToggle');
   }
@@ -170,67 +196,70 @@ class LcarsIlluminationCard extends LitElement {
     if (!this._hass) return html``;
 
     const floorGroups = this._getAreasWithLighting();
-    const { totalActive, totalAll, coversOpen, coversTotal } = this._getGlobalCounts(floorGroups);
+    const counts = this._getGlobalCounts(floorGroups);
 
     return html`
       <div class="ilm-dashboard" role="main" aria-label="Illumination dashboard">
 
-        <!-- Global Summary Bar -->
-        <div class="ilm-summary" role="status" aria-live="polite"
-             aria-label="${totalActive} lights active of ${totalAll} total">
-          <div class="ilm-summary-label">ILLUMINATION STATUS</div>
-          <div class="ilm-summary-values">
-            <span class="ilm-summary-active">${totalActive}</span>
-            <span class="ilm-summary-sep">ACTIVE /</span>
-            <span class="ilm-summary-total">${totalAll}</span>
-            <span class="ilm-summary-sep">TOTAL</span>
-            ${coversTotal > 0 ? html`
-              <span class="ilm-summary-divider">·</span>
-              <span class="ilm-summary-covers">${coversOpen} COVERS OPEN</span>
-            ` : ''}
-          </div>
+        <!-- Filter Buttons -->
+        <div class="ilm-filter-bar" role="tablist" aria-label="Filter illumination devices">
+          <button class="ilm-filter-btn ${this._filter === FILTER_ALL ? 'active' : ''}"
+                  role="tab"
+                  aria-selected="${this._filter === FILTER_ALL ? 'true' : 'false'}"
+                  @click=${() => this._setFilter(FILTER_ALL)}>
+            <span class="ilm-filter-count">${counts.totalActive}/${counts.totalAll}</span>
+            <span class="ilm-filter-label">ALL DEVICES</span>
+          </button>
+          <button class="ilm-filter-btn ${this._filter === FILTER_LIGHTS ? 'active' : ''}"
+                  role="tab"
+                  aria-selected="${this._filter === FILTER_LIGHTS ? 'true' : 'false'}"
+                  @click=${() => this._setFilter(FILTER_LIGHTS)}>
+            <span class="ilm-filter-count">${counts.lightsActive}/${counts.lightsTotal}</span>
+            <span class="ilm-filter-label">LIGHTS</span>
+          </button>
+          <button class="ilm-filter-btn ${this._filter === FILTER_CIRCUITS ? 'active' : ''}"
+                  role="tab"
+                  aria-selected="${this._filter === FILTER_CIRCUITS ? 'true' : 'false'}"
+                  @click=${() => this._setFilter(FILTER_CIRCUITS)}>
+            <span class="ilm-filter-count">${counts.circuitsActive}/${counts.circuitsTotal}</span>
+            <span class="ilm-filter-label">CIRCUITS</span>
+          </button>
         </div>
 
         <!-- Floor → Area sections -->
-        ${floorGroups.map(({ floor, areas }) => html`
-          ${floor ? html`
-            <div class="ilm-floor-header">
-              <span class="ilm-floor-name">${floor.name || 'FLOOR'}</span>
-              <span class="ilm-floor-line"></span>
-            </div>
-          ` : ''}
-          ${areas.map(({ area, lightEntities, viewportEntities, allHydrated }) => html`
-            <div class="ilm-area-section" data-area-id="${area.area_id}">
+        ${floorGroups.map(({ floor, areas }) => {
+          // Filter areas for current mode
+          const visibleAreas = areas.filter(a => this._getFilteredEntities(a) !== null);
+          if (visibleAreas.length === 0) return html``;
 
-              <!-- Area header with master toggle -->
-              <div class="ilm-area-header">
-                <span class="ilm-area-name">${area.name}</span>
-                <span class="ilm-area-line"></span>
-                ${this._renderMasterToggle(lightEntities, area)}
+          return html`
+            ${floor ? html`
+              <div class="ilm-floor-header">
+                <span class="ilm-floor-name">${floor.name || 'FLOOR'}</span>
+                <span class="ilm-floor-line"></span>
               </div>
+            ` : ''}
+            ${visibleAreas.map(areaData => {
+              const filtered = this._getFilteredEntities(areaData);
+              return html`
+                <div class="ilm-area-section" data-area-id="${areaData.area.area_id}">
+                  <div class="ilm-area-header">
+                    <span class="ilm-area-name">${areaData.area.name}</span>
+                    <span class="ilm-area-line"></span>
+                    ${this._renderMasterToggle(filtered, areaData.area)}
+                  </div>
 
-              <!-- Illumination panel (lights, scenes, circuits) -->
-              ${lightEntities.length > 0 ? html`
-                <lcars-illumination-panel
-                  .hass=${this._hass}
-                  .entities=${lightEntities}
-                  area-id="${area.area_id}"
-                  frame-mode="nested">
-                </lcars-illumination-panel>
-              ` : ''}
-
-              <!-- Viewport panel (covers/blinds) -->
-              ${viewportEntities.length > 0 ? html`
-                <lcars-viewport-panel
-                  .hass=${this._hass}
-                  .entities=${viewportEntities}
-                  area-id="${area.area_id}"
-                  frame-mode="nested">
-                </lcars-viewport-panel>
-              ` : ''}
-            </div>
-          `)}
-        `)}
+                  <lcars-illumination-panel
+                    .hass=${this._hass}
+                    .entities=${filtered}
+                    area-id="${areaData.area.area_id}"
+                    frame-mode="nested">
+                  </lcars-illumination-panel>
+                </div>
+              `;
+            })}
+          `;
+        })}
 
         ${floorGroups.length === 0 ? html`
           <div class="ilm-empty">
@@ -241,8 +270,13 @@ class LcarsIlluminationCard extends LitElement {
     `;
   }
 
-  _renderMasterToggle(lightEntities, area) {
-    const areaState = this._getAreaLightState(lightEntities);
+  _setFilter(filter) {
+    this._filter = filter;
+    lcarsAudio.play('navAcknowledge');
+  }
+
+  _renderMasterToggle(entities, area) {
+    const areaState = this._getAreaLightState(entities);
     if (areaState === 'empty') return html``;
 
     const label = areaState === 'on' ? 'ALL ON'
@@ -256,7 +290,7 @@ class LcarsIlluminationCard extends LitElement {
         role="switch"
         aria-checked="${isOn ? 'true' : 'false'}"
         aria-label="Toggle all lights in ${area.name}"
-        @click=${() => this._toggleAreaLights(lightEntities)}>
+        @click=${() => this._toggleAreaLights(entities)}>
         <span class="ilm-master-dot ${areaState}"></span>
         ${label}
       </button>
@@ -275,60 +309,67 @@ class LcarsIlluminationCard extends LitElement {
           padding: 0.25rem;
         }
 
-        /* ─── Summary Bar ─── */
-        .ilm-summary {
+        /* ─── Filter Bar ─── */
+        .ilm-filter-bar {
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 1rem;
-          padding: 0.5rem 0.75rem;
+          gap: 0.25rem;
           margin-bottom: 0.75rem;
-          background: rgba(102, 102, 136, 0.15);
-          border-radius: 0 1.5rem 1.5rem 0;
-          min-height: 3rem;
         }
 
-        .ilm-summary-label {
-          font-family: var(--lcars-font, 'Antonio', sans-serif);
-          font-size: 1rem;
-          color: var(--lcars-sunflower, #ffcc99);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          white-space: nowrap;
-        }
-
-        .ilm-summary-values {
+        .ilm-filter-btn {
+          flex: 1;
           display: flex;
-          align-items: baseline;
-          gap: 0.375rem;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 0.125rem;
+          padding: 0.75rem 0.5rem;
+          min-height: 4rem;
+          border: none;
+          border-radius: 0 1.5rem 1.5rem 0;
+          background: rgba(102, 102, 136, 0.2);
+          color: var(--lcars-gray, #666688);
           font-family: var(--lcars-font, 'Antonio', sans-serif);
-          font-size: 1rem;
           text-transform: uppercase;
+          cursor: pointer;
+          transition: background 200ms ease, color 200ms ease;
         }
 
-        .ilm-summary-active {
-          font-size: 1.5rem;
-          color: var(--lcars-sunflower, #ffcc99);
+        .ilm-filter-btn:first-child {
+          border-radius: 1.5rem 0 0 1.5rem;
+        }
+
+        .ilm-filter-btn:nth-child(2) {
+          border-radius: 0;
+        }
+
+        .ilm-filter-btn:hover {
+          filter: brightness(1.2);
+        }
+
+        .ilm-filter-btn:focus-visible {
+          outline: 2px solid var(--lcars-ice, #99ccff);
+          outline-offset: 2px;
+        }
+
+        .ilm-filter-btn.active {
+          background: var(--lcars-sunflower, #ffcc99);
+          color: var(--lcars-black, #000);
+        }
+
+        .ilm-filter-count {
+          font-size: 1.75rem;
           font-variant-numeric: tabular-nums;
+          line-height: 1;
         }
 
-        .ilm-summary-total {
-          font-size: 1.5rem;
-          color: var(--lcars-space-white, #f5f6fa);
-          font-variant-numeric: tabular-nums;
+        .ilm-filter-label {
+          font-size: 0.875rem;
+          letter-spacing: 0.08em;
         }
 
-        .ilm-summary-sep {
-          color: var(--lcars-gray, #666688);
-        }
-
-        .ilm-summary-divider {
-          color: var(--lcars-gray, #666688);
-          margin: 0 0.25rem;
-        }
-
-        .ilm-summary-covers {
-          color: var(--lcars-ice, #99ccff);
+        .ilm-filter-btn.active .ilm-filter-count {
+          color: var(--lcars-black, #000);
         }
 
         /* ─── Floor Header ─── */
@@ -438,8 +479,7 @@ class LcarsIlluminationCard extends LitElement {
         }
 
         /* ─── Nested panels — reduce spacing ─── */
-        lcars-illumination-panel,
-        lcars-viewport-panel {
+        lcars-illumination-panel {
           --lcars-panel-margin: 0;
         }
 
@@ -457,10 +497,17 @@ class LcarsIlluminationCard extends LitElement {
 
         /* ─── Mobile ─── */
         @media (max-width: 767px) {
-          .ilm-summary {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.25rem;
+          .ilm-filter-btn {
+            min-height: 3rem;
+            padding: 0.5rem 0.25rem;
+          }
+
+          .ilm-filter-count {
+            font-size: 1.25rem;
+          }
+
+          .ilm-filter-label {
+            font-size: 0.75rem;
           }
 
           .ilm-floor-name {

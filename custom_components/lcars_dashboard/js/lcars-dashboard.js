@@ -1165,140 +1165,7 @@
         <span class="ilm-circuit-name">${i}</span>
         <span class="ilm-circuit-state">${a?"ON":"OFF"}</span>
       </div>
-    `}_getBarColor(e,t,a){if(!t)return"var(--lcars-gray, #666688)";const r=a?.attributes?.color_mode;if("hs"===r||"rgb"===r||"xy"===r){const e=a?.attributes?.hs_color;if(e)return this._hueToLcarsColor(e[0],e[1])}if(!e)return"var(--lcars-sunflower)";const i=Math.max(0,Math.min(1,(e-2e3)/4500));return i<.5?"var(--lcars-butterscotch)":i<.8?"var(--lcars-sunflower)":"var(--lcars-ice)"}_hueToLcarsColor(e,t){return null!=t&&t<15?"var(--lcars-sunflower)":e<30?"var(--lcars-tomato)":e<60?"var(--lcars-butterscotch)":e<90?"var(--lcars-sunflower)":e<160?"var(--lcars-green, #66bb6a)":e<220?"var(--lcars-ice)":e<270?"var(--lcars-bluey)":e<330?"var(--lcars-lilac)":"var(--lcars-tomato)"}static get COLOR_PRESETS(){return[{name:"WARM",hs:[30,80],color:"var(--lcars-butterscotch, #ff9966)"},{name:"COOL",hs:[210,20],color:"var(--lcars-ice, #99ccff)"},{name:"RED",hs:[0,100],color:"var(--lcars-tomato, #ff5555)"},{name:"GREEN",hs:[120,100],color:"var(--lcars-green, #66bb6a)"},{name:"BLUE",hs:[240,100],color:"var(--lcars-bluey, #8899ff)"},{name:"PURPLE",hs:[280,80],color:"var(--lcars-lilac, #cc55ff)"}]}_isActivePreset(e,t){if(null==e)return!1;const a=Math.abs(e-t);return a<20||a>340}_setEffect(e,t){this.hass&&e&&(d.e.play("lightToggle"),this._callService("light","turn_on",{entity_id:e,effect:t}))}_clearEffect(e){this.hass&&e&&(d.e.play("lightToggle"),this._callService("light","turn_on",{entity_id:e,effect:"none"}))}_setColor(e,t){this.hass&&e&&(d.e.play("lightToggle"),this._callService("light","turn_on",{entity_id:e,hs_color:t}))}_toggleLight(e){if(!this.hass||!e)return;d.e.playForEntity(e);const t=e.split(".")[0];this._callService(t,"toggle",{entity_id:e})}_setBrightness(e,t){if(!this.hass||!e)return;d.e.play("climateAdjust");const a=(0,o.L3)(t,1,100),r=Math.round(a/100*255);this._callService("light","turn_on",{entity_id:e,brightness:r})}_activateScene(e){this.hass&&e&&this._sceneRateLimiter.allow()&&(d.e.play("scriptFire"),this._callService("scene","turn_on",{entity_id:e}))}_shortEntityName(e){const t=e.state?.attributes?.friendly_name||e.entity?.entity_id||"";return this._shortenName(t,e.entity).toUpperCase()}}customElements.define("lcars-illumination-panel",u)},690(e,t,a){var r=a(7349),i=a(7850),s=a(8851),n=a(2622);const o=r.AH`
-
-  .viewport-content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--lcars-gap);
-  }
-
-  .viewport-cover-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.375rem 0.75rem;
-    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
-    font-family: var(--lcars-font);
-    font-size: var(--lcars-font-size-data);
-    text-transform: uppercase;
-    transition: background var(--lcars-transition);
-    cursor: pointer;
-    min-height: var(--lcars-btn-height, 2rem);
-  }
-
-  .viewport-cover-row:hover { background: rgba(255,255,255,0.05); }
-  .viewport-cover-row:focus-visible {
-    outline: 2px solid var(--lcars-ice);
-    outline-offset: 2px;
-  }
-
-  .viewport-indicator {
-    width: 2px;
-    height: 1rem;
-    border-radius: 1px;
-    flex-shrink: 0;
-  }
-
-  .viewport-name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .viewport-position {
-    font-weight: 700;
-    flex-shrink: 0;
-    min-width: 3rem;
-    text-align: right;
-  }
-
-  .viewport-controls {
-    display: flex;
-    gap: 0.25rem;
-    flex-shrink: 0;
-  }
-
-  .viewport-btn {
-    width: 2rem;
-    height: 2rem;
-    border: none;
-    border-radius: var(--lcars-btn-radius);
-    background: var(--lcars-sunflower);
-    color: var(--lcars-black);
-    font-family: var(--lcars-font);
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: background 200ms;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .viewport-btn:hover { filter: brightness(1.15); }
-  .viewport-btn:focus-visible {
-    outline: 2px solid var(--lcars-ice);
-    outline-offset: 2px;
-  }
-  .viewport-btn[data-active] { background: var(--lcars-gold); }
-
-  .viewport-empty {
-    font-family: var(--lcars-font);
-    font-size: var(--lcars-font-size-data);
-    color: var(--lcars-gray);
-    text-transform: uppercase;
-    text-align: center;
-    padding: 2rem 1rem;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .viewport-cover-row,
-    .viewport-btn {
-      transition-duration: 0.01ms !important;
-    }
-  }
-`;var l=a(6940);a(58);const c=new Set(["garage_door","gate","door"]);class d extends i.j{get panelType(){return"viewport"}get defaultPanelTitle(){return"VIEWPORT CONTROLS"}get frameColor(){return"var(--lcars-sunflower)"}static get styles(){return[...super.styles,n.AM,o]}_getCoverEntries(){return this._getAllEntities().filter(e=>{if("cover"!==e.domain)return!1;const t=e.state?.attributes?.device_class||"";return!c.has(t)})}renderBadge(){const e=this._getCoverEntries(),t=e.filter(e=>"open"===e.state?.state).length,a=e.length;if(0===a)return r.qy``;const i=t>0?"var(--lcars-sunflower)":"var(--lcars-gray)";return r.qy`<lcars-summary-badge value="${t}/${a} OPEN" color="${i}"></lcars-summary-badge>`}renderContent(){const e=this._getCoverEntries();return 0===e.length?r.qy`<div class="viewport-empty">NO VIEWPORT CONTROLS</div>`:r.qy`
-      <div class="viewport-content" role="list" aria-label="Viewport controls">
-        ${e.map(e=>this._renderCoverRow(e))}
-      </div>
-    `}_renderCoverRow(e){const t=e.entity?.entity_id||"",a=e.state?.attributes?.friendly_name||t,i=e.state?.state||"unknown",n=e.state?.attributes?.current_position,o="open"===i,c="closed"===i,d=o?"var(--lcars-sunflower)":"var(--lcars-gray)",p=null!=n?`${n}%`:i.toUpperCase(),u=1&(e.state?.attributes?.supported_features||0),m=2&(e.state?.attributes?.supported_features||0),h=8&(e.state?.attributes?.supported_features||0);return r.qy`
-      <div class="viewport-cover-row"
-           role="listitem"
-           tabindex="0"
-           aria-label="${a}: ${p}"
-           @click=${()=>(0,s.Hv)(t)}
-           @keydown=${e=>("Enter"===e.key||" "===e.key)&&(e.preventDefault(),(0,s.Hv)(t))}>
-        <span class="viewport-indicator" style="background:${d}"></span>
-        <span class="viewport-name">${a}</span>
-        <span class="viewport-position">${p}</span>
-        <span class="viewport-controls" @click=${e=>e.stopPropagation()}>
-          ${u?r.qy`
-            <button class="viewport-btn"
-                    ?data-active=${o}
-                    aria-label="Open ${a}"
-                    @click=${()=>{l.e.play("coverAction"),this._callService("cover","open_cover",{entity_id:t})}}>
-              ▲
-            </button>
-          `:""}
-          ${h?r.qy`
-            <button class="viewport-btn"
-                    aria-label="Stop ${a}"
-                    @click=${()=>{l.e.play("coverAction"),this._callService("cover","stop_cover",{entity_id:t})}}>
-              ■
-            </button>
-          `:""}
-          ${m?r.qy`
-            <button class="viewport-btn"
-                    ?data-active=${c}
-                    aria-label="Close ${a}"
-                    @click=${()=>{l.e.play("coverAction"),this._callService("cover","close_cover",{entity_id:t})}}>
-              ▼
-            </button>
-          `:""}
-        </span>
-      </div>
-    `}}customElements.define("lcars-viewport-panel",d)},7349(e,t,a){a.d(t,{WF:()=>z,AH:()=>C,qy:()=>p.qy});var r=a(601),i=a(9995);function s(e,t){const{element:{content:a},parts:r}=e,i=document.createTreeWalker(a,133,null,!1);let s=o(r),n=r[s],l=-1,c=0;const d=[];let p=null;for(;i.nextNode();){l++;const e=i.currentNode;for(e.previousSibling===p&&(p=null),t.has(e)&&(d.push(e),null===p&&(p=e)),null!==p&&c++;void 0!==n&&n.index===l;)n.index=null!==p?-1:n.index-c,s=o(r,s),n=r[s]}d.forEach(e=>e.parentNode.removeChild(e))}const n=e=>{let t=11===e.nodeType?0:1;const a=document.createTreeWalker(e,133,null,!1);for(;a.nextNode();)t++;return t},o=(e,t=-1)=>{for(let a=t+1;a<e.length;a++){const t=e[a];if((0,i.s9)(t))return a}return-1};var l=a(3841),c=a(5172),d=a(4679),p=a(7637);const u=(e,t)=>`${e}--${t}`;let m=!0;void 0===window.ShadyCSS?m=!1:void 0===window.ShadyCSS.prepareTemplateDom&&(console.warn("Incompatible ShadyCSS version detected. Please update to at least @webcomponents/webcomponentsjs@2.0.2 and @webcomponents/shadycss@1.3.1."),m=!1);const h=e=>t=>{const a=u(t.type,e);let r=c.c.get(a);void 0===r&&(r={stringsArray:new WeakMap,keyString:new Map},c.c.set(a,r));let s=r.stringsArray.get(t.strings);if(void 0!==s)return s;const n=t.strings.join(i.xL);if(s=r.keyString.get(n),void 0===s){const a=t.getTemplateElement();m&&window.ShadyCSS.prepareTemplateDom(a,e),s=new i.Bj(t,a),r.keyString.set(n,s)}return r.stringsArray.set(t.strings,s),s},f=["html","svg"],v=new Set;window.JSCompiler_renameProperty=(e,t)=>e;const g={toAttribute(e,t){switch(t){case Boolean:return e?"":null;case Object:case Array:return null==e?e:JSON.stringify(e)}return e},fromAttribute(e,t){switch(t){case Boolean:return null!==e;case Number:return null===e?null:Number(e);case Object:case Array:return JSON.parse(e)}return e}},b=(e,t)=>t!==e&&(t==t||e==e),y={attribute:!0,type:String,converter:g,reflect:!1,hasChanged:b},_="finalized";class w extends HTMLElement{constructor(){super(),this.initialize()}static get observedAttributes(){this.finalize();const e=[];return this._classProperties.forEach((t,a)=>{const r=this._attributeNameForProperty(a,t);void 0!==r&&(this._attributeToPropertyMap.set(r,a),e.push(r))}),e}static _ensureClassProperties(){if(!this.hasOwnProperty(JSCompiler_renameProperty("_classProperties",this))){this._classProperties=new Map;const e=Object.getPrototypeOf(this)._classProperties;void 0!==e&&e.forEach((e,t)=>this._classProperties.set(t,e))}}static createProperty(e,t=y){if(this._ensureClassProperties(),this._classProperties.set(e,t),t.noAccessor||this.prototype.hasOwnProperty(e))return;const a="symbol"==typeof e?Symbol():`__${e}`,r=this.getPropertyDescriptor(e,a,t);void 0!==r&&Object.defineProperty(this.prototype,e,r)}static getPropertyDescriptor(e,t,a){return{get(){return this[t]},set(r){const i=this[e];this[t]=r,this.requestUpdateInternal(e,i,a)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this._classProperties&&this._classProperties.get(e)||y}static finalize(){const e=Object.getPrototypeOf(this);if(e.hasOwnProperty(_)||e.finalize(),this[_]=!0,this._ensureClassProperties(),this._attributeToPropertyMap=new Map,this.hasOwnProperty(JSCompiler_renameProperty("properties",this))){const e=this.properties,t=[...Object.getOwnPropertyNames(e),..."function"==typeof Object.getOwnPropertySymbols?Object.getOwnPropertySymbols(e):[]];for(const a of t)this.createProperty(a,e[a])}}static _attributeNameForProperty(e,t){const a=t.attribute;return!1===a?void 0:"string"==typeof a?a:"string"==typeof e?e.toLowerCase():void 0}static _valueHasChanged(e,t,a=b){return a(e,t)}static _propertyValueFromAttribute(e,t){const a=t.type,r=t.converter||g,i="function"==typeof r?r:r.fromAttribute;return i?i(e,a):e}static _propertyValueToAttribute(e,t){if(void 0===t.reflect)return;const a=t.type,r=t.converter;return(r&&r.toAttribute||g.toAttribute)(e,a)}initialize(){this._updateState=0,this._updatePromise=new Promise(e=>this._enableUpdatingResolver=e),this._changedProperties=new Map,this._saveInstanceProperties(),this.requestUpdateInternal()}_saveInstanceProperties(){this.constructor._classProperties.forEach((e,t)=>{if(this.hasOwnProperty(t)){const e=this[t];delete this[t],this._instanceProperties||(this._instanceProperties=new Map),this._instanceProperties.set(t,e)}})}_applyInstanceProperties(){this._instanceProperties.forEach((e,t)=>this[t]=e),this._instanceProperties=void 0}connectedCallback(){this.enableUpdating()}enableUpdating(){void 0!==this._enableUpdatingResolver&&(this._enableUpdatingResolver(),this._enableUpdatingResolver=void 0)}disconnectedCallback(){}attributeChangedCallback(e,t,a){t!==a&&this._attributeToProperty(e,a)}_propertyToAttribute(e,t,a=y){const r=this.constructor,i=r._attributeNameForProperty(e,a);if(void 0!==i){const e=r._propertyValueToAttribute(t,a);if(void 0===e)return;this._updateState=8|this._updateState,null==e?this.removeAttribute(i):this.setAttribute(i,e),this._updateState=-9&this._updateState}}_attributeToProperty(e,t){if(8&this._updateState)return;const a=this.constructor,r=a._attributeToPropertyMap.get(e);if(void 0!==r){const e=a.getPropertyOptions(r);this._updateState=16|this._updateState,this[r]=a._propertyValueFromAttribute(t,e),this._updateState=-17&this._updateState}}requestUpdateInternal(e,t,a){let r=!0;if(void 0!==e){const i=this.constructor;a=a||i.getPropertyOptions(e),i._valueHasChanged(this[e],t,a.hasChanged)?(this._changedProperties.has(e)||this._changedProperties.set(e,t),!0!==a.reflect||16&this._updateState||(void 0===this._reflectingProperties&&(this._reflectingProperties=new Map),this._reflectingProperties.set(e,a))):r=!1}!this._hasRequestedUpdate&&r&&(this._updatePromise=this._enqueueUpdate())}requestUpdate(e,t){return this.requestUpdateInternal(e,t),this.updateComplete}async _enqueueUpdate(){this._updateState=4|this._updateState;try{await this._updatePromise}catch(e){}const e=this.performUpdate();return null!=e&&await e,!this._hasRequestedUpdate}get _hasRequestedUpdate(){return 4&this._updateState}get hasUpdated(){return 1&this._updateState}performUpdate(){if(!this._hasRequestedUpdate)return;this._instanceProperties&&this._applyInstanceProperties();let e=!1;const t=this._changedProperties;try{e=this.shouldUpdate(t),e?this.update(t):this._markUpdated()}catch(t){throw e=!1,this._markUpdated(),t}e&&(1&this._updateState||(this._updateState=1|this._updateState,this.firstUpdated(t)),this.updated(t))}_markUpdated(){this._changedProperties=new Map,this._updateState=-5&this._updateState}get updateComplete(){return this._getUpdateComplete()}_getUpdateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._updatePromise}shouldUpdate(e){return!0}update(e){void 0!==this._reflectingProperties&&this._reflectingProperties.size>0&&(this._reflectingProperties.forEach((e,t)=>this._propertyToAttribute(t,this[t],e)),this._reflectingProperties=void 0),this._markUpdated()}updated(e){}firstUpdated(e){}}w[_]=!0;const x=Element.prototype;x.msMatchesSelector||x.webkitMatchesSelector;const $=window.ShadowRoot&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,k=Symbol();class S{constructor(e,t){if(t!==k)throw new Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e}get styleSheet(){return void 0===this._styleSheet&&($?(this._styleSheet=new CSSStyleSheet,this._styleSheet.replaceSync(this.cssText)):this._styleSheet=null),this._styleSheet}toString(){return this.cssText}}const C=(e,...t)=>{const a=t.reduce((t,a,r)=>t+(e=>{if(e instanceof S)return e.cssText;if("number"==typeof e)return e;throw new Error(`Value passed to 'css' function must be a 'css' function result: ${e}. Use 'unsafeCSS' to pass non-literal values, but\n            take care to ensure page security.`)})(a)+e[r+1],e[0]);return new S(a,k)};(window.litElementVersions||(window.litElementVersions=[])).push("2.5.1");const E={};class z extends w{static getStyles(){return this.styles}static _getUniqueStyles(){if(this.hasOwnProperty(JSCompiler_renameProperty("_styles",this)))return;const e=this.getStyles();if(Array.isArray(e)){const t=(e,a)=>e.reduceRight((e,a)=>Array.isArray(a)?t(a,e):(e.add(a),e),a),a=t(e,new Set),r=[];a.forEach(e=>r.unshift(e)),this._styles=r}else this._styles=void 0===e?[]:[e];this._styles=this._styles.map(e=>{if(e instanceof CSSStyleSheet&&!$){const t=Array.prototype.slice.call(e.cssRules).reduce((e,t)=>e+t.cssText,"");return new S(String(t),k)}return e})}initialize(){super.initialize(),this.constructor._getUniqueStyles(),this.renderRoot=this.createRenderRoot(),window.ShadowRoot&&this.renderRoot instanceof window.ShadowRoot&&this.adoptStyles()}createRenderRoot(){return this.attachShadow(this.constructor.shadowRootOptions)}adoptStyles(){const e=this.constructor._styles;0!==e.length&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow?$?this.renderRoot.adoptedStyleSheets=e.map(e=>e instanceof CSSStyleSheet?e:e.styleSheet):this._needsShimAdoptedStyleSheets=!0:window.ShadyCSS.ScopingShim.prepareAdoptedCssText(e.map(e=>e.cssText),this.localName))}connectedCallback(){super.connectedCallback(),this.hasUpdated&&void 0!==window.ShadyCSS&&window.ShadyCSS.styleElement(this)}update(e){const t=this.render();super.update(e),t!==E&&this.constructor.render(t,this.renderRoot,{scopeName:this.localName,eventContext:this}),this._needsShimAdoptedStyleSheets&&(this._needsShimAdoptedStyleSheets=!1,this.constructor._styles.forEach(e=>{const t=document.createElement("style");t.textContent=e.cssText,this.renderRoot.appendChild(t)}))}render(){return E}}z.finalized=!0,z.render=(e,t,a)=>{if(!a||"object"!=typeof a||!a.scopeName)throw new Error("The `scopeName` option is required.");const i=a.scopeName,p=l.r.has(t),g=m&&11===t.nodeType&&!!t.host,b=g&&!v.has(i),y=b?document.createDocumentFragment():t;if((0,l.X)(e,y,Object.assign({templateFactory:h(i)},a)),b){const e=l.r.get(y);l.r.delete(y);((e,t,a)=>{v.add(e);const r=a?a.element:document.createElement("template"),i=t.querySelectorAll("style"),{length:l}=i;if(0===l)return void window.ShadyCSS.prepareTemplateStyles(r,e);const d=document.createElement("style");for(let e=0;e<l;e++){const t=i[e];t.parentNode.removeChild(t),d.textContent+=t.textContent}(e=>{f.forEach(t=>{const a=c.c.get(u(t,e));void 0!==a&&a.keyString.forEach(e=>{const{element:{content:t}}=e,a=new Set;Array.from(t.querySelectorAll("style")).forEach(e=>{a.add(e)}),s(e,a)})})})(e);const p=r.content;a?function(e,t,a=null){const{element:{content:r},parts:i}=e;if(null==a)return void r.appendChild(t);const s=document.createTreeWalker(r,133,null,!1);let l=o(i),c=0,d=-1;for(;s.nextNode();)for(d++,s.currentNode===a&&(c=n(t),a.parentNode.insertBefore(t,a));-1!==l&&i[l].index===d;){if(c>0){for(;-1!==l;)i[l].index+=c,l=o(i,l);return}l=o(i,l)}}(a,d,p.firstChild):p.insertBefore(d,p.firstChild),window.ShadyCSS.prepareTemplateStyles(r,e);const m=p.querySelector("style");if(window.ShadyCSS.nativeShadow&&null!==m)t.insertBefore(m.cloneNode(!0),t.firstChild);else if(a){p.insertBefore(d,p.firstChild);const e=new Set;e.add(d),s(a,e)}})(i,y,e.value instanceof d.i?e.value.template:void 0),(0,r.if)(t,t.firstChild),t.appendChild(y),l.r.set(t,e)}!p&&g&&window.ShadyCSS.styleElement(t.host)},z.shadowRootOptions={mode:"open"}},1012(e,t,a){a.d(t,{q:()=>i});const r=new WeakMap,i=e=>"function"==typeof e&&r.has(e)},601(e,t,a){a.d(t,{Pf:()=>i,if:()=>s,o6:()=>r});const r="undefined"!=typeof window&&null!=window.customElements&&void 0!==window.customElements.polyfillWrapFlushCallback,i=(e,t,a=null,r=null)=>{for(;t!==a;){const a=t.nextSibling;e.insertBefore(t,r),t=a}},s=(e,t,a=null)=>{for(;t!==a;){const a=t.nextSibling;e.removeChild(t),t=a}}},624(e,t,a){a.d(t,{c:()=>r,s:()=>i});const r={},i={}},6671(e,t,a){a.d(t,{GP:()=>b,Qh:()=>m,Yp:()=>h,g$:()=>f,pU:()=>p});var r=a(1012),i=a(601),s=a(624),n=a(4679),o=a(3957),l=a(9995);const c=e=>null===e||!("object"==typeof e||"function"==typeof e),d=e=>Array.isArray(e)||!(!e||!e[Symbol.iterator]);class p{constructor(e,t,a){this.dirty=!0,this.element=e,this.name=t,this.strings=a,this.parts=[];for(let e=0;e<a.length-1;e++)this.parts[e]=this._createPart()}_createPart(){return new u(this)}_getValue(){const e=this.strings,t=e.length-1,a=this.parts;if(1===t&&""===e[0]&&""===e[1]){const e=a[0].value;if("symbol"==typeof e)return String(e);if("string"==typeof e||!d(e))return e}let r="";for(let i=0;i<t;i++){r+=e[i];const t=a[i];if(void 0!==t){const e=t.value;if(c(e)||!d(e))r+="string"==typeof e?e:String(e);else for(const t of e)r+="string"==typeof t?t:String(t)}}return r+=e[t],r}commit(){this.dirty&&(this.dirty=!1,this.element.setAttribute(this.name,this._getValue()))}}class u{constructor(e){this.value=void 0,this.committer=e}setValue(e){e===s.c||c(e)&&e===this.value||(this.value=e,(0,r.q)(e)||(this.committer.dirty=!0))}commit(){for(;(0,r.q)(this.value);){const e=this.value;this.value=s.c,e(this)}this.value!==s.c&&this.committer.commit()}}class m{constructor(e){this.value=void 0,this.__pendingValue=void 0,this.options=e}appendInto(e){this.startNode=e.appendChild((0,l.h5)()),this.endNode=e.appendChild((0,l.h5)())}insertAfterNode(e){this.startNode=e,this.endNode=e.nextSibling}appendIntoPart(e){e.__insert(this.startNode=(0,l.h5)()),e.__insert(this.endNode=(0,l.h5)())}insertAfterPart(e){e.__insert(this.startNode=(0,l.h5)()),this.endNode=e.endNode,e.endNode=this.startNode}setValue(e){this.__pendingValue=e}commit(){if(null===this.startNode.parentNode)return;for(;(0,r.q)(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=s.c,e(this)}const e=this.__pendingValue;e!==s.c&&(c(e)?e!==this.value&&this.__commitText(e):e instanceof o.Q?this.__commitTemplateResult(e):e instanceof Node?this.__commitNode(e):d(e)?this.__commitIterable(e):e===s.s?(this.value=s.s,this.clear()):this.__commitText(e))}__insert(e){this.endNode.parentNode.insertBefore(e,this.endNode)}__commitNode(e){this.value!==e&&(this.clear(),this.__insert(e),this.value=e)}__commitText(e){const t=this.startNode.nextSibling,a="string"==typeof(e=null==e?"":e)?e:String(e);t===this.endNode.previousSibling&&3===t.nodeType?t.data=a:this.__commitNode(document.createTextNode(a)),this.value=e}__commitTemplateResult(e){const t=this.options.templateFactory(e);if(this.value instanceof n.i&&this.value.template===t)this.value.update(e.values);else{const a=new n.i(t,e.processor,this.options),r=a._clone();a.update(e.values),this.__commitNode(r),this.value=a}}__commitIterable(e){Array.isArray(this.value)||(this.value=[],this.clear());const t=this.value;let a,r=0;for(const i of e)a=t[r],void 0===a&&(a=new m(this.options),t.push(a),0===r?a.appendIntoPart(this):a.insertAfterPart(t[r-1])),a.setValue(i),a.commit(),r++;r<t.length&&(t.length=r,this.clear(a&&a.endNode))}clear(e=this.startNode){(0,i.if)(this.startNode.parentNode,e.nextSibling,this.endNode)}}class h{constructor(e,t,a){if(this.value=void 0,this.__pendingValue=void 0,2!==a.length||""!==a[0]||""!==a[1])throw new Error("Boolean attributes can only contain a single expression");this.element=e,this.name=t,this.strings=a}setValue(e){this.__pendingValue=e}commit(){for(;(0,r.q)(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=s.c,e(this)}if(this.__pendingValue===s.c)return;const e=!!this.__pendingValue;this.value!==e&&(e?this.element.setAttribute(this.name,""):this.element.removeAttribute(this.name),this.value=e),this.__pendingValue=s.c}}class f extends p{constructor(e,t,a){super(e,t,a),this.single=2===a.length&&""===a[0]&&""===a[1]}_createPart(){return new v(this)}_getValue(){return this.single?this.parts[0].value:super._getValue()}commit(){this.dirty&&(this.dirty=!1,this.element[this.name]=this._getValue())}}class v extends u{}let g=!1;(()=>{try{const e={get capture(){return g=!0,!1}};window.addEventListener("test",e,e),window.removeEventListener("test",e,e)}catch(e){}})();class b{constructor(e,t,a){this.value=void 0,this.__pendingValue=void 0,this.element=e,this.eventName=t,this.eventContext=a,this.__boundHandleEvent=e=>this.handleEvent(e)}setValue(e){this.__pendingValue=e}commit(){for(;(0,r.q)(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=s.c,e(this)}if(this.__pendingValue===s.c)return;const e=this.__pendingValue,t=this.value,a=null==e||null!=t&&(e.capture!==t.capture||e.once!==t.once||e.passive!==t.passive),i=null!=e&&(null==t||a);a&&this.element.removeEventListener(this.eventName,this.__boundHandleEvent,this.__options),i&&(this.__options=y(e),this.element.addEventListener(this.eventName,this.__boundHandleEvent,this.__options)),this.value=e,this.__pendingValue=s.c}handleEvent(e){"function"==typeof this.value?this.value.call(this.eventContext||this.element,e):this.value.handleEvent(e)}}const y=e=>e&&(g?{capture:e.capture,passive:e.passive,once:e.once}:e.capture)},3841(e,t,a){a.d(t,{X:()=>o,r:()=>n});var r=a(601),i=a(6671),s=a(5172);const n=new WeakMap,o=(e,t,a)=>{let o=n.get(t);void 0===o&&((0,r.if)(t,t.firstChild),n.set(t,o=new i.Qh(Object.assign({templateFactory:s.v},a))),o.appendInto(t)),o.setValue(e),o.commit()}},5172(e,t,a){a.d(t,{c:()=>s,v:()=>i});var r=a(9995);function i(e){let t=s.get(e.type);void 0===t&&(t={stringsArray:new WeakMap,keyString:new Map},s.set(e.type,t));let a=t.stringsArray.get(e.strings);if(void 0!==a)return a;const i=e.strings.join(r.xL);return a=t.keyString.get(i),void 0===a&&(a=new r.Bj(e,e.getTemplateElement()),t.keyString.set(i,a)),t.stringsArray.set(e.strings,a),a}const s=new Map},4679(e,t,a){a.d(t,{i:()=>s});var r=a(601),i=a(9995);class s{constructor(e,t,a){this.__parts=[],this.template=e,this.processor=t,this.options=a}update(e){let t=0;for(const a of this.__parts)void 0!==a&&a.setValue(e[t]),t++;for(const e of this.__parts)void 0!==e&&e.commit()}_clone(){const e=r.o6?this.template.element.content.cloneNode(!0):document.importNode(this.template.element.content,!0),t=[],a=this.template.parts,s=document.createTreeWalker(e,133,null,!1);let n,o=0,l=0,c=s.nextNode();for(;o<a.length;)if(n=a[o],(0,i.s9)(n)){for(;l<n.index;)l++,"TEMPLATE"===c.nodeName&&(t.push(c),s.currentNode=c.content),null===(c=s.nextNode())&&(s.currentNode=t.pop(),c=s.nextNode());if("node"===n.type){const e=this.processor.handleTextExpression(this.options);e.insertAfterNode(c.previousSibling),this.__parts.push(e)}else this.__parts.push(...this.processor.handleAttributeExpressions(c,n.name,n.strings,this.options));o++}else this.__parts.push(void 0),o++;return r.o6&&(document.adoptNode(e),customElements.upgrade(e)),e}}},3957(e,t,a){a.d(t,{Q:()=>o,U:()=>l});var r=a(601),i=a(9995);const s=window.trustedTypes&&trustedTypes.createPolicy("lit-html",{createHTML:e=>e}),n=` ${i.xL} `;class o{constructor(e,t,a,r){this.strings=e,this.values=t,this.type=a,this.processor=r}getHTML(){const e=this.strings.length-1;let t="",a=!1;for(let r=0;r<e;r++){const e=this.strings[r],s=e.lastIndexOf("\x3c!--");a=(s>-1||a)&&-1===e.indexOf("--\x3e",s+1);const o=i.zY.exec(e);t+=null===o?e+(a?n:i.XY):e.substr(0,o.index)+o[1]+o[2]+i.c1+o[3]+i.xL}return t+=this.strings[e],t}getTemplateElement(){const e=document.createElement("template");let t=this.getHTML();return void 0!==s&&(t=s.createHTML(t)),e.innerHTML=t,e}}class l extends o{getHTML(){return`<svg>${super.getHTML()}</svg>`}getTemplateElement(){const e=super.getTemplateElement(),t=e.content,a=t.firstChild;return t.removeChild(a),(0,r.Pf)(t,a.firstChild),e}}},9995(e,t,a){a.d(t,{Bj:()=>o,XY:()=>i,c1:()=>n,h5:()=>d,s9:()=>c,xL:()=>r,zY:()=>p});const r=`{{lit-${String(Math.random()).slice(2)}}}`,i=`\x3c!--${r}--\x3e`,s=new RegExp(`${r}|${i}`),n="$lit$";class o{constructor(e,t){this.parts=[],this.element=t;const a=[],i=[],o=document.createTreeWalker(t.content,133,null,!1);let c=0,u=-1,m=0;const{strings:h,values:{length:f}}=e;for(;m<f;){const e=o.nextNode();if(null!==e){if(u++,1===e.nodeType){if(e.hasAttributes()){const t=e.attributes,{length:a}=t;let r=0;for(let e=0;e<a;e++)l(t[e].name,n)&&r++;for(;r-- >0;){const t=h[m],a=p.exec(t)[2],r=a.toLowerCase()+n,i=e.getAttribute(r);e.removeAttribute(r);const o=i.split(s);this.parts.push({type:"attribute",index:u,name:a,strings:o}),m+=o.length-1}}"TEMPLATE"===e.tagName&&(i.push(e),o.currentNode=e.content)}else if(3===e.nodeType){const t=e.data;if(t.indexOf(r)>=0){const r=e.parentNode,i=t.split(s),o=i.length-1;for(let t=0;t<o;t++){let a,s=i[t];if(""===s)a=d();else{const e=p.exec(s);null!==e&&l(e[2],n)&&(s=s.slice(0,e.index)+e[1]+e[2].slice(0,-n.length)+e[3]),a=document.createTextNode(s)}r.insertBefore(a,e),this.parts.push({type:"node",index:++u})}""===i[o]?(r.insertBefore(d(),e),a.push(e)):e.data=i[o],m+=o}}else if(8===e.nodeType)if(e.data===r){const t=e.parentNode;null!==e.previousSibling&&u!==c||(u++,t.insertBefore(d(),e)),c=u,this.parts.push({type:"node",index:u}),null===e.nextSibling?e.data="":(a.push(e),u--),m++}else{let t=-1;for(;-1!==(t=e.data.indexOf(r,t+1));)this.parts.push({type:"node",index:-1}),m++}}else o.currentNode=i.pop()}for(const e of a)e.parentNode.removeChild(e)}}const l=(e,t)=>{const a=e.length-t.length;return a>=0&&e.slice(a)===t},c=e=>-1!==e.index,d=()=>document.createComment(""),p=/([ \x09\x0a\x0c\x0d])([^\0-\x1F\x7F-\x9F "'>=/]+)([ \x09\x0a\x0c\x0d]*=[ \x09\x0a\x0c\x0d]*(?:[^ \x09\x0a\x0c\x0d"'`<>=]*|"[^"]*|'[^']*))$/},7637(e,t,a){a.d(t,{qy:()=>o,XX:()=>n.X,JW:()=>l});var r=a(6671);const i=new class{handleAttributeExpressions(e,t,a,i){const s=t[0];return"."===s?new r.g$(e,t.slice(1),a).parts:"@"===s?[new r.GP(e,t.slice(1),i.eventContext)]:"?"===s?[new r.Yp(e,t.slice(1),a)]:new r.pU(e,t,a).parts}handleTextExpression(e){return new r.Qh(e)}};var s=a(3957),n=(a(1012),a(601),a(624),a(3841));a(5172),a(4679),a(9995),"undefined"!=typeof window&&(window.litHtmlVersions||(window.litHtmlVersions=[])).push("1.4.1");const o=(e,...t)=>new s.Q(e,t,"html",i),l=(e,...t)=>new s.U(e,t,"svg",i)},8330(e){e.exports=JSON.parse('{"name":"lcars-dashboard","private":true,"version":"5.0.0-beta.1","description":"LCARS Dashboard — Home Assistant Lovelace dashboard with Star Trek LCARS UI. Based on Dwains Dashboard by Dwain Scheeren.","scripts":{"build":"webpack --mode=production","watch":"webpack --watch --mode=development"},"keywords":["lcars","home-assistant","lovelace","dashboard","hacs"],"author":"htiel (based on Dwains Dashboard by Dwain Scheeren)","license":"MIT","devDependencies":{"autoprefixer":"^10.2.5","css-loader":"^5.1.3","html-webpack-plugin":"^5.3.1","postcss":"^8.2.8","postcss-cli":"^8.3.1","postcss-loader":"^5.2.0","style-loader":"^2.0.0","tailwindcss":"^2.0.3","webpack":"^5.26.0","webpack-cli":"^4.5.0","webpack-dev-server":"^5.2.3","webpack-merge":"^5.7.3"},"dependencies":{"@mdi/js":"^6.5.95","card-tools":"github:thomasloven/lovelace-card-tools#477f3d4eeb5c70cab047d418d19afb6b0f07bf49","custom-card-helpers":"^1.8.0","js-cookie":"^3.0.1","lit-element":"^2.2.1","lit-html":"^1.1.2","sortablejs":"^1.14.0"}}')}},t={};function a(r){var i=t[r];if(void 0!==i)return i.exports;var s=t[r]={exports:{}};return e[r](s,s.exports,a),s.exports}a.d=(e,t)=>{for(var r in t)a.o(t,r)&&!a.o(e,r)&&Object.defineProperty(e,r,{enumerable:!0,get:t[r]})},a.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),(()=>{var e=a(7349),t=a(2622),r=a(8851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_activePath:{type:String}}}constructor(){super(),this._activePath="home"}set hass(e){this._hass=e}setConfig(e){this._config=e}_handleNav(e){this._activePath=e,(0,r.oo)(`/lcars-dashboard/${e}`),this.requestUpdate()}static get styles(){return[t.Bx,e.AH`
+    `}_getBarColor(e,t,a){if(!t)return"var(--lcars-gray, #666688)";const r=a?.attributes?.color_mode;if("hs"===r||"rgb"===r||"xy"===r){const e=a?.attributes?.hs_color;if(e)return this._hueToLcarsColor(e[0],e[1])}if(!e)return"var(--lcars-sunflower)";const i=Math.max(0,Math.min(1,(e-2e3)/4500));return i<.5?"var(--lcars-butterscotch)":i<.8?"var(--lcars-sunflower)":"var(--lcars-ice)"}_hueToLcarsColor(e,t){return null!=t&&t<15?"var(--lcars-sunflower)":e<30?"var(--lcars-tomato)":e<60?"var(--lcars-butterscotch)":e<90?"var(--lcars-sunflower)":e<160?"var(--lcars-green, #66bb6a)":e<220?"var(--lcars-ice)":e<270?"var(--lcars-bluey)":e<330?"var(--lcars-lilac)":"var(--lcars-tomato)"}static get COLOR_PRESETS(){return[{name:"WARM",hs:[30,80],color:"var(--lcars-butterscotch, #ff9966)"},{name:"COOL",hs:[210,20],color:"var(--lcars-ice, #99ccff)"},{name:"RED",hs:[0,100],color:"var(--lcars-tomato, #ff5555)"},{name:"GREEN",hs:[120,100],color:"var(--lcars-green, #66bb6a)"},{name:"BLUE",hs:[240,100],color:"var(--lcars-bluey, #8899ff)"},{name:"PURPLE",hs:[280,80],color:"var(--lcars-lilac, #cc55ff)"}]}_isActivePreset(e,t){if(null==e)return!1;const a=Math.abs(e-t);return a<20||a>340}_setEffect(e,t){this.hass&&e&&(d.e.play("lightToggle"),this._callService("light","turn_on",{entity_id:e,effect:t}))}_clearEffect(e){this.hass&&e&&(d.e.play("lightToggle"),this._callService("light","turn_on",{entity_id:e,effect:"none"}))}_setColor(e,t){this.hass&&e&&(d.e.play("lightToggle"),this._callService("light","turn_on",{entity_id:e,hs_color:t}))}_toggleLight(e){if(!this.hass||!e)return;d.e.playForEntity(e);const t=e.split(".")[0];this._callService(t,"toggle",{entity_id:e})}_setBrightness(e,t){if(!this.hass||!e)return;d.e.play("climateAdjust");const a=(0,o.L3)(t,1,100),r=Math.round(a/100*255);this._callService("light","turn_on",{entity_id:e,brightness:r})}_activateScene(e){this.hass&&e&&this._sceneRateLimiter.allow()&&(d.e.play("scriptFire"),this._callService("scene","turn_on",{entity_id:e}))}_shortEntityName(e){const t=e.state?.attributes?.friendly_name||e.entity?.entity_id||"";return this._shortenName(t,e.entity).toUpperCase()}}customElements.define("lcars-illumination-panel",u)},7349(e,t,a){a.d(t,{WF:()=>z,AH:()=>C,qy:()=>p.qy});var r=a(601),i=a(9995);function s(e,t){const{element:{content:a},parts:r}=e,i=document.createTreeWalker(a,133,null,!1);let s=o(r),n=r[s],l=-1,c=0;const d=[];let p=null;for(;i.nextNode();){l++;const e=i.currentNode;for(e.previousSibling===p&&(p=null),t.has(e)&&(d.push(e),null===p&&(p=e)),null!==p&&c++;void 0!==n&&n.index===l;)n.index=null!==p?-1:n.index-c,s=o(r,s),n=r[s]}d.forEach(e=>e.parentNode.removeChild(e))}const n=e=>{let t=11===e.nodeType?0:1;const a=document.createTreeWalker(e,133,null,!1);for(;a.nextNode();)t++;return t},o=(e,t=-1)=>{for(let a=t+1;a<e.length;a++){const t=e[a];if((0,i.s9)(t))return a}return-1};var l=a(3841),c=a(5172),d=a(4679),p=a(7637);const u=(e,t)=>`${e}--${t}`;let m=!0;void 0===window.ShadyCSS?m=!1:void 0===window.ShadyCSS.prepareTemplateDom&&(console.warn("Incompatible ShadyCSS version detected. Please update to at least @webcomponents/webcomponentsjs@2.0.2 and @webcomponents/shadycss@1.3.1."),m=!1);const h=e=>t=>{const a=u(t.type,e);let r=c.c.get(a);void 0===r&&(r={stringsArray:new WeakMap,keyString:new Map},c.c.set(a,r));let s=r.stringsArray.get(t.strings);if(void 0!==s)return s;const n=t.strings.join(i.xL);if(s=r.keyString.get(n),void 0===s){const a=t.getTemplateElement();m&&window.ShadyCSS.prepareTemplateDom(a,e),s=new i.Bj(t,a),r.keyString.set(n,s)}return r.stringsArray.set(t.strings,s),s},f=["html","svg"],v=new Set;window.JSCompiler_renameProperty=(e,t)=>e;const g={toAttribute(e,t){switch(t){case Boolean:return e?"":null;case Object:case Array:return null==e?e:JSON.stringify(e)}return e},fromAttribute(e,t){switch(t){case Boolean:return null!==e;case Number:return null===e?null:Number(e);case Object:case Array:return JSON.parse(e)}return e}},b=(e,t)=>t!==e&&(t==t||e==e),y={attribute:!0,type:String,converter:g,reflect:!1,hasChanged:b},_="finalized";class w extends HTMLElement{constructor(){super(),this.initialize()}static get observedAttributes(){this.finalize();const e=[];return this._classProperties.forEach((t,a)=>{const r=this._attributeNameForProperty(a,t);void 0!==r&&(this._attributeToPropertyMap.set(r,a),e.push(r))}),e}static _ensureClassProperties(){if(!this.hasOwnProperty(JSCompiler_renameProperty("_classProperties",this))){this._classProperties=new Map;const e=Object.getPrototypeOf(this)._classProperties;void 0!==e&&e.forEach((e,t)=>this._classProperties.set(t,e))}}static createProperty(e,t=y){if(this._ensureClassProperties(),this._classProperties.set(e,t),t.noAccessor||this.prototype.hasOwnProperty(e))return;const a="symbol"==typeof e?Symbol():`__${e}`,r=this.getPropertyDescriptor(e,a,t);void 0!==r&&Object.defineProperty(this.prototype,e,r)}static getPropertyDescriptor(e,t,a){return{get(){return this[t]},set(r){const i=this[e];this[t]=r,this.requestUpdateInternal(e,i,a)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this._classProperties&&this._classProperties.get(e)||y}static finalize(){const e=Object.getPrototypeOf(this);if(e.hasOwnProperty(_)||e.finalize(),this[_]=!0,this._ensureClassProperties(),this._attributeToPropertyMap=new Map,this.hasOwnProperty(JSCompiler_renameProperty("properties",this))){const e=this.properties,t=[...Object.getOwnPropertyNames(e),..."function"==typeof Object.getOwnPropertySymbols?Object.getOwnPropertySymbols(e):[]];for(const a of t)this.createProperty(a,e[a])}}static _attributeNameForProperty(e,t){const a=t.attribute;return!1===a?void 0:"string"==typeof a?a:"string"==typeof e?e.toLowerCase():void 0}static _valueHasChanged(e,t,a=b){return a(e,t)}static _propertyValueFromAttribute(e,t){const a=t.type,r=t.converter||g,i="function"==typeof r?r:r.fromAttribute;return i?i(e,a):e}static _propertyValueToAttribute(e,t){if(void 0===t.reflect)return;const a=t.type,r=t.converter;return(r&&r.toAttribute||g.toAttribute)(e,a)}initialize(){this._updateState=0,this._updatePromise=new Promise(e=>this._enableUpdatingResolver=e),this._changedProperties=new Map,this._saveInstanceProperties(),this.requestUpdateInternal()}_saveInstanceProperties(){this.constructor._classProperties.forEach((e,t)=>{if(this.hasOwnProperty(t)){const e=this[t];delete this[t],this._instanceProperties||(this._instanceProperties=new Map),this._instanceProperties.set(t,e)}})}_applyInstanceProperties(){this._instanceProperties.forEach((e,t)=>this[t]=e),this._instanceProperties=void 0}connectedCallback(){this.enableUpdating()}enableUpdating(){void 0!==this._enableUpdatingResolver&&(this._enableUpdatingResolver(),this._enableUpdatingResolver=void 0)}disconnectedCallback(){}attributeChangedCallback(e,t,a){t!==a&&this._attributeToProperty(e,a)}_propertyToAttribute(e,t,a=y){const r=this.constructor,i=r._attributeNameForProperty(e,a);if(void 0!==i){const e=r._propertyValueToAttribute(t,a);if(void 0===e)return;this._updateState=8|this._updateState,null==e?this.removeAttribute(i):this.setAttribute(i,e),this._updateState=-9&this._updateState}}_attributeToProperty(e,t){if(8&this._updateState)return;const a=this.constructor,r=a._attributeToPropertyMap.get(e);if(void 0!==r){const e=a.getPropertyOptions(r);this._updateState=16|this._updateState,this[r]=a._propertyValueFromAttribute(t,e),this._updateState=-17&this._updateState}}requestUpdateInternal(e,t,a){let r=!0;if(void 0!==e){const i=this.constructor;a=a||i.getPropertyOptions(e),i._valueHasChanged(this[e],t,a.hasChanged)?(this._changedProperties.has(e)||this._changedProperties.set(e,t),!0!==a.reflect||16&this._updateState||(void 0===this._reflectingProperties&&(this._reflectingProperties=new Map),this._reflectingProperties.set(e,a))):r=!1}!this._hasRequestedUpdate&&r&&(this._updatePromise=this._enqueueUpdate())}requestUpdate(e,t){return this.requestUpdateInternal(e,t),this.updateComplete}async _enqueueUpdate(){this._updateState=4|this._updateState;try{await this._updatePromise}catch(e){}const e=this.performUpdate();return null!=e&&await e,!this._hasRequestedUpdate}get _hasRequestedUpdate(){return 4&this._updateState}get hasUpdated(){return 1&this._updateState}performUpdate(){if(!this._hasRequestedUpdate)return;this._instanceProperties&&this._applyInstanceProperties();let e=!1;const t=this._changedProperties;try{e=this.shouldUpdate(t),e?this.update(t):this._markUpdated()}catch(t){throw e=!1,this._markUpdated(),t}e&&(1&this._updateState||(this._updateState=1|this._updateState,this.firstUpdated(t)),this.updated(t))}_markUpdated(){this._changedProperties=new Map,this._updateState=-5&this._updateState}get updateComplete(){return this._getUpdateComplete()}_getUpdateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._updatePromise}shouldUpdate(e){return!0}update(e){void 0!==this._reflectingProperties&&this._reflectingProperties.size>0&&(this._reflectingProperties.forEach((e,t)=>this._propertyToAttribute(t,this[t],e)),this._reflectingProperties=void 0),this._markUpdated()}updated(e){}firstUpdated(e){}}w[_]=!0;const x=Element.prototype;x.msMatchesSelector||x.webkitMatchesSelector;const $=window.ShadowRoot&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,k=Symbol();class S{constructor(e,t){if(t!==k)throw new Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e}get styleSheet(){return void 0===this._styleSheet&&($?(this._styleSheet=new CSSStyleSheet,this._styleSheet.replaceSync(this.cssText)):this._styleSheet=null),this._styleSheet}toString(){return this.cssText}}const C=(e,...t)=>{const a=t.reduce((t,a,r)=>t+(e=>{if(e instanceof S)return e.cssText;if("number"==typeof e)return e;throw new Error(`Value passed to 'css' function must be a 'css' function result: ${e}. Use 'unsafeCSS' to pass non-literal values, but\n            take care to ensure page security.`)})(a)+e[r+1],e[0]);return new S(a,k)};(window.litElementVersions||(window.litElementVersions=[])).push("2.5.1");const E={};class z extends w{static getStyles(){return this.styles}static _getUniqueStyles(){if(this.hasOwnProperty(JSCompiler_renameProperty("_styles",this)))return;const e=this.getStyles();if(Array.isArray(e)){const t=(e,a)=>e.reduceRight((e,a)=>Array.isArray(a)?t(a,e):(e.add(a),e),a),a=t(e,new Set),r=[];a.forEach(e=>r.unshift(e)),this._styles=r}else this._styles=void 0===e?[]:[e];this._styles=this._styles.map(e=>{if(e instanceof CSSStyleSheet&&!$){const t=Array.prototype.slice.call(e.cssRules).reduce((e,t)=>e+t.cssText,"");return new S(String(t),k)}return e})}initialize(){super.initialize(),this.constructor._getUniqueStyles(),this.renderRoot=this.createRenderRoot(),window.ShadowRoot&&this.renderRoot instanceof window.ShadowRoot&&this.adoptStyles()}createRenderRoot(){return this.attachShadow(this.constructor.shadowRootOptions)}adoptStyles(){const e=this.constructor._styles;0!==e.length&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow?$?this.renderRoot.adoptedStyleSheets=e.map(e=>e instanceof CSSStyleSheet?e:e.styleSheet):this._needsShimAdoptedStyleSheets=!0:window.ShadyCSS.ScopingShim.prepareAdoptedCssText(e.map(e=>e.cssText),this.localName))}connectedCallback(){super.connectedCallback(),this.hasUpdated&&void 0!==window.ShadyCSS&&window.ShadyCSS.styleElement(this)}update(e){const t=this.render();super.update(e),t!==E&&this.constructor.render(t,this.renderRoot,{scopeName:this.localName,eventContext:this}),this._needsShimAdoptedStyleSheets&&(this._needsShimAdoptedStyleSheets=!1,this.constructor._styles.forEach(e=>{const t=document.createElement("style");t.textContent=e.cssText,this.renderRoot.appendChild(t)}))}render(){return E}}z.finalized=!0,z.render=(e,t,a)=>{if(!a||"object"!=typeof a||!a.scopeName)throw new Error("The `scopeName` option is required.");const i=a.scopeName,p=l.r.has(t),g=m&&11===t.nodeType&&!!t.host,b=g&&!v.has(i),y=b?document.createDocumentFragment():t;if((0,l.X)(e,y,Object.assign({templateFactory:h(i)},a)),b){const e=l.r.get(y);l.r.delete(y);((e,t,a)=>{v.add(e);const r=a?a.element:document.createElement("template"),i=t.querySelectorAll("style"),{length:l}=i;if(0===l)return void window.ShadyCSS.prepareTemplateStyles(r,e);const d=document.createElement("style");for(let e=0;e<l;e++){const t=i[e];t.parentNode.removeChild(t),d.textContent+=t.textContent}(e=>{f.forEach(t=>{const a=c.c.get(u(t,e));void 0!==a&&a.keyString.forEach(e=>{const{element:{content:t}}=e,a=new Set;Array.from(t.querySelectorAll("style")).forEach(e=>{a.add(e)}),s(e,a)})})})(e);const p=r.content;a?function(e,t,a=null){const{element:{content:r},parts:i}=e;if(null==a)return void r.appendChild(t);const s=document.createTreeWalker(r,133,null,!1);let l=o(i),c=0,d=-1;for(;s.nextNode();)for(d++,s.currentNode===a&&(c=n(t),a.parentNode.insertBefore(t,a));-1!==l&&i[l].index===d;){if(c>0){for(;-1!==l;)i[l].index+=c,l=o(i,l);return}l=o(i,l)}}(a,d,p.firstChild):p.insertBefore(d,p.firstChild),window.ShadyCSS.prepareTemplateStyles(r,e);const m=p.querySelector("style");if(window.ShadyCSS.nativeShadow&&null!==m)t.insertBefore(m.cloneNode(!0),t.firstChild);else if(a){p.insertBefore(d,p.firstChild);const e=new Set;e.add(d),s(a,e)}})(i,y,e.value instanceof d.i?e.value.template:void 0),(0,r.if)(t,t.firstChild),t.appendChild(y),l.r.set(t,e)}!p&&g&&window.ShadyCSS.styleElement(t.host)},z.shadowRootOptions={mode:"open"}},1012(e,t,a){a.d(t,{q:()=>i});const r=new WeakMap,i=e=>"function"==typeof e&&r.has(e)},601(e,t,a){a.d(t,{Pf:()=>i,if:()=>s,o6:()=>r});const r="undefined"!=typeof window&&null!=window.customElements&&void 0!==window.customElements.polyfillWrapFlushCallback,i=(e,t,a=null,r=null)=>{for(;t!==a;){const a=t.nextSibling;e.insertBefore(t,r),t=a}},s=(e,t,a=null)=>{for(;t!==a;){const a=t.nextSibling;e.removeChild(t),t=a}}},624(e,t,a){a.d(t,{c:()=>r,s:()=>i});const r={},i={}},6671(e,t,a){a.d(t,{GP:()=>b,Qh:()=>m,Yp:()=>h,g$:()=>f,pU:()=>p});var r=a(1012),i=a(601),s=a(624),n=a(4679),o=a(3957),l=a(9995);const c=e=>null===e||!("object"==typeof e||"function"==typeof e),d=e=>Array.isArray(e)||!(!e||!e[Symbol.iterator]);class p{constructor(e,t,a){this.dirty=!0,this.element=e,this.name=t,this.strings=a,this.parts=[];for(let e=0;e<a.length-1;e++)this.parts[e]=this._createPart()}_createPart(){return new u(this)}_getValue(){const e=this.strings,t=e.length-1,a=this.parts;if(1===t&&""===e[0]&&""===e[1]){const e=a[0].value;if("symbol"==typeof e)return String(e);if("string"==typeof e||!d(e))return e}let r="";for(let i=0;i<t;i++){r+=e[i];const t=a[i];if(void 0!==t){const e=t.value;if(c(e)||!d(e))r+="string"==typeof e?e:String(e);else for(const t of e)r+="string"==typeof t?t:String(t)}}return r+=e[t],r}commit(){this.dirty&&(this.dirty=!1,this.element.setAttribute(this.name,this._getValue()))}}class u{constructor(e){this.value=void 0,this.committer=e}setValue(e){e===s.c||c(e)&&e===this.value||(this.value=e,(0,r.q)(e)||(this.committer.dirty=!0))}commit(){for(;(0,r.q)(this.value);){const e=this.value;this.value=s.c,e(this)}this.value!==s.c&&this.committer.commit()}}class m{constructor(e){this.value=void 0,this.__pendingValue=void 0,this.options=e}appendInto(e){this.startNode=e.appendChild((0,l.h5)()),this.endNode=e.appendChild((0,l.h5)())}insertAfterNode(e){this.startNode=e,this.endNode=e.nextSibling}appendIntoPart(e){e.__insert(this.startNode=(0,l.h5)()),e.__insert(this.endNode=(0,l.h5)())}insertAfterPart(e){e.__insert(this.startNode=(0,l.h5)()),this.endNode=e.endNode,e.endNode=this.startNode}setValue(e){this.__pendingValue=e}commit(){if(null===this.startNode.parentNode)return;for(;(0,r.q)(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=s.c,e(this)}const e=this.__pendingValue;e!==s.c&&(c(e)?e!==this.value&&this.__commitText(e):e instanceof o.Q?this.__commitTemplateResult(e):e instanceof Node?this.__commitNode(e):d(e)?this.__commitIterable(e):e===s.s?(this.value=s.s,this.clear()):this.__commitText(e))}__insert(e){this.endNode.parentNode.insertBefore(e,this.endNode)}__commitNode(e){this.value!==e&&(this.clear(),this.__insert(e),this.value=e)}__commitText(e){const t=this.startNode.nextSibling,a="string"==typeof(e=null==e?"":e)?e:String(e);t===this.endNode.previousSibling&&3===t.nodeType?t.data=a:this.__commitNode(document.createTextNode(a)),this.value=e}__commitTemplateResult(e){const t=this.options.templateFactory(e);if(this.value instanceof n.i&&this.value.template===t)this.value.update(e.values);else{const a=new n.i(t,e.processor,this.options),r=a._clone();a.update(e.values),this.__commitNode(r),this.value=a}}__commitIterable(e){Array.isArray(this.value)||(this.value=[],this.clear());const t=this.value;let a,r=0;for(const i of e)a=t[r],void 0===a&&(a=new m(this.options),t.push(a),0===r?a.appendIntoPart(this):a.insertAfterPart(t[r-1])),a.setValue(i),a.commit(),r++;r<t.length&&(t.length=r,this.clear(a&&a.endNode))}clear(e=this.startNode){(0,i.if)(this.startNode.parentNode,e.nextSibling,this.endNode)}}class h{constructor(e,t,a){if(this.value=void 0,this.__pendingValue=void 0,2!==a.length||""!==a[0]||""!==a[1])throw new Error("Boolean attributes can only contain a single expression");this.element=e,this.name=t,this.strings=a}setValue(e){this.__pendingValue=e}commit(){for(;(0,r.q)(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=s.c,e(this)}if(this.__pendingValue===s.c)return;const e=!!this.__pendingValue;this.value!==e&&(e?this.element.setAttribute(this.name,""):this.element.removeAttribute(this.name),this.value=e),this.__pendingValue=s.c}}class f extends p{constructor(e,t,a){super(e,t,a),this.single=2===a.length&&""===a[0]&&""===a[1]}_createPart(){return new v(this)}_getValue(){return this.single?this.parts[0].value:super._getValue()}commit(){this.dirty&&(this.dirty=!1,this.element[this.name]=this._getValue())}}class v extends u{}let g=!1;(()=>{try{const e={get capture(){return g=!0,!1}};window.addEventListener("test",e,e),window.removeEventListener("test",e,e)}catch(e){}})();class b{constructor(e,t,a){this.value=void 0,this.__pendingValue=void 0,this.element=e,this.eventName=t,this.eventContext=a,this.__boundHandleEvent=e=>this.handleEvent(e)}setValue(e){this.__pendingValue=e}commit(){for(;(0,r.q)(this.__pendingValue);){const e=this.__pendingValue;this.__pendingValue=s.c,e(this)}if(this.__pendingValue===s.c)return;const e=this.__pendingValue,t=this.value,a=null==e||null!=t&&(e.capture!==t.capture||e.once!==t.once||e.passive!==t.passive),i=null!=e&&(null==t||a);a&&this.element.removeEventListener(this.eventName,this.__boundHandleEvent,this.__options),i&&(this.__options=y(e),this.element.addEventListener(this.eventName,this.__boundHandleEvent,this.__options)),this.value=e,this.__pendingValue=s.c}handleEvent(e){"function"==typeof this.value?this.value.call(this.eventContext||this.element,e):this.value.handleEvent(e)}}const y=e=>e&&(g?{capture:e.capture,passive:e.passive,once:e.once}:e.capture)},3841(e,t,a){a.d(t,{X:()=>o,r:()=>n});var r=a(601),i=a(6671),s=a(5172);const n=new WeakMap,o=(e,t,a)=>{let o=n.get(t);void 0===o&&((0,r.if)(t,t.firstChild),n.set(t,o=new i.Qh(Object.assign({templateFactory:s.v},a))),o.appendInto(t)),o.setValue(e),o.commit()}},5172(e,t,a){a.d(t,{c:()=>s,v:()=>i});var r=a(9995);function i(e){let t=s.get(e.type);void 0===t&&(t={stringsArray:new WeakMap,keyString:new Map},s.set(e.type,t));let a=t.stringsArray.get(e.strings);if(void 0!==a)return a;const i=e.strings.join(r.xL);return a=t.keyString.get(i),void 0===a&&(a=new r.Bj(e,e.getTemplateElement()),t.keyString.set(i,a)),t.stringsArray.set(e.strings,a),a}const s=new Map},4679(e,t,a){a.d(t,{i:()=>s});var r=a(601),i=a(9995);class s{constructor(e,t,a){this.__parts=[],this.template=e,this.processor=t,this.options=a}update(e){let t=0;for(const a of this.__parts)void 0!==a&&a.setValue(e[t]),t++;for(const e of this.__parts)void 0!==e&&e.commit()}_clone(){const e=r.o6?this.template.element.content.cloneNode(!0):document.importNode(this.template.element.content,!0),t=[],a=this.template.parts,s=document.createTreeWalker(e,133,null,!1);let n,o=0,l=0,c=s.nextNode();for(;o<a.length;)if(n=a[o],(0,i.s9)(n)){for(;l<n.index;)l++,"TEMPLATE"===c.nodeName&&(t.push(c),s.currentNode=c.content),null===(c=s.nextNode())&&(s.currentNode=t.pop(),c=s.nextNode());if("node"===n.type){const e=this.processor.handleTextExpression(this.options);e.insertAfterNode(c.previousSibling),this.__parts.push(e)}else this.__parts.push(...this.processor.handleAttributeExpressions(c,n.name,n.strings,this.options));o++}else this.__parts.push(void 0),o++;return r.o6&&(document.adoptNode(e),customElements.upgrade(e)),e}}},3957(e,t,a){a.d(t,{Q:()=>o,U:()=>l});var r=a(601),i=a(9995);const s=window.trustedTypes&&trustedTypes.createPolicy("lit-html",{createHTML:e=>e}),n=` ${i.xL} `;class o{constructor(e,t,a,r){this.strings=e,this.values=t,this.type=a,this.processor=r}getHTML(){const e=this.strings.length-1;let t="",a=!1;for(let r=0;r<e;r++){const e=this.strings[r],s=e.lastIndexOf("\x3c!--");a=(s>-1||a)&&-1===e.indexOf("--\x3e",s+1);const o=i.zY.exec(e);t+=null===o?e+(a?n:i.XY):e.substr(0,o.index)+o[1]+o[2]+i.c1+o[3]+i.xL}return t+=this.strings[e],t}getTemplateElement(){const e=document.createElement("template");let t=this.getHTML();return void 0!==s&&(t=s.createHTML(t)),e.innerHTML=t,e}}class l extends o{getHTML(){return`<svg>${super.getHTML()}</svg>`}getTemplateElement(){const e=super.getTemplateElement(),t=e.content,a=t.firstChild;return t.removeChild(a),(0,r.Pf)(t,a.firstChild),e}}},9995(e,t,a){a.d(t,{Bj:()=>o,XY:()=>i,c1:()=>n,h5:()=>d,s9:()=>c,xL:()=>r,zY:()=>p});const r=`{{lit-${String(Math.random()).slice(2)}}}`,i=`\x3c!--${r}--\x3e`,s=new RegExp(`${r}|${i}`),n="$lit$";class o{constructor(e,t){this.parts=[],this.element=t;const a=[],i=[],o=document.createTreeWalker(t.content,133,null,!1);let c=0,u=-1,m=0;const{strings:h,values:{length:f}}=e;for(;m<f;){const e=o.nextNode();if(null!==e){if(u++,1===e.nodeType){if(e.hasAttributes()){const t=e.attributes,{length:a}=t;let r=0;for(let e=0;e<a;e++)l(t[e].name,n)&&r++;for(;r-- >0;){const t=h[m],a=p.exec(t)[2],r=a.toLowerCase()+n,i=e.getAttribute(r);e.removeAttribute(r);const o=i.split(s);this.parts.push({type:"attribute",index:u,name:a,strings:o}),m+=o.length-1}}"TEMPLATE"===e.tagName&&(i.push(e),o.currentNode=e.content)}else if(3===e.nodeType){const t=e.data;if(t.indexOf(r)>=0){const r=e.parentNode,i=t.split(s),o=i.length-1;for(let t=0;t<o;t++){let a,s=i[t];if(""===s)a=d();else{const e=p.exec(s);null!==e&&l(e[2],n)&&(s=s.slice(0,e.index)+e[1]+e[2].slice(0,-n.length)+e[3]),a=document.createTextNode(s)}r.insertBefore(a,e),this.parts.push({type:"node",index:++u})}""===i[o]?(r.insertBefore(d(),e),a.push(e)):e.data=i[o],m+=o}}else if(8===e.nodeType)if(e.data===r){const t=e.parentNode;null!==e.previousSibling&&u!==c||(u++,t.insertBefore(d(),e)),c=u,this.parts.push({type:"node",index:u}),null===e.nextSibling?e.data="":(a.push(e),u--),m++}else{let t=-1;for(;-1!==(t=e.data.indexOf(r,t+1));)this.parts.push({type:"node",index:-1}),m++}}else o.currentNode=i.pop()}for(const e of a)e.parentNode.removeChild(e)}}const l=(e,t)=>{const a=e.length-t.length;return a>=0&&e.slice(a)===t},c=e=>-1!==e.index,d=()=>document.createComment(""),p=/([ \x09\x0a\x0c\x0d])([^\0-\x1F\x7F-\x9F "'>=/]+)([ \x09\x0a\x0c\x0d]*=[ \x09\x0a\x0c\x0d]*(?:[^ \x09\x0a\x0c\x0d"'`<>=]*|"[^"]*|'[^']*))$/},7637(e,t,a){a.d(t,{qy:()=>o,XX:()=>n.X,JW:()=>l});var r=a(6671);const i=new class{handleAttributeExpressions(e,t,a,i){const s=t[0];return"."===s?new r.g$(e,t.slice(1),a).parts:"@"===s?[new r.GP(e,t.slice(1),i.eventContext)]:"?"===s?[new r.Yp(e,t.slice(1),a)]:new r.pU(e,t,a).parts}handleTextExpression(e){return new r.Qh(e)}};var s=a(3957),n=(a(1012),a(601),a(624),a(3841));a(5172),a(4679),a(9995),"undefined"!=typeof window&&(window.litHtmlVersions||(window.litHtmlVersions=[])).push("1.4.1");const o=(e,...t)=>new s.Q(e,t,"html",i),l=(e,...t)=>new s.U(e,t,"svg",i)},8330(e){e.exports=JSON.parse('{"name":"lcars-dashboard","private":true,"version":"5.0.0-beta.1","description":"LCARS Dashboard — Home Assistant Lovelace dashboard with Star Trek LCARS UI. Based on Dwains Dashboard by Dwain Scheeren.","scripts":{"build":"webpack --mode=production","watch":"webpack --watch --mode=development"},"keywords":["lcars","home-assistant","lovelace","dashboard","hacs"],"author":"htiel (based on Dwains Dashboard by Dwain Scheeren)","license":"MIT","devDependencies":{"autoprefixer":"^10.2.5","css-loader":"^5.1.3","html-webpack-plugin":"^5.3.1","postcss":"^8.2.8","postcss-cli":"^8.3.1","postcss-loader":"^5.2.0","style-loader":"^2.0.0","tailwindcss":"^2.0.3","webpack":"^5.26.0","webpack-cli":"^4.5.0","webpack-dev-server":"^5.2.3","webpack-merge":"^5.7.3"},"dependencies":{"@mdi/js":"^6.5.95","card-tools":"github:thomasloven/lovelace-card-tools#477f3d4eeb5c70cab047d418d19afb6b0f07bf49","custom-card-helpers":"^1.8.0","js-cookie":"^3.0.1","lit-element":"^2.2.1","lit-html":"^1.1.2","sortablejs":"^1.14.0"}}')}},t={};function a(r){var i=t[r];if(void 0!==i)return i.exports;var s=t[r]={exports:{}};return e[r](s,s.exports,a),s.exports}a.d=(e,t)=>{for(var r in t)a.o(t,r)&&!a.o(e,r)&&Object.defineProperty(e,r,{enumerable:!0,get:t[r]})},a.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),(()=>{var e=a(7349),t=a(2622),r=a(8851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_activePath:{type:String}}}constructor(){super(),this._activePath="home"}set hass(e){this._hass=e}setConfig(e){this._config=e}_handleNav(e){this._activePath=e,(0,r.oo)(`/lcars-dashboard/${e}`),this.requestUpdate()}static get styles(){return[t.Bx,e.AH`
           :host {
             display: block;
           }
@@ -7081,7 +6948,140 @@
             </div>
           `})}
       </div>
-    `}_batterySegFilled(e,t){return e>=[0,11,26,51,76][t-1]}_batteryColor(e){return e<=10?"var(--lcars-tomato)":e<=25?"var(--lcars-peach)":e<=50?"var(--lcars-butterscotch)":"var(--lcars-sunflower)"}_toggleLock(e,t){f.e.play("lockToggle"),t?this._callService("lock","lock",{entity_id:e}):this._requestConfirm(e,e=>{this._callService("lock","unlock",{entity_id:e})},"CONFIRM UNLOCK?")}_toggleCover(e,t){f.e.play("coverAction"),"closed"===t?this._requestConfirm(e,e=>{this._callService("cover","open_cover",{entity_id:e})},"CONFIRM OPEN?"):"open"===t?this._requestConfirm(e,e=>{this._callService("cover","close_cover",{entity_id:e})},"CONFIRM CLOSE?"):"opening"!==t&&"closing"!==t||this._callService("cover","stop_cover",{entity_id:e})}_getCoverStateInfo(e){switch(e?.state||""){case"open":return{text:"OPEN",hint:"TAP TO CLOSE",color:"var(--lcars-tomato)",transitional:!1};case"closed":return{text:"CLOSED",hint:"TAP TO OPEN",color:"var(--lcars-sunflower)",transitional:!1};case"opening":return{text:"OPENING…",hint:"",color:"var(--lcars-butterscotch)",transitional:!0};case"closing":return{text:"CLOSING…",hint:"",color:"var(--lcars-butterscotch)",transitional:!0};case"stopped":return{text:"STOPPED",hint:"TAP TO OPEN",color:"var(--lcars-peach)",transitional:!1};default:return{text:"UNKNOWN",hint:"",color:"var(--lcars-disabled)",transitional:!1}}}_pendingConfirm=null;_requestConfirm(e,t,a){this._cancelConfirm(),this._pendingConfirm={entityId:e,action:t,label:a},this._pendingConfirm.timer=setTimeout(()=>{this._cancelConfirm()},5e3),this.requestUpdate()}_executeConfirm(){if(!this._pendingConfirm)return;const{entityId:e,action:t}=this._pendingConfirm;clearTimeout(this._pendingConfirm.timer),this._pendingConfirm=null,t(e),this.requestUpdate()}_cancelConfirm(){this._pendingConfirm&&(clearTimeout(this._pendingConfirm.timer),this._pendingConfirm=null,this.requestUpdate())}disconnectedCallback(){super.disconnectedCallback(),this._cancelConfirm()}_buildGroup(e,t){let a=null;for(const r of e){const e=r.entity?.device_id;if(e&&t[e]){a=t[e];break}}return{device:a,entities:e}}}customElements.define("lcars-tactical-panel",Z),a(690);const Q=e.AH`
+    `}_batterySegFilled(e,t){return e>=[0,11,26,51,76][t-1]}_batteryColor(e){return e<=10?"var(--lcars-tomato)":e<=25?"var(--lcars-peach)":e<=50?"var(--lcars-butterscotch)":"var(--lcars-sunflower)"}_toggleLock(e,t){f.e.play("lockToggle"),t?this._callService("lock","lock",{entity_id:e}):this._requestConfirm(e,e=>{this._callService("lock","unlock",{entity_id:e})},"CONFIRM UNLOCK?")}_toggleCover(e,t){f.e.play("coverAction"),"closed"===t?this._requestConfirm(e,e=>{this._callService("cover","open_cover",{entity_id:e})},"CONFIRM OPEN?"):"open"===t?this._requestConfirm(e,e=>{this._callService("cover","close_cover",{entity_id:e})},"CONFIRM CLOSE?"):"opening"!==t&&"closing"!==t||this._callService("cover","stop_cover",{entity_id:e})}_getCoverStateInfo(e){switch(e?.state||""){case"open":return{text:"OPEN",hint:"TAP TO CLOSE",color:"var(--lcars-tomato)",transitional:!1};case"closed":return{text:"CLOSED",hint:"TAP TO OPEN",color:"var(--lcars-sunflower)",transitional:!1};case"opening":return{text:"OPENING…",hint:"",color:"var(--lcars-butterscotch)",transitional:!0};case"closing":return{text:"CLOSING…",hint:"",color:"var(--lcars-butterscotch)",transitional:!0};case"stopped":return{text:"STOPPED",hint:"TAP TO OPEN",color:"var(--lcars-peach)",transitional:!1};default:return{text:"UNKNOWN",hint:"",color:"var(--lcars-disabled)",transitional:!1}}}_pendingConfirm=null;_requestConfirm(e,t,a){this._cancelConfirm(),this._pendingConfirm={entityId:e,action:t,label:a},this._pendingConfirm.timer=setTimeout(()=>{this._cancelConfirm()},5e3),this.requestUpdate()}_executeConfirm(){if(!this._pendingConfirm)return;const{entityId:e,action:t}=this._pendingConfirm;clearTimeout(this._pendingConfirm.timer),this._pendingConfirm=null,t(e),this.requestUpdate()}_cancelConfirm(){this._pendingConfirm&&(clearTimeout(this._pendingConfirm.timer),this._pendingConfirm=null,this.requestUpdate())}disconnectedCallback(){super.disconnectedCallback(),this._cancelConfirm()}_buildGroup(e,t){let a=null;for(const r of e){const e=r.entity?.device_id;if(e&&t[e]){a=t[e];break}}return{device:a,entities:e}}}customElements.define("lcars-tactical-panel",Z);const Q=e.AH`
+
+  .viewport-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lcars-gap);
+  }
+
+  .viewport-cover-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0;
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    text-transform: uppercase;
+    transition: background var(--lcars-transition);
+    cursor: pointer;
+    min-height: var(--lcars-btn-height, 2rem);
+  }
+
+  .viewport-cover-row:hover { background: rgba(255,255,255,0.05); }
+  .viewport-cover-row:focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
+  }
+
+  .viewport-indicator {
+    width: 2px;
+    height: 1rem;
+    border-radius: 1px;
+    flex-shrink: 0;
+  }
+
+  .viewport-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .viewport-position {
+    font-weight: 700;
+    flex-shrink: 0;
+    min-width: 3rem;
+    text-align: right;
+  }
+
+  .viewport-controls {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .viewport-btn {
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    border-radius: var(--lcars-btn-radius);
+    background: var(--lcars-sunflower);
+    color: var(--lcars-black);
+    font-family: var(--lcars-font);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background 200ms;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .viewport-btn:hover { filter: brightness(1.15); }
+  .viewport-btn:focus-visible {
+    outline: 2px solid var(--lcars-ice);
+    outline-offset: 2px;
+  }
+  .viewport-btn[data-active] { background: var(--lcars-gold); }
+
+  .viewport-empty {
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-gray);
+    text-transform: uppercase;
+    text-align: center;
+    padding: 2rem 1rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .viewport-cover-row,
+    .viewport-btn {
+      transition-duration: 0.01ms !important;
+    }
+  }
+`,K=new Set(["garage_door","gate","door"]);class J extends _.j{get panelType(){return"viewport"}get defaultPanelTitle(){return"VIEWPORT CONTROLS"}get frameColor(){return"var(--lcars-sunflower)"}static get styles(){return[...super.styles,r.AM,Q]}_getCoverEntries(){return this._getAllEntities().filter(e=>{if("cover"!==e.domain)return!1;const t=e.state?.attributes?.device_class||"";return!K.has(t)})}renderBadge(){const t=this._getCoverEntries(),a=t.filter(e=>"open"===e.state?.state).length,r=t.length;if(0===r)return e.qy``;const i=a>0?"var(--lcars-sunflower)":"var(--lcars-gray)";return e.qy`<lcars-summary-badge value="${a}/${r} OPEN" color="${i}"></lcars-summary-badge>`}renderContent(){const t=this._getCoverEntries();return 0===t.length?e.qy`<div class="viewport-empty">NO VIEWPORT CONTROLS</div>`:e.qy`
+      <div class="viewport-content" role="list" aria-label="Viewport controls">
+        ${t.map(e=>this._renderCoverRow(e))}
+      </div>
+    `}_renderCoverRow(t){const a=t.entity?.entity_id||"",r=t.state?.attributes?.friendly_name||a,s=t.state?.state||"unknown",n=t.state?.attributes?.current_position,o="open"===s,l="closed"===s,c=o?"var(--lcars-sunflower)":"var(--lcars-gray)",d=null!=n?`${n}%`:s.toUpperCase(),p=1&(t.state?.attributes?.supported_features||0),u=2&(t.state?.attributes?.supported_features||0),m=8&(t.state?.attributes?.supported_features||0);return e.qy`
+      <div class="viewport-cover-row"
+           role="listitem"
+           tabindex="0"
+           aria-label="${r}: ${d}"
+           @click=${()=>(0,i.Hv)(a)}
+           @keydown=${e=>("Enter"===e.key||" "===e.key)&&(e.preventDefault(),(0,i.Hv)(a))}>
+        <span class="viewport-indicator" style="background:${c}"></span>
+        <span class="viewport-name">${r}</span>
+        <span class="viewport-position">${d}</span>
+        <span class="viewport-controls" @click=${e=>e.stopPropagation()}>
+          ${p?e.qy`
+            <button class="viewport-btn"
+                    ?data-active=${o}
+                    aria-label="Open ${r}"
+                    @click=${()=>{f.e.play("coverAction"),this._callService("cover","open_cover",{entity_id:a})}}>
+              ▲
+            </button>
+          `:""}
+          ${m?e.qy`
+            <button class="viewport-btn"
+                    aria-label="Stop ${r}"
+                    @click=${()=>{f.e.play("coverAction"),this._callService("cover","stop_cover",{entity_id:a})}}>
+              ■
+            </button>
+          `:""}
+          ${u?e.qy`
+            <button class="viewport-btn"
+                    ?data-active=${l}
+                    aria-label="Close ${r}"
+                    @click=${()=>{f.e.play("coverAction"),this._callService("cover","close_cover",{entity_id:a})}}>
+              ▼
+            </button>
+          `:""}
+        </span>
+      </div>
+    `}}customElements.define("lcars-viewport-panel",J);const ee=e.AH`
 
   .hazard-content {
     display: flex;
@@ -7214,7 +7214,7 @@
       transition-duration: 0.01ms !important;
     }
   }
-`,K=new Set(["smoke","gas","carbon_monoxide","heat","safety"]);new Set(["battery"]);class J extends _.j{get panelType(){return"hazard"}get defaultPanelTitle(){return"HAZARD DETECTION"}get frameColor(){return this._getAllEntities().some(e=>{const t=e.state?.attributes?.device_class||"";return K.has(t)&&"on"===e.state?.state})?"var(--lcars-tomato)":"var(--lcars-sunflower)"}static get styles(){return[...super.styles,r.AM,Q]}_partitionEntities(){const e=this._getAllEntities(),t=this.hass?.devices||{},a=new Map,r=[];for(const i of e){const e=i.entity?.device_id;e?(a.has(e)||a.set(e,{device:t[e]||null,entries:[]}),a.get(e).entries.push(i)):r.push(i)}return{deviceMap:a,ungrouped:r}}renderBadge(){const t=this._getAllEntities().filter(e=>{const t=e.state?.attributes?.device_class||"";return K.has(t)&&"on"===e.state?.state}).length;return t>0?e.qy`<lcars-summary-badge value="⚠ ${t} ALERT" color="var(--lcars-tomato)"></lcars-summary-badge>`:e.qy`<lcars-summary-badge value="ALL CLEAR" color="var(--lcars-sunflower)"></lcars-summary-badge>`}renderContent(){const{deviceMap:t,ungrouped:a}=this._partitionEntities();return 0===t.size&&0===a.length?e.qy`<div class="hazard-empty">NO HAZARD DETECTORS</div>`:e.qy`
+`,te=new Set(["smoke","gas","carbon_monoxide","heat","safety"]);new Set(["battery"]);class ae extends _.j{get panelType(){return"hazard"}get defaultPanelTitle(){return"HAZARD DETECTION"}get frameColor(){return this._getAllEntities().some(e=>{const t=e.state?.attributes?.device_class||"";return te.has(t)&&"on"===e.state?.state})?"var(--lcars-tomato)":"var(--lcars-sunflower)"}static get styles(){return[...super.styles,r.AM,ee]}_partitionEntities(){const e=this._getAllEntities(),t=this.hass?.devices||{},a=new Map,r=[];for(const i of e){const e=i.entity?.device_id;e?(a.has(e)||a.set(e,{device:t[e]||null,entries:[]}),a.get(e).entries.push(i)):r.push(i)}return{deviceMap:a,ungrouped:r}}renderBadge(){const t=this._getAllEntities().filter(e=>{const t=e.state?.attributes?.device_class||"";return te.has(t)&&"on"===e.state?.state}).length;return t>0?e.qy`<lcars-summary-badge value="⚠ ${t} ALERT" color="var(--lcars-tomato)"></lcars-summary-badge>`:e.qy`<lcars-summary-badge value="ALL CLEAR" color="var(--lcars-sunflower)"></lcars-summary-badge>`}renderContent(){const{deviceMap:t,ungrouped:a}=this._partitionEntities();return 0===t.size&&0===a.length?e.qy`<div class="hazard-empty">NO HAZARD DETECTORS</div>`:e.qy`
       <div class="hazard-content">
         <div class="hazard-section-label">DETECTORS</div>
         <div class="hazard-detectors">
@@ -7222,7 +7222,7 @@
         </div>
         ${this._renderBatteryOverview(t)}
       </div>
-    `}_renderDetectorCard(t){const a=t.device?.name_by_user||t.device?.name||"Detector",r=t.entries.filter(e=>{const t=e.state?.attributes?.device_class||"";return K.has(t)}),s=t.entries.find(e=>"occupancy"===e.state?.attributes?.device_class),n=r.some(e=>"on"===e.state?.state),o=t.entries[0]?.entity?.entity_id||"";return e.qy`
+    `}_renderDetectorCard(t){const a=t.device?.name_by_user||t.device?.name||"Detector",r=t.entries.filter(e=>{const t=e.state?.attributes?.device_class||"";return te.has(t)}),s=t.entries.find(e=>"occupancy"===e.state?.attributes?.device_class),n=r.some(e=>"on"===e.state?.state),o=t.entries[0]?.entity?.entity_id||"";return e.qy`
       <div class="hazard-detector-card"
            tabindex="0"
            role="group"
@@ -7264,7 +7264,7 @@
             `})}
         </div>
       </div>
-    `}}customElements.define("lcars-hazard-panel",J);const ee=e.AH`
+    `}}customElements.define("lcars-hazard-panel",ae);const re=e.AH`
 
   .galley-content {
     display: flex;
@@ -7374,7 +7374,7 @@
       transition-duration: 0.01ms !important;
     }
   }
-`;new Set(["ge_home","smartthinq_sensors"]),new Set(["temperature","duration","enum"]);class te extends _.j{get panelType(){return"galley"}get defaultPanelTitle(){return"GALLEY SYSTEMS"}get frameColor(){return"var(--lcars-butterscotch)"}static get styles(){return[...super.styles,r.AM,ee]}_partitionEntities(){const e=this._getAllEntities(),t=this.hass?.devices||{},a=new Map;for(const r of e){const e=r.entity?.device_id;e&&(a.has(e)||a.set(e,{device:t[e]||null,entries:[]}),a.get(e).entries.push(r))}return{deviceMap:a}}renderBadge(){const t=this._getAllEntities().filter(e=>{const t=(e.state?.state||"").toLowerCase();return"running"===t||"cooking"===t||"preheat"===t||"on"===t||"drying"===t||"washing"===t}).length;return t>0?e.qy`<lcars-summary-badge value="${t} ACTIVE" color="var(--lcars-gold)"></lcars-summary-badge>`:e.qy`<lcars-summary-badge value="STANDBY" color="var(--lcars-gray)"></lcars-summary-badge>`}renderContent(){const{deviceMap:t}=this._partitionEntities();return 0===t.size?e.qy`<div class="galley-empty">NO GALLEY SYSTEMS</div>`:e.qy`
+`;new Set(["ge_home","smartthinq_sensors"]),new Set(["temperature","duration","enum"]);class ie extends _.j{get panelType(){return"galley"}get defaultPanelTitle(){return"GALLEY SYSTEMS"}get frameColor(){return"var(--lcars-butterscotch)"}static get styles(){return[...super.styles,r.AM,re]}_partitionEntities(){const e=this._getAllEntities(),t=this.hass?.devices||{},a=new Map;for(const r of e){const e=r.entity?.device_id;e&&(a.has(e)||a.set(e,{device:t[e]||null,entries:[]}),a.get(e).entries.push(r))}return{deviceMap:a}}renderBadge(){const t=this._getAllEntities().filter(e=>{const t=(e.state?.state||"").toLowerCase();return"running"===t||"cooking"===t||"preheat"===t||"on"===t||"drying"===t||"washing"===t}).length;return t>0?e.qy`<lcars-summary-badge value="${t} ACTIVE" color="var(--lcars-gold)"></lcars-summary-badge>`:e.qy`<lcars-summary-badge value="STANDBY" color="var(--lcars-gray)"></lcars-summary-badge>`}renderContent(){const{deviceMap:t}=this._partitionEntities();return 0===t.size?e.qy`<div class="galley-empty">NO GALLEY SYSTEMS</div>`:e.qy`
       <div class="galley-content">
         <div class="galley-section-label">APPLIANCES</div>
         <div class="galley-appliances">
@@ -7411,7 +7411,7 @@
             <div class="galley-timer" aria-label="Timer: ${a}">⏱ ${a}</div>
           `})}
       </div>
-    `}}customElements.define("lcars-galley-panel",te);const ae=e.AH`
+    `}}customElements.define("lcars-galley-panel",ie);const se=e.AH`
   :host { display: block; }
 
   /* ═══ Panel Content Grid ═══ */
@@ -7542,7 +7542,7 @@
       grid-template-columns: 1fr;
     }
   }
-`;function re(e){const t=e.entity?.entity_id||"",a=(e.state,e.domain||"");if("lock"===a)return"lock";if("select"===a&&/solar/i.test(t))return"solar_mode";if("number"===a&&/max.*current/i.test(t))return"max_current_number";if("sensor"===a){if(/status_description/i.test(t))return"status";if(/current_mode/i.test(t))return"mode";if(/charging_power/i.test(t))return"charging_power";if(/charging_speed/i.test(t))return"charging_speed";if(/added_energy/i.test(t)&&!/green|grid/i.test(t))return"added_energy";if(/added_range/i.test(t))return"added_range";if(/(?:^|_)cost$/i.test(t))return"cost";if(/added_green_energy/i.test(t))return"green_energy";if(/added_grid_energy/i.test(t))return"grid_energy";if(/discharged_energy/i.test(t))return"discharged_energy";if(/state_of_charge/i.test(t))return"soc";if(/depot_price/i.test(t))return"depot_price";if(/max_available_power/i.test(t))return"max_available";if(/max_charging_current/i.test(t))return"max_current";if(/energy_price/i.test(t))return"energy_price"}return null}const ie=[{role:"status",label:"STATUS",color:null},{role:"mode",label:"MODE",color:"var(--lcars-data-accent, var(--lcars-sunflower))"}],se=[{role:"charging_power",label:"POWER",unit:"kW",color:null},{role:"charging_speed",label:"SPEED",unit:"km/h"},{role:"added_energy",label:"ADDED",unit:"kWh"},{role:"added_range",label:"RANGE",unit:"km"},{role:"cost",label:"COST",unit:"$"}],ne=[{role:"green_energy",label:"GREEN ENERGY",unit:"kWh",color:"var(--lcars-bluey, var(--lcars-ice))"},{role:"grid_energy",label:"GRID ENERGY",unit:"kWh",color:"var(--lcars-butterscotch)"},{role:"discharged_energy",label:"DISCHARGED",unit:"kWh",color:"var(--lcars-ice)"}],oe=[{role:"soc",label:"SOC",unit:"%",color:null},{role:"depot_price",label:"DEPOT PRICE",unit:"$/kWh"}],le=[{role:"max_available",label:"MAX AVAILABLE",unit:"kW"},{role:"max_current",label:"MAX CURRENT",unit:"A"},{role:"energy_price",label:"ENERGY PRICE",unit:"$/kWh"}];class ce extends _.j{get panelType(){return"ev_charger"}get defaultPanelTitle(){return"EV CHARGER"}get frameColor(){const e=this._entityMap(),t=e.get("status")?.state?.state,a=e.get("charging_power")?.state?.state,r=null!=a?parseFloat(a):null;return(0,n.N)(t,r)}static get styles(){return[...super.styles,r.AM,ae]}_entityMap(){if(this.__entityMapCache)return this.__entityMapCache;const e=new Map;for(const t of this._getAllEntities()){const a=re(t);a&&!e.has(a)&&e.set(a,t)}return this.__entityMapCache=e,e}updated(e){super.updated(e),this.__entityMapCache=null}renderBadge(){const t=this._entityMap(),a=t.get("status")?.state?.state,r=(0,n.WG)(a),i=this.frameColor;return e.qy`<lcars-summary-badge value="${r}" color="${i}"></lcars-summary-badge>`}renderContent(){const t=this._entityMap(),a=t.get("status")?.state?.state,r=t.get("charging_power")?.state?.state,i=null!=r?parseFloat(r):0,s=this.frameColor,o=(0,n.WG)(a),l=(0,n.t$)(a),c=t.get("soc")?.state?.state,d=null!=c&&"unavailable"!==c&&"unknown"!==c?parseFloat(c):null,p=(0,n.MO)(d),u=a&&(String(a).toLowerCase().includes("discharg")||String(a).toLowerCase().includes("v2g")),m=!(a&&String(a).toLowerCase().includes("charg")&&!String(a).toLowerCase().includes("waiting")||u);return e.qy`
+`;function ne(e){const t=e.entity?.entity_id||"",a=(e.state,e.domain||"");if("lock"===a)return"lock";if("select"===a&&/solar/i.test(t))return"solar_mode";if("number"===a&&/max.*current/i.test(t))return"max_current_number";if("sensor"===a){if(/status_description/i.test(t))return"status";if(/current_mode/i.test(t))return"mode";if(/charging_power/i.test(t))return"charging_power";if(/charging_speed/i.test(t))return"charging_speed";if(/added_energy/i.test(t)&&!/green|grid/i.test(t))return"added_energy";if(/added_range/i.test(t))return"added_range";if(/(?:^|_)cost$/i.test(t))return"cost";if(/added_green_energy/i.test(t))return"green_energy";if(/added_grid_energy/i.test(t))return"grid_energy";if(/discharged_energy/i.test(t))return"discharged_energy";if(/state_of_charge/i.test(t))return"soc";if(/depot_price/i.test(t))return"depot_price";if(/max_available_power/i.test(t))return"max_available";if(/max_charging_current/i.test(t))return"max_current";if(/energy_price/i.test(t))return"energy_price"}return null}const oe=[{role:"status",label:"STATUS",color:null},{role:"mode",label:"MODE",color:"var(--lcars-data-accent, var(--lcars-sunflower))"}],le=[{role:"charging_power",label:"POWER",unit:"kW",color:null},{role:"charging_speed",label:"SPEED",unit:"km/h"},{role:"added_energy",label:"ADDED",unit:"kWh"},{role:"added_range",label:"RANGE",unit:"km"},{role:"cost",label:"COST",unit:"$"}],ce=[{role:"green_energy",label:"GREEN ENERGY",unit:"kWh",color:"var(--lcars-bluey, var(--lcars-ice))"},{role:"grid_energy",label:"GRID ENERGY",unit:"kWh",color:"var(--lcars-butterscotch)"},{role:"discharged_energy",label:"DISCHARGED",unit:"kWh",color:"var(--lcars-ice)"}],de=[{role:"soc",label:"SOC",unit:"%",color:null},{role:"depot_price",label:"DEPOT PRICE",unit:"$/kWh"}],pe=[{role:"max_available",label:"MAX AVAILABLE",unit:"kW"},{role:"max_current",label:"MAX CURRENT",unit:"A"},{role:"energy_price",label:"ENERGY PRICE",unit:"$/kWh"}];class ue extends _.j{get panelType(){return"ev_charger"}get defaultPanelTitle(){return"EV CHARGER"}get frameColor(){const e=this._entityMap(),t=e.get("status")?.state?.state,a=e.get("charging_power")?.state?.state,r=null!=a?parseFloat(a):null;return(0,n.N)(t,r)}static get styles(){return[...super.styles,r.AM,se]}_entityMap(){if(this.__entityMapCache)return this.__entityMapCache;const e=new Map;for(const t of this._getAllEntities()){const a=ne(t);a&&!e.has(a)&&e.set(a,t)}return this.__entityMapCache=e,e}updated(e){super.updated(e),this.__entityMapCache=null}renderBadge(){const t=this._entityMap(),a=t.get("status")?.state?.state,r=(0,n.WG)(a),i=this.frameColor;return e.qy`<lcars-summary-badge value="${r}" color="${i}"></lcars-summary-badge>`}renderContent(){const t=this._entityMap(),a=t.get("status")?.state?.state,r=t.get("charging_power")?.state?.state,i=null!=r?parseFloat(r):0,s=this.frameColor,o=(0,n.WG)(a),l=(0,n.t$)(a),c=t.get("soc")?.state?.state,d=null!=c&&"unavailable"!==c&&"unknown"!==c?parseFloat(c):null,p=(0,n.MO)(d),u=a&&(String(a).toLowerCase().includes("discharg")||String(a).toLowerCase().includes("v2g")),m=!(a&&String(a).toLowerCase().includes("charg")&&!String(a).toLowerCase().includes("waiting")||u);return e.qy`
       <div class="lcars-device-panel" style="--ev-charger-state-color: ${s}">
         ${this._renderHeader(s,l,o,i)}
         ${this._renderSensors(t,s,p)}
@@ -7565,19 +7565,19 @@
       </div>
     `}_renderSensors(t,a,r){return e.qy`
       <div class="ev-sensors">
-        ${this._renderSensorGroup(t,ie,a,null)}
+        ${this._renderSensorGroup(t,oe,a,null)}
         <div class="ev-section-divider"></div>
         <div class="ev-section-label">SESSION</div>
-        ${this._renderSensorGroup(t,se,a,null)}
+        ${this._renderSensorGroup(t,le,a,null)}
         <div class="ev-section-divider"></div>
         <div class="ev-section-label">ENERGY BALANCE</div>
-        ${this._renderSensorGroup(t,ne,null,null)}
+        ${this._renderSensorGroup(t,ce,null,null)}
         <div class="ev-section-divider"></div>
         <div class="ev-section-label">VEHICLE</div>
-        ${this._renderSensorGroup(t,oe,null,r)}
+        ${this._renderSensorGroup(t,de,null,r)}
         <div class="ev-section-divider"></div>
         <div class="ev-section-label">CHARGER</div>
-        ${this._renderSensorGroup(t,le,null,null)}
+        ${this._renderSensorGroup(t,pe,null,null)}
       </div>
     `}_renderSensorGroup(t,a,r,i){return a.map(a=>{const s=t.get(a.role);if(!s)return e.qy``;const n=s.state?.state;if(null==n||"unavailable"===n||"unknown"===n)return this._renderSensorLine(s,a.label,"—","var(--lcars-disabled)",a.unit);const l=isNaN(n)?n:(0,o.ZV)(parseFloat(n),1);let c=a.color||"var(--lcars-space-white)";return"status"!==a.role&&"charging_power"!==a.role||(c=r||c),"soc"===a.role&&i&&(c=i),this._renderSensorLine(s,a.label,l,c,a.unit)})}_renderSensorLine(t,a,r,s,n){const o=t.entity?.entity_id||"";return e.qy`
       <div class="device-sensor-line"
@@ -7697,7 +7697,7 @@
           ${r?"LOCKED":"UNLOCKED"}
         </button>
       </div>
-    `}_toggleLock(e,t){this.hass&&e&&(f.e.play("lockToggle"),this._callService("lock",t?"unlock":"lock",{entity_id:e}))}}customElements.get("lcars-ev-charger-panel")||customElements.define("lcars-ev-charger-panel",ce);const de="Homepage",pe=new Map([[s.KK,(t,a,r,i)=>e.qy`<lcars-camera-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-camera-panel>`],[s.a2,(t,a,r,i)=>e.qy`<lcars-environment-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-environment-panel>`],[s.MJ,(t,a,r,i)=>e.qy`<lcars-battery-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-battery-panel>`],[s.gC,(t,a,r,i)=>e.qy`<lcars-climate-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-climate-panel>`],[s.uk,(t,a,r,i)=>e.qy`<lcars-alarm-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-alarm-panel>`],[s.Lx,(t,a,r,i)=>e.qy`<lcars-media-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-media-panel>`],[s.Sp,(t,a,r,i)=>e.qy`<lcars-pool-spa-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-pool-spa-panel>`],[s.TZ,(t,a,r,i)=>e.qy`<lcars-weather-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-weather-panel>`],[s.sv,(t,a,r,i)=>e.qy`<lcars-illumination-panel .group=${t} .entities=${t.entities} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-illumination-panel>`],[s.QQ,(t,a,r,i)=>e.qy`<lcars-tactical-panel .group=${t} .entities=${t.entities} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-tactical-panel>`],[s.Z,(t,a,r,i)=>e.qy`<lcars-viewport-panel .group=${t} .entities=${t.entities} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-viewport-panel>`],[s.Jn,(t,a,r,i)=>e.qy`<lcars-hazard-panel .group=${t} .entities=${t.entities} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-hazard-panel>`],[s.xW,(t,a,r,i)=>e.qy`<lcars-galley-panel .group=${t} .entities=${t.entities} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-galley-panel>`],[s.Tl,(t,a,r,i)=>e.qy`<lcars-ev-charger-panel .group=${t} .entities=${t.entities} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-ev-charger-panel>`]]);function ue(e){const t=e?.attributes?.entity_picture;if(!t)return"";const a=e.last_updated||e.last_changed||"",r=t.includes("?")?"&":"?";return`${t}${r}_cb=${encodeURIComponent(a)}`}class me extends e.WF{static get properties(){return{data:{type:Object},selectedArea:{type:String},selectedFloor:{type:String},_hass:{type:Object},_editMode:{type:Boolean}}}constructor(){super(),this.data=null,this.selectedArea=null,this.selectedFloor=null,this._editMode=!1,this._configLoading=!1,this._entityCache=new Map,this._cameraRefreshInterval=null,this._cameraObserver=null,this._visibleCameras=new Set,this._loadingCameras=new Set,this._onAreaSelected=e=>{i.g0.debug(de,"Area selected event:",e.detail.areaId),this.selectedArea=e.detail.areaId,this.selectedFloor=null,this._entityCache.clear()},this._onFloorSelected=e=>{i.g0.debug(de,"Floor selected event:",e.detail.floorId),this.selectedFloor=e.detail.floorId,this.selectedArea=null,this._entityCache.clear()},this._onEditMode=e=>{this._editMode=e.detail.enabled,i.g0.debug(de,"Edit mode:",this._editMode)}}connectedCallback(){super.connectedCallback(),i.o6.addEventListener("lcars-area-selected",this._onAreaSelected),i.o6.addEventListener("lcars-floor-selected",this._onFloorSelected),i.o6.addEventListener("lcars-edit-mode",this._onEditMode),this._startCameraRefresh(),document.addEventListener("visibilitychange",this._onVisibilityChange)}disconnectedCallback(){super.disconnectedCallback(),i.o6.removeEventListener("lcars-area-selected",this._onAreaSelected),i.o6.removeEventListener("lcars-floor-selected",this._onFloorSelected),i.o6.removeEventListener("lcars-edit-mode",this._onEditMode),this._stopCameraRefresh(),document.removeEventListener("visibilitychange",this._onVisibilityChange)}_onVisibilityChange=()=>{document.hidden?this._stopCameraTimer():(this._startCameraTimer(),this._refreshVisibleCameras())};_startCameraRefresh(){this._cameraObserver=new IntersectionObserver(e=>{for(const t of e){const e=t.target.dataset.entity;e&&(t.isIntersecting?this._visibleCameras.add(e):this._visibleCameras.delete(e))}},{rootMargin:"50px"}),this._startCameraTimer()}_startCameraTimer(){this._cameraRefreshInterval||(this._cameraRefreshInterval=setInterval(()=>{this._refreshVisibleCameras()},1e4))}_stopCameraTimer(){this._cameraRefreshInterval&&(clearInterval(this._cameraRefreshInterval),this._cameraRefreshInterval=null)}_stopCameraRefresh(){this._stopCameraTimer(),this._cameraObserver&&(this._cameraObserver.disconnect(),this._cameraObserver=null),this._visibleCameras.clear(),this._loadingCameras.clear()}_refreshVisibleCameras(){if(document.hidden||!this._hass)return;const e=Date.now();for(const t of this._visibleCameras){if(this._loadingCameras.has(t))continue;const a=this._hass.states[t];if(!a||"unavailable"===a.state||"unknown"===a.state)continue;const r=a.attributes?.entity_picture;if(!r)continue;const i=this.shadowRoot?.querySelector(`img[data-entity="${CSS.escape(t)}"]`);if(!i)continue;const s=r.includes("?")?"&":"?",n=`${r}${s}_cb=${e}`;this._loadingCameras.add(t),i.addEventListener("load",()=>this._loadingCameras.delete(t),{once:!0}),i.addEventListener("error",()=>this._loadingCameras.delete(t),{once:!0}),i.src=n}}updated(e){if(super.updated(e),this._cameraObserver){const e=this.shadowRoot?.querySelectorAll("img[data-entity]")||[],t=new Set;for(const a of e)t.add(a.dataset.entity),this._cameraObserver.observe(a);for(const e of this._visibleCameras)t.has(e)||(this._visibleCameras.delete(e),this._loadingCameras.delete(e))}}setConfig(e){try{this._config=e,i.g0.debug(de,"setConfig:",e)}catch(e){throw i.g0.error(de,"setConfig FAILED — this causes CONFIGURATION ERROR:",e),e}}set hass(e){const t=this._hass;this._hass=e,t||i.g0.debug(de,"First hass received — areas:",Object.keys(e.areas||{}).length,"entities:",Object.keys(e.entities||{}).length),!t||t.entities===e.entities&&t.devices===e.devices||(i.g0.debug(de,"Entity/device registry changed — busting cache"),this._entityCache.clear()),t&&t.areas!==e.areas&&this.selectedArea&&(e.areas?.[this.selectedArea]||(this.selectedArea=null,this._entityCache.clear())),this.data||this._configLoading||this._loadConfiguration()}async _loadConfiguration(){if(this._hass){this._configLoading=!0,i.g0.debug(de,"Loading configuration via WS...");try{const e=await this._hass.callWS({type:"lcars_dashboard/configuration/get"});this.data=e,void 0!==e.debug&&(window.__LCARS_DEBUG=e.debug,e.debug&&i.g0.info(de,"Debug logging auto-enabled from HA backend")),i.g0.debug(de,"Configuration loaded:",Object.keys(e),"version:",e.installed_version)}catch(e){i.g0.error(de,"Failed to load configuration — WS call failed:",e),this.data={}}finally{this._configLoading=!1}}}_handleEntityClick(e){i.g0.debug(de,"Entity click:",e),f.e.playForEntity(e),(0,i.Hv)(e)}_handleEditEntity(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._getEntityState(t),r=a?.attributes?.friendly_name||t;(0,i.Bo)(this._hass,"lcars-edit-entity-card",{entity:t,icon:a?.attributes?.icon||"",name:r},`Edit: ${r}`)}_handleEditDevice(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._hass.devices?.[t],r=a?.name_by_user||a?.name||t;(0,i.Bo)(this._hass,"lcars-edit-device-button-card",{device:t,name:r,icon:""},`Edit: ${r}`)}_handlePanelReorder(e,t,a,r){if(e.stopPropagation(),e.preventDefault(),!this._hass||!t)return;const s=this.data?.panel_column_overrides?.[t]||{};(0,i.Bo)(this._hass,"lcars-edit-panel-order-card",{area_id:t,panel_id:a,panels:r.map(e=>({panelId:e.panelId,panelType:e.panelType,label:e.label,deviceId:e.deviceId})),column_overrides:s},`Panel Layout: ${(t||"").replace(/_/g," ").toUpperCase()}`)}_handleToggle(e){const t=e.split(".")[0];if(i.g0.debug(de,"Toggle:",e,"domain:",t),f.e.playForEntity(e),"lock"===t){const t=this._getEntityState(e);this._hass.callService("lock","locked"===t?.state?"unlock":"lock",{entity_id:e})}else"script"===t?this._hass.callService("script","turn_on",{entity_id:e}):this._hass.callService("homeassistant","toggle",{entity_id:e})}_getAreaEntities(e){return(0,h.d6)(this._hass,e,this._entityCache)}_getFloorAreaIds(e){return(0,m.jE)(this._hass,e)}_getDeviceCategoryEntities(e){if(!this._hass||!e)return{config:[],diagnostic:[]};const t=Object.values(this._hass.entities||{}),a=[],r=[];for(const i of t)i.device_id===e&&(i.disabled_by||"user"===i.hidden_by||i.hidden||("config"===i.entity_category?a.push(i):"diagnostic"===i.entity_category&&r.push(i)));return{config:a,diagnostic:r}}_groupEntities(e){return(0,h.bc)(this._hass,e)}_groupByDomain(e){const t=new Map;return e.forEach(e=>{t.has(e.domain)||t.set(e.domain,[]),t.get(e.domain).push(e)}),[...t.entries()].sort((e,t)=>(s.sg[e[0]]??50)-(s.sg[t[0]]??50))}_getEntityState(e){return this._hass&&this._hass.states[e]?this._hass.states[e]:null}_getEntityIcon(e){return e?e.attributes?.icon?e.attributes.icon:{light:"mdi:lightbulb",switch:"mdi:toggle-switch",sensor:"mdi:eye",binary_sensor:"mdi:radiobox-blank",climate:"mdi:thermostat",cover:"mdi:window-shutter",fan:"mdi:fan",lock:"mdi:lock",camera:"mdi:video",media_player:"mdi:cast",automation:"mdi:robot",script:"mdi:script-text",update:"mdi:package-up"}[e.entity_id.split(".")[0]]||"mdi:information-outline":"mdi:help-circle-outline"}_withEditPip(t,a){return this._editMode?e.qy`
+    `}_toggleLock(e,t){this.hass&&e&&(f.e.play("lockToggle"),this._callService("lock",t?"unlock":"lock",{entity_id:e}))}}customElements.get("lcars-ev-charger-panel")||customElements.define("lcars-ev-charger-panel",ue);const me="Homepage",he=new Map([[s.KK,(t,a,r,i)=>e.qy`<lcars-camera-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-camera-panel>`],[s.a2,(t,a,r,i)=>e.qy`<lcars-environment-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-environment-panel>`],[s.MJ,(t,a,r,i)=>e.qy`<lcars-battery-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-battery-panel>`],[s.gC,(t,a,r,i)=>e.qy`<lcars-climate-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-climate-panel>`],[s.uk,(t,a,r,i)=>e.qy`<lcars-alarm-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-alarm-panel>`],[s.Lx,(t,a,r,i)=>e.qy`<lcars-media-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-media-panel>`],[s.Sp,(t,a,r,i)=>e.qy`<lcars-pool-spa-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-pool-spa-panel>`],[s.TZ,(t,a,r,i)=>e.qy`<lcars-weather-panel .group=${t} .hass=${a} .editMode=${r} .config=${i}></lcars-weather-panel>`],[s.sv,(t,a,r,i)=>e.qy`<lcars-illumination-panel .group=${t} .entities=${t.entities} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-illumination-panel>`],[s.QQ,(t,a,r,i)=>e.qy`<lcars-tactical-panel .group=${t} .entities=${t.entities} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-tactical-panel>`],[s.Z,(t,a,r,i)=>e.qy`<lcars-viewport-panel .group=${t} .entities=${t.entities} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-viewport-panel>`],[s.Jn,(t,a,r,i)=>e.qy`<lcars-hazard-panel .group=${t} .entities=${t.entities} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-hazard-panel>`],[s.xW,(t,a,r,i)=>e.qy`<lcars-galley-panel .group=${t} .entities=${t.entities} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-galley-panel>`],[s.Tl,(t,a,r,i)=>e.qy`<lcars-ev-charger-panel .group=${t} .entities=${t.entities} .hass=${a} .editMode=${r} .config=${i} area-id="${t.areaId||""}"></lcars-ev-charger-panel>`]]);function fe(e){const t=e?.attributes?.entity_picture;if(!t)return"";const a=e.last_updated||e.last_changed||"",r=t.includes("?")?"&":"?";return`${t}${r}_cb=${encodeURIComponent(a)}`}class ve extends e.WF{static get properties(){return{data:{type:Object},selectedArea:{type:String},selectedFloor:{type:String},_hass:{type:Object},_editMode:{type:Boolean}}}constructor(){super(),this.data=null,this.selectedArea=null,this.selectedFloor=null,this._editMode=!1,this._configLoading=!1,this._entityCache=new Map,this._cameraRefreshInterval=null,this._cameraObserver=null,this._visibleCameras=new Set,this._loadingCameras=new Set,this._onAreaSelected=e=>{i.g0.debug(me,"Area selected event:",e.detail.areaId),this.selectedArea=e.detail.areaId,this.selectedFloor=null,this._entityCache.clear()},this._onFloorSelected=e=>{i.g0.debug(me,"Floor selected event:",e.detail.floorId),this.selectedFloor=e.detail.floorId,this.selectedArea=null,this._entityCache.clear()},this._onEditMode=e=>{this._editMode=e.detail.enabled,i.g0.debug(me,"Edit mode:",this._editMode)}}connectedCallback(){super.connectedCallback(),i.o6.addEventListener("lcars-area-selected",this._onAreaSelected),i.o6.addEventListener("lcars-floor-selected",this._onFloorSelected),i.o6.addEventListener("lcars-edit-mode",this._onEditMode),this._startCameraRefresh(),document.addEventListener("visibilitychange",this._onVisibilityChange)}disconnectedCallback(){super.disconnectedCallback(),i.o6.removeEventListener("lcars-area-selected",this._onAreaSelected),i.o6.removeEventListener("lcars-floor-selected",this._onFloorSelected),i.o6.removeEventListener("lcars-edit-mode",this._onEditMode),this._stopCameraRefresh(),document.removeEventListener("visibilitychange",this._onVisibilityChange)}_onVisibilityChange=()=>{document.hidden?this._stopCameraTimer():(this._startCameraTimer(),this._refreshVisibleCameras())};_startCameraRefresh(){this._cameraObserver=new IntersectionObserver(e=>{for(const t of e){const e=t.target.dataset.entity;e&&(t.isIntersecting?this._visibleCameras.add(e):this._visibleCameras.delete(e))}},{rootMargin:"50px"}),this._startCameraTimer()}_startCameraTimer(){this._cameraRefreshInterval||(this._cameraRefreshInterval=setInterval(()=>{this._refreshVisibleCameras()},1e4))}_stopCameraTimer(){this._cameraRefreshInterval&&(clearInterval(this._cameraRefreshInterval),this._cameraRefreshInterval=null)}_stopCameraRefresh(){this._stopCameraTimer(),this._cameraObserver&&(this._cameraObserver.disconnect(),this._cameraObserver=null),this._visibleCameras.clear(),this._loadingCameras.clear()}_refreshVisibleCameras(){if(document.hidden||!this._hass)return;const e=Date.now();for(const t of this._visibleCameras){if(this._loadingCameras.has(t))continue;const a=this._hass.states[t];if(!a||"unavailable"===a.state||"unknown"===a.state)continue;const r=a.attributes?.entity_picture;if(!r)continue;const i=this.shadowRoot?.querySelector(`img[data-entity="${CSS.escape(t)}"]`);if(!i)continue;const s=r.includes("?")?"&":"?",n=`${r}${s}_cb=${e}`;this._loadingCameras.add(t),i.addEventListener("load",()=>this._loadingCameras.delete(t),{once:!0}),i.addEventListener("error",()=>this._loadingCameras.delete(t),{once:!0}),i.src=n}}updated(e){if(super.updated(e),this._cameraObserver){const e=this.shadowRoot?.querySelectorAll("img[data-entity]")||[],t=new Set;for(const a of e)t.add(a.dataset.entity),this._cameraObserver.observe(a);for(const e of this._visibleCameras)t.has(e)||(this._visibleCameras.delete(e),this._loadingCameras.delete(e))}}setConfig(e){try{this._config=e,i.g0.debug(me,"setConfig:",e)}catch(e){throw i.g0.error(me,"setConfig FAILED — this causes CONFIGURATION ERROR:",e),e}}set hass(e){const t=this._hass;this._hass=e,t||i.g0.debug(me,"First hass received — areas:",Object.keys(e.areas||{}).length,"entities:",Object.keys(e.entities||{}).length),!t||t.entities===e.entities&&t.devices===e.devices||(i.g0.debug(me,"Entity/device registry changed — busting cache"),this._entityCache.clear()),t&&t.areas!==e.areas&&this.selectedArea&&(e.areas?.[this.selectedArea]||(this.selectedArea=null,this._entityCache.clear())),this.data||this._configLoading||this._loadConfiguration()}async _loadConfiguration(){if(this._hass){this._configLoading=!0,i.g0.debug(me,"Loading configuration via WS...");try{const e=await this._hass.callWS({type:"lcars_dashboard/configuration/get"});this.data=e,void 0!==e.debug&&(window.__LCARS_DEBUG=e.debug,e.debug&&i.g0.info(me,"Debug logging auto-enabled from HA backend")),i.g0.debug(me,"Configuration loaded:",Object.keys(e),"version:",e.installed_version)}catch(e){i.g0.error(me,"Failed to load configuration — WS call failed:",e),this.data={}}finally{this._configLoading=!1}}}_handleEntityClick(e){i.g0.debug(me,"Entity click:",e),f.e.playForEntity(e),(0,i.Hv)(e)}_handleEditEntity(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._getEntityState(t),r=a?.attributes?.friendly_name||t;(0,i.Bo)(this._hass,"lcars-edit-entity-card",{entity:t,icon:a?.attributes?.icon||"",name:r},`Edit: ${r}`)}_handleEditDevice(e,t){if(e.stopPropagation(),e.preventDefault(),!this._hass)return;const a=this._hass.devices?.[t],r=a?.name_by_user||a?.name||t;(0,i.Bo)(this._hass,"lcars-edit-device-button-card",{device:t,name:r,icon:""},`Edit: ${r}`)}_handlePanelReorder(e,t,a,r){if(e.stopPropagation(),e.preventDefault(),!this._hass||!t)return;const s=this.data?.panel_column_overrides?.[t]||{};(0,i.Bo)(this._hass,"lcars-edit-panel-order-card",{area_id:t,panel_id:a,panels:r.map(e=>({panelId:e.panelId,panelType:e.panelType,label:e.label,deviceId:e.deviceId})),column_overrides:s},`Panel Layout: ${(t||"").replace(/_/g," ").toUpperCase()}`)}_handleToggle(e){const t=e.split(".")[0];if(i.g0.debug(me,"Toggle:",e,"domain:",t),f.e.playForEntity(e),"lock"===t){const t=this._getEntityState(e);this._hass.callService("lock","locked"===t?.state?"unlock":"lock",{entity_id:e})}else"script"===t?this._hass.callService("script","turn_on",{entity_id:e}):this._hass.callService("homeassistant","toggle",{entity_id:e})}_getAreaEntities(e){return(0,h.d6)(this._hass,e,this._entityCache)}_getFloorAreaIds(e){return(0,m.jE)(this._hass,e)}_getDeviceCategoryEntities(e){if(!this._hass||!e)return{config:[],diagnostic:[]};const t=Object.values(this._hass.entities||{}),a=[],r=[];for(const i of t)i.device_id===e&&(i.disabled_by||"user"===i.hidden_by||i.hidden||("config"===i.entity_category?a.push(i):"diagnostic"===i.entity_category&&r.push(i)));return{config:a,diagnostic:r}}_groupEntities(e){return(0,h.bc)(this._hass,e)}_groupByDomain(e){const t=new Map;return e.forEach(e=>{t.has(e.domain)||t.set(e.domain,[]),t.get(e.domain).push(e)}),[...t.entries()].sort((e,t)=>(s.sg[e[0]]??50)-(s.sg[t[0]]??50))}_getEntityState(e){return this._hass&&this._hass.states[e]?this._hass.states[e]:null}_getEntityIcon(e){return e?e.attributes?.icon?e.attributes.icon:{light:"mdi:lightbulb",switch:"mdi:toggle-switch",sensor:"mdi:eye",binary_sensor:"mdi:radiobox-blank",climate:"mdi:thermostat",cover:"mdi:window-shutter",fan:"mdi:fan",lock:"mdi:lock",camera:"mdi:video",media_player:"mdi:cast",automation:"mdi:robot",script:"mdi:script-text",update:"mdi:package-up"}[e.entity_id.split(".")[0]]||"mdi:information-outline":"mdi:help-circle-outline"}_withEditPip(t,a){return this._editMode?e.qy`
         <div class="edit-pip-wrap">
           ${a}
           <div class="edit-pip" tabindex="0" role="button" aria-label="Edit entity"
@@ -11365,12 +11365,12 @@
             .camera-offline-text { animation: none; }
             .camera-frame[data-state="offline"] .camera-offline-overlay { animation: none; }
           }
-        `]}_renderFloorView(t){const a=this._hass.floors?.[t];if(!a)return i.g0.debug(de,"Render: floor not found:",t),e.qy`<div class="lcars-empty">Floor not found</div>`;const r=this._getFloorAreaIds(t);return 0===r.length?e.qy`
+        `]}_renderFloorView(t){const a=this._hass.floors?.[t];if(!a)return i.g0.debug(me,"Render: floor not found:",t),e.qy`<div class="lcars-empty">Floor not found</div>`;const r=this._getFloorAreaIds(t);return 0===r.length?e.qy`
           <div class="content-area-panel">
             <h2 class="content-area-header">${a.name}</h2>
             <div class="lcars-empty">No areas on this floor</div>
           </div>
-        `:(i.g0.debug(de,"Render: floor=%s areas=%d",a.name,r.length),e.qy`
+        `:(i.g0.debug(me,"Render: floor=%s areas=%d",a.name,r.length),e.qy`
         <div class="content-floor-panel">
           <h2 class="content-floor-header">${a.name}</h2>
           ${r.map(t=>{const a=this._hass.areas?.[t];if(!a)return"";const r=this._getAreaEntities(t);if(0===r.length)return"";const i=this._getAlarmBadgeForArea(t,r);return e.qy`
@@ -11393,12 +11393,12 @@
               </div>
             `})}
         </div>
-      `)}render(){if(!this._hass)return i.g0.debug(de,"Render: waiting for hass"),e.qy`<div class="lcars-empty">Initializing...</div>`;if(this._renderedAlarmDeviceIds.clear(),this.selectedFloor)return this._renderFloorView(this.selectedFloor);if(!this.selectedArea)return i.g0.debug(de,"Render: no area selected"),e.qy`<div class="lcars-empty">Select an area</div>`;const t=this._hass.areas?.[this.selectedArea];if(!t)return i.g0.debug(de,"Render: area not found:",this.selectedArea),e.qy`<div class="lcars-empty">Area not found</div>`;const a=this._getAreaEntities(this.selectedArea);return i.g0.debug(de,"Render: area=%s entities=%d",t.name,a.length),e.qy`
+      `)}render(){if(!this._hass)return i.g0.debug(me,"Render: waiting for hass"),e.qy`<div class="lcars-empty">Initializing...</div>`;if(this._renderedAlarmDeviceIds.clear(),this.selectedFloor)return this._renderFloorView(this.selectedFloor);if(!this.selectedArea)return i.g0.debug(me,"Render: no area selected"),e.qy`<div class="lcars-empty">Select an area</div>`;const t=this._hass.areas?.[this.selectedArea];if(!t)return i.g0.debug(me,"Render: area not found:",this.selectedArea),e.qy`<div class="lcars-empty">Area not found</div>`;const a=this._getAreaEntities(this.selectedArea);return i.g0.debug(me,"Render: area=%s entities=%d",t.name,a.length),e.qy`
         <div class="content-area-panel">
           <h2 class="content-area-header">${t.name}</h2>
           ${this._renderAreaContent(a,this.selectedArea)}
         </div>
-      `}_getDevicePanelType(e){return(0,s.v3)(e)}_partitionDeviceEntities(e){const t=[],a=[],r=[];for(const i of e)s.aE.has(i.domain)?t.push(i):s.Xt.has(i.domain)?a.push(i):r.push(i);return{cameras:t,sensors:a,controls:r}}_generatePanelCode(e){let t=5381;for(let a=0;a<e.length;a++)t=(t<<5)+t+e.charCodeAt(a)|0;const a=String(Math.abs(t)%1e6).padStart(6,"0");return`${a.slice(0,3)}-${a.slice(3)}`}_renderDevicePanel(e,t){if(e===s.X8)return this._renderIrrigationPanel(t);const a=pe.get(e);return a?a(t,this._hass,this._editMode,this._config):""}_getSensorIndicatorColor(e,t=""){return"carbon_dioxide"===(e?.attributes?.device_class||"")?(0,n.kR)(e?.state):(0,n.xH)(e?.entity_id||"",e,t)}_fmtSensor(e,t){return(0,o.kp)(e,t?.entity_category||"")}_renderCameraPanel(t){const{cameras:a,sensors:r,controls:i}=this._partitionDeviceEntities(t.entities),n=this._shortDeviceName(t.device);return e.qy`
+      `}_getDevicePanelType(e){return(0,s.v3)(e)}_partitionDeviceEntities(e){const t=[],a=[],r=[];for(const i of e)s.aE.has(i.domain)?t.push(i):s.Xt.has(i.domain)?a.push(i):r.push(i);return{cameras:t,sensors:a,controls:r}}_generatePanelCode(e){let t=5381;for(let a=0;a<e.length;a++)t=(t<<5)+t+e.charCodeAt(a)|0;const a=String(Math.abs(t)%1e6).padStart(6,"0");return`${a.slice(0,3)}-${a.slice(3)}`}_renderDevicePanel(e,t){if(e===s.X8)return this._renderIrrigationPanel(t);const a=he.get(e);return a?a(t,this._hass,this._editMode,this._config):""}_getSensorIndicatorColor(e,t=""){return"carbon_dioxide"===(e?.attributes?.device_class||"")?(0,n.kR)(e?.state):(0,n.xH)(e?.entity_id||"",e,t)}_fmtSensor(e,t){return(0,o.kp)(e,t?.entity_category||"")}_renderCameraPanel(t){const{cameras:a,sensors:r,controls:i}=this._partitionDeviceEntities(t.entities),n=this._shortDeviceName(t.device);return e.qy`
         <div class="lcars-device-panel" data-panel-type="camera">
           <div class="device-panel-header">
             <span class="device-panel-name">${n}</span>
@@ -11421,7 +11421,7 @@
 
           <div class="device-panel-media"
             ?data-offline=${a.length>0&&this._isOff(a[0].state)}>
-            ${a.map(({entity:t,state:a},r)=>{const i=ue(a),s=0===r?n:this._friendlyName(a,t),o=this._isOff(a)||!i?"offline":"connecting";return e.qy`
+            ${a.map(({entity:t,state:a},r)=>{const i=fe(a),s=0===r?n:this._friendlyName(a,t),o=this._isOff(a)||!i?"offline":"connecting";return e.qy`
                 <div class="camera-frame" data-state="${o}"
                   style="${r>0?"margin-top:var(--lcars-gap);border-top:2px solid var(--panel-frame-color)":""}"
                   aria-busy="${"connecting"===o}"
@@ -12636,7 +12636,7 @@
 
           <div class="panel-pip-strip" aria-hidden="true"></div>
         </div>
-      `}_renderedAlarmDeviceIds=new Set;_getAlarmBadgeForArea(e,t){for(const e of t){const t=e.entity_id.split(".")[0];if(!s.yS.has(t))continue;const a=this._hass?.states?.[e.entity_id];if(!a)continue;const r=e.device_id;if(r&&this._renderedAlarmDeviceIds.has(r))return{entity:e,domain:t,state:a}}return null}_findAlarmPrimaryArea(e){const t=this._hass?.entities||{};for(const[a,r]of Object.entries(t))if(r.device_id===e&&a.startsWith("alarm_control_panel.")){if(r.area_id)return r.area_id;const t=this._hass.devices?.[e];return t?.area_id||null}return null}_navigateToAlarmArea(e){const t=e?.entity?.device_id;if(!t)return;const a=this._findAlarmPrimaryArea(t);a&&(this.selectedArea=a,this.selectedFloor=null,this.requestUpdate())}_renderAreaContent(t,a){if(0===t.length)return e.qy`<div class="lcars-empty" role="status">No entities in this area</div>`;const{byDevice:r,noDevice:i}=this._groupEntities(t),n=t.map(e=>{const t=e.entity_id.split(".")[0],a=this._hass?.states?.[e.entity_id];return{entity:e,domain:t,state:a}}).filter(e=>e.state).filter(e=>!(0,s.JM)(e)),o=(0,s.US)(this._hass,a,n),l=[];for(const e of o){const t=pe.get(e);if(t){if(e===s.QQ)for(const e of n)s.yS.has(e.domain)&&e.entity?.device_id&&this._renderedAlarmDeviceIds.add(e.entity.device_id);l.push({panelType:e,template:t({entities:n,areaId:a},this._hass,this._editMode,this._config)})}}const c=this._buildAreaPanelFilter(o,n);if(c)for(const[e,t]of r)t.entities=t.entities.filter(e=>!c(e)),0===t.entities.length&&r.delete(e);const d=c?i.filter(e=>!c(e)):i,p=new Set;o.has(s.QQ)&&(p.add(s.uk),p.add(s.QQ)),o.has(s.Lx)&&p.add(s.Lx);const u=[],m=[],h=[];for(const e of r.values()){const t=this._getDevicePanelType(e.entities);t&&p.has(t)||(t===s.S?h.push({...e,panelType:t}):t?u.push({...e,panelType:t}):m.push(e))}const f=e=>e.filter(e=>!s.iU.has(e.domain)&&!(0,s.JM)(e)),v=e.qy`
+      `}_renderedAlarmDeviceIds=new Set;_getAlarmBadgeForArea(e,t){for(const e of t){const t=e.entity_id.split(".")[0];if(!s.yS.has(t))continue;const a=this._hass?.states?.[e.entity_id];if(!a)continue;const r=e.device_id;if(r&&this._renderedAlarmDeviceIds.has(r))return{entity:e,domain:t,state:a}}return null}_findAlarmPrimaryArea(e){const t=this._hass?.entities||{};for(const[a,r]of Object.entries(t))if(r.device_id===e&&a.startsWith("alarm_control_panel.")){if(r.area_id)return r.area_id;const t=this._hass.devices?.[e];return t?.area_id||null}return null}_navigateToAlarmArea(e){const t=e?.entity?.device_id;if(!t)return;const a=this._findAlarmPrimaryArea(t);a&&(this.selectedArea=a,this.selectedFloor=null,this.requestUpdate())}_renderAreaContent(t,a){if(0===t.length)return e.qy`<div class="lcars-empty" role="status">No entities in this area</div>`;const{byDevice:r,noDevice:i}=this._groupEntities(t),n=t.map(e=>{const t=e.entity_id.split(".")[0],a=this._hass?.states?.[e.entity_id];return{entity:e,domain:t,state:a}}).filter(e=>e.state).filter(e=>!(0,s.JM)(e)),o=(0,s.US)(this._hass,a,n),l=[];for(const e of o){const t=he.get(e);if(t){if(e===s.QQ)for(const e of n)s.yS.has(e.domain)&&e.entity?.device_id&&this._renderedAlarmDeviceIds.add(e.entity.device_id);l.push({panelType:e,template:t({entities:n,areaId:a},this._hass,this._editMode,this._config)})}}const c=this._buildAreaPanelFilter(o,n);if(c)for(const[e,t]of r)t.entities=t.entities.filter(e=>!c(e)),0===t.entities.length&&r.delete(e);const d=c?i.filter(e=>!c(e)):i,p=new Set;o.has(s.QQ)&&(p.add(s.uk),p.add(s.QQ)),o.has(s.Lx)&&p.add(s.Lx);const u=[],m=[],h=[];for(const e of r.values()){const t=this._getDevicePanelType(e.entities);t&&p.has(t)||(t===s.S?h.push({...e,panelType:t}):t?u.push({...e,panelType:t}):m.push(e))}const f=e=>e.filter(e=>!s.iU.has(e.domain)&&!(0,s.JM)(e)),v=e.qy`
         ${m.map(t=>{const a=f(t.entities);return 0===a.length?"":e.qy`
           <div class="device-group">
             <div class="device-header">
@@ -12688,7 +12688,7 @@
         <div class="domain-label" role="heading" aria-level="4">${s.xU[t]||t}</div>
         ${this._renderDomainEntities(t,a)}
       `)}`}_renderDomainEntities(e,t){return s.aE.has(e)?this._renderCameras(t):s.Zz.has(e)?this._renderToggles(t):s.ge.has(e)?this._renderClimates(t):s.K5.has(e)?this._renderCovers(t):s.TL.has(e)?this._renderMedia(t):s.Xt.has(e)?this._renderSensors(t):this._renderGeneric(t)}_renderCameras(t){return e.qy`<div class="camera-grid">
-        ${t.map(({entity:t,state:a},r)=>{const i=this._friendlyName(a,t),s=this._isOff(a),n=ue(a),o=s||!n?"offline":"connecting",l=s?this._formatCamTimeSince(a?.last_changed):"";return e.qy`
+        ${t.map(({entity:t,state:a},r)=>{const i=this._friendlyName(a,t),s=this._isOff(a),n=fe(a),o=s||!n?"offline":"connecting",l=s?this._formatCamTimeSince(a?.last_changed):"";return e.qy`
             <div class="camera-frame" data-state="${o}" style="--i:${r}"
               role="button"
               tabindex="0"
@@ -12797,7 +12797,7 @@
               <span class="entity-state">${a.state}</span>
             </button>
           `)})}
-      </div>`}getCardSize(){return 6}}customElements.get("homepage-card")?i.g0.warn(de,"Custom element homepage-card already registered — skipping"):(customElements.define("homepage-card",me),i.g0.debug(de,"Custom element registered: homepage-card"))})(),(()=>{var e=a(7349),t=a(2622),r=a(8851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_pages:{type:Array}}}constructor(){super(),this._pages=[]}set hass(e){this._hass=e,0===this._pages.length&&this._loadPages()}setConfig(e){this._config=e}async _loadPages(){if(this._hass)try{const e=await this._hass.callWS({type:"lcars_dashboard/configuration/get"});e&&e.more_pages&&(this._pages=Object.entries(e.more_pages).map(([e,t])=>({id:e,...t})))}catch(e){console.warn("LCARS: Could not load more-pages",e)}}_openPage(e){(0,r.oo)(`/lcars-dashboard/more/${e}`)}static get styles(){return[t.Bx,e.AH`
+      </div>`}getCardSize(){return 6}}customElements.get("homepage-card")?i.g0.warn(me,"Custom element homepage-card already registered — skipping"):(customElements.define("homepage-card",ve),i.g0.debug(me,"Custom element registered: homepage-card"))})(),(()=>{var e=a(7349),t=a(2622),r=a(8851);class i extends e.WF{static get properties(){return{_hass:{type:Object},_config:{type:Object},_pages:{type:Array}}}constructor(){super(),this._pages=[]}set hass(e){this._hass=e,0===this._pages.length&&this._loadPages()}setConfig(e){this._config=e}async _loadPages(){if(this._hass)try{const e=await this._hass.callWS({type:"lcars_dashboard/configuration/get"});e&&e.more_pages&&(this._pages=Object.entries(e.more_pages).map(([e,t])=>({id:e,...t})))}catch(e){console.warn("LCARS: Could not load more-pages",e)}}_openPage(e){(0,r.oo)(`/lcars-dashboard/more/${e}`)}static get styles(){return[t.Bx,e.AH`
           :host { display: block; }
 
           .divider {
@@ -14111,65 +14111,59 @@
           .sensor-tile { animation: none !important; }
           .tile-battery-badge { animation: none !important; opacity: 1; }
         }
-      `]}getCardSize(){return Math.max(2,Math.ceil(this._sensorGroups.length/4)+1)}}customElements.get("lcars-internal-sensors-grid")||(customElements.define("lcars-internal-sensors-grid",p),r.g0.debug(n,"Custom element registered: lcars-internal-sensors-grid")),window.customCards=window.customCards||[],window.customCards.push({type:"lcars-internal-sensors-grid",name:"LCARS Internal Sensors Grid",description:"Ship-wide environmental monitoring grid",preview:!0})})(),(()=>{var e=a(7349),t=(a(8851),a(2622)),r=a(7597),i=a(6930),s=a(4867),n=a(6940);a(7292),a(690),a(58);class o extends e.WF{static get properties(){return{hass:{type:Object},_config:{type:Object}}}constructor(){super(),this.hass=null,this._config={},this._entityCache=new Map}setConfig(e){this._config=e||{}}set hass(e){const t=this._hass;this._hass=e,e&&t!==e&&(this._entityCache.clear(),this.requestUpdate("hass",t))}get hass(){return this._hass}getCardSize(){return 12}_getAreasWithLighting(){if(!this._hass)return[];const e=(0,r.Qn)(this._hass),t=(0,r.E3)(this._hass),a=[];for(const r of e){const e=t.get(r.floor_id)||[],i=[];for(const t of e){const e=this._resolveAreaEntities(t);e&&i.push(e)}i.length>0&&a.push({floor:r,areas:i})}const i=t.get(null)||[],s=[];for(const e of i){const t=this._resolveAreaEntities(e);t&&s.push(t)}return s.length>0&&a.push({floor:null,areas:s}),a}_resolveAreaEntities(e){const t=(0,i.d6)(this._hass,e.area_id,this._entityCache),a=[];for(const e of t){const t=e.entity_id.split(".")[0],r=this._hass.states?.[e.entity_id];if(!r)continue;const i={entity:e,domain:t,state:r};(0,s.JM)(i)||a.push(i)}const r=a.filter(e=>(0,s.eX)(e)||"scene"===e.domain),n=a.filter(e=>(0,s.Ax)(e));return 0===r.length&&0===n.length?null:{area:e,lightEntities:r,viewportEntities:n,allHydrated:a}}_getGlobalCounts(e){let t=0,a=0,r=0,i=0;for(const{areas:s}of e)for(const{lightEntities:e,viewportEntities:n}of s){for(const r of e)"scene"!==r.domain&&(a++,"on"===r.state?.state&&t++);for(const e of n)i++,"open"===e.state?.state&&r++}return{totalActive:t,totalAll:a,coversOpen:r,coversTotal:i}}_getAreaLightState(e){const t=e.filter(e=>"scene"!==e.domain);if(0===t.length)return"empty";const a=t.filter(e=>"on"===e.state?.state).length;return 0===a?"off":a===t.length?"on":"mixed"}_toggleAreaLights(e){const t=e.filter(e=>"scene"!==e.domain);if(0===t.length)return;const a=t.every(e=>"on"===e.state?.state),r=a?"turn_off":"turn_on";for(const e of t)this._hass.callService("homeassistant",r,{entity_id:e.entity.entity_id});n.e.play(a?"switchToggle":"lightToggle")}render(){if(!this._hass)return e.qy``;const t=this._getAreasWithLighting(),{totalActive:a,totalAll:r,coversOpen:i,coversTotal:s}=this._getGlobalCounts(t);return e.qy`
+      `]}getCardSize(){return Math.max(2,Math.ceil(this._sensorGroups.length/4)+1)}}customElements.get("lcars-internal-sensors-grid")||(customElements.define("lcars-internal-sensors-grid",p),r.g0.debug(n,"Custom element registered: lcars-internal-sensors-grid")),window.customCards=window.customCards||[],window.customCards.push({type:"lcars-internal-sensors-grid",name:"LCARS Internal Sensors Grid",description:"Ship-wide environmental monitoring grid",preview:!0})})(),(()=>{var e=a(7349),t=(a(8851),a(2622)),r=a(7597),i=a(6930),s=a(4867),n=a(6940);a(7292),a(58);const o="all",l="lights",c="circuits";class d extends e.WF{static get properties(){return{hass:{type:Object},_config:{type:Object},_filter:{type:String}}}constructor(){super(),this.hass=null,this._config={},this._filter=o,this._entityCache=new Map}setConfig(e){this._config=e||{}}set hass(e){const t=this._hass;this._hass=e,e&&t!==e&&(this._entityCache.clear(),this.requestUpdate("hass",t))}get hass(){return this._hass}getCardSize(){return 12}_getAreasWithLighting(){if(!this._hass)return[];const e=(0,r.Qn)(this._hass),t=(0,r.E3)(this._hass),a=[];for(const r of e){const e=t.get(r.floor_id)||[],i=[];for(const t of e){const e=this._resolveAreaEntities(t);e&&i.push(e)}i.length>0&&a.push({floor:r,areas:i})}const i=t.get(null)||[],s=[];for(const e of i){const t=this._resolveAreaEntities(e);t&&s.push(t)}return s.length>0&&a.push({floor:null,areas:s}),a}_resolveAreaEntities(e){const t=(0,i.d6)(this._hass,e.area_id,this._entityCache),a=[];for(const e of t){const t=e.entity_id.split(".")[0],r=this._hass.states?.[e.entity_id];if(!r)continue;const i={entity:e,domain:t,state:r};(0,s.JM)(i)||a.push(i)}const r=a.filter(e=>(0,s.eX)(e)||"scene"===e.domain);if(0===r.length)return null;const n=r.filter(e=>"light"===e.domain),o=r.filter(e=>"light"!==e.domain&&"scene"!==e.domain),l=r.filter(e=>"scene"===e.domain);return{area:e,lightEntities:r,lights:n,circuits:o,scenes:l}}_getFilteredEntities(e){if(this._filter===l){const t=[...e.lights,...e.scenes];return t.length>0?t:null}return this._filter===c?e.circuits.length>0?e.circuits:null:e.lightEntities}_getGlobalCounts(e){let t=0,a=0,r=0,i=0;for(const{areas:s}of e)for(const{lights:e,circuits:n}of s){for(const r of e)a++,"on"===r.state?.state&&t++;for(const e of n)i++,"on"===e.state?.state&&r++}return{lightsActive:t,lightsTotal:a,circuitsActive:r,circuitsTotal:i,totalActive:t+r,totalAll:a+i}}_getAreaLightState(e){const t=e.filter(e=>"scene"!==e.domain);if(0===t.length)return"empty";const a=t.filter(e=>"on"===e.state?.state).length;return 0===a?"off":a===t.length?"on":"mixed"}_toggleAreaLights(e){const t=e.filter(e=>"scene"!==e.domain);if(0===t.length)return;const a=t.every(e=>"on"===e.state?.state),r=a?"turn_off":"turn_on";for(const e of t)this._hass.callService("homeassistant",r,{entity_id:e.entity.entity_id});n.e.play(a?"switchToggle":"lightToggle")}render(){if(!this._hass)return e.qy``;const t=this._getAreasWithLighting(),a=this._getGlobalCounts(t);return e.qy`
       <div class="ilm-dashboard" role="main" aria-label="Illumination dashboard">
 
-        <!-- Global Summary Bar -->
-        <div class="ilm-summary" role="status" aria-live="polite"
-             aria-label="${a} lights active of ${r} total">
-          <div class="ilm-summary-label">ILLUMINATION STATUS</div>
-          <div class="ilm-summary-values">
-            <span class="ilm-summary-active">${a}</span>
-            <span class="ilm-summary-sep">ACTIVE /</span>
-            <span class="ilm-summary-total">${r}</span>
-            <span class="ilm-summary-sep">TOTAL</span>
-            ${s>0?e.qy`
-              <span class="ilm-summary-divider">·</span>
-              <span class="ilm-summary-covers">${i} COVERS OPEN</span>
-            `:""}
-          </div>
+        <!-- Filter Buttons -->
+        <div class="ilm-filter-bar" role="tablist" aria-label="Filter illumination devices">
+          <button class="ilm-filter-btn ${this._filter===o?"active":""}"
+                  role="tab"
+                  aria-selected="${this._filter===o?"true":"false"}"
+                  @click=${()=>this._setFilter(o)}>
+            <span class="ilm-filter-count">${a.totalActive}/${a.totalAll}</span>
+            <span class="ilm-filter-label">ALL DEVICES</span>
+          </button>
+          <button class="ilm-filter-btn ${this._filter===l?"active":""}"
+                  role="tab"
+                  aria-selected="${this._filter===l?"true":"false"}"
+                  @click=${()=>this._setFilter(l)}>
+            <span class="ilm-filter-count">${a.lightsActive}/${a.lightsTotal}</span>
+            <span class="ilm-filter-label">LIGHTS</span>
+          </button>
+          <button class="ilm-filter-btn ${this._filter===c?"active":""}"
+                  role="tab"
+                  aria-selected="${this._filter===c?"true":"false"}"
+                  @click=${()=>this._setFilter(c)}>
+            <span class="ilm-filter-count">${a.circuitsActive}/${a.circuitsTotal}</span>
+            <span class="ilm-filter-label">CIRCUITS</span>
+          </button>
         </div>
 
         <!-- Floor → Area sections -->
-        ${t.map(({floor:t,areas:a})=>e.qy`
-          ${t?e.qy`
-            <div class="ilm-floor-header">
-              <span class="ilm-floor-name">${t.name||"FLOOR"}</span>
-              <span class="ilm-floor-line"></span>
-            </div>
-          `:""}
-          ${a.map(({area:t,lightEntities:a,viewportEntities:r,allHydrated:i})=>e.qy`
-            <div class="ilm-area-section" data-area-id="${t.area_id}">
-
-              <!-- Area header with master toggle -->
-              <div class="ilm-area-header">
-                <span class="ilm-area-name">${t.name}</span>
-                <span class="ilm-area-line"></span>
-                ${this._renderMasterToggle(a,t)}
+        ${t.map(({floor:t,areas:a})=>{const r=a.filter(e=>null!==this._getFilteredEntities(e));return 0===r.length?e.qy``:e.qy`
+            ${t?e.qy`
+              <div class="ilm-floor-header">
+                <span class="ilm-floor-name">${t.name||"FLOOR"}</span>
+                <span class="ilm-floor-line"></span>
               </div>
+            `:""}
+            ${r.map(t=>{const a=this._getFilteredEntities(t);return e.qy`
+                <div class="ilm-area-section" data-area-id="${t.area.area_id}">
+                  <div class="ilm-area-header">
+                    <span class="ilm-area-name">${t.area.name}</span>
+                    <span class="ilm-area-line"></span>
+                    ${this._renderMasterToggle(a,t.area)}
+                  </div>
 
-              <!-- Illumination panel (lights, scenes, circuits) -->
-              ${a.length>0?e.qy`
-                <lcars-illumination-panel
-                  .hass=${this._hass}
-                  .entities=${a}
-                  area-id="${t.area_id}"
-                  frame-mode="nested">
-                </lcars-illumination-panel>
-              `:""}
-
-              <!-- Viewport panel (covers/blinds) -->
-              ${r.length>0?e.qy`
-                <lcars-viewport-panel
-                  .hass=${this._hass}
-                  .entities=${r}
-                  area-id="${t.area_id}"
-                  frame-mode="nested">
-                </lcars-viewport-panel>
-              `:""}
-            </div>
-          `)}
-        `)}
+                  <lcars-illumination-panel
+                    .hass=${this._hass}
+                    .entities=${a}
+                    area-id="${t.area.area_id}"
+                    frame-mode="nested">
+                  </lcars-illumination-panel>
+                </div>
+              `})}
+          `})}
 
         ${0===t.length?e.qy`
           <div class="ilm-empty">
@@ -14177,7 +14171,7 @@
           </div>
         `:""}
       </div>
-    `}_renderMasterToggle(t,a){const r=this._getAreaLightState(t);if("empty"===r)return e.qy``;const i="on"===r?"ALL ON":"off"===r?"ALL OFF":"MIXED",s="on"===r;return e.qy`
+    `}_setFilter(e){this._filter=e,n.e.play("navAcknowledge")}_renderMasterToggle(t,a){const r=this._getAreaLightState(t);if("empty"===r)return e.qy``;const i="on"===r?"ALL ON":"off"===r?"ALL OFF":"MIXED",s="on"===r;return e.qy`
       <button
         class="ilm-master-btn ${s?"active":""}"
         role="switch"
@@ -14196,60 +14190,67 @@
           padding: 0.25rem;
         }
 
-        /* ─── Summary Bar ─── */
-        .ilm-summary {
+        /* ─── Filter Bar ─── */
+        .ilm-filter-bar {
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 1rem;
-          padding: 0.5rem 0.75rem;
+          gap: 0.25rem;
           margin-bottom: 0.75rem;
-          background: rgba(102, 102, 136, 0.15);
-          border-radius: 0 1.5rem 1.5rem 0;
-          min-height: 3rem;
         }
 
-        .ilm-summary-label {
-          font-family: var(--lcars-font, 'Antonio', sans-serif);
-          font-size: 1rem;
-          color: var(--lcars-sunflower, #ffcc99);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          white-space: nowrap;
-        }
-
-        .ilm-summary-values {
+        .ilm-filter-btn {
+          flex: 1;
           display: flex;
-          align-items: baseline;
-          gap: 0.375rem;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 0.125rem;
+          padding: 0.75rem 0.5rem;
+          min-height: 4rem;
+          border: none;
+          border-radius: 0 1.5rem 1.5rem 0;
+          background: rgba(102, 102, 136, 0.2);
+          color: var(--lcars-gray, #666688);
           font-family: var(--lcars-font, 'Antonio', sans-serif);
-          font-size: 1rem;
           text-transform: uppercase;
+          cursor: pointer;
+          transition: background 200ms ease, color 200ms ease;
         }
 
-        .ilm-summary-active {
-          font-size: 1.5rem;
-          color: var(--lcars-sunflower, #ffcc99);
+        .ilm-filter-btn:first-child {
+          border-radius: 1.5rem 0 0 1.5rem;
+        }
+
+        .ilm-filter-btn:nth-child(2) {
+          border-radius: 0;
+        }
+
+        .ilm-filter-btn:hover {
+          filter: brightness(1.2);
+        }
+
+        .ilm-filter-btn:focus-visible {
+          outline: 2px solid var(--lcars-ice, #99ccff);
+          outline-offset: 2px;
+        }
+
+        .ilm-filter-btn.active {
+          background: var(--lcars-sunflower, #ffcc99);
+          color: var(--lcars-black, #000);
+        }
+
+        .ilm-filter-count {
+          font-size: 1.75rem;
           font-variant-numeric: tabular-nums;
+          line-height: 1;
         }
 
-        .ilm-summary-total {
-          font-size: 1.5rem;
-          color: var(--lcars-space-white, #f5f6fa);
-          font-variant-numeric: tabular-nums;
+        .ilm-filter-label {
+          font-size: 0.875rem;
+          letter-spacing: 0.08em;
         }
 
-        .ilm-summary-sep {
-          color: var(--lcars-gray, #666688);
-        }
-
-        .ilm-summary-divider {
-          color: var(--lcars-gray, #666688);
-          margin: 0 0.25rem;
-        }
-
-        .ilm-summary-covers {
-          color: var(--lcars-ice, #99ccff);
+        .ilm-filter-btn.active .ilm-filter-count {
+          color: var(--lcars-black, #000);
         }
 
         /* ─── Floor Header ─── */
@@ -14359,8 +14360,7 @@
         }
 
         /* ─── Nested panels — reduce spacing ─── */
-        lcars-illumination-panel,
-        lcars-viewport-panel {
+        lcars-illumination-panel {
           --lcars-panel-margin: 0;
         }
 
@@ -14378,14 +14378,21 @@
 
         /* ─── Mobile ─── */
         @media (max-width: 767px) {
-          .ilm-summary {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.25rem;
+          .ilm-filter-btn {
+            min-height: 3rem;
+            padding: 0.5rem 0.25rem;
+          }
+
+          .ilm-filter-count {
+            font-size: 1.25rem;
+          }
+
+          .ilm-filter-label {
+            font-size: 0.75rem;
           }
 
           .ilm-floor-name {
             font-size: 1rem;
           }
         }
-      `]}}customElements.get("illumination-card")||customElements.define("illumination-card",o)})()})();
+      `]}}customElements.get("illumination-card")||customElements.define("illumination-card",d)})()})();

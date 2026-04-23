@@ -34,6 +34,7 @@ class LcarsIlluminationPanel extends LitElement {
       config:     { type: Object },
       areaId:     { type: String, attribute: 'area-id' },
       editMode:   { type: Boolean, attribute: 'edit-mode', reflect: true },
+      filter:     { type: String },
     };
   }
 
@@ -43,8 +44,10 @@ class LcarsIlluminationPanel extends LitElement {
     this.entities = null;
     this.group = null;
     this.config = null;
+    this.filter = 'all';
     this.areaId = null;
     this.editMode = false;
+    this._expandedEffects = new Set();
     this._brightnessDebouncer = createDebouncer((eid, pct) => {
       const safePct = clampValue(pct, 1, 100);
       const brightness = Math.round(safePct / 100 * 255);
@@ -106,23 +109,50 @@ class LcarsIlluminationPanel extends LitElement {
 
   render() {
     const { lights, circuits, scenes } = this._getPartition();
-    if (lights.length === 0 && circuits.length === 0) return html``;
+
+    // Apply filter
+    const showLights = this.filter !== 'circuits';
+    const showCircuits = this.filter !== 'lights';
+    const filteredLights = showLights ? lights : [];
+    const filteredCircuits = showCircuits ? circuits : [];
+
+    if (filteredLights.length === 0 && filteredCircuits.length === 0) return html``;
+
+    // Sub-partition lights: complex (dimmer/full) left, simple (onoff) right
+    const complexLights = filteredLights.filter(e => {
+      const state = this.hass?.states?.[e.entity?.entity_id] || e.state;
+      const t = classifyLightType(state);
+      return t === 'dimmer' || t === 'full';
+    });
+    const simpleLights = filteredLights.filter(e => {
+      const state = this.hass?.states?.[e.entity?.entity_id] || e.state;
+      return classifyLightType(state) === 'onoff';
+    });
 
     const content = html`
-      ${lights.length > 0 ? html`
-        <div class="ilm-devices">
-          ${lights.map(entry => this._renderDevice(entry))}
+      ${filteredLights.length > 0 ? html`
+        <div class="ilm-lights-split">
+          ${complexLights.length > 0 ? html`
+            <div class="ilm-devices ilm-complex">
+              ${complexLights.map(entry => this._renderDevice(entry))}
+            </div>
+          ` : ''}
+          ${simpleLights.length > 0 ? html`
+            <div class="ilm-simple-group">
+              ${simpleLights.map(entry => this._renderDevice(entry))}
+            </div>
+          ` : ''}
         </div>
       ` : ''}
-      ${lights.length > 0 && circuits.length > 0 ? html`
+      ${filteredLights.length > 0 && filteredCircuits.length > 0 ? html`
         <div class="ilm-section-divider">
           <span class="ilm-section-label">CIRCUITS</span>
           <span class="ilm-section-line"></span>
         </div>
       ` : ''}
-      ${circuits.length > 0 ? html`
+      ${filteredCircuits.length > 0 ? html`
         <div class="ilm-devices">
-          ${circuits.map(entry => this._renderDevice(entry))}
+          ${filteredCircuits.map(entry => this._renderDevice(entry))}
         </div>
       ` : ''}
     `;
@@ -225,6 +255,7 @@ class LcarsIlluminationPanel extends LitElement {
       <div class="ilm-dimmer">
         <div class="ilm-dimmer__header">
           <span class="ilm-dimmer__name">${name}</span>
+          <span class="ilm-type-badge">DIM</span>
           <span class="ilm-dimmer__value">${isOn ? brightness + '%' : 'OFF'}</span>
         </div>
         <lcars-slider
@@ -265,6 +296,7 @@ class LcarsIlluminationPanel extends LitElement {
       <div class="ilm-full" role="group" aria-label="${name} controls">
         <div class="ilm-dimmer__header">
           <span class="ilm-dimmer__name">${name}</span>
+          <span class="ilm-type-badge full">${hasColorControl ? 'RGB' : 'FX'}</span>
           <span class="ilm-dimmer__value">${isOn ? brightness + '%' : 'OFF'}</span>
         </div>
         <lcars-slider
@@ -300,20 +332,27 @@ class LcarsIlluminationPanel extends LitElement {
             </div>
           ` : ''}
           ${hasEffects ? html`
-            <div class="ilm-effect-strip">
-              <button class="ilm-effect-btn ${!activeEffect || activeEffect === 'none' ? 'active' : ''}"
-                      aria-pressed="${!activeEffect || activeEffect === 'none' ? 'true' : 'false'}"
-                      @click=${(e) => { e.stopPropagation(); this._clearEffect(eid); }}>
-                SOLID
-              </button>
-              ${effectList.map(fx => html`
-                <button class="ilm-effect-btn ${activeEffect === fx ? 'active' : ''}"
-                        aria-pressed="${activeEffect === fx ? 'true' : 'false'}"
-                        @click=${(e) => { e.stopPropagation(); this._setEffect(eid, fx); }}>
-                  ${fx.toUpperCase()}
+            <button class="ilm-fx-toggle"
+                    aria-expanded="${this._expandedEffects.has(eid) ? 'true' : 'false'}"
+                    @click=${(e) => { e.stopPropagation(); this._toggleEffects(eid); }}>
+              ${this._expandedEffects.has(eid) ? '\u25BE' : '\u25B8'} ${effectList.length} EFFECTS
+            </button>
+            ${this._expandedEffects.has(eid) ? html`
+              <div class="ilm-effect-strip">
+                <button class="ilm-effect-btn ${!activeEffect || activeEffect === 'none' ? 'active' : ''}"
+                        aria-pressed="${!activeEffect || activeEffect === 'none' ? 'true' : 'false'}"
+                        @click=${(e) => { e.stopPropagation(); this._clearEffect(eid); }}>
+                  SOLID
                 </button>
-              `)}
-            </div>
+                ${effectList.map(fx => html`
+                  <button class="ilm-effect-btn ${activeEffect === fx ? 'active' : ''}"
+                          aria-pressed="${activeEffect === fx ? 'true' : 'false'}"
+                          @click=${(e) => { e.stopPropagation(); this._setEffect(eid, fx); }}>
+                    ${fx.toUpperCase()}
+                  </button>
+                `)}
+              </div>
+            ` : ''}
           ` : ''}
         </div>
       </div>
@@ -336,7 +375,14 @@ class LcarsIlluminationPanel extends LitElement {
     `;
   }
 
-  /* â”€â”€â”€ Color Temperature / Hue â”€â”€â”€ */
+  _toggleEffects(eid) {
+    if (this._expandedEffects.has(eid)) {
+      this._expandedEffects.delete(eid);
+    } else {
+      this._expandedEffects.add(eid);
+    }
+    this.requestUpdate();
+  }
 
   _getBarColor(state) {
     const isOn = state?.state === 'on';
@@ -485,6 +531,28 @@ class LcarsIlluminationPanel extends LitElement {
           gap: 0.375rem;
         }
 
+        /* Split layout: complex lights left, simple pills right */
+        .ilm-lights-split {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .ilm-complex {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .ilm-simple-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.375rem;
+          flex-shrink: 0;
+          min-width: 10rem;
+          max-width: 14rem;
+          border-left: 1px solid rgba(102, 102, 136, 0.2);
+          padding-left: 0.5rem;
+        }
+
         /* â”€â”€â”€ Shared Pill Button (Type A & D) â”€â”€â”€ */
 
         .ilm-pill {
@@ -584,6 +652,39 @@ class LcarsIlluminationPanel extends LitElement {
           padding: 0 0.25rem;
         }
 
+        .ilm-type-badge {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.625rem;
+          color: var(--lcars-gray, #666688);
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          margin-left: 0.5rem;
+          flex-shrink: 0;
+        }
+        .ilm-type-badge.full {
+          color: var(--lcars-gold, #ffaa00);
+        }
+
+        .ilm-fx-toggle {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.625rem;
+          text-transform: uppercase;
+          color: var(--lcars-gray, #666688);
+          background: rgba(102, 102, 136, 0.15);
+          border: none;
+          padding: 0.25rem 0.5rem;
+          height: 1.5rem;
+          border-radius: var(--lcars-btn-radius, 1.5rem);
+          cursor: pointer;
+          white-space: nowrap;
+          transition: filter 150ms ease;
+        }
+        .ilm-fx-toggle:hover { filter: brightness(1.3); }
+        .ilm-fx-toggle:focus-visible {
+          outline: 2px solid var(--lcars-ice, #99ccff);
+          outline-offset: 2px;
+        }
+
         .ilm-dimmer__name {
           flex: 1;
           font-family: var(--lcars-font, 'Antonio', sans-serif);
@@ -611,6 +712,7 @@ class LcarsIlluminationPanel extends LitElement {
           flex-direction: column;
           gap: 0.25rem;
           border: 1px solid rgba(255, 204, 153, 0.15);
+          border-left: 4px solid var(--lcars-gold, #ffaa00);
           border-radius: 0.5rem;
           padding: 0.375rem;
         }
@@ -626,23 +728,23 @@ class LcarsIlluminationPanel extends LitElement {
 
         .ilm-color-presets {
           display: flex;
-          gap: 0.25rem;
+          gap: 0.125rem;
           flex-wrap: wrap;
         }
 
         .ilm-color-btn {
           font-family: var(--lcars-font, 'Antonio', sans-serif);
-          font-size: 0.75rem;
+          font-size: 0.625rem;
           text-transform: uppercase;
           color: var(--lcars-black, #000);
           background: var(--preset-color, var(--lcars-sunflower));
           border: none;
-          padding: 0.25rem 0.5rem;
-          height: 2rem;
+          padding: 0.125rem 0.375rem;
+          height: 1.5rem;
           border-radius: var(--lcars-btn-radius, 1.5rem);
           cursor: pointer;
           transition: filter 150ms ease;
-          opacity: 0.6;
+          opacity: 0.45;
         }
 
         .ilm-color-btn.active { opacity: 1; }

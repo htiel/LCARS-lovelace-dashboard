@@ -238,6 +238,7 @@ class LcarsIlluminationCard extends LitElement {
                   <lcars-illumination-panel
                     .hass=${this._hass}
                     .entities=${filtered}
+                    .filter=${this._filter}
                     area-id="${areaData.area.area_id}">
                   </lcars-illumination-panel>
                 </div>

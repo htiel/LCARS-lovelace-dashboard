@@ -200,12 +200,12 @@ class LcarsIlluminationLayout extends LitElement {
         }
         .lcars-header-title {
           font-family: var(--lcars-font, 'Antonio', sans-serif);
-          font-size: var(--lcars-font-size-sub, 1.25rem);
+          font-size: var(--lcars-font-size-title, 2rem);
           color: var(--lcars-sunflower, #ffcc99);
           text-transform: uppercase; letter-spacing: 0.05em;
           white-space: nowrap;
           line-height: var(--lcars-bar-h, 1.5rem);
-          padding: 0 0.5rem;
+          padding: 0 1rem;
         }
         .lcars-header-bar {
           flex: 1; height: var(--lcars-bar-h, 1.5rem);
@@ -215,7 +215,7 @@ class LcarsIlluminationLayout extends LitElement {
           height: var(--lcars-bar-h, 1.5rem);
           background: var(--lcars-sunflower, #ffcc99);
           border-radius: 0;
-          display: flex; align-items: center; padding: 0 0.25rem;
+          display: flex; align-items: center; padding: 0 0.5rem;
         }
         .mute-btn {
           background: none; border: none; cursor: pointer;
@@ -318,7 +318,7 @@ class LcarsIlluminationLayout extends LitElement {
         }
         .lcars-footer-text {
           font-family: var(--lcars-font, 'Antonio', sans-serif);
-          font-size: 0.75rem; color: var(--lcars-african-violet, #cc99ff);
+          font-size: var(--lcars-font-size-data, 0.875rem); color: var(--lcars-sky, #aaaaff);
           text-transform: uppercase; white-space: nowrap;
           line-height: var(--lcars-bar-h, 1.5rem); padding: 0 0.5rem;
         }

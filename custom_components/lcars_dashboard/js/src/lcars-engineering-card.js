@@ -121,19 +121,29 @@ class LcarsEngineeringCard extends LitElement {
     }
 
     // Build device groups for battery panel rendering
+    // Only render warp core for devices with power I/O siblings (not battery-only like motion sensors)
     const deviceGroups = [];
+    const batteryOnlyEntries = []; // Battery-only devices render as compact tiles
     for (const [deviceId, group] of batteryDeviceMap) {
       if (group.battery) {
-        deviceGroups.push({
-          device: group.device,
-          entities: group.entities,
-          areaId: area.area_id,
+        const hasPowerSibling = group.entities.some(e => {
+          const dc = (this._hass?.states?.[e.entity?.entity_id] || e.state)?.attributes?.device_class;
+          return dc === 'power' || dc === 'energy' || dc === 'voltage' || dc === 'current';
         });
+        if (hasPowerSibling) {
+          deviceGroups.push({
+            device: group.device,
+            entities: group.entities,
+            areaId: area.area_id,
+          });
+        } else {
+          batteryOnlyEntries.push(group.battery);
+        }
       }
     }
 
-    if (deviceGroups.length === 0 && circuits.length === 0) return null;
-    return { area, deviceGroups, circuits, all: [...deviceGroups.flatMap(g => g.entities), ...circuits] };
+    if (deviceGroups.length === 0 && circuits.length === 0 && batteryOnlyEntries.length === 0) return null;
+    return { area, deviceGroups, circuits: [...circuits, ...batteryOnlyEntries], all: [...deviceGroups.flatMap(g => g.entities), ...circuits, ...batteryOnlyEntries] };
   }
 
   _getFiltered(data) {

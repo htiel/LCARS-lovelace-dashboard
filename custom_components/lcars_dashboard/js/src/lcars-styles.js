@@ -50,10 +50,10 @@ export const lcarsColors = css`
   --lcars-unit: 7.5rem;
   --lcars-vunit: 3rem;
   --lcars-gap: 0.25rem;
-  --lcars-elbow-w: 10.5rem;
+  --lcars-elbow-w: 7.5rem;
   --lcars-elbow-h: 4.5rem;
   --lcars-elbow-radius: 3.75rem;
-  --lcars-sidebar-w: 12rem;
+  --lcars-sidebar-w: 9rem;
   --lcars-bar-h: 1.5rem;
   --lcars-endcap: 1.5rem;
   --lcars-btn-radius: 1.5rem;

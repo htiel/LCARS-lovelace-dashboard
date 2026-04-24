@@ -1,4 +1,4 @@
-/**
+﻿/**
  * LCARS Homepage Card — Main dashboard view with areas
  * Entities grouped by device → domain type with specialized renderers:
  *   camera → LCARS-framed live feed

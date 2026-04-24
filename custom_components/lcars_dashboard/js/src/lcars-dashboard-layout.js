@@ -426,7 +426,7 @@ class LcarsDashboardLayout extends LitElement {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          background: var(--lcars-almond-creme);
+          background: var(--lcars-african-violet);
           color: var(--lcars-black);
           border: none;
           border-radius: var(--lcars-btn-radius) 0 0 var(--lcars-btn-radius);

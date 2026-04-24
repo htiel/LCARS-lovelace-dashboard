@@ -15,6 +15,9 @@ import { getAreaEntities } from './lcars-entity-query.js';
 import { isDiagnosticEntity } from './lcars-entity-utils.js';
 import { formatNumber } from './lcars-format-utils.js';
 
+// Side-effect: register battery panel
+import './panels/battery/lcars-battery-panel.js';
+
 const TAG = 'EngineeringCard';
 const FILTER_ALL = 'all';
 const FILTER_STORAGE = 'storage';
@@ -66,8 +69,8 @@ class LcarsEngineeringCard extends LitElement {
 
   _resolveArea(area) {
     const raw = getAreaEntities(this._hass, area.area_id, this._entityCache);
-    const storage = []; // battery entities
-    const circuits = []; // power/energy/voltage/current sensors
+    const circuits = [];
+    const batteryDeviceMap = new Map(); // device_id → { battery, powerEntries[] }
 
     for (const e of raw) {
       const domain = e.entity_id.split('.')[0];
@@ -78,22 +81,65 @@ class LcarsEngineeringCard extends LitElement {
       const dc = state.attributes?.device_class || '';
       if (!POWER_CLASSES.has(dc)) continue;
 
-      if (dc === 'battery') {
-        storage.push(entry);
-      } else {
+      const deviceId = e.device_id;
+
+      if (dc === 'battery' && deviceId) {
+        // Group battery with its device's power entities
+        if (!batteryDeviceMap.has(deviceId)) {
+          batteryDeviceMap.set(deviceId, { battery: entry, entities: [entry], device: this._hass?.devices?.[deviceId] });
+        } else {
+          batteryDeviceMap.get(deviceId).battery = entry;
+          batteryDeviceMap.get(deviceId).entities.push(entry);
+        }
+      } else if (deviceId && batteryDeviceMap.has(deviceId)) {
+        // Power entity belongs to a battery device
+        batteryDeviceMap.get(deviceId).entities.push(entry);
+      } else if (dc === 'battery' && !deviceId) {
+        // Orphan battery (no device) — treat as standalone
         circuits.push(entry);
+      } else {
+        // Check if this device has a battery — if so, add to its group
+        let addedToDevice = false;
+        if (deviceId) {
+          // Look ahead: does this device have a battery?
+          for (const e2 of raw) {
+            if (e2.device_id === deviceId) {
+              const s2 = this._hass.states?.[e2.entity_id];
+              if (s2?.attributes?.device_class === 'battery') {
+                if (!batteryDeviceMap.has(deviceId)) {
+                  batteryDeviceMap.set(deviceId, { battery: null, entities: [], device: this._hass?.devices?.[deviceId] });
+                }
+                batteryDeviceMap.get(deviceId).entities.push(entry);
+                addedToDevice = true;
+                break;
+              }
+            }
+          }
+        }
+        if (!addedToDevice) circuits.push(entry);
       }
     }
 
-    const all = [...storage, ...circuits];
-    if (all.length === 0) return null;
-    return { area, all, storage, circuits };
+    // Build device groups for battery panel rendering
+    const deviceGroups = [];
+    for (const [deviceId, group] of batteryDeviceMap) {
+      if (group.battery) {
+        deviceGroups.push({
+          device: group.device,
+          entities: group.entities,
+          areaId: area.area_id,
+        });
+      }
+    }
+
+    if (deviceGroups.length === 0 && circuits.length === 0) return null;
+    return { area, deviceGroups, circuits, all: [...deviceGroups.flatMap(g => g.entities), ...circuits] };
   }
 
   _getFiltered(data) {
-    if (this.filter === FILTER_STORAGE) return data.storage.length > 0 ? data.storage : null;
+    if (this.filter === FILTER_STORAGE) return data.deviceGroups.length > 0 ? data.deviceGroups : null;
     if (this.filter === FILTER_CIRCUITS) return data.circuits.length > 0 ? data.circuits : null;
-    return data.all;
+    return data.all.length > 0 ? data.all : null;
   }
 
   /* ─── Summary ─── */
@@ -111,10 +157,16 @@ class LcarsEngineeringCard extends LitElement {
             if (!isNaN(v)) totalPowerW += v;
           }
         }
-        for (const e of data.storage) {
-          const state = this._hass?.states?.[e.entity?.entity_id] || e.state;
-          const v = parseFloat(state?.state);
-          if (!isNaN(v)) { batteryCount++; batterySum += v; lowestBat = Math.min(lowestBat, v); }
+        for (const g of data.deviceGroups) {
+          if (g.entities) {
+            for (const e of g.entities) {
+              const state = this._hass?.states?.[e.entity?.entity_id] || e.state;
+              if (state?.attributes?.device_class === 'battery') {
+                const v = parseFloat(state?.state);
+                if (!isNaN(v)) { batteryCount++; batterySum += v; lowestBat = Math.min(lowestBat, v); }
+              }
+            }
+          }
         }
       }
     }
@@ -166,20 +218,30 @@ class LcarsEngineeringCard extends LitElement {
           if (visible.length === 0) return html``;
           return html`
             ${floor ? html`<div class="eng-floor-header"><span class="eng-floor-name">${floor.name || 'FLOOR'}</span><span class="eng-floor-line"></span></div>` : ''}
-            ${visible.map(data => {
-              const filtered = this._getFiltered(data);
-              return html`
-                <div class="eng-area-section">
-                  <div class="eng-area-header">
-                    <span class="eng-area-name">${data.area.name}</span>
-                    <span class="eng-area-line"></span>
-                  </div>
-                  <div class="eng-devices">
-                    ${filtered.map(e => this._renderDevice(e))}
-                  </div>
+            ${visible.map(data => html`
+              <div class="eng-area-section">
+                <div class="eng-area-header">
+                  <span class="eng-area-name">${data.area.name}</span>
+                  <span class="eng-area-line"></span>
                 </div>
-              `;
-            })}
+                ${this.filter !== FILTER_CIRCUITS && data.deviceGroups.length > 0 ? html`
+                  <div class="eng-battery-panels">
+                    ${data.deviceGroups.map(g => html`
+                      <lcars-battery-panel
+                        .group=${{ device: g.device, entities: g.entities, areaId: g.areaId }}
+                        .hass=${this._hass}
+                        area-id="${g.areaId}">
+                      </lcars-battery-panel>
+                    `)}
+                  </div>
+                ` : ''}
+                ${this.filter !== FILTER_STORAGE && data.circuits.length > 0 ? html`
+                  <div class="eng-devices">
+                    ${data.circuits.map(e => this._renderDevice(e))}
+                  </div>
+                ` : ''}
+              </div>
+            `)}
           `;
         })}
         ${floorGroups.length === 0 ? html`<div class="eng-empty"><span>NO POWER DEVICES DETECTED</span></div>` : ''}
@@ -256,6 +318,7 @@ class LcarsEngineeringCard extends LitElement {
         .eng-area-name { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; color: var(--lcars-butterscotch, #ff9966); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
         .eng-area-line { flex: 1; height: 2px; background: var(--lcars-butterscotch, #ff9966); opacity: 0.3; }
         .eng-devices { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr)); gap: 0.375rem; }
+        .eng-battery-panels { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr)); gap: 0.5rem; margin-bottom: 0.5rem; }
         .eng-device { border: 1px solid rgba(255, 153, 102, 0.15); border-radius: 0.5rem; padding: 0.5rem 0.75rem; cursor: pointer; transition: filter 200ms ease; }
         .eng-device:hover { filter: brightness(1.15); }
         .eng-device.battery { border-left: 4px solid var(--lcars-butterscotch, #ff9966); }

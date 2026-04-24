@@ -8,7 +8,7 @@
  * v5.0.0 — 5X-2.3
  */
 import { LitElement, html, css } from 'lit-element';
-import { lcarsLog, lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
+import { lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
@@ -96,12 +96,71 @@ class LcarsEngineeringCard extends LitElement {
     return data.all;
   }
 
+  /* ─── Summary ─── */
+
+  _getGlobalSummary(floorGroups) {
+    let totalPowerW = 0;
+    let batteryCount = 0, batterySum = 0, lowestBat = 100;
+
+    for (const { areas } of floorGroups) {
+      for (const data of areas) {
+        for (const e of data.circuits) {
+          const state = this._hass?.states?.[e.entity?.entity_id] || e.state;
+          if (state?.attributes?.device_class === 'power') {
+            const v = parseFloat(state?.state);
+            if (!isNaN(v)) totalPowerW += v;
+          }
+        }
+        for (const e of data.storage) {
+          const state = this._hass?.states?.[e.entity?.entity_id] || e.state;
+          const v = parseFloat(state?.state);
+          if (!isNaN(v)) { batteryCount++; batterySum += v; lowestBat = Math.min(lowestBat, v); }
+        }
+      }
+    }
+    const avgBattery = batteryCount > 0 ? Math.round(batterySum / batteryCount) : null;
+    return { totalPowerW, batteryCount, avgBattery, lowestBat: batteryCount > 0 ? Math.round(lowestBat) : null };
+  }
+
+  _getPowerTierColor(watts) {
+    if (watts > 1000) return 'var(--lcars-tomato, #ff5555)';
+    if (watts > 500) return 'var(--lcars-butterscotch, #ff9966)';
+    if (watts > 200) return 'var(--lcars-sunflower, #ffcc99)';
+    if (watts > 50) return 'var(--lcars-ice, #99ccff)';
+    return 'var(--lcars-gray, #666688)';
+  }
+
+  _getBatteryColor(pct) {
+    if (pct < 20) return 'var(--lcars-tomato, #ff5555)';
+    if (pct < 50) return 'var(--lcars-butterscotch, #ff9966)';
+    return 'var(--lcars-ice, #99ccff)';
+  }
+
   render() {
     if (!this._hass) return html``;
     const floorGroups = this._getAreasWithPower();
+    const summary = this._getGlobalSummary(floorGroups);
 
     return html`
       <div class="eng-dashboard">
+        <!-- Warp Core Summary -->
+        <div class="eng-summary">
+          <span class="eng-summary__block">
+            <span class="eng-summary__label">TOTAL DRAW</span>
+            <span class="eng-summary__value" style="color:${this._getPowerTierColor(summary.totalPowerW)}">${formatNumber(Math.round(summary.totalPowerW))} W</span>
+          </span>
+          ${summary.batteryCount > 0 ? html`
+            <span class="eng-summary__block">
+              <span class="eng-summary__label">BATTERIES</span>
+              <span class="eng-summary__value">${summary.batteryCount} UNITS · AVG ${summary.avgBattery}%</span>
+            </span>
+            <span class="eng-summary__block">
+              <span class="eng-summary__label">LOWEST</span>
+              <span class="eng-summary__value" style="color:${this._getBatteryColor(summary.lowestBat)}">${summary.lowestBat}%</span>
+            </span>
+          ` : ''}
+        </div>
+
         ${floorGroups.map(({ floor, areas }) => {
           const visible = areas.filter(a => this._getFiltered(a) !== null);
           if (visible.length === 0) return html``;
@@ -138,23 +197,35 @@ class LcarsEngineeringCard extends LitElement {
     const numVal = parseFloat(val);
     const displayVal = isNaN(numVal) ? (val || '').toUpperCase() : `${formatNumber(numVal)} ${unit}`;
     const isBattery = dc === 'battery';
-    const batteryPct = isBattery ? numVal : null;
+    const batteryPct = isBattery ? (isNaN(numVal) ? 0 : numVal) : null;
+
+    if (isBattery) {
+      const batColor = this._getBatteryColor(batteryPct);
+      return html`
+        <div class="eng-device battery" @click=${() => showMoreInfo(eid)}
+             style="--bat-color:${batColor}">
+          <div class="eng-device__header">
+            <span class="eng-device__name">${name}</span>
+            <span class="eng-device__value-inline" style="color:${batColor}">${Math.round(batteryPct)}%</span>
+          </div>
+          <div class="eng-bat-bar">
+            <div class="eng-bat-fill" style="width:${batteryPct}%; background:${batColor}"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Power/energy/voltage/current sensor
+    const watts = dc === 'power' ? numVal : 0;
+    const tierColor = dc === 'power' ? this._getPowerTierColor(watts) : 'var(--lcars-butterscotch, #ff9966)';
 
     return html`
-      <div class="eng-device ${isBattery ? 'battery' : 'sensor'}"
-           @click=${() => showMoreInfo(eid)}>
+      <div class="eng-device sensor" @click=${() => showMoreInfo(eid)}>
         <div class="eng-device__header">
           <span class="eng-device__name">${name}</span>
           <span class="eng-device__badge">${dc.toUpperCase()}</span>
         </div>
-        <div class="eng-device__value" style="${isBattery ? `--bat-pct:${batteryPct || 0}%` : ''}">
-          ${displayVal}
-        </div>
-        ${isBattery ? html`
-          <div class="eng-bat-bar">
-            <div class="eng-bat-fill" style="width:${batteryPct || 0}%"></div>
-          </div>
-        ` : ''}
+        <div class="eng-device__value" style="color:${tierColor}">${displayVal}</div>
       </div>
     `;
   }
@@ -165,6 +236,18 @@ class LcarsEngineeringCard extends LitElement {
       css`
         :host { display: block; }
         .eng-dashboard { padding: 0.25rem; }
+
+        /* ─── Summary Strip ─── */
+        .eng-summary {
+          display: flex; gap: 0.25rem; margin-bottom: 0.75rem;
+          background: var(--lcars-butterscotch, #ff9966); border-radius: 0.5rem;
+          padding: 0.5rem 1rem; color: var(--lcars-black, #000);
+          font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
+        }
+        .eng-summary__block { flex: 1; display: flex; flex-direction: column; gap: 0.125rem; }
+        .eng-summary__label { font-size: 0.625rem; letter-spacing: 0.1em; opacity: 0.6; }
+        .eng-summary__value { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+
         .eng-floor-header { display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0 0.5rem 0; }
         .eng-floor-name { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; color: var(--lcars-butterscotch, #ff9966); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
         .eng-floor-line { flex: 1; height: 0.375rem; background: var(--lcars-butterscotch, #ff9966); border-radius: 0 1.5rem 1.5rem 0; opacity: 0.4; }
@@ -180,6 +263,7 @@ class LcarsEngineeringCard extends LitElement {
         .eng-device__name { flex: 1; font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; color: var(--lcars-butterscotch, #ff9966); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .eng-device__badge { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.625rem; color: var(--lcars-gray, #666688); text-transform: uppercase; letter-spacing: 0.1em; }
         .eng-device__value { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.5rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; margin-top: 0.25rem; }
+        .eng-device__value-inline { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
         .eng-bat-bar { height: 0.375rem; background: rgba(102, 102, 136, 0.2); border-radius: 0.25rem; margin-top: 0.25rem; overflow: hidden; }
         .eng-bat-fill { height: 100%; background: var(--lcars-butterscotch, #ff9966); border-radius: 0.25rem; transition: width 300ms ease; }
         .eng-empty { display: flex; align-items: center; justify-content: center; min-height: 10rem; color: var(--lcars-gray, #666688); font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; text-transform: uppercase; }

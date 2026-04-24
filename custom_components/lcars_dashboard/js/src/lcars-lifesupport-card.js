@@ -8,7 +8,7 @@
  * v5.0.0 — 5X-2.4
  */
 import { LitElement, html, css } from 'lit-element';
-import { lcarsLog, lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
+import { lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
@@ -99,12 +99,91 @@ class LcarsLifeSupportCard extends LitElement {
     return data.all;
   }
 
+  /* ─── Summary ─── */
+
+  _getGlobalSummary(floorGroups) {
+    let tempSum = 0, tempCount = 0;
+    let hvacHeating = 0, hvacCooling = 0, hvacIdle = 0;
+    let worstAqi = 0, worstAqiArea = '';
+
+    for (const { areas } of floorGroups) {
+      for (const data of areas) {
+        for (const e of data.climateEntities) {
+          const state = this._hass?.states?.[e.entity?.entity_id] || e.state;
+          if (e.domain === 'climate') {
+            const action = state?.attributes?.hvac_action || state?.state;
+            if (action === 'heating') hvacHeating++;
+            else if (action === 'cooling') hvacCooling++;
+            else hvacIdle++;
+          }
+          if (state?.attributes?.device_class === 'temperature') {
+            const v = parseFloat(state?.state);
+            if (!isNaN(v)) { tempSum += v; tempCount++; }
+          }
+        }
+        for (const e of data.airEntities) {
+          const state = this._hass?.states?.[e.entity?.entity_id] || e.state;
+          if (state?.attributes?.device_class === 'aqi') {
+            const v = parseFloat(state?.state);
+            if (!isNaN(v) && v > worstAqi) { worstAqi = v; worstAqiArea = data.area.name; }
+          }
+        }
+      }
+    }
+    const avgTemp = tempCount > 0 ? Math.round(tempSum / tempCount) : null;
+    const weatherEid = Object.keys(this._hass?.states || {}).find(k => k.startsWith('weather.'));
+    const outdoor = weatherEid ? this._hass.states[weatherEid]?.attributes?.temperature : null;
+    return { avgTemp, outdoor, worstAqi, worstAqiArea, hvacHeating, hvacCooling, hvacIdle };
+  }
+
+  _getComfortColor(tempF) {
+    if (tempF == null) return 'var(--lcars-gray)';
+    if (tempF < 68) return 'var(--lcars-bluey, #8899ff)';
+    if (tempF <= 74) return 'var(--lcars-ice, #99ccff)';
+    if (tempF <= 80) return 'var(--lcars-butterscotch, #ff9966)';
+    return 'var(--lcars-tomato, #ff5555)';
+  }
+
+  _getAqiColor(aqi) {
+    if (aqi <= 50) return 'var(--lcars-ice, #99ccff)';
+    if (aqi <= 100) return 'var(--lcars-sunflower, #ffcc99)';
+    if (aqi <= 150) return 'var(--lcars-butterscotch, #ff9966)';
+    return 'var(--lcars-tomato, #ff5555)';
+  }
+
   render() {
     if (!this._hass) return html``;
     const floorGroups = this._getAreasWithEnv();
+    const summary = this._getGlobalSummary(floorGroups);
 
     return html`
       <div class="ls-dashboard">
+        <!-- Summary Strip -->
+        <div class="ls-summary">
+          ${summary.avgTemp != null ? html`
+            <span class="ls-summary__block">
+              <span class="ls-summary__label">INDOOR AVG</span>
+              <span class="ls-summary__value" style="color:${this._getComfortColor(summary.avgTemp)}">${summary.avgTemp}°</span>
+            </span>
+          ` : ''}
+          ${summary.outdoor != null ? html`
+            <span class="ls-summary__block">
+              <span class="ls-summary__label">OUTDOOR</span>
+              <span class="ls-summary__value">${Math.round(summary.outdoor)}°</span>
+            </span>
+          ` : ''}
+          ${summary.worstAqi > 0 ? html`
+            <span class="ls-summary__block">
+              <span class="ls-summary__label">WORST AQI</span>
+              <span class="ls-summary__value" style="color:${this._getAqiColor(summary.worstAqi)}">${summary.worstAqi} (${summary.worstAqiArea.toUpperCase()})</span>
+            </span>
+          ` : ''}
+          <span class="ls-summary__block">
+            <span class="ls-summary__label">HVAC</span>
+            <span class="ls-summary__value">${summary.hvacHeating} HEAT · ${summary.hvacCooling} COOL · ${summary.hvacIdle} IDLE</span>
+          </span>
+        </div>
+
         ${floorGroups.map(({ floor, areas }) => {
           const visible = areas.filter(a => this._getFiltered(a) !== null);
           if (visible.length === 0) return html``;
@@ -182,9 +261,25 @@ class LcarsLifeSupportCard extends LitElement {
           <span class="ls-device__name">${name}</span>
           <span class="ls-device__badge">${dc.toUpperCase()}</span>
         </div>
-        <div class="ls-device__value">${displayVal}</div>
+        <div class="ls-device__value" style="color:${this._getSensorColor(dc, numVal)}">${displayVal}</div>
       </div>
     `;
+  }
+
+  _getSensorColor(dc, val) {
+    if (isNaN(val)) return 'var(--lcars-space-white)';
+    if (dc === 'temperature') return this._getComfortColor(val);
+    if (dc === 'aqi' || dc === 'pm25' || dc === 'pm10') return this._getAqiColor(val);
+    if (dc === 'carbon_dioxide') {
+      if (val < 800) return 'var(--lcars-ice)';
+      if (val < 1200) return 'var(--lcars-sunflower)';
+      return 'var(--lcars-tomato)';
+    }
+    if (dc === 'humidity') {
+      if (val < 30 || val > 70) return 'var(--lcars-butterscotch)';
+      return 'var(--lcars-ice)';
+    }
+    return 'var(--lcars-space-white)';
   }
 
   static get styles() {
@@ -193,6 +288,18 @@ class LcarsLifeSupportCard extends LitElement {
       css`
         :host { display: block; }
         .ls-dashboard { padding: 0.25rem; }
+
+        /* ─── Summary Strip ─── */
+        .ls-summary {
+          display: flex; gap: 0.25rem; margin-bottom: 0.75rem;
+          background: var(--lcars-bluey, #8899ff); border-radius: 0.5rem;
+          padding: 0.5rem 1rem; color: var(--lcars-black, #000);
+          font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
+        }
+        .ls-summary__block { flex: 1; display: flex; flex-direction: column; gap: 0.125rem; }
+        .ls-summary__label { font-size: 0.625rem; letter-spacing: 0.1em; opacity: 0.6; }
+        .ls-summary__value { font-size: 1rem; font-variant-numeric: tabular-nums; }
+
         .ls-floor-header { display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0 0.5rem 0; }
         .ls-floor-name { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; color: var(--lcars-bluey, #8899ff); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
         .ls-floor-line { flex: 1; height: 0.375rem; background: var(--lcars-bluey, #8899ff); border-radius: 0 1.5rem 1.5rem 0; opacity: 0.4; }

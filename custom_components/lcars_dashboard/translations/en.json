@@ -42,6 +42,17 @@
           "environmental_icon": "MDI icon name (e.g., mdi:thermometer)",
           "lighting_icon": "MDI icon name (e.g., mdi:lightbulb)"
         }
+      },
+      "dashboard_order": {
+        "title": "Sidebar Order",
+        "description": "Set the display order for LCARS dashboards in the sidebar. Dashboards will be grouped together in this order.",
+        "data": {
+          "position_1": "1st position",
+          "position_2": "2nd position",
+          "position_3": "3rd position",
+          "position_4": "4th position",
+          "position_5": "5th position"
+        }
       }
     },
     "error": {

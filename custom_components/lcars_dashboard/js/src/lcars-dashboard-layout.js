@@ -384,8 +384,7 @@ class LcarsDashboardLayout extends LitElement {
 
         .lcars-sidebar-panel {
           background: var(--lcars-sidebar-bg);
-          padding: 0.5rem 0.75rem;
-          min-height: 2rem;
+          padding: 0.25rem 0.5rem;
           font-size: var(--lcars-font-size-data);
           color: var(--lcars-black);
           text-transform: uppercase;

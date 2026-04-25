@@ -7,7 +7,7 @@ import re
 
 from .load_plugins import load_plugins
 from .load_dashboard import load_dashboards, unload_dashboards
-from .const import DOMAIN, VERSION, CONF_DASHBOARDS, DASHBOARD_REGISTRY, DEFAULT_DASHBOARDS
+from .const import DOMAIN, VERSION, CONF_DASHBOARDS, CONF_DASHBOARD_ORDER, DASHBOARD_REGISTRY, DEFAULT_DASHBOARDS
 from .process_yaml import process_yaml, reload_configuration
 from .notifications import notifications
 from datetime import datetime
@@ -1812,6 +1812,71 @@ async def ws_handle_panel_column_set(
     connection.send_result(msg["id"], {"successful": "Panel column overrides saved"})
 
 
+async def _apply_sidebar_order(hass, config_entry):
+    """Update sidebar panelOrder for all human users to group LCARS dashboards together."""
+    from homeassistant.components.frontend.storage import async_user_store
+
+    order_keys = list(
+        config_entry.options.get(
+            CONF_DASHBOARD_ORDER,
+            config_entry.options.get(CONF_DASHBOARDS, DEFAULT_DASHBOARDS),
+        )
+    )
+    # Build ordered url_paths for enabled LCARS dashboards
+    lcars_paths = []
+    for key in order_keys:
+        meta = DASHBOARD_REGISTRY.get(key)
+        if meta:
+            lcars_paths.append(meta["url_path"])
+
+    if not lcars_paths:
+        return
+
+    lcars_set = set(lcars_paths)
+
+    try:
+        users = await hass.auth.async_get_users()
+    except Exception as err:
+        _LOGGER.warning("Could not retrieve users for sidebar ordering: %s", err)
+        return
+
+    for user in users:
+        if user.system_generated:
+            continue
+        try:
+            store, data = await async_user_store(hass, user.id)
+            sidebar = data.get("sidebar", {})
+            panel_order = list(sidebar.get("panelOrder", []))
+
+            # Find the position of the first existing LCARS panel
+            insert_idx = None
+            for i, panel_id in enumerate(panel_order):
+                if panel_id in lcars_set:
+                    if insert_idx is None:
+                        insert_idx = i
+                    break
+
+            # Remove all existing LCARS panels from the order
+            panel_order = [p for p in panel_order if p not in lcars_set]
+
+            # Insert LCARS panels at the found position (or append at end)
+            if insert_idx is None:
+                insert_idx = len(panel_order)
+            else:
+                # Adjust for removals before insert_idx
+                insert_idx = min(insert_idx, len(panel_order))
+
+            for offset, path in enumerate(lcars_paths):
+                panel_order.insert(insert_idx + offset, path)
+
+            sidebar["panelOrder"] = panel_order
+            data["sidebar"] = sidebar
+            await store.async_save(data)
+            _LOGGER.debug("Updated sidebar order for user %s: %s", user.name, lcars_paths)
+        except Exception as err:
+            _LOGGER.warning("Failed to update sidebar order for user %s: %s", user.name, err)
+
+
 async def async_setup_entry(hass, config_entry):
     _LOGGER.debug("async_setup_entry starting for %s", config_entry.entry_id)
 
@@ -1837,6 +1902,8 @@ async def async_setup_entry(hass, config_entry):
     except Exception as err:
         _LOGGER.error("load_dashboards failed: %s", err, exc_info=True)
         return False
+
+    await _apply_sidebar_order(hass, config_entry)
 
     config_entry.add_update_listener(_update_listener)
 
@@ -1868,6 +1935,8 @@ async def _update_listener(hass, config_entry):
     await process_yaml(hass, config_entry)
     registered = load_dashboards(hass, config_entry)
     hass.data.setdefault(DOMAIN, {})["registered_dashboards"] = registered
+
+    await _apply_sidebar_order(hass, config_entry)
 
     hass.bus.async_fire("lcars_dashboard_reload")
 

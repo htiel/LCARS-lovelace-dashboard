@@ -1,8 +1,9 @@
 DOMAIN = "lcars_dashboard"
-VERSION = "5.0.1-beta.1"
+VERSION = "5.0.1-beta.2"
 
 # Configuration keys
 CONF_DASHBOARDS = "dashboards"
+CONF_DASHBOARD_ORDER = "dashboard_order"
 DEFAULT_DASHBOARDS = ["habitat"]
 
 # Dashboard registry — canonical definitions

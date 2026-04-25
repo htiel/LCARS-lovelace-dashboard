@@ -991,5 +991,685 @@ This is more authentically LCARS than expanding circles. The arc system stays se
 - [ ] Should zone labels use the Okuda abbreviated style (FR, GR, SD, BK) or full names (FRONT, GARAGE, SIDE, BACK)?
 
 **For Worf:**
-- [ ] The dense data bar pattern from Engineering II shows numeric codes on each segment. If we add sensor entity IDs or last-changed timestamps to the arcs, is that an information disclosure concern for wall-mounted displays?
-- [ ] Structural bars containing crew manifest inline — does this make the presence data MORE visible (always on screen in the bar) vs. the original separate panel approach?
+- [x] The dense data bar pattern from Engineering II shows numeric codes on each segment. If we add sensor entity IDs or last-changed timestamps to the arcs, is that an information disclosure concern for wall-mounted displays?
+  - **Worf**: Acceptable. Entity IDs are internal HA identifiers, not credentials. Timestamps of last-changed are operational data, not secrets. However, do NOT display entity configuration details (IP addresses, MAC addresses) on arcs. Sensor names and timestamps only.
+- [x] Structural bars containing crew manifest inline — does this make the presence data MORE visible (always on screen in the bar) vs. the original separate panel approach?
+  - **Worf**: Yes, more visible — and that is acceptable IF `show_crew_manifest` config flag is honored. The inline approach is actually superior: it keeps presence data contextual (part of the tactical display) rather than a separate panel that could be mistaken for a social feature. However, the config flag MUST default to `true` with documentation that wall-mounted displays in shared spaces (Airbnb, office) should set it to `false`.
+
+---
+
+## Addendum C: Viewscreen Detection Highlighting — Security Requirements
+
+**Author**: Worf, Son of Mogh (Chief of Security)  
+**Date**: 2026-04-25  
+**Status**: SECURITY REQUIREMENTS — Mandatory for implementation  
+**OWASP**: A01:2021 Broken Access Control (camera proxy), A03:2021 Injection (event payload validation)
+
+*"A warrior does not watch all directions equally. He watches the direction where the enemy approaches."*
+
+---
+
+### C.1 Detection Classification Hierarchy
+
+UniFi Protect provides `binary_sensor.*_motion` (generic) and Smart Detection events (`unifiprotect_smart_detection`) for person, vehicle, animal, and package. Each detection type maps to a threat tier based on **intent probability**, not object novelty.
+
+| Detection Type | Threat Tier | Border Color | Rationale |
+|---|---|---|---|
+| `binary_sensor.*_motion` (generic) | YELLOW — Awareness | `--lcars-sunflower` | Something moved. Could be environmental. Look. |
+| Smart Detection: `animal` | YELLOW — Awareness | `--lcars-sunflower` | Animals trigger motion constantly. Same tier. |
+| Smart Detection: `package` | YELLOW — Awareness | `--lcars-sunflower` | Package delivery — person detection fires simultaneously and takes priority. |
+| Smart Detection: `vehicle` | AMBER — Elevated | `--lcars-butterscotch` | A vehicle at 3 AM is more concerning than a cat. Amber — between yellow and red. |
+| Smart Detection: `person` | RED — Threat | `--lcars-tomato` | A person on property is the primary threat vector. Full alert. |
+
+**Priority rule**: When multiple detections fire simultaneously on the same camera, the highest threat level wins. Person > Vehicle > Animal/Package > Generic Motion.
+
+```javascript
+const DETECTION_PRIORITY = {
+  'motion':  1,
+  'animal':  1,
+  'package': 1,
+  'vehicle': 2,
+  'person':  3,
+};
+```
+
+---
+
+### C.2 Expansion Behavior
+
+**The camera MUST NOT reflow the grid.** Grid reflow destroys spatial memory. A security officer learns camera positions — "front door is top-left, driveway is top-center." Cameras jumping positions costs reaction time.
+
+| Property | Value | Rationale |
+|---|---|---|
+| Method | CSS `transform: scale()` + `z-index` | Grow in-place, overlap neighbors |
+| Scale factor | `scale(1.25)` | 25% — draws the eye without obscuring adjacents |
+| Transform origin | `center center` | Grows outward from grid position |
+| Z-index (idle) | `1` | Default layer |
+| Z-index (motion) | `10` | Above idle cameras |
+| Z-index (vehicle) | `11` | Above motion cameras |
+| Z-index (person) | `12` | Above everything |
+| Transition | `transform 300ms ease-out, box-shadow 300ms ease-out` | Fast attention grab, smooth |
+
+**Simultaneous detections**: All active cameras expand. Multiple expansions = information, not a bug. Three cameras going yellow simultaneously means large movement across zones — the officer needs to see all of them. Higher threat level gets higher z-index in overlap cases.
+
+```css
+.viewscreen-tile {
+  transition: transform 300ms ease-out, box-shadow 300ms ease-out;
+  z-index: 1;
+}
+.viewscreen-tile.detection-motion {
+  transform: scale(1.25);
+  z-index: 10;
+  box-shadow: 0 0 16px 4px var(--lcars-sunflower);
+}
+.viewscreen-tile.detection-vehicle {
+  transform: scale(1.25);
+  z-index: 11;
+  box-shadow: 0 0 16px 4px var(--lcars-butterscotch);
+}
+.viewscreen-tile.detection-person {
+  transform: scale(1.25);
+  z-index: 12;
+  box-shadow: 0 0 20px 6px var(--lcars-tomato);
+}
+```
+
+Person detection gets a wider, stronger glow (`20px 6px` vs `16px 4px`) — **unmistakable from across the room on a wall-mounted display**.
+
+---
+
+### C.3 Detection Persistence Timing
+
+Detection highlights are NOT instantaneous. They HOLD to accommodate glance-based monitoring of a wall-mounted display.
+
+| Detection Type | Hold Duration | Rationale |
+|---|---|---|
+| Motion / Animal / Package | **10 seconds** after sensor clears | Covers the gap between glances |
+| Vehicle | **15 seconds** | Vehicles move faster than people but slower than wind |
+| Person | **30 seconds** | A person doesn't vanish in 10s — they approach, they try doors |
+
+**Fade-out**: Final 3 seconds of hold → `box-shadow` opacity fades 1.0→0, `transform` scales 1.25→1.0. No jarring snap-off.
+
+**Re-trigger**: New detection during active hold → timer resets, threat level re-evaluated (upgrade only, never downgrade).
+
+```javascript
+const DETECTION_HOLD = {
+  'motion':  10000,
+  'animal':  10000,
+  'package': 10000,
+  'vehicle': 15000,
+  'person':  30000,
+};
+```
+
+---
+
+### C.4 Patrol Mode Interaction
+
+*"When the enemy reveals himself, you do not continue your patrol route. You engage."*
+
+| Detection Type | Patrol Behavior | Auto-Resume |
+|---|---|---|
+| Motion / Animal / Package | **Continue patrol** — extend dwell on active camera by 5s | N/A |
+| Vehicle | **STOP patrol** — lock on active camera | Only if alarm is DISARMED |
+| Person | **STOP patrol** — lock on active camera | **NEVER** — officer must manually restart |
+
+**Multiple person detections**: Lock on the MOST RECENT (leading edge of approach path). Other camera thumbnails still show red highlights — officer can tap to switch.
+
+**Rationale for no auto-resume on person**: A person was detected. The officer should be actively monitoring. Auto-resume implies the event was handled, but the dashboard cannot know that.
+
+---
+
+### C.5 Audio Feedback
+
+| Detection Type | Sound | Rationale |
+|---|---|---|
+| Motion | **Silent** | Fires dozens of times daily. Audio = alert fatigue = ignored alerts = security failure. |
+| Animal | **Silent** | Same. |
+| Package | **Silent** | Person detection fires simultaneously. |
+| Vehicle | `doorEvent` | "Activity at the perimeter" — appropriate urgency. |
+| Person | `alert` | "Intruder on sensors" — demands attention. |
+
+**Constraints:**
+- **Mute respected**: All detection audio obeys the `[🔇]` mute toggle.
+- **Red Alert suppression**: No detection sounds during `triggered` state — Red Alert has its own klaxon.
+- **Cooldown**: Same sound, same camera → max once per **10 seconds**. Prevents rapid-fire UniFi events from creating a cacophony.
+- **Async playback**: `Audio.play()` errors are swallowed silently. Audio failure must never crash the visual detection system.
+
+---
+
+### C.6 Approach Path — Detection Trace
+
+The most tactically valuable feature. When Red Alert fires, the preceding camera highlights tell the story of the approach.
+
+**Detection Ring Buffer:**
+- In-memory only (Lit component instance). **Never serialized, never sent via WebSocket, never persisted.**
+- 50 events max. Fields: `{ cameraId, detectionType, timestamp, entityId }`
+- Garbage-collected on dashboard navigation.
+
+**Detection Trace Panel** (replaces Motion Trace during Red Alert):
+
+```
+DETECTION TRACE — LAST 5 MINUTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+03:11:42  ○ Front Yard      MOTION     sunflower
+03:12:15  ● Front Yard      PERSON     tomato — first contact
+03:12:48  ● Driveway        PERSON     tomato — approach
+03:13:02  ● Front Door      PERSON     tomato — at the door
+03:14:11  ✦ Front Door      BREACH     pulsing tomato
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Filmstrip ordering during Red Alert**: Cameras from the detection trace, ordered by recency, so the officer can review the approach path.
+
+**Post-event persistence**: Detection Trace remains visible for **5 minutes after Red Alert clears** (alarm disarmed). Then clears and dashboard returns to normal mode.
+
+---
+
+### C.7 Per-Camera State Machine
+
+Each viewscreen tile runs an independent state machine. Detection states only escalate (never downgrade while active).
+
+```
+         ┌─────────┐
+         │  IDLE    │  normal size, butterscotch border
+         └────┬────┘
+              │ motion / animal / package event
+              ▼
+         ┌─────────┐
+         │ MOTION   │  scale 1.25, sunflower glow, 10s hold
+         └────┬────┘
+              │ vehicle event (upgrades, resets timer)
+              ▼
+         ┌─────────┐
+         │ VEHICLE  │  scale 1.25, butterscotch glow, 15s hold
+         └────┬────┘
+              │ person event (upgrades, resets timer)
+              ▼
+         ┌─────────┐
+         │ PERSON   │  scale 1.25, tomato glow, 30s hold
+         └─────────┘
+
+  Rules:
+  - Higher-priority detection → upgrade state + reset timer
+  - Lower-priority detection during active higher state → IGNORED
+  - Same-priority re-trigger → reset timer only (no animation restart)
+  - Timer expiry → 3s fade → IDLE
+  - Each camera is independent — no global timer
+```
+
+**Critical**: No downgrade while active. If a camera is in PERSON state (red) and generic motion fires, it stays PERSON. Yellow-red-yellow flickering destroys confidence in the display.
+
+---
+
+### C.8 Security Constraints
+
+1. **No direct camera IP access.** All feeds use `entity.attributes.entity_picture` (HA-proxied). Detection logic must NOT construct URLs to UniFi Protect directly.
+2. **Smart detection event validation.** Validate `type` field against known set `['person', 'vehicle', 'animal', 'package']`. Unknown types → default to generic motion (yellow). Never pass raw event data into the DOM.
+3. **Ring buffer is memory-only.** Never serialized, never sent via WebSocket, never persisted to disk. Session-local, garbage-collected on navigation.
+4. **Audio must not block rendering.** Async `Audio.play()` with error swallowing. Failed audio ≠ failed detection highlighting.
+5. **Per-camera timers.** Each camera maintains independent detection state. No global timer that cross-contaminates camera states.
+6. **`prefers-reduced-motion` compliance.** Scale transitions → instant scale change (no animation). Glow → static border color. Fade-out → instant clear. Detection state information is preserved; only animation is removed.
+
+---
+
+## Addendum D: Final Convergence — Implementation Specification
+
+**Author**: Wesley Crusher (Creative Engineering), consolidating decisions from Geordi La Forge (Design Authority), Worf (Security), and Riker (Command)  
+**Date**: 2026-04-25  
+**Status**: APPROVED — All debates settled. Ready for Data (implementation review).  
+**Rounds**: 5 design rounds across Wesley, Geordi, Worf. This addendum is the single source of truth.
+
+---
+
+### D.1 Final Feature Summary Table
+
+Every feature, its final approved form, and provenance.
+
+| # | Feature | Final Specification | Status | Approved By | Round |
+|---|---------|-------------------|--------|-------------|-------|
+| F-01 | **Perimeter Schematic** | Concentric arc segments per zone. Pill-shaped sensor nodes embedded ON arcs. Auto-layout by area name heuristic (front→top, back→bottom, side→left/right, garage→top-right). SVG `<path>` arcs with gaps between zones. | APPROVED | Wesley (R1), Geordi (R2) | 1–2 |
+| F-02 | **Shield Status Core** | **Rounded rectangle** (not hexagon). Displays alarm state label + crew count. Tap opens alarm panel overlay. Center of radial arc display. | APPROVED | Geordi (R2) overruled Wesley (R1) | 2 |
+| F-03 | **Shield Countdown** | Depleting arc segments around shield core during pending state. Arc depletion matches exit/entry delay timer. Falls back to numeric text under `prefers-reduced-motion`. | APPROVED | Wesley (R1), Worf (R3) | 1, 3 |
+| F-04 | **Shield Core Subtext** | Below shield core: `"DISARMED BY LEITH · 07:32"` (Cruise). At night (22:00–06:00): `"0 OVERNIGHT"` badge showing overnight event count. | APPROVED | Wesley (R4), Geordi (R4) | 4 |
+| F-05 | **3-Mode Adaptive Layout** | Cruise (disarmed) → Tactical (armed) → Red Alert (triggered). Layout density increases with threat level. | APPROVED | Wesley (R1), all (R2–R4) | 1 |
+| F-06 | **Auto-Escalation** | Mode auto-promotes Cruise→Tactical→Red Alert ONLY when alarm is armed. When disarmed, detection highlighting occurs but NO mode change. De-escalation after 60s cooldown with no active detections. | APPROVED | Worf (R3) | 3 |
+| F-07 | **Motion Trace (2-tier)** | 0–5 min: bright `--lcars-sunflower` dot. 5 min–2 hr: faded `--lcars-gray` dot. Beyond 2 hr: removed from trace. Sorted most-recent-first. | APPROVED | Wesley (R2), Geordi (R2) | 2 |
+| F-08 | **Motion Ripple** | Arc flash on the sensor's arc segment (NOT expanding circles). Zone arc briefly brightens + thickens, fades over 2s. Consistent with radial arc visual language. | APPROVED | Wesley (R2, Addendum B) | 2 |
+| F-09 | **Camera Detection Hierarchy** | 4-tier: Idle → Motion → Vehicle → Person. Escalate-only state machine per camera. Never downgrade while active. | APPROVED | Worf (R3, Addendum C) | 3 |
+| F-10 | **Camera Detection Scaling** | Idle: `scale(1.0)`, butterscotch border. Motion: `scale(1.15)`, sunflower glow, z-index 20. Vehicle: `scale(1.15)`, butterscotch glow, z-index 30. Person: `scale(1.25)`, tomato glow, z-index 40. | APPROVED | Worf (R3), Geordi (R4) | 3–4 |
+| F-11 | **Active Camera Row** | Active (detecting) cameras promote to a dedicated "Active" row above the idle grid. No scale overlap with neighbors. Idle cameras remain in static grid below. | APPROVED | Geordi (R4) | 4 |
+| F-12 | **Detection Hold Times** | Motion: 10s hold. Vehicle: 15s hold. Person: 30s hold. Final 3s: fade-out (box-shadow opacity 1→0, scale back to 1.0). Re-trigger resets timer, upgrades only. | APPROVED | Worf (R3, Addendum C) | 3 |
+| F-13 | **Detection Sound** | First person = `alert`. Second person on DIFFERENT camera within 60s = `alert` again. Third+ person = silent. Vehicle = `doorEvent`. Motion/animal/package = silent. 10s per-camera cooldown. Mute toggle respected. Red Alert suppresses detection sounds. | APPROVED | Worf (R3), revised R4 | 3–4 |
+| F-14 | **Camera Patrol Mode** | Cruise mode only. 10s dwell per camera, auto-cycles. Stops on person/vehicle detection. Manual restart required after threat. Not available in Tactical/Red Alert. | APPROVED | Worf (R3, §C.4), Wesley (R4) | 3–4 |
+| F-15 | **Red Alert Layout** | Full-width main viewscreen (auto-selected camera nearest breach). 3-column strip below: CREW MANIFEST (30%) \| LAST 5 EVENTS (40%) \| ACTIONS (30%). Crew manifest shown, NOT suppressed. | APPROVED | Worf (R4), Geordi (R4) | 4 |
+| F-16 | **Red Alert Header** | `"RED ALERT — FRONT DOOR BREACH — 00:42 ELAPSED"` (pulsing tomato bar). Second line: `"Armed by LEITH at 22:00"`. | APPROVED | Worf (R4) | 4 |
+| F-17 | **Red Alert Actions** | Two action buttons: SILENCE (sunflower, left) \| DISARM (tomato, hold-800ms confirm, right). 2rem gap between them. No accidental disarm — hold required. | APPROVED | Worf (R4) | 4 |
+| F-18 | **Detection Trace** | In-memory ring buffer (50 events max). Shown in Red Alert as "LAST 5 EVENTS" column — approach path from camera detection history. Persists 5 min after Red Alert clears, then garbage collected. | APPROVED | Worf (R3, §C.6) | 3 |
+| F-19 | **Lock Status Bar** | Structural LCARS bar: `"LOCKS: 4/4 ENGAGED"` (all locked) or `"LOCKS: 3/4 · 1 UNSECURED [LOCK ALL]"` (unlocked present). `[LOCK ALL]` button appears ONLY when unsecured locks exist. | APPROVED | Wesley (R4), Worf (R4) | 4 |
+| F-20 | **Privacy Levels** | YAML config `privacy: full | icons | hidden`. `full` = names + avatars. `icons` = count only in shield core, no names anywhere. `hidden` = crew manifest suppressed entirely. | APPROVED | Worf (R3), Geordi (R4) | 3–4 |
+| F-21 | **Sensor Timeline** | Bounded: 24h window, 50 entity cap, cached, incremental updates via WebSocket. Cruise = 1.5rem thin strip. Tactical = 3rem with tick marks + zone codes. Red Alert = replaced by Last 5 Events list. | APPROVED | Wesley (R1), Worf (R3, perf) | 1, 3 |
+| F-22 | **Crew Manifest** | Person entities with home/away/zone badges. Inline in structural bar (Tactical) or dedicated column (Red Alert). Respects privacy config. | APPROVED | Wesley (R1), Worf (R3) | 1, 3 |
+| F-23 | **Viewscreen Array** | Cruise: equal-size camera grid + optional patrol. Tactical: main viewscreen (60%) + filmstrip (40%). Red Alert: full-width main + thumbnail strip. | APPROVED | Wesley (R1), Geordi (R2) | 1–2 |
+| F-24 | **Viewscreen Auto-Switch** | Motion triggers auto-switch main viewscreen to camera in same area. Cross-fade 300ms. Configurable via `viewscreen_auto_switch: true`. | APPROVED | Wesley (R1) | 1 |
+| F-25 | **Mobile Red Alert** | Camera feed + SILENCE button + DISARM button only. No perimeter schematic, no timeline, no crew manifest. Maximum signal, minimum chrome. | APPROVED | Geordi (R4), Worf (R4) | 4 |
+| F-26 | **Reduced Motion** | All animations respect `prefers-reduced-motion: reduce`. Ripples→instant color. Breathing→static. Countdown→numeric text. Pulsing→static color. Scale→instant. | APPROVED | Wesley (R1), all | 1 |
+| F-27 | **Structural LCARS Bars** | Thick butterscotch bars as layout separators (not CSS borders). Contain inline data pills: crew manifest, motion trace, lock status. Engineering II pattern. | APPROVED | Wesley (R2, Addendum B) | 2 |
+| F-28 | **Shield Arcs (Armed)** | Outer ring of radial display. Armed Home: butterscotch @ 40% opacity. Armed Away: sunflower @ 60%, double-line. Triggered: tomato, broken/flickering. | APPROVED | Wesley (R1), Geordi (R2) | 1–2 |
+| F-29 | **Red Alert Pulse** | Frame elbows + header bar pulse tomato↔black at 1Hz. Entire dashboard border in alert state. | APPROVED | Wesley (R1) | 1 |
+| F-30 | **Perimeter Bar (Mobile)** | Below 600px, perimeter schematic collapses to horizontal strip of sensor node pips grouped by zone label. | APPROVED | Wesley (R1) | 1 |
+
+---
+
+### D.2 Final ASCII Mockups
+
+#### D.2.1 Mode A: CRUISE (Disarmed) — Desktop
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ╭─────╮  TACTICAL ══════════════════════════════════════════════ [🔇][⚙]  │
+│ │ELBOW│                                                                    │
+├─╰─────╯─────────────────────────────────────────────────────────────────┐  │
+│                                                                         │  │
+│  ┌──────────────────── PERIMETER SCHEMATIC ──────────────────────────┐  │  │
+│  │                            FRONT                                  │  │  │
+│  │                       ╭━━━━━━━━━━━╮                               │  │  │
+│  │                    ╭──┤ ◖○ ○ ○ ○◗ ├──╮                            │  │  │
+│  │                 ╭──┤  ╰━━━━━━━━━━━╯  ├──╮                         │  │  │
+│  │              ╭──┤  │                 │  ├──╮                       │  │  │
+│  │  SIDE  ──────┤  │  │  ╭───────────╮  │  │  ├────── GARAGE         │  │  │
+│  │              │  │  │  │ DISARMED  │  │  │  │                      │  │  │
+│  │              │  │  │  │ 👤×2 HOME │  │  │  │                      │  │  │
+│  │              │  │  │  │LEITH·07:32│  │  │  │                      │  │  │
+│  │              ╰──┤  │  ╰───────────╯  │  ├──╯                      │  │  │
+│  │                 ╰──┤  ╭━━━━━━━━━━━╮  ├──╯                         │  │  │
+│  │                    ╰──┤ ◖○     ○◗ ├──╯                            │  │  │
+│  │                       ╰━━━━━━━━━━━╯                               │  │  │
+│  │                          BACK/YARD                                │  │  │
+│  └───────────────────────────────────────────────────────────────────┘  │  │
+│                                                                         │  │
+│  ┌──────────────────── VIEWSCREENS (Patrol) ─────────────────────────┐  │  │
+│  │ ┌╴FRONT DOOR╶────┐ ┌╴DRIVEWAY╶──────┐ ┌╴BACK YARD╶────┐ ┌╴SIDE╶┐│  │  │
+│  │ │                 │ │                │ │                │ │      ││  │  │
+│  │ │   thumbnail     │ │   thumbnail    │ │   thumbnail    │ │ thumb││  │  │
+│  │ │                 │ │                │ │                │ │      ││  │  │
+│  │ └─────────────────┘ └────────────────┘ └────────────────┘ └──────┘│  │  │
+│  │  ▶ PATROL 10s ─────────────────────────── cycle indicator ─────── │  │  │
+│  └───────────────────────────────────────────────────────────────────┘  │  │
+│                                                                         │  │
+│  ═══╡ LOCKS: 4/4 ENGAGED ╞═══════════════════════════════════════════   │  │
+│                                                                         │  │
+│  ▮▮▮░░░░▮░░░▮▮▮░░░░░░░▮░░░░░░░░░░░░░░░░░░░░░░░░░░░  24H ─── 1.5rem   │  │
+│                                                                         │  │
+├──╭─────╮═══════════════════════════════════════════════════ LCARS 5.x ═╯  │
+│  │ELBOW│                                                                  │
+└──╰─────╯──────────────────────────────────────────────────────────────────┘
+
+  ○   = sealed sensor node (dim --lcars-ice, pill shape)
+  ◖ ◗ = pill endcaps on arc segment
+  ╭───────────╮ = Shield Core: rounded rectangle
+  All arcs dim, single-ring, no shield layer
+  Timeline: thin 1.5rem strip, no labels
+  Patrol mode: 10s auto-cycle through cameras
+```
+
+#### D.2.2 Mode B: TACTICAL (Armed Home / Armed Away) — Desktop
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ╭─────╮  TACTICAL ══════════════════════════════════════════════ [🔇][⚙]  │
+│ │ELBOW│  ▪ SHIELDS: ARMED AWAY  ▪ PERIMETER: 18/20  ▪ CLEAR              │
+├─╰─────╯─────────────────────────────────────────────────────────────────┐  │
+│                                                                         │  │
+│  ┌── PERIMETER ─────────────────────┐  ┌── VIEWSCREEN ───────────────┐  │  │
+│  │            FRONT                 │  │                              │  │  │
+│  │    ·····╭━━━━━━━━━━━━━╮·····     │  │  ┌╴FRONT DOOR╶───────────┐  │  │  │
+│  │ ╭──╭────┤ ◉  ◉  ◉  ◉ ├────╮──╮  │  │  │                      │  │  │  │
+│  │ │  │    ╰━━━━━━━━━━━━━╯    │  │  │  │  │   MAIN CAMERA FEED   │  │  │  │
+│  │ │  │                       │  │  │  │  │   (motion-selected)   │  │  │  │
+│  │ │  │   ╭──────────────╮    │  │  │  │  │                      │  │  │  │
+│  │ │  │   │ ARMED AWAY   │    │  │  │  │  └──── ● MOTION ────────┘  │  │  │
+│  │ │  │   │  👤×2 HOME   │    │  │  │  │                              │  │  │
+│  │ │  │   │ 0 OVERNIGHT  │    │  │  │  │  ┌────── FILMSTRIP ──────┐  │  │  │
+│  │ │  │   ╰──────────────╯    │  │  │  │  │ ┌────┐┌────┐┌────┐   │  │  │  │
+│  │ ╰──╰────┤ ◉        ◉ ├────╯──╯  │  │  │ │cam2││cam3││cam4│   │  │  │  │
+│  │    ·····╰━━━━━━━━━━━━━╯·····     │  │  │ └────┘└────┘└────┘   │  │  │  │
+│  │            BACK                  │  │  └───────────────────────┘  │  │  │
+│  └──────────────────────────────────┘  └──────────────────────────────┘  │  │
+│                                                                         │  │
+│  ═══╡ 👤 Leith HOME │ 👤 Guest AWAY │ LOCKS: 4/4 ENGAGED ╞═════════    │  │
+│  ═══╡ ● FrontYard 3m │ ○ Driveway 1h │ ○ Backyard 4h ╞══════════════   │  │
+│                                                                         │  │
+│  ▮▮▮░░░░▮░░░▮▮▮░░░░░░░▮▮░░░░░░░░░░░░░░░░░░░░░  24H→NOW ──── 3rem     │  │
+│  ┊ 06:00    ┊ 12:00    ┊ 18:00    ┊ 00:00  ┊ NOW                       │  │
+│                                                                         │  │
+├──╭─────╮═══════════════════════════════════════════════════ LCARS 5.x ═╯  │
+│  │ELBOW│                                                                  │
+└──╰─────╯──────────────────────────────────────────────────────────────────┘
+
+  ◉   = sealed sensor node (bright --lcars-ice, pill shape)
+  ····· = shield arcs (outer ring, sunflower, breathing animation)
+  ╭──────────────╮ = Shield Core: rounded rect, sunflower fill, double border
+  Three concentric rings: shields (outer) / sensors (mid) / motion flash (inner)
+  Structural bars contain: crew manifest pills + lock status + motion trace pills
+  Timeline: 3rem with tick marks and zone codes
+  Viewscreen: 60% main + 40% filmstrip, auto-switch on motion
+```
+
+#### D.2.3 Mode B — Camera Detection Active (Tactical)
+
+```
+  ┌── VIEWSCREEN ──────────────────────────────────────────────┐
+  │  ACTIVE CAMERAS ─────────────────────────────────────────  │
+  │  ┌╴FRONT DOOR╶────────────┐  ┌╴DRIVEWAY╶─────────────┐    │
+  │  │ ████████████████████████│  │ ██████████████████████ │    │
+  │  │ ██  PERSON DETECTED  ██│  │ ██ VEHICLE DETECTED ██ │    │
+  │  │ ████████████████████████│  │ ██████████████████████ │    │
+  │  └─── ● PERSON ─── 00:03 ─┘  └─── ● VEHICLE ── 00:07 ┘    │
+  │     tomato glow, z:40            butterscotch glow, z:30    │
+  │                                                             │
+  │  IDLE CAMERAS ───────────────────────────────────────────   │
+  │  ┌╴BACK YARD╶──┐  ┌╴SIDE╶──────┐  ┌╴GARAGE╶────┐          │
+  │  │   normal     │  │   normal    │  │   normal    │          │
+  │  └──────────────┘  └────────────┘  └─────────────┘          │
+  └─────────────────────────────────────────────────────────────┘
+
+  Active row: cameras with active detections, promoted above idle grid
+  No scale overlap — active row is a separate flex container
+  Person: scale(1.25), tomato glow, z-index 40
+  Vehicle: scale(1.15), butterscotch glow, z-index 30
+  Motion: scale(1.15), sunflower glow, z-index 20
+  Idle: scale(1.0), butterscotch border, z-index 1
+```
+
+#### D.2.4 Mode C: RED ALERT (Triggered) — Desktop
+
+```
+┌═▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓═┐
+│ ╭▓▓▓▓▓╮  ▓▓ RED ALERT — FRONT DOOR BREACH — 00:42 ELAPSED ▓▓ [🔇][⚙]   │
+│ │▓▓▓▓▓│  Armed by LEITH at 22:00                                        │
+├─╰▓▓▓▓▓╯─────────────────────────────────────────────────────────────────┐│
+│                                                                          ││
+│  ┌── MAIN VIEWSCREEN (full width) ───────────────────────────────────┐  ││
+│  │ ┌╴FRONT DOOR — LIVE╶──────────────────────────────────────────┐   │  ││
+│  │ │                                                              │   │  ││
+│  │ │                                                              │   │  ││
+│  │ │          FRONT DOOR CAMERA — LIVE FEED                       │   │  ││
+│  │ │          (auto-selected — nearest to breach)                 │   │  ││
+│  │ │                                                              │   │  ││
+│  │ │                                                              │   │  ││
+│  │ └──────────────────────────────────────────────────────────────┘   │  ││
+│  │  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐  ← camera strip      │  ││
+│  │  │cam2│ │cam3│ │cam4│ │cam5│ │cam6│ │cam7│                       │  ││
+│  │  └────┘ └────┘ └────┘ └────┘ └────┘ └────┘                       │  ││
+│  └───────────────────────────────────────────────────────────────────┘  ││
+│                                                                          ││
+│  ┌─ CREW MANIFEST ─┐  ┌─ LAST 5 EVENTS ─────────┐  ┌─ ACTIONS ──────┐ ││
+│  │  (30%)           │  │  (40%)                   │  │  (30%)         │ ││
+│  │  👤 Leith  HOME  │  │  03:12 ● FY   PERSON    │  │                │ ││
+│  │  👤 Guest  AWAY  │  │  03:12 ● DW   PERSON    │  │  ╭──────────╮  │ ││
+│  │  📱 2 phones     │  │  03:13 ● FD   PERSON    │  │  │ SILENCE  │  │ ││
+│  │                  │  │  03:13 ✦ FD   BREACH     │  │  ╰──────────╯  │ ││
+│  │                  │  │  03:14   FD   ALARM      │  │      2rem      │ ││
+│  │                  │  │                          │  │  ╭──────────╮  │ ││
+│  │                  │  │  ← approach path trace   │  │  │▓ DISARM ▓│  │ ││
+│  │                  │  │                          │  │  │hold 800ms│  │ ││
+│  │                  │  │                          │  │  ╰──────────╯  │ ││
+│  └──────────────────┘  └──────────────────────────┘  └────────────────┘ ││
+│                                                                          ││
+├──╭▓▓▓▓▓╮═▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ LCARS 5.x ▓▓═╯│
+│  │▓▓▓▓▓│                                                                │
+└──╰▓▓▓▓▓╯────────────────────────────────────────────────────────────────┘
+
+  ▓▓▓ = pulsing tomato ↔ black at 1Hz (frame, header, elbows, footer)
+  SILENCE = sunflower button (left)
+  DISARM = tomato button, requires 800ms hold to activate (right)
+  2rem gap between action buttons — prevents accidental taps
+  LAST 5 EVENTS = detection ring buffer, approach path visualization
+  CREW MANIFEST shown (NOT suppressed in Red Alert)
+  No perimeter schematic — focus is NOW, not spatial overview
+  No timeline — replaced by Last 5 Events
+```
+
+#### D.2.5 Mode C: RED ALERT — Mobile (< 600px)
+
+```
+┌──────────────────────────────────┐
+│ ▓▓ RED ALERT — FRONT DOOR ▓▓▓▓  │
+│ 00:42 ELAPSED                    │
+├──────────────────────────────────┤
+│ ┌╴FRONT DOOR — LIVE╶─────────┐  │
+│ │                             │  │
+│ │   FRONT DOOR CAMERA FEED   │  │
+│ │   (auto-selected)          │  │
+│ │                             │  │
+│ │                             │  │
+│ └─────────────────────────────┘  │
+├──────────────────────────────────┤
+│  ╭────────────╮   ╭────────────╮ │
+│  │  SILENCE   │   │▓ DISARM  ▓│ │
+│  │ (sunflower)│   │(hold 800ms)│ │
+│  ╰────────────╯   ╰────────────╯ │
+│        2rem gap between          │
+└──────────────────────────────────┘
+
+  Camera + two action buttons ONLY
+  No perimeter schematic
+  No timeline
+  No crew manifest
+  Maximum signal, minimum chrome
+```
+
+---
+
+### D.3 Component Inventory
+
+Every new UI component required, with scope estimates.
+
+| # | Component | File | Description | Est. Lines | Dependencies |
+|---|-----------|------|-------------|-----------|--------------|
+| C-01 | `TacticalPerimeterSchematic` | `lcars-tactical-perimeter.js` | SVG radial arc display. Concentric arc segments, pill-shaped sensor nodes, zone labels, shield arcs (armed), motion arc flash animation. Auto-layout by area name heuristic. Tap node → `showMoreInfo()`. Tap zone label → filter. | ~450 | Area registry, binary_sensor entities, alarm_control_panel |
+| C-02 | `TacticalShieldCore` | `lcars-tactical-shield-core.js` | Rounded rectangle at center of perimeter. Alarm state label, crew count, subtext ("DISARMED BY X · HH:MM" / "N OVERNIGHT"). Countdown depleting arcs (pending). Tap → alarm panel overlay. | ~250 | alarm_control_panel entity, person entities |
+| C-03 | `TacticalViewscreenArray` | `lcars-tactical-viewscreen.js` | Camera grid with 3 layout modes: equal grid (Cruise), main+filmstrip (Tactical), full-width (Red Alert). Active camera row promotion. Detection state machine per tile (idle/motion/vehicle/person). Scale/glow/z-index transitions. LCARS bracket frames. | ~500 | camera entities, binary_sensor.*_motion, smart detection events |
+| C-04 | `TacticalDetectionStateMachine` | `lcars-tactical-detection.js` | Per-camera state machine class. Escalate-only logic, hold timers (10s/15s/30s), 3s fade-out, re-trigger handling. Detection ring buffer (50 events, memory-only). Sound dispatch (alert/doorEvent, cooldown, mute). | ~300 | UniFi smart detection events, Audio API |
+| C-05 | `TacticalPatrolController` | `lcars-tactical-patrol.js` | Camera patrol mode (Cruise only). 10s cycle, auto-stop on person/vehicle detection. Manual restart. UI indicator strip. | ~120 | Camera entity list, detection state |
+| C-06 | `TacticalSensorTimeline` | `lcars-tactical-timeline.js` | Horizontal 24h event strip. Canvas renderer for performance. Color-coded event pills by type. Cruise: 1.5rem thin. Tactical: 3rem with ticks. Red Alert: hidden. Bounded query (50 entity cap, cached, incremental updates via WebSocket). | ~350 | HA history API, recorder integration |
+| C-07 | `TacticalCrewManifest` | `lcars-tactical-crew.js` | Person entities with home/away/zone badges. Inline pill mode (structural bar) and column mode (Red Alert). Privacy levels (full/icons/hidden). | ~180 | person entities, privacy config |
+| C-08 | `TacticalMotionTrace` | `lcars-tactical-motion-trace.js` | Recent motion detection list. 2-tier display: bright (0–5min), faded (5min–2hr). Sorted most-recent-first. Inline in structural bar (Tactical) or replaced by Last 5 Events (Red Alert). | ~150 | binary_sensor.*_motion entities |
+| C-09 | `TacticalLockStatus` | `lcars-tactical-lock-status.js` | Lock summary pill in structural bar. "N/N ENGAGED" or "N/N · X UNSECURED [LOCK ALL]". Lock All button calls `lock.lock` on all unsecured. | ~100 | lock entities |
+| C-10 | `TacticalRedAlertOverlay` | `lcars-tactical-red-alert.js` | Red Alert mode controller. Pulsing frame (tomato↔black 1Hz). Header with breach info + elapsed timer + armed-by text. 3-column layout (crew/events/actions). SILENCE + DISARM (hold-800ms) buttons. Mobile layout (camera + buttons only). | ~350 | alarm_control_panel, detection ring buffer, camera entities |
+| C-11 | `TacticalAutoEscalation` | `lcars-tactical-escalation.js` | Mode auto-promotion controller. Cruise→Tactical→Red Alert ONLY when armed. De-escalation after 60s cooldown. Disarmed = highlighting only, no mode change. | ~100 | alarm_control_panel state, detection states |
+| C-12 | `TacticalDashboardLayout` | `lcars-tactical-layout.js` | Top-level layout orchestrator. Three-mode rendering, structural bar layout, responsive breakpoints (desktop/tablet/mobile). Delegates to sub-components. | ~400 | All above components |
+| | | | **TOTAL ESTIMATED** | **~3,250** | |
+
+#### Support Utilities
+
+| # | Utility | Description | Est. Lines |
+|---|---------|-------------|-----------|
+| U-01 | `areaPositionHeuristic()` | Maps HA area names to angular positions on radial arc | ~60 |
+| U-02 | `describeArc()` | SVG arc path generator from polar coordinates | ~30 |
+| U-03 | `detectionPriorityMap` | Priority constants, hold times, sound mapping | ~40 |
+| U-04 | `timelineQueryCache` | History API query with caching + incremental WebSocket updates | ~80 |
+| | | **TOTAL UTILITIES** | **~210** |
+
+---
+
+### D.4 Configuration YAML Schema
+
+Complete config schema for tactical dashboard customization.
+
+```yaml
+# ─────────────────────────────────────────────────────────────
+# LCARS Tactical Dashboard — Configuration Schema
+# All keys are optional. Defaults shown in comments.
+# ─────────────────────────────────────────────────────────────
+
+tactical:
+
+  # ── PERIMETER SCHEMATIC ──────────────────────────────────
+  # Manual area-to-arc-segment positioning overrides.
+  # If omitted, auto-layout uses area name heuristic:
+  #   "front/entry/porch" → top, "garage/driveway" → top-right,
+  #   "side" → left/right, "back/rear/patio/yard" → bottom
+  area_positions:
+    front_yard:     { segment: "front",       position: 0.5 }
+    garage:         { segment: "front-right",  position: 0.3 }
+    side_entrance:  { segment: "left",         position: 0.5 }
+    back_yard:      { segment: "back",         position: 0.5 }
+    patio:          { segment: "back-left",    position: 0.7 }
+    # segment: front | front-right | right | back-right |
+    #          back  | back-left   | left  | front-left
+    # position: 0.0 (start of arc) → 1.0 (end of arc)
+
+  # ── PRIVACY ──────────────────────────────────────────────
+  # Controls crew manifest visibility.
+  #   full   — names + avatars + home/away status (default)
+  #   icons  — crew count only in shield core, no names
+  #   hidden — crew manifest suppressed entirely
+  privacy: full  # full | icons | hidden
+
+  # ── VIEWSCREEN ───────────────────────────────────────────
+  # Auto-switch main viewscreen to camera in active area.
+  viewscreen_auto_switch: true  # default: true
+
+  # Camera patrol mode (Cruise only).
+  # Cycles through cameras at dwell_seconds interval.
+  # Stops on person/vehicle detection. Manual restart required.
+  patrol:
+    enabled: false              # default: false
+    dwell_seconds: 10           # default: 10
+
+  # ── DETECTION ────────────────────────────────────────────
+  # Camera detection highlighting behavior.
+  detection:
+    # Scale factors per detection tier
+    scale_motion:  1.15         # default: 1.15
+    scale_vehicle: 1.15         # default: 1.15
+    scale_person:  1.25         # default: 1.25
+
+    # Hold durations before fade-out (milliseconds)
+    hold_motion:   10000        # default: 10000 (10s)
+    hold_vehicle:  15000        # default: 15000 (15s)
+    hold_person:   30000        # default: 30000 (30s)
+    fade_duration: 3000         # default: 3000  (3s)
+
+    # Sound configuration
+    sound:
+      person_sound:  "alert"    # default: "alert"
+      vehicle_sound: "doorEvent" # default: "doorEvent"
+      motion_sound:  null       # default: null (silent)
+      cooldown_ms:   10000      # per-camera cooldown (default: 10000)
+      # Multi-person escalation:
+      #   1st person on any camera → plays person_sound
+      #   2nd person on DIFFERENT camera within 60s → plays again
+      #   3rd+ person → silent
+      multi_person_window_ms: 60000  # default: 60000 (60s)
+
+  # ── AUTO-ESCALATION ─────────────────────────────────────
+  # Automatic mode promotion (Cruise→Tactical→Red Alert).
+  # ONLY active when alarm is armed. Disarmed = no mode change.
+  auto_escalation:
+    enabled: true               # default: true
+    cooldown_seconds: 60        # de-escalation cooldown (default: 60)
+
+  # ── TIMELINE ─────────────────────────────────────────────
+  # Sensor event timeline strip at bottom of dashboard.
+  timeline:
+    enabled: true               # default: true
+    hours: 24                   # history window (default: 24)
+    entity_cap: 50              # max entities queried (default: 50)
+    # Height per mode:
+    #   Cruise:    1.5rem (thin strip, no labels)
+    #   Tactical:  3rem   (tick marks + zone codes)
+    #   Red Alert: hidden (replaced by Last 5 Events)
+
+  # ── LOCK STATUS ──────────────────────────────────────────
+  # Lock summary in structural bar.
+  show_lock_status: true        # default: true
+  # Lock All button appears ONLY when unsecured locks exist.
+
+  # ── MOTION TRACE ─────────────────────────────────────────
+  # Recent motion detection list in structural bar.
+  motion_trace:
+    bright_window_minutes: 5    # bright dot (default: 5)
+    fade_window_minutes: 120    # faded dot, then removed (default: 120)
+
+  # ── RED ALERT ────────────────────────────────────────────
+  red_alert:
+    # DISARM button requires hold to prevent accidental press
+    disarm_hold_ms: 800         # default: 800
+    # Detection trace shows approach path from ring buffer
+    trace_persist_minutes: 5    # persist after alert clears (default: 5)
+    # Ring buffer size for detection events
+    ring_buffer_size: 50        # default: 50
+
+  # ── SHIELD CORE ──────────────────────────────────────────
+  # Overnight event counter badge (shown 22:00–06:00)
+  overnight:
+    start_hour: 22              # default: 22
+    end_hour: 6                 # default: 6
+
+  # ── RESPONSIVE ───────────────────────────────────────────
+  # Mobile Red Alert: camera + SILENCE + DISARM only.
+  # Below this width, perimeter schematic → perimeter bar.
+  mobile_breakpoint: 600        # default: 600 (px)
+```
+
+---
+
+### D.5 Color & Animation Reference (Final)
+
+#### Detection Visual Language
+
+| State | Scale | Border Color | Glow | Z-Index | Hold |
+|-------|-------|-------------|------|---------|------|
+| Idle | `1.0` | `--lcars-butterscotch` | none | 1 | — |
+| Motion | `1.15` | `--lcars-sunflower` | `0 0 16px 4px sunflower` | 20 | 10s |
+| Vehicle | `1.15` | `--lcars-butterscotch` | `0 0 16px 4px butterscotch` | 30 | 15s |
+| Person | `1.25` | `--lcars-tomato` | `0 0 20px 6px tomato` | 40 | 30s |
+
+#### Shield Core States
+
+| Alarm State | Shape | Fill | Border | Label | Subtext |
+|-------------|-------|------|--------|-------|---------|
+| Disarmed | Rounded rect | none (outline only) | `--lcars-ice` | DISARMED | "DISARMED BY {user} · {time}" |
+| Armed Home | Rounded rect | `--lcars-butterscotch` | single | ARMED HOME | crew count |
+| Armed Away | Rounded rect | `--lcars-sunflower` | double | ARMED AWAY | "{N} OVERNIGHT" at night |
+| Pending | Rounded rect | pulsing `--lcars-sunflower` | depleting arcs | {seconds} | "EXIT DELAY" or "ENTRY DELAY" |
+| Triggered | Rounded rect | pulsing `--lcars-tomato` | broken | BREACH | breach location |
+
+#### Sound Dispatch Table
+
+| Event | Sound | Condition | Cooldown |
+|-------|-------|-----------|----------|
+| 1st person detection | `alert` | Any camera | 10s per-camera |
+| 2nd person (different camera, <60s) | `alert` | Different camera from 1st | 10s per-camera |
+| 3rd+ person | silent | — | — |
+| Vehicle detection | `doorEvent` | Any camera | 10s per-camera |
+| Motion / animal / package | silent | — | — |
+| Red Alert active | suppressed | All detection sounds muted during triggered state | — |
+
+---
+
+### D.6 Open Items — NONE
+
+All design debates are settled. No open questions remain.
+
+| Original Question | Resolution | Round |
+|---|---|---|
+| Shield core shape: hexagon vs circle vs pill? | **Rounded rectangle** — Geordi ruled: most LCARS-consistent | R2 |
+| Camera scaling: overlap neighbors vs separate row? | **Active row promotion** (Geordi) + **scale values** (Worf) | R3–R4 |
+| Auto-escalation: always or only when armed? | **Only when armed** — Worf: disarmed = no mode change | R3 |
+| Red Alert: suppress crew manifest? | **No** — crew manifest SHOWN in Red Alert (30% column) | R4 |
+| Red Alert layout: timeline or events list? | **Last 5 Events** replaces timeline in Red Alert | R4 |
+| Camera detection: reflow grid or scale in place? | **Active row** above idle grid (no overlap, no reflow) | R4 |
+| Privacy: binary toggle or levels? | **Three levels**: full / icons / hidden | R3–R4 |
+| Sound: every detection or escalating? | **Escalating**: 1st person→alert, 2nd diff camera→alert, 3rd+→silent | R4 |
+| Patrol mode: which modes? | **Cruise only** — disabled in Tactical/Red Alert | R4 |
+| Mobile Red Alert: what to show? | **Camera + SILENCE + DISARM only** — nothing else | R4 |
+
+---
+
+*"The design review is complete, sir. All stations report ready. Recommend we transmit to Data for implementation feasibility analysis."*
+
+— Wesley Crusher, Creative Engineering, Stardate 2026.115

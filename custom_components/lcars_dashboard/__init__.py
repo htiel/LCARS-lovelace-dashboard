@@ -373,7 +373,12 @@ async def ws_handle_install_blueprint(
         connection.send_result(msg["id"], {"error": "Blueprint payload exceeds 256 KB limit"})
         return
 
-    filecontent = yaml.safe_load(raw_yaml)
+    try:
+        filecontent = yaml.safe_load(raw_yaml)
+    except (yaml.YAMLError, RecursionError) as exc:
+        _LOGGER.warning("Blueprint YAML parse error: %s", type(exc).__name__)
+        connection.send_result(msg["id"], {"error": "Invalid or malformed YAML"})
+        return
 
     # 5X-B11: Reject excessively nested YAML (resource exhaustion defense)
     def _check_depth(obj, depth=0, max_depth=20):

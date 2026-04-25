@@ -135,6 +135,8 @@ class LcarsHomepageCard extends LitElement {
       };
       this._onFloorSelected = (e) => {
         lcarsLog.debug(TAG, 'Floor selected event:', e.detail.floorId);
+        this._visibleCameras.clear();
+        this._loadingCameras.clear();
         this.selectedFloor = e.detail.floorId;
         this.selectedArea = null; // floor overrides area
         this._entityCache.clear();

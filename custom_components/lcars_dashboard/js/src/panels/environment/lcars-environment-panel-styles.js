@@ -304,7 +304,7 @@ export const environmentPanelStyles = css`
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--lcars-space-white);
-    opacity: 0.6;
+    opacity: 0.7;
     z-index: 1;
     text-shadow: 0 0 4px rgba(0,0,0,0.8);
   }

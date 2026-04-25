@@ -1876,13 +1876,10 @@ async def ws_handle_sidebar_order_set(hass, connection, msg):
         connection.send_error(msg["id"], "not_found", "LCARS Dashboard config entry not found")
         return
 
-    # Update config entry options with new order
+    # Update config entry options with new order (persist only, no sidebar write)
     new_options = dict(entry.options)
     new_options[CONF_DASHBOARD_ORDER] = order
     hass.config_entries.async_update_entry(entry, options=new_options)
-
-    # Apply to HA sidebar
-    await _apply_sidebar_order(hass, entry)
 
     connection.send_result(msg["id"], {"successful": "Sidebar order saved"})
 

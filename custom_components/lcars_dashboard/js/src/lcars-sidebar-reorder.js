@@ -173,12 +173,65 @@ class LcarsSidebarReorder extends LitElement {
   async _save() {
     if (!this._hass) return;
     try {
+      // 1. Save order to our backend for persistence
       await this._hass.callWS({
         type: 'lcars_dashboard/sidebar_order/set',
         order: JSON.stringify(this._order),
       });
+
+      // 2. Build LCARS url_paths from dashboard keys in chosen order
+      const DASHBOARD_URL_MAP = {
+        habitat: 'lcars-habitat',
+        security: 'lcars-security',
+        power: 'lcars-power',
+        environmental: 'lcars-environmental',
+        lighting: 'lcars-lighting',
+      };
+      const lcarsUrls = this._order.map(k => DASHBOARD_URL_MAP[k]).filter(Boolean);
+      const lcarsSet = new Set(lcarsUrls);
+
+      // 3. Get current sidebar data from HA frontend storage
+      let sidebarData = {};
+      try {
+        const resp = await this._hass.callWS({ type: 'frontend/get_user_data', key: 'sidebar' });
+        if (resp && resp.value) sidebarData = resp.value;
+      } catch (e) { /* no existing sidebar data */ }
+
+      let panelOrder = Array.isArray(sidebarData.panelOrder) ? [...sidebarData.panelOrder] : [];
+
+      // 4. If panelOrder is empty, seed from all known panels
+      if (panelOrder.length === 0) {
+        panelOrder = Object.keys(this._hass.panels || {}).sort();
+      }
+
+      // 5. Find where first LCARS panel currently sits
+      let insertIdx = panelOrder.findIndex(p => lcarsSet.has(p));
+
+      // 6. Remove all LCARS panels from current order
+      panelOrder = panelOrder.filter(p => !lcarsSet.has(p));
+
+      // 7. Insert LCARS panels grouped at the found position (or top)
+      if (insertIdx < 0) insertIdx = 0;
+      insertIdx = Math.min(insertIdx, panelOrder.length);
+      panelOrder.splice(insertIdx, 0, ...lcarsUrls);
+
+      // 8. Ensure all registered panels are present
+      const existing = new Set(panelOrder);
+      for (const p of Object.keys(this._hass.panels || {})) {
+        if (!existing.has(p)) panelOrder.push(p);
+      }
+
+      // 9. Write sidebar data directly via HA frontend storage
+      await this._hass.callWS({
+        type: 'frontend/set_user_data',
+        key: 'sidebar',
+        value: {
+          panelOrder,
+          hiddenPanels: sidebarData.hiddenPanels || [],
+        },
+      });
+
       this.close();
-      // Reload page to reflect new sidebar order
       window.location.reload();
     } catch (e) {
       console.error('LCARS Reorder: Failed to save sidebar order', e);

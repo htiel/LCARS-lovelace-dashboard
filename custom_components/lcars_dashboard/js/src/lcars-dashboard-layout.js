@@ -327,7 +327,7 @@ class LcarsDashboardLayout extends LitElement {
           grid-row: 1;
           display: flex;
           align-items: flex-start;
-          gap: 0;
+          gap: var(--lcars-gap);
         }
 
         .lcars-header-bar {
@@ -353,6 +353,7 @@ class LcarsDashboardLayout extends LitElement {
           white-space: nowrap;
           padding: 0 1rem;
           line-height: var(--lcars-bar-h);
+          letter-spacing: 0.05em;
         }
 
         /* ─── Header Action Buttons (shared) ─── */
@@ -381,7 +382,7 @@ class LcarsDashboardLayout extends LitElement {
           outline-offset: 2px;
         }
         .configure-btn ha-icon,
-        .mute-btn ha-icon { --mdc-icon-size: 16px; }
+        .mute-btn ha-icon { --mdc-icon-size: 18px; }
 
         /* ─── Sidebar ─── */
         .lcars-sidebar {
@@ -390,7 +391,6 @@ class LcarsDashboardLayout extends LitElement {
           display: flex;
           flex-direction: column;
           gap: var(--lcars-gap);
-          padding-top: var(--lcars-gap);
           overflow: hidden;
           min-height: 0;
         }
@@ -527,7 +527,7 @@ class LcarsDashboardLayout extends LitElement {
           grid-row: 2;
           overflow-y: auto;
           overflow-x: hidden;
-          padding: 1rem;
+          padding: 0.5rem;
           display: flex;
           flex-direction: column;
           gap: 1rem;
@@ -560,7 +560,7 @@ class LcarsDashboardLayout extends LitElement {
           grid-row: 3;
           display: flex;
           align-items: flex-end;
-          gap: 0;
+          gap: var(--lcars-gap);
         }
 
         .lcars-footer-bar {
@@ -570,10 +570,11 @@ class LcarsDashboardLayout extends LitElement {
         }
 
         .lcars-footer-endcap {
-          min-width: var(--lcars-endcap);
+          width: var(--lcars-endcap);
           height: var(--lcars-bar-h);
           background: var(--lcars-footer-bar);
           border-radius: 0;
+          flex-shrink: 0;
         }
 
         .lcars-footer-text {

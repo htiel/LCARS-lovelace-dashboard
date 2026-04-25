@@ -1840,6 +1840,10 @@ async def _apply_sidebar_order(hass, config_entry):
         _LOGGER.warning("Could not retrieve users for sidebar ordering: %s", err)
         return
 
+    # Get all registered panel IDs for building a complete order
+    from homeassistant.components.frontend import DATA_PANELS
+    all_panels = list(hass.data.get(DATA_PANELS, {}).keys())
+
     for user in users:
         if user.system_generated:
             continue
@@ -1847,6 +1851,10 @@ async def _apply_sidebar_order(hass, config_entry):
             store, data = await async_user_store(hass, user.id)
             sidebar = data.get("sidebar", {})
             panel_order = list(sidebar.get("panelOrder", []))
+
+            # If panelOrder is empty, seed it with all registered panels
+            if not panel_order:
+                panel_order = sorted(all_panels)
 
             # Find the position of the first existing LCARS panel
             insert_idx = None
@@ -1859,20 +1867,25 @@ async def _apply_sidebar_order(hass, config_entry):
             # Remove all existing LCARS panels from the order
             panel_order = [p for p in panel_order if p not in lcars_set]
 
-            # Insert LCARS panels at the found position (or append at end)
+            # Insert LCARS panels at the found position (or at the top)
             if insert_idx is None:
-                insert_idx = len(panel_order)
+                insert_idx = 0
             else:
-                # Adjust for removals before insert_idx
                 insert_idx = min(insert_idx, len(panel_order))
 
             for offset, path in enumerate(lcars_paths):
                 panel_order.insert(insert_idx + offset, path)
 
+            # Ensure all registered panels are in the order
+            existing = set(panel_order)
+            for p in all_panels:
+                if p not in existing:
+                    panel_order.append(p)
+
             sidebar["panelOrder"] = panel_order
             data["sidebar"] = sidebar
             await store.async_save(data)
-            _LOGGER.debug("Updated sidebar order for user %s: %s", user.name, lcars_paths)
+            _LOGGER.debug("Updated sidebar order for user %s: %s", user.name, panel_order)
         except Exception as err:
             _LOGGER.warning("Failed to update sidebar order for user %s: %s", user.name, err)
 

@@ -171,6 +171,17 @@ class LcarsDashboardLayout extends LitElement {
     );
   }
 
+  _openSidebarReorder() {
+    if (!this._hass?.user?.is_admin) return;
+    let dialog = this.shadowRoot.querySelector('lcars-sidebar-reorder');
+    if (!dialog) {
+      dialog = document.createElement('lcars-sidebar-reorder');
+      this.shadowRoot.appendChild(dialog);
+    }
+    dialog.hass = this._hass;
+    dialog.open();
+  }
+
   _handleElbowPointerDown(e) {
     if (!this._hass?.user?.is_admin) return;
     e.preventDefault();
@@ -678,6 +689,11 @@ class LcarsDashboardLayout extends LitElement {
               <ha-icon .icon=${this._audioMuted ? 'mdi:volume-off' : 'mdi:volume-high'}></ha-icon>
             </button>
             ${this._hass?.user?.is_admin ? html`
+              <button class="configure-btn"
+                aria-label="Reorder sidebar dashboards"
+                @click=${() => this._openSidebarReorder()}>
+                <ha-icon .icon=${'mdi:sort-variant'}></ha-icon>
+              </button>
               <button class="configure-btn"
                 aria-pressed=${this._editMode}
                 aria-label="${this._editMode ? 'Exit configuration mode' : 'Enter configuration mode'}"

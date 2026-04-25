@@ -27,6 +27,7 @@ module.exports = {
     './src/lcars-edit-device-button-card.js',
     './src/lcars-edit-panel-order-card.js',
     './src/lcars-popup.js',
+    './src/lcars-sidebar-reorder.js',
     './src/lcars-internal-sensors-grid.js',  // 4X-2: Temp/Humidity Grid
     './src/lcars-illumination-card.js',      // 5X-2.5: Illumination Dashboard
     './src/lcars-illumination-layout.js',    // 5X-2.5: Illumination Layout (filter sidebar)

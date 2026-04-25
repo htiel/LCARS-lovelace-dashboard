@@ -201,6 +201,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     websocket_api.async_register_command(hass, ws_handle_panel_column_get)
     websocket_api.async_register_command(hass, ws_handle_panel_column_set)
 
+    websocket_api.async_register_command(hass, ws_handle_sidebar_order_get)
+    websocket_api.async_register_command(hass, ws_handle_sidebar_order_set)
+
     await load_plugins(hass, DOMAIN)
 
     notifications(hass, DOMAIN)
@@ -1810,6 +1813,78 @@ async def ws_handle_panel_column_set(
         await _write_yaml_file(hass, "lcars-dashboard/configs/panel_column_overrides.yaml", overrides)
 
     connection.send_result(msg["id"], {"successful": "Panel column overrides saved"})
+
+
+# ── Dashboard sidebar order WS commands ──────────────────────────────
+
+@websocket_api.require_admin
+@websocket_api.websocket_command({vol.Required("type"): "lcars_dashboard/sidebar_order/get"})
+@websocket_api.async_response
+async def ws_handle_sidebar_order_get(hass, connection, msg):
+    """Return the current dashboard sidebar order and available dashboards."""
+    entry = None
+    for e in hass.config_entries.async_entries(DOMAIN):
+        entry = e
+        break
+    if not entry:
+        connection.send_result(msg["id"], {"order": [], "dashboards": {}})
+        return
+
+    enabled = list(entry.options.get(CONF_DASHBOARDS, DEFAULT_DASHBOARDS))
+    order = list(entry.options.get(CONF_DASHBOARD_ORDER, enabled))
+    # Filter to only enabled dashboards
+    order = [k for k in order if k in enabled]
+    for k in enabled:
+        if k not in order:
+            order.append(k)
+
+    dashboards = {}
+    for key in enabled:
+        meta = DASHBOARD_REGISTRY.get(key, {})
+        dashboards[key] = {
+            "title": entry.options.get(f"{key}_title", meta.get("default_title", key)),
+            "icon": entry.options.get(f"{key}_icon", meta.get("default_icon", "mdi:monitor-dashboard")),
+        }
+
+    connection.send_result(msg["id"], {"order": order, "dashboards": dashboards})
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command({
+    vol.Required("type"): "lcars_dashboard/sidebar_order/set",
+    vol.Required("order"): str,
+})
+@websocket_api.async_response
+async def ws_handle_sidebar_order_set(hass, connection, msg):
+    """Save the dashboard sidebar order and apply to HA sidebar."""
+    import json as _json
+    try:
+        order = _json.loads(msg["order"])
+    except (ValueError, TypeError):
+        connection.send_error(msg["id"], "invalid_format", "order must be a JSON array")
+        return
+
+    if not isinstance(order, list):
+        connection.send_error(msg["id"], "invalid_format", "order must be a JSON array")
+        return
+
+    entry = None
+    for e in hass.config_entries.async_entries(DOMAIN):
+        entry = e
+        break
+    if not entry:
+        connection.send_error(msg["id"], "not_found", "LCARS Dashboard config entry not found")
+        return
+
+    # Update config entry options with new order
+    new_options = dict(entry.options)
+    new_options[CONF_DASHBOARD_ORDER] = order
+    hass.config_entries.async_update_entry(entry, options=new_options)
+
+    # Apply to HA sidebar
+    await _apply_sidebar_order(hass, entry)
+
+    connection.send_result(msg["id"], {"successful": "Sidebar order saved"})
 
 
 async def _apply_sidebar_order(hass, config_entry):

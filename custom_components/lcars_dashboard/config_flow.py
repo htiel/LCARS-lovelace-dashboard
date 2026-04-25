@@ -10,7 +10,6 @@ from homeassistant.helpers import config_validation as cv
 
 from .const import (
     CONF_DASHBOARDS,
-    CONF_DASHBOARD_ORDER,
     DASHBOARD_REGISTRY,
     DEFAULT_DASHBOARDS,
     DOMAIN,
@@ -44,7 +43,7 @@ class LcarsDashboardConfigFlow(ConfigFlow):
 
 
 class LcarsDashboardOptionsFlow(OptionsFlowWithConfigEntry):
-    """Three-step options: select dashboards → configure titles/icons → set sidebar order."""
+    """Two-step options: select dashboards → configure titles/icons."""
 
     async def async_step_init(self, user_input=None):
         """Step 1: Select which dashboards to enable."""
@@ -79,8 +78,21 @@ class LcarsDashboardOptionsFlow(OptionsFlowWithConfigEntry):
     async def async_step_dashboard_config(self, user_input=None):
         """Step 2: Set title + icon for each enabled dashboard."""
         if user_input is not None:
-            self._config_input = user_input
-            return await self.async_step_dashboard_order()
+            result = {CONF_DASHBOARDS: self._selected}
+            # Preserve existing dashboard_order if present
+            existing_order = self.config_entry.options.get("dashboard_order")
+            if existing_order:
+                result["dashboard_order"] = existing_order
+            for key in self._selected:
+                result[f"{key}_title"] = user_input.get(
+                    f"{key}_title",
+                    DASHBOARD_REGISTRY[key]["default_title"],
+                )
+                result[f"{key}_icon"] = user_input.get(
+                    f"{key}_icon",
+                    DASHBOARD_REGISTRY[key]["default_icon"],
+                )
+            return self.async_create_entry(data=result)
 
         # Build dynamic schema for enabled dashboards only
         schema_dict = {}
@@ -102,66 +114,5 @@ class LcarsDashboardOptionsFlow(OptionsFlowWithConfigEntry):
 
         return self.async_show_form(
             step_id="dashboard_config",
-            data_schema=vol.Schema(schema_dict),
-        )
-
-    async def async_step_dashboard_order(self, user_input=None):
-        """Step 3: Set sidebar display order for enabled dashboards."""
-        if user_input is not None:
-            # Collect ordered keys from position selects
-            ordered = []
-            for i in range(1, len(self._selected) + 1):
-                key = user_input.get(f"position_{i}")
-                if key and key not in ordered:
-                    ordered.append(key)
-            # Add any missing (shouldn't happen, but safety)
-            for key in self._selected:
-                if key not in ordered:
-                    ordered.append(key)
-
-            # Build final result
-            result = {
-                CONF_DASHBOARDS: self._selected,
-                CONF_DASHBOARD_ORDER: ordered,
-            }
-            for key in self._selected:
-                result[f"{key}_title"] = self._config_input.get(
-                    f"{key}_title",
-                    DASHBOARD_REGISTRY[key]["default_title"],
-                )
-                result[f"{key}_icon"] = self._config_input.get(
-                    f"{key}_icon",
-                    DASHBOARD_REGISTRY[key]["default_icon"],
-                )
-            return self.async_create_entry(data=result)
-
-        # Build position select schema
-        existing_order = list(
-            self.config_entry.options.get(CONF_DASHBOARD_ORDER, self._selected)
-        )
-        # Filter to only enabled dashboards, preserving saved order
-        current_order = [k for k in existing_order if k in self._selected]
-        # Add any newly enabled dashboards at the end
-        for k in self._selected:
-            if k not in current_order:
-                current_order.append(k)
-
-        # Build choices: key → display title (use config_input titles if set)
-        choices = {}
-        for key in self._selected:
-            title = self._config_input.get(
-                f"{key}_title",
-                DASHBOARD_REGISTRY[key]["default_title"],
-            )
-            choices[key] = title
-
-        schema_dict = {}
-        for i, key in enumerate(current_order, 1):
-            schema_dict[
-                vol.Required(f"position_{i}", default=key)
-            ] = vol.In(choices)
-
-        return self.async_show_form(
-            step_id="dashboard_order",
             data_schema=vol.Schema(schema_dict),
         )

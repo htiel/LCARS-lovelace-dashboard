@@ -8,6 +8,7 @@ import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsEventBus, lcarsLog, openEditPopup } from './lcars-helpers.js';
 import { lcarsAudio } from './lcars-audio.js';
+import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
 
 const TAG = 'Layout';
 
@@ -82,6 +83,7 @@ class LcarsDashboardLayout extends LitElement {
     this._hass = hass;
     if (!prev) {
       lcarsLog.debug(TAG, 'First hass received — cards:', this.cards?.length || 0);
+      ensureLcarsSidebarTop(hass);
     }
     // Update site name from HA config if available (GEO-015/DATA-006)
     if (hass?.config?.location_name) {

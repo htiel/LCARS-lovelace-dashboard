@@ -11,6 +11,7 @@ import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsLog, lcarsEventBus } from './lcars-helpers.js';
 import { lcarsAudio } from './lcars-audio.js';
+import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
 
 const TAG = 'TacticalLayout';
 const FILTER_ALL = 'all';
@@ -48,6 +49,7 @@ class LcarsTacticalLayout extends LitElement {
     this._hass = hass;
     if (hass?.config?.location_name) this._siteName = hass.config.location_name.toUpperCase();
     if (this.cards) this.cards.forEach((c) => { if (c) c.hass = hass; });
+    ensureLcarsSidebarTop(hass);
   }
 
   _setFilter(filter) {

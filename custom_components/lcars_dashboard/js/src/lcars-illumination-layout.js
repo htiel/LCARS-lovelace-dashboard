@@ -13,6 +13,7 @@ import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsLog, lcarsEventBus } from './lcars-helpers.js';
 import { lcarsAudio } from './lcars-audio.js';
+import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
 
 const TAG = 'IlluminationLayout';
 const FILTER_ALL = 'all';
@@ -50,6 +51,7 @@ class LcarsIlluminationLayout extends LitElement {
 
   set hass(hass) {
     this._hass = hass;
+    ensureLcarsSidebarTop(hass);
     if (hass?.config?.location_name) {
       this._siteName = hass.config.location_name.toUpperCase();
     }

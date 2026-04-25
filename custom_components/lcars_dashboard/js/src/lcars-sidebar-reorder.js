@@ -8,6 +8,70 @@
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 
+const DASHBOARD_URL_MAP = {
+  habitat: 'lcars-habitat',
+  security: 'lcars-security',
+  power: 'lcars-power',
+  environmental: 'lcars-environmental',
+  lighting: 'lcars-lighting',
+};
+
+/**
+ * Auto-fix sidebar order so LCARS dashboards are grouped at the top.
+ * Runs at most once per page load. Uses HA's frontend/set_user_data WS.
+ */
+let _sidebarFixRan = false;
+export async function ensureLcarsSidebarTop(hass) {
+  if (_sidebarFixRan || !hass) return;
+  _sidebarFixRan = true;
+
+  try {
+    // Get configured dashboard order from our backend
+    const result = await hass.callWS({ type: 'lcars_dashboard/sidebar_order/get' });
+    const order = result.order || [];
+
+    const lcarsUrls = order.map(k => DASHBOARD_URL_MAP[k]).filter(Boolean);
+    if (lcarsUrls.length === 0) return;
+    const lcarsSet = new Set(lcarsUrls);
+
+    // Get current sidebar data from HA frontend storage
+    let sidebarData = {};
+    try {
+      const resp = await hass.callWS({ type: 'frontend/get_user_data', key: 'sidebar' });
+      if (resp && resp.value) sidebarData = resp.value;
+    } catch (e) { return; }
+
+    let panelOrder = Array.isArray(sidebarData.panelOrder) ? [...sidebarData.panelOrder] : [];
+    if (panelOrder.length === 0) return;
+
+    // Check if LCARS panels are already at the top in correct order
+    let alreadyCorrect = true;
+    for (let i = 0; i < lcarsUrls.length; i++) {
+      if (panelOrder[i] !== lcarsUrls[i]) { alreadyCorrect = false; break; }
+    }
+    if (alreadyCorrect) return;
+
+    // Fix: remove LCARS, insert at top
+    panelOrder = panelOrder.filter(p => !lcarsSet.has(p));
+    panelOrder.splice(0, 0, ...lcarsUrls);
+
+    // Ensure all registered panels are present
+    const existing = new Set(panelOrder);
+    for (const p of Object.keys(hass.panels || {})) {
+      if (!existing.has(p)) panelOrder.push(p);
+    }
+
+    // Write back via HA frontend storage (subscription auto-updates sidebar)
+    await hass.callWS({
+      type: 'frontend/set_user_data',
+      key: 'sidebar',
+      value: { panelOrder, hiddenPanels: sidebarData.hiddenPanels || [] },
+    });
+  } catch (e) {
+    console.warn('LCARS: auto-fix sidebar order failed', e);
+  }
+}
+
 const REORDER_STYLES = css`
   :host { display: block; }
 
@@ -180,13 +244,6 @@ class LcarsSidebarReorder extends LitElement {
       });
 
       // 2. Build LCARS url_paths from dashboard keys in chosen order
-      const DASHBOARD_URL_MAP = {
-        habitat: 'lcars-habitat',
-        security: 'lcars-security',
-        power: 'lcars-power',
-        environmental: 'lcars-environmental',
-        lighting: 'lcars-lighting',
-      };
       const lcarsUrls = this._order.map(k => DASHBOARD_URL_MAP[k]).filter(Boolean);
       const lcarsSet = new Set(lcarsUrls);
 

@@ -1939,11 +1939,8 @@ async def _apply_sidebar_order(hass, config_entry):
             # Remove all existing LCARS panels from the order
             panel_order = [p for p in panel_order if p not in lcars_set]
 
-            # Insert LCARS panels at the found position (or at the top)
-            if insert_idx is None:
-                insert_idx = 0
-            else:
-                insert_idx = min(insert_idx, len(panel_order))
+            # Always insert LCARS panels at the top of the sidebar
+            insert_idx = 0
 
             for offset, path in enumerate(lcars_paths):
                 panel_order.insert(insert_idx + offset, path)

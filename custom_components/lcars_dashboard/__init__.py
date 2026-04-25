@@ -375,6 +375,21 @@ async def ws_handle_install_blueprint(
 
     filecontent = yaml.safe_load(raw_yaml)
 
+    # 5X-B11: Reject excessively nested YAML (resource exhaustion defense)
+    def _check_depth(obj, depth=0, max_depth=20):
+        if depth > max_depth:
+            return False
+        if isinstance(obj, dict):
+            return all(_check_depth(v, depth + 1, max_depth) for v in obj.values())
+        if isinstance(obj, list):
+            return all(_check_depth(v, depth + 1, max_depth) for v in obj)
+        return True
+
+    if filecontent and not _check_depth(filecontent):
+        _LOGGER.warning("Blueprint YAML exceeds maximum nesting depth")
+        connection.send_result(msg["id"], {"error": "Blueprint YAML is too deeply nested"})
+        return
+
     if not filecontent.get("blueprint"):
         _LOGGER.warning('no blueprint data')
         connection.send_result(
@@ -1876,87 +1891,20 @@ async def ws_handle_sidebar_order_set(hass, connection, msg):
         connection.send_error(msg["id"], "not_found", "LCARS Dashboard config entry not found")
         return
 
-    # Update config entry options with new order (persist only, no sidebar write)
+    # 5X-B01: Validate order items against DASHBOARD_REGISTRY keys
+    valid_keys = set(DASHBOARD_REGISTRY.keys())
+    order = [item for item in order if isinstance(item, str) and item in valid_keys]
+    if not order:
+        connection.send_error(msg["id"], "invalid_format", "order must contain valid dashboard keys")
+        return
+
+    # Update config entry options with new order (persist only)
+    # Sidebar ordering is handled client-side by ensureLcarsSidebarTop()
     new_options = dict(entry.options)
     new_options[CONF_DASHBOARD_ORDER] = order
     hass.config_entries.async_update_entry(entry, options=new_options)
 
     connection.send_result(msg["id"], {"successful": "Sidebar order saved"})
-
-
-async def _apply_sidebar_order(hass, config_entry):
-    """Update sidebar panelOrder for all human users to group LCARS dashboards together."""
-    from homeassistant.components.frontend.storage import async_user_store
-
-    order_keys = list(
-        config_entry.options.get(
-            CONF_DASHBOARD_ORDER,
-            config_entry.options.get(CONF_DASHBOARDS, DEFAULT_DASHBOARDS),
-        )
-    )
-    # Build ordered url_paths for enabled LCARS dashboards
-    lcars_paths = []
-    for key in order_keys:
-        meta = DASHBOARD_REGISTRY.get(key)
-        if meta:
-            lcars_paths.append(meta["url_path"])
-
-    if not lcars_paths:
-        return
-
-    lcars_set = set(lcars_paths)
-
-    try:
-        users = await hass.auth.async_get_users()
-    except Exception as err:
-        _LOGGER.warning("Could not retrieve users for sidebar ordering: %s", err)
-        return
-
-    # Get all registered panel IDs for building a complete order
-    from homeassistant.components.frontend import DATA_PANELS
-    all_panels = list(hass.data.get(DATA_PANELS, {}).keys())
-
-    for user in users:
-        if user.system_generated:
-            continue
-        try:
-            store, data = await async_user_store(hass, user.id)
-            sidebar = data.get("sidebar", {})
-            panel_order = list(sidebar.get("panelOrder", []))
-
-            # If panelOrder is empty, seed it with all registered panels
-            if not panel_order:
-                panel_order = sorted(all_panels)
-
-            # Find the position of the first existing LCARS panel
-            insert_idx = None
-            for i, panel_id in enumerate(panel_order):
-                if panel_id in lcars_set:
-                    if insert_idx is None:
-                        insert_idx = i
-                    break
-
-            # Remove all existing LCARS panels from the order
-            panel_order = [p for p in panel_order if p not in lcars_set]
-
-            # Always insert LCARS panels at the top of the sidebar
-            insert_idx = 0
-
-            for offset, path in enumerate(lcars_paths):
-                panel_order.insert(insert_idx + offset, path)
-
-            # Ensure all registered panels are in the order
-            existing = set(panel_order)
-            for p in all_panels:
-                if p not in existing:
-                    panel_order.append(p)
-
-            sidebar["panelOrder"] = panel_order
-            data["sidebar"] = sidebar
-            await store.async_save(data)
-            _LOGGER.debug("Updated sidebar order for user %s: %s", user.name, panel_order)
-        except Exception as err:
-            _LOGGER.warning("Failed to update sidebar order for user %s: %s", user.name, err)
 
 
 async def async_setup_entry(hass, config_entry):
@@ -1984,8 +1932,6 @@ async def async_setup_entry(hass, config_entry):
     except Exception as err:
         _LOGGER.error("load_dashboards failed: %s", err, exc_info=True)
         return False
-
-    await _apply_sidebar_order(hass, config_entry)
 
     config_entry.add_update_listener(_update_listener)
 
@@ -2017,8 +1963,6 @@ async def _update_listener(hass, config_entry):
     await process_yaml(hass, config_entry)
     registered = load_dashboards(hass, config_entry)
     hass.data.setdefault(DOMAIN, {})["registered_dashboards"] = registered
-
-    await _apply_sidebar_order(hass, config_entry)
 
     hass.bus.async_fire("lcars_dashboard_reload")
 

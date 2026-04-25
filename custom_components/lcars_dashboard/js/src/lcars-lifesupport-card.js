@@ -163,7 +163,7 @@ class LcarsLifeSupportCard extends LitElement {
           ${summary.avgTemp != null ? html`
             <span class="ls-summary__block">
               <span class="ls-summary__label">INDOOR AVG</span>
-              <span class="ls-summary__value" style="color:${this._getComfortColor(summary.avgTemp)}">${summary.avgTemp}°</span>
+              <span class="ls-summary__value">${summary.avgTemp}°</span>
             </span>
           ` : ''}
           ${summary.outdoor != null ? html`
@@ -175,7 +175,7 @@ class LcarsLifeSupportCard extends LitElement {
           ${summary.worstAqi > 0 ? html`
             <span class="ls-summary__block">
               <span class="ls-summary__label">WORST AQI</span>
-              <span class="ls-summary__value" style="color:${this._getAqiColor(summary.worstAqi)}">${summary.worstAqi} (${summary.worstAqiArea.toUpperCase()})</span>
+              <span class="ls-summary__value">${summary.worstAqi} (${summary.worstAqiArea.toUpperCase()})</span>
             </span>
           ` : ''}
           <span class="ls-summary__block">
@@ -297,8 +297,8 @@ class LcarsLifeSupportCard extends LitElement {
           font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
         }
         .ls-summary__block { flex: 1; display: flex; flex-direction: column; gap: 0.125rem; }
-        .ls-summary__label { font-size: 0.625rem; letter-spacing: 0.1em; opacity: 0.6; }
-        .ls-summary__value { font-size: 1rem; font-variant-numeric: tabular-nums; }
+        .ls-summary__label { font-size: 0.625rem; letter-spacing: 0.1em; color: var(--lcars-black, #000); opacity: 0.7; }
+        .ls-summary__value { font-size: 1rem; font-variant-numeric: tabular-nums; color: var(--lcars-black, #000); }
 
         .ls-floor-header { display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0 0.5rem 0; }
         .ls-floor-name { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; color: var(--lcars-bluey, #8899ff); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }

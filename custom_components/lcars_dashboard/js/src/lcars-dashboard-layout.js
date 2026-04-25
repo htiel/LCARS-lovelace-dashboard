@@ -726,8 +726,10 @@ class LcarsDashboardLayout extends LitElement {
               `}
               ${areas.map((area) => html`
                 <button class="sidebar-area-btn"
+                  title="${area.name}"
                   ?data-active=${this._selectedArea === area.area_id}
                   aria-pressed=${this._selectedArea === area.area_id}
+                  aria-label="${area.name}"
                   @click=${() => this._selectArea(area.area_id)}>
                   <ha-icon .icon=${area.icon || 'mdi:home-outline'}></ha-icon>
                   <span class="area-name">${area.name}</span>

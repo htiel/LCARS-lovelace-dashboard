@@ -172,8 +172,8 @@ export const lifeSupportPanelStyles = css`
 
   .ls-sparkline-slot svg {
     width: 100%;
-    max-width: 120px;
-    height: 24px;
+    max-width: 160px;
+    height: 32px;
   }
 
   /* ─── Sensor Array: passive AQ monitors (4X-46) ─── */

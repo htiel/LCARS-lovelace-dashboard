@@ -41,7 +41,7 @@ module.exports = {
   mode: 'production',
   output: {
     filename: 'lcars-dashboard.js',
-    path: path.resolve(__dirname)
+    path: path.resolve(__dirname, 'dist')
   },
   devtool: false
 };

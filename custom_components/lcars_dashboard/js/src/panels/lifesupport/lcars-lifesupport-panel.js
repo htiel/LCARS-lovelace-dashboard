@@ -77,6 +77,15 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
     const allEntries = this._getAllEntities();
     const devices = this.hass?.devices || {};
 
+    // 5X-B15: Build set of device IDs that have camera entities
+    // Their binary_sensor CO/alarm entities are camera diagnostics, not real safety devices
+    const cameraDeviceIds = new Set();
+    for (const entry of allEntries) {
+      if (entry.domain === 'camera' && entry.entity?.device_id) {
+        cameraDeviceIds.add(entry.entity.device_id);
+      }
+    }
+
     // First pass: partition by function
     const climateEntries = [];
     const envEntries = [];
@@ -86,6 +95,8 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
     for (const entry of allEntries) {
       // P3 QA-E06: filter diagnostic entities from life support panels
       if (isDiagnosticEntity(entry)) continue;
+      // 5X-B15: Skip binary_sensors from camera devices (CO/alarm noise)
+      if (entry.domain === 'binary_sensor' && entry.entity?.device_id && cameraDeviceIds.has(entry.entity.device_id)) continue;
       if (isClimateEntity(entry)) {
         climateEntries.push(entry);
       } else if (isEnvironmentEntity(entry)) {

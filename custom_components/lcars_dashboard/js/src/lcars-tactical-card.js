@@ -170,7 +170,7 @@ class LcarsTacticalCard extends LitElement {
     if (!this._hass) return html``;
     const floorGroups = this._getAreasWithTactical();
     const summary = this._getGlobalSummary(floorGroups);
-    const isTriggered = summary.alarmState === 'triggered';
+    const isTriggered = summary.alarmState === 'triggered' || summary.alarmState === 'pending';
 
     // Collect all cameras across areas
     const allCameras = [];
@@ -194,6 +194,12 @@ class LcarsTacticalCard extends LitElement {
             <span class="tac-summary__label">SENSORS</span>
             <span class="tac-summary__value">${summary.safetyAlerts === 0 ? 'ALL CLEAR' : summary.safetyAlerts + ' ALERTS'}</span>
           </span>
+          ${allCameras.length > 0 ? html`
+            <span class="tac-summary__block">
+              <span class="tac-summary__label">VIEWSCREENS</span>
+              <span class="tac-summary__value">${allCameras.filter(e => (this._hass?.states?.[e.entity?.entity_id] || e.state)?.state !== 'unavailable').length}/${allCameras.length} ACTIVE</span>
+            </span>
+          ` : ''}
         </div>
 
         <!-- Camera Grid -->

@@ -158,6 +158,21 @@ class LcarsEvChargerPanel extends LcarsBasePanel {
   renderContent() {
     const em = this._entityMap();
     const statusState = em.get('status')?.state?.state;
+
+    // 5X-B18: Suppress panel when charger has no valid data
+    if (!statusState || statusState === 'unavailable' || statusState === 'unknown') {
+      return html`
+        <div class="lcars-device-panel ev-empty-state">
+          <div class="ev-header">
+            <ha-icon icon="mdi:ev-station" style="color: var(--lcars-gray)"></ha-icon>
+            <span class="device-panel-name">${this._getPanelName ? this._getPanelName() : this.defaultPanelTitle}</span>
+            <span class="device-panel-header-line" aria-hidden="true"></span>
+            <span class="ev-status-badge" style="color: var(--lcars-gray)">OFFLINE</span>
+          </div>
+        </div>
+      `;
+    }
+
     const powerRaw = em.get('charging_power')?.state?.state;
     const chargingPower = powerRaw != null ? parseFloat(powerRaw) : 0;
     const stateColor = this.frameColor;

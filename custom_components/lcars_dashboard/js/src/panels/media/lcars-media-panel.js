@@ -199,6 +199,7 @@ class LcarsMediaPanel extends LcarsBasePanel {
         </div>
 
         <div class="media-controls">
+          ${isPlaying || isPaused ? html`
           <div class="media-transport" role="toolbar" aria-label="Transport controls">
             ${supportsShuffle ? html`<button class="media-transport-btn" aria-pressed="${shuffle}" title="Shuffle" @click=${() => this._handleMediaService(primary.entity.entity_id, 'shuffle_set', { shuffle: !shuffle })}>⇄</button>` : ''}
             ${supportsPrev ? html`<button class="media-transport-btn" title="Previous" @click=${() => this._handleMediaService(primary.entity.entity_id, 'media_previous_track')}>⏮</button>` : ''}
@@ -230,6 +231,7 @@ class LcarsMediaPanel extends LcarsBasePanel {
               </div>
               <span class="media-volume-pct">${Math.round(volume * 100)}%</span>
             </div>
+          ` : ''}
           ` : ''}
         </div>
       </div>

@@ -295,6 +295,19 @@ export const environmentPanelStyles = css`
     z-index: 1;
     text-shadow: 0 0 4px rgba(0,0,0,0.8);
   }
+  .scrubber-scale-label {
+    position: absolute;
+    bottom: 0.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.5rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--lcars-space-white);
+    opacity: 0.6;
+    z-index: 1;
+    text-shadow: 0 0 4px rgba(0,0,0,0.8);
+  }
 
   /* 4X-54: Filter Life Segment Bar */
   .filter-life-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.5rem; }

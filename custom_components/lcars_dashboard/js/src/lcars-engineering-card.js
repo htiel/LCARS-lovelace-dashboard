@@ -209,7 +209,7 @@ class LcarsEngineeringCard extends LitElement {
         <div class="eng-summary">
           <span class="eng-summary__block">
             <span class="eng-summary__label">TOTAL DRAW</span>
-            <span class="eng-summary__value" style="color:${this._getPowerTierColor(summary.totalPowerW)}">${formatNumber(Math.round(summary.totalPowerW))} W</span>
+            <span class="eng-summary__value">${formatNumber(Math.round(summary.totalPowerW))} W</span>
           </span>
           ${summary.batteryCount > 0 ? html`
             <span class="eng-summary__block">
@@ -218,7 +218,7 @@ class LcarsEngineeringCard extends LitElement {
             </span>
             <span class="eng-summary__block">
               <span class="eng-summary__label">LOWEST</span>
-              <span class="eng-summary__value" style="color:${this._getBatteryColor(summary.lowestBat)}">${summary.lowestBat}%</span>
+              <span class="eng-summary__value">${summary.lowestBat}%</span>
             </span>
           ` : ''}
         </div>
@@ -317,8 +317,8 @@ class LcarsEngineeringCard extends LitElement {
           font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
         }
         .eng-summary__block { flex: 1; display: flex; flex-direction: column; gap: 0.125rem; }
-        .eng-summary__label { font-size: 0.625rem; letter-spacing: 0.1em; opacity: 0.6; }
-        .eng-summary__value { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+        .eng-summary__label { font-size: 0.625rem; letter-spacing: 0.1em; color: var(--lcars-black, #000); opacity: 0.7; }
+        .eng-summary__value { font-size: 1.25rem; font-variant-numeric: tabular-nums; color: var(--lcars-black, #000); }
 
         .eng-floor-header { display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0 0.5rem 0; }
         .eng-floor-name { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; color: var(--lcars-butterscotch, #ff9966); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }

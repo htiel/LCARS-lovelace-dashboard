@@ -126,6 +126,9 @@ class LcarsHomepageCard extends LitElement {
       this._loadingCameras = new Set();
       this._onAreaSelected = (e) => {
         lcarsLog.debug(TAG, 'Area selected event:', e.detail.areaId);
+        // 5X-B04: Clear camera refresh state on area change to prevent proxy 500s
+        this._visibleCameras.clear();
+        this._loadingCameras.clear();
         this.selectedArea = e.detail.areaId;
         this.selectedFloor = null; // area overrides floor
         this._entityCache.clear();

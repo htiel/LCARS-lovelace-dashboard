@@ -189,6 +189,13 @@ export function humanizeTimestamp(isoStr) {
 
 const IDLE_DOMAINS = new Set(['button', 'input_button', 'scene', 'script']);
 
+// 5X-B02: Update-domain state text humanization
+const UPDATE_STATE_MAP = {
+  'off': 'UP TO DATE',
+  'on': 'UPDATE AVAILABLE',
+  'installing': 'INSTALLING',
+};
+
 /**
  * Format a state value for display, with domain-aware idle/error semantics.
  * Returns { text, isIdle } where isIdle indicates a dormant/non-error state.
@@ -217,6 +224,31 @@ export function formatStateValue(state, entityCategory = '') {
     if (entityCategory === 'diagnostic' || entityCategory === 'config') return { text: '—', isIdle: true };
     if (domain === 'sensor' || domain === 'binary_sensor') return { text: 'OFFLINE', isIdle: true };
     return { text: 'UNAVAILABLE', isIdle: true };
+  }
+
+  // 5X-B02: Humanize update domain state text
+  if (domain === 'update') {
+    const mapped = UPDATE_STATE_MAP[s] || s.toUpperCase();
+    return { text: mapped, isIdle: s === 'off' };
+  }
+
+  // 5X-B07: Battery 0% guard — distinguish unavailable/unknown from real 0%
+  if (dc === 'battery' && unit === '%') {
+    const n = Number(s);
+    if (n === 0) {
+      // Check if the entity is actually reporting or just unknown/stale
+      const lastChanged = state?.last_changed;
+      const lastUpdated = state?.last_updated;
+      // If last_updated equals last_changed AND value is 0, likely genuinely 0
+      // But if entity has been 0 for > 7 days with no change, flag it
+      if (lastUpdated && lastChanged && lastUpdated !== lastChanged) {
+        return { text: '0%', isIdle: false };
+      }
+      const age = lastChanged ? Date.now() - new Date(lastChanged).getTime() : Infinity;
+      if (age > 604800000) { // > 7 days
+        return { text: 'NO DATA', isIdle: true };
+      }
+    }
   }
 
   // Idle domains with non-sentinel states

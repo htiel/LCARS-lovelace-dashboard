@@ -133,6 +133,13 @@ def _include_yaml(ldr, node):
     else:
         fn, args, *_ = ldr.construct_sequence(node)
     fname = os.path.abspath(os.path.join(os.path.dirname(ldr.name), fn))
+    # 5X-B10: Enforce path boundary — reject includes that resolve outside HA config dir
+    if _jinja_base_dir:
+        config_real = os.path.realpath(_jinja_base_dir)
+        fname_real = os.path.realpath(fname)
+        if not fname_real.startswith(config_real + os.sep) and fname_real != config_real:
+            _LOGGER.error("!include path traversal blocked: %s (resolved to %s, outside %s)", fn, fname_real, config_real)
+            raise HomeAssistantError(f"!include path traversal blocked: {fn}")
     _LOGGER.debug("!include resolving: %s → %s", fn, fname)
     try:
         result = load_yamll(fname, ldr.secrets, args=args)

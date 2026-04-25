@@ -154,6 +154,8 @@ export class LcarsBasePanel extends LitElement {
         }
       }
     }
+    // 5X-B06: Strip trailing model-number suffixes (e.g., "Sensor SHT40", "Camera G4 Pro")
+    result = result.replace(/\s+(?:[A-Z]{1,3}\d{1,4}[A-Z]?|[A-Z]\d+[A-Z]\d*|\d{3,}[A-Z]?)$/i, '').trim();
     return result || fullName;
   }
 

@@ -192,9 +192,9 @@ class LcarsCameraPanel extends LcarsBasePanel {
           ${showConfigCta ? html`
             <button class="device-control-btn camera-config-cta"
               @click=${() => { history.pushState(null, '', `/config/devices/device/${deviceId}`); window.dispatchEvent(new Event('location-changed')); }}
-              aria-label="Configure in ${humanizePlatform(platform)}">
+              aria-label="Configure ${deviceName} in ${humanizePlatform(platform)}">
               <ha-icon icon="mdi:cog"></ha-icon>
-              <span>${platform ? `CONFIGURE IN ${humanizePlatform(platform).toUpperCase()}` : 'DEVICE REQUIRES SETUP'}</span>
+              <span>${platform ? `CONFIGURE ${deviceName.toUpperCase()} IN ${humanizePlatform(platform).toUpperCase()}` : `${deviceName.toUpperCase()} REQUIRES SETUP`}</span>
             </button>
           ` : ''}
           ${controls.map(({ entity, state }) => {

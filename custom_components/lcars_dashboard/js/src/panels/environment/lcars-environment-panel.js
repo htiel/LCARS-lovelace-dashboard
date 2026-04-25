@@ -239,8 +239,10 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
               style="--scrubber-hue:${Math.round(hue)};--scrubber-speed:${scrubberSpeed.toFixed(1)}s;--atmos-quality-color:${aqColor}">
               ${scoreEntry ? html`
                 <div class="scrubber-score">${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : '—'}</div>
+                <div class="scrubber-scale-label">AQI</div>
               ` : pm25Entry ? html`
                 <div class="scrubber-score">${pm25Val != null && Number.isFinite(pm25Val) ? Math.round(pm25Val) : '—'}</div>
+                <div class="scrubber-scale-label">PM2.5</div>
               ` : ''}
             </div>
           </div>

@@ -12,12 +12,14 @@ from .const import VERSION
 
 async def load_plugins(hass, name):
     js_url = f"/lcars_dashboard/js/lcars-dashboard.js?version={VERSION}"
-    static_dir = hass.config.path(f"custom_components/{name}/js")
+    # 5X-B09: Serve only the dist/ output directory, not the entire js/ tree
+    # (prevents exposing src/, vendor/, package.json, webpack.config.js)
+    dist_dir = hass.config.path(f"custom_components/{name}/js/dist")
 
     _LOGGER.debug("Registering JS plugin: %s", js_url)
 
     # Verify the JS bundle exists
-    bundle_path = os.path.join(static_dir, "lcars-dashboard.js")
+    bundle_path = os.path.join(dist_dir, "lcars-dashboard.js")
     if not os.path.exists(bundle_path):
         _LOGGER.error("JS bundle not found: %s", bundle_path)
     else:
@@ -27,7 +29,7 @@ async def load_plugins(hass, name):
     add_extra_js_url(hass, js_url)
 
     await hass.http.async_register_static_paths(
-        [StaticPathConfig("/lcars_dashboard/js", static_dir, True)]
+        [StaticPathConfig("/lcars_dashboard/js", dist_dir, True)]
     )
 
-    _LOGGER.debug("Static path registered: /lcars_dashboard/js -> %s", static_dir)
+    _LOGGER.debug("Static path registered: /lcars_dashboard/js -> %s", dist_dir)

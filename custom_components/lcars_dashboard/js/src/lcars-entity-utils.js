@@ -593,7 +593,7 @@ export function isAmbientSensor(entry) {
 // Entities in these domains add zero dashboard value and are suppressed
 // from the "Auxiliary Systems" (formerly Other Entities) section.
 export const SUPPRESS_DOMAINS = new Set([
-  'update', 'device_tracker', 'event', 'conversation',
+  'device_tracker', 'event', 'conversation',
   'input_datetime', 'input_text',
 ]);
 

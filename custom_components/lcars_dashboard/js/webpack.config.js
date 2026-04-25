@@ -37,6 +37,8 @@ module.exports = {
     './src/lcars-engineering-layout.js',     // 5X-2.3: Engineering Layout
     './src/lcars-lifesupport-card.js',       // 5X-2.4: Life Support (Environmental) Dashboard
     './src/lcars-lifesupport-layout.js',     // 5X-2.4: Life Support Layout
+    './src/lcars-cetacean-card.js',          // 5X-3.1: Cetacean Ops (Pool & Spa) Dashboard
+    './src/lcars-cetacean-layout.js',        // 5X-3.1: Cetacean Ops Layout
   ],
   mode: 'production',
   output: {

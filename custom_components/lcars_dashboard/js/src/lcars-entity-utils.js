@@ -105,7 +105,7 @@ export const AQ_ENTITY_SUFFIX_RE = /_(air_quality|score)$/;
 const POOL_SPA_ID_RE = /pool|spa/i;
 const POOL_PRESET_MODES = new Set(['heater', 'solar', 'solar_preferred']);
 // Known pool/spa integration platforms (4X-37)
-const POOL_SPA_PLATFORMS = new Set([
+export const POOL_SPA_PLATFORMS = new Set([
   'screenlogic', 'iaqualink', 'poolmath', 'waterguru', 'pentair',
 ]);
 

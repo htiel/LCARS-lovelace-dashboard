@@ -1,5 +1,5 @@
 DOMAIN = "lcars_dashboard"
-VERSION = "5.0.2-beta.3"
+VERSION = "5.0.2-beta.4"
 
 # Configuration keys
 CONF_DASHBOARDS = "dashboards"
@@ -14,6 +14,7 @@ DASHBOARD_REGISTRY = {
     "power":         {"default_title": "Engineering",   "default_icon": "mdi:flash",       "url_path": "lcars-power"},
     "environmental": {"default_title": "Life Support",  "default_icon": "mdi:thermometer",  "url_path": "lcars-environmental"},
     "lighting":      {"default_title": "Illumination",  "default_icon": "mdi:lightbulb",   "url_path": "lcars-lighting"},
+    "cetacean":      {"default_title": "Cetacean Ops",  "default_icon": "mdi:dolphin",     "url_path": "lcars-cetacean"},
 }
 
-MAX_DASHBOARDS = len(DASHBOARD_REGISTRY)  # Hard cap = 5
+MAX_DASHBOARDS = len(DASHBOARD_REGISTRY)  # 6

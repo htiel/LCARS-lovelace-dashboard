@@ -1,0 +1,8 @@
+# LCARS Cetacean Ops Dashboard — Lovelace YAML configuration
+views:
+  - title: Cetacean Ops
+    icon: mdi:dolphin
+    path: home
+    type: custom:lcars-cetacean-layout
+    cards:
+      - type: custom:cetacean-card

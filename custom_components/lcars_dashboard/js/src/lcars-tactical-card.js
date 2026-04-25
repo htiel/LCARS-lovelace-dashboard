@@ -252,12 +252,27 @@ class LcarsTacticalCard extends LitElement {
     const imgUrl = state?.attributes?.entity_picture;
     const motionEid = eid.replace('camera.', 'binary_sensor.').replace(/_high$/, '_motion');
     const hasMotion = this._hass?.states?.[motionEid]?.state === 'on';
+    const stateVal = state?.state || 'unknown';
+    const isOff = stateVal === 'unavailable' || stateVal === 'unknown';
+    const camState = (isOff || !imgUrl) ? 'offline' : 'connecting';
 
     return html`
       <div class="tac-camera ${hasMotion ? 'motion' : ''}"
+           data-state="${camState}"
            @click=${() => showMoreInfo(eid)}
            role="button" tabindex="0" aria-label="${name}">
-        ${imgUrl ? html`<img src="${imgUrl}" alt="${name}" loading="lazy">` : html`<div class="tac-camera__placeholder"><ha-icon .icon=${'mdi:camera'} style="--mdc-icon-size:32px"></ha-icon></div>`}
+        <div class="tac-camera__connecting">
+          <span class="tac-camera__connecting-text">ESTABLISHING LINK</span>
+        </div>
+        <div class="tac-camera__offline">
+          <ha-icon .icon=${'mdi:video-off'} style="--mdc-icon-size:24px"></ha-icon>
+          <span class="tac-camera__offline-text">VIEWSCREEN OFFLINE</span>
+        </div>
+        ${imgUrl
+          ? html`<img src="${imgUrl}" alt="${name}" loading="lazy"
+                       @load=${(e) => { e.target.closest('.tac-camera')?.setAttribute('data-state', 'live'); }}
+                       @error=${(e) => { e.target.closest('.tac-camera')?.setAttribute('data-state', 'offline'); }} />`
+          : ''}
         <span class="tac-camera__label">${name}</span>
       </div>
     `;
@@ -371,14 +386,40 @@ class LcarsTacticalCard extends LitElement {
           aspect-ratio: 16/9; background: var(--lcars-bg, #000);
         }
         .tac-camera.motion { border-color: var(--lcars-tomato, #ff5555); }
-        .tac-camera img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .tac-camera__placeholder { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--lcars-gray, #666688); }
+        .tac-camera img { width: 100%; height: 100%; object-fit: cover; display: block; position: relative; z-index: 0; }
         .tac-camera__label {
           position: absolute; bottom: 0; left: 0; right: 0;
           padding: 0.25rem 0.5rem; font-family: var(--lcars-font, 'Antonio', sans-serif);
           font-size: 0.75rem; color: var(--lcars-space-white, #f5f6fa);
-          background: rgba(0,0,0,0.6); text-transform: uppercase;
+          background: rgba(0,0,0,0.6); text-transform: uppercase; z-index: 3;
         }
+        .tac-camera__connecting,
+        .tac-camera__offline {
+          position: absolute; inset: 0; display: flex; flex-direction: column;
+          align-items: center; justify-content: center; gap: 0.25rem;
+          background: var(--lcars-bg, #000); z-index: 2;
+          opacity: 0; visibility: hidden; transition: opacity 300ms ease-out, visibility 300ms ease-out;
+        }
+        .tac-camera[data-state="connecting"] .tac-camera__connecting {
+          opacity: 1; visibility: visible;
+          transition: opacity 300ms ease-out 500ms, visibility 300ms ease-out 500ms;
+        }
+        .tac-camera[data-state="connecting"] .tac-camera__offline,
+        .tac-camera[data-state="offline"] .tac-camera__connecting,
+        .tac-camera[data-state="live"] .tac-camera__connecting,
+        .tac-camera[data-state="live"] .tac-camera__offline { opacity: 0; visibility: hidden; }
+        .tac-camera[data-state="offline"] .tac-camera__offline { opacity: 1; visibility: visible; }
+        .tac-camera__connecting-text {
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.7rem;
+          color: var(--lcars-ice, #99ccff); text-transform: uppercase; letter-spacing: 0.1em;
+          animation: tac-breathe 4s ease-in-out infinite;
+        }
+        .tac-camera__offline ha-icon { color: var(--lcars-gray, #666688); }
+        .tac-camera__offline-text {
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.7rem;
+          color: var(--lcars-gray, #666688); text-transform: uppercase; letter-spacing: 0.1em;
+        }
+        @keyframes tac-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         .tac-camera:focus-visible { outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px; }
 
         /* ─── Floor / Area ─── */

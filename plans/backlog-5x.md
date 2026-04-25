@@ -145,6 +145,31 @@ Targeted audit/update constrained by `lit-html` 1.x compatibility limits. Should
 
 ---
 
+## Epic 3 · Tactical Dashboard Enhancements
+
+> Identified by Wesley's gap analysis against real-world security dashboards (Dwains, SmartFace, UniFi Protect, SimpliSafe).
+
+#### 5X-TAC-1 · Tactical Log — Event Timeline — `TODO` · Priority: HIGH · Size: M
+24h event timeline below the camera grid. Scrollable column of LCARS pills showing door/motion/alarm events with timestamps, entity names, and severity coloring (tomato=breach, sunflower=motion, ice=seal/arrive, gray=clear).
+**Data source**: `logbook/get_events` WS API filtered to tactical entity IDs, capped at ~20 entries.
+
+#### 5X-TAC-2 · Crew Manifest — Person/Presence Awareness — `TODO` · Priority: HIGH · Size: S
+Compact row of person entity pills in the summary bar area. Shows who's home/away with status colors (butterscotch=home, gray=away, ice=custom zone). Adds `person` domain to tactical entity scope.
+
+#### 5X-TAC-3 · Viewscreen Focus — Tap-to-Enlarge Camera — `TODO` · Priority: MEDIUM · Size: M
+Tapping a camera tile expands it to full grid width with remaining cameras in a filmstrip row below. Tap again to de-focus. CSS grid state management only — no new data dependencies.
+
+#### 5X-TAC-4 · Lock Summary in Summary Bar — `TODO` · Priority: LOW · Size: S
+Add LOCKS block to tactical summary bar when lock entities exist. `ENGAGED` (all locked) = ice, `{n} UNSECURED` = tomato.
+
+#### 5X-TAC-5 · Alarm-State Adaptive Density — `TODO` · Priority: LOW · Size: S
+Auto-expand timeline and camera focus when armed away. Compact when disarmed. Behavioral enhancement tied to 5X-TAC-1.
+
+#### 5X-TAC-6 · Tactical Dashboard Visual Redesign — `TODO` · Priority: HIGH · Size: L
+Full visual overhaul of the Tactical dashboard with inspiration from professional security systems (UniFi Protect, SimpliSafe, SmartFace). Explore non-rectangular layouts: ship/house schematics, perimeter diagrams, zone maps. Wesley to research and design, Geordi to LCARS-ify.
+
+---
+
 ## Epic 1 · Branch & Release Setup
 
 ### 5X-1 · Create 5.0 Branch + HACS Beta Track — `TODO` · Priority: CRITICAL · Size: S

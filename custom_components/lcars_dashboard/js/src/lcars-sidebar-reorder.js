@@ -204,24 +204,19 @@ class LcarsSidebarReorder extends LitElement {
         panelOrder = Object.keys(this._hass.panels || {}).sort();
       }
 
-      // 5. Find where first LCARS panel currently sits
-      let insertIdx = panelOrder.findIndex(p => lcarsSet.has(p));
-
-      // 6. Remove all LCARS panels from current order
+      // 5. Remove all LCARS panels from current order
       panelOrder = panelOrder.filter(p => !lcarsSet.has(p));
 
-      // 7. Insert LCARS panels grouped at the found position (or top)
-      if (insertIdx < 0) insertIdx = 0;
-      insertIdx = Math.min(insertIdx, panelOrder.length);
-      panelOrder.splice(insertIdx, 0, ...lcarsUrls);
+      // 6. Insert LCARS panels at the top, grouped together
+      panelOrder.splice(0, 0, ...lcarsUrls);
 
-      // 8. Ensure all registered panels are present
+      // 7. Ensure all registered panels are present
       const existing = new Set(panelOrder);
       for (const p of Object.keys(this._hass.panels || {})) {
         if (!existing.has(p)) panelOrder.push(p);
       }
 
-      // 9. Write sidebar data directly via HA frontend storage
+      // 8. Write sidebar data directly via HA frontend storage
       await this._hass.callWS({
         type: 'frontend/set_user_data',
         key: 'sidebar',

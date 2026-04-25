@@ -121,6 +121,16 @@ The Device Panel uses a **2-column asymmetric grid** within a bordered frame. Th
 
 The header bar uses the existing `device-header` pattern from `lcars-homepage-card.js` — the device name left-aligned with a thin rule extending to the right edge, plus an optional badge showing the device model or area.
 
+### 3.1.1 Name Shortening (5X-B06)
+
+`_shortenName()` in `lcars-base-panel.js` strips redundant prefixes (area name, device name) from entity names for cleaner display. As of v5.0.1, it also strips trailing model-number suffixes (e.g., "Bedroom Light SL2414" → "Bedroom Light") via regex:
+
+```javascript
+result.replace(/\s+(?:[A-Z]{1,3}\d{1,4}[A-Z]?|[A-Z]\d+[A-Z]\d*|\d{3,}[A-Z]?)$/i, '').trim()
+```
+
+This catches common patterns like `SL2414`, `P1`, `311i`, `HS300` that appear in device names from Insteon, HomeKit, TP-Link, and similar integrations.
+
 ### 3.2 Primary Media Frame (Viewscreen)
 
 ```css
@@ -349,7 +359,7 @@ Color assignments follow Bracer Jack's color theory: **3 core hue families** (wa
 | Sensor Type      | Display Color                | Variable                   | Rationale                                |
 |------------------|------------------------------|----------------------------|------------------------------------------|
 | Signal strength  | `--lcars-data-accent`        | `--lcars-ice` (`#99ccff`)  | Standard LCARS data readout color        |
-| Battery level    | `--lcars-data-accent`        | `--lcars-ice` (`#99ccff`)  | Standard readout; switches to `--lcars-tomato` at <20% |
+| Battery level    | `--lcars-data-accent`        | `--lcars-ice` (`#99ccff`)  | Standard readout; switches to `--lcars-tomato` at <20%. Stale 0% (last_changed >7 days) shows "NO DATA" (5X-B07) |
 | Temperature      | `--lcars-sunflower`          | `#ffcc99`                  | Warm data — heading text color family    |
 | Generic numeric  | `--lcars-data-accent`        | `--lcars-ice` (`#99ccff`)  | Default data readout                     |
 
@@ -854,6 +864,22 @@ When the camera is offline:
   <ha-icon icon="mdi:video-off" aria-hidden="true"></ha-icon>
 </div>
 ```
+
+### 8.8 Unadopted Camera CTA (5X-B08)
+
+Unadopted cameras (e.g., UniFi Protect cameras not yet adopted into the controller) show a specific call-to-action instead of a generic error state. The CTA includes the device name and platform for actionable guidance:
+
+```html
+<!-- Platform known -->
+<button aria-label="Configure ${deviceName} in ${platform}">
+  CONFIGURE ${deviceName.toUpperCase()} IN ${humanizePlatform(platform).toUpperCase()}
+</button>
+
+<!-- Platform unknown -->
+<span>${deviceName.toUpperCase()} REQUIRES SETUP</span>
+```
+
+The button navigates to `/config/devices/device/${deviceId}` — the standard HA device configuration page.
 
 ---
 

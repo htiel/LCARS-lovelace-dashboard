@@ -1117,20 +1117,31 @@ When the media player is `idle`, `standby`, or `off`, the panel simplifies drama
 | Frame border          | `--lcars-african-violet`      | `--lcars-gray` (dimmed)                 |
 | Min-height            | Full panel                    | Reduced (compact idle)                  |
 
-### Idle CSS (v4.23.0 — Standby Compaction)
+### Idle CSS (v5.0.1 — DOM-Level Compaction)
 
-The idle state uses a `.media-idle` class on the panel wrapper. Transport controls, waveform visualizer, and secondary metadata are hidden via CSS cascade — no JavaScript conditional rendering needed.
+The idle state uses conditional DOM rendering — transport controls and volume are removed from the DOM entirely when the player is idle/standby/off, not just hidden with CSS. This prevents screen readers from encountering phantom controls and eliminates stale button state.
+
+```javascript
+// In renderContent():
+${isPlaying || isPaused ? html`
+  <div class="media-transport" role="toolbar" aria-label="Transport controls">
+    ...
+  </div>
+  ${supportsVolume ? html`<div class="media-volume ...">...</div>` : ''}
+` : ''}
+```
+
+Remaining idle visual treatment is CSS-based:
 
 ```css
 .media-idle { opacity: 0.7; }
-.media-idle .media-transport { display: none; }
 .media-idle .lcars-audio-waveform { display: none; }
 .media-idle .media-volume-fill { background: var(--lcars-gray); width: 0% !important; }
 .media-idle .media-volume-pct { color: var(--lcars-gray); }
 .media-idle .media-metadata-extra { display: none; }
 ```
 
-The `.media-metadata-extra` wrapper wraps shuffle/repeat/sensor metadata rows. The Source row renders *outside* this wrapper so it remains visible during standby — it's the most useful ambient information. The 0.7 opacity dims the entire panel, communicating dormancy without hiding the panel entirely.
+The `.media-metadata-extra` wrapper wraps shuffle/repeat/sensor metadata rows. The Source row renders *outside* this wrapper so it remains visible during standby — it's the most useful ambient information. The 0.7 opacity dims the entire panel, communicating dormancy without hiding the panel entirely. Transport controls and volume are not in this CSS section because they are conditionally rendered (removed from DOM) via JavaScript — see above.
 
 ### Transition from Idle to Active
 

@@ -1394,9 +1394,41 @@ LCARS's strict geometric frame doesn't naturally reflow. Strategy: **collapse th
 
 ---
 
-## 11. File Manifest
+## 11. Security Hardening
 
-Source files to create in `custom_components/lcars_dashboard/js/src/`:
+### Static Asset Isolation (5X-B09)
+Only the compiled bundle is served via HTTP. `load_plugins.py` registers `js/dist/` (not `js/`) as the static path, preventing exposure of `src/`, `vendor/`, `package.json`, and `webpack.config.js`.
+
+### YAML !include Path Boundary (5X-B10)
+`_include_yaml()` in `process_yaml.py` validates resolved paths stay within the HA config directory using `os.path.realpath()`. Blocks directory traversal (`../`) and symlink escape. Fails closed when the YAML environment is uninitialized.
+
+### Blueprint YAML Depth Cap (5X-B11)
+`ws_handle_install_blueprint` enforces three layers of defense:
+1. **Size limit**: 256 KB maximum payload
+2. **Parse safety**: `yaml.safe_load()` wrapped in `try/except (YAMLError, RecursionError)`
+3. **Depth check**: Recursive `_check_depth()` rejects nesting beyond 20 levels
+
+### Sidebar Order Validation (5X-B01)
+`ws_handle_sidebar_order_set` validates order items against `DASHBOARD_REGISTRY.keys()` (5 hard-coded dashboard slugs). Items are type-checked (`isinstance(str)`), filtered against the allowlist, and rejected if empty after filtering. The deprecated `_apply_sidebar_order()` function (which used private `async_user_store` API and crossed user-isolation boundaries) has been removed entirely.
+
+### Domain Suppression (5X-B03)
+`SUPPRESS_DOMAINS` in `lcars-entity-utils.js` controls which entity domains are hidden from panel rendering. The `update` domain was removed from this set in v5.0.1 — update entities now render with humanized state text (see Format Utilities below).
+
+### Format Utilities — Update Domain (5X-B02)
+`formatStateValue()` in `lcars-format-utils.js` includes an `UPDATE_STATE_MAP` for the `update` domain:
+- `off` → `UP TO DATE` (isIdle: true)
+- `on` → `UPDATE AVAILABLE` (isIdle: false)
+- `installing` → `INSTALLING` (isIdle: false)
+- Unknown states → `s.toUpperCase()` fallback
+
+### Battery 0% Stale Data Guard (5X-B07)
+When a battery sensor reports 0% with `device_class: battery` and `unit: %`, `formatStateValue()` checks `last_updated` vs `last_changed` timestamps. If `last_changed` exceeds 7 days and no recent updates exist, the value displays as `NO DATA` (isIdle: true) instead of a potentially misleading `0%`.
+
+---
+
+## 12. File Manifest
+
+Source files in `custom_components/lcars_dashboard/js/src/`. Build output: `js/dist/lcars-dashboard.js` (~866 KiB, webpack 5).
 
 | File | Custom Element | Purpose |
 |------|----------------|---------|

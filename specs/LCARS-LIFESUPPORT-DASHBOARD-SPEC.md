@@ -103,7 +103,7 @@
 
 ## §4 Hero Element: Ship-Wide Environment Summary
 
-Full-width 2-row block below header:
+Full-width 2-row block below header. Text uses `color: var(--lcars-black, #000)` for WCAG contrast on colored backgrounds (5X-B05). Labels use `opacity: 0.75` for visual hierarchy while maintaining ≥4.5:1 contrast ratio on bluey (`#8899ff`).
 
 **Row 1** — four data blocks:
 | Block | Content | Source |
@@ -137,8 +137,12 @@ Full-width 2-row block below header:
 - `<lcars-environment-panel>` — atmoscrubber visualization for air purifiers
 - `<lcars-lifesupport-panel>` — composed panel (reference for entity partitioning)
 - Internal Sensors Grid tiles — temp/humidity compact display
-- Sparkline renderer — 24h trend lines for sensors
+- Sparkline renderer — 24h trend lines for sensors (160×32px max dimensions, 5X-B20)
 - `formatNumber()` from `lcars-format-utils.js`
+
+### Entity Filtering (5X-B15)
+
+Camera-derived binary sensors (motion, tamper, CO from Blink/UniFi Protect camera devices) are filtered from Life Support's `_partitionEntities()`. A first pass collects device IDs for all `camera` domain entities, then binary sensors belonging to those devices are skipped. This prevents camera diagnostic sensors from appearing as safety/environmental entities.
 
 ---
 

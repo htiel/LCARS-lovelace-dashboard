@@ -2,6 +2,52 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.0.2-beta.1] — 2026-04-24
+
+### Agent Review Hardening
+Follow-up fixes from Worf (security), Data (code quality), and Geordi (accessibility) agent reviews of v5.0.1-beta.8.
+
+- **B11 hardening**: `yaml.safe_load()` wrapped in `try/except RecursionError` — catches pathological nesting at parse stage before depth check runs
+- **B10 hardening**: `!include` path enforcement now fails closed when YAML environment is uninitialized (`_jinja_base_dir is None`)
+- **B04 extension**: Camera proxy caches cleared in `_onFloorSelected` — same race condition as area transitions
+- **B05 hardening**: Life Support summary label opacity 0.70 → 0.75 (additional WCAG contrast headroom on bluey background)
+- **B20 hardening**: Atmoscrubber scale label opacity 0.6 → 0.7 (improved readability)
+
+## [5.0.1-beta.8] — 2026-04-24
+
+### Epic 0: QA Bug Fixes (17 bugs)
+
+Full QA review by all five specialist agents (Geordi, Wesley, Data, Worf, Riker) identified 23 bugs. This release fixes all 12 CRITICAL and 5 HIGH severity items.
+
+#### Security
+- **B09**: Static asset path restricted to `js/dist/` only — `src/`, `vendor/`, `package.json`, `webpack.config.js` no longer served via HTTP
+- **B10**: `!include` YAML path boundary enforcement via `os.path.realpath()` — blocks directory traversal and symlink escape
+- **B01**: `_apply_sidebar_order()` removed — eliminated private `async_user_store` API that crossed user-isolation boundaries. Sidebar order WS handler now validates against `DASHBOARD_REGISTRY` allowlist
+- **B11**: Blueprint YAML depth capped at 20 levels with 256 KB size limit — prevents resource exhaustion via deeply nested structures
+
+#### Functional
+- **B03**: Update domain entities unsuppressed — now render with humanized LCARS text instead of being hidden
+- **B04**: Camera proxy race condition fixed — `_visibleCameras` and `_loadingCameras` cleared on area transition to prevent stale HTTP 500s
+- **B15**: Camera-derived binary sensors (motion/tamper from Blink, UniFi Protect) filtered from Life Support panel
+- **B08**: Unadopted camera CTA improved — shows device name and platform: "CONFIGURE {name} IN {platform}"
+
+#### Accessibility
+- **B05**: Summary bar contrast fixed — black text on butterscotch/bluey backgrounds (WCAG AA: ~5–10:1 ratios). Removed inline colored styles
+- **B13**: Sidebar area buttons now have `title` and `aria-label` attributes for screen reader and tooltip access
+- **B02**: Update entity states humanized — `off` → "UP TO DATE", `on` → "UPDATE AVAILABLE", `installing` → "INSTALLING"
+- **B14**: Media transport controls and volume hidden when player is idle/standby/off (DOM removal, not CSS hide)
+- **B07**: Battery 0% stale data guard — shows "NO DATA" when `last_changed` exceeds 7 days and no recent updates
+
+#### Panel Polish
+- **B18**: EV charger offline empty state — gray "OFFLINE" badge when status entity is unavailable/unknown
+- **B06**: Model-number suffixes stripped from device names via regex in `_shortenName()`
+- **B19**: Tactical summary bar gains "VIEWSCREENS X/Y ACTIVE" camera badge; red-alert trigger extended to include `pending` alarm state
+- **B20**: AQI and PM2.5 scale labels added below atmoscrubber score numbers; Life Support sparklines enlarged from 120×24 to 160×32px
+
+#### Build
+- Webpack output relocated to `js/dist/` — source files no longer in static serving path
+- Bundle: 866 KiB (webpack 5.106.1)
+
 ## [4.23.0] — 2026-04-22
 
 ### New — Synthesized Audio System

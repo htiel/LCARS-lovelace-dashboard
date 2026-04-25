@@ -42,6 +42,14 @@ The EV Charger introduces a state-driven frame that cycles between three operati
 | **Error / Fault** | Tomato | `--lcars-tomato` | `#ff5555` | Red alert. Standard LCARS error state across all panels |
 | **Unavailable** | Gray | `--lcars-gray` | `#666688` | Offline / sensor unavailable. Standard LCARS disabled state |
 
+### 1.1.1 Offline Empty State (5X-B18)
+
+When the status entity is `unavailable` or `unknown`, `renderContent()` returns an early offline state instead of the full telemetry panel (which would display N/A values). The offline view shows:
+- Gray frame color (`--lcars-gray`)
+- Gray "OFFLINE" badge in header
+- Minimal panel height — no sensor rows, no energy flow SVG, no controls
+- Panel remains in the DOM (not suppressed) so the user sees their charger exists but is unreachable
+
 **Rationale for Lilac as primary/idle color**: Lilac (`#cc55ff`) is currently unused by any panel as a *frame* color. The EV charger is a specialized piece of infrastructure — not an HVAC system (butterscotch), not a media player (african-violet), not a battery (ice). Lilac communicates "dedicated energy coupling" — visually distinct from every other panel in the dashboard. When the charger activates, the frame shifts to butterscotch (charging) or ice (V2G discharge), creating a clear "idle → active" transition. (Source: Bracer Jack Color Theory — 3 colors is the sweet spot; the panel cycles through lilac/butterscotch/ice based on state)
 
 ### 1.2 Border Style

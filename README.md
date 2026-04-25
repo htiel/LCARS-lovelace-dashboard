@@ -8,7 +8,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-4.23.0-blue)
+![Version](https://img.shields.io/badge/version-5.0.2--beta.1-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 [![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 
@@ -39,7 +39,7 @@ Shield viewscreen with state-reactive glow, digit-only PIN keypad with 3-attempt
 - **Integrations**: SimpliSafe, Honeywell Home, Ring, Alarmo
 
 #### Media Panel
-Album art viewscreen with transport controls (play/pause/prev/next/shuffle/repeat) gated by `supported_features` bitmask, click-to-set volume bar with keyboard arrow support, source/shuffle/repeat metadata, 12-bar audio waveform visualizer.
+Album art viewscreen with transport controls (play/pause/prev/next/shuffle/repeat) gated by `supported_features` bitmask, click-to-set volume bar with keyboard arrow support, source/shuffle/repeat metadata, 12-bar audio waveform visualizer. Transport controls and volume hidden when player is idle/standby/off.
 - **Integrations**: Apple TV, HomePod, Sonos, Chromecast, Plex
 
 #### Pool & Spa Panel
@@ -57,7 +57,7 @@ Full-featured irrigation control with zone photo thumbnails (from Rachio cloud, 
 - **Integrations**: Rachio, RainMachine, OpenSprinkler
 
 #### Environment / Atmoscrubber Panel
-Animated particle cylinder with AQI-mapped colors, 24h SVG sparklines, fan/preset controls, CO₂ 3-tier threshold coloring (ice/sunflower/tomato), filter life segment bar (10 segments with critical pulse animation). Sensor-only mode for monitor-only devices (compact readout grid without cylinder). Sparkline labels use canonical device_class names (PM₂.₅, CO₂, VOC).
+Animated particle cylinder with AQI-mapped colors, 24h SVG sparklines, fan/preset controls, CO₂ 3-tier threshold coloring (ice/sunflower/tomato), filter life segment bar (10 segments with critical pulse animation). AQI and PM2.5 scale labels below score numbers for metric disambiguation. Sensor-only mode for monitor-only devices (compact readout grid without cylinder). Sparkline labels use canonical device_class names (PM₂.₅, CO₂, VOC).
 - **Integrations**: Awair, VeSync purifiers, BlueAir (Blue Pure 311i Max), SwitchBot meters (WoTHP/WoTHPc)
 
 #### Power Systems Panel
@@ -70,11 +70,11 @@ CSS reactor core with charge-level color, SOC gauge, power flow I/O arrows, tele
 - **Integrations**: EcoFlow (River, Delta), Victron, Tesla Powerwall, NUT (CyberPower, APC, Tripp Lite, Eaton)
 
 #### EV Charger Panel
-Bidirectional EV charger monitoring with SVG energy flow visualization (animated chevron cascade for charging/V2G, directional flip, idle dashes), 15-row sensor telemetry column (status, session, energy balance, vehicle, charger), solar mode radio strip, max charging current ±adjuster, and cable lock toggle. Dynamic frame color by charger state (charging=butterscotch, V2G=ice, error=tomato, idle=lilac). SoC progress bar with 4-tier color coding.
+Bidirectional EV charger monitoring with SVG energy flow visualization (animated chevron cascade for charging/V2G, directional flip, idle dashes), 15-row sensor telemetry column (status, session, energy balance, vehicle, charger), solar mode radio strip, max charging current ±adjuster, and cable lock toggle. Dynamic frame color by charger state (charging=butterscotch, V2G=ice, error=tomato, idle=lilac). SoC progress bar with 4-tier color coding. Offline empty state with gray "OFFLINE" badge when charger is unavailable.
 - **Integrations**: Wallbox (Vilya V2G, Pulsar Plus)
 
 #### Life Support Panel
-Area-level composite panel aggregating climate, environment (air quality), and ambient sensor entities into a unified view. Four graceful degradation configurations: full (thermostat + purifier + sensors), atmos-only, climate-only, and sensor-hero (standalone temp/humidity). Composes existing climate and environment panels as nested substations. Adaptive sparkline tray shows 24-hour trends for temperature, humidity, AQI, PM2.5, CO₂, VOC. HomeKit air purifiers (fan + AQ sensor on same device) auto-detected.
+Area-level composite panel aggregating climate, environment (air quality), and ambient sensor entities into a unified view. Four graceful degradation configurations: full (thermostat + purifier + sensors), atmos-only, climate-only, and sensor-hero (standalone temp/humidity). Composes existing climate and environment panels as nested substations. Adaptive sparkline tray (160×32px) shows 24-hour trends for temperature, humidity, AQI, PM2.5, CO₂, VOC. Camera-derived binary sensors (motion/tamper) auto-filtered. HomeKit air purifiers (fan + AQ sensor on same device) auto-detected.
 - **Integrations**: Any combination of climate entities, air quality devices, and ambient sensors in an area, plus HomeKit Controller purifiers (Smartmi P1, etc.)
 
 #### Illumination Control Panel
@@ -121,9 +121,13 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 - **Setpoint clamping** — Temperature controls validated against entity min/max with absolute bounds
 - **Service call throttling** — Token-bucket rate limiter on all device control calls
 - **YAML concurrency** — All read-modify-write WebSocket handlers protected by per-file `asyncio.Lock`
+- **Static asset isolation** — Only compiled bundle served via HTTP (`js/dist/`); source files, `package.json`, and webpack config not exposed
+- **!include path boundary** — YAML `!include` directives validated against HA config directory via `os.path.realpath()` — blocks traversal and symlink escape
+- **Blueprint depth cap** — Blueprint YAML limited to 256 KB and 20 levels of nesting to prevent resource exhaustion
+- **Sidebar order validation** — Dashboard order validated against allowlist; no private HA API usage
 - **Skip-nav link** — Hidden link jumps to `<main>` on first Tab press
 - **ARIA landmarks** — Full keyboard navigation, `role` structure, `aria-live` announcements
-- **WCAG 2.2 AA** — Color-blind safe indicators, `focus-visible` outlines (ice), 24×24px minimum targets
+- **WCAG 2.2 AA** — Color-blind safe indicators, `focus-visible` outlines (ice), 24×24px minimum targets, summary bar contrast ≥4.5:1
 - **Self-contained** — All fonts (Antonio) and dependencies vendored locally, no external CDN calls
 
 ## Panel Gallery
@@ -272,7 +276,7 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 |-------|-----------|
 | HA Integration | Python custom component (`lcars_dashboard`) |
 | Frontend | Lit Element v2 web components — 12 extracted panel elements + shared base class |
-| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~763 KiB) |
+| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~866 KiB), output to `js/dist/` |
 | Styling | 3-tier CSS composition: base variables → component shadow DOM → panel-specific modules |
 | Components | 7 shared components: `<lcars-panel-frame>`, `<lcars-sensor-row>`, `<lcars-section-divider>`, `<lcars-option-strip>`, `<lcars-setpoint>`, `<lcars-segmented-bar>`, `<lcars-summary-badge>` |
 | Communication | WebSocket API + window custom events |

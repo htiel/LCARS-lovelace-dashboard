@@ -92,7 +92,7 @@
 
 ## §4 Hero Element: Warp Core Summary Strip
 
-Full-width 2-row block below header:
+Full-width 2-row block below header. Text uses `color: var(--lcars-black, #000)` for WCAG contrast on butterscotch background (5X-B05). Labels use `opacity: 0.7` for visual hierarchy while maintaining ≥4.5:1 contrast ratio.
 
 **Row 1** — three data blocks:
 | Block | Content | Source |

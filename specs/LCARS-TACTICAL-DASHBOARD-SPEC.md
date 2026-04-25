@@ -96,18 +96,20 @@ Full-width strip below header elbow. Three data blocks:
 | SHIELDS | Alarm state (DISARMED / ARMED HOME / ARMED AWAY / TRIGGERED) | `alarm_control_panel` state |
 | PERIMETER | `{closed}/{total} SECURE` | Count of door/window sensors |
 | SENSORS | `ALL CLEAR` or `{count} ALERTS` | Count of triggered smoke/safety sensors |
+| VIEWSCREENS | `{active}/{total} ACTIVE` | Count of active camera entities (5X-B19) |
 
 **Background color** = alarm state color:
 - Disarmed: `--lcars-ice`
 - Armed Home: `--lcars-butterscotch`
 - Armed Away: `--lcars-sunflower`
+- Pending: `--lcars-sunflower` (pulsing)
 - Triggered: `--lcars-tomato`
 
 ---
 
 ## §5 Red Alert Mode
 
-When `alarm_control_panel.state === 'triggered'`:
+When `alarm_control_panel.state === 'triggered'` or `alarm_control_panel.state === 'pending'`:
 - Frame elbows + header/footer bars pulse `tomato ↔ black` at 1Hz
 - Summary bar: `RED ALERT — INTRUSION DETECTED`
 - `prefers-reduced-motion`: static tomato, no pulse

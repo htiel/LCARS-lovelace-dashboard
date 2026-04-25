@@ -225,7 +225,34 @@ The centerpiece visualization: a vertical cylinder representing the air filtrati
 │  ▒  ░    │
 │ ░    ▒ ░ │
 │   ░   ░  │
+│   [42]   │  ← AQI/PM2.5 score overlay
+│   AQI    │  ← scale label (0.5rem, uppercase, 70% opacity)
 └──────────┘  ← rounded cap (dirty air intake)
+```
+
+### Scale Labels (5X-B20)
+
+A small text label below the score number inside the cylinder disambiguates between AQI and PM2.5 readings. Without this label, users cannot tell which metric the number represents.
+
+```html
+<div class="scrubber-score">${score}</div>
+<div class="scrubber-scale-label">${isAqi ? 'AQI' : 'PM2.5'}</div>
+```
+
+```css
+.scrubber-scale-label {
+  position: absolute;
+  bottom: 0.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--lcars-space-white);
+  opacity: 0.7;
+  z-index: 1;
+  text-shadow: 0 0 4px rgba(0,0,0,0.8);
+}
 ```
 
 ### Tick Marks (AQI Scale)

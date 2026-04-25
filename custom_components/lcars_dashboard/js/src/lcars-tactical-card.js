@@ -490,7 +490,29 @@ class LcarsTacticalCard extends LitElement {
           </button>
         ` : ''}
       </div>
+      <div class="tac-lock-grid">
+        ${allLocks.map(l => {
+          const s = this._hass?.states?.[l.entity?.entity_id] || l.state;
+          const name = (s?.attributes?.friendly_name || l.entity?.entity_id || '').toUpperCase();
+          const isLocked = s?.state === 'locked';
+          return html`
+            <button class="tac-lock-pill ${isLocked ? 'locked' : 'unlocked'}"
+                    role="switch" aria-checked="${isLocked}"
+                    aria-label="${name}: ${isLocked ? 'locked' : 'unlocked'}"
+                    @click=${() => this._toggleLock(l.entity.entity_id, isLocked)}>
+              <ha-icon .icon=${isLocked ? 'mdi:lock' : 'mdi:lock-open'} style="--mdc-icon-size:18px"></ha-icon>
+              <span class="tac-lock-name">${name}</span>
+              <span class="tac-lock-state">${isLocked ? 'ENGAGED' : 'UNSECURED'}</span>
+            </button>
+          `;
+        })}
+      </div>
     `;
+  }
+
+  _toggleLock(entityId, isLocked) {
+    this._hass.callService('lock', isLocked ? 'unlock' : 'lock', { entity_id: entityId });
+    lcarsAudio.play(isLocked ? 'switchToggle' : 'lockToggle');
   }
 
   _lockAll(locks) {
@@ -689,6 +711,28 @@ class LcarsTacticalCard extends LitElement {
         }
         .tac-lock-all-btn:hover { filter: brightness(1.2); }
         .tac-lock-all-btn:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 2px; }
+
+        /* Lock individual pills */
+        .tac-lock-grid {
+          display: grid; grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr));
+          gap: 0.375rem;
+        }
+        .tac-lock-pill {
+          display: flex; align-items: center; gap: 0.5rem; height: 3rem; padding: 0 1rem;
+          border: none; border-radius: 0 var(--lcars-btn-radius, 1.5rem) var(--lcars-btn-radius, 1.5rem) 0;
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1rem;
+          text-transform: uppercase; cursor: pointer; transition: background 200ms ease, filter 200ms ease;
+        }
+        .tac-lock-pill.locked {
+          background: var(--lcars-ice, #99ccff); color: var(--lcars-black, #000);
+        }
+        .tac-lock-pill.unlocked {
+          background: var(--lcars-tomato, #ff5555); color: var(--lcars-black, #000);
+        }
+        .tac-lock-pill:hover { filter: brightness(1.2); }
+        .tac-lock-pill:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 2px; }
+        .tac-lock-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tac-lock-state { font-size: 0.75rem; opacity: 0.8; flex-shrink: 0; }
 
         /* ─── Timeline ─── */
         .tac-timeline {

@@ -252,30 +252,43 @@ class LcarsTacticalCard extends LitElement {
   _updateDetectionStates() {
     if (!this._hass) return;
     const states = this._hass.states || {};
-    // Scan for motion + smart detection binary sensors
-    for (const [eid, s] of Object.entries(states)) {
-      if (!eid.startsWith('binary_sensor.') || s.state !== 'on') continue;
-      const dc = s.attributes?.device_class;
-      if (dc !== 'motion' && dc !== 'occupancy') continue;
-      // Find paired camera
-      const camEid = eid.replace('binary_sensor.', 'camera.').replace(/_motion$/, '_high').replace(/_motion$/, '');
-      if (!states[camEid]) continue;
-      this._escalateCamera(camEid, DETECT_MOTION);
+    const entities = this._hass.entities || {};
+
+    // Build camera entity_id set for quick lookup
+    const cameraEids = new Set();
+    for (const eid of Object.keys(states)) {
+      if (eid.startsWith('camera.') && !/_low$|_medium$|_insecure$/.test(eid)) {
+        cameraEids.add(eid);
+      }
     }
-    // Check event entities for smart detections (person/vehicle)
-    for (const [eid, s] of Object.entries(states)) {
-      if (!eid.startsWith('event.') || !/_smart_detection/.test(eid)) continue;
-      const eventType = s.attributes?.event_type;
-      if (!eventType) continue;
-      // Find paired camera by device
-      const camBase = eid.replace('event.', 'camera.').replace(/_smart_detection$/, '_high');
-      const camEid = states[camBase] ? camBase : eid.replace('event.', 'camera.').replace(/_smart_detection$/, '');
-      if (!states[camEid]) continue;
-      const now = Date.now();
-      const lastChanged = new Date(s.last_changed).getTime();
-      if (now - lastChanged > 60000) continue; // only recent events
-      if (eventType === 'person') this._escalateCamera(camEid, DETECT_PERSON);
-      else if (eventType === 'vehicle') this._escalateCamera(camEid, DETECT_VEHICLE);
+
+    // For each camera, find paired detection binary sensors by device_id
+    for (const camEid of cameraEids) {
+      const camEntity = entities[camEid];
+      if (!camEntity?.device_id) continue;
+
+      // Find all binary sensors on same device
+      let hasPersonDetection = false;
+      let hasVehicleDetection = false;
+      let hasMotionDetection = false;
+
+      for (const [eid, s] of Object.entries(states)) {
+        if (!eid.startsWith('binary_sensor.') || s.state !== 'on') continue;
+        const e = entities[eid];
+        if (!e || e.device_id !== camEntity.device_id) continue;
+
+        // Check by entity_id pattern (UniFi Protect naming)
+        if (/_person_detected$/.test(eid)) hasPersonDetection = true;
+        else if (/_vehicle_detected$/.test(eid)) hasVehicleDetection = true;
+        else if (/_motion$|_motion_detected$/.test(eid)) hasMotionDetection = true;
+        // Also check device_class
+        else if (s.attributes?.device_class === 'motion' || s.attributes?.device_class === 'occupancy') hasMotionDetection = true;
+      }
+
+      // Escalate camera to highest detected level
+      if (hasPersonDetection) this._escalateCamera(camEid, DETECT_PERSON);
+      else if (hasVehicleDetection) this._escalateCamera(camEid, DETECT_VEHICLE);
+      else if (hasMotionDetection) this._escalateCamera(camEid, DETECT_MOTION);
     }
   }
 

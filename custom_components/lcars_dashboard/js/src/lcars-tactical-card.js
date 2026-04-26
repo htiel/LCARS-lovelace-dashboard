@@ -462,7 +462,7 @@ class LcarsTacticalCard extends LitElement {
 
     return html`
       <div class="tac-camera" data-state="${camState}" data-level="${level}"
-           style="--cam-border:${borderColor}; --cam-scale:${scale}; --cam-glow:${glow}"
+           style="--cam-border:${borderColor}; --cam-scale:${scale}; --cam-glow:${glow}; --cam-z:${level > 0 ? 10 + level * 10 : 1}"
            @click=${() => showMoreInfo(eid)}
            role="button" tabindex="0" aria-label="${name}${levelLabel ? ` — ${levelLabel} DETECTED` : ''}">
         <div class="tac-camera__connecting">
@@ -646,17 +646,19 @@ class LcarsTacticalCard extends LitElement {
         /* ─── Camera Grid ─── */
         .tac-camera-grid {
           display: grid; grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
-          gap: 0.375rem;
+          gap: 0.375rem; overflow: visible;
         }
+        .tac-camera-active { padding: 0.5rem 0; }
         .tac-camera {
-          position: relative; border-radius: 0.25rem; overflow: hidden;
+          position: relative; border-radius: 0.25rem; overflow: visible;
           cursor: pointer; border: 2px solid var(--cam-border, var(--lcars-butterscotch));
           aspect-ratio: 16/9; background: var(--lcars-bg, #000);
-          transform: scale(var(--cam-scale, 1));
+          transform: scale(var(--cam-scale, 1)); transform-origin: center center;
           box-shadow: var(--cam-glow, none);
           transition: transform 300ms ease, box-shadow 300ms ease, border-color 300ms ease;
+          z-index: var(--cam-z, 1);
         }
-        .tac-camera img { width: 100%; height: 100%; object-fit: cover; display: block; position: relative; z-index: 0; }
+        .tac-camera img { width: 100%; height: 100%; object-fit: cover; display: block; position: relative; z-index: 0; border-radius: 0.2rem; }
         .tac-camera__label {
           position: absolute; bottom: 0; left: 0; right: 0; z-index: 3;
           padding: 0.25rem 0.5rem; font-family: var(--lcars-font, 'Antonio', sans-serif);
@@ -671,7 +673,7 @@ class LcarsTacticalCard extends LitElement {
         .tac-camera__connecting, .tac-camera__offline {
           position: absolute; inset: 0; display: flex; flex-direction: column;
           align-items: center; justify-content: center; gap: 0.25rem;
-          background: var(--lcars-bg, #000); z-index: 2;
+          background: var(--lcars-bg, #000); z-index: 2; border-radius: 0.2rem;
           opacity: 0; visibility: hidden; transition: opacity 300ms ease-out, visibility 300ms ease-out;
         }
         .tac-camera[data-state="connecting"] .tac-camera__connecting {

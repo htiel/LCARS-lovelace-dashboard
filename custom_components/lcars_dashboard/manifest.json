@@ -6,7 +6,7 @@
   "dependencies": ["lovelace", "http", "frontend"],
   "codeowners": ["@htiel"],
   "config_flow": true,
-  "version": "5.1.0-beta.3",
+  "version": "5.1.0-beta.4",
   "iot_class": "calculated",
   "homeassistant": "2025.4.0"
 }

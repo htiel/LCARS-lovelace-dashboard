@@ -170,6 +170,66 @@ Full visual overhaul of the Tactical dashboard with inspiration from professiona
 
 ---
 
+## Epic 4 · Life Support Dashboard Enhancements
+
+> Visual comparison against ChatGPT Life Support mockup (Apr 26 2026). Wesley gap analysis.
+
+#### 5X-LS-4 · Air Purifier Table Enrichment — `TODO` · Priority: MEDIUM · Size: M
+Add MODEL column, FAN SPEED as fraction, AIR QUALITY IMPROVEMENT % with inline bar. Requires device model attribute lookup and fan speed mapping.
+
+#### 5X-LS-5 · Temp/Humidity Trend Sparklines — `TODO` · Priority: MEDIUM · Size: M
+Per-zone mini sparkline in TREND column. Requires `recorder/statistics_during_period` WS API for 24h history.
+
+#### 5X-LS-6 · Outdoor Temp/Humidity Row — `TODO` · Priority: LOW · Size: S
+Add outdoor row from weather integration entity (`weather.home`) to temp table.
+
+#### 5X-LS-7 · Air Quality History (24H) Chart — `TODO` · Priority: LOW · Size: M
+AQI line chart with GOOD/MODERATE/UNHEALTHY zone bands. Requires statistics API.
+
+#### 5X-LS-8 · Environment History (24H) Chart — `TODO` · Priority: LOW · Size: M
+Dual-axis temp + humidity line chart. Same statistics API dependency.
+
+#### 5X-LS-9 · Alerts & Notifications Panel — `TODO` · Priority: MEDIUM · Size: M
+Timestamped event log with severity dots and source labels. Shares pattern with 5X-TAC-1 (tactical event timeline). Requires `logbook/get_events` WS API.
+
+#### 5X-LS-10 · Pluralization Fix — `DONE` · Priority: LOW · Size: S
+"1 ZONES" → "1 ZONE". Singular/plural for all summary counts.
+
+#### 5X-LS-11 · CO₂ Warning Threshold — `TODO` · Priority: MEDIUM · Size: S
+Add color-coded threshold indicator for CO₂ >1000 ppm. Currently shows 1229 PPM as neutral text.
+
+---
+
+## Epic 5 · Engineering Dashboard Enhancements
+
+> Visual comparison against ChatGPT Power Distribution mockup (Apr 26 2026). Wesley gap analysis.
+
+#### 5X-ENG-1 · Power Flow Topology Visualization — `TODO` · Priority: HIGH · Size: M
+Visual connection between Sources → Distribution Bus → Load Circuits using solid LCARS structural bars as "power conduits". Currently sections are stacked without visual flow connection.
+
+#### 5X-ENG-2 · Load Grouping Summary — `TODO` · Priority: MEDIUM · Size: M
+Group summary row above circuit list showing per-category totals (HVAC total, LIGHTING total, etc.). Requires circuit classification logic by entity name heuristics.
+
+#### 5X-ENG-3 · Voltage/Frequency/Current Data — `TODO` · Priority: LOW · Size: S
+Add structured key-value fields to source cards if voltage/frequency entities exist.
+
+#### 5X-ENG-4 · Power History (24H) Chart — `TODO` · Priority: LOW · Size: M
+Three-line chart: total production, battery power, total consumption. Shared chart renderer with 5X-LS-7/8.
+
+#### 5X-ENG-5 · Power Balance Metric — `TODO` · Priority: LOW · Size: S
+Production − Consumption computed metric in System Status sidebar.
+
+#### 5X-ENG-6 · Source Contribution Proportional Bar — `TODO` · Priority: LOW · Size: S
+Stacked horizontal bar showing Grid/Battery/Generator proportions (NOT donut chart).
+
+#### 5X-ENG-7 · Grid 0W Investigation — `TODO` · Priority: HIGH · Size: S
+Grid shows 0W ONLINE while house draws 2550W. Likely wrong entity matched by GRID_KEYWORDS regex or missing grid sensor. Investigate Emporia Vue main panel entity.
+
+#### 5X-ENG-8 · Battery Classification Cleanup — `TODO` · Priority: MEDIUM · Size: S
+Motion sensors and Wallbox Vilya showing as battery cards. Filter out non-storage battery entities (device_class=battery but not actual energy storage devices).
+
+---
+
 ## Epic 1 · Branch & Release Setup
 
 ### 5X-1 · Create 5.0 Branch + HACS Beta Track — `TODO` · Priority: CRITICAL · Size: S

@@ -139,12 +139,12 @@ class LcarsLifeSupportCard extends LitElement {
       <div class="ls-overview">
         <div class="ls-overview-card">
           <span class="ls-ov-title">AIR PURIFIERS</span>
-          <span class="ls-ov-value">${purifiers.length} UNITS</span>
+          <span class="ls-ov-value">${purifiers.length} ${purifiers.length === 1 ? 'UNIT' : 'UNITS'}</span>
           <span class="ls-ov-status" style="color:var(--lcars-ice)">ALL NORMAL</span>
         </div>
         <div class="ls-overview-card">
           <span class="ls-ov-title">THERMOSTATS</span>
-          <span class="ls-ov-value">${thermostats.length} ZONES</span>
+          <span class="ls-ov-value">${thermostats.length} ${thermostats.length === 1 ? 'ZONE' : 'ZONES'}</span>
           <span class="ls-ov-status">${heating > 0 ? `${heating} HEATING` : cooling > 0 ? `${cooling} COOLING` : 'ALL IDLE'}</span>
         </div>
         <div class="ls-overview-card">
@@ -282,7 +282,7 @@ class LcarsLifeSupportCard extends LitElement {
         <div class="ls-section-header">
           <span class="ls-section-label">TEMPERATURE & HUMIDITY SENSORS</span>
           <span class="ls-section-line"></span>
-          <span class="ls-sensor-count">${rows.length} ZONES</span>
+          <span class="ls-sensor-count">${rows.length} ${rows.length === 1 ? 'ZONE' : 'ZONES'}</span>
         </div>
         <div class="ls-purifier-table">
           <div class="ls-table-header">

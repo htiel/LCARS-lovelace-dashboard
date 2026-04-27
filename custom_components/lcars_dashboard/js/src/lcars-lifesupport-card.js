@@ -1,11 +1,12 @@
 /**
- * lcars-lifesupport-card.js
+ * lcars-lifesupport-card.js — v5.1.0 Life Support Dashboard Redesign
  *
- * Life Support (Environmental) Dashboard — climate, temperature, humidity,
- * air quality, fans, humidifiers across all areas, grouped by floor → area.
+ * Inspired by ChatGPT LCARS Life Support mockup (Apr 26 2026).
+ * Multi-panel layout: overview cards, air quality, purifiers table,
+ * temp/humidity grid, thermostat zones, system controls.
  *
- * Filter: ALL / CLIMATE (thermostats + temp/humidity) / AIR (AQ sensors + fans)
- * v5.0.0 — 5X-2.4
+ * Entity sources: Nest thermostats, BlueAir purifiers, Awair AQ sensors,
+ * SwitchBot meters, VeSync purifiers, HomeKit controllers, WeatherFlow/Link.
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
@@ -23,8 +24,9 @@ const FILTER_AIR = 'air';
 
 const CLIMATE_DOMAINS = new Set(['climate']);
 const CLIMATE_CLASSES = new Set(['temperature', 'humidity']);
-const AIR_DOMAINS = new Set(['fan', 'humidifier', 'air_quality']);
-const AIR_CLASSES = new Set(['pm25', 'pm10', 'carbon_dioxide', 'volatile_organic_compounds', 'aqi']);
+const AIR_DOMAINS = new Set(['fan', 'humidifier']);
+const AIR_CLASSES = new Set(['pm25', 'pm10', 'carbon_dioxide', 'volatile_organic_compounds', 'aqi', 'carbon_monoxide']);
+const PURIFIER_PLATFORMS = new Set(['ha_blueair', 'vesync', 'homekit_controller']);
 
 class LcarsLifeSupportCard extends LitElement {
 
@@ -34,7 +36,7 @@ class LcarsLifeSupportCard extends LitElement {
 
   constructor() {
     super();
-    this.hass = null; this._config = {}; this.filter = FILTER_ALL;
+    this._hass = null; this._config = {}; this.filter = FILTER_ALL;
     this._entityCache = new Map();
     this._onFilter = (e) => { this.filter = e.detail.filter; };
   }
@@ -44,242 +46,329 @@ class LcarsLifeSupportCard extends LitElement {
   setConfig(config) { this._config = config || {}; }
   set hass(val) { const old = this._hass; this._hass = val; if (val && old !== val) { this._entityCache.clear(); this.requestUpdate('hass', old); } }
   get hass() { return this._hass; }
-  getCardSize() { return 12; }
+  getCardSize() { return 16; }
 
-  _getAreasWithEnv() {
-    if (!this._hass) return [];
+  /* ═══ Entity Discovery ═══ */
+  _discoverAll() {
+    if (!this._hass) return { thermostats: [], purifiers: [], tempSensors: [], aqSensors: [], fans: [] };
     const floors = getFloors(this._hass);
     const floorMap = getAreasByFloor(this._hass);
-    const result = [];
+    const thermostats = [], purifiers = [], tempSensors = [], aqSensors = [], fans = [];
+    const entities = this._hass.entities || {};
+    const states = this._hass.states || {};
 
+    // Scan all areas
+    const allAreas = [];
     for (const floor of floors) {
       const areas = floorMap.get(floor.floor_id) || [];
-      const floorAreas = [];
-      for (const area of areas) {
-        const data = this._resolveArea(area);
-        if (data) floorAreas.push(data);
-      }
-      if (floorAreas.length > 0) result.push({ floor, areas: floorAreas });
+      for (const area of areas) allAreas.push({ floor, area });
     }
     const noFloor = floorMap.get(null) || [];
-    const orphans = [];
-    for (const area of noFloor) { const data = this._resolveArea(area); if (data) orphans.push(data); }
-    if (orphans.length > 0) result.push({ floor: null, areas: orphans });
-    return result;
-  }
+    for (const area of noFloor) allAreas.push({ floor: null, area });
 
-  _resolveArea(area) {
-    const raw = getAreaEntities(this._hass, area.area_id, this._entityCache);
-    const climateEntities = [];
-    const airEntities = [];
+    for (const { floor, area } of allAreas) {
+      const raw = getAreaEntities(this._hass, area.area_id, this._entityCache);
+      for (const e of raw) {
+        const domain = e.entity_id.split('.')[0];
+        const state = states[e.entity_id];
+        if (!state) continue;
+        const entry = { entity: e, domain, state, area, floor };
+        if (isDiagnosticEntity(entry)) continue;
+        const dc = state.attributes?.device_class || '';
+        const platform = e.platform || '';
 
-    for (const e of raw) {
-      const domain = e.entity_id.split('.')[0];
-      const state = this._hass.states?.[e.entity_id];
-      if (!state) continue;
-      const entry = { entity: e, domain, state };
-      if (isDiagnosticEntity(entry)) continue;
-      const dc = state.attributes?.device_class || '';
+        // Skip pool/spa climate entities
+        if (domain === 'climate' && /pool|spa|fridge|freezer/i.test(e.entity_id)) continue;
 
-      if (CLIMATE_DOMAINS.has(domain) || CLIMATE_CLASSES.has(dc)) {
-        climateEntities.push(entry);
-      } else if (AIR_DOMAINS.has(domain) || AIR_CLASSES.has(dc) || isEnvironmentEntity(entry)) {
-        airEntities.push(entry);
+        if (domain === 'climate') { thermostats.push(entry); continue; }
+        if (domain === 'fan' && PURIFIER_PLATFORMS.has(platform)) { purifiers.push(entry); continue; }
+        if (domain === 'fan') { fans.push(entry); continue; }
+        if (dc === 'temperature' && !/drive_|cpu_|phy_|display_|raw_|cook_|water_/i.test(e.entity_id)) { tempSensors.push(entry); continue; }
+        if (dc === 'humidity') { tempSensors.push(entry); continue; }
+        if (AIR_CLASSES.has(dc) || /filter_life/i.test(e.entity_id)) { aqSensors.push(entry); continue; }
       }
     }
-
-    const all = [...climateEntities, ...airEntities];
-    if (all.length === 0) return null;
-    return { area, all, climateEntities, airEntities };
+    return { thermostats, purifiers, tempSensors, aqSensors, fans };
   }
 
-  _getFiltered(data) {
-    if (this.filter === FILTER_CLIMATE) return data.climateEntities.length > 0 ? data.climateEntities : null;
-    if (this.filter === FILTER_AIR) return data.airEntities.length > 0 ? data.airEntities : null;
-    return data.all;
-  }
+  /* ═══ Overview Summary Cards (mockup top row) ═══ */
+  _renderOverview(data) {
+    const { thermostats, purifiers, tempSensors, aqSensors } = data;
+    // Thermostat summary
+    let heating = 0, cooling = 0, idle = 0;
+    for (const t of thermostats) {
+      const action = t.state?.attributes?.hvac_action || t.state?.state || 'idle';
+      if (action === 'heating') heating++;
+      else if (action === 'cooling') cooling++;
+      else idle++;
+    }
+    // AQ summary
+    let worstAqi = 0, aqiStatus = 'GOOD';
+    for (const e of aqSensors) {
+      if (e.state?.attributes?.device_class === 'aqi') {
+        const v = Number(e.state?.state);
+        if (!isNaN(v) && v > worstAqi) worstAqi = v;
+      }
+    }
+    if (worstAqi > 100) aqiStatus = 'UNHEALTHY';
+    else if (worstAqi > 50) aqiStatus = 'MODERATE';
 
-  /* ─── Summary ─── */
-
-  _getGlobalSummary(floorGroups) {
+    // Avg indoor temp
     let tempSum = 0, tempCount = 0;
-    let hvacHeating = 0, hvacCooling = 0, hvacIdle = 0;
-    let worstAqi = 0, worstAqiArea = '';
-
-    for (const { areas } of floorGroups) {
-      for (const data of areas) {
-        for (const e of data.climateEntities) {
-          const state = this._hass?.states?.[e.entity?.entity_id] || e.state;
-          if (e.domain === 'climate') {
-            const action = state?.attributes?.hvac_action || state?.state;
-            if (action === 'heating') hvacHeating++;
-            else if (action === 'cooling') hvacCooling++;
-            else hvacIdle++;
-          }
-          if (state?.attributes?.device_class === 'temperature') {
-            const v = parseFloat(state?.state);
-            if (!isNaN(v)) { tempSum += v; tempCount++; }
-          }
-        }
-        for (const e of data.airEntities) {
-          const state = this._hass?.states?.[e.entity?.entity_id] || e.state;
-          if (state?.attributes?.device_class === 'aqi') {
-            const v = parseFloat(state?.state);
-            if (!isNaN(v) && v > worstAqi) { worstAqi = v; worstAqiArea = data.area.name; }
-          }
-        }
+    for (const e of tempSensors) {
+      if (e.state?.attributes?.device_class === 'temperature') {
+        const v = Number(e.state?.state);
+        if (!isNaN(v) && v > 0 && v < 120) { tempSum += v; tempCount++; }
       }
     }
-    const avgTemp = tempCount > 0 ? Math.round(tempSum / tempCount) : null;
-    const weatherEid = Object.keys(this._hass?.states || {}).find(k => k.startsWith('weather.'));
-    const outdoor = weatherEid ? this._hass.states[weatherEid]?.attributes?.temperature : null;
-    return { avgTemp, outdoor, worstAqi, worstAqiArea, hvacHeating, hvacCooling, hvacIdle };
+    const avgTemp = tempCount > 0 ? Math.round(tempSum / tempCount * 10) / 10 : null;
+
+    // Avg humidity
+    let humSum = 0, humCount = 0;
+    for (const e of tempSensors) {
+      if (e.state?.attributes?.device_class === 'humidity') {
+        const v = Number(e.state?.state);
+        if (!isNaN(v)) { humSum += v; humCount++; }
+      }
+    }
+    const avgHum = humCount > 0 ? Math.round(humSum / humCount) : null;
+
+    const aqiColor = worstAqi <= 50 ? 'var(--lcars-ice)' : worstAqi <= 100 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+
+    return html`
+      <div class="ls-overview">
+        <div class="ls-overview-card">
+          <span class="ls-ov-title">AIR PURIFIERS</span>
+          <span class="ls-ov-value">${purifiers.length} UNITS</span>
+          <span class="ls-ov-status" style="color:var(--lcars-ice)">ALL NORMAL</span>
+        </div>
+        <div class="ls-overview-card">
+          <span class="ls-ov-title">THERMOSTATS</span>
+          <span class="ls-ov-value">${thermostats.length} ZONES</span>
+          <span class="ls-ov-status">${heating > 0 ? `${heating} HEATING` : cooling > 0 ? `${cooling} COOLING` : 'ALL IDLE'}</span>
+        </div>
+        <div class="ls-overview-card">
+          <span class="ls-ov-title">AIR QUALITY</span>
+          <span class="ls-ov-value" style="color:${aqiColor}">${worstAqi > 0 ? worstAqi : '—'} AQI</span>
+          <span class="ls-ov-status" style="color:${aqiColor}">${aqiStatus}</span>
+        </div>
+        <div class="ls-overview-card">
+          <span class="ls-ov-title">ENVIRONMENT</span>
+          <span class="ls-ov-value">${avgTemp != null ? `${avgTemp}°` : '—'}</span>
+          <span class="ls-ov-status">${avgHum != null ? `${avgHum}% HUMIDITY` : ''}</span>
+        </div>
+      </div>
+    `;
   }
 
-  _getComfortColor(tempF) {
-    if (tempF == null) return 'var(--lcars-gray)';
-    if (tempF < 68) return 'var(--lcars-bluey, #8899ff)';
-    if (tempF <= 74) return 'var(--lcars-ice, #99ccff)';
-    if (tempF <= 80) return 'var(--lcars-butterscotch, #ff9966)';
-    return 'var(--lcars-tomato, #ff5555)';
+  /* ═══ Thermostat Zones (mockup bottom-left) ═══ */
+  _renderThermostats(thermostats) {
+    if (thermostats.length === 0) return '';
+    return html`
+      <div class="ls-section">
+        <div class="ls-section-header">
+          <span class="ls-section-label">THERMOSTAT ZONES</span>
+          <span class="ls-section-line"></span>
+        </div>
+        <div class="ls-thermo-grid">
+          ${thermostats.map(t => {
+            const s = this._hass?.states?.[t.entity?.entity_id] || t.state;
+            const name = (t.area?.name || s?.attributes?.friendly_name || '').toUpperCase();
+            const currentTemp = s?.attributes?.current_temperature;
+            const targetTemp = s?.attributes?.temperature;
+            const action = s?.attributes?.hvac_action || s?.state || 'idle';
+            const actionColor = action === 'heating' ? 'var(--lcars-butterscotch)' : action === 'cooling' ? 'var(--lcars-ice)' : 'var(--lcars-gray)';
+            const actionLabel = action.toUpperCase();
+            return html`
+              <div class="ls-thermo-card" @click=${() => showMoreInfo(t.entity.entity_id)}>
+                <span class="ls-thermo-name">${name}</span>
+                <span class="ls-thermo-temp" style="color:${actionColor}">${currentTemp != null ? `${Math.round(currentTemp * 10) / 10}°` : '—'}</span>
+                <span class="ls-thermo-action" style="color:${actionColor}">${actionLabel}</span>
+                ${targetTemp != null ? html`<span class="ls-thermo-setpoint">${targetTemp}° SETPOINT</span>` : ''}
+              </div>
+            `;
+          })}
+        </div>
+      </div>
+    `;
   }
 
-  _getAqiColor(aqi) {
-    if (aqi <= 50) return 'var(--lcars-ice, #99ccff)';
-    if (aqi <= 100) return 'var(--lcars-sunflower, #ffcc99)';
-    if (aqi <= 150) return 'var(--lcars-butterscotch, #ff9966)';
-    return 'var(--lcars-tomato, #ff5555)';
+  /* ═══ Air Purifiers Table (mockup middle-left) ═══ */
+  _renderPurifiers(purifiers, aqSensors) {
+    if (purifiers.length === 0) return '';
+    // Group AQ sensors by device_id to pair with purifiers
+    const deviceAq = new Map();
+    for (const e of aqSensors) {
+      const did = e.entity?.device_id;
+      if (!did) continue;
+      if (!deviceAq.has(did)) deviceAq.set(did, []);
+      deviceAq.get(did).push(e);
+    }
+
+    return html`
+      <div class="ls-section">
+        <div class="ls-section-header">
+          <span class="ls-section-label">AIR PURIFIERS</span>
+          <span class="ls-section-line"></span>
+        </div>
+        <div class="ls-purifier-table">
+          <div class="ls-table-header">
+            <span class="ls-th">LOCATION</span>
+            <span class="ls-th">STATUS</span>
+            <span class="ls-th">SPEED</span>
+            <span class="ls-th">FILTER</span>
+            <span class="ls-th">PM2.5</span>
+          </div>
+          ${purifiers.map(p => {
+            const s = this._hass?.states?.[p.entity?.entity_id] || p.state;
+            const name = (p.area?.name || s?.attributes?.friendly_name || '').replace(/air purifier|fan/gi, '').trim().toUpperCase() || 'PURIFIER';
+            const isOn = s?.state === 'on';
+            const speed = s?.attributes?.percentage || s?.attributes?.speed || '—';
+            // Find paired sensors
+            const paired = deviceAq.get(p.entity?.device_id) || [];
+            const filterLife = paired.find(e => /filter_life/i.test(e.entity?.entity_id));
+            const pm25 = paired.find(e => /pm_?2_?5/i.test(e.entity?.entity_id));
+            const filterVal = filterLife ? Number(this._hass?.states?.[filterLife.entity?.entity_id]?.state) : null;
+            const pm25Val = pm25 ? Number(this._hass?.states?.[pm25.entity?.entity_id]?.state) : null;
+
+            return html`
+              <div class="ls-table-row" @click=${() => showMoreInfo(p.entity.entity_id)}>
+                <span class="ls-td ls-td-name">${name}</span>
+                <span class="ls-td" style="color:${isOn ? 'var(--lcars-ice)' : 'var(--lcars-gray)'}">${isOn ? 'ACTIVE' : 'OFF'}</span>
+                <span class="ls-td">${isOn ? `${speed}%` : '—'}</span>
+                <span class="ls-td">
+                  ${filterVal != null ? html`
+                    <div class="ls-filter-bar">
+                      <div class="ls-filter-fill" style="width:${filterVal}%; background:${filterVal > 50 ? 'var(--lcars-ice)' : filterVal > 20 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)'}"></div>
+                    </div>
+                    <span class="ls-filter-pct">${filterVal}%</span>
+                  ` : '—'}
+                </span>
+                <span class="ls-td">${pm25Val != null ? `${pm25Val}` : '—'}</span>
+              </div>
+            `;
+          })}
+        </div>
+      </div>
+    `;
   }
 
+  /* ═══ Temperature & Humidity Grid (mockup middle-right) ═══ */
+  _renderTempGrid(tempSensors) {
+    // Group by area, show temp + humidity pairs
+    const areaMap = new Map();
+    for (const e of tempSensors) {
+      const areaName = e.area?.name || 'Unknown';
+      if (!areaMap.has(areaName)) areaMap.set(areaName, { temp: null, humidity: null });
+      const dc = e.state?.attributes?.device_class;
+      const val = Number(e.state?.state);
+      if (dc === 'temperature' && !isNaN(val)) {
+        const existing = areaMap.get(areaName);
+        if (!existing.temp || val > 0) existing.temp = { entry: e, val };
+      }
+      if (dc === 'humidity' && !isNaN(val)) {
+        areaMap.get(areaName).humidity = { entry: e, val };
+      }
+    }
+
+    const rows = [...areaMap.entries()]
+      .filter(([, d]) => d.temp || d.humidity)
+      .sort((a, b) => a[0].localeCompare(b[0]));
+
+    if (rows.length === 0) return '';
+
+    return html`
+      <div class="ls-section">
+        <div class="ls-section-header">
+          <span class="ls-section-label">TEMPERATURE & HUMIDITY SENSORS</span>
+          <span class="ls-section-line"></span>
+          <span class="ls-sensor-count">${rows.length} ZONES</span>
+        </div>
+        <div class="ls-purifier-table">
+          <div class="ls-table-header">
+            <span class="ls-th">LOCATION</span>
+            <span class="ls-th">TEMP</span>
+            <span class="ls-th">HUMIDITY</span>
+            <span class="ls-th">STATUS</span>
+          </div>
+          ${rows.map(([name, d]) => {
+            const tempColor = d.temp ? (d.temp.val < 68 ? 'var(--lcars-bluey)' : d.temp.val <= 76 ? 'var(--lcars-ice)' : 'var(--lcars-butterscotch)') : 'var(--lcars-gray)';
+            const status = d.temp ? (d.temp.val >= 65 && d.temp.val <= 78 ? 'NORMAL' : d.temp.val < 65 ? 'COOL' : 'WARM') : '—';
+            const statusColor = status === 'NORMAL' ? 'var(--lcars-ice)' : status === 'COOL' ? 'var(--lcars-bluey)' : 'var(--lcars-butterscotch)';
+            return html`
+              <div class="ls-table-row" @click=${() => showMoreInfo(d.temp?.entry?.entity?.entity_id || d.humidity?.entry?.entity?.entity_id)}>
+                <span class="ls-td ls-td-name">${name.toUpperCase()}</span>
+                <span class="ls-td" style="color:${tempColor}">${d.temp ? `${Math.round(d.temp.val * 10) / 10}°` : '—'}</span>
+                <span class="ls-td">${d.humidity ? `${Math.round(d.humidity.val)}%` : '—'}</span>
+                <span class="ls-td" style="color:${statusColor}">${status}</span>
+              </div>
+            `;
+          })}
+        </div>
+      </div>
+    `;
+  }
+
+  /* ═══ Air Quality Breakdown (mockup top-right — AWAIR/AirLink) ═══ */
+  _renderAirQuality(aqSensors) {
+    // Find AQI, PM2.5, PM10, CO2, VOC sensors
+    const metrics = {};
+    for (const e of aqSensors) {
+      const dc = e.state?.attributes?.device_class || '';
+      const eid = e.entity?.entity_id || '';
+      const val = Number(e.state?.state);
+      if (isNaN(val)) continue;
+      if (dc === 'aqi' && (!metrics.aqi || val > metrics.aqi.val)) metrics.aqi = { val, entry: e };
+      if ((dc === 'pm25' || /pm_?2_?5/i.test(eid)) && !metrics.pm25) metrics.pm25 = { val, entry: e };
+      if ((dc === 'pm10' || /pm_?10/i.test(eid)) && !metrics.pm10) metrics.pm10 = { val, entry: e };
+      if ((dc === 'carbon_dioxide' || /co2|carbon_dioxide/i.test(eid)) && !metrics.co2) metrics.co2 = { val, entry: e };
+      if ((dc === 'volatile_organic_compounds' || /voc/i.test(eid)) && !metrics.voc) metrics.voc = { val, entry: e };
+    }
+
+    if (Object.keys(metrics).length === 0) return '';
+
+    const aqiVal = metrics.aqi?.val || 0;
+    const aqiLabel = aqiVal <= 50 ? 'GOOD' : aqiVal <= 100 ? 'MODERATE' : aqiVal <= 150 ? 'SENSITIVE' : 'UNHEALTHY';
+    const aqiColor = aqiVal <= 50 ? 'var(--lcars-ice)' : aqiVal <= 100 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+
+    return html`
+      <div class="ls-section">
+        <div class="ls-section-header">
+          <span class="ls-section-label">AIR QUALITY</span>
+          <span class="ls-section-line"></span>
+        </div>
+        <div class="ls-aq-panel">
+          <div class="ls-aq-hero">
+            <span class="ls-aq-score" style="color:${aqiColor}">${aqiVal || '—'}</span>
+            <span class="ls-aq-label">AQI</span>
+            <span class="ls-aq-status" style="color:${aqiColor}">${aqiLabel}</span>
+          </div>
+          <div class="ls-aq-metrics">
+            ${metrics.pm25 ? html`<div class="ls-aq-row" @click=${() => showMoreInfo(metrics.pm25.entry.entity.entity_id)}><span class="ls-aq-metric-name">PM2.5</span><span class="ls-aq-metric-val">${metrics.pm25.val} µg/m³</span></div>` : ''}
+            ${metrics.pm10 ? html`<div class="ls-aq-row" @click=${() => showMoreInfo(metrics.pm10.entry.entity.entity_id)}><span class="ls-aq-metric-name">PM10</span><span class="ls-aq-metric-val">${metrics.pm10.val} µg/m³</span></div>` : ''}
+            ${metrics.co2 ? html`<div class="ls-aq-row" @click=${() => showMoreInfo(metrics.co2.entry.entity.entity_id)}><span class="ls-aq-metric-name">CO₂</span><span class="ls-aq-metric-val">${metrics.co2.val} ppm</span></div>` : ''}
+            ${metrics.voc ? html`<div class="ls-aq-row" @click=${() => showMoreInfo(metrics.voc.entry.entity.entity_id)}><span class="ls-aq-metric-name">TVOC</span><span class="ls-aq-metric-val">${metrics.voc.val} ppb</span></div>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /* ═══ Main Render ═══ */
   render() {
-    if (!this._hass) return html``;
-    const floorGroups = this._getAreasWithEnv();
-    const summary = this._getGlobalSummary(floorGroups);
+    if (!this._hass) return html`<div class="ls-loading">INITIALIZING LIFE SUPPORT...</div>`;
+    const data = this._discoverAll();
+    const f = this.filter;
 
     return html`
       <div class="ls-dashboard">
-        <!-- Summary Strip -->
-        <div class="ls-summary">
-          ${summary.avgTemp != null ? html`
-            <span class="ls-summary__block">
-              <span class="ls-summary__label">INDOOR AVG</span>
-              <span class="ls-summary__value">${summary.avgTemp}°</span>
-            </span>
-          ` : ''}
-          ${summary.outdoor != null ? html`
-            <span class="ls-summary__block">
-              <span class="ls-summary__label">OUTDOOR</span>
-              <span class="ls-summary__value">${Math.round(summary.outdoor)}°</span>
-            </span>
-          ` : ''}
-          ${summary.worstAqi > 0 ? html`
-            <span class="ls-summary__block">
-              <span class="ls-summary__label">WORST AQI</span>
-              <span class="ls-summary__value">${summary.worstAqi} (${summary.worstAqiArea.toUpperCase()})</span>
-            </span>
-          ` : ''}
-          <span class="ls-summary__block">
-            <span class="ls-summary__label">HVAC</span>
-            <span class="ls-summary__value">${summary.hvacHeating} HEAT · ${summary.hvacCooling} COOL · ${summary.hvacIdle} IDLE</span>
-          </span>
-        </div>
-
-        ${floorGroups.map(({ floor, areas }) => {
-          const visible = areas.filter(a => this._getFiltered(a) !== null);
-          if (visible.length === 0) return html``;
-          return html`
-            ${floor ? html`<div class="ls-floor-header"><span class="ls-floor-name">${floor.name || 'FLOOR'}</span><span class="ls-floor-line"></span></div>` : ''}
-            ${visible.map(data => {
-              const filtered = this._getFiltered(data);
-              return html`
-                <div class="ls-area-section">
-                  <div class="ls-area-header">
-                    <span class="ls-area-name">${data.area.name}</span>
-                    <span class="ls-area-line"></span>
-                  </div>
-                  <div class="ls-devices">
-                    ${filtered.map(e => this._renderDevice(e))}
-                  </div>
-                </div>
-              `;
-            })}
-          `;
-        })}
-        ${floorGroups.length === 0 ? html`<div class="ls-empty"><span>NO ENVIRONMENTAL DEVICES DETECTED</span></div>` : ''}
+        ${this._renderOverview(data)}
+        ${(f === FILTER_ALL || f === FILTER_CLIMATE) ? this._renderThermostats(data.thermostats) : ''}
+        ${(f === FILTER_ALL || f === FILTER_AIR) ? this._renderAirQuality(data.aqSensors) : ''}
+        ${(f === FILTER_ALL || f === FILTER_AIR) ? this._renderPurifiers(data.purifiers, data.aqSensors) : ''}
+        ${(f === FILTER_ALL || f === FILTER_CLIMATE) ? this._renderTempGrid(data.tempSensors) : ''}
       </div>
     `;
-  }
-
-  _renderDevice(entry) {
-    const eid = entry.entity?.entity_id;
-    const state = this._hass?.states?.[eid] || entry.state;
-    const name = (state?.attributes?.friendly_name || eid || '').toUpperCase();
-    const dc = state?.attributes?.device_class || '';
-    const domain = entry.domain;
-    const unit = state?.attributes?.unit_of_measurement || '';
-    const val = state?.state;
-
-    if (domain === 'climate') {
-      const currentTemp = state?.attributes?.current_temperature;
-      const targetTemp = state?.attributes?.temperature;
-      const hvacAction = state?.attributes?.hvac_action || val;
-      return html`
-        <div class="ls-device climate" @click=${() => showMoreInfo(eid)}>
-          <div class="ls-device__header">
-            <span class="ls-device__name">${name}</span>
-            <span class="ls-device__badge ${hvacAction}">${(hvacAction || '').toUpperCase()}</span>
-          </div>
-          <div class="ls-device__temps">
-            ${currentTemp != null ? html`<span class="ls-temp current">${formatNumber(currentTemp)}°</span>` : ''}
-            ${targetTemp != null ? html`<span class="ls-temp target">→ ${formatNumber(targetTemp)}°</span>` : ''}
-          </div>
-        </div>
-      `;
-    }
-
-    // Sensor or fan/humidifier
-    const numVal = parseFloat(val);
-    const displayVal = isNaN(numVal) ? (val || '').toUpperCase() : `${formatNumber(numVal)} ${unit}`;
-    const isToggleable = domain === 'fan' || domain === 'humidifier';
-    const isOn = state?.state === 'on';
-
-    if (isToggleable) {
-      return html`
-        <button class="ls-pill ${isOn ? 'on' : 'off'}"
-                aria-pressed="${isOn ? 'true' : 'false'}"
-                @click=${() => { lcarsAudio.playForEntity(eid); this._hass.callService(domain, 'toggle', { entity_id: eid }); }}
-                @contextmenu=${(e) => { e.preventDefault(); showMoreInfo(eid); }}>
-          <span class="ls-pill__name">${name}</span>
-          <span class="ls-pill__state">${isOn ? 'ON' : 'OFF'}</span>
-        </button>
-      `;
-    }
-
-    return html`
-      <div class="ls-device sensor" @click=${() => showMoreInfo(eid)}>
-        <div class="ls-device__header">
-          <span class="ls-device__name">${name}</span>
-          <span class="ls-device__badge">${dc.toUpperCase()}</span>
-        </div>
-        <div class="ls-device__value" style="color:${this._getSensorColor(dc, numVal)}">${displayVal}</div>
-      </div>
-    `;
-  }
-
-  _getSensorColor(dc, val) {
-    if (isNaN(val)) return 'var(--lcars-space-white)';
-    if (dc === 'temperature') return this._getComfortColor(val);
-    if (dc === 'aqi' || dc === 'pm25' || dc === 'pm10') return this._getAqiColor(val);
-    if (dc === 'carbon_dioxide') {
-      if (val < 800) return 'var(--lcars-ice)';
-      if (val < 1200) return 'var(--lcars-sunflower)';
-      return 'var(--lcars-tomato)';
-    }
-    if (dc === 'humidity') {
-      if (val < 30 || val > 70) return 'var(--lcars-butterscotch)';
-      return 'var(--lcars-ice)';
-    }
-    return 'var(--lcars-space-white)';
   }
 
   static get styles() {
@@ -287,53 +376,116 @@ class LcarsLifeSupportCard extends LitElement {
       lcarsBaseStyles,
       css`
         :host { display: block; }
-        .ls-dashboard { padding: 0.25rem; }
+        .ls-dashboard { display: flex; flex-direction: column; gap: 1rem; }
+        .ls-loading { font-family: var(--lcars-font, 'Antonio', sans-serif); color: var(--lcars-gray); text-transform: uppercase; padding: 2rem; text-align: center; font-size: 1.25rem; letter-spacing: 0.1em; }
 
-        /* ─── Summary Strip ─── */
-        .ls-summary {
-          display: flex; gap: 0.25rem; margin-bottom: 0.75rem;
-          background: var(--lcars-bluey, #8899ff); border-radius: 0.5rem;
-          padding: 0.5rem 1rem; color: var(--lcars-black, #000);
+        /* ─── Overview Cards (mockup top row) ─── */
+        .ls-overview {
+          display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+          gap: 0.375rem;
+        }
+        .ls-overview-card {
+          display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+          padding: 0.75rem 0.5rem;
+          border: 2px solid var(--lcars-bluey, #8899ff); border-radius: 0.5rem;
+          background: rgba(136,153,255,0.05);
           font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
         }
-        .ls-summary__block { flex: 1; display: flex; flex-direction: column; gap: 0.125rem; }
-        .ls-summary__label { font-size: 0.625rem; letter-spacing: 0.1em; color: var(--lcars-black, #000); opacity: 0.75; }
-        .ls-summary__value { font-size: 1rem; font-variant-numeric: tabular-nums; color: var(--lcars-black, #000); }
+        .ls-ov-title { font-size: 0.75rem; color: var(--lcars-gray, #666688); letter-spacing: 0.1em; }
+        .ls-ov-value { font-size: 1.5rem; color: var(--lcars-space-white, #f5f6fa); }
+        .ls-ov-status { font-size: 0.75rem; }
 
-        .ls-floor-header { display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0 0.5rem 0; }
-        .ls-floor-name { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; color: var(--lcars-bluey, #8899ff); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
-        .ls-floor-line { flex: 1; height: 0.375rem; background: var(--lcars-bluey, #8899ff); border-radius: 0 1.5rem 1.5rem 0; opacity: 0.4; }
-        .ls-area-section { margin-bottom: 0.75rem; }
-        .ls-area-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; }
-        .ls-area-name { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; color: var(--lcars-bluey, #8899ff); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
-        .ls-area-line { flex: 1; height: 2px; background: var(--lcars-bluey, #8899ff); opacity: 0.3; }
-        .ls-devices { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr)); gap: 0.375rem; }
-        .ls-device { border: 1px solid rgba(136, 153, 255, 0.15); border-radius: 0.5rem; padding: 0.5rem 0.75rem; cursor: pointer; transition: filter 200ms ease; }
-        .ls-device:hover { filter: brightness(1.15); }
-        .ls-device.climate { border-left: 4px solid var(--lcars-bluey, #8899ff); }
-        .ls-device__header { display: flex; align-items: center; gap: 0.5rem; }
-        .ls-device__name { flex: 1; font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; color: var(--lcars-bluey, #8899ff); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .ls-device__badge { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.625rem; color: var(--lcars-gray, #666688); text-transform: uppercase; letter-spacing: 0.1em; }
-        .ls-device__badge.heating { color: var(--lcars-butterscotch, #ff9966); }
-        .ls-device__badge.cooling { color: var(--lcars-ice, #99ccff); }
-        .ls-device__badge.idle { color: var(--lcars-gray, #666688); }
-        .ls-device__value { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; margin-top: 0.125rem; }
-        .ls-device__temps { display: flex; gap: 0.75rem; align-items: baseline; margin-top: 0.125rem; }
-        .ls-temp { font-family: var(--lcars-font, 'Antonio', sans-serif); font-variant-numeric: tabular-nums; }
-        .ls-temp.current { font-size: 1.75rem; color: var(--lcars-space-white, #f5f6fa); }
-        .ls-temp.target { font-size: 1rem; color: var(--lcars-ice, #99ccff); }
-        .ls-pill { display: flex; align-items: center; height: 3rem; padding: 0 1rem 0 0.75rem; border-radius: 0 var(--lcars-btn-radius, 1.5rem) var(--lcars-btn-radius, 1.5rem) 0; background: var(--lcars-bluey, #8899ff); color: var(--lcars-black, #000); font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1rem; text-transform: uppercase; cursor: pointer; border: 1px solid rgba(136, 153, 255, 0.2); transition: filter 200ms ease; width: 100%; text-align: left; }
-        .ls-pill:hover { filter: brightness(1.2); }
-        .ls-pill:focus-visible { outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px; }
-        .ls-pill.off { background: var(--lcars-gray, #666688); color: var(--lcars-space-white, #f5f6fa); border-color: rgba(102, 102, 136, 0.3); }
-        .ls-pill__name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .ls-pill__state { font-variant-numeric: tabular-nums; min-width: 2.5rem; text-align: right; flex-shrink: 0; }
-        .ls-empty { display: flex; align-items: center; justify-content: center; min-height: 10rem; color: var(--lcars-gray, #666688); font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; text-transform: uppercase; }
+        /* ─── Section Headers ─── */
+        .ls-section { margin-bottom: 0.25rem; }
+        .ls-section-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .ls-section-label {
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem;
+          color: var(--lcars-bluey, #8899ff); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;
+        }
+        .ls-section-line { flex: 1; height: 2px; background: var(--lcars-bluey, #8899ff); opacity: 0.4; }
+        .ls-sensor-count {
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1rem;
+          color: var(--lcars-ice, #99ccff); white-space: nowrap;
+        }
+
+        /* ─── Thermostat Zone Cards ─── */
+        .ls-thermo-grid {
+          display: grid; grid-template-columns: repeat(auto-fill, minmax(min(10rem, 100%), 1fr));
+          gap: 0.375rem;
+        }
+        .ls-thermo-card {
+          display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+          padding: 0.75rem; cursor: pointer;
+          border: 2px solid var(--lcars-bluey, #8899ff); border-radius: 0.375rem;
+          background: rgba(136,153,255,0.03);
+          font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
+          transition: border-color 200ms ease;
+        }
+        .ls-thermo-card:hover { border-color: var(--lcars-gold, #ffaa00); }
+        .ls-thermo-card:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 2px; }
+        .ls-thermo-name { font-size: 0.875rem; color: var(--lcars-space-white, #f5f6fa); letter-spacing: 0.05em; }
+        .ls-thermo-temp { font-size: 2rem; }
+        .ls-thermo-action { font-size: 0.75rem; }
+        .ls-thermo-setpoint { font-size: 0.625rem; color: var(--lcars-gray, #666688); }
+
+        /* ─── Table (purifiers + temp grid) ─── */
+        .ls-purifier-table { display: flex; flex-direction: column; gap: 0.125rem; }
+        .ls-table-header {
+          display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr 1fr;
+          gap: 0.5rem; padding: 0.25rem 0.5rem;
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.625rem;
+          color: var(--lcars-gray, #666688); text-transform: uppercase; letter-spacing: 0.08em;
+          border-bottom: 1px solid rgba(136,153,255,0.2);
+        }
+        .ls-table-row {
+          display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr 1fr;
+          gap: 0.5rem; padding: 0.375rem 0.5rem; cursor: pointer;
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem;
+          color: var(--lcars-space-white, #f5f6fa); text-transform: uppercase;
+          border-bottom: 1px solid rgba(136,153,255,0.06);
+          transition: background 150ms ease;
+        }
+        .ls-table-row:hover { background: rgba(136,153,255,0.08); }
+        .ls-td { display: flex; align-items: center; }
+        .ls-td-name { color: var(--lcars-ice, #99ccff); }
+        .ls-th { display: flex; align-items: center; }
+
+        /* Temp grid uses 4 columns */
+        .ls-section:last-of-type .ls-table-header,
+        .ls-section:last-of-type .ls-table-row {
+          grid-template-columns: 2fr 1fr 1fr 1fr;
+        }
+
+        /* Filter life bar */
+        .ls-filter-bar {
+          width: 4rem; height: 0.5rem; background: rgba(153,204,255,0.15);
+          border-radius: 0 0.25rem 0.25rem 0; overflow: hidden; display: inline-block; vertical-align: middle;
+        }
+        .ls-filter-fill { height: 100%; border-radius: 0 0.25rem 0.25rem 0; transition: width 300ms ease; }
+        .ls-filter-pct { font-size: 0.7rem; margin-left: 0.25rem; color: var(--lcars-ice, #99ccff); }
+
+        /* ─── Air Quality Panel ─── */
+        .ls-aq-panel { display: flex; gap: 1.5rem; align-items: flex-start; }
+        .ls-aq-hero {
+          display: flex; flex-direction: column; align-items: center; gap: 0.125rem;
+          min-width: 5rem;
+        }
+        .ls-aq-score { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 2.5rem; }
+        .ls-aq-label { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.75rem; color: var(--lcars-gray, #666688); text-transform: uppercase; }
+        .ls-aq-status { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; text-transform: uppercase; }
+        .ls-aq-metrics { display: flex; flex-direction: column; gap: 0.375rem; flex: 1; }
+        .ls-aq-row {
+          display: flex; justify-content: space-between; padding: 0.25rem 0; cursor: pointer;
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem;
+          text-transform: uppercase; border-bottom: 1px solid rgba(136,153,255,0.08);
+        }
+        .ls-aq-row:hover { background: rgba(136,153,255,0.08); }
+        .ls-aq-metric-name { color: var(--lcars-ice, #99ccff); }
+        .ls-aq-metric-val { color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; }
       `,
     ];
   }
 }
 
-if (!customElements.get('lifesupport-card')) {
-  customElements.define('lifesupport-card', LcarsLifeSupportCard);
-}
+const ready = Promise.race([customElements.whenDefined('hui-masonry-view'), new Promise((r) => setTimeout(r, 5000))]);
+ready.then(() => { if (!customElements.get('lifesupport-card')) { customElements.define('lifesupport-card', LcarsLifeSupportCard); } });

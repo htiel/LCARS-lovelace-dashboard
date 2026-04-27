@@ -198,6 +198,15 @@ Timestamped event log with severity dots and source labels. Shares pattern with 
 #### 5X-LS-11 · CO₂ Warning Threshold — `TODO` · Priority: MEDIUM · Size: S
 Add color-coded threshold indicator for CO₂ >1000 ppm. Currently shows 1229 PPM as neutral text.
 
+#### 5X-LS-12 · Circular AQI Gauge — `TODO` · Priority: MEDIUM · Size: M
+SVG ring gauge for AQI score (like mockup). Circles now allowed per design direction. Arc fills proportional to AQI value, color-coded by tier (ice=good, sunflower=moderate, tomato=unhealthy). Score number centered inside ring.
+
+#### 5X-LS-13 · Circular Thermostat Dials — `TODO` · Priority: MEDIUM · Size: M
+SVG circular dial for each thermostat zone (like mockup). Shows current temp inside circle, setpoint as arc marker, COOLING/HEATING mode as ring color (ice=cooling, butterscotch=heating, gray=idle). Tap to open thermostat controls.
+
+#### 5X-LS-14 · Overview Card Circular Gauges — `TODO` · Priority: LOW · Size: M
+Add small circular gauge indicators to the 4 overview cards (like mockup). Temperature ring in Environment card, AQI ring in Air Quality card, aggregate setpoint in Thermostats card.
+
 ---
 
 ## Epic 5 · Engineering Dashboard Enhancements
@@ -221,6 +230,12 @@ Production − Consumption computed metric in System Status sidebar.
 
 #### 5X-ENG-6 · Source Contribution Proportional Bar — `TODO` · Priority: LOW · Size: S
 Stacked horizontal bar showing Grid/Battery/Generator proportions (NOT donut chart).
+
+#### 5X-ENG-9 · Battery SOC Circular Gauge — `TODO` · Priority: MEDIUM · Size: M
+SVG ring gauge for each battery showing state of charge. Arc fills proportional to SOC%, color-coded (ice>50%, sunflower 20-50%, tomato<20%). Replaces/supplements the current SOC bar. Power flow direction indicated by arc animation direction (charging vs discharging).
+
+#### 5X-ENG-10 · Power Flow Donut/Ring — `TODO` · Priority: LOW · Size: M
+Circular ring chart showing power source contribution proportions (Grid/Battery/Solar). Alternative to 5X-ENG-6 stacked bar — circles now allowed. Ring segments proportional to wattage contribution.
 
 #### 5X-ENG-7 · Grid 0W Investigation — `TODO` · Priority: HIGH · Size: S
 Grid shows 0W ONLINE while house draws 2550W. Likely wrong entity matched by GRID_KEYWORDS regex or missing grid sensor. Investigate Emporia Vue main panel entity.

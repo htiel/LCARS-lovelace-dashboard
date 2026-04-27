@@ -1,0 +1,15 @@
+{
+  "name": "lcars-image-generator-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for generating LCARS dashboard mockup images via OpenAI",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "openai": "^4.86.0",
+    "zod": "^3.24.0"
+  }
+}

@@ -132,6 +132,8 @@ class LcarsEngineeringCard extends LitElement {
         else if (dc === 'power' && /total.*out/i.test(eid) && !b.siblings.totalOut) b.siblings.totalOut = s;
         else if (/remaining.*time|discharge.*remain|charge.*remain/i.test(eid) && !b.siblings.runtime) b.siblings.runtime = s;
         else if (/charging.*state|battery.*state/i.test(eid) && !b.siblings.chargeState) b.siblings.chargeState = s;
+        else if (/state.of.health/i.test(leid) && !b.siblings.soh) b.siblings.soh = s;
+        else if (/\bcycles\b/i.test(leid) && !b.siblings.cycles) b.siblings.cycles = s;
       }
     }
 
@@ -215,6 +217,12 @@ class LcarsEngineeringCard extends LitElement {
             const chargeState = b.siblings?.chargeState?.state || null;
             // Numeric code from device model/serial
             const model = b.device?.model || '';
+            const coreColor = soc > 80 ? 'var(--lcars-ice)' : soc > 60 ? 'var(--lcars-sky,#aaaaff)' : soc > 40 ? 'var(--lcars-bluey,#8899ff)' : soc > 20 ? 'var(--lcars-butterscotch)' : soc > 10 ? 'var(--lcars-peach,#ff8866)' : 'var(--lcars-tomato)';
+            const coreClass = isCharging ? 'mini-core-charging' : isDischarging ? '' : 'mini-core-idle';
+            // Enriched telemetry
+            const soh = b.siblings?.soh ? Number(b.siblings.soh.state) : null;
+            const cycles = b.siblings?.cycles ? Number(b.siblings.cycles.state) : null;
+            const runtimeLabel = isCharging ? 'FULL IN' : isDischarging ? 'EMPTY IN' : 'RUNTIME';
             return html`
               <div class="eng-source-card eng-battery-card" style="border-color:${borderColor}"
                    @click=${() => showMoreInfo(b.entry.entity.entity_id)}>
@@ -222,13 +230,27 @@ class LcarsEngineeringCard extends LitElement {
                   <span class="eng-source-title" style="color:var(--lcars-butterscotch)">${name}</span>
                   ${model ? html`<span class="eng-battery-code">${model}</span>` : ''}
                 </div>
-                ${_ringGauge(soc, 100, 72, socHex, `${soc}%`, '')}
+                <div class="eng-battery-body">
+                  <div class="mini-core" style="--core-color:${coreColor};--core-charge:${soc}">
+                    <div class="mini-core-fill ${coreClass}"></div>
+                    <div class="mini-core-tick" style="bottom:25%"></div>
+                    <div class="mini-core-tick" style="bottom:50%"></div>
+                    <div class="mini-core-tick" style="bottom:75%"></div>
+                  </div>
+                  <div class="eng-battery-stats">
+                    <span class="eng-battery-soc" style="color:${coreColor}">${soc}%</span>
+                    <span class="eng-battery-flow" style="color:${flowColor}">${isCharging ? '▲' : isDischarging ? '▼' : '━'} ${isCharging ? formatNumber(totalIn, 0) : isDischarging ? formatNumber(totalOut, 0) : '0'}W</span>
+                    ${voltage != null ? html`<span class="eng-battery-volt">${voltage}V</span>` : ''}
+                  </div>
+                </div>
                 <div class="eng-battery-status" style="background:${flowBg}; color:${flowColor}">${flowLabel}</div>
                 <div class="eng-battery-telemetry">
-                  ${voltage != null ? html`<span class="eng-bt-key">VOLTAGE</span><span class="eng-bt-val">${voltage}V</span>` : ''}
                   ${temp != null ? html`<span class="eng-bt-key">TEMP</span><span class="eng-bt-val">${Math.round(temp)}°</span>` : ''}
-                  ${runtime ? html`<span class="eng-bt-key">RUNTIME</span><span class="eng-bt-val">${runtime}</span>` : ''}
+                  ${runtime ? html`<span class="eng-bt-key">${runtimeLabel}</span><span class="eng-bt-val">${runtime}</span>` : ''}
+                  ${soh != null && soh < 100 ? html`<span class="eng-bt-key">HEALTH</span><span class="eng-bt-val" style="color:${soh > 80 ? 'var(--lcars-ice)' : 'var(--lcars-sunflower)'}">${soh}%</span>` : ''}
+                  ${cycles != null ? html`<span class="eng-bt-key">CYCLES</span><span class="eng-bt-val">${cycles}</span>` : ''}
                 </div>
+                <span class="eng-battery-detail">DETAIL ►</span>
               </div>`;
           })}
         </div>
@@ -297,11 +319,24 @@ class LcarsEngineeringCard extends LitElement {
       .eng-circuit-count, .eng-circuit-remaining { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; color: var(--lcars-gray, #666688); white-space: nowrap; text-transform: uppercase; }
       .eng-sources-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.375rem; position: relative; padding-bottom: 1.5rem; }
       .eng-source-card { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.75rem; cursor: pointer; border: 2px solid var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem; background: rgba(255,153,102,0.03); font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; transition: border-color 200ms ease; position: relative; }
-      .eng-source-card::after { content: ''; position: absolute; bottom: -1.5rem; left: 50%; width: 3px; height: 1.5rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.4; }
+      .eng-source-card::after { content: ''; position: absolute; bottom: -1.5rem; left: 50%; width: 4px; height: 1.5rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.65; }
       .eng-source-card:hover { border-color: var(--lcars-gold, #ffaa00); }
       .eng-source-card:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 2px; }
-      /* Enriched battery card (Prompt 1 mockup) */
+      /* Enriched battery card — mini warp core (Prompt 3 mockup) */
       .eng-battery-card { gap: 0.375rem; }
+      .eng-battery-body { display: flex; align-items: stretch; gap: 0.625rem; width: 100%; min-height: 4.5rem; }
+      .mini-core { position: relative; width: 2rem; flex-shrink: 0; border-radius: 1rem; border: 2px solid var(--core-color); background: var(--lcars-black, #000); overflow: hidden; transition: border-color 1s ease; }
+      .mini-core-fill { position: absolute; bottom: 0; left: 0; right: 0; height: calc(var(--core-charge, 0) * 1%); background: var(--core-color); opacity: 0.8; transition: height 1s ease; }
+      .mini-core-fill.mini-core-idle { animation: mini-core-pulse 3s ease-in-out infinite; }
+      .mini-core-fill.mini-core-charging { animation: mini-core-flow 2s linear infinite; background-image: repeating-linear-gradient(0deg, transparent 0px, transparent 0.5rem, rgba(255,255,255,0.15) 0.5rem, rgba(255,255,255,0.15) 0.625rem); }
+      .mini-core-tick { position: absolute; left: 15%; right: 15%; height: 1px; background: var(--core-color); opacity: 0.3; }
+      @keyframes mini-core-pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 0.9; } }
+      @keyframes mini-core-flow { from { background-position: 0 0; } to { background-position: 0 -1.125rem; } }
+      .eng-battery-stats { display: flex; flex-direction: column; justify-content: center; gap: 0.125rem; }
+      .eng-battery-soc { font-size: 1.5rem; font-weight: bold; line-height: 1; font-variant-numeric: tabular-nums; }
+      .eng-battery-flow { font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+      .eng-battery-volt { font-size: 0.7rem; color: var(--lcars-ice, #99ccff); font-variant-numeric: tabular-nums; }
+      .eng-battery-detail { font-size: 0.625rem; color: var(--lcars-gray, #666688); text-align: right; margin-top: auto; letter-spacing: 0.05em; }
       .eng-battery-header { display: flex; justify-content: space-between; align-items: baseline; width: 100%; }
       .eng-battery-code { font-size: 0.625rem; color: var(--lcars-gray, #666688); }
       .eng-battery-status {

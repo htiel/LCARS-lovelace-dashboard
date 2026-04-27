@@ -1,0 +1,22 @@
+{
+  "servers": {
+    "image-generator": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["mcp/image-generator/index.js"],
+      "env": {
+        "AZURE_OPENAI_API_KEY": "${input:azure-openai-key}",
+        "AZURE_OPENAI_ENDPOINT": "https://eastus2.api.cognitive.microsoft.com/",
+        "OPENAI_API_VERSION": "2025-04-01-preview"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "id": "azure-openai-key",
+      "type": "promptString",
+      "description": "Azure OpenAI API key for LCARSImageGen (eastus2)",
+      "password": true
+    }
+  ]
+}

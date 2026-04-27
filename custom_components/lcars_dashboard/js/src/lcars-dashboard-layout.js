@@ -45,16 +45,40 @@ class LcarsDashboardLayout extends LitElement {
     super.connectedCallback();
     window.addEventListener('resize', this._resizeHandler);
     lcarsLog.debug(TAG, 'connectedCallback — layout mounted');
+    // Deep-link: check hash for #area:<area_id>
+    this._applyHashDeepLink();
+    this._hashHandler = () => this._applyHashDeepLink();
+    window.addEventListener('hashchange', this._hashHandler);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener('resize', this._resizeHandler);
+    window.removeEventListener('hashchange', this._hashHandler);
     if (this._elbowPressTimer) {
       clearTimeout(this._elbowPressTimer);
       this._elbowPressTimer = null;
     }
     lcarsLog.debug(TAG, 'disconnectedCallback — layout unmounted');
+  }
+
+  _applyHashDeepLink() {
+    const hash = location.hash;
+    const match = hash.match(/^#area:(.+)$/);
+    if (match) {
+      const areaId = decodeURIComponent(match[1]);
+      lcarsLog.debug(TAG, 'Deep-link: auto-selecting area', areaId);
+      // Use setTimeout to ensure hass and areas are loaded
+      setTimeout(() => {
+        if (this._selectedArea !== areaId) {
+          this._selectedArea = areaId;
+          lcarsEventBus.dispatchEvent(
+            new CustomEvent('lcars-area-selected', { detail: { areaId } })
+          );
+          this.requestUpdate();
+        }
+      }, 100);
+    }
   }
 
   updated(changedProps) {
@@ -137,6 +161,12 @@ class LcarsDashboardLayout extends LitElement {
     }
     this._selectedArea = this._selectedArea === areaId ? null : areaId;
     lcarsLog.debug(TAG, 'Area selected:', this._selectedArea || '(deselected)');
+    // Update hash for deep-link persistence
+    if (this._selectedArea) {
+      history.replaceState(null, '', `${location.pathname}#area:${this._selectedArea}`);
+    } else {
+      history.replaceState(null, '', location.pathname);
+    }
     lcarsEventBus.dispatchEvent(
       new CustomEvent('lcars-area-selected', {
         detail: { areaId: this._selectedArea },

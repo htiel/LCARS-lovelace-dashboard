@@ -10,7 +10,7 @@
  * - Leith: EcoFlow batteries (3 units, 191 entities), Emporia Vue (84), Shelly Pro 3EM
  */
 import { LitElement, html, css, svg } from 'lit-element';
-import { lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
+import { lcarsEventBus, showMoreInfo, navigate } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
 
@@ -50,6 +50,9 @@ const FILTER_CIRCUITS = 'circuits';
 const POWER_CLASSES = new Set(['battery', 'power', 'energy', 'voltage', 'current']);
 const UPS_KEYWORDS = /ups|battery_charge|battery_runtime|battery_voltage/i;
 const GRID_KEYWORDS = /grid|mains|mainsfromgrid|main.*load|total.*power|vueg3.*main|shelly.*total|3em.*total/i;
+const GRID_SIBLING_KEYWORDS = /grid|mains|main.*load|vueg3.*main|shelly.*total|3em.*total|totalusage/i;
+// Aggregate/total sensors that double-count individual circuits
+const AGGREGATE_KEYWORDS = /totalusage|total.*usage|^sensor\.balance|mainload|main.*load|mainsfromgrid|mainstogrid/i;
 // 5X-ENG-8: Filter out non-storage battery entities
 const STORAGE_PLATFORMS = new Set(['ecoflow_cloud', 'nut', 'victron', 'tesla_powerwall', 'solaredge']);
 const NON_STORAGE_PLATFORMS = new Set(['wallbox', 'insteon', 'blink', 'simplisafe', 'tile', 'switchbot', 'unifiprotect', 'unifi', 'mobile_app', 'nest_protect']);
@@ -109,6 +112,8 @@ class LcarsEngineeringCard extends LitElement {
         if (platform === 'nut' && UPS_KEYWORDS.test(e.entity_id)) { upsSensors.push(entry); continue; }
         if (dc === 'power' && GRID_KEYWORDS.test(e.entity_id)) { gridSensors.push(entry); continue; }
         if (dc === 'power' && !GRID_KEYWORDS.test(e.entity_id)) {
+          // Skip aggregate/total sensors that double-count individual circuits
+          if (AGGREGATE_KEYWORDS.test(e.entity_id)) continue;
           const val = Number(state.state);
           if (!isNaN(val)) totalDraw += val;
           circuits.push(entry);
@@ -116,6 +121,35 @@ class LcarsEngineeringCard extends LitElement {
       }
     }
     circuits.sort((a, b) => (Number(b.state?.state) || 0) - (Number(a.state?.state) || 0));
+
+    // Deduplicate 240V paired circuits: if both _l1 and _l2 exist, keep only the combined sensor
+    // or if only _l1/_l2 exist without a combined, merge them into one entry
+    const circuitMap = new Map();
+    const pairedBases = new Set();
+    for (const c of circuits) {
+      const eid = c.entity.entity_id;
+      const l1Match = eid.match(/^(sensor\..+?)_l1_/i);
+      const l2Match = eid.match(/^(sensor\..+?)_l2_/i);
+      if (l1Match) pairedBases.add(l1Match[1]);
+      if (l2Match) pairedBases.add(l2Match[1]);
+      circuitMap.set(eid, c);
+    }
+    // Remove _l1 and _l2 variants when a combined sensor exists for the same base
+    for (const base of pairedBases) {
+      const combinedId = `${base}_power_minute_average`;
+      if (circuitMap.has(combinedId)) {
+        // Combined exists — remove the L1/L2 variants and subtract from totalDraw
+        for (const suffix of ['_l1_power_minute_average', '_l2_power_minute_average']) {
+          const pairId = `${base}${suffix}`;
+          if (circuitMap.has(pairId)) {
+            const pairVal = Number(circuitMap.get(pairId).state?.state) || 0;
+            totalDraw -= pairVal;
+            circuitMap.delete(pairId);
+          }
+        }
+      }
+    }
+    const dedupedCircuits = [...circuitMap.values()].sort((a, b) => (Number(b.state?.state) || 0) - (Number(a.state?.state) || 0));
 
     // Enrich batteries with sibling entities (voltage, temp, power, runtime)
     const entities = this._hass?.entities || {};
@@ -137,7 +171,20 @@ class LcarsEngineeringCard extends LitElement {
       }
     }
 
-    return { batteries, circuits, gridSensors, upsSensors, totalDraw };
+    return { batteries, circuits: dedupedCircuits, gridSensors, upsSensors, totalDraw, gridSiblings: this._discoverGridSiblings(states) };
+  }
+
+  _discoverGridSiblings(states) {
+    const siblings = {};
+    for (const [eid, s] of Object.entries(states)) {
+      if (!GRID_SIBLING_KEYWORDS.test(eid)) continue;
+      const dc = s.attributes?.device_class || '';
+      if (dc === 'voltage' && !siblings.voltage) siblings.voltage = s;
+      else if (dc === 'frequency' && !siblings.frequency) siblings.frequency = s;
+      else if (dc === 'energy' && /today/i.test(eid) && !siblings.energyToday) siblings.energyToday = s;
+      else if (dc === 'current' && !siblings.current) siblings.current = s;
+    }
+    return siblings;
   }
 
   _getGridPower(data) {
@@ -173,14 +220,28 @@ class LcarsEngineeringCard extends LitElement {
 
   _renderSources(data) {
     const gridPower = this._getGridPower(data);
+    const gs = data.gridSiblings || {};
+    const gridVoltage = gs.voltage ? Number(gs.voltage.state) : null;
+    const gridFreq = gs.frequency ? Number(gs.frequency.state) : null;
+    const gridEnergy = gs.energyToday ? Number(gs.energyToday.state) : null;
+    const gridBarPct = Math.min(100, (gridPower / 5000) * 100);
     return html`
       <div class="eng-section">
         <div class="eng-section-header"><span class="eng-section-label">POWER SOURCES</span><span class="eng-section-line"></span></div>
         <div class="eng-sources-row">
-          <div class="eng-source-card" @click=${() => data.gridSensors[0] && showMoreInfo(data.gridSensors[0].entity.entity_id)}>
-            <span class="eng-source-title" style="color:var(--lcars-ice)">GRID</span>
-            <span class="eng-source-power">${formatNumber(gridPower, 0)} W</span>
-            <span class="eng-source-status" style="color:var(--lcars-ice)">ONLINE</span>
+          <div class="eng-source-card eng-grid-card" @click=${() => data.gridSensors[0] && showMoreInfo(data.gridSensors[0].entity.entity_id)}>
+            <div class="eng-grid-header">
+              <span class="eng-source-title" style="color:var(--lcars-ice)">GRID</span>
+              ${gridVoltage != null ? html`<span class="eng-grid-voltage">${gridVoltage}V</span>` : ''}
+            </div>
+            <span class="eng-grid-power">${formatNumber(gridPower, 0)} W</span>
+            <div class="eng-grid-bar"><div class="eng-grid-fill" style="width:${gridBarPct}%"></div></div>
+            <div class="eng-battery-telemetry">
+              ${gridVoltage != null ? html`<span class="eng-bt-key">VOLTAGE</span><span class="eng-bt-val">${gridVoltage} V</span>` : ''}
+              ${gridFreq != null ? html`<span class="eng-bt-key">FREQUENCY</span><span class="eng-bt-val">${gridFreq} HZ</span>` : ''}
+              ${gridEnergy != null ? html`<span class="eng-bt-key">TODAY</span><span class="eng-bt-val" style="color:var(--lcars-sunflower)">${formatNumber(gridEnergy, 1)} KWH</span>` : ''}
+            </div>
+            <div class="eng-grid-status">ONLINE</div>
           </div>
           ${data.upsSensors.length > 0 ? html`
             <div class="eng-source-card" @click=${() => showMoreInfo(data.upsSensors[0].entity.entity_id)}>
@@ -250,7 +311,7 @@ class LcarsEngineeringCard extends LitElement {
                   ${soh != null && soh < 100 ? html`<span class="eng-bt-key">HEALTH</span><span class="eng-bt-val" style="color:${soh > 80 ? 'var(--lcars-ice)' : 'var(--lcars-sunflower)'}">${soh}%</span>` : ''}
                   ${cycles != null ? html`<span class="eng-bt-key">CYCLES</span><span class="eng-bt-val">${cycles}</span>` : ''}
                 </div>
-                <span class="eng-battery-detail">DETAIL ►</span>
+                <span class="eng-battery-detail" @click=${(e) => { e.stopPropagation(); navigate(`/lcars-habitat/0#area:${b.area?.area_id || ''}`); }}>DETAIL ►</span>
               </div>`;
           })}
         </div>
@@ -268,16 +329,19 @@ class LcarsEngineeringCard extends LitElement {
   _renderCircuits(circuits) {
     if (circuits.length === 0) return '';
     const active = circuits.filter(c => Number(c.state?.state) > 1);
-    const top = active.slice(0, 12);
+    const top = active.slice(0, 24);
     const remaining = active.length - top.length;
     return html`
       <div class="eng-section">
         <div class="eng-section-header"><span class="eng-section-label">LOAD CIRCUITS</span><span class="eng-section-line"></span><span class="eng-circuit-count">${active.length} ACTIVE</span></div>
         <div class="eng-circuit-grid">
           ${top.map(c => {
-            const name = (c.state?.attributes?.friendly_name || c.entity?.entity_id || '').replace(/_power.*$/i, '').replace(/_/g, ' ').toUpperCase();
+            const name = (c.state?.attributes?.friendly_name || c.entity?.entity_id || '')
+              .replace(/_power.*$/i, '').replace(/_/g, ' ')
+              .replace(/\s+(l[12])$/i, ' $1')  // keep L1/L2 suffix readable
+              .toUpperCase();
             const watts = Number(c.state?.state) || 0;
-            const barPct = Math.min(100, (watts / Math.max(watts, 500)) * 100);
+            const barPct = Math.min(100, (watts / Math.max(...active.map(a => Number(a.state?.state) || 0), 500)) * 100);
             const barColor = watts > 1000 ? 'var(--lcars-tomato)' : watts > 500 ? 'var(--lcars-butterscotch)' : watts > 200 ? 'var(--lcars-sunflower)' : 'var(--lcars-ice)';
             return html`
               <div class="eng-circuit-card" @click=${() => showMoreInfo(c.entity.entity_id)}>
@@ -287,7 +351,7 @@ class LcarsEngineeringCard extends LitElement {
               </div>`;
           })}
         </div>
-        ${remaining > 0 ? html`<span class="eng-circuit-remaining">${remaining} MORE CIRCUITS</span>` : ''}
+        ${remaining > 0 ? html`<span class="eng-circuit-remaining">+ ${remaining} MORE CIRCUITS</span>` : ''}
       </div>`;
   }
 
@@ -336,7 +400,16 @@ class LcarsEngineeringCard extends LitElement {
       .eng-battery-soc { font-size: 1.5rem; font-weight: bold; line-height: 1; font-variant-numeric: tabular-nums; }
       .eng-battery-flow { font-size: 0.75rem; font-variant-numeric: tabular-nums; }
       .eng-battery-volt { font-size: 0.7rem; color: var(--lcars-ice, #99ccff); font-variant-numeric: tabular-nums; }
-      .eng-battery-detail { font-size: 0.625rem; color: var(--lcars-gray, #666688); text-align: right; margin-top: auto; letter-spacing: 0.05em; }
+      .eng-battery-detail { font-size: 0.625rem; color: var(--lcars-gray, #666688); text-align: right; margin-top: auto; letter-spacing: 0.05em; cursor: pointer; }
+      .eng-battery-detail:hover { color: var(--lcars-ice, #99ccff); }
+      /* Enriched GRID card */
+      .eng-grid-card { border-color: var(--lcars-ice, #99ccff) !important; background: rgba(153,204,255,0.03) !important; }
+      .eng-grid-header { display: flex; justify-content: space-between; align-items: baseline; width: 100%; }
+      .eng-grid-voltage { font-size: 0.625rem; color: var(--lcars-gray, #666688); }
+      .eng-grid-power { font-size: 1.75rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; }
+      .eng-grid-bar { width: 100%; height: 0.375rem; background: rgba(153,204,255,0.12); border-radius: 0 0.25rem 0.25rem 0; overflow: hidden; }
+      .eng-grid-fill { height: 100%; background: var(--lcars-ice, #99ccff); border-radius: 0 0.25rem 0.25rem 0; transition: width 500ms ease; }
+      .eng-grid-status { font-size: 0.75rem; color: var(--lcars-ice, #99ccff); padding: 0.125rem 0.5rem; border: 1px solid var(--lcars-ice, #99ccff); border-radius: 0 0.75rem 0.75rem 0; margin-top: auto; letter-spacing: 0.08em; }
       .eng-battery-header { display: flex; justify-content: space-between; align-items: baseline; width: 100%; }
       .eng-battery-code { font-size: 0.625rem; color: var(--lcars-gray, #666688); }
       .eng-battery-status {

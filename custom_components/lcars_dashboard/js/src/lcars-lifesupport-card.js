@@ -354,6 +354,50 @@ class LcarsLifeSupportCard extends LitElement {
 
     if (Object.keys(metrics).length === 0) return '';
 
+    // Per-room AQ breakdown: group by AREA, average sensors — exclude purifier platforms (shown in purifier table)
+    const areaAqMap = new Map();
+    for (const e of aqSensors) {
+      // Skip purifier-platform sensors — they're already in the Air Purifiers table
+      const platform = e.entity?.platform || '';
+      if (PURIFIER_PLATFORMS.has(platform)) continue;
+      // Resolve area: prefer entity area, fall back to device area
+      let areaId = e.area?.area_id;
+      let areaName = e.area?.name || '';
+      if (!areaId && e.entity?.device_id) {
+        const device = this._hass?.devices?.[e.entity.device_id];
+        if (device?.area_id) {
+          areaId = device.area_id;
+          areaName = this._hass?.areas?.[areaId]?.name || '';
+        }
+      }
+      if (!areaId) continue;
+      if (!areaAqMap.has(areaId)) {
+        areaAqMap.set(areaId, { name: areaName.toUpperCase(), metrics: {} });
+      }
+      const dc = e.state?.attributes?.device_class || '';
+      const val = Number(e.state?.state);
+      if (isNaN(val)) continue;
+      const room = areaAqMap.get(areaId);
+      const key = dc === 'pm25' ? 'pm25'
+        : dc === 'carbon_dioxide' ? 'co2'
+        : (dc === 'volatile_organic_compounds' || dc === 'volatile_organic_compounds_parts') ? 'voc'
+        : (!dc && /score$/i.test(e.entity?.entity_id)) ? 'score'
+        : (!dc && /pm_?2_?5/i.test(e.entity?.entity_id)) ? 'pm25'
+        : (!dc && /co2|carbon_dioxide/i.test(e.entity?.entity_id)) ? 'co2'
+        : (!dc && /voc|volatile/i.test(e.entity?.entity_id)) ? 'voc'
+        : null;
+      if (!key) continue;
+      if (!room.metrics[key]) room.metrics[key] = { sum: val, count: 1 };
+      else { room.metrics[key].sum += val; room.metrics[key].count++; }
+    }
+    const rooms = [...areaAqMap.values()]
+      .filter(r => Object.keys(r.metrics).length > 0)
+      .map(r => {
+        const avg = {};
+        for (const [k, v] of Object.entries(r.metrics)) avg[k] = Math.round(v.sum / v.count);
+        return { name: r.name, metrics: avg };
+      });
+
     const aqiVal = metrics.aqi?.val || 0;
     const aqiLabel = aqiVal <= 50 ? 'GOOD' : aqiVal <= 100 ? 'MODERATE' : aqiVal <= 150 ? 'SENSITIVE' : 'UNHEALTHY';
     const aqiHex = aqiVal <= 50 ? '#99ccff' : aqiVal <= 100 ? '#ffcc99' : '#ff5555';
@@ -381,6 +425,36 @@ class LcarsLifeSupportCard extends LitElement {
             ${metrics.voc ? html`<div class="ls-aq-row" @click=${() => showMoreInfo(metrics.voc.entry.entity.entity_id)}><span class="ls-aq-metric-name">TVOC</span><span class="ls-aq-metric-val">${metrics.voc.val} ppb</span></div>` : ''}
           </div>
         </div>
+        ${rooms.length > 1 ? html`
+          <div class="ls-section-header" style="margin-top:0.75rem">
+            <span class="ls-section-label">PER-ROOM ATMOSPHERE</span>
+            <span class="ls-section-line"></span>
+            <span class="ls-sensor-count">${rooms.length} SENSORS</span>
+          </div>
+          <div class="ls-purifier-table">
+            <div class="ls-table-header">
+              <span class="ls-th">LOCATION</span>
+              <span class="ls-th">SCORE</span>
+              <span class="ls-th">PM2.5</span>
+              <span class="ls-th">CO₂</span>
+              <span class="ls-th">VOC</span>
+            </div>
+            ${rooms.map(r => {
+              const scoreColor = r.metrics.score != null ? (r.metrics.score >= 80 ? 'var(--lcars-ice)' : r.metrics.score >= 60 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)') : 'var(--lcars-gray)';
+              const pm25Color = r.metrics.pm25 != null ? (r.metrics.pm25 <= 12 ? 'var(--lcars-ice)' : r.metrics.pm25 <= 35 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)') : 'var(--lcars-gray)';
+              const co2Color = r.metrics.co2 != null ? (r.metrics.co2 <= 600 ? 'var(--lcars-ice)' : r.metrics.co2 <= 1000 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)') : 'var(--lcars-gray)';
+              const vocColor = r.metrics.voc != null ? (r.metrics.voc <= 150 ? 'var(--lcars-ice)' : r.metrics.voc <= 500 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)') : 'var(--lcars-gray)';
+              return html`
+                <div class="ls-table-row">
+                  <span class="ls-td ls-td-name">${r.name}</span>
+                  <span class="ls-td" style="color:${scoreColor}">${r.metrics.score != null ? r.metrics.score : '—'}</span>
+                  <span class="ls-td" style="color:${pm25Color}">${r.metrics.pm25 != null ? r.metrics.pm25 : '—'}</span>
+                  <span class="ls-td" style="color:${co2Color}">${r.metrics.co2 != null ? `${r.metrics.co2}` : '—'}</span>
+                  <span class="ls-td" style="color:${vocColor}">${r.metrics.voc != null ? r.metrics.voc : '—'}</span>
+                </div>`;
+            })}
+          </div>
+        ` : ''}
       </div>
     `;
   }

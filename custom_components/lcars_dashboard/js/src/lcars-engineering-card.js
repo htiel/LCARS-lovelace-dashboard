@@ -116,6 +116,25 @@ class LcarsEngineeringCard extends LitElement {
       }
     }
     circuits.sort((a, b) => (Number(b.state?.state) || 0) - (Number(a.state?.state) || 0));
+
+    // Enrich batteries with sibling entities (voltage, temp, power, runtime)
+    const entities = this._hass?.entities || {};
+    for (const b of batteries) {
+      b.siblings = {};
+      for (const [eid, s] of Object.entries(states)) {
+        const e = entities[eid];
+        if (!e || e.device_id !== b.deviceId) continue;
+        const dc = s.attributes?.device_class || '';
+        const leid = eid.toLowerCase();
+        if (dc === 'voltage' && !b.siblings.voltage) b.siblings.voltage = s;
+        else if (dc === 'temperature' && !/pcs/i.test(eid) && !b.siblings.temp) b.siblings.temp = s;
+        else if (dc === 'power' && /total.*in/i.test(eid) && !b.siblings.totalIn) b.siblings.totalIn = s;
+        else if (dc === 'power' && /total.*out/i.test(eid) && !b.siblings.totalOut) b.siblings.totalOut = s;
+        else if (/remaining.*time|discharge.*remain|charge.*remain/i.test(eid) && !b.siblings.runtime) b.siblings.runtime = s;
+        else if (/charging.*state|battery.*state/i.test(eid) && !b.siblings.chargeState) b.siblings.chargeState = s;
+      }
+    }
+
     return { batteries, circuits, gridSensors, upsSensors, totalDraw };
   }
 
@@ -179,10 +198,37 @@ class LcarsEngineeringCard extends LitElement {
             const soc = Number(b.entry.state?.state) || 0;
             const name = (b.device?.name || b.entry.state?.attributes?.friendly_name || 'BATTERY').toUpperCase();
             const socHex = soc > 50 ? '#99ccff' : soc > 20 ? '#ffcc99' : '#ff5555';
+            const socCssColor = soc > 50 ? 'var(--lcars-ice)' : soc > 20 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+            const borderColor = socCssColor;
+            // Power flow
+            const totalIn = b.siblings?.totalIn ? Number(b.siblings.totalIn.state) || 0 : 0;
+            const totalOut = b.siblings?.totalOut ? Number(b.siblings.totalOut.state) || 0 : 0;
+            const isCharging = totalIn > totalOut + 5;
+            const isDischarging = totalOut > totalIn + 5;
+            const flowLabel = isCharging ? `▲ CHARGING ${formatNumber(totalIn, 0)}W` : isDischarging ? `▼ DISCHARGING ${formatNumber(totalOut, 0)}W` : '━ IDLE';
+            const flowColor = isCharging ? 'var(--lcars-ice)' : isDischarging ? 'var(--lcars-butterscotch)' : 'var(--lcars-gray)';
+            const flowBg = isCharging ? 'rgba(153,204,255,0.15)' : isDischarging ? 'rgba(255,153,102,0.15)' : 'rgba(102,102,136,0.15)';
+            // Telemetry
+            const voltage = b.siblings?.voltage ? Number(b.siblings.voltage.state) : null;
+            const temp = b.siblings?.temp ? Number(b.siblings.temp.state) : null;
+            const runtime = b.siblings?.runtime?.state || null;
+            const chargeState = b.siblings?.chargeState?.state || null;
+            // Numeric code from device model/serial
+            const model = b.device?.model || '';
             return html`
-              <div class="eng-source-card" @click=${() => showMoreInfo(b.entry.entity.entity_id)}>
-                ${_ringGauge(soc, 100, 72, socHex, `${soc}%`, name.length > 10 ? name.substring(0, 10) : name)}
-                <span class="eng-source-title" style="color:var(--lcars-butterscotch)">${name}</span>
+              <div class="eng-source-card eng-battery-card" style="border-color:${borderColor}"
+                   @click=${() => showMoreInfo(b.entry.entity.entity_id)}>
+                <div class="eng-battery-header">
+                  <span class="eng-source-title" style="color:var(--lcars-butterscotch)">${name}</span>
+                  ${model ? html`<span class="eng-battery-code">${model}</span>` : ''}
+                </div>
+                ${_ringGauge(soc, 100, 72, socHex, `${soc}%`, '')}
+                <div class="eng-battery-status" style="background:${flowBg}; color:${flowColor}">${flowLabel}</div>
+                <div class="eng-battery-telemetry">
+                  ${voltage != null ? html`<span class="eng-bt-key">VOLTAGE</span><span class="eng-bt-val">${voltage}V</span>` : ''}
+                  ${temp != null ? html`<span class="eng-bt-key">TEMP</span><span class="eng-bt-val">${Math.round(temp)}°</span>` : ''}
+                  ${runtime ? html`<span class="eng-bt-key">RUNTIME</span><span class="eng-bt-val">${runtime}</span>` : ''}
+                </div>
               </div>`;
           })}
         </div>
@@ -254,6 +300,23 @@ class LcarsEngineeringCard extends LitElement {
       .eng-source-card::after { content: ''; position: absolute; bottom: -1.5rem; left: 50%; width: 3px; height: 1.5rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.4; }
       .eng-source-card:hover { border-color: var(--lcars-gold, #ffaa00); }
       .eng-source-card:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 2px; }
+      /* Enriched battery card (Prompt 1 mockup) */
+      .eng-battery-card { gap: 0.375rem; }
+      .eng-battery-header { display: flex; justify-content: space-between; align-items: baseline; width: 100%; }
+      .eng-battery-code { font-size: 0.625rem; color: var(--lcars-gray, #666688); }
+      .eng-battery-status {
+        width: 100%; padding: 0.25rem 0.5rem; border-radius: 0 1rem 1rem 0;
+        font-size: 0.75rem; text-align: center; text-transform: uppercase;
+        font-family: var(--lcars-font, 'Antonio', sans-serif);
+      }
+      .eng-battery-telemetry {
+        display: grid; grid-template-columns: auto 1fr; gap: 0.125rem 0.5rem;
+        width: 100%; font-family: var(--lcars-font, 'Antonio', sans-serif);
+        text-transform: uppercase; font-size: 0.7rem;
+        border-top: 1px solid rgba(255,153,102,0.15); padding-top: 0.375rem;
+      }
+      .eng-bt-key { color: var(--lcars-gray, #666688); }
+      .eng-bt-val { color: var(--lcars-ice, #99ccff); text-align: right; font-variant-numeric: tabular-nums; }
       .eng-source-title { font-size: 0.875rem; letter-spacing: 0.08em; }
       .eng-source-power { font-size: 1.75rem; color: var(--lcars-space-white, #f5f6fa); }
       .eng-source-detail { font-size: 0.75rem; color: var(--lcars-ice, #99ccff); }

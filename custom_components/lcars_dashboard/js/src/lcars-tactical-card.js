@@ -181,6 +181,7 @@ class LcarsTacticalCard extends LitElement {
   _getGlobalSummary(floorGroups) {
     let alarmState = 'disarmed', perimeterTotal = 0, perimeterSecure = 0, safetyAlerts = 0;
     let locksTotal = 0, locksLocked = 0;
+    let alarmEntityId = null;
     const allCameras = [], allLocks = [], allPersons = [];
 
     for (const { areas } of floorGroups) {
@@ -188,7 +189,10 @@ class LcarsTacticalCard extends LitElement {
         for (const e of data.access) {
           if (e.domain === 'alarm_control_panel') {
             const s = (this._hass?.states?.[e.entity?.entity_id] || e.state)?.state || 'disarmed';
-            if ((ALARM_SEVERITY[s] || 0) > (ALARM_SEVERITY[alarmState] || 0)) alarmState = s;
+            if ((ALARM_SEVERITY[s] || 0) > (ALARM_SEVERITY[alarmState] || 0)) {
+              alarmState = s;
+              alarmEntityId = e.entity?.entity_id;
+            }
           }
         }
         for (const e of data.perimeter) {
@@ -214,7 +218,7 @@ class LcarsTacticalCard extends LitElement {
         if (eid.startsWith('person.')) allPersons.push({ entity_id: eid, state: s });
       }
     }
-    return { alarmState, perimeterTotal, perimeterSecure, safetyAlerts,
+    return { alarmState, alarmEntityId, perimeterTotal, perimeterSecure, safetyAlerts,
              locksTotal, locksLocked, allCameras, allLocks, allPersons };
   }
 
@@ -410,19 +414,23 @@ class LcarsTacticalCard extends LitElement {
             `;
           })}
 
-          <!-- Shield Core (F-02) -->
-          <rect x="${cx - 40}" y="${cy - 28}" width="80" height="56" rx="8"
-                class="tac-shield-core" style="fill:${shieldColor}" />
-          <text x="${cx}" y="${cy - 8}" class="tac-shield-text"
-                text-anchor="middle" dominant-baseline="central">
-            ${summary.alarmState.replace(/_/g, ' ').toUpperCase()}
-          </text>
-          <text x="${cx}" y="${cy + 12}" class="tac-shield-subtext"
-                text-anchor="middle" dominant-baseline="central">
-            ${this._config?.tactical?.privacy === 'hidden'
-              ? ''
-              : personsHome > 0 ? `${personsHome} HOME` : 'EMPTY'}
-          </text>
+          <!-- Shield Core (F-02) — tap to arm/disarm -->
+          <g class="tac-shield-core-group" tabindex="0" role="button"
+             aria-label="Alarm: ${summary.alarmState.replace(/_/g, ' ')}. Tap to arm or disarm."
+             @click=${() => { if (summary.alarmEntityId) showMoreInfo(summary.alarmEntityId); }}>
+            <rect x="${cx - 40}" y="${cy - 28}" width="80" height="56" rx="8"
+                  class="tac-shield-core" style="fill:${shieldColor}" />
+            <text x="${cx}" y="${cy - 8}" class="tac-shield-text"
+                  text-anchor="middle" dominant-baseline="central">
+              ${summary.alarmState.replace(/_/g, ' ').toUpperCase()}
+            </text>
+            <text x="${cx}" y="${cy + 12}" class="tac-shield-subtext"
+                  text-anchor="middle" dominant-baseline="central">
+              ${this._config?.tactical?.privacy === 'hidden'
+                ? ''
+                : personsHome > 0 ? `${personsHome} HOME` : 'EMPTY'}
+            </text>
+          </g>
         </svg>
       </div>
     `;
@@ -645,6 +653,9 @@ class LcarsTacticalCard extends LitElement {
           fill: var(--lcars-ice, #99ccff); opacity: 0.6; text-transform: uppercase; letter-spacing: 0.08em;
         }
         .tac-shield-core { opacity: 0.9; transition: fill 500ms ease; }
+        .tac-shield-core-group { cursor: pointer; }
+        .tac-shield-core-group:hover .tac-shield-core { opacity: 1; filter: brightness(1.15); }
+        .tac-shield-core-group:focus-visible { outline: 2px solid var(--lcars-space-white, #f5f6fa); outline-offset: 4px; border-radius: 8px; }
         .tac-shield-text {
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 11px;
           fill: var(--lcars-black, #000); text-transform: uppercase; letter-spacing: 0.08em; font-weight: bold;

@@ -341,41 +341,51 @@ class LcarsTacticalCard extends LitElement {
     return this._cameraStates.get(camEid) || null;
   }
 
-  /* ═══ Perimeter Schematic (F-01) ═══ */
+  /* ═══ Perimeter Schematic (F-01) — Tiered: outer perimeter + inner motion ═══ */
   _renderPerimeter(floorGroups, summary) {
-    const cx = 150, cy = 150, sensorR = 100, shieldR = 120;
-    // Build zone data from areas
-    const zones = [];
+    const cx = 150, cy = 150, sensorR = 100, shieldR = 120, innerR = 45;
+    const outerZones = [], innerZones = [];
     const usedAngles = new Set();
     let fallbackIdx = 0;
     const allAreas = [];
     for (const { areas } of floorGroups) {
       for (const data of areas) allAreas.push(data);
     }
-    // First pass: assign heuristic angles
+
+    // Classify: outer (has door/window sensors) vs inner (motion-only)
     for (const data of allAreas) {
-      const sensorCount = data.perimeter.length + data.motion.length;
-      if (sensorCount === 0 && data.cameras.length === 0) continue;
+      const hasPerimeter = data.perimeter.length > 0;
+      const hasMotion = data.motion.length > 0;
+      if (!hasPerimeter && !hasMotion && data.cameras.length === 0) continue;
+
       const zp = _zoneForArea(data.area.name);
-      let angle = zp ? zp.angle : null;
-      const zoneName = zp ? zp.zone : data.area.name.substring(0, 5).toUpperCase();
-      // Deduplicate angles — offset by 25° if collision
-      if (angle != null) {
-        while (usedAngles.has(Math.round(angle))) angle += 25;
-      } else {
-        // Fallback: distribute evenly
-        angle = (fallbackIdx * (360 / Math.max(allAreas.length, 6))) % 360;
-        fallbackIdx++;
-        while (usedAngles.has(Math.round(angle))) angle += 15;
+      const hasBreaches = data.perimeter.some(e => (this._hass?.states?.[e.entity?.entity_id] || e.state)?.state === 'on');
+      const hasActiveMotion = data.motion.some(e => (this._hass?.states?.[e.entity?.entity_id] || e.state)?.state === 'on');
+
+      if (hasPerimeter) {
+        // OUTER ring — entry-point areas
+        let angle = zp ? zp.angle : null;
+        const zoneName = zp ? zp.zone : data.area.name.substring(0, 5).toUpperCase();
+        if (angle != null) {
+          while (usedAngles.has(Math.round(angle))) angle += 30;
+        } else {
+          angle = (fallbackIdx * (360 / Math.max(allAreas.length, 6))) % 360;
+          fallbackIdx++;
+          while (usedAngles.has(Math.round(angle))) angle += 20;
+        }
+        usedAngles.add(Math.round(angle));
+        outerZones.push({ name: zoneName, angle, area: data.area, perimeter: data.perimeter,
+                          motion: data.motion, hasBreaches, hasMotion: hasActiveMotion });
+      } else if (hasMotion) {
+        // INNER field — interior motion-only areas
+        const abbr = data.area.name.substring(0, 3).toUpperCase();
+        innerZones.push({ name: abbr, area: data.area, motion: data.motion, hasMotion: hasActiveMotion });
       }
-      usedAngles.add(Math.round(angle));
-      zones.push({
-        name: zoneName, angle, area: data.area,
-        perimeter: data.perimeter, motion: data.motion, cameras: data.cameras,
-        hasBreaches: data.perimeter.some(e => (this._hass?.states?.[e.entity?.entity_id] || e.state)?.state === 'on'),
-        hasMotion: data.motion.some(e => (this._hass?.states?.[e.entity?.entity_id] || e.state)?.state === 'on'),
-      });
     }
+
+    // Distribute inner zones evenly around the inner ring
+    const innerAngleStep = innerZones.length > 0 ? 360 / innerZones.length : 0;
+    innerZones.forEach((z, i) => { z.angle = i * innerAngleStep; });
 
     const isArmed = summary.alarmState !== 'disarmed';
     const shieldColor = this._getSummaryColor(summary.alarmState);
@@ -393,8 +403,8 @@ class LcarsTacticalCard extends LitElement {
             <path d="${_describeArc(cx, cy, shieldR, 280, 350)}" class="tac-shield-arc" style="stroke:${shieldColor}" />
           ` : ''}
 
-          <!-- Sensor ring arcs -->
-          ${zones.map((z, i) => {
+          <!-- Sensor ring arcs (OUTER — perimeter zones with door/window sensors) -->
+          ${outerZones.map((z, i) => {
             const startA = z.angle - 20;
             const endA = z.angle + 20;
             const nodeColor = z.hasBreaches ? 'var(--lcars-tomato)' : z.hasMotion ? 'var(--lcars-sunflower)' : 'var(--lcars-ice)';
@@ -411,6 +421,21 @@ class LcarsTacticalCard extends LitElement {
                     class="tac-zone-label"
                     text-anchor="${z.angle > 45 && z.angle < 180 ? 'start' : z.angle > 180 && z.angle < 315 ? 'end' : 'middle'}"
                     dominant-baseline="central">${z.name}</text>
+            `;
+          })}
+
+          <!-- Interior motion pills (INNER — motion-only areas, labels hidden when idle) -->
+          ${innerZones.map(z => {
+            const pos = _polarToCart(cx, cy, innerR, z.angle);
+            const color = z.hasMotion ? 'var(--lcars-sunflower)' : 'var(--lcars-gray)';
+            return svg`
+              <rect x="${pos.x - 4}" y="${pos.y - 2}" width="8" height="4" rx="2"
+                    fill="${color}" class="tac-inner-pip ${z.hasMotion ? 'active' : ''}"
+                    @click=${() => showMoreInfo(z.motion[0]?.entity?.entity_id)} />
+              ${z.hasMotion ? svg`
+                <text x="${pos.x}" y="${pos.y + 10}" class="tac-inner-label"
+                      text-anchor="middle" dominant-baseline="central">${z.name}</text>
+              ` : ''}
             `;
           })}
 
@@ -651,6 +676,14 @@ class LcarsTacticalCard extends LitElement {
         .tac-zone-label {
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 10px;
           fill: var(--lcars-ice, #99ccff); opacity: 0.6; text-transform: uppercase; letter-spacing: 0.08em;
+        }
+        /* Inner field — motion-only interior zones */
+        .tac-inner-pip { cursor: pointer; transition: opacity 200ms ease; }
+        .tac-inner-pip.active { opacity: 1; }
+        .tac-inner-pip:not(.active) { opacity: 0.4; }
+        .tac-inner-label {
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 8px;
+          fill: var(--lcars-sunflower, #ffcc99); text-transform: uppercase; letter-spacing: 0.05em;
         }
         .tac-shield-core { opacity: 0.9; transition: fill 500ms ease; }
         .tac-shield-core-group { cursor: pointer; }

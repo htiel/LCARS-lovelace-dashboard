@@ -49,10 +49,11 @@ const FILTER_CIRCUITS = 'circuits';
 
 const POWER_CLASSES = new Set(['battery', 'power', 'energy', 'voltage', 'current']);
 const UPS_KEYWORDS = /ups|battery_charge|battery_runtime|battery_voltage/i;
-const GRID_KEYWORDS = /grid|mains|main.*load|total.*power|vueg3.*main/i;
+const GRID_KEYWORDS = /grid|mains|mainsfromgrid|main.*load|total.*power|vueg3.*main|shelly.*total|3em.*total/i;
 // 5X-ENG-8: Filter out non-storage battery entities
 const STORAGE_PLATFORMS = new Set(['ecoflow_cloud', 'nut', 'victron', 'tesla_powerwall', 'solaredge']);
-const NON_STORAGE_KEYWORDS = /motion_sensor|remote|phone|tablet|watch|tile|tag|lock|camera|protect|switch_?bot/i;
+const NON_STORAGE_PLATFORMS = new Set(['wallbox', 'insteon', 'blink', 'simplisafe', 'tile', 'switchbot', 'unifiprotect', 'unifi', 'mobile_app', 'nest_protect']);
+const NON_STORAGE_KEYWORDS = /motion.sensor|remote|phone|tablet|watch|tile|tag|lock|camera|protect|switch.?bot|wallbox|vilya|charger|thermostat|meter|doorbell/i;
 
 class LcarsEngineeringCard extends LitElement {
   static get properties() {
@@ -95,12 +96,12 @@ class LcarsEngineeringCard extends LitElement {
         const platform = e.platform || '';
         if (dc === 'battery' && e.device_id && !seenDevices.has(e.device_id)) {
           // 5X-ENG-8: Only include actual energy storage devices, not motion sensors etc.
+          if (NON_STORAGE_PLATFORMS.has(platform)) continue;
           const device = this._hass?.devices?.[e.device_id];
           const devName = (device?.name || e.entity_id || '').toLowerCase();
           if (NON_STORAGE_KEYWORDS.test(devName) || NON_STORAGE_KEYWORDS.test(e.entity_id)) continue;
-          // Must be a storage platform OR have high-capacity battery attributes
           const isStorage = STORAGE_PLATFORMS.has(platform) || /ecoflow|river|delta|powerwall|ups/i.test(devName);
-          if (!isStorage && Number(state.state) === 0) continue; // Skip 0% non-storage batteries
+          if (!isStorage) continue; // Only show confirmed storage devices
           seenDevices.add(e.device_id);
           batteries.push({ entry, device, deviceId: e.device_id, area, floor });
           continue;
@@ -118,8 +119,18 @@ class LcarsEngineeringCard extends LitElement {
     return { batteries, circuits, gridSensors, upsSensors, totalDraw };
   }
 
+  _getGridPower(data) {
+    // Find grid power sensor with non-zero value
+    const powerSensor = data.gridSensors.find(s =>
+      (s.state?.attributes?.device_class === 'power') && Number(s.state?.state) > 0
+    );
+    if (powerSensor) return Number(powerSensor.state.state);
+    // No solar/generator detected → grid ≈ total draw
+    return data.totalDraw;
+  }
+
   _renderSystemStatus(data) {
-    const gridPower = data.gridSensors.length > 0 ? Number(data.gridSensors[0].state?.state) || 0 : data.totalDraw;
+    const gridPower = this._getGridPower(data);
     let avgSoc = 0, batteryCount = 0;
     for (const b of data.batteries) { const soc = Number(b.entry.state?.state); if (!isNaN(soc)) { avgSoc += soc; batteryCount++; } }
     if (batteryCount > 0) avgSoc = Math.round(avgSoc / batteryCount);
@@ -140,7 +151,7 @@ class LcarsEngineeringCard extends LitElement {
   }
 
   _renderSources(data) {
-    const gridPower = data.gridSensors.length > 0 ? Number(data.gridSensors[0].state?.state) || 0 : data.totalDraw;
+    const gridPower = this._getGridPower(data);
     return html`
       <div class="eng-section">
         <div class="eng-section-header"><span class="eng-section-label">POWER SOURCES</span><span class="eng-section-line"></span></div>
@@ -238,8 +249,9 @@ class LcarsEngineeringCard extends LitElement {
       .eng-section-label { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; color: var(--lcars-butterscotch, #ff9966); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
       .eng-section-line { flex: 1; height: 2px; background: var(--lcars-butterscotch, #ff9966); opacity: 0.4; }
       .eng-circuit-count, .eng-circuit-remaining { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; color: var(--lcars-gray, #666688); white-space: nowrap; text-transform: uppercase; }
-      .eng-sources-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.375rem; }
-      .eng-source-card { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.75rem; cursor: pointer; border: 2px solid var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem; background: rgba(255,153,102,0.03); font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; transition: border-color 200ms ease; }
+      .eng-sources-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.375rem; position: relative; padding-bottom: 1.5rem; }
+      .eng-source-card { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.75rem; cursor: pointer; border: 2px solid var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem; background: rgba(255,153,102,0.03); font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; transition: border-color 200ms ease; position: relative; }
+      .eng-source-card::after { content: ''; position: absolute; bottom: -1.5rem; left: 50%; width: 3px; height: 1.5rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.4; }
       .eng-source-card:hover { border-color: var(--lcars-gold, #ffaa00); }
       .eng-source-card:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 2px; }
       .eng-source-title { font-size: 0.875rem; letter-spacing: 0.08em; }
@@ -251,7 +263,8 @@ class LcarsEngineeringCard extends LitElement {
       .ring-gauge .ring-sublabel { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 7px; fill: var(--lcars-gray, #666688); text-transform: uppercase; }
       .eng-soc-bar { width: 100%; height: 0.5rem; background: rgba(153,204,255,0.15); border-radius: 0 0.25rem 0.25rem 0; overflow: hidden; }
       .eng-soc-fill { height: 100%; border-radius: 0 0.25rem 0.25rem 0; transition: width 300ms ease; }
-      .eng-distribution-bar { display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 0.5rem 1rem; background: var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem; font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; color: var(--lcars-black, #000); }
+      .eng-distribution-bar { display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 0.5rem 1rem; background: var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem; font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; color: var(--lcars-black, #000); position: relative; margin-bottom: 1rem; }
+      .eng-distribution-bar::after { content: ''; position: absolute; bottom: -1rem; left: 50%; width: 3px; height: 1rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.4; }
       .eng-dist-label { font-size: 0.875rem; opacity: 0.9; }
       .eng-dist-value { font-size: 1.125rem; font-weight: bold; font-variant-numeric: tabular-nums; }
       .eng-circuit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(10rem, 100%), 1fr)); gap: 0.375rem; }

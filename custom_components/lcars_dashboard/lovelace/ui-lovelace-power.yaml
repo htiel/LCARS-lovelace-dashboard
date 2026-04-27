@@ -1,6 +1,6 @@
 # LCARS Engineering Dashboard — Lovelace YAML configuration
 views:
-  - title: Engineering
+  - title: Power Distribution
     icon: mdi:flash
     path: home
     type: custom:lcars-engineering-layout

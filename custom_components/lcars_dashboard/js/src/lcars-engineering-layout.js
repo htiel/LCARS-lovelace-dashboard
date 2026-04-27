@@ -90,7 +90,7 @@ class LcarsEngineeringLayout extends LitElement {
           </div>
         </div>
         <nav class="lcars-sidebar" role="tablist" aria-label="Filter engineering devices">
-          <div class="lcars-sidebar-panel">Engineering</div>
+          <div class="lcars-sidebar-panel">Power Distribution</div>
           <div class="lcars-sidebar-filters">
             <button class="sidebar-filter-btn ${this._filter === FILTER_ALL ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_ALL ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_ALL)}><span class="filter-label">ALL</span></button>
             <button class="sidebar-filter-btn ${this._filter === FILTER_STORAGE ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_STORAGE ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_STORAGE)}><span class="filter-label">STORAGE</span></button>
@@ -98,7 +98,7 @@ class LcarsEngineeringLayout extends LitElement {
           </div>
           <div class="lcars-sidebar-filler" aria-hidden="true"></div>
         </nav>
-        <main class="lcars-content" aria-label="Engineering dashboard">
+        <main class="lcars-content" aria-label="Power Distribution dashboard">
           ${this.cards?.length > 0 ? this.cards.map((c) => html`${c}`) : html`<div class="lcars-heading">No data available</div>`}
         </main>
         <div class="lcars-elbow-bottom" aria-hidden="true"></div>

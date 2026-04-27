@@ -460,6 +460,12 @@ class LcarsTacticalCard extends LitElement {
     const glow = DETECT_GLOW[level] || 'none';
     const levelLabel = level === DETECT_PERSON ? 'PERSON' : level === DETECT_VEHICLE ? 'VEHICLE' : level === DETECT_MOTION ? 'MOTION' : '';
 
+    // Active cameras get live MJPEG stream, idle get still snapshots
+    const isActive = level > DETECT_IDLE;
+    const feedUrl = isActive && imgUrl
+      ? `/api/camera_proxy_stream/${eid}?token=${state?.attributes?.access_token || ''}`
+      : imgUrl;
+
     return html`
       <div class="tac-camera" data-state="${camState}" data-level="${level}"
            style="--cam-border:${borderColor}; --cam-scale:${scale}; --cam-glow:${glow}; --cam-z:${level > 0 ? 10 + level * 10 : 1}"
@@ -472,14 +478,15 @@ class LcarsTacticalCard extends LitElement {
           <ha-icon .icon=${'mdi:video-off'} style="--mdc-icon-size:24px"></ha-icon>
           <span class="tac-camera__offline-text">VIEWSCREEN OFFLINE</span>
         </div>
-        ${imgUrl ? html`
-          <img src="${imgUrl}" alt="${name}" loading="lazy"
+        ${feedUrl ? html`
+          <img src="${feedUrl}" alt="${name}" loading="${isActive ? 'eager' : 'lazy'}"
                @load=${(e) => { e.target.closest('.tac-camera')?.setAttribute('data-state', 'live'); }}
                @error=${(e) => { e.target.closest('.tac-camera')?.setAttribute('data-state', 'offline'); }} />
         ` : ''}
         <span class="tac-camera__label">
           ${name}
           ${levelLabel ? html`<span class="tac-camera__detect-badge" style="color:${borderColor}">${levelLabel}</span>` : ''}
+          ${isActive ? html`<span class="tac-camera__live-badge">LIVE</span>` : ''}
         </span>
       </div>
     `;
@@ -667,6 +674,13 @@ class LcarsTacticalCard extends LitElement {
           display: flex; justify-content: space-between; align-items: center;
         }
         .tac-camera__detect-badge { font-size: 0.65rem; font-weight: bold; }
+        .tac-camera__live-badge {
+          font-size: 0.55rem; font-weight: bold; color: var(--lcars-tomato, #ff5555);
+          background: rgba(0,0,0,0.6); padding: 0.05rem 0.3rem; border-radius: 0.2rem;
+          animation: tac-live-blink 1.5s ease-in-out infinite;
+        }
+        @keyframes tac-live-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @media (prefers-reduced-motion: reduce) { .tac-camera__live-badge { animation: none; } }
         .tac-camera:focus-visible { outline: 2px solid var(--lcars-space-white, #f5f6fa); outline-offset: 2px; }
 
         /* Camera state overlays */

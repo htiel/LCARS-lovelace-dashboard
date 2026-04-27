@@ -8,11 +8,35 @@
  * Entity sources: Nest thermostats, BlueAir purifiers, Awair AQ sensors,
  * SwitchBot meters, VeSync purifiers, HomeKit controllers, WeatherFlow/Link.
  */
-import { LitElement, html, css } from 'lit-element';
+import { LitElement, html, css, svg } from 'lit-element';
 import { lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
+
+/* ─── SVG Ring Gauge Utility ─── */
+function _ringGauge(value, max, size, color, label, sublabel, opts = {}) {
+  const r = (size - 8) / 2;
+  const circumference = 2 * Math.PI * r;
+  const pct = Math.min(1, Math.max(0, value / max));
+  const dashOffset = circumference * (1 - pct);
+  const cx = size / 2, cy = size / 2;
+  const trackColor = opts.trackColor || 'rgba(153,204,255,0.12)';
+  return svg`
+    <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" class="ring-gauge" role="meter"
+         aria-valuenow="${value}" aria-valuemin="0" aria-valuemax="${max}" aria-label="${label}: ${value}">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${trackColor}" stroke-width="4" />
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="4"
+              stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"
+              stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})"
+              style="transition: stroke-dashoffset 500ms ease" />
+      <text x="${cx}" y="${cy - 4}" text-anchor="middle" dominant-baseline="central"
+            class="ring-value" style="fill:${color}">${label}</text>
+      ${sublabel ? svg`<text x="${cx}" y="${cy + 10}" text-anchor="middle" dominant-baseline="central"
+            class="ring-sublabel">${sublabel}</text>` : ''}
+    </svg>
+  `;
+}
 import { isDiagnosticEntity, isEnvironmentEntity } from './lcars-entity-utils.js';
 import { formatNumber } from './lcars-format-utils.js';
 import { lcarsAudio } from './lcars-audio.js';
@@ -133,28 +157,31 @@ class LcarsLifeSupportCard extends LitElement {
     }
     const avgHum = humCount > 0 ? Math.round(humSum / humCount) : null;
 
-    const aqiColor = worstAqi <= 50 ? 'var(--lcars-ice)' : worstAqi <= 100 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+    const aqiColor = worstAqi <= 50 ? '#99ccff' : worstAqi <= 100 ? '#ffcc99' : '#ff5555';
+    const aqiCssColor = worstAqi <= 50 ? 'var(--lcars-ice)' : worstAqi <= 100 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+    const thermoAvgTemp = thermostats.length > 0 ? Math.round(thermostats.reduce((s, t) => s + (Number(t.state?.attributes?.current_temperature) || 0), 0) / thermostats.length) : null;
+    const thermoColor = heating > 0 ? '#ff9966' : cooling > 0 ? '#99ccff' : '#666688';
 
     return html`
       <div class="ls-overview">
         <div class="ls-overview-card">
+          ${_ringGauge(purifiers.filter(p => (this._hass?.states?.[p.entity?.entity_id] || p.state)?.state === 'on').length, Math.max(purifiers.length, 1), 64, '#99ccff', `${purifiers.length}`, purifiers.length === 1 ? 'UNIT' : 'UNITS')}
           <span class="ls-ov-title">AIR PURIFIERS</span>
-          <span class="ls-ov-value">${purifiers.length} ${purifiers.length === 1 ? 'UNIT' : 'UNITS'}</span>
           <span class="ls-ov-status" style="color:var(--lcars-ice)">ALL NORMAL</span>
         </div>
         <div class="ls-overview-card">
+          ${thermoAvgTemp != null ? _ringGauge(thermoAvgTemp, 100, 64, thermoColor, `${thermoAvgTemp}°`, heating > 0 ? 'HEATING' : cooling > 0 ? 'COOLING' : 'IDLE') : html`<span class="ls-ov-value">${thermostats.length} ${thermostats.length === 1 ? 'ZONE' : 'ZONES'}</span>`}
           <span class="ls-ov-title">THERMOSTATS</span>
-          <span class="ls-ov-value">${thermostats.length} ${thermostats.length === 1 ? 'ZONE' : 'ZONES'}</span>
-          <span class="ls-ov-status">${heating > 0 ? `${heating} HEATING` : cooling > 0 ? `${cooling} COOLING` : 'ALL IDLE'}</span>
+          <span class="ls-ov-status">${thermostats.length} ${thermostats.length === 1 ? 'ZONE' : 'ZONES'}</span>
         </div>
         <div class="ls-overview-card">
+          ${_ringGauge(Math.min(worstAqi, 300), 300, 64, aqiColor, worstAqi > 0 ? `${worstAqi}` : '—', 'AQI')}
           <span class="ls-ov-title">AIR QUALITY</span>
-          <span class="ls-ov-value" style="color:${aqiColor}">${worstAqi > 0 ? worstAqi : '—'} AQI</span>
-          <span class="ls-ov-status" style="color:${aqiColor}">${aqiStatus}</span>
+          <span class="ls-ov-status" style="color:${aqiCssColor}">${aqiStatus}</span>
         </div>
         <div class="ls-overview-card">
+          ${avgTemp != null ? _ringGauge(avgTemp, 100, 64, avgTemp < 68 ? '#8899ff' : avgTemp <= 76 ? '#99ccff' : '#ff9966', `${avgTemp}°`, `${avgHum || '—'}%`) : html`<span class="ls-ov-value">—</span>`}
           <span class="ls-ov-title">ENVIRONMENT</span>
-          <span class="ls-ov-value">${avgTemp != null ? `${avgTemp}°` : '—'}</span>
           <span class="ls-ov-status">${avgHum != null ? `${avgHum}% HUMIDITY` : ''}</span>
         </div>
       </div>
@@ -177,13 +204,13 @@ class LcarsLifeSupportCard extends LitElement {
             const currentTemp = s?.attributes?.current_temperature;
             const targetTemp = s?.attributes?.temperature;
             const action = s?.attributes?.hvac_action || s?.state || 'idle';
+            const actionHex = action === 'heating' ? '#ff9966' : action === 'cooling' ? '#99ccff' : '#666688';
             const actionColor = action === 'heating' ? 'var(--lcars-butterscotch)' : action === 'cooling' ? 'var(--lcars-ice)' : 'var(--lcars-gray)';
             const actionLabel = action.toUpperCase();
             return html`
               <div class="ls-thermo-card" @click=${() => showMoreInfo(t.entity.entity_id)}>
+                ${currentTemp != null ? _ringGauge(currentTemp, 100, 80, actionHex, `${Math.round(currentTemp * 10) / 10}°`, actionLabel) : html`<span class="ls-thermo-temp">—</span>`}
                 <span class="ls-thermo-name">${name}</span>
-                <span class="ls-thermo-temp" style="color:${actionColor}">${currentTemp != null ? `${Math.round(currentTemp * 10) / 10}°` : '—'}</span>
-                <span class="ls-thermo-action" style="color:${actionColor}">${actionLabel}</span>
                 ${targetTemp != null ? html`<span class="ls-thermo-setpoint">${targetTemp}° SETPOINT</span>` : ''}
               </div>
             `;
@@ -329,7 +356,12 @@ class LcarsLifeSupportCard extends LitElement {
 
     const aqiVal = metrics.aqi?.val || 0;
     const aqiLabel = aqiVal <= 50 ? 'GOOD' : aqiVal <= 100 ? 'MODERATE' : aqiVal <= 150 ? 'SENSITIVE' : 'UNHEALTHY';
-    const aqiColor = aqiVal <= 50 ? 'var(--lcars-ice)' : aqiVal <= 100 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+    const aqiHex = aqiVal <= 50 ? '#99ccff' : aqiVal <= 100 ? '#ffcc99' : '#ff5555';
+    const aqiCssColor = aqiVal <= 50 ? 'var(--lcars-ice)' : aqiVal <= 100 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+    // CO₂ threshold coloring (5X-LS-11)
+    const co2Val = metrics.co2?.val || 0;
+    const co2Color = co2Val > 1500 ? 'var(--lcars-tomato)' : co2Val > 1000 ? 'var(--lcars-sunflower)' : 'var(--lcars-ice)';
+    const co2Status = co2Val > 1500 ? ' ⚠ HIGH' : co2Val > 1000 ? ' ⚠ ELEVATED' : '';
 
     return html`
       <div class="ls-section">
@@ -339,14 +371,13 @@ class LcarsLifeSupportCard extends LitElement {
         </div>
         <div class="ls-aq-panel">
           <div class="ls-aq-hero">
-            <span class="ls-aq-score" style="color:${aqiColor}">${aqiVal || '—'}</span>
-            <span class="ls-aq-label">AQI</span>
-            <span class="ls-aq-status" style="color:${aqiColor}">${aqiLabel}</span>
+            ${_ringGauge(Math.min(aqiVal, 300), 300, 96, aqiHex, aqiVal > 0 ? `${aqiVal}` : '—', 'AQI')}
+            <span class="ls-aq-status" style="color:${aqiCssColor}">${aqiLabel}</span>
           </div>
           <div class="ls-aq-metrics">
             ${metrics.pm25 ? html`<div class="ls-aq-row" @click=${() => showMoreInfo(metrics.pm25.entry.entity.entity_id)}><span class="ls-aq-metric-name">PM2.5</span><span class="ls-aq-metric-val">${metrics.pm25.val} µg/m³</span></div>` : ''}
             ${metrics.pm10 ? html`<div class="ls-aq-row" @click=${() => showMoreInfo(metrics.pm10.entry.entity.entity_id)}><span class="ls-aq-metric-name">PM10</span><span class="ls-aq-metric-val">${metrics.pm10.val} µg/m³</span></div>` : ''}
-            ${metrics.co2 ? html`<div class="ls-aq-row" @click=${() => showMoreInfo(metrics.co2.entry.entity.entity_id)}><span class="ls-aq-metric-name">CO₂</span><span class="ls-aq-metric-val">${metrics.co2.val} ppm</span></div>` : ''}
+            ${metrics.co2 ? html`<div class="ls-aq-row" @click=${() => showMoreInfo(metrics.co2.entry.entity.entity_id)}><span class="ls-aq-metric-name">CO₂</span><span class="ls-aq-metric-val" style="color:${co2Color}">${metrics.co2.val} ppm${co2Status}</span></div>` : ''}
             ${metrics.voc ? html`<div class="ls-aq-row" @click=${() => showMoreInfo(metrics.voc.entry.entity.entity_id)}><span class="ls-aq-metric-name">TVOC</span><span class="ls-aq-metric-val">${metrics.voc.val} ppb</span></div>` : ''}
           </div>
         </div>
@@ -394,6 +425,16 @@ class LcarsLifeSupportCard extends LitElement {
         .ls-ov-title { font-size: 0.75rem; color: var(--lcars-gray, #666688); letter-spacing: 0.1em; }
         .ls-ov-value { font-size: 1.5rem; color: var(--lcars-space-white, #f5f6fa); }
         .ls-ov-status { font-size: 0.75rem; }
+
+        /* Ring gauge text */
+        .ring-gauge .ring-value {
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 14px;
+          text-transform: uppercase; font-weight: bold;
+        }
+        .ring-gauge .ring-sublabel {
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 8px;
+          fill: var(--lcars-gray, #666688); text-transform: uppercase;
+        }
 
         /* ─── Section Headers ─── */
         .ls-section { margin-bottom: 0.25rem; }

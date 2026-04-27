@@ -9,10 +9,32 @@
  * - Eric: Emporia Vue (210 circuits), NUT UPS, TP-Link smart plugs
  * - Leith: EcoFlow batteries (3 units, 191 entities), Emporia Vue (84), Shelly Pro 3EM
  */
-import { LitElement, html, css } from 'lit-element';
+import { LitElement, html, css, svg } from 'lit-element';
 import { lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
+
+/* ─── SVG Ring Gauge for Battery SOC ─── */
+function _ringGauge(value, max, size, color, label, sublabel) {
+  const r = (size - 8) / 2;
+  const circumference = 2 * Math.PI * r;
+  const pct = Math.min(1, Math.max(0, value / max));
+  const dashOffset = circumference * (1 - pct);
+  const cx = size / 2, cy = size / 2;
+  return svg`
+    <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" class="ring-gauge" role="meter"
+         aria-valuenow="${value}" aria-valuemin="0" aria-valuemax="${max}" aria-label="${label}: ${value}">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(153,204,255,0.12)" stroke-width="4" />
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="4"
+              stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"
+              stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})"
+              style="transition: stroke-dashoffset 500ms ease" />
+      <text x="${cx}" y="${cy - 4}" text-anchor="middle" dominant-baseline="central"
+            class="ring-value" style="fill:${color}">${label}</text>
+      ${sublabel ? svg`<text x="${cx}" y="${cy + 10}" text-anchor="middle" dominant-baseline="central"
+            class="ring-sublabel">${sublabel}</text>` : ''}
+    </svg>`;
+}
 import { getAreaEntities } from './lcars-entity-query.js';
 import { isDiagnosticEntity } from './lcars-entity-utils.js';
 import { formatNumber } from './lcars-format-utils.js';
@@ -27,7 +49,10 @@ const FILTER_CIRCUITS = 'circuits';
 
 const POWER_CLASSES = new Set(['battery', 'power', 'energy', 'voltage', 'current']);
 const UPS_KEYWORDS = /ups|battery_charge|battery_runtime|battery_voltage/i;
-const GRID_KEYWORDS = /grid|mains|main.*panel|total|balance/i;
+const GRID_KEYWORDS = /grid|mains|main.*load|total.*power|vueg3.*main/i;
+// 5X-ENG-8: Filter out non-storage battery entities
+const STORAGE_PLATFORMS = new Set(['ecoflow_cloud', 'nut', 'victron', 'tesla_powerwall', 'solaredge']);
+const NON_STORAGE_KEYWORDS = /motion_sensor|remote|phone|tablet|watch|tile|tag|lock|camera|protect|switch_?bot/i;
 
 class LcarsEngineeringCard extends LitElement {
   static get properties() {
@@ -69,8 +94,15 @@ class LcarsEngineeringCard extends LitElement {
         const dc = state.attributes?.device_class || '';
         const platform = e.platform || '';
         if (dc === 'battery' && e.device_id && !seenDevices.has(e.device_id)) {
+          // 5X-ENG-8: Only include actual energy storage devices, not motion sensors etc.
+          const device = this._hass?.devices?.[e.device_id];
+          const devName = (device?.name || e.entity_id || '').toLowerCase();
+          if (NON_STORAGE_KEYWORDS.test(devName) || NON_STORAGE_KEYWORDS.test(e.entity_id)) continue;
+          // Must be a storage platform OR have high-capacity battery attributes
+          const isStorage = STORAGE_PLATFORMS.has(platform) || /ecoflow|river|delta|powerwall|ups/i.test(devName);
+          if (!isStorage && Number(state.state) === 0) continue; // Skip 0% non-storage batteries
           seenDevices.add(e.device_id);
-          batteries.push({ entry, device: this._hass?.devices?.[e.device_id], deviceId: e.device_id, area, floor });
+          batteries.push({ entry, device, deviceId: e.device_id, area, floor });
           continue;
         }
         if (platform === 'nut' && UPS_KEYWORDS.test(e.entity_id)) { upsSensors.push(entry); continue; }
@@ -135,12 +167,11 @@ class LcarsEngineeringCard extends LitElement {
           ${data.batteries.map(b => {
             const soc = Number(b.entry.state?.state) || 0;
             const name = (b.device?.name || b.entry.state?.attributes?.friendly_name || 'BATTERY').toUpperCase();
-            const socColor = soc > 50 ? 'var(--lcars-ice)' : soc > 20 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+            const socHex = soc > 50 ? '#99ccff' : soc > 20 ? '#ffcc99' : '#ff5555';
             return html`
               <div class="eng-source-card" @click=${() => showMoreInfo(b.entry.entity.entity_id)}>
+                ${_ringGauge(soc, 100, 72, socHex, `${soc}%`, name.length > 10 ? name.substring(0, 10) : name)}
                 <span class="eng-source-title" style="color:var(--lcars-butterscotch)">${name}</span>
-                <span class="eng-source-power" style="color:${socColor}">${soc}%</span>
-                <div class="eng-soc-bar"><div class="eng-soc-fill" style="width:${soc}%; background:${socColor}"></div></div>
               </div>`;
           })}
         </div>
@@ -211,10 +242,13 @@ class LcarsEngineeringCard extends LitElement {
       .eng-source-card { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.75rem; cursor: pointer; border: 2px solid var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem; background: rgba(255,153,102,0.03); font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; transition: border-color 200ms ease; }
       .eng-source-card:hover { border-color: var(--lcars-gold, #ffaa00); }
       .eng-source-card:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 2px; }
-      .eng-source-title { font-size: 1rem; letter-spacing: 0.08em; }
+      .eng-source-title { font-size: 0.875rem; letter-spacing: 0.08em; }
       .eng-source-power { font-size: 1.75rem; color: var(--lcars-space-white, #f5f6fa); }
       .eng-source-detail { font-size: 0.75rem; color: var(--lcars-ice, #99ccff); }
       .eng-source-status { font-size: 0.75rem; }
+      /* Ring gauge text */
+      .ring-gauge .ring-value { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 14px; text-transform: uppercase; font-weight: bold; }
+      .ring-gauge .ring-sublabel { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 7px; fill: var(--lcars-gray, #666688); text-transform: uppercase; }
       .eng-soc-bar { width: 100%; height: 0.5rem; background: rgba(153,204,255,0.15); border-radius: 0 0.25rem 0.25rem 0; overflow: hidden; }
       .eng-soc-fill { height: 100%; border-radius: 0 0.25rem 0.25rem 0; transition: width 300ms ease; }
       .eng-distribution-bar { display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 0.5rem 1rem; background: var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem; font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; color: var(--lcars-black, #000); }

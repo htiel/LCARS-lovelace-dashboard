@@ -168,16 +168,16 @@ class LcarsCetaceanCard extends LitElement {
         <div class="cet-summary__block">
           <span class="cet-summary__label">POOL</span>
           <span class="cet-summary__value">${poolTemp != null ? `${Math.round(poolTemp)}°F` : '—'}</span>
-          ${poolAction === 'heating' ? html`<span class="cet-summary__badge" style="color:var(--lcars-butterscotch)">● HEATING</span>` : ''}
+          ${poolAction === 'heating' ? html`<span class="cet-summary__badge"><span class="cet-status-pip" style="background:var(--lcars-butterscotch)" aria-hidden="true"></span>HEATING</span>` : ''}
         </div>
         <div class="cet-summary__block">
           <span class="cet-summary__label">SPA</span>
           <span class="cet-summary__value">${spaTemp != null ? `${Math.round(spaTemp)}°F` : '—'}</span>
-          ${spaAction === 'heating' ? html`<span class="cet-summary__badge" style="color:var(--lcars-butterscotch)">● HEATING</span>` : ''}
+          ${spaAction === 'heating' ? html`<span class="cet-summary__badge"><span class="cet-status-pip" style="background:var(--lcars-butterscotch)" aria-hidden="true"></span>HEATING</span>` : ''}
         </div>
         <div class="cet-summary__block">
           <span class="cet-summary__label">CHEMISTRY</span>
-          <span class="cet-summary__value" style="color:${chemColor}">${chemLabel}</span>
+          <span class="cet-summary__value"><span class="cet-status-pip" style="background:${chemColor}" aria-hidden="true"></span>${chemLabel}</span>
         </div>
         <div class="cet-summary__block">
           <span class="cet-summary__label">SYSTEMS</span>
@@ -185,8 +185,8 @@ class LcarsCetaceanCard extends LitElement {
         </div>
         ${isFreezing ? html`
           <div class="cet-summary__block">
-            <span class="cet-summary__label" style="color:var(--lcars-ice)">❄ FREEZE</span>
-            <span class="cet-summary__value" style="color:var(--lcars-ice)">ACTIVE</span>
+            <span class="cet-summary__label">❄ FREEZE</span>
+            <span class="cet-summary__value">ACTIVE</span>
           </div>
         ` : ''}
       </div>
@@ -508,9 +508,13 @@ class LcarsCetaceanCard extends LitElement {
           font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
         }
         .cet-summary__block { flex: 1; display: flex; flex-direction: column; gap: 0.125rem; }
-        .cet-summary__label { font-size: 0.625rem; letter-spacing: 0.1em; opacity: 0.7; }
+        .cet-summary__label { font-size: 0.625rem; letter-spacing: 0.1em; opacity: 0.9; }
         .cet-summary__value { font-size: 1rem; font-variant-numeric: tabular-nums; }
-        .cet-summary__badge { font-size: 0.625rem; }
+        .cet-summary__badge { font-size: 0.625rem; display: flex; align-items: center; gap: 0.25rem; }
+        .cet-status-pip {
+          display: inline-block; width: 0.5rem; height: 0.5rem;
+          border-radius: 50%; vertical-align: middle;
+        }
 
         /* Chemistry status segments (Row 2) */
         .cet-chem-segments {
@@ -610,7 +614,7 @@ class LcarsCetaceanCard extends LitElement {
         .gauge-scale {
           display: flex; justify-content: space-between; margin-top: 0.125rem;
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.625rem;
-          color: var(--lcars-gray, #666688); text-transform: uppercase;
+          color: var(--lcars-ice, #99ccff); opacity: 0.5; text-transform: uppercase;
         }
 
         /* Sensor health */
@@ -638,7 +642,7 @@ class LcarsCetaceanCard extends LitElement {
         .cet-toggle:hover { filter: brightness(1.2); }
         .cet-toggle:focus-visible { outline: 2px solid var(--lcars-space-white, #f5f6fa); outline-offset: 2px; }
         .cet-toggle-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .cet-toggle-state { font-size: 0.75rem; opacity: 0.8; flex-shrink: 0; margin-left: 0.5rem; }
+        .cet-toggle-state { font-size: 0.75rem; opacity: 0.9; flex-shrink: 0; margin-left: 0.5rem; }
 
         /* ─── Pump Telemetry ─── */
         .cet-pump-row {

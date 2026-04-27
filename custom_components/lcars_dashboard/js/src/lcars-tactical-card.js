@@ -342,22 +342,35 @@ class LcarsTacticalCard extends LitElement {
     const cx = 150, cy = 150, sensorR = 100, shieldR = 120;
     // Build zone data from areas
     const zones = [];
-    let fallbackAngle = 0;
+    const usedAngles = new Set();
+    let fallbackIdx = 0;
+    const allAreas = [];
     for (const { areas } of floorGroups) {
-      for (const data of areas) {
-        const zp = _zoneForArea(data.area.name);
-        const angle = zp ? zp.angle : (fallbackAngle += 360 / 8);
-        const zoneName = zp ? zp.zone : data.area.name.substring(0, 4).toUpperCase();
-        const sensorCount = data.perimeter.length + data.motion.length;
-        if (sensorCount > 0 || data.cameras.length > 0) {
-          zones.push({
-            name: zoneName, angle, area: data.area,
-            perimeter: data.perimeter, motion: data.motion, cameras: data.cameras,
-            hasBreaches: data.perimeter.some(e => (this._hass?.states?.[e.entity?.entity_id] || e.state)?.state === 'on'),
-            hasMotion: data.motion.some(e => (this._hass?.states?.[e.entity?.entity_id] || e.state)?.state === 'on'),
-          });
-        }
+      for (const data of areas) allAreas.push(data);
+    }
+    // First pass: assign heuristic angles
+    for (const data of allAreas) {
+      const sensorCount = data.perimeter.length + data.motion.length;
+      if (sensorCount === 0 && data.cameras.length === 0) continue;
+      const zp = _zoneForArea(data.area.name);
+      let angle = zp ? zp.angle : null;
+      const zoneName = zp ? zp.zone : data.area.name.substring(0, 5).toUpperCase();
+      // Deduplicate angles — offset by 25° if collision
+      if (angle != null) {
+        while (usedAngles.has(Math.round(angle))) angle += 25;
+      } else {
+        // Fallback: distribute evenly
+        angle = (fallbackIdx * (360 / Math.max(allAreas.length, 6))) % 360;
+        fallbackIdx++;
+        while (usedAngles.has(Math.round(angle))) angle += 15;
       }
+      usedAngles.add(Math.round(angle));
+      zones.push({
+        name: zoneName, angle, area: data.area,
+        perimeter: data.perimeter, motion: data.motion, cameras: data.cameras,
+        hasBreaches: data.perimeter.some(e => (this._hass?.states?.[e.entity?.entity_id] || e.state)?.state === 'on'),
+        hasMotion: data.motion.some(e => (this._hass?.states?.[e.entity?.entity_id] || e.state)?.state === 'on'),
+      });
     }
 
     const isArmed = summary.alarmState !== 'disarmed';
@@ -389,9 +402,11 @@ class LcarsTacticalCard extends LitElement {
               <circle cx="${nodePos.x}" cy="${nodePos.y}" r="6" fill="${nodeColor}"
                       class="tac-sensor-node ${z.hasBreaches ? 'breach' : ''}"
                       @click=${() => showMoreInfo(z.perimeter[0]?.entity?.entity_id || z.motion[0]?.entity?.entity_id)} />
-              <text x="${_polarToCart(cx, cy, sensorR + 16, z.angle).x}"
-                    y="${_polarToCart(cx, cy, sensorR + 16, z.angle).y}"
-                    class="tac-zone-label" text-anchor="middle" dominant-baseline="central">${z.name}</text>
+              <text x="${_polarToCart(cx, cy, sensorR + 20, z.angle).x}"
+                    y="${_polarToCart(cx, cy, sensorR + 20, z.angle).y}"
+                    class="tac-zone-label"
+                    text-anchor="${z.angle > 45 && z.angle < 180 ? 'start' : z.angle > 180 && z.angle < 315 ? 'end' : 'middle'}"
+                    dominant-baseline="central">${z.name}</text>
             `;
           })}
 
@@ -500,7 +515,8 @@ class LcarsTacticalCard extends LitElement {
     return html`
       <div class="tac-structural-bar">
         <span class="tac-bar-label">LOCKS</span>
-        <span class="tac-bar-value" style="color:${allEngaged ? 'var(--lcars-ice)' : 'var(--lcars-tomato)'}">
+        <span class="tac-bar-value">
+          <span class="tac-status-pip ${allEngaged ? 'engaged' : 'alert'}" aria-hidden="true"></span>
           ${locksLocked}/${locksTotal} ${allEngaged ? 'ENGAGED' : `· ${unsecured} UNSECURED`}
         </span>
         ${!allEngaged ? html`
@@ -625,8 +641,8 @@ class LcarsTacticalCard extends LitElement {
         @keyframes tac-node-pulse { 0%, 100% { r: 6; } 50% { r: 9; } }
         @media (prefers-reduced-motion: reduce) { .tac-sensor-node.breach { animation: none; r: 8; } }
         .tac-zone-label {
-          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 9px;
-          fill: var(--lcars-gray, #666688); text-transform: uppercase; letter-spacing: 0.08em;
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 10px;
+          fill: var(--lcars-ice, #99ccff); opacity: 0.6; text-transform: uppercase; letter-spacing: 0.08em;
         }
         .tac-shield-core { opacity: 0.9; transition: fill 500ms ease; }
         .tac-shield-text {
@@ -634,8 +650,8 @@ class LcarsTacticalCard extends LitElement {
           fill: var(--lcars-black, #000); text-transform: uppercase; letter-spacing: 0.08em; font-weight: bold;
         }
         .tac-shield-subtext {
-          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 8px;
-          fill: var(--lcars-black, #000); text-transform: uppercase; opacity: 0.7;
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 9px;
+          fill: var(--lcars-black, #000); text-transform: uppercase;
         }
 
         /* ─── Section Headers ─── */
@@ -719,8 +735,14 @@ class LcarsTacticalCard extends LitElement {
           font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
           color: var(--lcars-black, #000); min-height: 2rem;
         }
-        .tac-bar-label { font-size: 0.75rem; letter-spacing: 0.08em; opacity: 0.7; }
-        .tac-bar-value { font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+        .tac-bar-label { font-size: 0.75rem; letter-spacing: 0.08em; opacity: 0.9; }
+        .tac-bar-value { font-size: 0.875rem; font-variant-numeric: tabular-nums; display: flex; align-items: center; }
+        .tac-status-pip {
+          display: inline-block; width: 0.5rem; height: 0.5rem;
+          border-radius: 50%; margin-right: 0.375rem; flex-shrink: 0;
+        }
+        .tac-status-pip.engaged { background: var(--lcars-ice, #99ccff); }
+        .tac-status-pip.alert { background: var(--lcars-tomato, #ff5555); }
 
         /* Crew pills */
         .tac-crew-pill {
@@ -761,7 +783,7 @@ class LcarsTacticalCard extends LitElement {
         .tac-lock-pill:hover { filter: brightness(1.2); }
         .tac-lock-pill:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 2px; }
         .tac-lock-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .tac-lock-state { font-size: 0.75rem; opacity: 0.8; flex-shrink: 0; }
+        .tac-lock-state { font-size: 0.75rem; flex-shrink: 0; }
 
         /* ─── Timeline ─── */
         .tac-timeline {

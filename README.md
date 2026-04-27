@@ -246,20 +246,7 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 
 ## Screenshots
 
-### Area View — Environment Panels
-<p align="center">
-  <img src="https://raw.githubusercontent.com/htiel/LCARS-lovelace-dashboard/4.0/screenshots/Bedroom.png" alt="Master Bedroom with Awair and Air Purifier environment panels" width="100%">
-</p>
 
-### Area View — Battery Panel
-<p align="center">
-  <img src="https://raw.githubusercontent.com/htiel/LCARS-lovelace-dashboard/4.0/screenshots/Office.png" alt="Office with EcoFlow River 3+ warp core battery panel" width="100%">
-</p>
-
-### Floor Navigation
-<p align="center">
-  <img src="https://raw.githubusercontent.com/htiel/LCARS-lovelace-dashboard/4.0/screenshots/Entrance.png" alt="Entrance area view with floor-grouped sidebar navigation" width="100%">
-</p>
 
 ## Installation (HACS)
 

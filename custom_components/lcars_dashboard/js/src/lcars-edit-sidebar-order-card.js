@@ -15,6 +15,7 @@ const LCARS_PANELS = [
   'lcars-environmental',
   'lcars-lighting',
   'lcars-security',
+  'lcars-cetacean',
 ];
 
 const EDIT_STYLES = css`

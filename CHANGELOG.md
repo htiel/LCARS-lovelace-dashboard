@@ -2,6 +2,63 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.1.0-beta.16] — 2026-04-27
+
+### Life Support Dashboard Overhaul
+Complete redesign of the Environmental/Life Support dashboard, closing the gap with the ChatGPT mockup.
+
+- **3-column layout**: Main content (purifiers + climate) left, AQ detail sidebar right. Responsive — collapses to single column on mobile (<960px)
+- **Colorful overview cards**: Each of the 4 summary cards has a distinct border color and ring gauge color:
+  - Air Purifiers: ice blue border, green ring when all active
+  - Thermostats: butterscotch border, orange ring when heating, blue when cooling
+  - Air Quality: sunflower border, green ring when AQI good
+  - Environment: violet border, green ring when temp normal
+- **Ring gauge upgrade**: 6px stroke width (up from 4px), glow drop-shadow (`filter: drop-shadow`), color-matched track, larger 80px size in overview cards
+- **VIEW DETAILS / VIEW ZONES action buttons**: LCARS pill-shaped buttons per overview card that filter the dashboard to Air or Climate sections
+- **Per-room atmosphere table**: 7 columns — LOCATION | SCORE | PM2.5 | CO₂ | VOC | TEMP | RH. Groups by area, averages when multiple sensors in same room. Purifier-platform sensors excluded (shown in purifier table instead). Color-coded by EPA thresholds
+- **Purifier MODEL column**: Device model from HA device registry displayed in purifier table
+- **24h AQ History sidebar**: PM2.5 (peach) + CO₂ (sunflower) sparklines via `recorder/statistics_during_period` API
+- **24h Environment History sidebar**: Temperature (butterscotch) + Humidity (ice) sparklines
+- **CO₂ sparklines per room**: Below per-room table, one trend line per Awair sensor
+- **Combined climate panel**: Thermostat zones and temp/humidity grid rendered in one "CLIMATE MONITORING" section, reducing dead space
+- **Thermostat card details**: Shows humidity, HVAC mode, fan mode. Wider layout when single zone
+- **Bug fixes**:
+  - `volatile_organic_compounds_parts` added to `AIR_CLASSES` — VOC data was silently dropped
+  - Score entities (`_score` suffix) now captured in `aqSensors` discovery
+  - Temp/Humidity injected from `tempSensors` into per-room AQ grid for rooms with Awair sensors
+
+### Engineering Dashboard Enhancements
+- **Mini warp core battery cards**: Replace ring gauge SOC with animated CSS warp core bars (idle pulse, charging flow stripes, static discharge fill). Side-by-side layout: core | SOC% + flow rate + voltage
+- **Enriched GRID card**: Voltage, frequency, today's energy (kWh), horizontal power draw bar. Ice blue border distinguishing from battery cards. ONLINE status pill
+- **Circuit double-count fix**: Aggregate sensors (`totalusage`, `balance`, `mainload`) excluded from circuits and totalDraw. 240V paired circuits (L1+L2) deduplicated when combined sensor exists
+- **24 visible circuits**: Up from 12. Power bars scale relative to highest-draw circuit
+- **DETAIL ► deep link**: Battery cards navigate to Habitat dashboard with `#area:<area_id>` hash for room-specific deep linking
+- **Enriched battery telemetry**: State of Health (SOH%), Cycles, directional runtime ("FULL IN" / "EMPTY IN")
+
+### Dashboard Animations
+- **Scanning section headers**: Light sweep animation across all section divider lines (butterscotch on Engineering, ice on Life Support)
+- **Thermostat glow**: Breathing box-shadow on active thermostat cards — warm orange pulse when heating, cool blue pulse when cooling
+- **Distribution bus glow**: Pulsing butterscotch shadow on the AC Distribution Bus bar
+- **Conduit flow**: Animated dashed pattern on source-to-bus connector lines
+- **Circuit/filter bar shimmer**: Light sweep across power bars and filter life bars
+- **AQ hero pulse**: Ambient glow on the main AQI ring gauge
+- **Ring gauge glow**: SVG `drop-shadow` filter on all ring gauge arcs
+- **Table row highlights**: Left-edge ice blue inset shadow on hover
+
+### Habitat Dashboard
+- **Hash-based area deep linking**: URL `#area:<area_id>` auto-selects the corresponding area on page load. Sidebar area clicks update the hash via `history.replaceState`. Supports browser back/forward and bookmarks. `hashchange` event listener for dynamic navigation
+
+### MCP Image Generator
+- New `mcp/image-generator/` service using Azure OpenAI `gpt-image-1` (eastus2)
+- Three tools: `generate_image`, `list_mockups`, `delete_mockup`
+- Wesley agent has explicit MCP tool bindings for design prototyping
+- VS Code MCP config: `.vscode/mcp.json` with Azure credentials
+- 7 mockups generated: power sources warp core, 6 life support sections
+
+### Build
+- Bundle: 951 KiB (webpack 5.106.1)
+- Version files: const.py, manifest.json, package.json bumped in sync
+
 ## [5.0.2-beta.1] — 2026-04-24
 
 ### Agent Review Hardening

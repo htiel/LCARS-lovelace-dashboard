@@ -3,6 +3,7 @@
 > Life Support / Environmental — climate, temperature, humidity, air quality.
 > Frame color: `--lcars-bluey` (#8899ff). Sidebar: african-violet.
 > Filters: ALL / CLIMATE / AIR
+> **Updated**: 2026-04-27 — v5.1.0-beta.16 (3-column layout, per-room AQ, history sparklines)
 
 ---
 

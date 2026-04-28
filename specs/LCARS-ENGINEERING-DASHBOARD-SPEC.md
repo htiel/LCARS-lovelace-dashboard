@@ -3,6 +3,7 @@
 > Engineering / Power — all batteries, power sensors, energy monitoring.
 > Frame color: `--lcars-butterscotch` (#ff9966). Sidebar: african-violet.
 > Filters: ALL / STORAGE / CIRCUITS
+> **Updated**: 2026-04-27 — v5.1.0-beta.16 (topology redesign: Sources → Bus → Circuits)
 
 ---
 
@@ -21,33 +22,56 @@
 
 ---
 
-## §2 Layout Structure
+## §2 Layout Structure (v5.1.0)
 
 ```
 ┌──────────────────────────────────────────────────────────┐
 │ [Elbow]  SITE NAME ════════════════════════ [🔇][⚙]    │
-├──────────┬───────────────────────────────────────────────┤
-│          │  WARP CORE SUMMARY STRIP                     │
-│ ENGINEER │  TOTAL: 2,847W | GRID: 3.1kW | BAT: 78%    │
-│ -ING     │  [████ area1 ██ area2 █ area3 ████ area4]   │
-│          ├───────────────────────────────────────────────┤
-│ ┌──────┐ │  SERVER ROOM ─────────────────────────       │
-│ │ ALL  │ │  ┌──────────────┐ ┌──────────────┐          │
-│ │      │ │  │ UDM SE       │ │ Switch 24E   │          │
-│ ├──────┤ │  │ 42W  ████░░  │ │ 18W  ██░░░░  │          │
-│ │STORE │ │  │ [toggle]     │ │ [toggle]     │          │
-│ │      │ │  └──────────────┘ └──────────────┘          │
-│ ├──────┤ │                                              │
-│ │CIRCT │ │  GARAGE ──────── ┌──────────────┐            │
-│ │      │ │                  │ EcoFlow      │            │
-│ ├──────┤ │                  │ ██████░░ 78% │            │
-│ │▓▓▓▓▓▓│ │                  │ 4.2h remain  │            │
-│ │filler│ │                  └──────────────┘            │
+├──────────┬───────────────────────┬──────────────────────┤
+│          │  POWER SOURCES ═══   │  SYSTEM STATUS       │
+│ ENGINEER │  ┌──────┐ ┌────────┐ │  LOAD:  2,847 W     │
+│ -ING     │  │ GRID │ │RIVER 3+│ │  GRID:  3,100 W     │
+│          │  │2340 W│ │[▓▓▓]85%│ │  BATTERIES: 3 UNITS │
+│ ┌──────┐ │  │ONLINE│ │▼342W   │ │  AVG SOC:   78%     │
+│ │ ALL  │ │  └──┼───┘ └──┼─────┘ │  CIRCUITS:  28      │
+│ │      │ │     │  ║  ║  │       │  HEALTH: NOMINAL    │
+│ ├──────┤ │  ═══╧══╧══╧══╧═══   │                      │
+│ │STORE │ │  AC DISTRIBUTION BUS │                      │
+│ │      │ │  2,847 W TOTAL LOAD  │                      │
+│ ├──────┤ │  ════════════════    │                      │
+│ │CIRCT │ │                      │                      │
+│ │      │ │  LOAD CIRCUITS ═══ 28 ACTIVE                │
+│ ├──────┤ │  ┌────────┐┌────────┐┌────────┐┌────────┐  │
+│ │▓▓▓▓▓▓│ │  │DRYER   ││HOT TUB ││KITCHEN ││WASHER  │  │
+│ │filler│ │  │4200W   ││1800W   ││342W    ││120W    │  │
+│ │      │ │  │████████││██████░░││███░░░░░││█░░░░░░░│  │
+│ │      │ │  └────────┘└────────┘└────────┘└────────┘  │
 ├──────────┤──────────────────────────────────────────────┤
-│ [Elbow]  │  ENERGY — 7 DAY LOG                         │
-│ ═════════╪══ LCARS 5.0.0 ══════════════════             │
-└──────────┴───────────────────────────────────────────────┘
+│ [Elbow]  │  LCARS 5.1.0-BETA.16 ═══════════            │
+└──────────┴──────────────────────────────────────────────┘
 ```
+
+### §2.1 Source Row
+- **GRID card**: Ice blue border, voltage/frequency/energy telemetry, power bar, ONLINE pill
+- **UPS card**: Sunflower, charge%/load%/runtime (NUT sensors)
+- **Battery cards**: Mini warp core (CSS fill, idle pulse, charging stripes), SOC% + flow + voltage side-by-side, DETAIL ► deep-link to Habitat `#area:<area_id>`
+- **Conduit connectors**: 4px animated dashed flow lines from each source to bus
+
+### §2.2 Distribution Bus
+- Butterscotch horizontal bar with breathing glow animation
+- Total load readout (summed from all circuits)
+
+### §2.3 Circuit Grid
+- Top 24 active circuits sorted by wattage descending
+- Bar width relative to highest-draw circuit (not self-referencing)
+- 4-tier color: ice (<200W), sunflower (200-500W), butterscotch (500-1000W), tomato (>1000W)
+- Shimmer animation on fill bars
+- Aggregate exclusion: `totalusage`, `balance`, `mainload`, `mainsfromgrid`, `mainstogrid` filtered
+- 240V dedup: L1+L2 pairs removed when combined sensor exists
+
+### §2.4 System Status Sidebar
+- 16rem fixed width, sticky, key-value grid
+- LOAD, GRID, BATTERIES count, AVG SOC, CIRCUITS count, HEALTH
 
 ---
 

@@ -8,7 +8,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-5.0.2--beta.1-blue)
+![Version](https://img.shields.io/badge/version-5.1.0--beta.16-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 [![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 
@@ -65,6 +65,16 @@ Consolidated per-area power monitoring with three sections: CIRCUITS (tile grid)
 - **Smart dedup**: Excludes aggregate circuits (Balance/Total/Mains) and UPS parent wattage when children are present
 - **Integrations**: Emporia Vue, TP-Link Kasa (KP115, KP125M, HS110, HS300), Shelly Pro 3EM
 
+#### Engineering Dashboard (v5.1.0)
+Dedicated power distribution dashboard with topology view: Sources → Distribution Bus → Load Circuits.
+- **Source row**: GRID card (voltage/frequency/energy/power bar), UPS card, battery cards with animated mini warp core bars (SOC fill, idle pulse, charging stripes)
+- **Distribution bus**: Animated butterscotch bar with per-card conduit connectors and breathing glow
+- **Circuit grid**: Top-24 active circuits sorted by wattage, color-coded bars (ice/sunflower/butterscotch/tomato), relative scaling
+- **System status sidebar**: Total load, grid power, battery count, average SOC, circuit count, health status
+- **Double-count prevention**: Aggregate sensors (totalusage, balance, mainload) excluded; 240V L1/L2 pairs deduplicated
+- **Deep linking**: Battery DETAIL ► navigates to Habitat with `#area:<area_id>` hash
+- **Integrations**: Emporia Vue, TP-Link Kasa, NUT UPS, EcoFlow batteries, Shelly Pro 3EM
+
 #### Warp Core Battery Panel
 CSS reactor core with charge-level color, SOC gauge, power flow I/O arrows, telemetry sensors, integrated config/diagnostic entity controls with LCARS option strips. NUT UPS devices auto-detected with Grid→UPS→Load flow, load/runtime telemetry, and NUT status code parsing (OL/OB/CHRG/LB/FSD).
 - **Integrations**: EcoFlow (River, Delta), Victron, Tesla Powerwall, NUT (CyberPower, APC, Tripp Lite, Eaton)
@@ -76,6 +86,18 @@ Bidirectional EV charger monitoring with SVG energy flow visualization (animated
 #### Life Support Panel
 Area-level composite panel aggregating climate, environment (air quality), and ambient sensor entities into a unified view. Four graceful degradation configurations: full (thermostat + purifier + sensors), atmos-only, climate-only, and sensor-hero (standalone temp/humidity). Composes existing climate and environment panels as nested substations. Adaptive sparkline tray (160×32px) shows 24-hour trends for temperature, humidity, AQI, PM2.5, CO₂, VOC. Camera-derived binary sensors (motion/tamper) auto-filtered. HomeKit air purifiers (fan + AQ sensor on same device) auto-detected.
 - **Integrations**: Any combination of climate entities, air quality devices, and ambient sensors in an area, plus HomeKit Controller purifiers (Smartmi P1, etc.)
+
+#### Life Support Dashboard (v5.1.0)
+Dedicated environmental monitoring dashboard with 3-column layout: main content + AQ sidebar.
+- **Overview cards**: 4 ring gauge summary cards (Purifiers, Thermostats, AQ, Environment) with colorful borders, glowing rings, and action buttons (VIEW DETAILS / VIEW ZONES)
+- **Air Purifiers table**: Location, Model, Status, Speed, Filter life bar (with shimmer animation), PM2.5 — color-coded
+- **Per-room atmosphere**: 7-column comparison table (Score, PM2.5, CO₂, VOC, Temp, RH) — area-grouped, averaged, purifier sensors excluded
+- **CO₂ sparklines**: Per-room 24h trend lines below the atmosphere table
+- **AQ sidebar**: Hero AQI ring gauge (96px, glowing), metric rows (PM2.5, PM10, CO₂, TVOC), 24h history sparklines
+- **Environment sidebar**: 24h temperature + humidity sparklines
+- **Combined climate panel**: Thermostat zones + temp/humidity grid in one section
+- **Animations**: Scanning section headers, thermostat breathing glow (warm/cool), AQ hero pulse, filter bar shimmer, ring gauge glow
+- **Integrations**: Awair, VeSync, BlueAir, HomeKit purifiers, Nest thermostats, SwitchBot meters
 
 #### Illumination Control Panel
 Area-level lighting panel spanning full width as the primary room control. Multi-column responsive grid (2-3 lights per row). Full-width brightness bars with color temperature awareness (warm amber to cool white). **Effect strip**: 2-column LCARS pill grid for Nanoleaf/Govee/smart light effects — active effect shown in bar value. **Color presets**: 6 LCARS palette pills (Warm, Cool, Red, Green, Blue, Purple) for HS/RGB color lights. Toggle-only lights show ON/OFF without slider. Scene activation strip and lighting circuit toggles (explicit `isLightingEntity()` match required — irrigation, battery, HVAC, and appliance switches excluded). Inline brightness slider with keyboard navigation. Drag-and-drop reorder in edit mode with FLIP animation. Custom order persisted per area via localStorage.

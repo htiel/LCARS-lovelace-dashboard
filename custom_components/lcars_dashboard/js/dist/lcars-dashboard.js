@@ -1866,11 +1866,21 @@
       @media (max-width: 900px) { .eng-dashboard { grid-template-columns: 1fr; } }
       .eng-section-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
       .eng-section-label { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; color: var(--lcars-butterscotch, #ff9966); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
-      .eng-section-line { flex: 1; height: 2px; background: var(--lcars-butterscotch, #ff9966); opacity: 0.4; }
+      .eng-section-line {
+        flex: 1; height: 2px; background: var(--lcars-butterscotch, #ff9966); opacity: 0.4;
+        position: relative; overflow: hidden;
+      }
+      .eng-section-line::after {
+        content: ''; position: absolute; top: 0; left: -30%; width: 30%; height: 100%;
+        background: linear-gradient(90deg, transparent, var(--lcars-gold, #ffaa00), transparent);
+        animation: eng-scan-line 4s ease-in-out infinite;
+      }
+      @keyframes eng-scan-line { 0% { left: -30%; } 100% { left: 100%; } }
       .eng-circuit-count, .eng-circuit-remaining { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; color: var(--lcars-gray, #666688); white-space: nowrap; text-transform: uppercase; }
       .eng-sources-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.375rem; position: relative; padding-bottom: 1.5rem; }
       .eng-source-card { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.75rem; cursor: pointer; border: 2px solid var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem; background: rgba(255,153,102,0.03); font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; transition: border-color 200ms ease; position: relative; }
-      .eng-source-card::after { content: ''; position: absolute; bottom: -1.5rem; left: 50%; width: 4px; height: 1.5rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.65; }
+      .eng-source-card::after { content: ''; position: absolute; bottom: -1.5rem; left: 50%; width: 4px; height: 1.5rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.65; animation: eng-conduit-flow 2s linear infinite; background-size: 4px 8px; background-image: repeating-linear-gradient(180deg, var(--lcars-butterscotch, #ff9966) 0px, var(--lcars-butterscotch, #ff9966) 4px, transparent 4px, transparent 8px); }
+      @keyframes eng-conduit-flow { from { background-position: 0 0; } to { background-position: 0 8px; } }
       .eng-source-card:hover { border-color: var(--lcars-gold, #ffaa00); }
       .eng-source-card:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 2px; }
       /* Enriched battery card — mini warp core (Prompt 3 mockup) */
@@ -1921,7 +1931,18 @@
       .ring-gauge .ring-sublabel { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 7px; fill: var(--lcars-gray, #666688); text-transform: uppercase; }
       .eng-soc-bar { width: 100%; height: 0.5rem; background: rgba(153,204,255,0.15); border-radius: 0 0.25rem 0.25rem 0; overflow: hidden; }
       .eng-soc-fill { height: 100%; border-radius: 0 0.25rem 0.25rem 0; transition: width 300ms ease; }
-      .eng-distribution-bar { display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 0.5rem 1rem; background: var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem; font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; color: var(--lcars-black, #000); position: relative; margin-bottom: 1rem; }
+      .eng-distribution-bar {
+        display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 0.5rem 1rem;
+        background: var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem;
+        font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
+        color: var(--lcars-black, #000); position: relative; margin-bottom: 1rem;
+        box-shadow: 0 0 10px rgba(255,153,102,0.3);
+        animation: eng-bus-glow 3s ease-in-out infinite;
+      }
+      @keyframes eng-bus-glow {
+        0%, 100% { box-shadow: 0 0 8px rgba(255,153,102,0.2); }
+        50% { box-shadow: 0 0 18px rgba(255,153,102,0.45); }
+      }
       .eng-distribution-bar::after { content: ''; position: absolute; bottom: -1rem; left: 50%; width: 3px; height: 1rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.4; }
       .eng-dist-label { font-size: 0.875rem; opacity: 0.9; }
       .eng-dist-value { font-size: 1.125rem; font-weight: bold; font-variant-numeric: tabular-nums; }
@@ -1931,7 +1952,16 @@
       .eng-circuit-name { font-size: 0.7rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .eng-circuit-watts { font-size: 1.25rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; }
       .eng-circuit-bar { width: 100%; height: 0.375rem; background: rgba(153,204,255,0.1); border-radius: 0 0.25rem 0.25rem 0; overflow: hidden; }
-      .eng-circuit-fill { height: 100%; border-radius: 0 0.25rem 0.25rem 0; transition: width 300ms ease; }
+      .eng-circuit-fill {
+        height: 100%; border-radius: 0 0.25rem 0.25rem 0; transition: width 300ms ease;
+        position: relative; overflow: hidden;
+      }
+      .eng-circuit-fill::after {
+        content: ''; position: absolute; top: 0; left: -50%; width: 50%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+        animation: eng-bar-shimmer 2.5s ease-in-out infinite;
+      }
+      @keyframes eng-bar-shimmer { 0% { left: -50%; } 100% { left: 150%; } }
       .eng-status-panel { border: 2px solid var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem; padding: 0.75rem; align-self: start; }
       .eng-status-grid { display: grid; grid-template-columns: 1fr auto; gap: 0.25rem 0.75rem; font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; }
       .eng-status-key { font-size: 0.75rem; color: var(--lcars-gray, #666688); }
@@ -13338,7 +13368,7 @@
           .sensor-tile { animation: none !important; }
           .tile-battery-badge { animation: none !important; opacity: 1; }
         }
-      `]}getCardSize(){return Math.max(2,Math.ceil(this._sensorGroups.length/4)+1)}}customElements.get("lcars-internal-sensors-grid")||(customElements.define("lcars-internal-sensors-grid",m),s.g0.debug(l,"Custom element registered: lcars-internal-sensors-grid")),window.customCards=window.customCards||[],window.customCards.push({type:"lcars-internal-sensors-grid",name:"LCARS Internal Sensors Grid",description:"Ship-wide environmental monitoring grid",preview:!0})},958(e,t,a){var r=a(7349),i=a(8851),s=a(2622),n=a(7597),o=a(6930),l=a(4867);function c(e,t,a,i,s,n,o={}){const l=(a-8)/2,c=2*Math.PI*l,d=c*(1-Math.min(1,Math.max(0,e/t))),p=a/2,u=a/2,m=o.trackColor||"rgba(153,204,255,0.12)";return r.JW`
+      `]}getCardSize(){return Math.max(2,Math.ceil(this._sensorGroups.length/4)+1)}}customElements.get("lcars-internal-sensors-grid")||(customElements.define("lcars-internal-sensors-grid",m),s.g0.debug(l,"Custom element registered: lcars-internal-sensors-grid")),window.customCards=window.customCards||[],window.customCards.push({type:"lcars-internal-sensors-grid",name:"LCARS Internal Sensors Grid",description:"Ship-wide environmental monitoring grid",preview:!0})},958(e,t,a){var r=a(7349),i=a(8851),s=a(2622),n=a(7597),o=a(6930),l=a(261),c=a(4867);function d(e,t,a,i,s,n,o={}){const l=(a-8)/2,c=2*Math.PI*l,d=c*(1-Math.min(1,Math.max(0,e/t))),p=a/2,u=a/2,m=o.trackColor||"rgba(153,204,255,0.12)";return r.JW`
     <svg viewBox="0 0 ${a} ${a}" width="${a}" height="${a}" class="ring-gauge" role="meter"
          aria-valuenow="${e}" aria-valuemin="0" aria-valuemax="${t}" aria-label="${s}: ${e}">
       <circle cx="${p}" cy="${u}" r="${l}" fill="none" stroke="${m}" stroke-width="4" />
@@ -13351,25 +13381,25 @@
       ${n?r.JW`<text x="${p}" y="${u+10}" text-anchor="middle" dominant-baseline="central"
             class="ring-sublabel">${n}</text>`:""}
     </svg>
-  `}a(9411),a(6940);const d="all",p="climate",u=(new Set(["climate"]),new Set(["temperature","humidity"]),new Set(["fan","humidifier"]),new Set(["pm25","pm10","carbon_dioxide","volatile_organic_compounds","aqi","carbon_monoxide"])),m=new Set(["ha_blueair","vesync","homekit_controller"]);class h extends r.WF{static get properties(){return{hass:{type:Object},_config:{type:Object},filter:{type:String}}}constructor(){super(),this._hass=null,this._config={},this.filter=d,this._entityCache=new Map,this._onFilter=e=>{this.filter=e.detail.filter}}connectedCallback(){super.connectedCallback(),i.o6.addEventListener("lcars-ls-filter",this._onFilter)}disconnectedCallback(){super.disconnectedCallback(),i.o6.removeEventListener("lcars-ls-filter",this._onFilter)}setConfig(e){this._config=e||{}}set hass(e){const t=this._hass;this._hass=e,e&&t!==e&&(this._entityCache.clear(),this.requestUpdate("hass",t))}get hass(){return this._hass}getCardSize(){return 16}_discoverAll(){if(!this._hass)return{thermostats:[],purifiers:[],tempSensors:[],aqSensors:[],fans:[]};const e=(0,n.Qn)(this._hass),t=(0,n.E3)(this._hass),a=[],r=[],i=[],s=[],c=[],d=(this._hass.entities,this._hass.states||{}),p=[];for(const a of e){const e=t.get(a.floor_id)||[];for(const t of e)p.push({floor:a,area:t})}const h=t.get(null)||[];for(const e of h)p.push({floor:null,area:e});for(const{floor:e,area:t}of p){const n=(0,o.d6)(this._hass,t.area_id,this._entityCache);for(const o of n){const n=o.entity_id.split(".")[0],p=d[o.entity_id];if(!p)continue;const h={entity:o,domain:n,state:p,area:t,floor:e};if((0,l.JM)(h))continue;const f=p.attributes?.device_class||"",v=o.platform||"";"climate"===n&&/pool|spa|fridge|freezer/i.test(o.entity_id)||("climate"!==n?"fan"===n&&m.has(v)?r.push(h):"fan"!==n?"temperature"===f&&!/drive_|cpu_|phy_|display_|raw_|cook_|water_/i.test(o.entity_id)||"humidity"===f?i.push(h):(u.has(f)||/filter_life/i.test(o.entity_id))&&s.push(h):c.push(h):a.push(h))}}return{thermostats:a,purifiers:r,tempSensors:i,aqSensors:s,fans:c}}_renderOverview(e){const{thermostats:t,purifiers:a,tempSensors:i,aqSensors:s}=e;let n=0,o=0;for(const e of t){const t=e.state?.attributes?.hvac_action||e.state?.state||"idle";"heating"===t?n++:"cooling"===t&&o++}let l=0,d="GOOD";for(const e of s)if("aqi"===e.state?.attributes?.device_class){const t=Number(e.state?.state);!isNaN(t)&&t>l&&(l=t)}l>100?d="UNHEALTHY":l>50&&(d="MODERATE");let p=0,u=0;for(const e of i)if("temperature"===e.state?.attributes?.device_class){const t=Number(e.state?.state);!isNaN(t)&&t>0&&t<120&&(p+=t,u++)}const m=u>0?Math.round(p/u*10)/10:null;let h=0,f=0;for(const e of i)if("humidity"===e.state?.attributes?.device_class){const t=Number(e.state?.state);isNaN(t)||(h+=t,f++)}const v=f>0?Math.round(h/f):null,g=l<=50?"#99ccff":l<=100?"#ffcc99":"#ff5555",b=l<=50?"var(--lcars-ice)":l<=100?"var(--lcars-sunflower)":"var(--lcars-tomato)",y=t.length>0?Math.round(t.reduce((e,t)=>e+(Number(t.state?.attributes?.current_temperature)||0),0)/t.length):null,_=n>0?"#ff9966":o>0?"#99ccff":"#666688";return r.qy`
+  `}a(9411),a(6940);const p="all",u="climate",m=(new Set(["climate"]),new Set(["temperature","humidity"]),new Set(["fan","humidifier"]),new Set(["pm25","pm10","carbon_dioxide","volatile_organic_compounds","aqi","carbon_monoxide"])),h=new Set(["ha_blueair","vesync","homekit_controller"]);class f extends r.WF{static get properties(){return{hass:{type:Object},_config:{type:Object},filter:{type:String}}}constructor(){super(),this._hass=null,this._config={},this.filter=p,this._entityCache=new Map,this._aqHistoryCache=new Map,this._aqSparklines={},this._onFilter=e=>{this.filter=e.detail.filter}}connectedCallback(){super.connectedCallback(),i.o6.addEventListener("lcars-ls-filter",this._onFilter)}disconnectedCallback(){super.disconnectedCallback(),i.o6.removeEventListener("lcars-ls-filter",this._onFilter)}setConfig(e){this._config=e||{}}set hass(e){const t=this._hass;this._hass=e,e&&t!==e&&(this._entityCache.clear(),this._aqSparklinesFetched=!1,this.requestUpdate("hass",t))}get hass(){return this._hass}getCardSize(){return 16}_discoverAll(){if(!this._hass)return{thermostats:[],purifiers:[],tempSensors:[],aqSensors:[],fans:[]};const e=(0,n.Qn)(this._hass),t=(0,n.E3)(this._hass),a=[],r=[],i=[],s=[],l=[],d=(this._hass.entities,this._hass.states||{}),p=[];for(const a of e){const e=t.get(a.floor_id)||[];for(const t of e)p.push({floor:a,area:t})}const u=t.get(null)||[];for(const e of u)p.push({floor:null,area:e});for(const{floor:e,area:t}of p){const n=(0,o.d6)(this._hass,t.area_id,this._entityCache);for(const o of n){const n=o.entity_id.split(".")[0],p=d[o.entity_id];if(!p)continue;const u={entity:o,domain:n,state:p,area:t,floor:e};if((0,c.JM)(u))continue;const f=p.attributes?.device_class||"",v=o.platform||"";"climate"===n&&/pool|spa|fridge|freezer/i.test(o.entity_id)||("climate"!==n?"fan"===n&&h.has(v)?r.push(u):"fan"!==n?"temperature"===f&&!/drive_|cpu_|phy_|display_|raw_|cook_|water_/i.test(o.entity_id)||"humidity"===f?i.push(u):(m.has(f)||/filter_life/i.test(o.entity_id))&&s.push(u):l.push(u):a.push(u))}}return{thermostats:a,purifiers:r,tempSensors:i,aqSensors:s,fans:l}}_renderOverview(e){const{thermostats:t,purifiers:a,tempSensors:i,aqSensors:s}=e;let n=0,o=0;for(const e of t){const t=e.state?.attributes?.hvac_action||e.state?.state||"idle";"heating"===t?n++:"cooling"===t&&o++}let l=0,c="GOOD";for(const e of s)if("aqi"===e.state?.attributes?.device_class){const t=Number(e.state?.state);!isNaN(t)&&t>l&&(l=t)}l>100?c="UNHEALTHY":l>50&&(c="MODERATE");let p=0,u=0;for(const e of i)if("temperature"===e.state?.attributes?.device_class){const t=Number(e.state?.state);!isNaN(t)&&t>0&&t<120&&(p+=t,u++)}const m=u>0?Math.round(p/u*10)/10:null;let h=0,f=0;for(const e of i)if("humidity"===e.state?.attributes?.device_class){const t=Number(e.state?.state);isNaN(t)||(h+=t,f++)}const v=f>0?Math.round(h/f):null,g=l<=50?"#99ccff":l<=100?"#ffcc99":"#ff5555",b=l<=50?"var(--lcars-ice)":l<=100?"var(--lcars-sunflower)":"var(--lcars-tomato)",y=t.length>0?Math.round(t.reduce((e,t)=>e+(Number(t.state?.attributes?.current_temperature)||0),0)/t.length):null,_=n>0?"#ff9966":o>0?"#99ccff":"#666688";return r.qy`
       <div class="ls-overview">
         <div class="ls-overview-card">
-          ${c(a.filter(e=>"on"===(this._hass?.states?.[e.entity?.entity_id]||e.state)?.state).length,Math.max(a.length,1),64,"#99ccff",`${a.length}`,1===a.length?"UNIT":"UNITS")}
+          ${d(a.filter(e=>"on"===(this._hass?.states?.[e.entity?.entity_id]||e.state)?.state).length,Math.max(a.length,1),64,"#99ccff",`${a.length}`,1===a.length?"UNIT":"UNITS")}
           <span class="ls-ov-title">AIR PURIFIERS</span>
           <span class="ls-ov-status" style="color:var(--lcars-ice)">ALL NORMAL</span>
         </div>
         <div class="ls-overview-card">
-          ${null!=y?c(y,100,64,_,`${y}°`,n>0?"HEATING":o>0?"COOLING":"IDLE"):r.qy`<span class="ls-ov-value">${t.length} ${1===t.length?"ZONE":"ZONES"}</span>`}
+          ${null!=y?d(y,100,64,_,`${y}°`,n>0?"HEATING":o>0?"COOLING":"IDLE"):r.qy`<span class="ls-ov-value">${t.length} ${1===t.length?"ZONE":"ZONES"}</span>`}
           <span class="ls-ov-title">THERMOSTATS</span>
           <span class="ls-ov-status">${t.length} ${1===t.length?"ZONE":"ZONES"}</span>
         </div>
         <div class="ls-overview-card">
-          ${c(Math.min(l,300),300,64,g,l>0?`${l}`:"—","AQI")}
+          ${d(Math.min(l,300),300,64,g,l>0?`${l}`:"—","AQI")}
           <span class="ls-ov-title">AIR QUALITY</span>
-          <span class="ls-ov-status" style="color:${b}">${d}</span>
+          <span class="ls-ov-status" style="color:${b}">${c}</span>
         </div>
         <div class="ls-overview-card">
-          ${null!=m?c(m,100,64,m<68?"#8899ff":m<=76?"#99ccff":"#ff9966",`${m}°`,`${v||"—"}%`):r.qy`<span class="ls-ov-value">—</span>`}
+          ${null!=m?d(m,100,64,m<68?"#8899ff":m<=76?"#99ccff":"#ff9966",`${m}°`,`${v||"—"}%`):r.qy`<span class="ls-ov-value">—</span>`}
           <span class="ls-ov-title">ENVIRONMENT</span>
           <span class="ls-ov-status">${null!=v?`${v}% HUMIDITY`:""}</span>
         </div>
@@ -13381,9 +13411,9 @@
           <span class="ls-section-line"></span>
         </div>
         <div class="ls-thermo-grid">
-          ${e.map(e=>{const t=this._hass?.states?.[e.entity?.entity_id]||e.state,a=(e.area?.name||t?.attributes?.friendly_name||"").toUpperCase(),s=t?.attributes?.current_temperature,n=t?.attributes?.temperature,o=t?.attributes?.hvac_action||t?.state||"idle",l="heating"===o?"#ff9966":"cooling"===o?"#99ccff":"#666688",d=o.toUpperCase();return r.qy`
-              <div class="ls-thermo-card" @click=${()=>(0,i.Hv)(e.entity.entity_id)}>
-                ${null!=s?c(s,100,80,l,Math.round(10*s)/10+"°",d):r.qy`<span class="ls-thermo-temp">—</span>`}
+          ${e.map(e=>{const t=this._hass?.states?.[e.entity?.entity_id]||e.state,a=(e.area?.name||t?.attributes?.friendly_name||"").toUpperCase(),s=t?.attributes?.current_temperature,n=t?.attributes?.temperature,o=t?.attributes?.hvac_action||t?.state||"idle",l="heating"===o?"#ff9966":"cooling"===o?"#99ccff":"#666688",c=o.toUpperCase();return r.qy`
+              <div class="ls-thermo-card" data-action="${o}" @click=${()=>(0,i.Hv)(e.entity.entity_id)}>
+                ${null!=s?d(s,100,80,l,Math.round(10*s)/10+"°",c):r.qy`<span class="ls-thermo-temp">—</span>`}
                 <span class="ls-thermo-name">${a}</span>
                 ${null!=n?r.qy`<span class="ls-thermo-setpoint">${n}° SETPOINT</span>`:""}
               </div>
@@ -13446,7 +13476,7 @@
             `})}
         </div>
       </div>
-    `}_renderAirQuality(e){const t={};for(const a of e){const e=a.state?.attributes?.device_class||"",r=a.entity?.entity_id||"",i=Number(a.state?.state);isNaN(i)||("aqi"===e&&(!t.aqi||i>t.aqi.val)&&(t.aqi={val:i,entry:a}),"pm25"!==e&&!/pm_?2_?5/i.test(r)||t.pm25||(t.pm25={val:i,entry:a}),"pm10"!==e&&!/pm_?10/i.test(r)||t.pm10||(t.pm10={val:i,entry:a}),"carbon_dioxide"!==e&&!/co2|carbon_dioxide/i.test(r)||t.co2||(t.co2={val:i,entry:a}),"volatile_organic_compounds"!==e&&!/voc/i.test(r)||t.voc||(t.voc={val:i,entry:a}))}if(0===Object.keys(t).length)return"";const a=new Map;for(const t of e){const e=t.entity?.platform||"";if(m.has(e))continue;let r=t.area?.area_id,i=t.area?.name||"";if(!r&&t.entity?.device_id){const e=this._hass?.devices?.[t.entity.device_id];e?.area_id&&(r=e.area_id,i=this._hass?.areas?.[r]?.name||"")}if(!r)continue;a.has(r)||a.set(r,{name:i.toUpperCase(),metrics:{}});const s=t.state?.attributes?.device_class||"",n=Number(t.state?.state);if(isNaN(n))continue;const o=a.get(r),l="pm25"===s?"pm25":"carbon_dioxide"===s?"co2":"volatile_organic_compounds"===s||"volatile_organic_compounds_parts"===s?"voc":!s&&/score$/i.test(t.entity?.entity_id)?"score":!s&&/pm_?2_?5/i.test(t.entity?.entity_id)?"pm25":!s&&/co2|carbon_dioxide/i.test(t.entity?.entity_id)?"co2":!s&&/voc|volatile/i.test(t.entity?.entity_id)?"voc":null;l&&(o.metrics[l]?(o.metrics[l].sum+=n,o.metrics[l].count++):o.metrics[l]={sum:n,count:1})}const s=[...a.values()].filter(e=>Object.keys(e.metrics).length>0).map(e=>{const t={};for(const[a,r]of Object.entries(e.metrics))t[a]=Math.round(r.sum/r.count);return{name:e.name,metrics:t}}),n=t.aqi?.val||0,o=n<=50?"GOOD":n<=100?"MODERATE":n<=150?"SENSITIVE":"UNHEALTHY",l=n<=50?"#99ccff":n<=100?"#ffcc99":"#ff5555",d=n<=50?"var(--lcars-ice)":n<=100?"var(--lcars-sunflower)":"var(--lcars-tomato)",p=t.co2?.val||0,u=p>1500?"var(--lcars-tomato)":p>1e3?"var(--lcars-sunflower)":"var(--lcars-ice)",h=p>1500?" ⚠ HIGH":p>1e3?" ⚠ ELEVATED":"";return r.qy`
+    `}_renderAirQuality(e){const t={};for(const a of e){const e=a.state?.attributes?.device_class||"",r=a.entity?.entity_id||"",i=Number(a.state?.state);isNaN(i)||("aqi"===e&&(!t.aqi||i>t.aqi.val)&&(t.aqi={val:i,entry:a}),"pm25"!==e&&!/pm_?2_?5/i.test(r)||t.pm25||(t.pm25={val:i,entry:a}),"pm10"!==e&&!/pm_?10/i.test(r)||t.pm10||(t.pm10={val:i,entry:a}),"carbon_dioxide"!==e&&!/co2|carbon_dioxide/i.test(r)||t.co2||(t.co2={val:i,entry:a}),"volatile_organic_compounds"!==e&&!/voc/i.test(r)||t.voc||(t.voc={val:i,entry:a}))}if(0===Object.keys(t).length)return"";const a=new Map;for(const t of e){const e=t.entity?.platform||"";if(h.has(e))continue;let r=t.area?.area_id,i=t.area?.name||"";if(!r&&t.entity?.device_id){const e=this._hass?.devices?.[t.entity.device_id];e?.area_id&&(r=e.area_id,i=this._hass?.areas?.[r]?.name||"")}if(!r)continue;a.has(r)||a.set(r,{name:i.toUpperCase(),metrics:{}});const s=t.state?.attributes?.device_class||"",n=Number(t.state?.state);if(isNaN(n))continue;const o=a.get(r),l="pm25"===s?"pm25":"carbon_dioxide"===s?"co2":"volatile_organic_compounds"===s||"volatile_organic_compounds_parts"===s?"voc":"humidity"===s?"humidity":"temperature"===s?"temp":!s&&/score$/i.test(t.entity?.entity_id)?"score":!s&&/pm_?2_?5/i.test(t.entity?.entity_id)?"pm25":!s&&/co2|carbon_dioxide/i.test(t.entity?.entity_id)?"co2":!s&&/voc|volatile/i.test(t.entity?.entity_id)?"voc":null;l&&(o.metrics[l]?(o.metrics[l].sum+=n,o.metrics[l].count++):o.metrics[l]={sum:n,count:1},"co2"===l&&t.entity?.entity_id&&(o.co2EntityId||(o.co2EntityId=t.entity.entity_id)))}const s=[...a.values()].filter(e=>Object.keys(e.metrics).length>0).map(e=>{const t={};for(const[a,r]of Object.entries(e.metrics))t[a]=Math.round(r.sum/r.count*10)/10;return{name:e.name,metrics:t,co2EntityId:e.co2EntityId}}),n=t.aqi?.val||0,o=n<=50?"GOOD":n<=100?"MODERATE":n<=150?"SENSITIVE":"UNHEALTHY",l=n<=50?"#99ccff":n<=100?"#ffcc99":"#ff5555",c=n<=50?"var(--lcars-ice)":n<=100?"var(--lcars-sunflower)":"var(--lcars-tomato)",p=t.co2?.val||0,u=p>1500?"var(--lcars-tomato)":p>1e3?"var(--lcars-sunflower)":"var(--lcars-ice)",m=p>1500?" ⚠ HIGH":p>1e3?" ⚠ ELEVATED":"";return r.qy`
       <div class="ls-section">
         <div class="ls-section-header">
           <span class="ls-section-label">AIR QUALITY</span>
@@ -13454,13 +13484,13 @@
         </div>
         <div class="ls-aq-panel">
           <div class="ls-aq-hero">
-            ${c(Math.min(n,300),300,96,l,n>0?`${n}`:"—","AQI")}
-            <span class="ls-aq-status" style="color:${d}">${o}</span>
+            ${d(Math.min(n,300),300,96,l,n>0?`${n}`:"—","AQI")}
+            <span class="ls-aq-status" style="color:${c}">${o}</span>
           </div>
           <div class="ls-aq-metrics">
             ${t.pm25?r.qy`<div class="ls-aq-row" @click=${()=>(0,i.Hv)(t.pm25.entry.entity.entity_id)}><span class="ls-aq-metric-name">PM2.5</span><span class="ls-aq-metric-val">${t.pm25.val} µg/m³</span></div>`:""}
             ${t.pm10?r.qy`<div class="ls-aq-row" @click=${()=>(0,i.Hv)(t.pm10.entry.entity.entity_id)}><span class="ls-aq-metric-name">PM10</span><span class="ls-aq-metric-val">${t.pm10.val} µg/m³</span></div>`:""}
-            ${t.co2?r.qy`<div class="ls-aq-row" @click=${()=>(0,i.Hv)(t.co2.entry.entity.entity_id)}><span class="ls-aq-metric-name">CO₂</span><span class="ls-aq-metric-val" style="color:${u}">${t.co2.val} ppm${h}</span></div>`:""}
+            ${t.co2?r.qy`<div class="ls-aq-row" @click=${()=>(0,i.Hv)(t.co2.entry.entity.entity_id)}><span class="ls-aq-metric-name">CO₂</span><span class="ls-aq-metric-val" style="color:${u}">${t.co2.val} ppm${m}</span></div>`:""}
             ${t.voc?r.qy`<div class="ls-aq-row" @click=${()=>(0,i.Hv)(t.voc.entry.entity.entity_id)}><span class="ls-aq-metric-name">TVOC</span><span class="ls-aq-metric-val">${t.voc.val} ppb</span></div>`:""}
           </div>
         </div>
@@ -13477,25 +13507,33 @@
               <span class="ls-th">PM2.5</span>
               <span class="ls-th">CO₂</span>
               <span class="ls-th">VOC</span>
+              <span class="ls-th">TEMP</span>
+              <span class="ls-th">RH</span>
             </div>
-            ${s.map(e=>{const t=null!=e.metrics.score?e.metrics.score>=80?"var(--lcars-ice)":e.metrics.score>=60?"var(--lcars-sunflower)":"var(--lcars-tomato)":"var(--lcars-gray)",a=null!=e.metrics.pm25?e.metrics.pm25<=12?"var(--lcars-ice)":e.metrics.pm25<=35?"var(--lcars-sunflower)":"var(--lcars-tomato)":"var(--lcars-gray)",i=null!=e.metrics.co2?e.metrics.co2<=600?"var(--lcars-ice)":e.metrics.co2<=1e3?"var(--lcars-sunflower)":"var(--lcars-tomato)":"var(--lcars-gray)",s=null!=e.metrics.voc?e.metrics.voc<=150?"var(--lcars-ice)":e.metrics.voc<=500?"var(--lcars-sunflower)":"var(--lcars-tomato)":"var(--lcars-gray)";return r.qy`
+            ${s.map(e=>{const t=null!=e.metrics.score?e.metrics.score>=80?"var(--lcars-ice)":e.metrics.score>=60?"var(--lcars-sunflower)":"var(--lcars-tomato)":"var(--lcars-gray)",a=null!=e.metrics.pm25?e.metrics.pm25<=12?"var(--lcars-ice)":e.metrics.pm25<=35?"var(--lcars-sunflower)":"var(--lcars-tomato)":"var(--lcars-gray)",i=null!=e.metrics.co2?e.metrics.co2<=600?"var(--lcars-ice)":e.metrics.co2<=1e3?"var(--lcars-sunflower)":"var(--lcars-tomato)":"var(--lcars-gray)",s=null!=e.metrics.voc?e.metrics.voc<=150?"var(--lcars-ice)":e.metrics.voc<=500?"var(--lcars-sunflower)":"var(--lcars-tomato)":"var(--lcars-gray)",n=null!=e.metrics.temp?e.metrics.temp<68?"var(--lcars-bluey)":e.metrics.temp<=76?"var(--lcars-ice)":"var(--lcars-butterscotch)":"var(--lcars-gray)";return r.qy`
                 <div class="ls-table-row">
                   <span class="ls-td ls-td-name">${e.name}</span>
-                  <span class="ls-td" style="color:${t}">${null!=e.metrics.score?e.metrics.score:"—"}</span>
-                  <span class="ls-td" style="color:${a}">${null!=e.metrics.pm25?e.metrics.pm25:"—"}</span>
-                  <span class="ls-td" style="color:${i}">${null!=e.metrics.co2?`${e.metrics.co2}`:"—"}</span>
-                  <span class="ls-td" style="color:${s}">${null!=e.metrics.voc?e.metrics.voc:"—"}</span>
+                  <span class="ls-td" style="color:${t}">${null!=e.metrics.score?Math.round(e.metrics.score):"—"}</span>
+                  <span class="ls-td" style="color:${a}">${null!=e.metrics.pm25?Math.round(e.metrics.pm25):"—"}</span>
+                  <span class="ls-td" style="color:${i}">${null!=e.metrics.co2?Math.round(e.metrics.co2):"—"}</span>
+                  <span class="ls-td" style="color:${s}">${null!=e.metrics.voc?Math.round(e.metrics.voc):"—"}</span>
+                  <span class="ls-td" style="color:${n}">${null!=e.metrics.temp?`${e.metrics.temp}°`:"—"}</span>
+                  <span class="ls-td">${null!=e.metrics.humidity?`${Math.round(e.metrics.humidity)}%`:"—"}</span>
                 </div>`})}
           </div>
+          ${this._renderAqSparklines(s)}
         `:""}
       </div>
-    `}render(){if(!this._hass)return r.qy`<div class="ls-loading">INITIALIZING LIFE SUPPORT...</div>`;const e=this._discoverAll(),t=this.filter;return r.qy`
+    `}_renderAqSparklines(e){const t=e.filter(e=>e.co2EntityId);if(0===t.length)return"";const a=t.map(e=>e.co2EntityId);this._aqSparklinesFetched||(this._aqSparklinesFetched=!0,(0,l.s)(this._hass,"aq-rooms",a,this._aqHistoryCache,{ttlMs:3e5}).then(e=>{e&&(this._aqSparklines=e,this.requestUpdate())}));const i=this._aqSparklines;return i&&0!==Object.keys(i).length?r.qy`
+      <div class="ls-aq-sparkline-tray">
+        ${t.map(e=>{const t=i[e.co2EntityId];if(!t||t.length<2)return"";const a=null!=e.metrics.co2?e.metrics.co2<=600?"var(--lcars-ice)":e.metrics.co2<=1e3?"var(--lcars-sunflower)":"var(--lcars-tomato)":"var(--lcars-ice)";return(0,l.K)(t,{color:a,label:`${e.name} CO₂`,width:160,height:32})})}
+      </div>`:""}render(){if(!this._hass)return r.qy`<div class="ls-loading">INITIALIZING LIFE SUPPORT...</div>`;const e=this._discoverAll(),t=this.filter;return r.qy`
       <div class="ls-dashboard">
         ${this._renderOverview(e)}
-        ${t===d||t===p?this._renderThermostats(e.thermostats):""}
-        ${t===d||"air"===t?this._renderAirQuality(e.aqSensors):""}
-        ${t===d||"air"===t?this._renderPurifiers(e.purifiers,e.aqSensors):""}
-        ${t===d||t===p?this._renderTempGrid(e.tempSensors):""}
+        ${t===p||t===u?this._renderThermostats(e.thermostats):""}
+        ${t===p||"air"===t?this._renderAirQuality(e.aqSensors):""}
+        ${t===p||"air"===t?this._renderPurifiers(e.purifiers,e.aqSensors):""}
+        ${t===p||t===u?this._renderTempGrid(e.tempSensors):""}
       </div>
     `}static get styles(){return[s.Bx,r.AH`
         :host { display: block; }
@@ -13513,12 +13551,20 @@
           border: 2px solid var(--lcars-bluey, #8899ff); border-radius: 0.5rem;
           background: rgba(136,153,255,0.05);
           font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
+          transition: box-shadow 300ms ease, border-color 300ms ease;
+        }
+        .ls-overview-card:hover {
+          box-shadow: 0 0 12px rgba(136,153,255,0.25);
+          border-color: var(--lcars-ice, #99ccff);
         }
         .ls-ov-title { font-size: 0.75rem; color: var(--lcars-gray, #666688); letter-spacing: 0.1em; }
         .ls-ov-value { font-size: 1.5rem; color: var(--lcars-space-white, #f5f6fa); }
         .ls-ov-status { font-size: 0.75rem; }
 
-        /* Ring gauge text */
+        /* Ring gauge animated glow */
+        .ring-gauge circle:last-of-type {
+          filter: drop-shadow(0 0 3px currentColor);
+        }
         .ring-gauge .ring-value {
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 14px;
           text-transform: uppercase; font-weight: bold;
@@ -13535,10 +13581,33 @@
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem;
           color: var(--lcars-bluey, #8899ff); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;
         }
-        .ls-section-line { flex: 1; height: 2px; background: var(--lcars-bluey, #8899ff); opacity: 0.4; }
+        .ls-section-line {
+          flex: 1; height: 2px; background: var(--lcars-bluey, #8899ff); opacity: 0.4;
+          position: relative; overflow: hidden;
+        }
+        .ls-section-line::after {
+          content: ''; position: absolute; top: 0; left: -30%; width: 30%; height: 100%;
+          background: linear-gradient(90deg, transparent, var(--lcars-ice, #99ccff), transparent);
+          animation: ls-scan-line 4s ease-in-out infinite;
+        }
+        @keyframes ls-scan-line { 0% { left: -30%; } 100% { left: 100%; } }
         .ls-sensor-count {
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1rem;
           color: var(--lcars-ice, #99ccff); white-space: nowrap;
+        }
+        /* ─── Per-Room AQ Sparklines ─── */
+        .ls-aq-sparkline-tray {
+          display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin-top: 0.5rem;
+          font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
+        }
+        .ls-aq-sparkline-tray .lcars-sparkline-wrap {
+          display: flex; align-items: center; gap: 0.375rem;
+        }
+        .ls-aq-sparkline-tray .lcars-sparkline-label {
+          font-size: 0.625rem; color: var(--lcars-gray, #666688); white-space: nowrap;
+        }
+        .ls-aq-sparkline-tray .lcars-sparkline {
+          width: 10rem; height: 2rem;
         }
 
         /* ─── Thermostat Zone Cards ─── */
@@ -13552,7 +13621,23 @@
           border: 2px solid var(--lcars-bluey, #8899ff); border-radius: 0.375rem;
           background: rgba(136,153,255,0.03);
           font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
-          transition: border-color 200ms ease;
+          transition: border-color 200ms ease, box-shadow 500ms ease;
+        }
+        .ls-thermo-card[data-action="heating"] {
+          border-color: var(--lcars-butterscotch, #ff9966);
+          animation: ls-thermo-glow-warm 3s ease-in-out infinite;
+        }
+        .ls-thermo-card[data-action="cooling"] {
+          border-color: var(--lcars-ice, #99ccff);
+          animation: ls-thermo-glow-cool 3s ease-in-out infinite;
+        }
+        @keyframes ls-thermo-glow-warm {
+          0%, 100% { box-shadow: 0 0 4px rgba(255,153,102,0.1); }
+          50% { box-shadow: 0 0 16px rgba(255,153,102,0.3); }
+        }
+        @keyframes ls-thermo-glow-cool {
+          0%, 100% { box-shadow: 0 0 4px rgba(153,204,255,0.1); }
+          50% { box-shadow: 0 0 16px rgba(153,204,255,0.3); }
         }
         .ls-thermo-card:hover { border-color: var(--lcars-gold, #ffaa00); }
         .ls-thermo-card:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 2px; }
@@ -13576,9 +13661,13 @@
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem;
           color: var(--lcars-space-white, #f5f6fa); text-transform: uppercase;
           border-bottom: 1px solid rgba(136,153,255,0.06);
-          transition: background 150ms ease;
+          transition: background 150ms ease, box-shadow 150ms ease;
+          position: relative;
         }
-        .ls-table-row:hover { background: rgba(136,153,255,0.08); }
+        .ls-table-row:hover {
+          background: rgba(136,153,255,0.08);
+          box-shadow: inset 3px 0 0 var(--lcars-ice, #99ccff);
+        }
         .ls-td { display: flex; align-items: center; }
         .ls-td-name { color: var(--lcars-ice, #99ccff); }
         .ls-th { display: flex; align-items: center; }
@@ -13594,7 +13683,13 @@
           width: 4rem; height: 0.5rem; background: rgba(153,204,255,0.15);
           border-radius: 0 0.25rem 0.25rem 0; overflow: hidden; display: inline-block; vertical-align: middle;
         }
-        .ls-filter-fill { height: 100%; border-radius: 0 0.25rem 0.25rem 0; transition: width 300ms ease; }
+        .ls-filter-fill { height: 100%; border-radius: 0 0.25rem 0.25rem 0; transition: width 300ms ease; position: relative; overflow: hidden; }
+        .ls-filter-fill::after {
+          content: ''; position: absolute; top: 0; left: -50%; width: 50%; height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+          animation: ls-filter-shimmer 2s ease-in-out infinite;
+        }
+        @keyframes ls-filter-shimmer { 0% { left: -50%; } 100% { left: 150%; } }
         .ls-filter-pct { font-size: 0.7rem; margin-left: 0.25rem; color: var(--lcars-ice, #99ccff); }
 
         /* ─── Air Quality Panel ─── */
@@ -13602,6 +13697,11 @@
         .ls-aq-hero {
           display: flex; flex-direction: column; align-items: center; gap: 0.125rem;
           min-width: 5rem;
+          animation: ls-aq-hero-pulse 4s ease-in-out infinite;
+        }
+        @keyframes ls-aq-hero-pulse {
+          0%, 100% { filter: drop-shadow(0 0 2px transparent); }
+          50% { filter: drop-shadow(0 0 8px rgba(153,204,255,0.3)); }
         }
         .ls-aq-score { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 2.5rem; }
         .ls-aq-label { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.75rem; color: var(--lcars-gray, #666688); text-transform: uppercase; }
@@ -13615,7 +13715,7 @@
         .ls-aq-row:hover { background: rgba(136,153,255,0.08); }
         .ls-aq-metric-name { color: var(--lcars-ice, #99ccff); }
         .ls-aq-metric-val { color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; }
-      `]}}Promise.race([customElements.whenDefined("hui-masonry-view"),new Promise(e=>setTimeout(e,5e3))]).then(()=>{customElements.get("lifesupport-card")||customElements.define("lifesupport-card",h)})},114(e,t,a){var r=a(7349),i=a(2622),s=a(8851),n=a(6940),o=a(5824);const l="all",c="climate",d="air";class p extends r.WF{static get properties(){return{cards:{type:Array},_hass:{type:Object},_config:{type:Object},_filter:{type:String},_siteName:{type:String},_audioMuted:{type:Boolean},_editMode:{type:Boolean}}}constructor(){super(),this.cards=[],this._hass=null,this._config={},this._filter=l,this._siteName="LCARS",this._audioMuted=n.e.isMuted,this._editMode=!1}setConfig(e){this._config=e}set hass(e){this._hass=e,e?.config?.location_name&&(this._siteName=e.config.location_name.toUpperCase()),this.cards&&this.cards.forEach(t=>{t&&(t.hass=e)}),(0,o.X)(e)}_setFilter(e){this._filter=e,n.e.play("navAcknowledge"),s.o6.dispatchEvent(new CustomEvent("lcars-ls-filter",{detail:{filter:e}}))}_toggleMute(){n.e.toggle(),this._audioMuted=n.e.isMuted}_openSidebarReorder(){if(!this._hass?.user?.is_admin)return;let e=this.shadowRoot.querySelector("lcars-sidebar-reorder");e||(e=document.createElement("lcars-sidebar-reorder"),this.shadowRoot.appendChild(e)),e.hass=this._hass,e.open()}_toggleEditMode(){this._editMode=!this._editMode,s.o6.dispatchEvent(new CustomEvent("lcars-ls-edit",{detail:{enabled:this._editMode}}))}render(){const e=a(8330).version;return r.qy`
+      `]}}Promise.race([customElements.whenDefined("hui-masonry-view"),new Promise(e=>setTimeout(e,5e3))]).then(()=>{customElements.get("lifesupport-card")||customElements.define("lifesupport-card",f)})},114(e,t,a){var r=a(7349),i=a(2622),s=a(8851),n=a(6940),o=a(5824);const l="all",c="climate",d="air";class p extends r.WF{static get properties(){return{cards:{type:Array},_hass:{type:Object},_config:{type:Object},_filter:{type:String},_siteName:{type:String},_audioMuted:{type:Boolean},_editMode:{type:Boolean}}}constructor(){super(),this.cards=[],this._hass=null,this._config={},this._filter=l,this._siteName="LCARS",this._audioMuted=n.e.isMuted,this._editMode=!1}setConfig(e){this._config=e}set hass(e){this._hass=e,e?.config?.location_name&&(this._siteName=e.config.location_name.toUpperCase()),this.cards&&this.cards.forEach(t=>{t&&(t.hass=e)}),(0,o.X)(e)}_setFilter(e){this._filter=e,n.e.play("navAcknowledge"),s.o6.dispatchEvent(new CustomEvent("lcars-ls-filter",{detail:{filter:e}}))}_toggleMute(){n.e.toggle(),this._audioMuted=n.e.isMuted}_openSidebarReorder(){if(!this._hass?.user?.is_admin)return;let e=this.shadowRoot.querySelector("lcars-sidebar-reorder");e||(e=document.createElement("lcars-sidebar-reorder"),this.shadowRoot.appendChild(e)),e.hass=this._hass,e.open()}_toggleEditMode(){this._editMode=!this._editMode,s.o6.dispatchEvent(new CustomEvent("lcars-ls-edit",{detail:{enabled:this._editMode}}))}render(){const e=a(8330).version;return r.qy`
       <div class="lcars-frame">
         <div class="lcars-elbow-top" aria-hidden="true"></div>
         <div class="lcars-header" role="banner">

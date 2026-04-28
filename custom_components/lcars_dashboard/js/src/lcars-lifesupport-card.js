@@ -13,6 +13,7 @@ import { lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
+import { renderSparkline, fetchSparklineData } from './lcars-sparkline.js';
 
 /* ─── SVG Ring Gauge Utility ─── */
 function _ringGauge(value, max, size, color, label, sublabel, opts = {}) {
@@ -62,13 +63,15 @@ class LcarsLifeSupportCard extends LitElement {
     super();
     this._hass = null; this._config = {}; this.filter = FILTER_ALL;
     this._entityCache = new Map();
+    this._aqHistoryCache = new Map();
+    this._aqSparklines = {};
     this._onFilter = (e) => { this.filter = e.detail.filter; };
   }
 
   connectedCallback() { super.connectedCallback(); lcarsEventBus.addEventListener('lcars-ls-filter', this._onFilter); }
   disconnectedCallback() { super.disconnectedCallback(); lcarsEventBus.removeEventListener('lcars-ls-filter', this._onFilter); }
   setConfig(config) { this._config = config || {}; }
-  set hass(val) { const old = this._hass; this._hass = val; if (val && old !== val) { this._entityCache.clear(); this.requestUpdate('hass', old); } }
+  set hass(val) { const old = this._hass; this._hass = val; if (val && old !== val) { this._entityCache.clear(); this._aqSparklinesFetched = false; this.requestUpdate('hass', old); } }
   get hass() { return this._hass; }
   getCardSize() { return 16; }
 
@@ -208,7 +211,7 @@ class LcarsLifeSupportCard extends LitElement {
             const actionColor = action === 'heating' ? 'var(--lcars-butterscotch)' : action === 'cooling' ? 'var(--lcars-ice)' : 'var(--lcars-gray)';
             const actionLabel = action.toUpperCase();
             return html`
-              <div class="ls-thermo-card" @click=${() => showMoreInfo(t.entity.entity_id)}>
+              <div class="ls-thermo-card" data-action="${action}" @click=${() => showMoreInfo(t.entity.entity_id)}>
                 ${currentTemp != null ? _ringGauge(currentTemp, 100, 80, actionHex, `${Math.round(currentTemp * 10) / 10}°`, actionLabel) : html`<span class="ls-thermo-temp">—</span>`}
                 <span class="ls-thermo-name">${name}</span>
                 ${targetTemp != null ? html`<span class="ls-thermo-setpoint">${targetTemp}° SETPOINT</span>` : ''}
@@ -381,6 +384,8 @@ class LcarsLifeSupportCard extends LitElement {
       const key = dc === 'pm25' ? 'pm25'
         : dc === 'carbon_dioxide' ? 'co2'
         : (dc === 'volatile_organic_compounds' || dc === 'volatile_organic_compounds_parts') ? 'voc'
+        : dc === 'humidity' ? 'humidity'
+        : dc === 'temperature' ? 'temp'
         : (!dc && /score$/i.test(e.entity?.entity_id)) ? 'score'
         : (!dc && /pm_?2_?5/i.test(e.entity?.entity_id)) ? 'pm25'
         : (!dc && /co2|carbon_dioxide/i.test(e.entity?.entity_id)) ? 'co2'
@@ -389,13 +394,17 @@ class LcarsLifeSupportCard extends LitElement {
       if (!key) continue;
       if (!room.metrics[key]) room.metrics[key] = { sum: val, count: 1 };
       else { room.metrics[key].sum += val; room.metrics[key].count++; }
+      // Track CO2 entity ID for sparklines
+      if (key === 'co2' && e.entity?.entity_id) {
+        if (!room.co2EntityId) room.co2EntityId = e.entity.entity_id;
+      }
     }
     const rooms = [...areaAqMap.values()]
       .filter(r => Object.keys(r.metrics).length > 0)
       .map(r => {
         const avg = {};
-        for (const [k, v] of Object.entries(r.metrics)) avg[k] = Math.round(v.sum / v.count);
-        return { name: r.name, metrics: avg };
+        for (const [k, v] of Object.entries(r.metrics)) avg[k] = Math.round(v.sum / v.count * 10) / 10;
+        return { name: r.name, metrics: avg, co2EntityId: r.co2EntityId };
       });
 
     const aqiVal = metrics.aqi?.val || 0;
@@ -438,25 +447,55 @@ class LcarsLifeSupportCard extends LitElement {
               <span class="ls-th">PM2.5</span>
               <span class="ls-th">CO₂</span>
               <span class="ls-th">VOC</span>
+              <span class="ls-th">TEMP</span>
+              <span class="ls-th">RH</span>
             </div>
             ${rooms.map(r => {
               const scoreColor = r.metrics.score != null ? (r.metrics.score >= 80 ? 'var(--lcars-ice)' : r.metrics.score >= 60 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)') : 'var(--lcars-gray)';
               const pm25Color = r.metrics.pm25 != null ? (r.metrics.pm25 <= 12 ? 'var(--lcars-ice)' : r.metrics.pm25 <= 35 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)') : 'var(--lcars-gray)';
-              const co2Color = r.metrics.co2 != null ? (r.metrics.co2 <= 600 ? 'var(--lcars-ice)' : r.metrics.co2 <= 1000 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)') : 'var(--lcars-gray)';
+              const co2Clr = r.metrics.co2 != null ? (r.metrics.co2 <= 600 ? 'var(--lcars-ice)' : r.metrics.co2 <= 1000 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)') : 'var(--lcars-gray)';
               const vocColor = r.metrics.voc != null ? (r.metrics.voc <= 150 ? 'var(--lcars-ice)' : r.metrics.voc <= 500 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)') : 'var(--lcars-gray)';
+              const tempColor = r.metrics.temp != null ? (r.metrics.temp < 68 ? 'var(--lcars-bluey)' : r.metrics.temp <= 76 ? 'var(--lcars-ice)' : 'var(--lcars-butterscotch)') : 'var(--lcars-gray)';
               return html`
                 <div class="ls-table-row">
                   <span class="ls-td ls-td-name">${r.name}</span>
-                  <span class="ls-td" style="color:${scoreColor}">${r.metrics.score != null ? r.metrics.score : '—'}</span>
-                  <span class="ls-td" style="color:${pm25Color}">${r.metrics.pm25 != null ? r.metrics.pm25 : '—'}</span>
-                  <span class="ls-td" style="color:${co2Color}">${r.metrics.co2 != null ? `${r.metrics.co2}` : '—'}</span>
-                  <span class="ls-td" style="color:${vocColor}">${r.metrics.voc != null ? r.metrics.voc : '—'}</span>
+                  <span class="ls-td" style="color:${scoreColor}">${r.metrics.score != null ? Math.round(r.metrics.score) : '—'}</span>
+                  <span class="ls-td" style="color:${pm25Color}">${r.metrics.pm25 != null ? Math.round(r.metrics.pm25) : '—'}</span>
+                  <span class="ls-td" style="color:${co2Clr}">${r.metrics.co2 != null ? Math.round(r.metrics.co2) : '—'}</span>
+                  <span class="ls-td" style="color:${vocColor}">${r.metrics.voc != null ? Math.round(r.metrics.voc) : '—'}</span>
+                  <span class="ls-td" style="color:${tempColor}">${r.metrics.temp != null ? `${r.metrics.temp}°` : '—'}</span>
+                  <span class="ls-td">${r.metrics.humidity != null ? `${Math.round(r.metrics.humidity)}%` : '—'}</span>
                 </div>`;
             })}
           </div>
+          ${this._renderAqSparklines(rooms)}
         ` : ''}
       </div>
     `;
+  }
+
+  /* ═══ Per-Room CO₂ Sparklines ═══ */
+  _renderAqSparklines(rooms) {
+    const roomsWithCo2 = rooms.filter(r => r.co2EntityId);
+    if (roomsWithCo2.length === 0) return '';
+    // Fetch sparkline data if not cached
+    const entityIds = roomsWithCo2.map(r => r.co2EntityId);
+    if (!this._aqSparklinesFetched) {
+      this._aqSparklinesFetched = true;
+      fetchSparklineData(this._hass, 'aq-rooms', entityIds, this._aqHistoryCache, { ttlMs: 300000 })
+        .then(data => { if (data) { this._aqSparklines = data; this.requestUpdate(); } });
+    }
+    const sparkData = this._aqSparklines;
+    if (!sparkData || Object.keys(sparkData).length === 0) return '';
+    return html`
+      <div class="ls-aq-sparkline-tray">
+        ${roomsWithCo2.map(r => {
+          const points = sparkData[r.co2EntityId];
+          if (!points || points.length < 2) return '';
+          const co2Color = r.metrics.co2 != null ? (r.metrics.co2 <= 600 ? 'var(--lcars-ice)' : r.metrics.co2 <= 1000 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)') : 'var(--lcars-ice)';
+          return renderSparkline(points, { color: co2Color, label: `${r.name} CO₂`, width: 160, height: 32 });
+        })}
+      </div>`;
   }
 
   /* ═══ Main Render ═══ */
@@ -495,12 +534,20 @@ class LcarsLifeSupportCard extends LitElement {
           border: 2px solid var(--lcars-bluey, #8899ff); border-radius: 0.5rem;
           background: rgba(136,153,255,0.05);
           font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
+          transition: box-shadow 300ms ease, border-color 300ms ease;
+        }
+        .ls-overview-card:hover {
+          box-shadow: 0 0 12px rgba(136,153,255,0.25);
+          border-color: var(--lcars-ice, #99ccff);
         }
         .ls-ov-title { font-size: 0.75rem; color: var(--lcars-gray, #666688); letter-spacing: 0.1em; }
         .ls-ov-value { font-size: 1.5rem; color: var(--lcars-space-white, #f5f6fa); }
         .ls-ov-status { font-size: 0.75rem; }
 
-        /* Ring gauge text */
+        /* Ring gauge animated glow */
+        .ring-gauge circle:last-of-type {
+          filter: drop-shadow(0 0 3px currentColor);
+        }
         .ring-gauge .ring-value {
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 14px;
           text-transform: uppercase; font-weight: bold;
@@ -517,10 +564,33 @@ class LcarsLifeSupportCard extends LitElement {
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem;
           color: var(--lcars-bluey, #8899ff); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;
         }
-        .ls-section-line { flex: 1; height: 2px; background: var(--lcars-bluey, #8899ff); opacity: 0.4; }
+        .ls-section-line {
+          flex: 1; height: 2px; background: var(--lcars-bluey, #8899ff); opacity: 0.4;
+          position: relative; overflow: hidden;
+        }
+        .ls-section-line::after {
+          content: ''; position: absolute; top: 0; left: -30%; width: 30%; height: 100%;
+          background: linear-gradient(90deg, transparent, var(--lcars-ice, #99ccff), transparent);
+          animation: ls-scan-line 4s ease-in-out infinite;
+        }
+        @keyframes ls-scan-line { 0% { left: -30%; } 100% { left: 100%; } }
         .ls-sensor-count {
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1rem;
           color: var(--lcars-ice, #99ccff); white-space: nowrap;
+        }
+        /* ─── Per-Room AQ Sparklines ─── */
+        .ls-aq-sparkline-tray {
+          display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin-top: 0.5rem;
+          font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
+        }
+        .ls-aq-sparkline-tray .lcars-sparkline-wrap {
+          display: flex; align-items: center; gap: 0.375rem;
+        }
+        .ls-aq-sparkline-tray .lcars-sparkline-label {
+          font-size: 0.625rem; color: var(--lcars-gray, #666688); white-space: nowrap;
+        }
+        .ls-aq-sparkline-tray .lcars-sparkline {
+          width: 10rem; height: 2rem;
         }
 
         /* ─── Thermostat Zone Cards ─── */
@@ -534,7 +604,23 @@ class LcarsLifeSupportCard extends LitElement {
           border: 2px solid var(--lcars-bluey, #8899ff); border-radius: 0.375rem;
           background: rgba(136,153,255,0.03);
           font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
-          transition: border-color 200ms ease;
+          transition: border-color 200ms ease, box-shadow 500ms ease;
+        }
+        .ls-thermo-card[data-action="heating"] {
+          border-color: var(--lcars-butterscotch, #ff9966);
+          animation: ls-thermo-glow-warm 3s ease-in-out infinite;
+        }
+        .ls-thermo-card[data-action="cooling"] {
+          border-color: var(--lcars-ice, #99ccff);
+          animation: ls-thermo-glow-cool 3s ease-in-out infinite;
+        }
+        @keyframes ls-thermo-glow-warm {
+          0%, 100% { box-shadow: 0 0 4px rgba(255,153,102,0.1); }
+          50% { box-shadow: 0 0 16px rgba(255,153,102,0.3); }
+        }
+        @keyframes ls-thermo-glow-cool {
+          0%, 100% { box-shadow: 0 0 4px rgba(153,204,255,0.1); }
+          50% { box-shadow: 0 0 16px rgba(153,204,255,0.3); }
         }
         .ls-thermo-card:hover { border-color: var(--lcars-gold, #ffaa00); }
         .ls-thermo-card:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 2px; }
@@ -558,9 +644,13 @@ class LcarsLifeSupportCard extends LitElement {
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem;
           color: var(--lcars-space-white, #f5f6fa); text-transform: uppercase;
           border-bottom: 1px solid rgba(136,153,255,0.06);
-          transition: background 150ms ease;
+          transition: background 150ms ease, box-shadow 150ms ease;
+          position: relative;
         }
-        .ls-table-row:hover { background: rgba(136,153,255,0.08); }
+        .ls-table-row:hover {
+          background: rgba(136,153,255,0.08);
+          box-shadow: inset 3px 0 0 var(--lcars-ice, #99ccff);
+        }
         .ls-td { display: flex; align-items: center; }
         .ls-td-name { color: var(--lcars-ice, #99ccff); }
         .ls-th { display: flex; align-items: center; }
@@ -576,7 +666,13 @@ class LcarsLifeSupportCard extends LitElement {
           width: 4rem; height: 0.5rem; background: rgba(153,204,255,0.15);
           border-radius: 0 0.25rem 0.25rem 0; overflow: hidden; display: inline-block; vertical-align: middle;
         }
-        .ls-filter-fill { height: 100%; border-radius: 0 0.25rem 0.25rem 0; transition: width 300ms ease; }
+        .ls-filter-fill { height: 100%; border-radius: 0 0.25rem 0.25rem 0; transition: width 300ms ease; position: relative; overflow: hidden; }
+        .ls-filter-fill::after {
+          content: ''; position: absolute; top: 0; left: -50%; width: 50%; height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+          animation: ls-filter-shimmer 2s ease-in-out infinite;
+        }
+        @keyframes ls-filter-shimmer { 0% { left: -50%; } 100% { left: 150%; } }
         .ls-filter-pct { font-size: 0.7rem; margin-left: 0.25rem; color: var(--lcars-ice, #99ccff); }
 
         /* ─── Air Quality Panel ─── */
@@ -584,6 +680,11 @@ class LcarsLifeSupportCard extends LitElement {
         .ls-aq-hero {
           display: flex; flex-direction: column; align-items: center; gap: 0.125rem;
           min-width: 5rem;
+          animation: ls-aq-hero-pulse 4s ease-in-out infinite;
+        }
+        @keyframes ls-aq-hero-pulse {
+          0%, 100% { filter: drop-shadow(0 0 2px transparent); }
+          50% { filter: drop-shadow(0 0 8px rgba(153,204,255,0.3)); }
         }
         .ls-aq-score { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 2.5rem; }
         .ls-aq-label { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.75rem; color: var(--lcars-gray, #666688); text-transform: uppercase; }

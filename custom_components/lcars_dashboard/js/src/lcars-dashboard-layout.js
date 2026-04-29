@@ -64,7 +64,7 @@ class LcarsDashboardLayout extends LitElement {
 
   _applyHashDeepLink() {
     const hash = location.hash;
-    const match = hash.match(/^#area:(.+)$/);
+    const match = hash.match(/^#area:([a-z0-9_]+)$/i);
     if (match) {
       const areaId = decodeURIComponent(match[1]);
       lcarsLog.debug(TAG, 'Deep-link: auto-selecting area', areaId);

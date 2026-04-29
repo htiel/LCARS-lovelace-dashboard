@@ -69,6 +69,23 @@ export function getAreasByFloor(hass) {
 }
 
 /**
+ * Flatten all floors/areas into a single array of { floor, area } objects.
+ * Includes unassigned areas (floor: null).
+ * @param {Object} hass - Home Assistant instance
+ * @returns {Array<{floor: Object|null, area: Object}>}
+ */
+export function getAllAreasFlat(hass) {
+  const floors = getFloors(hass);
+  const floorMap = getAreasByFloor(hass);
+  const allAreas = [];
+  for (const floor of floors) {
+    for (const area of (floorMap.get(floor.floor_id) || [])) allAreas.push({ floor, area });
+  }
+  for (const area of (floorMap.get(null) || [])) allAreas.push({ floor: null, area });
+  return allAreas;
+}
+
+/**
  * Get sibling area IDs — areas on the same floor as the given area,
  * excluding the given area itself. Useful for multi-zone awareness.
  * @param {Object} hass - Home Assistant instance

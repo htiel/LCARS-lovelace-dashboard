@@ -12,35 +12,10 @@
 import { LitElement, html, css, svg } from 'lit-element';
 import { lcarsEventBus, showMoreInfo, navigate } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
-
-/* ─── SVG Ring Gauge for Battery SOC ─── */
-function _ringGauge(value, max, size, color, label, sublabel) {
-  const r = (size - 8) / 2;
-  const circumference = 2 * Math.PI * r;
-  const pct = Math.min(1, Math.max(0, value / max));
-  const dashOffset = circumference * (1 - pct);
-  const cx = size / 2, cy = size / 2;
-  return svg`
-    <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" class="ring-gauge" role="meter"
-         aria-valuenow="${value}" aria-valuemin="0" aria-valuemax="${max}" aria-label="${label}: ${value}">
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(153,204,255,0.12)" stroke-width="4" />
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="4"
-              stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"
-              stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})"
-              style="transition: stroke-dashoffset 500ms ease" />
-      <text x="${cx}" y="${cy - 4}" text-anchor="middle" dominant-baseline="central"
-            class="ring-value" style="fill:${color}">${label}</text>
-      ${sublabel ? svg`<text x="${cx}" y="${cy + 10}" text-anchor="middle" dominant-baseline="central"
-            class="ring-sublabel">${sublabel}</text>` : ''}
-    </svg>`;
-}
+import { getAllAreasFlat } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
 import { isDiagnosticEntity } from './lcars-entity-utils.js';
 import { formatNumber } from './lcars-format-utils.js';
-import { lcarsAudio } from './lcars-audio.js';
-
-import './panels/battery/lcars-battery-panel.js';
 
 const TAG = 'EngineeringCard';
 const FILTER_ALL = 'all';
@@ -79,13 +54,10 @@ class LcarsEngineeringCard extends LitElement {
     if (!this._hass) return { batteries: [], circuits: [], gridSensors: [], upsSensors: [], totalDraw: 0 };
     const states = this._hass.states || {};
     const batteries = [], circuits = [], gridSensors = [], upsSensors = [];
+    const gridSiblings = {};
     let totalDraw = 0;
-    const floors = getFloors(this._hass);
-    const floorMap = getAreasByFloor(this._hass);
     const seenDevices = new Set();
-    const allAreas = [];
-    for (const floor of floors) { for (const area of (floorMap.get(floor.floor_id) || [])) allAreas.push({ floor, area }); }
-    for (const area of (floorMap.get(null) || [])) allAreas.push({ floor: null, area });
+    const allAreas = getAllAreasFlat(this._hass);
 
     for (const { floor, area } of allAreas) {
       const raw = getAreaEntities(this._hass, area.area_id, this._entityCache);
@@ -151,13 +123,19 @@ class LcarsEngineeringCard extends LitElement {
     }
     const dedupedCircuits = [...circuitMap.values()].sort((a, b) => (Number(b.state?.state) || 0) - (Number(a.state?.state) || 0));
 
-    // Enrich batteries with sibling entities (voltage, temp, power, runtime)
+    // Enrich batteries with sibling entities — pre-index by device_id (O(n) vs O(n²))
     const entities = this._hass?.entities || {};
+    const byDevice = new Map();
+    for (const [eid, e] of Object.entries(entities)) {
+      if (e.device_id && states[eid]) {
+        if (!byDevice.has(e.device_id)) byDevice.set(e.device_id, []);
+        byDevice.get(e.device_id).push({ eid, state: states[eid], entity: e });
+      }
+    }
     for (const b of batteries) {
       b.siblings = {};
-      for (const [eid, s] of Object.entries(states)) {
-        const e = entities[eid];
-        if (!e || e.device_id !== b.deviceId) continue;
+      const devEntities = byDevice.get(b.deviceId) || [];
+      for (const { eid, state: s } of devEntities) {
         const dc = s.attributes?.device_class || '';
         const leid = eid.toLowerCase();
         if (dc === 'voltage' && !b.siblings.voltage) b.siblings.voltage = s;
@@ -171,20 +149,17 @@ class LcarsEngineeringCard extends LitElement {
       }
     }
 
-    return { batteries, circuits: dedupedCircuits, gridSensors, upsSensors, totalDraw, gridSiblings: this._discoverGridSiblings(states) };
-  }
-
-  _discoverGridSiblings(states) {
-    const siblings = {};
+    // Grid siblings: voltage, frequency, energy from grid-related entities
     for (const [eid, s] of Object.entries(states)) {
       if (!GRID_SIBLING_KEYWORDS.test(eid)) continue;
       const dc = s.attributes?.device_class || '';
-      if (dc === 'voltage' && !siblings.voltage) siblings.voltage = s;
-      else if (dc === 'frequency' && !siblings.frequency) siblings.frequency = s;
-      else if (dc === 'energy' && /today/i.test(eid) && !siblings.energyToday) siblings.energyToday = s;
-      else if (dc === 'current' && !siblings.current) siblings.current = s;
+      if (dc === 'voltage' && !gridSiblings.voltage) gridSiblings.voltage = s;
+      else if (dc === 'frequency' && !gridSiblings.frequency) gridSiblings.frequency = s;
+      else if (dc === 'energy' && /today/i.test(eid) && !gridSiblings.energyToday) gridSiblings.energyToday = s;
+      else if (dc === 'current' && !gridSiblings.current) gridSiblings.current = s;
     }
-    return siblings;
+
+    return { batteries, circuits: dedupedCircuits, gridSensors, upsSensors, totalDraw, gridSiblings };
   }
 
   _getGridPower(data) {

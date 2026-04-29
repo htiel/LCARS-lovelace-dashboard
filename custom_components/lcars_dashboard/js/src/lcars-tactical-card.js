@@ -12,10 +12,11 @@
 import { LitElement, html, css, svg } from 'lit-element';
 import { lcarsLog, lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
+import { getAllAreasFlat } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
 import { isTacticalEntity, isDiagnosticEntity } from './lcars-entity-utils.js';
 import { lcarsAudio } from './lcars-audio.js';
+import { renderRingGauge } from './lcars-ring-gauge.js';
 
 const TAG = 'TacticalCard';
 
@@ -665,16 +666,6 @@ class LcarsTacticalCard extends LitElement {
     `;
   }
 
-  /* ═══ Sensor Timeline placeholder (F-21, Phase 3 full implementation) ═══ */
-  _renderTimeline(floorGroups) {
-    return html`
-      <div class="tac-timeline" role="img" aria-label="24-hour sensor timeline">
-        <span class="tac-timeline-label">SENSOR LOG</span>
-        <div class="tac-timeline-track"></div>
-      </div>
-    `;
-  }
-
   /* ═══ Overview Cards (Design Playbook §3.1) ═══ */
   _renderOverview(summary) {
     const shieldColor = summary.alarmState === 'disarmed' ? '#44cc88' : summary.alarmState === 'triggered' ? '#ff5555' : '#ffcc99';
@@ -688,22 +679,22 @@ class LcarsTacticalCard extends LitElement {
     return html`
       <div class="tac-overview">
         <div class="tac-ov-card tac-ov-shield" @click=${() => { if (summary.alarmEntityId) showMoreInfo(summary.alarmEntityId); }}>
-          ${this._ringGauge(1, 1, 80, shieldColor, shieldLabel, '')}
+          ${renderRingGauge(1, 1, 80, shieldColor, shieldLabel, '')}
           <span class="tac-ov-title">SHIELDS</span>
           <span class="tac-ov-status" style="color:${shieldColor}">${shieldLabel}</span>
         </div>
         <div class="tac-ov-card tac-ov-perimeter">
-          ${this._ringGauge(summary.perimeterSecure, Math.max(summary.perimeterTotal, 1), 80, perimColor, `${summary.perimeterSecure}/${summary.perimeterTotal}`, 'SECURE')}
+          ${renderRingGauge(summary.perimeterSecure, Math.max(summary.perimeterTotal, 1), 80, perimColor, `${summary.perimeterSecure}/${summary.perimeterTotal}`, 'SECURE')}
           <span class="tac-ov-title">PERIMETER</span>
           <span class="tac-ov-status" style="color:${perimColor}">${summary.perimeterSecure === summary.perimeterTotal ? 'ALL SECURE' : `${summary.perimeterTotal - summary.perimeterSecure} BREACH`}</span>
         </div>
         <div class="tac-ov-card tac-ov-cameras">
-          ${this._ringGauge(camOnline, Math.max(summary.allCameras.length, 1), 80, camColor, `${camOnline}/${summary.allCameras.length}`, 'ONLINE')}
+          ${renderRingGauge(camOnline, Math.max(summary.allCameras.length, 1), 80, camColor, `${camOnline}/${summary.allCameras.length}`, 'ONLINE')}
           <span class="tac-ov-title">VIEWSCREENS</span>
           <span class="tac-ov-status" style="color:${camColor}">${camOnline === summary.allCameras.length ? 'ALL ONLINE' : `${summary.allCameras.length - camOnline} OFFLINE`}</span>
         </div>
         <div class="tac-ov-card tac-ov-locks">
-          ${this._ringGauge(summary.locksLocked, Math.max(summary.locksTotal, 1), 80, lockColor, `${summary.locksLocked}/${summary.locksTotal}`, 'LOCKED')}
+          ${renderRingGauge(summary.locksLocked, Math.max(summary.locksTotal, 1), 80, lockColor, `${summary.locksLocked}/${summary.locksTotal}`, 'LOCKED')}
           <span class="tac-ov-title">LOCKS</span>
           <span class="tac-ov-status" style="color:${lockColor}">${lockStatus}</span>
         </div>

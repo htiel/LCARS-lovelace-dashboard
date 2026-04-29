@@ -11,37 +11,12 @@
 import { LitElement, html, css, svg } from 'lit-element';
 import { lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
+import { getAllAreasFlat } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
+import { renderRingGauge } from './lcars-ring-gauge.js';
 import { renderSparkline, fetchSparklineData } from './lcars-sparkline.js';
-
-/* ─── SVG Ring Gauge Utility ─── */
-function _ringGauge(value, max, size, color, label, sublabel, opts = {}) {
-  const strokeW = opts.strokeWidth || 6;
-  const r = (size - strokeW * 2) / 2;
-  const circumference = 2 * Math.PI * r;
-  const pct = Math.min(1, Math.max(0, value / max));
-  const dashOffset = circumference * (1 - pct);
-  const cx = size / 2, cy = size / 2;
-  const trackColor = opts.trackColor || `${color}22`;
-  return svg`
-    <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" class="ring-gauge" role="meter"
-         aria-valuenow="${value}" aria-valuemin="0" aria-valuemax="${max}" aria-label="${label}: ${value}">
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${trackColor}" stroke-width="${strokeW}" />
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${strokeW}"
-              stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"
-              stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})"
-              style="transition: stroke-dashoffset 500ms ease; filter: drop-shadow(0 0 4px ${color})" />
-      <text x="${cx}" y="${cy - 5}" text-anchor="middle" dominant-baseline="central"
-            class="ring-value" style="fill:${color}; filter: drop-shadow(0 0 3px ${color})">${label}</text>
-      ${sublabel ? svg`<text x="${cx}" y="${cy + 11}" text-anchor="middle" dominant-baseline="central"
-            class="ring-sublabel" style="fill:${color}; opacity:0.7">${sublabel}</text>` : ''}
-    </svg>
-  `;
-}
-import { isDiagnosticEntity, isEnvironmentEntity } from './lcars-entity-utils.js';
+import { isDiagnosticEntity } from './lcars-entity-utils.js';
 import { formatNumber } from './lcars-format-utils.js';
-import { lcarsAudio } from './lcars-audio.js';
 
 const TAG = 'LifeSupportCard';
 const FILTER_ALL = 'all';
@@ -81,20 +56,11 @@ class LcarsLifeSupportCard extends LitElement {
   /* ═══ Entity Discovery ═══ */
   _discoverAll() {
     if (!this._hass) return { thermostats: [], purifiers: [], tempSensors: [], aqSensors: [], fans: [] };
-    const floors = getFloors(this._hass);
-    const floorMap = getAreasByFloor(this._hass);
     const thermostats = [], purifiers = [], tempSensors = [], aqSensors = [], fans = [];
     const entities = this._hass.entities || {};
     const states = this._hass.states || {};
 
-    // Scan all areas
-    const allAreas = [];
-    for (const floor of floors) {
-      const areas = floorMap.get(floor.floor_id) || [];
-      for (const area of areas) allAreas.push({ floor, area });
-    }
-    const noFloor = floorMap.get(null) || [];
-    for (const area of noFloor) allAreas.push({ floor: null, area });
+    const allAreas = getAllAreasFlat(this._hass);
 
     for (const { floor, area } of allAreas) {
       const raw = getAreaEntities(this._hass, area.area_id, this._entityCache);
@@ -174,25 +140,25 @@ class LcarsLifeSupportCard extends LitElement {
     return html`
       <div class="ls-overview">
         <div class="ls-overview-card ls-ov-purifier">
-          ${_ringGauge(purifierActiveCount, Math.max(purifiers.length, 1), 80, purifierColor, `${purifiers.length}`, purifiers.length === 1 ? 'UNIT' : 'UNITS')}
+          ${renderRingGauge(purifierActiveCount, Math.max(purifiers.length, 1), 80, purifierColor, `${purifiers.length}`, purifiers.length === 1 ? 'UNIT' : 'UNITS')}
           <span class="ls-ov-title">AIR PURIFIERS</span>
           <span class="ls-ov-status" style="color:${purifierColor}">${purifierActiveCount === purifiers.length ? 'ALL NORMAL' : `${purifierActiveCount}/${purifiers.length} ACTIVE`}</span>
           <span class="ls-ov-action" @click=${() => { this.filter = FILTER_AIR; }}>VIEW DETAILS</span>
         </div>
         <div class="ls-overview-card ls-ov-thermo">
-          ${thermoAvgTemp != null ? _ringGauge(thermoAvgTemp, 100, 80, thermoColor, `${thermoAvgTemp}°`, heating > 0 ? 'HEATING' : cooling > 0 ? 'COOLING' : 'IDLE') : html`<span class="ls-ov-value">${thermostats.length} ${thermostats.length === 1 ? 'ZONE' : 'ZONES'}</span>`}
+          ${thermoAvgTemp != null ? renderRingGauge(thermoAvgTemp, 100, 80, thermoColor, `${thermoAvgTemp}°`, heating > 0 ? 'HEATING' : cooling > 0 ? 'COOLING' : 'IDLE') : html`<span class="ls-ov-value">${thermostats.length} ${thermostats.length === 1 ? 'ZONE' : 'ZONES'}</span>`}
           <span class="ls-ov-title">THERMOSTATS</span>
           <span class="ls-ov-status">${thermostats.length} ${thermostats.length === 1 ? 'ZONE' : 'ZONES'}</span>
           <span class="ls-ov-action" @click=${() => { this.filter = FILTER_CLIMATE; }}>VIEW ZONES</span>
         </div>
         <div class="ls-overview-card ls-ov-aq">
-          ${_ringGauge(Math.min(worstAqi, 300), 300, 80, aqiColor, worstAqi > 0 ? `${worstAqi}` : '—', 'AQI')}
+          ${renderRingGauge(Math.min(worstAqi, 300), 300, 80, aqiColor, worstAqi > 0 ? `${worstAqi}` : '—', 'AQI')}
           <span class="ls-ov-title">AIR QUALITY</span>
           <span class="ls-ov-status" style="color:${aqiCssColor}">${aqiStatus}</span>
           <span class="ls-ov-action" @click=${() => { this.filter = FILTER_AIR; }}>VIEW DETAILS</span>
         </div>
         <div class="ls-overview-card ls-ov-env">
-          ${avgTemp != null ? _ringGauge(avgTemp, 100, 80, envColor, `${avgTemp}°`, `${avgHum || '—'}%`) : html`<span class="ls-ov-value">—</span>`}
+          ${avgTemp != null ? renderRingGauge(avgTemp, 100, 80, envColor, `${avgTemp}°`, `${avgHum || '—'}%`) : html`<span class="ls-ov-value">—</span>`}
           <span class="ls-ov-title">ENVIRONMENT</span>
           <span class="ls-ov-status" style="color:${envColor}">${avgHum != null ? `${avgHum}% HUMIDITY` : ''}</span>
           <span class="ls-ov-action" @click=${() => { this.filter = FILTER_CLIMATE; }}>VIEW DETAILS</span>
@@ -225,7 +191,7 @@ class LcarsLifeSupportCard extends LitElement {
             const ringSize = thermostats.length === 1 ? 96 : 80;
             return html`
               <div class="ls-thermo-card ${thermostats.length === 1 ? 'ls-thermo-wide' : ''}" data-action="${action}" @click=${() => showMoreInfo(t.entity.entity_id)}>
-                ${currentTemp != null ? _ringGauge(currentTemp, 100, ringSize, actionHex, `${Math.round(currentTemp * 10) / 10}°`, actionLabel) : html`<span class="ls-thermo-temp">—</span>`}
+                ${currentTemp != null ? renderRingGauge(currentTemp, 100, ringSize, actionHex, `${Math.round(currentTemp * 10) / 10}°`, actionLabel) : html`<span class="ls-thermo-temp">—</span>`}
                 <span class="ls-thermo-name">${name}</span>
                 ${targetTemp != null ? html`<span class="ls-thermo-setpoint">${targetTemp}° SETPOINT</span>` : ''}
                 <div class="ls-thermo-details">
@@ -463,7 +429,7 @@ class LcarsLifeSupportCard extends LitElement {
         </div>
         <div class="ls-aq-panel">
           <div class="ls-aq-hero">
-            ${_ringGauge(Math.min(aqiVal, 300), 300, 96, aqiHex, aqiVal > 0 ? `${aqiVal}` : '—', 'AQI')}
+            ${renderRingGauge(Math.min(aqiVal, 300), 300, 96, aqiHex, aqiVal > 0 ? `${aqiVal}` : '—', 'AQI')}
             <span class="ls-aq-status" style="color:${aqiCssColor}">${aqiLabel}</span>
           </div>
           <div class="ls-aq-metrics">
@@ -538,7 +504,7 @@ class LcarsLifeSupportCard extends LitElement {
     if (!this._aqSparklinesFetched) {
       this._aqSparklinesFetched = true;
       fetchSparklineData(this._hass, 'aq-rooms', entityIds, this._aqHistoryCache, { ttlMs: 300000 })
-        .then(data => { if (data) { this._aqSparklines = data; this.requestUpdate(); } });
+        .then(data => { if (data) { this._aqSparklines = data; this.requestUpdate(); } }).catch(() => {});
     }
     const sparkData = this._aqSparklines;
     if (!sparkData || Object.keys(sparkData).length === 0) return '';
@@ -563,7 +529,7 @@ class LcarsLifeSupportCard extends LitElement {
     if (!this._aqHistoryFetched) {
       this._aqHistoryFetched = true;
       fetchSparklineData(this._hass, 'aq-history', entityIds, this._aqHistoryCache, { ttlMs: 300000 })
-        .then(data => { if (data) { this._aqHistoryData = data; this.requestUpdate(); } });
+        .then(data => { if (data) { this._aqHistoryData = data; this.requestUpdate(); } }).catch(() => {});
     }
     const histData = this._aqHistoryData;
     if (!histData) return '';
@@ -587,7 +553,7 @@ class LcarsLifeSupportCard extends LitElement {
     if (!this._envHistoryFetched) {
       this._envHistoryFetched = true;
       fetchSparklineData(this._hass, 'env-history', entityIds, this._aqHistoryCache, { ttlMs: 300000 })
-        .then(data => { if (data) { this._envHistoryData = data; this.requestUpdate(); } });
+        .then(data => { if (data) { this._envHistoryData = data; this.requestUpdate(); } }).catch(() => {});
     }
     const histData = this._envHistoryData;
     if (!histData) return '';

@@ -465,12 +465,52 @@ class LcarsTacticalCard extends LitElement {
     `;
   }
 
+  /* ═══ Camera Location Labels ═══ */
+  /** Check HA labels on entity, device, and area for 'exterior'/'interior' classification.
+   *  Labels: 'exterior', 'outdoor', 'outside' → 'exterior'
+   *          'interior', 'indoor', 'inside'   → 'interior'
+   *  Returns 'exterior', 'interior', or null (no label — fall back to name heuristic) */
+  _getCameraLocation(camEntry) {
+    const EXTERIOR = new Set(['exterior', 'outdoor', 'outside']);
+    const INTERIOR = new Set(['interior', 'indoor', 'inside']);
+    // Check entity labels
+    const entityLabels = camEntry.entity?.labels || [];
+    for (const l of entityLabels) {
+      const lower = (l || '').toLowerCase();
+      if (EXTERIOR.has(lower)) return 'exterior';
+      if (INTERIOR.has(lower)) return 'interior';
+    }
+    // Check device labels
+    if (camEntry.entity?.device_id && this._hass?.devices) {
+      const dev = this._hass.devices[camEntry.entity.device_id];
+      for (const l of (dev?.labels || [])) {
+        const lower = (l || '').toLowerCase();
+        if (EXTERIOR.has(lower)) return 'exterior';
+        if (INTERIOR.has(lower)) return 'interior';
+      }
+    }
+    // Check area labels
+    const areaId = camEntry.entity?.area_id || (camEntry.entity?.device_id && this._hass?.devices?.[camEntry.entity.device_id]?.area_id);
+    if (areaId && this._hass?.areas) {
+      const area = this._hass.areas[areaId];
+      for (const l of (area?.labels || [])) {
+        const lower = (l || '').toLowerCase();
+        if (EXTERIOR.has(lower)) return 'exterior';
+        if (INTERIOR.has(lower)) return 'interior';
+      }
+    }
+    return null; // No label — caller uses name heuristic
+  }
+
   /* ═══ Camera Viewscreen Array (F-23, F-09, F-10, F-11) ═══ */
   _renderCameras(allCameras) {
     if (allCameras.length === 0) return '';
-    // Filter cameras
+    // Filter cameras — labels take priority, then name heuristic fallback
     const filtered = this._cameraFilter === 'all' ? allCameras
       : allCameras.filter(c => {
+          const labelMatch = this._getCameraLocation(c);
+          if (labelMatch) return labelMatch === this._cameraFilter;
+          // Fallback: name-based heuristic
           const name = (c.entity?.entity_id || '').toLowerCase();
           if (this._cameraFilter === 'exterior') return /front|back|drive|garage|yard|outdoor|porch|door/i.test(name);
           if (this._cameraFilter === 'interior') return !/front|back|drive|garage|yard|outdoor|porch|door/i.test(name);

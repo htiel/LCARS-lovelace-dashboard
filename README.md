@@ -61,6 +61,27 @@ LCARS dashboards can be reordered within the HA sidebar so they appear grouped t
 
 The order is stored in the integration config entry and applied client-side. Non-LCARS sidebar items are unaffected.
 
+### HA Labels for Entity Classification
+
+LCARS uses [Home Assistant Labels](https://www.home-assistant.io/docs/organizing/labels/) (2024.4+) to improve entity classification where automatic detection isn't sufficient. Labels can be applied to entities, devices, or areas — LCARS checks all three levels.
+
+#### Camera Location Labels
+
+The Tactical dashboard's camera filter (ALL / EXTERIOR / INTERIOR) uses labels to classify cameras. Without labels, it falls back to a name-based heuristic (matching keywords like `front`, `garage`, `yard`).
+
+Apply any of these labels to your camera entities, devices, or areas:
+
+| Label | Classification |
+|-------|---------------|
+| `exterior`, `outdoor`, `outside` | Camera shown under EXTERIOR filter |
+| `interior`, `indoor`, `inside` | Camera shown under INTERIOR filter |
+
+**How to apply labels:**
+1. **Settings** → **Devices & Services** → find your camera device
+2. Click the device → **pencil icon** (edit)
+3. Under **Labels**, add `exterior` or `interior`
+4. Alternatively, apply the label to the **area** (e.g., label "Front Yard" as `exterior`) — all cameras in that area inherit the classification
+
 ---
 
 ## Features

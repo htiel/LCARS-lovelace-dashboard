@@ -23,7 +23,7 @@ const TAG = 'TacticalCard';
 /* ─── Entity Classification Constants ─── */
 const ACCESS_DOMAINS = new Set(['lock', 'alarm_control_panel']);
 const PERIMETER_CLASSES = new Set(['door', 'window', 'garage_door']);
-const SAFETY_CLASSES = new Set(['smoke', 'gas', 'safety', 'tamper', 'vibration', 'carbon_monoxide']);
+const SAFETY_CLASSES = new Set(['smoke', 'gas', 'safety', 'tamper', 'vibration', 'carbon_monoxide', 'heat']);
 const MOTION_CLASSES = new Set(['motion', 'occupancy']);
 const ALARM_SEVERITY = { triggered: 5, pending: 4, armed_away: 3, armed_night: 2, armed_home: 2, armed_vacation: 2, arming: 1, disarmed: 0 };
 
@@ -183,6 +183,7 @@ class LcarsTacticalCard extends LitElement {
   _getGlobalSummary(floorGroups) {
     let alarmState = 'disarmed', perimeterTotal = 0, perimeterSecure = 0, safetyAlerts = 0;
     let locksTotal = 0, locksLocked = 0;
+    let safetyTotal = 0;
     let alarmEntityId = null;
     const allCameras = [], allLocks = [], allPersons = [];
 
@@ -202,6 +203,7 @@ class LcarsTacticalCard extends LitElement {
           if ((this._hass?.states?.[e.entity?.entity_id] || e.state)?.state !== 'on') perimeterSecure++;
         }
         for (const e of data.safety) {
+          safetyTotal++;
           if ((this._hass?.states?.[e.entity?.entity_id] || e.state)?.state === 'on') safetyAlerts++;
         }
         allCameras.push(...data.cameras);
@@ -220,7 +222,7 @@ class LcarsTacticalCard extends LitElement {
         if (eid.startsWith('person.')) allPersons.push({ entity_id: eid, state: s });
       }
     }
-    return { alarmState, alarmEntityId, perimeterTotal, perimeterSecure, safetyAlerts,
+    return { alarmState, alarmEntityId, perimeterTotal, perimeterSecure, safetyAlerts, safetyTotal,
              locksTotal, locksLocked, allCameras, allLocks, allPersons };
   }
 
@@ -675,6 +677,8 @@ class LcarsTacticalCard extends LitElement {
     const camColor = camOnline === summary.allCameras.length ? '#99ccff' : camOnline > 0 ? '#ffcc99' : '#ff5555';
     const lockColor = summary.locksLocked === summary.locksTotal ? '#44cc88' : '#ff5555';
     const lockStatus = summary.locksLocked === summary.locksTotal ? 'ALL ENGAGED' : `${summary.locksTotal - summary.locksLocked} UNSECURED`;
+    const hazardColor = summary.safetyAlerts > 0 ? '#ff5555' : summary.safetyTotal > 0 ? '#44cc88' : '#666688';
+    const hazardStatus = summary.safetyAlerts > 0 ? `${summary.safetyAlerts} ALERT${summary.safetyAlerts > 1 ? 'S' : ''}` : summary.safetyTotal > 0 ? 'ALL CLEAR' : 'NO SENSORS';
 
     return html`
       <div class="tac-overview">
@@ -698,6 +702,13 @@ class LcarsTacticalCard extends LitElement {
           <span class="tac-ov-title">LOCKS</span>
           <span class="tac-ov-status" style="color:${lockColor}">${lockStatus}</span>
         </div>
+        ${summary.safetyTotal > 0 ? html`
+          <div class="tac-ov-card tac-ov-hazard">
+            ${renderRingGauge(summary.safetyTotal - summary.safetyAlerts, Math.max(summary.safetyTotal, 1), 80, hazardColor, `${summary.safetyTotal - summary.safetyAlerts}/${summary.safetyTotal}`, 'CLEAR')}
+            <span class="tac-ov-title">HAZARD DETECTORS</span>
+            <span class="tac-ov-status" style="color:${hazardColor}">${hazardStatus}</span>
+          </div>
+        ` : ''}
       </div>
     `;
   }
@@ -737,6 +748,7 @@ class LcarsTacticalCard extends LitElement {
     }
     const motionTriggered = motionTotal - motionClear;
     const perimeterOpen = summary.perimeterTotal - summary.perimeterSecure;
+    const safetyClear = summary.safetyTotal - summary.safetyAlerts;
 
     return html`
       <div class="tac-sidebar-section">
@@ -754,6 +766,14 @@ class LcarsTacticalCard extends LitElement {
             <div class="tac-sensor-row"><span class="tac-sensor-key">CLEAR</span><span class="tac-sensor-val" style="color:#44cc88">${motionClear}</span></div>
             <div class="tac-sensor-row"><span class="tac-sensor-key">TRIGGERED</span><span class="tac-sensor-val" style="color:${motionTriggered > 0 ? 'var(--lcars-tomato)' : '#44cc88'}">${motionTriggered}</span></div>
           </div>
+          ${summary.safetyTotal > 0 ? html`
+            <div class="tac-sensor-group">
+              <span class="tac-sensor-group-title">HAZARD DETECTORS</span>
+              <div class="tac-sensor-row"><span class="tac-sensor-key">TOTAL</span><span class="tac-sensor-val">${summary.safetyTotal}</span></div>
+              <div class="tac-sensor-row"><span class="tac-sensor-key">CLEAR</span><span class="tac-sensor-val" style="color:#44cc88">${safetyClear}</span></div>
+              <div class="tac-sensor-row"><span class="tac-sensor-key">ALERTS</span><span class="tac-sensor-val" style="color:${summary.safetyAlerts > 0 ? 'var(--lcars-tomato)' : '#44cc88'}">${summary.safetyAlerts}</span></div>
+            </div>
+          ` : ''}
         </div>
       </div>`;
   }
@@ -824,6 +844,7 @@ class LcarsTacticalCard extends LitElement {
         .tac-ov-perimeter { border-color: #44cc88; }
         .tac-ov-cameras { border-color: var(--lcars-ice, #99ccff); }
         .tac-ov-locks { border-color: var(--lcars-butterscotch, #ff9966); }
+        .tac-ov-hazard { border-color: var(--lcars-sunflower, #ffcc99); }
         .tac-ov-title { font-size: 0.75rem; color: var(--lcars-gray, #666688); letter-spacing: 0.1em; }
         .tac-ov-status { font-size: 0.75rem; }
         .ring-gauge .ring-value { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 12px; text-transform: uppercase; font-weight: bold; }

@@ -557,7 +557,7 @@ export function isSecurityEntity(entry) {
 }
 
 /** Named predicate: is this a tactical panel entity? (security minus cameras) */
-const TACTICAL_BINARY_CLASSES = new Set(['door', 'window', 'opening', 'garage_door', 'motion', 'occupancy', 'tamper', 'safety']);
+const TACTICAL_BINARY_CLASSES = new Set(['door', 'window', 'opening', 'garage_door', 'motion', 'occupancy', 'tamper', 'safety', 'smoke', 'carbon_monoxide', 'gas', 'heat', 'vibration']);
 const TACTICAL_COVER_CLASSES = new Set(['garage_door', 'gate', 'door']);
 const VIEWPORT_COVER_CLASSES = new Set(['blind', 'shade', 'curtain', 'awning', 'shutter']);
 // 4X-58: Platforms whose lock entities belong to their device panel, not tactical

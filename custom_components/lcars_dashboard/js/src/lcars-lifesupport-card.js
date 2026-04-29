@@ -86,6 +86,9 @@ class LcarsLifeSupportCard extends LitElement {
         // Skip pool/spa climate entities
         if (domain === 'climate' && /pool|spa|fridge|freezer/i.test(e.entity_id)) continue;
 
+        // Skip binary_sensor — safety/smoke/CO sensors belong on Tactical, not Life Support
+        if (domain === 'binary_sensor') continue;
+
         if (domain === 'climate') { thermostats.push(entry); continue; }
         if (domain === 'fan' && PURIFIER_PLATFORMS.has(platform)) { purifiers.push(entry); continue; }
         if (domain === 'fan') { fans.push(entry); continue; }

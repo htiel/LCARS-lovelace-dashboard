@@ -289,20 +289,27 @@ class LcarsLifeSupportCard extends LitElement {
     const areaMap = new Map();
     for (const e of tempSensors) {
       const areaName = e.area?.name || 'Unknown';
-      if (!areaMap.has(areaName)) areaMap.set(areaName, { temp: null, humidity: null });
+      if (!areaMap.has(areaName)) areaMap.set(areaName, { temp: null, humidity: null, hasEntities: false });
       const dc = e.state?.attributes?.device_class;
       const val = Number(e.state?.state);
-      if (dc === 'temperature' && !isNaN(val)) {
-        const existing = areaMap.get(areaName);
-        if (!existing.temp || val > 0) existing.temp = { entry: e, val };
+      const isUnavail = e.state?.state === 'unavailable' || e.state?.state === 'unknown';
+      if (dc === 'temperature') {
+        areaMap.get(areaName).hasEntities = true;
+        if (!isNaN(val)) {
+          const existing = areaMap.get(areaName);
+          if (!existing.temp || val > 0) existing.temp = { entry: e, val };
+        }
       }
-      if (dc === 'humidity' && !isNaN(val)) {
-        areaMap.get(areaName).humidity = { entry: e, val };
+      if (dc === 'humidity') {
+        areaMap.get(areaName).hasEntities = true;
+        if (!isNaN(val)) {
+          areaMap.get(areaName).humidity = { entry: e, val };
+        }
       }
     }
 
     const rows = [...areaMap.entries()]
-      .filter(([, d]) => d.temp || d.humidity)
+      .filter(([, d]) => d.temp || d.humidity || d.hasEntities)
       .sort((a, b) => a[0].localeCompare(b[0]));
 
     if (rows.length === 0) return '';
@@ -322,6 +329,17 @@ class LcarsLifeSupportCard extends LitElement {
             <span class="ls-th">STATUS</span>
           </div>
           ${rows.map(([name, d]) => {
+            const offline = !d.temp && !d.humidity && d.hasEntities;
+            if (offline) {
+              return html`
+                <div class="ls-table-row ls-row-offline">
+                  <span class="ls-td ls-td-name">${name.toUpperCase()}</span>
+                  <span class="ls-td" style="color:var(--lcars-gray)">—</span>
+                  <span class="ls-td" style="color:var(--lcars-gray)">—</span>
+                  <span class="ls-td ls-offline-badge" style="color:var(--lcars-gray)">OFFLINE</span>
+                </div>
+              `;
+            }
             const tempColor = d.temp ? (d.temp.val < 68 ? 'var(--lcars-bluey)' : d.temp.val <= 76 ? 'var(--lcars-ice)' : 'var(--lcars-butterscotch)') : 'var(--lcars-gray)';
             const status = d.temp ? (d.temp.val >= 65 && d.temp.val <= 78 ? 'NORMAL' : d.temp.val < 65 ? 'COOL' : 'WARM') : '—';
             const statusColor = status === 'NORMAL' ? 'var(--lcars-ice)' : status === 'COOL' ? 'var(--lcars-bluey)' : 'var(--lcars-butterscotch)';
@@ -375,11 +393,11 @@ class LcarsLifeSupportCard extends LitElement {
       }
       if (!areaId) continue;
       if (!areaAqMap.has(areaId)) {
-        areaAqMap.set(areaId, { name: areaName.toUpperCase(), metrics: {} });
+        areaAqMap.set(areaId, { name: areaName.toUpperCase(), metrics: {}, hasEntities: true });
       }
       const dc = e.state?.attributes?.device_class || '';
       const val = Number(e.state?.state);
-      if (isNaN(val)) continue;
+      if (isNaN(val)) { areaAqMap.get(areaId).hasEntities = true; continue; }
       const room = areaAqMap.get(areaId);
       const key = dc === 'pm25' ? 'pm25'
         : dc === 'carbon_dioxide' ? 'co2'
@@ -427,11 +445,12 @@ class LcarsLifeSupportCard extends LitElement {
       }
     }
     const rooms = [...areaAqMap.values()]
-      .filter(r => Object.keys(r.metrics).length > 0)
+      .filter(r => Object.keys(r.metrics).length > 0 || r.hasEntities)
       .map(r => {
         const avg = {};
         for (const [k, v] of Object.entries(r.metrics)) avg[k] = Math.round(v.sum / v.count * 10) / 10;
-        return { name: r.name, metrics: avg, co2EntityId: r.co2EntityId };
+        const offline = Object.keys(avg).length === 0 && r.hasEntities;
+        return { name: r.name, metrics: avg, co2EntityId: r.co2EntityId, offline };
       });
 
     const aqiVal = metrics.aqi?.val || 0;
@@ -478,6 +497,18 @@ class LcarsLifeSupportCard extends LitElement {
               <span class="ls-th">RH</span>
             </div>
             ${rooms.map(r => {
+              if (r.offline) {
+                return html`
+                  <div class="ls-table-row ls-row-offline">
+                    <span class="ls-td ls-td-name">${r.name}</span>
+                    <span class="ls-td ls-offline-badge" style="color:var(--lcars-gray)">OFFLINE</span>
+                    <span class="ls-td" style="color:var(--lcars-gray)">—</span>
+                    <span class="ls-td" style="color:var(--lcars-gray)">—</span>
+                    <span class="ls-td" style="color:var(--lcars-gray)">—</span>
+                    <span class="ls-td" style="color:var(--lcars-gray)">—</span>
+                    <span class="ls-td" style="color:var(--lcars-gray)">—</span>
+                  </div>`;
+              }
               const scoreColor = r.metrics.score != null ? (r.metrics.score >= 80 ? 'var(--lcars-ice)' : r.metrics.score >= 60 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)') : 'var(--lcars-gray)';
               const pm25Color = r.metrics.pm25 != null ? (r.metrics.pm25 <= 12 ? 'var(--lcars-ice)' : r.metrics.pm25 <= 35 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)') : 'var(--lcars-gray)';
               const co2Clr = r.metrics.co2 != null ? (r.metrics.co2 <= 600 ? 'var(--lcars-ice)' : r.metrics.co2 <= 1000 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)') : 'var(--lcars-gray)';
@@ -776,6 +807,9 @@ class LcarsLifeSupportCard extends LitElement {
           background: rgba(136,153,255,0.08);
           box-shadow: inset 3px 0 0 var(--lcars-ice, #99ccff);
         }
+        .ls-row-offline { opacity: 0.5; }
+        .ls-row-offline:hover { background: rgba(102,102,136,0.08); box-shadow: inset 3px 0 0 var(--lcars-gray, #666688); }
+        .ls-offline-badge { font-size: 0.65rem; letter-spacing: 0.1em; }
         .ls-td { display: flex; align-items: center; }
         .ls-td-name { color: var(--lcars-ice, #99ccff); }
         .ls-td-model { font-size: 0.7rem; color: var(--lcars-gray, #666688); }

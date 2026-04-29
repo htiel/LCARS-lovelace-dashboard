@@ -99,6 +99,7 @@ class LcarsTacticalCard extends LitElement {
     this._cascadeFirstTime = 0;
     this._cascadeSoundCount = 0;
     this._lockAllPending = false;
+    this._cameraFilter = 'all';  // 'all' | 'exterior' | 'interior'
   }
 
   setConfig(config) { this._config = config || {}; }
@@ -464,39 +465,85 @@ class LcarsTacticalCard extends LitElement {
   /* ═══ Camera Viewscreen Array (F-23, F-09, F-10, F-11) ═══ */
   _renderCameras(allCameras) {
     if (allCameras.length === 0) return '';
-    // Separate active vs idle cameras
+    // Filter cameras
+    const filtered = this._cameraFilter === 'all' ? allCameras
+      : allCameras.filter(c => {
+          const name = (c.entity?.entity_id || '').toLowerCase();
+          if (this._cameraFilter === 'exterior') return /front|back|drive|garage|yard|outdoor|porch|door/i.test(name);
+          if (this._cameraFilter === 'interior') return !/front|back|drive|garage|yard|outdoor|porch|door/i.test(name);
+          return true;
+        });
+    // Separate active vs idle
     const active = [], idle = [];
-    for (const cam of allCameras) {
+    for (const cam of filtered) {
       const det = this._getCameraDetection(cam.entity.entity_id);
       if (det) active.push({ cam, det });
       else idle.push(cam);
     }
+    // Main viewscreen (focused camera)
+    const focusedEid = this._focusedCamera;
+    const focusedCam = focusedEid ? allCameras.find(c => c.entity.entity_id === focusedEid) : null;
+    const focusedDet = focusedEid ? this._getCameraDetection(focusedEid) : null;
+    const onlineCount = allCameras.filter(c => (this._hass?.states?.[c.entity?.entity_id] || c.state)?.state !== 'unavailable').length;
 
     return html`
-      ${active.length > 0 ? html`
-        <div class="tac-section-header">
-          <span class="tac-section-label">ACTIVE VIEWSCREENS</span>
-          <span class="tac-section-line"></span>
-        </div>
-        <div class="tac-camera-grid tac-camera-active">
-          ${active.map(({ cam, det }) => this._renderCamera(cam, det))}
-        </div>
-      ` : ''}
       <div class="tac-section-header">
         <span class="tac-section-label">VIEWSCREENS</span>
         <span class="tac-section-line"></span>
-        <span class="tac-camera-count">${allCameras.filter(c => (this._hass?.states?.[c.entity?.entity_id] || c.state)?.state !== 'unavailable').length}/${allCameras.length}</span>
+        <span class="tac-camera-count">${onlineCount}/${allCameras.length}</span>
+      </div>
+      <div class="tac-camera-presets">
+        ${['all', 'exterior', 'interior'].map(f => html`
+          <button class="tac-preset-btn ${this._cameraFilter === f ? 'active' : ''}"
+                  @click=${() => { this._cameraFilter = f; this.requestUpdate(); }}>
+            ${f.toUpperCase()}
+          </button>
+        `)}
       </div>
       <div class="tac-camera-grid">
-        ${idle.map(cam => this._renderCamera(cam, null))}
+        ${[...active.map(({ cam, det }, i) => this._renderCamera(cam, det, i + 1)),
+           ...idle.map((cam, i) => this._renderCamera(cam, null, active.length + i + 1))]}
+      </div>
+      ${focusedCam ? html`
+        <div class="tac-main-viewscreen">
+          ${this._renderMainViewscreen(focusedCam, focusedDet)}
+        </div>
+      ` : ''}
+    `;
+  }
+
+  _renderMainViewscreen(entry, detection) {
+    const eid = entry.entity?.entity_id;
+    const state = this._hass?.states?.[eid] || entry.state;
+    const name = this._shortCamName(state?.attributes?.friendly_name || eid || '');
+    const imgUrl = state?.attributes?.entity_picture;
+    const feedUrl = imgUrl ? `/api/camera_proxy_stream/${eid}?token=${state?.attributes?.access_token || ''}` : null;
+    const level = detection?.level || DETECT_IDLE;
+    const levelLabel = level === DETECT_PERSON ? 'PERSON DETECTED' : level === DETECT_VEHICLE ? 'VEHICLE DETECTED' : level === DETECT_MOTION ? 'MOTION DETECTED' : '';
+    const borderColor = DETECT_COLORS[level];
+    const now = new Date();
+    const timestamp = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+    return html`
+      <div class="tac-viewscreen-frame" style="border-color:${borderColor}">
+        ${feedUrl ? html`<img src="${feedUrl}" alt="${name}" @error=${(e) => { e.target.style.display = 'none'; }} />` : html`<span class="tac-viewscreen-offline">VIEWSCREEN OFFLINE</span>`}
+        <div class="tac-viewscreen-overlay">
+          <span class="tac-viewscreen-name">${name}</span>
+          ${levelLabel ? html`<span class="tac-viewscreen-detect" style="color:${borderColor}">${levelLabel}</span>` : ''}
+          <span class="tac-viewscreen-live">LIVE</span>
+          <span class="tac-viewscreen-time">${timestamp}</span>
+        </div>
       </div>
     `;
   }
 
-  _renderCamera(entry, detection) {
+  _shortCamName(name) {
+    return name.replace(/high resolution channel|channel|camera/gi, '').trim().toUpperCase();
+  }
+
+  _renderCamera(entry, detection, index) {
     const eid = entry.entity?.entity_id;
     const state = this._hass?.states?.[eid] || entry.state;
-    const name = (state?.attributes?.friendly_name || eid || '').toUpperCase();
+    const name = this._shortCamName(state?.attributes?.friendly_name || eid || '');
     const imgUrl = state?.attributes?.entity_picture;
     const stateVal = state?.state || 'unknown';
     const isOff = stateVal === 'unavailable' || stateVal === 'unknown';
@@ -517,8 +564,9 @@ class LcarsTacticalCard extends LitElement {
     return html`
       <div class="tac-camera" data-state="${camState}" data-level="${level}"
            style="--cam-border:${borderColor}; --cam-scale:${scale}; --cam-glow:${glow}; --cam-z:${level > 0 ? 10 + level * 10 : 1}"
-           @click=${() => showMoreInfo(eid)}
+           @click=${() => { this._focusedCamera = eid; this.requestUpdate(); showMoreInfo(eid); }}
            role="button" tabindex="0" aria-label="${name}${levelLabel ? ` — ${levelLabel} DETECTED` : ''}">
+        <span class="tac-camera__badge">${String(index || 0).padStart(2, '0')}</span>
         <div class="tac-camera__connecting">
           <span class="tac-camera__connecting-text">ESTABLISHING LINK</span>
         </div>
@@ -719,6 +767,24 @@ class LcarsTacticalCard extends LitElement {
       </div>`;
   }
 
+  /* ═══ System Status Sidebar ═══ */
+  _renderSystemStatus(summary) {
+    if (!summary.alarmEntityId) return '';
+    const s = this._hass?.states?.[summary.alarmEntityId];
+    if (!s) return '';
+    const attrs = s.attributes || {};
+    return html`
+      <div class="tac-sidebar-section">
+        <div class="tac-section-header"><span class="tac-section-label">SYSTEM STATUS</span><span class="tac-section-line"></span></div>
+        <div class="tac-system-grid">
+          <span class="tac-sensor-key">SYSTEM MODE</span><span class="tac-sensor-val" style="color:${this._getSummaryColor(summary.alarmState)}">${summary.alarmState.replace(/_/g, ' ').toUpperCase()}</span>
+          ${attrs.changed_by ? html`<span class="tac-sensor-key">CHANGED BY</span><span class="tac-sensor-val">${String(attrs.changed_by).toUpperCase()}</span>` : ''}
+          ${attrs.code_arm_required != null ? html`<span class="tac-sensor-key">PIN REQUIRED</span><span class="tac-sensor-val">${attrs.code_arm_required ? 'YES' : 'NO'}</span>` : ''}
+          <span class="tac-sensor-key">CREW HOME</span><span class="tac-sensor-val">${summary.allPersons.filter(p => p.state?.state === 'home').length}</span>
+        </div>
+      </div>`;
+  }
+
   /* ═══ Main Render ═══ */
   render() {
     if (!this._hass) return html`<div class="tac-loading">INITIALIZING TACTICAL SYSTEMS...</div>`;
@@ -737,6 +803,7 @@ class LcarsTacticalCard extends LitElement {
           </div>
           <div class="tac-sidebar">
             ${this._renderSensorSummary(floorGroups, summary)}
+            ${this._renderSystemStatus(summary)}
           </div>
         </div>
       </div>
@@ -801,6 +868,55 @@ class LcarsTacticalCard extends LitElement {
         .tac-sensor-row { display: flex; justify-content: space-between; font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; text-transform: uppercase; padding: 0.125rem 0; }
         .tac-sensor-key { color: var(--lcars-gray, #666688); }
         .tac-sensor-val { color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; }
+
+        /* ─── Camera Presets ─── */
+        .tac-camera-presets { display: flex; gap: 0.25rem; margin-bottom: 0.5rem; }
+        .tac-preset-btn {
+          font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
+          font-size: 0.75rem; letter-spacing: 0.08em; cursor: pointer;
+          padding: 0.25rem 0.75rem; border: 1px solid var(--lcars-butterscotch, #ff9966);
+          border-radius: 0 0.75rem 0.75rem 0; background: transparent;
+          color: var(--lcars-butterscotch, #ff9966); transition: background 200ms ease, color 200ms ease;
+        }
+        .tac-preset-btn.active { background: var(--lcars-butterscotch, #ff9966); color: var(--lcars-black, #000); }
+        .tac-preset-btn:hover { filter: brightness(1.2); }
+
+        /* ─── Camera Badge ─── */
+        .tac-camera__badge {
+          position: absolute; top: 0.25rem; right: 0.25rem; z-index: 5;
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.625rem;
+          color: var(--lcars-gray, #666688); background: rgba(0,0,0,0.6);
+          padding: 0.1rem 0.3rem; border-radius: 0.25rem;
+        }
+
+        /* ─── Main Viewscreen ─── */
+        .tac-main-viewscreen { margin-top: 0.5rem; }
+        .tac-viewscreen-frame {
+          position: relative; width: 100%; aspect-ratio: 16/9;
+          border: 3px solid var(--lcars-butterscotch, #ff9966); border-radius: 0.5rem;
+          overflow: hidden; background: var(--lcars-black, #000);
+          box-shadow: 0 0 12px rgba(255,153,102,0.2);
+        }
+        .tac-viewscreen-frame img { width: 100%; height: 100%; object-fit: cover; }
+        .tac-viewscreen-overlay {
+          position: absolute; bottom: 0; left: 0; right: 0;
+          display: flex; justify-content: space-between; align-items: center;
+          padding: 0.375rem 0.5rem; background: linear-gradient(transparent, rgba(0,0,0,0.8));
+          font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; font-size: 0.75rem;
+        }
+        .tac-viewscreen-name { color: var(--lcars-butterscotch, #ff9966); }
+        .tac-viewscreen-detect { font-size: 0.625rem; animation: tac-detect-pulse 1.5s ease-in-out infinite; }
+        @keyframes tac-detect-pulse { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
+        .tac-viewscreen-live { color: var(--lcars-tomato, #ff5555); font-size: 0.625rem; animation: tac-live-blink 2s step-start infinite; }
+        @keyframes tac-live-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .tac-viewscreen-time { color: var(--lcars-gray, #666688); font-size: 0.625rem; font-variant-numeric: tabular-nums; }
+        .tac-viewscreen-offline { color: var(--lcars-gray); font-family: var(--lcars-font); text-transform: uppercase; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+
+        /* ─── System Status Grid ─── */
+        .tac-system-grid {
+          display: grid; grid-template-columns: 1fr auto; gap: 0.25rem 0.75rem;
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; text-transform: uppercase;
+        }
         .tac-inner-pip { cursor: pointer; transition: opacity 200ms ease; }
         .tac-inner-pip.active { opacity: 1; }
         .tac-inner-pip:not(.active) { opacity: 0.4; }

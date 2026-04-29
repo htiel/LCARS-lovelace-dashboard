@@ -61,9 +61,19 @@ class LcarsLifeSupportCard extends LitElement {
     const states = this._hass.states || {};
 
     const allAreas = getAllAreasFlat(this._hass);
+    console.debug(`[LCARS-LS] _discoverAll: ${allAreas.length} areas`);
 
     for (const { floor, area } of allAreas) {
       const raw = getAreaEntities(this._hass, area.area_id, this._entityCache);
+      // Debug: log areas with potential LS entities
+      const lsEntities = raw.filter(e => {
+        const s = states[e.entity_id];
+        const dc = s?.attributes?.device_class || '';
+        return CLIMATE_CLASSES.has(dc) || AIR_CLASSES.has(dc) || e.entity_id.split('.')[0] === 'climate' || /_score$/i.test(e.entity_id);
+      });
+      if (lsEntities.length > 0) {
+        console.debug(`[LCARS-LS] Area "${area.name}" (${area.area_id}): ${raw.length} total, ${lsEntities.length} LS-relevant:`, lsEntities.map(e => e.entity_id));
+      }
       for (const e of raw) {
         const domain = e.entity_id.split('.')[0];
         const state = states[e.entity_id];
@@ -84,6 +94,7 @@ class LcarsLifeSupportCard extends LitElement {
         if (AIR_CLASSES.has(dc) || /filter_life/i.test(e.entity_id) || /_score$/i.test(e.entity_id)) { aqSensors.push(entry); continue; }
       }
     }
+    console.debug(`[LCARS-LS] Discovery totals: thermostats=${thermostats.length}, purifiers=${purifiers.length}, tempSensors=${tempSensors.length} (areas: ${[...new Set(tempSensors.map(e => e.area?.name))]}), aqSensors=${aqSensors.length} (areas: ${[...new Set(aqSensors.map(e => e.area?.name))]}), fans=${fans.length}`);
     return { thermostats, purifiers, tempSensors, aqSensors, fans };
   }
 
@@ -388,18 +399,29 @@ class LcarsLifeSupportCard extends LitElement {
         if (!room.co2EntityId) room.co2EntityId = e.entity.entity_id;
       }
     }
-    // Inject temp/humidity from tempSensors into matching rooms
+    // Inject temp/humidity from tempSensors into ALL rooms (not just AQ rooms)
     if (tempSensors) {
       for (const e of tempSensors) {
-        const areaId = e.area?.area_id;
-        if (!areaId || !areaAqMap.has(areaId)) continue;
-        // Only inject into rooms that already have AQ sensors (Awair rooms)
+        let areaId = e.area?.area_id;
+        let areaName = e.area?.name || '';
+        // Resolve area from device if entity has no area
+        if (!areaId && e.entity?.device_id) {
+          const device = this._hass?.devices?.[e.entity.device_id];
+          if (device?.area_id) {
+            areaId = device.area_id;
+            areaName = this._hass?.areas?.[areaId]?.name || '';
+          }
+        }
+        if (!areaId) continue;
         const dc = e.state?.attributes?.device_class || '';
         const val = Number(e.state?.state);
         if (isNaN(val)) continue;
-        const room = areaAqMap.get(areaId);
         const key = dc === 'temperature' ? 'temp' : dc === 'humidity' ? 'humidity' : null;
         if (!key) continue;
+        if (!areaAqMap.has(areaId)) {
+          areaAqMap.set(areaId, { name: areaName.toUpperCase(), metrics: {} });
+        }
+        const room = areaAqMap.get(areaId);
         if (!room.metrics[key]) room.metrics[key] = { sum: val, count: 1 };
         else { room.metrics[key].sum += val; room.metrics[key].count++; }
       }
@@ -439,9 +461,9 @@ class LcarsLifeSupportCard extends LitElement {
             ${metrics.voc ? html`<div class="ls-aq-row" @click=${() => showMoreInfo(metrics.voc.entry.entity.entity_id)}><span class="ls-aq-metric-name">TVOC</span><span class="ls-aq-metric-val">${metrics.voc.val} ppb</span></div>` : ''}
           </div>
         </div>
-        ${rooms.length > 1 ? html`
+        ${rooms.length > 0 ? html`
           <div class="ls-section-header" style="margin-top:0.75rem">
-            <span class="ls-section-label">PER-ROOM ATMOSPHERE</span>
+            <span class="ls-section-label">PER-ROOM ENVIRONMENT</span>
             <span class="ls-section-line"></span>
             <span class="ls-sensor-count">${rooms.length} SENSORS</span>
           </div>

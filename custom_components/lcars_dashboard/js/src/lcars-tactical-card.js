@@ -627,6 +627,98 @@ class LcarsTacticalCard extends LitElement {
     `;
   }
 
+  /* ═══ Overview Cards (Design Playbook §3.1) ═══ */
+  _renderOverview(summary) {
+    const shieldColor = summary.alarmState === 'disarmed' ? '#44cc88' : summary.alarmState === 'triggered' ? '#ff5555' : '#ffcc99';
+    const shieldLabel = summary.alarmState.replace(/_/g, ' ').toUpperCase();
+    const perimColor = summary.perimeterSecure === summary.perimeterTotal ? '#44cc88' : '#ff5555';
+    const camOnline = summary.allCameras.filter(c => (this._hass?.states?.[c.entity?.entity_id] || c.state)?.state !== 'unavailable').length;
+    const camColor = camOnline === summary.allCameras.length ? '#99ccff' : camOnline > 0 ? '#ffcc99' : '#ff5555';
+    const lockColor = summary.locksLocked === summary.locksTotal ? '#44cc88' : '#ff5555';
+    const lockStatus = summary.locksLocked === summary.locksTotal ? 'ALL ENGAGED' : `${summary.locksTotal - summary.locksLocked} UNSECURED`;
+
+    return html`
+      <div class="tac-overview">
+        <div class="tac-ov-card tac-ov-shield" @click=${() => { if (summary.alarmEntityId) showMoreInfo(summary.alarmEntityId); }}>
+          ${this._ringGauge(1, 1, 80, shieldColor, shieldLabel, '')}
+          <span class="tac-ov-title">SHIELDS</span>
+          <span class="tac-ov-status" style="color:${shieldColor}">${shieldLabel}</span>
+        </div>
+        <div class="tac-ov-card tac-ov-perimeter">
+          ${this._ringGauge(summary.perimeterSecure, Math.max(summary.perimeterTotal, 1), 80, perimColor, `${summary.perimeterSecure}/${summary.perimeterTotal}`, 'SECURE')}
+          <span class="tac-ov-title">PERIMETER</span>
+          <span class="tac-ov-status" style="color:${perimColor}">${summary.perimeterSecure === summary.perimeterTotal ? 'ALL SECURE' : `${summary.perimeterTotal - summary.perimeterSecure} BREACH`}</span>
+        </div>
+        <div class="tac-ov-card tac-ov-cameras">
+          ${this._ringGauge(camOnline, Math.max(summary.allCameras.length, 1), 80, camColor, `${camOnline}/${summary.allCameras.length}`, 'ONLINE')}
+          <span class="tac-ov-title">VIEWSCREENS</span>
+          <span class="tac-ov-status" style="color:${camColor}">${camOnline === summary.allCameras.length ? 'ALL ONLINE' : `${summary.allCameras.length - camOnline} OFFLINE`}</span>
+        </div>
+        <div class="tac-ov-card tac-ov-locks">
+          ${this._ringGauge(summary.locksLocked, Math.max(summary.locksTotal, 1), 80, lockColor, `${summary.locksLocked}/${summary.locksTotal}`, 'LOCKED')}
+          <span class="tac-ov-title">LOCKS</span>
+          <span class="tac-ov-status" style="color:${lockColor}">${lockStatus}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  /* ═══ SVG Ring Gauge (shared) ═══ */
+  _ringGauge(value, max, size, color, label, sublabel) {
+    const strokeW = 6;
+    const r = (size - strokeW * 2) / 2;
+    const circumference = 2 * Math.PI * r;
+    const pct = Math.min(1, Math.max(0, value / max));
+    const dashOffset = circumference * (1 - pct);
+    const cx = size / 2, cy = size / 2;
+    return svg`
+      <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" class="ring-gauge">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}22" stroke-width="${strokeW}" />
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${strokeW}"
+                stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"
+                stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})"
+                style="transition: stroke-dashoffset 500ms ease; filter: drop-shadow(0 0 4px ${color})" />
+        <text x="${cx}" y="${cy - 5}" text-anchor="middle" dominant-baseline="central"
+              class="ring-value" style="fill:${color}; filter: drop-shadow(0 0 3px ${color})">${label}</text>
+        ${sublabel ? svg`<text x="${cx}" y="${cy + 11}" text-anchor="middle" dominant-baseline="central"
+              class="ring-sublabel" style="fill:${color}; opacity:0.7">${sublabel}</text>` : ''}
+      </svg>`;
+  }
+
+  /* ═══ Sensor Summary Sidebar ═══ */
+  _renderSensorSummary(floorGroups, summary) {
+    let motionTotal = 0, motionClear = 0;
+    for (const { areas } of floorGroups) {
+      for (const data of areas) {
+        for (const e of data.motion) {
+          motionTotal++;
+          if ((this._hass?.states?.[e.entity?.entity_id] || e.state)?.state !== 'on') motionClear++;
+        }
+      }
+    }
+    const motionTriggered = motionTotal - motionClear;
+    const perimeterOpen = summary.perimeterTotal - summary.perimeterSecure;
+
+    return html`
+      <div class="tac-sidebar-section">
+        <div class="tac-section-header"><span class="tac-section-label">SENSOR STATUS</span><span class="tac-section-line"></span></div>
+        <div class="tac-sensor-summary">
+          <div class="tac-sensor-group">
+            <span class="tac-sensor-group-title">DOORS / WINDOWS</span>
+            <div class="tac-sensor-row"><span class="tac-sensor-key">TOTAL</span><span class="tac-sensor-val">${summary.perimeterTotal}</span></div>
+            <div class="tac-sensor-row"><span class="tac-sensor-key">SECURE</span><span class="tac-sensor-val" style="color:#44cc88">${summary.perimeterSecure}</span></div>
+            <div class="tac-sensor-row"><span class="tac-sensor-key">OPEN</span><span class="tac-sensor-val" style="color:${perimeterOpen > 0 ? 'var(--lcars-tomato)' : '#44cc88'}">${perimeterOpen}</span></div>
+          </div>
+          <div class="tac-sensor-group">
+            <span class="tac-sensor-group-title">MOTION SENSORS</span>
+            <div class="tac-sensor-row"><span class="tac-sensor-key">TOTAL</span><span class="tac-sensor-val">${motionTotal}</span></div>
+            <div class="tac-sensor-row"><span class="tac-sensor-key">CLEAR</span><span class="tac-sensor-val" style="color:#44cc88">${motionClear}</span></div>
+            <div class="tac-sensor-row"><span class="tac-sensor-key">TRIGGERED</span><span class="tac-sensor-val" style="color:${motionTriggered > 0 ? 'var(--lcars-tomato)' : '#44cc88'}">${motionTriggered}</span></div>
+          </div>
+        </div>
+      </div>`;
+  }
+
   /* ═══ Main Render ═══ */
   render() {
     if (!this._hass) return html`<div class="tac-loading">INITIALIZING TACTICAL SYSTEMS...</div>`;
@@ -636,11 +728,17 @@ class LcarsTacticalCard extends LitElement {
 
     return html`
       <div class="tac-dashboard ${isRedAlert ? 'red-alert' : ''} mode-${this._mode}">
-        ${this._renderPerimeter(floorGroups, summary)}
-        ${this._renderCrewManifest(summary.allPersons)}
-        ${this._renderLockStatus(summary.allLocks, summary.locksTotal, summary.locksLocked)}
-        ${this._renderCameras(summary.allCameras)}
-        ${this._renderTimeline(floorGroups)}
+        ${this._renderOverview(summary)}
+        <div class="tac-main-grid">
+          <div class="tac-main-content">
+            ${this._renderCrewManifest(summary.allPersons)}
+            ${this._renderLockStatus(summary.allLocks, summary.locksTotal, summary.locksLocked)}
+            ${this._renderCameras(summary.allCameras)}
+          </div>
+          <div class="tac-sidebar">
+            ${this._renderSensorSummary(floorGroups, summary)}
+          </div>
+        </div>
       </div>
     `;
   }
@@ -653,31 +751,56 @@ class LcarsTacticalCard extends LitElement {
         .tac-dashboard { display: flex; flex-direction: column; gap: 0.75rem; }
         .tac-loading { font-family: var(--lcars-font, 'Antonio', sans-serif); color: var(--lcars-gray); text-transform: uppercase; padding: 2rem; text-align: center; font-size: 1.25rem; letter-spacing: 0.1em; }
 
-        /* ─── Perimeter Schematic ─── */
-        .tac-perimeter { display: flex; justify-content: center; padding: 0.5rem; }
-        .tac-perimeter-svg { width: 100%; max-width: 400px; height: auto; }
-        .tac-shield-arc {
-          fill: none; stroke-width: 3; stroke-linecap: round; opacity: 0.4;
-          transition: opacity 300ms ease;
+        /* ─── Overview Cards ─── */
+        .tac-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.375rem; }
+        .tac-ov-card {
+          display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+          padding: 0.75rem 0.5rem; cursor: pointer;
+          border: 2px solid var(--lcars-butterscotch, #ff9966); border-radius: 0.5rem;
+          background: rgba(255,153,102,0.05);
+          font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
+          transition: box-shadow 300ms ease, border-color 300ms ease;
         }
-        .mode-tactical .tac-shield-arc, .mode-redalert .tac-shield-arc { opacity: 0.8; stroke-width: 4; }
-        .tac-sensor-arc { fill: none; stroke-width: 5; stroke-linecap: round; opacity: 0.6; }
-        .tac-sensor-arc.motion-flash {
-          opacity: 1; stroke-width: 7;
-          animation: tac-arc-flash 2s ease-out forwards;
+        .tac-ov-card:hover { box-shadow: 0 0 12px rgba(255,153,102,0.25); border-color: var(--lcars-gold, #ffaa00); }
+        .tac-ov-shield { border-color: var(--lcars-sunflower, #ffcc99); }
+        .tac-ov-perimeter { border-color: #44cc88; }
+        .tac-ov-cameras { border-color: var(--lcars-ice, #99ccff); }
+        .tac-ov-locks { border-color: var(--lcars-butterscotch, #ff9966); }
+        .tac-ov-title { font-size: 0.75rem; color: var(--lcars-gray, #666688); letter-spacing: 0.1em; }
+        .tac-ov-status { font-size: 0.75rem; }
+        .ring-gauge .ring-value { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 12px; text-transform: uppercase; font-weight: bold; }
+        .ring-gauge .ring-sublabel { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 8px; }
+
+        /* ─── Main Grid (2-column) ─── */
+        .tac-main-grid { display: grid; grid-template-columns: 1fr 18rem; gap: 1rem; }
+        @media (max-width: 960px) { .tac-main-grid { grid-template-columns: 1fr; } }
+        .tac-main-content { display: flex; flex-direction: column; gap: 0.75rem; }
+        .tac-sidebar { display: flex; flex-direction: column; gap: 0.75rem; align-self: start; }
+
+        /* ─── Section Headers (animated) ─── */
+        .tac-section-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .tac-section-label { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; color: var(--lcars-butterscotch, #ff9966); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+        .tac-section-line {
+          flex: 1; height: 2px; background: var(--lcars-butterscotch, #ff9966); opacity: 0.4;
+          position: relative; overflow: hidden;
         }
-        @keyframes tac-arc-flash { 0% { opacity: 1; stroke-width: 7; } 100% { opacity: 0.6; stroke-width: 5; } }
-        @media (prefers-reduced-motion: reduce) { .tac-sensor-arc.motion-flash { animation: none; opacity: 0.8; } }
-        .tac-sensor-node { cursor: pointer; transition: r 300ms ease; }
-        .tac-sensor-node:hover { r: 8; }
-        .tac-sensor-node.breach { animation: tac-node-pulse 1s ease-in-out infinite; }
-        @keyframes tac-node-pulse { 0%, 100% { r: 6; } 50% { r: 9; } }
-        @media (prefers-reduced-motion: reduce) { .tac-sensor-node.breach { animation: none; r: 8; } }
-        .tac-zone-label {
-          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 10px;
-          fill: var(--lcars-ice, #99ccff); opacity: 0.6; text-transform: uppercase; letter-spacing: 0.08em;
+        .tac-section-line::after {
+          content: ''; position: absolute; top: 0; left: -30%; width: 30%; height: 100%;
+          background: linear-gradient(90deg, transparent, var(--lcars-gold, #ffaa00), transparent);
+          animation: tac-scan-line 4s ease-in-out infinite;
         }
-        /* Inner field — motion-only interior zones */
+        @keyframes tac-scan-line { 0% { left: -30%; } 100% { left: 100%; } }
+
+        /* ─── Sidebar Sections ─── */
+        .tac-sidebar-section {
+          border: 2px solid var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem;
+          padding: 0.75rem; background: rgba(255,153,102,0.03);
+        }
+        .tac-sensor-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+        .tac-sensor-group-title { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.75rem; color: var(--lcars-butterscotch, #ff9966); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; display: block; }
+        .tac-sensor-row { display: flex; justify-content: space-between; font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; text-transform: uppercase; padding: 0.125rem 0; }
+        .tac-sensor-key { color: var(--lcars-gray, #666688); }
+        .tac-sensor-val { color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; }
         .tac-inner-pip { cursor: pointer; transition: opacity 200ms ease; }
         .tac-inner-pip.active { opacity: 1; }
         .tac-inner-pip:not(.active) { opacity: 0.4; }

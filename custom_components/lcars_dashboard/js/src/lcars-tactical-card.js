@@ -12,7 +12,7 @@
 import { LitElement, html, css, svg } from 'lit-element';
 import { lcarsLog, lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { getAllAreasFlat } from './lcars-hierarchy-utils.js';
+import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
 import { isTacticalEntity, isDiagnosticEntity } from './lcars-entity-utils.js';
 import { lcarsAudio } from './lcars-audio.js';

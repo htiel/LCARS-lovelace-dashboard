@@ -2014,8 +2014,8 @@
           <div class="lcars-sidebar-panel">Power Distribution</div>
           <div class="lcars-sidebar-filters">
             <button class="sidebar-filter-btn ${this._filter===l?"active":""}" role="tab" aria-selected="${this._filter===l?"true":"false"}" @click=${()=>this._setFilter(l)}><span class="filter-label">ALL</span></button>
-            <button class="sidebar-filter-btn ${this._filter===c?"active":""}" role="tab" aria-selected="${this._filter===c?"true":"false"}" @click=${()=>this._setFilter(c)}><span class="filter-label">STORAGE</span></button>
-            <button class="sidebar-filter-btn ${this._filter===d?"active":""}" role="tab" aria-selected="${this._filter===d?"true":"false"}" @click=${()=>this._setFilter(d)}><span class="filter-label">CIRCUITS</span></button>
+            <button class="sidebar-filter-btn ${this._filter===c?"active":""}" role="tab" aria-selected="${this._filter===c?"true":"false"}" @click=${()=>this._setFilter(c)}><span class="filter-label">SOURCES</span></button>
+            <button class="sidebar-filter-btn ${this._filter===d?"active":""}" role="tab" aria-selected="${this._filter===d?"true":"false"}" @click=${()=>this._setFilter(d)}><span class="filter-label">LOADS</span></button>
           </div>
           <div class="lcars-sidebar-filler" aria-hidden="true"></div>
         </nav>

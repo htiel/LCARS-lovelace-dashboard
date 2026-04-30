@@ -93,8 +93,8 @@ class LcarsEngineeringLayout extends LitElement {
           <div class="lcars-sidebar-panel">Power Distribution</div>
           <div class="lcars-sidebar-filters">
             <button class="sidebar-filter-btn ${this._filter === FILTER_ALL ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_ALL ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_ALL)}><span class="filter-label">ALL</span></button>
-            <button class="sidebar-filter-btn ${this._filter === FILTER_STORAGE ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_STORAGE ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_STORAGE)}><span class="filter-label">STORAGE</span></button>
-            <button class="sidebar-filter-btn ${this._filter === FILTER_CIRCUITS ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_CIRCUITS ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_CIRCUITS)}><span class="filter-label">CIRCUITS</span></button>
+            <button class="sidebar-filter-btn ${this._filter === FILTER_STORAGE ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_STORAGE ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_STORAGE)}><span class="filter-label">SOURCES</span></button>
+            <button class="sidebar-filter-btn ${this._filter === FILTER_CIRCUITS ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_CIRCUITS ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_CIRCUITS)}><span class="filter-label">LOADS</span></button>
           </div>
           <div class="lcars-sidebar-filler" aria-hidden="true"></div>
         </nav>

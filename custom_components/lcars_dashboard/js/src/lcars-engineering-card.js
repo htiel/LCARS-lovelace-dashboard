@@ -201,10 +201,25 @@ class LcarsEngineeringCard extends LitElement {
       voltageSensors.push({ entity, domain: 'sensor', state: s });
     }
 
+    // Daily energy sensors — global scan for today/daily energy totals
+    let totalDailyEnergy = 0;
+    let hasDailyEnergy = false;
+    for (const [eid, s] of Object.entries(states)) {
+      if (!eid.startsWith('sensor.')) continue;
+      const dc = s.attributes?.device_class || '';
+      if (dc !== 'energy') continue;
+      // Match daily/today energy sensors, skip lifetime/total accumulators
+      if (!/daily|today/i.test(eid)) continue;
+      // Skip aggregate/grid sensors to avoid double-counting
+      if (AGGREGATE_KEYWORDS.test(eid) || GRID_KEYWORDS.test(eid)) continue;
+      const val = Number(s.state);
+      if (!isNaN(val) && val > 0) { totalDailyEnergy += val; hasDailyEnergy = true; }
+    }
+
     // 5X-ENG-7: Sort grid candidates by confidence score (highest first)
     gridSensors.sort((a, b) => _scoreGridCandidate(b) - _scoreGridCandidate(a));
 
-    return { batteries, circuits: dedupedCircuits, gridSensors, upsSensors, voltageSensors, totalDraw, gridSiblings };
+    return { batteries, circuits: dedupedCircuits, gridSensors, upsSensors, voltageSensors, totalDraw, totalDailyEnergy, hasDailyEnergy, gridSiblings };
   }
 
   _getGridPower(data) {
@@ -247,8 +262,11 @@ class LcarsEngineeringCard extends LitElement {
       <div class="eng-status-panel">
         <div class="eng-section-header"><span class="eng-section-label">SYSTEM STATUS</span></div>
         <div class="eng-status-grid">
-          <span class="eng-status-key">LOAD</span><span class="eng-status-val">${formatNumber(data.totalDraw, 0)} W</span>
+          <span class="eng-status-key">LIVE DRAW</span><span class="eng-status-val">${formatNumber(data.totalDraw, 0)} W</span>
           <span class="eng-status-key">GRID</span><span class="eng-status-val">${formatNumber(gridPower, 0)} W</span>
+          ${data.hasDailyEnergy ? html`
+            <span class="eng-status-key">DAILY USAGE</span><span class="eng-status-val">${formatNumber(data.totalDailyEnergy, 1)} KWH</span>
+          ` : ''}
           ${batteryCount > 0 ? html`
             <span class="eng-status-key">BATTERIES</span><span class="eng-status-val">${batteryCount} UNITS</span>
             <span class="eng-status-key">AVG SOC</span><span class="eng-status-val">${avgSoc}%</span>

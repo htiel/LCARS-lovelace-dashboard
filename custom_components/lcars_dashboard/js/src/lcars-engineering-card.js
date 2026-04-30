@@ -301,32 +301,83 @@ class LcarsEngineeringCard extends LitElement {
       </div>`;
   }
 
+  _classifyCircuit(name) {
+    const n = name.toLowerCase();
+    if (/heat|hvac|ac\s*(in|out)|air\s*handler|furnace|hotub|hot\s*tub|spa|pool|pump|compressor|southeat|northeat|westeat|easteat|upperstrip|lowerstrip|minisplit/i.test(n)) return 'HVAC';
+    if (/server|udm|switch|poe|ap\b|network|router|modem|nas|rack|stack|unifi|usw|usg|udmpro/i.test(n)) return 'NETWORK';
+    if (/light|lamp|sconce|chandelier|fixture|led\b|illuminat|hallway|entry|bath.*light|bonus.*room/i.test(n)) return 'LIGHTING';
+    if (/outlet|plug|receptacle|bedroom|kitchen|garage(?!.*light)|closet|fridge|refrigerat|freezer|microwave|oven|dishwash|washer|dryer|disposal/i.test(n)) return 'OUTLETS';
+    if (/river|delta|battery|ecoflow|jackery|bluetti|ac\s*(in|out)$/i.test(n)) return 'BATTERY';
+    return 'OTHER';
+  }
+
   _renderCircuits(circuits) {
     if (circuits.length === 0) return '';
-    const active = circuits.filter(c => Number(c.state?.state) > 1);
-    const top = active.slice(0, 24);
-    const remaining = active.length - top.length;
+    const active = circuits.filter(c => Number(c.state?.state) > 1)
+      .map(c => {
+        const name = (c.state?.attributes?.friendly_name || c.entity?.entity_id || '')
+          .replace(/_power.*$/i, '').replace(/_/g, ' ')
+          .replace(/\s+(l[12])$/i, ' $1')
+          .toUpperCase();
+        const watts = Number(c.state?.state) || 0;
+        return { name, watts, entity: c.entity, category: this._classifyCircuit(name) };
+      })
+      .sort((a, b) => b.watts - a.watts);
+
+    const maxWatts = active.length > 0 ? active[0].watts : 1;
+    const barColor = (w) => w > 1000 ? 'var(--lcars-tomato)' : w > 500 ? 'var(--lcars-butterscotch)' : w > 200 ? 'var(--lcars-sunflower)' : 'var(--lcars-ice)';
+
+    // Group by category
+    const CATEGORY_META = {
+      'HVAC':     { color: 'var(--lcars-butterscotch, #ff9966)' },
+      'NETWORK':  { color: 'var(--lcars-ice, #99ccff)' },
+      'LIGHTING': { color: 'var(--lcars-sunflower, #ffcc99)' },
+      'OUTLETS':  { color: 'var(--lcars-bluey, #8899ff)' },
+      'BATTERY':  { color: 'var(--lcars-african-violet, #cc99ff)' },
+      'OTHER':    { color: 'var(--lcars-gray, #666688)' },
+    };
+    const groups = new Map();
+    for (const c of active) {
+      if (!groups.has(c.category)) groups.set(c.category, []);
+      groups.get(c.category).push(c);
+    }
+
+    // Render order: by total watts descending
+    const sortedGroups = [...groups.entries()]
+      .map(([cat, items]) => ({ cat, items, total: items.reduce((s, i) => s + i.watts, 0) }))
+      .sort((a, b) => b.total - a.total);
+
     return html`
       <div class="eng-section">
         <div class="eng-section-header"><span class="eng-section-label">LOAD CIRCUITS</span><span class="eng-section-line"></span><span class="eng-circuit-count">${active.length} ACTIVE</span></div>
-        <div class="eng-circuit-grid">
-          ${top.map(c => {
-            const name = (c.state?.attributes?.friendly_name || c.entity?.entity_id || '')
-              .replace(/_power.*$/i, '').replace(/_/g, ' ')
-              .replace(/\s+(l[12])$/i, ' $1')  // keep L1/L2 suffix readable
-              .toUpperCase();
-            const watts = Number(c.state?.state) || 0;
-            const barPct = Math.min(100, (watts / Math.max(...active.map(a => Number(a.state?.state) || 0), 500)) * 100);
-            const barColor = watts > 1000 ? 'var(--lcars-tomato)' : watts > 500 ? 'var(--lcars-butterscotch)' : watts > 200 ? 'var(--lcars-sunflower)' : 'var(--lcars-ice)';
-            return html`
-              <div class="eng-circuit-card" @click=${() => showMoreInfo(c.entity.entity_id)}>
-                <span class="eng-circuit-name">${name}</span>
-                <span class="eng-circuit-watts">${formatNumber(watts, 0)} W</span>
-                <div class="eng-circuit-bar"><div class="eng-circuit-fill" style="width:${barPct}%; background:${barColor}"></div></div>
-              </div>`;
-          })}
+        <div class="eng-loads-split">
+          <div class="eng-loads-grouped">
+            ${sortedGroups.map(g => html`
+              <div class="eng-load-group">
+                <div class="eng-group-bar" style="background:${CATEGORY_META[g.cat]?.color || 'var(--lcars-gray)'}">
+                  <span class="eng-group-name">${g.cat}</span>
+                  <span class="eng-group-total">${formatNumber(g.total, 0)} W</span>
+                </div>
+                ${g.items.map(c => html`
+                  <div class="eng-group-row" @click=${() => showMoreInfo(c.entity.entity_id)}>
+                    <span class="eng-group-circuit">${c.name}</span>
+                    <span class="eng-group-watts">${formatNumber(c.watts, 0)} W</span>
+                  </div>`)}
+              </div>`)}
+          </div>
+          <div class="eng-loads-bars">
+            <div class="eng-bars-title">LOAD DISTRIBUTION</div>
+            ${active.slice(0, 24).map(c => {
+              const pct = Math.min(100, (c.watts / maxWatts) * 100);
+              return html`
+                <div class="eng-bar-row" @click=${() => showMoreInfo(c.entity.entity_id)}>
+                  <span class="eng-bar-name">${c.name}</span>
+                  <div class="eng-bar-track"><div class="eng-bar-fill" style="width:${pct}%; background:${barColor(c.watts)}"></div></div>
+                  <span class="eng-bar-watts">${formatNumber(c.watts, 0)} W</span>
+                </div>`;
+            })}
+          </div>
         </div>
-        ${remaining > 0 ? html`<span class="eng-circuit-remaining">+ ${remaining} MORE CIRCUITS</span>` : ''}
       </div>`;
   }
 
@@ -364,7 +415,52 @@ class LcarsEngineeringCard extends LitElement {
         animation: eng-scan-line 4s ease-in-out infinite;
       }
       @keyframes eng-scan-line { 0% { left: -15%; } 100% { left: 100%; } }
-      .eng-circuit-count, .eng-circuit-remaining { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; color: var(--lcars-gray, #666688); white-space: nowrap; text-transform: uppercase; }
+      .eng-circuit-count { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; color: var(--lcars-gray, #666688); white-space: nowrap; text-transform: uppercase; }
+
+      /* ─── Load Circuits: Two-Column Split ─── */
+      .eng-loads-split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      @media (max-width: 960px) { .eng-loads-split { grid-template-columns: 1fr; } }
+
+      /* Left: Grouped Categories */
+      .eng-loads-grouped { display: flex; flex-direction: column; gap: 0.5rem; }
+      .eng-load-group { display: flex; flex-direction: column; }
+      .eng-group-bar {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.25rem 0.5rem; height: 1.25rem;
+        font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
+        color: var(--lcars-black, #000);
+      }
+      .eng-group-name { font-size: 0.75rem; letter-spacing: 0.05em; }
+      .eng-group-total { font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+      .eng-group-row {
+        display: flex; justify-content: space-between; align-items: baseline;
+        padding: 0.125rem 0.5rem; cursor: pointer;
+        font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
+        transition: background 150ms ease;
+      }
+      .eng-group-row:hover { background: rgba(153,204,255,0.08); }
+      .eng-group-circuit { font-size: 0.75rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .eng-group-watts { font-size: 0.75rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 0.5rem; }
+
+      /* Right: Ranked Bar Chart */
+      .eng-loads-bars { display: flex; flex-direction: column; gap: 0.125rem; }
+      .eng-bars-title {
+        font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1rem;
+        color: var(--lcars-butterscotch, #ff9966); text-transform: uppercase;
+        letter-spacing: 0.05em; margin-bottom: 0.25rem;
+      }
+      .eng-bar-row {
+        display: grid; grid-template-columns: 8rem 1fr auto; gap: 0.375rem;
+        align-items: center; cursor: pointer; padding: 0.125rem 0;
+        font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
+        transition: background 150ms ease;
+      }
+      .eng-bar-row:hover { background: rgba(153,204,255,0.08); }
+      .eng-bar-name { font-size: 0.625rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .eng-bar-track { height: 0.75rem; background: transparent; }
+      .eng-bar-fill { height: 100%; border-radius: 0 0.75rem 0.75rem 0; transition: width 300ms ease; }
+      .eng-bar-watts { font-size: 0.625rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; min-width: 3.5rem; }
+
       .eng-sources-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.375rem; position: relative; padding-bottom: 1.5rem; }
       .eng-source-card { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.75rem; cursor: pointer; border: none; border-radius: 0; background: rgba(255,153,102,0.03); font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; transition: background 200ms ease; position: relative; }
       .eng-source-card::after { content: ''; position: absolute; bottom: -1.5rem; left: 50%; width: 4px; height: 1.5rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.65; animation: eng-conduit-flow 2s linear infinite; background-size: 4px 8px; background-image: repeating-linear-gradient(180deg, var(--lcars-butterscotch, #ff9966) 0px, var(--lcars-butterscotch, #ff9966) 4px, transparent 4px, transparent 8px); }
@@ -427,16 +523,7 @@ class LcarsEngineeringCard extends LitElement {
       }
       .eng-distribution-bar::after { content: ''; position: absolute; bottom: -1rem; left: 50%; width: 3px; height: 1rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.4; }
       .eng-dist-label { font-size: 0.875rem; opacity: 0.9; }
-      .eng-dist-value { font-size: 1.125rem; font-weight: bold; font-variant-numeric: tabular-nums; }
-      .eng-circuit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(10rem, 100%), 1fr)); gap: 0.375rem; }
-      .eng-circuit-card { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.5rem 0.75rem; cursor: pointer; border: none; border-radius: 0; font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; transition: background 150ms ease; }
-      .eng-circuit-card:hover { background: rgba(255,153,102,0.08); }
-      .eng-circuit-name { font-size: 0.7rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .eng-circuit-watts { font-size: 1.25rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; }
-      .eng-circuit-bar { width: 100%; height: 0.375rem; background: rgba(153,204,255,0.1); border-radius: 0 0.25rem 0.25rem 0; overflow: hidden; }
-      .eng-circuit-fill {
-        height: 100%; border-radius: 0 0.25rem 0.25rem 0; transition: width 300ms ease;
-      }
+      .eng-dist-value { font-size: 1.125rem; font-variant-numeric: tabular-nums; }
       .eng-status-panel { padding: 0.75rem; align-self: start; }
       .eng-status-grid { display: grid; grid-template-columns: 1fr auto; gap: 0.25rem 0.75rem; font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; }
       .eng-status-key { font-size: 0.75rem; color: var(--lcars-gray, #666688); }

@@ -19,8 +19,8 @@ import { formatNumber } from './lcars-format-utils.js';
 
 const TAG = 'EngineeringCard';
 const FILTER_ALL = 'all';
-const FILTER_STORAGE = 'storage';
-const FILTER_CIRCUITS = 'circuits';
+const FILTER_LIVE = 'live';
+const FILTER_DAILY = 'daily';
 
 const POWER_CLASSES = new Set(['battery', 'power', 'energy', 'voltage', 'current']);
 const UPS_KEYWORDS = /ups|battery_charge|battery_runtime|battery_voltage/i;
@@ -201,25 +201,30 @@ class LcarsEngineeringCard extends LitElement {
       voltageSensors.push({ entity, domain: 'sensor', state: s });
     }
 
-    // Daily energy sensors — global scan for today/daily energy totals
+    // Daily energy sensors — global scan for today/daily energy totals + per-circuit list
     let totalDailyEnergy = 0;
     let hasDailyEnergy = false;
+    const dailyCircuits = [];
     for (const [eid, s] of Object.entries(states)) {
       if (!eid.startsWith('sensor.')) continue;
       const dc = s.attributes?.device_class || '';
       if (dc !== 'energy') continue;
-      // Match daily/today energy sensors, skip lifetime/total accumulators
       if (!/daily|today/i.test(eid)) continue;
-      // Skip aggregate/grid sensors to avoid double-counting
       if (AGGREGATE_KEYWORDS.test(eid) || GRID_KEYWORDS.test(eid)) continue;
       const val = Number(s.state);
-      if (!isNaN(val) && val > 0) { totalDailyEnergy += val; hasDailyEnergy = true; }
+      if (!isNaN(val) && val > 0) {
+        totalDailyEnergy += val;
+        hasDailyEnergy = true;
+        const entity = entities[eid] || { entity_id: eid };
+        dailyCircuits.push({ entity, domain: 'sensor', state: s });
+      }
     }
+    dailyCircuits.sort((a, b) => (Number(b.state?.state) || 0) - (Number(a.state?.state) || 0));
 
     // 5X-ENG-7: Sort grid candidates by confidence score (highest first)
     gridSensors.sort((a, b) => _scoreGridCandidate(b) - _scoreGridCandidate(a));
 
-    return { batteries, circuits: dedupedCircuits, gridSensors, upsSensors, voltageSensors, totalDraw, totalDailyEnergy, hasDailyEnergy, gridSiblings };
+    return { batteries, circuits: dedupedCircuits, dailyCircuits, gridSensors, upsSensors, voltageSensors, totalDraw, totalDailyEnergy, hasDailyEnergy, gridSiblings };
   }
 
   _getGridPower(data) {
@@ -556,6 +561,82 @@ class LcarsEngineeringCard extends LitElement {
       </div>`;
   }
 
+  _renderDailyCircuits(dailyCircuits) {
+    if (dailyCircuits.length === 0) return html`<div class="eng-loading">NO DAILY ENERGY SENSORS DETECTED</div>`;
+    const items = dailyCircuits.map(c => {
+      const name = (c.state?.attributes?.friendly_name || c.entity?.entity_id || '')
+        .replace(/_daily.*$/i, '').replace(/_today.*$/i, '').replace(/_energy.*$/i, '')
+        .replace(/_/g, ' ')
+        .replace(/\s*(daily|today|energy|consumption)\s*/gi, ' ')
+        .replace(/\s+/g, ' ').trim().toUpperCase();
+      const kwh = Number(c.state?.state) || 0;
+      const category = this._getCircuitLabel(c) || this._classifyCircuit(name);
+      return { name, kwh, entity: c.entity, category };
+    }).sort((a, b) => b.kwh - a.kwh);
+
+    const maxKwh = items.length > 0 ? items[0].kwh : 1;
+    const barColor = (k) => k > 10 ? 'var(--lcars-tomato)' : k > 5 ? 'var(--lcars-butterscotch)' : k > 1 ? 'var(--lcars-sunflower)' : 'var(--lcars-ice)';
+    const totalKwh = items.reduce((s, i) => s + i.kwh, 0);
+
+    const CATEGORY_META = {
+      'DEDICATED':      { color: 'var(--lcars-butterscotch, #ff9966)' },
+      'INFRASTRUCTURE': { color: 'var(--lcars-ice, #99ccff)' },
+      'LIGHTING':       { color: 'var(--lcars-sunflower, #ffcc99)' },
+      'OUTLETS':        { color: 'var(--lcars-bluey, #8899ff)' },
+      'BATTERY':        { color: 'var(--lcars-african-violet, #cc99ff)' },
+      'OTHER':          { color: 'var(--lcars-gray, #666688)' },
+    };
+    const groups = new Map();
+    for (const c of items) {
+      if (!groups.has(c.category)) groups.set(c.category, []);
+      groups.get(c.category).push(c);
+    }
+    const CATEGORY_ORDER = ['DEDICATED', 'OUTLETS', 'LIGHTING', 'INFRASTRUCTURE', 'BATTERY', 'OTHER'];
+    const sortedGroups = CATEGORY_ORDER
+      .filter(cat => groups.has(cat))
+      .map(cat => {
+        const catItems = groups.get(cat);
+        return { cat, items: catItems, total: catItems.reduce((s, i) => s + i.kwh, 0) };
+      });
+
+    return html`
+      <div class="eng-section">
+        <div class="eng-section-header"><span class="eng-section-label">DAILY ENERGY USAGE</span><span class="eng-section-line"></span><span class="eng-circuit-count">${formatNumber(totalKwh, 1)} KWH TODAY</span></div>
+        <div class="eng-loads-split">
+          <div class="eng-loads-grouped">
+            ${sortedGroups.map(g => html`
+              <div class="eng-load-group">
+                <div class="eng-group-bar" style="background:${CATEGORY_META[g.cat]?.color || 'var(--lcars-gray)'}">
+                  <span class="eng-group-name">${g.cat}</span>
+                  <span class="eng-group-total">${formatNumber(g.total, 2)} KWH</span>
+                </div>
+                ${g.items.map(c => html`
+                  <div class="eng-group-row" role="button" tabindex="0"
+                       @click=${() => showMoreInfo(c.entity.entity_id)}
+                       @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMoreInfo(c.entity.entity_id); } }}>
+                    <span class="eng-group-circuit">${c.name}</span>
+                    <span class="eng-group-watts">${formatNumber(c.kwh, 2)} KWH</span>
+                  </div>`)}
+              </div>`)}
+          </div>
+          <div class="eng-loads-bars">
+            <div class="eng-bars-title">DAILY DISTRIBUTION</div>
+            ${items.slice(0, 15).map(c => {
+              const pct = Math.min(100, (c.kwh / maxKwh) * 100);
+              return html`
+                <div class="eng-bar-row" role="button" tabindex="0"
+                     @click=${() => showMoreInfo(c.entity.entity_id)}
+                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMoreInfo(c.entity.entity_id); } }}>
+                  <span class="eng-bar-name">${c.name}</span>
+                  <div class="eng-bar-track"><div class="eng-bar-fill" style="width:${pct}%; background:${barColor(c.kwh)}"></div></div>
+                  <span class="eng-bar-watts">${formatNumber(c.kwh, 2)} KWH</span>
+                </div>`;
+            })}
+          </div>
+        </div>
+      </div>`;
+  }
+
   render() {
     if (!this._hass) return html`<div class="eng-loading">INITIALIZING ENGINEERING SYSTEMS...</div>`;
     const data = this._discoverAll();
@@ -563,9 +644,10 @@ class LcarsEngineeringCard extends LitElement {
     return html`
       <div class="eng-dashboard">
         <div class="eng-main-content">
-          ${this._renderSources(data)}
-          ${this._renderDistribution(data.totalDraw)}
-          ${(f === FILTER_ALL || f === FILTER_CIRCUITS) ? this._renderCircuits(data.circuits) : ''}
+          ${f !== FILTER_DAILY ? this._renderSources(data) : ''}
+          ${f !== FILTER_DAILY ? this._renderDistribution(data.totalDraw) : ''}
+          ${(f === FILTER_ALL || f === FILTER_LIVE) ? this._renderCircuits(data.circuits) : ''}
+          ${f === FILTER_DAILY ? this._renderDailyCircuits(data.dailyCircuits) : ''}
         </div>
         ${this._renderSystemStatus(data)}
       </div>`;

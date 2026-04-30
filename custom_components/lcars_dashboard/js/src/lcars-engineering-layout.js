@@ -15,8 +15,8 @@ import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
 
 const TAG = 'EngineeringLayout';
 const FILTER_ALL = 'all';
-const FILTER_STORAGE = 'storage';
-const FILTER_CIRCUITS = 'circuits';
+const FILTER_LIVE = 'live';
+const FILTER_DAILY = 'daily';
 
 class LcarsEngineeringLayout extends LitElement {
 
@@ -93,8 +93,8 @@ class LcarsEngineeringLayout extends LitElement {
           <div class="lcars-sidebar-panel">Power Distribution</div>
           <div class="lcars-sidebar-filters">
             <button class="sidebar-filter-btn ${this._filter === FILTER_ALL ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_ALL ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_ALL)}><span class="filter-label">ALL</span></button>
-            <button class="sidebar-filter-btn ${this._filter === FILTER_STORAGE ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_STORAGE ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_STORAGE)}><span class="filter-label">SOURCES</span></button>
-            <button class="sidebar-filter-btn ${this._filter === FILTER_CIRCUITS ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_CIRCUITS ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_CIRCUITS)}><span class="filter-label">LOADS</span></button>
+            <button class="sidebar-filter-btn ${this._filter === FILTER_LIVE ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_LIVE ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_LIVE)}><span class="filter-label">LIVE</span></button>
+            <button class="sidebar-filter-btn ${this._filter === FILTER_DAILY ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_DAILY ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_DAILY)}><span class="filter-label">DAILY</span></button>
           </div>
           <div class="lcars-sidebar-filler" aria-hidden="true"></div>
         </nav>

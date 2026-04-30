@@ -261,7 +261,7 @@ class LcarsEngineeringCard extends LitElement {
           <div class="eng-voltage-sidebar">
             ${homeVoltage != null ? html`
               <span class="eng-status-key">HOME VOLTAGE</span>
-              <span class="eng-status-val" style="color:var(--lcars-ice)">${formatNumber(homeVoltage, 1)} V</span>
+              <span class="eng-status-val">${formatNumber(homeVoltage, 1)} V</span>
             ` : ''}
             ${high.length > 0 ? html`
               <span class="eng-volt-label" style="color:var(--lcars-tomato)">HIGH VOLTAGE</span>
@@ -581,7 +581,7 @@ class LcarsEngineeringCard extends LitElement {
         font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
       }
       .eng-volt-label { font-size: 0.7rem; letter-spacing: 0.05em; margin-top: 0.25rem; }
-      .eng-volt-clear { font-size: 0.7rem; color: var(--lcars-gray, #666688); padding-left: 0.25rem; }
+      .eng-volt-clear { font-size: 0.7rem; color: var(--lcars-ice, #99ccff); padding-left: 0.25rem; }
       .eng-volt-row {
         display: flex; justify-content: space-between; align-items: baseline;
         padding: 0.0625rem 0.25rem; cursor: pointer; transition: background 150ms ease;

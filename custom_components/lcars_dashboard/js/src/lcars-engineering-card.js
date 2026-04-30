@@ -303,11 +303,11 @@ class LcarsEngineeringCard extends LitElement {
 
   _classifyCircuit(name) {
     const n = name.toLowerCase();
-    if (/heat|hvac|ac\s*(in|out)|air\s*handler|furnace|hotub|hot\s*tub|spa|pool|pump|compressor|southeat|northeat|westeat|easteat|upperstrip|lowerstrip|minisplit/i.test(n)) return 'HVAC';
-    if (/server|udm|switch|poe|ap\b|network|router|modem|nas|rack|stack|unifi|usw|usg|udmpro/i.test(n)) return 'NETWORK';
-    if (/light|lamp|sconce|chandelier|fixture|led\b|illuminat|hallway|entry|bath.*light|bonus.*room/i.test(n)) return 'LIGHTING';
+    if (/ecoflow|river|delta\s*\d|jackery|bluetti|battery/i.test(n)) return 'BATTERY';
+    if (/heat|hvac|air\s*handler|furnace|hotub|hot\s*tub|spa|pool|pump|compressor|minisplit/i.test(n)) return 'HVAC';
+    if (/server|udm|poe|\bap\b|network|router|modem|nas|rack|stack|unifi|usw|usg|udmpro/i.test(n)) return 'NETWORK';
+    if (/light|lamp|sconce|chandelier|fixture|\bled\b|illuminat|hallway|entry/i.test(n)) return 'LIGHTING';
     if (/outlet|plug|receptacle|bedroom|kitchen|garage(?!.*light)|closet|fridge|refrigerat|freezer|microwave|oven|dishwash|washer|dryer|disposal/i.test(n)) return 'OUTLETS';
-    if (/river|delta|battery|ecoflow|jackery|bluetti|ac\s*(in|out)$/i.test(n)) return 'BATTERY';
     return 'OTHER';
   }
 
@@ -316,8 +316,11 @@ class LcarsEngineeringCard extends LitElement {
     const active = circuits.filter(c => Number(c.state?.state) > 1)
       .map(c => {
         const name = (c.state?.attributes?.friendly_name || c.entity?.entity_id || '')
-          .replace(/_power.*$/i, '').replace(/_/g, ' ')
+          .replace(/_power.*$/i, '').replace(/_(current|energy|voltage)[\w]*$/i, '')
+          .replace(/_/g, ' ')
           .replace(/\s+(l[12])$/i, ' $1')
+          .replace(/\s*(power|current\s*consumption|minute\s*average|current\s*consumption)\s*/gi, ' ')
+          .replace(/\s+/g, ' ').trim()
           .toUpperCase();
         const watts = Number(c.state?.state) || 0;
         return { name, watts, entity: c.entity, category: this._classifyCircuit(name) };
@@ -342,10 +345,14 @@ class LcarsEngineeringCard extends LitElement {
       groups.get(c.category).push(c);
     }
 
-    // Render order: by total watts descending
-    const sortedGroups = [...groups.entries()]
-      .map(([cat, items]) => ({ cat, items, total: items.reduce((s, i) => s + i.watts, 0) }))
-      .sort((a, b) => b.total - a.total);
+    // Fixed category order for layout stability
+    const CATEGORY_ORDER = ['HVAC', 'OUTLETS', 'LIGHTING', 'NETWORK', 'BATTERY', 'OTHER'];
+    const sortedGroups = CATEGORY_ORDER
+      .filter(cat => groups.has(cat))
+      .map(cat => {
+        const items = groups.get(cat);
+        return { cat, items, total: items.reduce((s, i) => s + i.watts, 0) };
+      });
 
     return html`
       <div class="eng-section">
@@ -430,16 +437,18 @@ class LcarsEngineeringCard extends LitElement {
         padding: 0.25rem 0.5rem; height: 1.25rem;
         font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
         color: var(--lcars-black, #000);
+        border-radius: 0 0.75rem 0.75rem 0;
       }
       .eng-group-name { font-size: 0.75rem; letter-spacing: 0.05em; }
       .eng-group-total { font-size: 0.75rem; font-variant-numeric: tabular-nums; }
       .eng-group-row {
         display: flex; justify-content: space-between; align-items: baseline;
-        padding: 0.125rem 0.5rem; cursor: pointer;
+        padding: 0.125rem 0.5rem; cursor: pointer; min-height: 1.5rem;
         font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
         transition: background 150ms ease;
       }
       .eng-group-row:hover { background: rgba(153,204,255,0.08); }
+      .eng-group-row:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 1px; }
       .eng-group-circuit { font-size: 0.7rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 12rem; }
       .eng-group-watts { font-size: 0.7rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 0.5rem; }
 
@@ -457,7 +466,8 @@ class LcarsEngineeringCard extends LitElement {
         transition: background 150ms ease;
       }
       .eng-bar-row:hover { background: rgba(153,204,255,0.08); }
-      .eng-bar-name { font-size: 0.625rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .eng-bar-row:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 1px; }
+      .eng-bar-name { font-size: 0.7rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .eng-bar-track { height: 0.75rem; background: transparent; }
       .eng-bar-fill { height: 100%; border-radius: 0 0.75rem 0.75rem 0; transition: width 300ms ease; }
       .eng-bar-watts { font-size: 0.625rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; min-width: 3.5rem; }

@@ -1,7 +1,7 @@
 {
   "name": "lcars-dashboard",
   "private": true,
-  "version": "5.1.0-beta.28",
+  "version": "5.1.0-beta.29",
   "description": "LCARS Dashboard — Home Assistant Lovelace dashboard with Star Trek LCARS UI. Based on Dwains Dashboard by Dwain Scheeren.",
   "scripts": {
     "build": "webpack --mode=production",

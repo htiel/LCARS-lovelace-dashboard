@@ -219,6 +219,21 @@ class LcarsEngineeringCard extends LitElement {
       if (b.siblings?.storedKwh) { const kwh = Number(b.siblings.storedKwh.state); if (!isNaN(kwh)) { totalStoredKwh += kwh; hasStoredKwh = true; } }
     }
     if (batteryCount > 0) avgSoc = Math.round(avgSoc / batteryCount);
+
+    // Voltage tiers from discovered sensors
+    const high = [], low = [];
+    let normalSum = 0, normalCount = 0;
+    for (const s of (data.voltageSensors || [])) {
+      const v = Number(s.state?.state);
+      if (isNaN(v) || v <= 0) continue;
+      const name = (s.state?.attributes?.friendly_name || s.entity?.entity_id || '')
+        .replace(/_/g, ' ').replace(/\s*(voltage|volt)\s*/gi, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
+      if (v > 130) high.push({ name, voltage: v, entity: s.entity });
+      else if (v >= 110) { normalSum += v; normalCount++; }
+      else low.push({ name, voltage: v, entity: s.entity });
+    }
+    const homeVoltage = normalCount > 0 ? normalSum / normalCount : null;
+
     return html`
       <div class="eng-status-panel">
         <div class="eng-section-header"><span class="eng-section-label">SYSTEM STATUS</span></div>
@@ -233,6 +248,40 @@ class LcarsEngineeringCard extends LitElement {
           <span class="eng-status-key">CIRCUITS</span><span class="eng-status-val">${data.circuits.length}</span>
           <span class="eng-status-key">HEALTH</span><span class="eng-status-val" style="color:var(--lcars-ice)">NOMINAL</span>
         </div>
+        ${homeVoltage != null || high.length > 0 || low.length > 0 ? html`
+          <div class="eng-voltage-sidebar">
+            ${homeVoltage != null ? html`
+              <span class="eng-status-key">HOME VOLTAGE</span>
+              <span class="eng-status-val" style="color:var(--lcars-ice)">${formatNumber(homeVoltage, 1)} V</span>
+            ` : ''}
+            ${high.length > 0 ? html`
+              <span class="eng-volt-label" style="color:var(--lcars-tomato)">HIGH VOLTAGE</span>
+              ${high.map(h => html`
+                <div class="eng-volt-row" role="button" tabindex="0"
+                     @click=${() => showMoreInfo(h.entity.entity_id)}
+                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMoreInfo(h.entity.entity_id); } }}>
+                  <span class="eng-volt-name">${h.name}</span>
+                  <span class="eng-volt-val" style="color:var(--lcars-tomato)">${formatNumber(h.voltage, 1)} V</span>
+                </div>`)}
+            ` : html`
+              <span class="eng-volt-label" style="color:var(--lcars-gray)">HIGH VOLTAGE</span>
+              <span class="eng-volt-clear">CLEAR</span>
+            `}
+            ${low.length > 0 ? html`
+              <span class="eng-volt-label" style="color:var(--lcars-sunflower)">LOW VOLTAGE</span>
+              ${low.map(l => html`
+                <div class="eng-volt-row" role="button" tabindex="0"
+                     @click=${() => showMoreInfo(l.entity.entity_id)}
+                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMoreInfo(l.entity.entity_id); } }}>
+                  <span class="eng-volt-name">${l.name}</span>
+                  <span class="eng-volt-val" style="color:var(--lcars-sunflower)">${formatNumber(l.voltage, 1)} V</span>
+                </div>`)}
+            ` : html`
+              <span class="eng-volt-label" style="color:var(--lcars-gray)">LOW VOLTAGE</span>
+              <span class="eng-volt-clear">CLEAR</span>
+            `}
+          </div>
+        ` : ''}
       </div>`;
   }
 
@@ -349,80 +398,6 @@ class LcarsEngineeringCard extends LitElement {
       <div class="eng-distribution-bar">
         <span class="eng-dist-label">AC DISTRIBUTION BUS</span>
         <span class="eng-dist-value">${formatNumber(totalDraw, 0)} W TOTAL LOAD</span>
-      </div>`;
-  }
-
-  _renderVoltageOverview(voltageSensors) {
-    if (voltageSensors.length === 0) return '';
-    const high = [], normal = [], low = [];
-    for (const s of voltageSensors) {
-      const v = Number(s.state?.state);
-      if (isNaN(v) || v <= 0) continue;
-      const name = (s.state?.attributes?.friendly_name || s.entity?.entity_id || '')
-        .replace(/_/g, ' ').replace(/\s*(voltage|volt)\s*/gi, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
-      const item = { name, voltage: v, entity: s.entity };
-      if (v > 130) high.push(item);
-      else if (v >= 110) normal.push(item);
-      else low.push(item);
-    }
-    // Compute home voltage average from normal-range sensors
-    const homeAvg = normal.length > 0
-      ? normal.reduce((sum, i) => sum + i.voltage, 0) / normal.length
-      : null;
-    const homeColor = homeAvg != null
-      ? (homeAvg >= 118 && homeAvg <= 122 ? 'var(--lcars-ice)' : 'var(--lcars-sunflower)')
-      : 'var(--lcars-gray)';
-
-    return html`
-      <div class="eng-section">
-        <div class="eng-section-header"><span class="eng-section-label">VOLTAGE OVERVIEW</span><span class="eng-section-line"></span></div>
-        <div class="eng-voltage-grid">
-          ${high.length > 0 ? html`
-            <div class="eng-voltage-tier">
-              <div class="eng-voltage-tier-header" style="background:var(--lcars-tomato)">
-                <span class="eng-voltage-tier-name">HIGH VOLTAGE</span>
-                <span class="eng-voltage-tier-count">${high.length}</span>
-              </div>
-              ${high.map(h => html`
-                <div class="eng-voltage-row eng-voltage-high" role="button" tabindex="0"
-                     @click=${() => showMoreInfo(h.entity.entity_id)}
-                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMoreInfo(h.entity.entity_id); } }}>
-                  <span class="eng-voltage-name">${h.name}</span>
-                  <span class="eng-voltage-val" style="color:var(--lcars-tomato)">${formatNumber(h.voltage, 1)} V</span>
-                </div>`)}
-            </div>` : ''}
-          <div class="eng-voltage-tier">
-            <div class="eng-voltage-tier-header" style="background:var(--lcars-ice)">
-              <span class="eng-voltage-tier-name">HOME VOLTAGE</span>
-              <span class="eng-voltage-tier-count">${homeAvg != null ? `${formatNumber(homeAvg, 1)} V AVG` : 'N/A'}</span>
-            </div>
-            ${normal.length > 0 ? html`
-              <div class="eng-voltage-home-avg" style="color:${homeColor}">${formatNumber(homeAvg, 1)} V</div>
-              <div class="eng-voltage-home-detail">${normal.length} SENSORS · ${formatNumber(Math.min(...normal.map(n => n.voltage)), 1)}–${formatNumber(Math.max(...normal.map(n => n.voltage)), 1)} V RANGE</div>
-              ${normal.map(n => html`
-                <div class="eng-voltage-row" role="button" tabindex="0"
-                     @click=${() => showMoreInfo(n.entity.entity_id)}
-                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMoreInfo(n.entity.entity_id); } }}>
-                  <span class="eng-voltage-name">${n.name}</span>
-                  <span class="eng-voltage-val">${formatNumber(n.voltage, 1)} V</span>
-                </div>`)}
-            ` : html`<div class="eng-voltage-home-detail">NO SENSORS IN RANGE</div>`}
-          </div>
-          ${low.length > 0 ? html`
-            <div class="eng-voltage-tier">
-              <div class="eng-voltage-tier-header" style="background:var(--lcars-sunflower)">
-                <span class="eng-voltage-tier-name">LOW VOLTAGE</span>
-                <span class="eng-voltage-tier-count">${low.length}</span>
-              </div>
-              ${low.map(l => html`
-                <div class="eng-voltage-row" role="button" tabindex="0"
-                     @click=${() => showMoreInfo(l.entity.entity_id)}
-                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMoreInfo(l.entity.entity_id); } }}>
-                  <span class="eng-voltage-name">${l.name}</span>
-                  <span class="eng-voltage-val" style="color:var(--lcars-sunflower)">${formatNumber(l.voltage, 1)} V</span>
-                </div>`)}
-            </div>` : ''}
-        </div>
       </div>`;
   }
 
@@ -563,7 +538,6 @@ class LcarsEngineeringCard extends LitElement {
         <div class="eng-main-content">
           ${this._renderSources(data)}
           ${this._renderDistribution(data.totalDraw)}
-          ${(f === FILTER_ALL || f === FILTER_CIRCUITS) ? this._renderVoltageOverview(data.voltageSensors) : ''}
           ${(f === FILTER_ALL || f === FILTER_CIRCUITS) ? this._renderCircuits(data.circuits) : ''}
         </div>
         ${this._renderSystemStatus(data)}
@@ -591,38 +565,22 @@ class LcarsEngineeringCard extends LitElement {
       @keyframes eng-scan-line { 0% { left: -15%; } 100% { left: 100%; } }
       .eng-circuit-count { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; color: var(--lcars-gray, #666688); white-space: nowrap; text-transform: uppercase; }
 
-      /* ─── Voltage Overview ─── */
-      .eng-voltage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr)); gap: 0.75rem; }
-      .eng-voltage-tier { display: flex; flex-direction: column; }
-      .eng-voltage-tier-header {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 0.25rem 0.5rem; height: 1.25rem;
+      /* ─── Voltage Sidebar (compact, inside System Status) ─── */
+      .eng-voltage-sidebar {
+        display: flex; flex-direction: column; gap: 0.125rem;
+        border-top: 1px solid rgba(255,153,102,0.15); margin-top: 0.5rem; padding-top: 0.5rem;
         font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
-        color: var(--lcars-black, #000);
-        border-radius: 0 0.75rem 0.75rem 0;
       }
-      .eng-voltage-tier-name { font-size: 0.75rem; letter-spacing: 0.05em; }
-      .eng-voltage-tier-count { font-size: 0.75rem; font-variant-numeric: tabular-nums; }
-      .eng-voltage-home-avg {
-        font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.75rem;
-        text-align: center; padding: 0.375rem 0 0.125rem; font-variant-numeric: tabular-nums;
-      }
-      .eng-voltage-home-detail {
-        font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.7rem;
-        color: var(--lcars-gray, #666688); text-transform: uppercase; text-align: center;
-        padding-bottom: 0.25rem; letter-spacing: 0.04em;
-      }
-      .eng-voltage-row {
+      .eng-volt-label { font-size: 0.7rem; letter-spacing: 0.05em; margin-top: 0.25rem; }
+      .eng-volt-clear { font-size: 0.7rem; color: var(--lcars-gray, #666688); padding-left: 0.25rem; }
+      .eng-volt-row {
         display: flex; justify-content: space-between; align-items: baseline;
-        padding: 0.125rem 0.5rem; cursor: pointer; min-height: 1.5rem;
-        font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
-        transition: background 150ms ease;
+        padding: 0.0625rem 0.25rem; cursor: pointer; transition: background 150ms ease;
       }
-      .eng-voltage-row:hover { background: rgba(153,204,255,0.08); }
-      .eng-voltage-row:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 1px; }
-      .eng-voltage-name { font-size: 0.7rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 14rem; }
-      .eng-voltage-val { font-size: 0.7rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 0.5rem; }
-      .eng-voltage-high .eng-voltage-name { color: var(--lcars-tomato, #ff5555); }
+      .eng-volt-row:hover { background: rgba(153,204,255,0.08); }
+      .eng-volt-row:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 1px; }
+      .eng-volt-name { font-size: 0.625rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 8rem; }
+      .eng-volt-val { font-size: 0.625rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
       /* ─── Load Circuits: Two-Column Split ─── */
       .eng-loads-split { display: grid; grid-template-columns: 1fr 18rem; gap: 1rem; }

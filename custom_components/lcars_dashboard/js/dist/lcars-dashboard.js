@@ -1668,20 +1668,54 @@
           <button class="action-btn reset" @click=${this._reset}>Reset</button>
         </div>
       </div>
-    `}getCardSize(){return 5}}customElements.get("lcars-edit-panel-order-card")||customElements.define("lcars-edit-panel-order-card",l)},5316(e,t,a){var r=a(7349),s=a(8851),i=a(2622),n=a(7597),o=a(6930),l=a(4867),c=a(9411);const d="all",p="circuits",u=(new Set(["battery","power","energy","voltage","current"]),/ups|battery_charge|battery_runtime|battery_voltage/i),m=/\bgrid\b|\bmains\b|mainsfromgrid|mainstogrid|main[_.]?(panel|breaker|load|feed)|total[_.]?active[_.]?power|shelly.*total|3em.*total|vueg3[_.]?main[_.]?power/i,h=/\bgrid\b|\bmains\b|main[_.]?(panel|breaker|load|feed)|shelly.*total|3em.*total|totalusage/i,f=/totalusage|total.*usage|^sensor\.balance|mainload|main.*load|mainsfromgrid|mainstogrid/i,v=new Set(["shelly","sense","iotawatt","brultech","neurio","rainforest"]),g=new Set(["tplink","vesync","kasa","wemo","meross","tuya","tasmota"]),b=/plug|outlet|strip|lamp|desk|bedroom|kitchen|garage|bathroom|laundry|office|closet|fridge|dryer|washer|disposal|microwave/i,y=new Set(["ecoflow_cloud","nut","victron","tesla_powerwall","solaredge"]),_=new Set(["wallbox","insteon","blink","simplisafe","tile","switchbot","unifiprotect","unifi","mobile_app","nest_protect"]),w=/motion.sensor|remote|phone|tablet|watch|tile|tag|lock|camera|protect|switch.?bot|wallbox|vilya|charger|thermostat|meter|doorbell/i;function x(e){const t=e.entity.entity_id,a=e.entity.platform||"";let r=0;return/\bgrid\b/i.test(t)&&(r+=50),/\bmains\b/i.test(t)&&(r+=50),/mainsfromgrid|mainstogrid/i.test(t)&&(r+=60),/3em/i.test(t)&&(r+=40),v.has(a)&&(r+=30),/main[_.]?(panel|breaker)/i.test(t)&&(r+=35),/total[_.]?active[_.]?power/i.test(t)&&(r+=25),/vueg3[_.]?main[_.]?power/i.test(t)&&(r+=15),g.has(a)&&(r-=40),b.test(t)&&(r-=50),r}class $ extends r.WF{static get properties(){return{hass:{type:Object},_config:{type:Object},filter:{type:String}}}constructor(){super(),this._hass=null,this._config={},this.filter=d,this._entityCache=new Map,this._onFilter=e=>{this.filter=e.detail.filter}}connectedCallback(){super.connectedCallback(),s.o6.addEventListener("lcars-eng-filter",this._onFilter)}disconnectedCallback(){super.disconnectedCallback(),s.o6.removeEventListener("lcars-eng-filter",this._onFilter)}setConfig(e){this._config=e||{}}set hass(e){const t=this._hass;this._hass=e,e&&t!==e&&(this._entityCache.clear(),this.requestUpdate("hass",t))}get hass(){return this._hass}getCardSize(){return 16}_discoverAll(){if(!this._hass)return{batteries:[],circuits:[],gridSensors:[],upsSensors:[],voltageSensors:[],totalDraw:0};const e=this._hass.states||{},t=[],a=[],r=[],s=[],i=[],c={};let d=0;const p=new Set,v=(0,n.He)(this._hass);for(const{floor:n,area:c}of v){const h=(0,o.d6)(this._hass,c.area_id,this._entityCache);for(const o of h){const h=o.entity_id.split(".")[0],v=e[o.entity_id];if(!v)continue;const g={entity:o,domain:h,state:v,area:c,floor:n};if((0,l.JM)(g))continue;const b=v.attributes?.device_class||"",x=o.platform||"";if("battery"===b&&o.device_id&&!p.has(o.device_id)){if(_.has(x))continue;const e=this._hass?.devices?.[o.device_id],a=(e?.name||o.entity_id||"").toLowerCase();if(w.test(a)||w.test(o.entity_id))continue;if(!y.has(x)&&!/ecoflow|river|delta|powerwall|ups/i.test(a))continue;p.add(o.device_id),t.push({entry:g,device:e,deviceId:o.device_id,area:c,floor:n});continue}if("nut"===x&&u.test(o.entity_id))s.push(g);else if("power"===b&&m.test(o.entity_id))r.push(g);else{if("power"===b&&!m.test(o.entity_id)){if(f.test(o.entity_id))continue;const e=Number(v.state);isNaN(e)||(d+=e),a.push(g)}if("voltage"===b&&"sensor"===h){const e=Number(v.state);!isNaN(e)&&e>0&&i.push(g)}}}}a.sort((e,t)=>(Number(t.state?.state)||0)-(Number(e.state?.state)||0));const g=new Map,b=new Set;for(const e of a){const t=e.entity.entity_id,a=t.match(/^(sensor\..+?)_l1_/i),r=t.match(/^(sensor\..+?)_l2_/i);a&&b.add(a[1]),r&&b.add(r[1]),g.set(t,e)}for(const e of b){const t=`${e}_power_minute_average`;if(g.has(t))for(const t of["_l1_power_minute_average","_l2_power_minute_average"]){const a=`${e}${t}`;g.has(a)&&(d-=Number(g.get(a).state?.state)||0,g.delete(a))}}const $=[...g.values()].sort((e,t)=>(Number(t.state?.state)||0)-(Number(e.state?.state)||0)),k=this._hass?.entities||{},S=new Map;for(const[t,a]of Object.entries(k))a.device_id&&e[t]&&(S.has(a.device_id)||S.set(a.device_id,[]),S.get(a.device_id).push({eid:t,state:e[t],entity:a}));for(const e of t){e.siblings={};const t=S.get(e.deviceId)||[];for(const{eid:a,state:r}of t){const t=r.attributes?.device_class||"",s=a.toLowerCase();"voltage"!==t||e.siblings.voltage?"temperature"!==t||/pcs/i.test(a)||e.siblings.temp?"power"===t&&/total.*in/i.test(a)&&!e.siblings.totalIn?e.siblings.totalIn=r:"power"===t&&/total.*out/i.test(a)&&!e.siblings.totalOut?e.siblings.totalOut=r:/remaining.*time|discharge.*remain|charge.*remain/i.test(a)&&!e.siblings.runtime?e.siblings.runtime=r:/charging.*state|battery.*state/i.test(a)&&!e.siblings.chargeState?e.siblings.chargeState=r:/state.of.health/i.test(s)&&!e.siblings.soh?e.siblings.soh=r:/\bcycles\b/i.test(s)&&!e.siblings.cycles?e.siblings.cycles=r:!e.siblings.storedKwh&&("energy"===t&&/remain|stored|available/i.test(s)||/remain.*kwh|kwh.*remain|energy.*remain|stored.*energy/i.test(s))&&(e.siblings.storedKwh=r):e.siblings.temp=r:e.siblings.voltage=r}}for(const[t,a]of Object.entries(e)){if(!h.test(t))continue;const e=a.attributes?.device_class||"";"voltage"!==e||c.voltage?"frequency"!==e||c.frequency?"energy"===e&&/today/i.test(t)&&!c.energyToday?c.energyToday=a:"current"!==e||c.current||(c.current=a):c.frequency=a:c.voltage=a}return r.sort((e,t)=>x(t)-x(e)),{batteries:t,circuits:$,gridSensors:r,upsSensors:s,voltageSensors:i,totalDraw:d,gridSiblings:c}}_getGridPower(e){if(0===e.gridSensors.length)return e.totalDraw;for(const t of e.gridSensors){const e=Number(t.state?.state);if(!isNaN(e))return e}return e.totalDraw}_renderSystemStatus(e){const t=this._getGridPower(e);let a=0,s=0,i=0,n=!1;for(const t of e.batteries){const e=Number(t.entry.state?.state);if(isNaN(e)||(a+=e,s++),t.siblings?.storedKwh){const e=Number(t.siblings.storedKwh.state);isNaN(e)||(i+=e,n=!0)}}return s>0&&(a=Math.round(a/s)),r.qy`
+    `}getCardSize(){return 5}}customElements.get("lcars-edit-panel-order-card")||customElements.define("lcars-edit-panel-order-card",l)},5316(e,t,a){var r=a(7349),s=a(8851),i=a(2622),n=a(7597),o=a(6930),l=a(4867),c=a(9411);new Set(["battery","power","energy","voltage","current"]);const d=/ups|battery_charge|battery_runtime|battery_voltage/i,p=/\bgrid\b|\bmains\b|mainsfromgrid|mainstogrid|main[_.]?(panel|breaker|load|feed)|total[_.]?active[_.]?power|shelly.*total|3em.*total|vueg3[_.]?main[_.]?power/i,u=/\bgrid\b|\bmains\b|main[_.]?(panel|breaker|load|feed)|shelly.*total|3em.*total|totalusage/i,m=/totalusage|total.*usage|^sensor\.balance|mainload|main.*load|mainsfromgrid|mainstogrid/i,h=new Set(["shelly","sense","iotawatt","brultech","neurio","rainforest"]),f=new Set(["tplink","vesync","kasa","wemo","meross","tuya","tasmota"]),v=/plug|outlet|strip|lamp|desk|bedroom|kitchen|garage|bathroom|laundry|office|closet|fridge|dryer|washer|disposal|microwave/i,g=new Set(["ecoflow_cloud","nut","victron","tesla_powerwall","solaredge"]),b=new Set(["wallbox","insteon","blink","simplisafe","tile","switchbot","unifiprotect","unifi","mobile_app","nest_protect"]),y=/motion.sensor|remote|phone|tablet|watch|tile|tag|lock|camera|protect|switch.?bot|wallbox|vilya|charger|thermostat|meter|doorbell/i;function _(e){const t=e.entity.entity_id,a=e.entity.platform||"";let r=0;return/\bgrid\b/i.test(t)&&(r+=50),/\bmains\b/i.test(t)&&(r+=50),/mainsfromgrid|mainstogrid/i.test(t)&&(r+=60),/3em/i.test(t)&&(r+=40),h.has(a)&&(r+=30),/main[_.]?(panel|breaker)/i.test(t)&&(r+=35),/total[_.]?active[_.]?power/i.test(t)&&(r+=25),/vueg3[_.]?main[_.]?power/i.test(t)&&(r+=15),f.has(a)&&(r-=40),v.test(t)&&(r-=50),r}class w extends r.WF{static get properties(){return{hass:{type:Object},_config:{type:Object},filter:{type:String}}}constructor(){super(),this._hass=null,this._config={},this.filter="all",this._entityCache=new Map,this._onFilter=e=>{this.filter=e.detail.filter}}connectedCallback(){super.connectedCallback(),s.o6.addEventListener("lcars-eng-filter",this._onFilter)}disconnectedCallback(){super.disconnectedCallback(),s.o6.removeEventListener("lcars-eng-filter",this._onFilter)}setConfig(e){this._config=e||{}}set hass(e){const t=this._hass;this._hass=e,e&&t!==e&&(this._entityCache.clear(),this.requestUpdate("hass",t))}get hass(){return this._hass}getCardSize(){return 16}_discoverAll(){if(!this._hass)return{batteries:[],circuits:[],gridSensors:[],upsSensors:[],voltageSensors:[],totalDraw:0};const e=this._hass.states||{},t=[],a=[],r=[],s=[],i=[],c={};let h=0;const f=new Set,v=(0,n.He)(this._hass);for(const{floor:n,area:c}of v){const u=(0,o.d6)(this._hass,c.area_id,this._entityCache);for(const o of u){const u=o.entity_id.split(".")[0],v=e[o.entity_id];if(!v)continue;const _={entity:o,domain:u,state:v,area:c,floor:n};if((0,l.JM)(_))continue;const w=v.attributes?.device_class||"",x=o.platform||"";if("battery"===w&&o.device_id&&!f.has(o.device_id)){if(b.has(x))continue;const e=this._hass?.devices?.[o.device_id],a=(e?.name||o.entity_id||"").toLowerCase();if(y.test(a)||y.test(o.entity_id))continue;if(!g.has(x)&&!/ecoflow|river|delta|powerwall|ups/i.test(a))continue;f.add(o.device_id),t.push({entry:_,device:e,deviceId:o.device_id,area:c,floor:n});continue}if("nut"===x&&d.test(o.entity_id))s.push(_);else if("power"===w&&p.test(o.entity_id))r.push(_);else{if("power"===w&&!p.test(o.entity_id)){if(m.test(o.entity_id))continue;const e=Number(v.state);isNaN(e)||(h+=e),a.push(_)}if("voltage"===w&&"sensor"===u){const e=Number(v.state);!isNaN(e)&&e>0&&i.push(_)}}}}a.sort((e,t)=>(Number(t.state?.state)||0)-(Number(e.state?.state)||0));const w=new Map,x=new Set;for(const e of a){const t=e.entity.entity_id,a=t.match(/^(sensor\..+?)_l1_/i),r=t.match(/^(sensor\..+?)_l2_/i);a&&x.add(a[1]),r&&x.add(r[1]),w.set(t,e)}for(const e of x){const t=`${e}_power_minute_average`;if(w.has(t))for(const t of["_l1_power_minute_average","_l2_power_minute_average"]){const a=`${e}${t}`;w.has(a)&&(h-=Number(w.get(a).state?.state)||0,w.delete(a))}}const $=[...w.values()].sort((e,t)=>(Number(t.state?.state)||0)-(Number(e.state?.state)||0)),k=this._hass?.entities||{},S=new Map;for(const[t,a]of Object.entries(k))a.device_id&&e[t]&&(S.has(a.device_id)||S.set(a.device_id,[]),S.get(a.device_id).push({eid:t,state:e[t],entity:a}));for(const e of t){e.siblings={};const t=S.get(e.deviceId)||[];for(const{eid:a,state:r}of t){const t=r.attributes?.device_class||"",s=a.toLowerCase();"voltage"!==t||e.siblings.voltage?"temperature"!==t||/pcs/i.test(a)||e.siblings.temp?"power"===t&&/total.*in/i.test(a)&&!e.siblings.totalIn?e.siblings.totalIn=r:"power"===t&&/total.*out/i.test(a)&&!e.siblings.totalOut?e.siblings.totalOut=r:/remaining.*time|discharge.*remain|charge.*remain/i.test(a)&&!e.siblings.runtime?e.siblings.runtime=r:/charging.*state|battery.*state/i.test(a)&&!e.siblings.chargeState?e.siblings.chargeState=r:/state.of.health/i.test(s)&&!e.siblings.soh?e.siblings.soh=r:/\bcycles\b/i.test(s)&&!e.siblings.cycles?e.siblings.cycles=r:!e.siblings.storedKwh&&("energy"===t&&/remain|stored|available/i.test(s)||/remain.*kwh|kwh.*remain|energy.*remain|stored.*energy/i.test(s))&&(e.siblings.storedKwh=r):e.siblings.temp=r:e.siblings.voltage=r}}for(const[t,a]of Object.entries(e)){if(!u.test(t))continue;const e=a.attributes?.device_class||"";"voltage"!==e||c.voltage?"frequency"!==e||c.frequency?"energy"===e&&/today/i.test(t)&&!c.energyToday?c.energyToday=a:"current"!==e||c.current||(c.current=a):c.frequency=a:c.voltage=a}return r.sort((e,t)=>_(t)-_(e)),{batteries:t,circuits:$,gridSensors:r,upsSensors:s,voltageSensors:i,totalDraw:h,gridSiblings:c}}_getGridPower(e){if(0===e.gridSensors.length)return e.totalDraw;for(const t of e.gridSensors){const e=Number(t.state?.state);if(!isNaN(e))return e}return e.totalDraw}_renderSystemStatus(e){const t=this._getGridPower(e);let a=0,i=0,n=0,o=!1;for(const t of e.batteries){const e=Number(t.entry.state?.state);if(isNaN(e)||(a+=e,i++),t.siblings?.storedKwh){const e=Number(t.siblings.storedKwh.state);isNaN(e)||(n+=e,o=!0)}}i>0&&(a=Math.round(a/i));const l=[],d=[];let p=0,u=0;for(const t of e.voltageSensors||[]){const e=Number(t.state?.state);if(isNaN(e)||e<=0)continue;const a=(t.state?.attributes?.friendly_name||t.entity?.entity_id||"").replace(/_/g," ").replace(/\s*(voltage|volt)\s*/gi," ").replace(/\s+/g," ").trim().toUpperCase();e>130?l.push({name:a,voltage:e,entity:t.entity}):e>=110?(p+=e,u++):d.push({name:a,voltage:e,entity:t.entity})}const m=u>0?p/u:null;return r.qy`
       <div class="eng-status-panel">
         <div class="eng-section-header"><span class="eng-section-label">SYSTEM STATUS</span></div>
         <div class="eng-status-grid">
           <span class="eng-status-key">LOAD</span><span class="eng-status-val">${(0,c.ZV)(e.totalDraw,0)} W</span>
           <span class="eng-status-key">GRID</span><span class="eng-status-val">${(0,c.ZV)(t,0)} W</span>
-          ${s>0?r.qy`
-            <span class="eng-status-key">BATTERIES</span><span class="eng-status-val">${s} UNITS</span>
+          ${i>0?r.qy`
+            <span class="eng-status-key">BATTERIES</span><span class="eng-status-val">${i} UNITS</span>
             <span class="eng-status-key">AVG SOC</span><span class="eng-status-val">${a}%</span>
-            ${n?r.qy`<span class="eng-status-key">STORED</span><span class="eng-status-val" style="color:var(--lcars-ice)">${(0,c.ZV)(i,2)} KWH</span>`:""}
+            ${o?r.qy`<span class="eng-status-key">STORED</span><span class="eng-status-val" style="color:var(--lcars-ice)">${(0,c.ZV)(n,2)} KWH</span>`:""}
           `:""}
           <span class="eng-status-key">CIRCUITS</span><span class="eng-status-val">${e.circuits.length}</span>
           <span class="eng-status-key">HEALTH</span><span class="eng-status-val" style="color:var(--lcars-ice)">NOMINAL</span>
         </div>
+        ${null!=m||l.length>0||d.length>0?r.qy`
+          <div class="eng-voltage-sidebar">
+            ${null!=m?r.qy`
+              <span class="eng-status-key">HOME VOLTAGE</span>
+              <span class="eng-status-val" style="color:var(--lcars-ice)">${(0,c.ZV)(m,1)} V</span>
+            `:""}
+            ${l.length>0?r.qy`
+              <span class="eng-volt-label" style="color:var(--lcars-tomato)">HIGH VOLTAGE</span>
+              ${l.map(e=>r.qy`
+                <div class="eng-volt-row" role="button" tabindex="0"
+                     @click=${()=>(0,s.Hv)(e.entity.entity_id)}
+                     @keydown=${t=>{"Enter"!==t.key&&" "!==t.key||(t.preventDefault(),(0,s.Hv)(e.entity.entity_id))}}>
+                  <span class="eng-volt-name">${e.name}</span>
+                  <span class="eng-volt-val" style="color:var(--lcars-tomato)">${(0,c.ZV)(e.voltage,1)} V</span>
+                </div>`)}
+            `:r.qy`
+              <span class="eng-volt-label" style="color:var(--lcars-gray)">HIGH VOLTAGE</span>
+              <span class="eng-volt-clear">CLEAR</span>
+            `}
+            ${d.length>0?r.qy`
+              <span class="eng-volt-label" style="color:var(--lcars-sunflower)">LOW VOLTAGE</span>
+              ${d.map(e=>r.qy`
+                <div class="eng-volt-row" role="button" tabindex="0"
+                     @click=${()=>(0,s.Hv)(e.entity.entity_id)}
+                     @keydown=${t=>{"Enter"!==t.key&&" "!==t.key||(t.preventDefault(),(0,s.Hv)(e.entity.entity_id))}}>
+                  <span class="eng-volt-name">${e.name}</span>
+                  <span class="eng-volt-val" style="color:var(--lcars-sunflower)">${(0,c.ZV)(e.voltage,1)} V</span>
+                </div>`)}
+            `:r.qy`
+              <span class="eng-volt-label" style="color:var(--lcars-gray)">LOW VOLTAGE</span>
+              <span class="eng-volt-clear">CLEAR</span>
+            `}
+          </div>
+        `:""}
       </div>`}_renderSources(e){const t=this._getGridPower(e),a=e.gridSiblings||{},i=a.voltage?Number(a.voltage.state):null,n=a.frequency?Number(a.frequency.state):null,o=a.energyToday?Number(a.energyToday.state):null,l=Math.min(100,t/5e3*100);return r.qy`
       <div class="eng-section">
         <div class="eng-section-header"><span class="eng-section-label">POWER SOURCES</span><span class="eng-section-line"></span></div>
@@ -1750,56 +1784,6 @@
       <div class="eng-distribution-bar">
         <span class="eng-dist-label">AC DISTRIBUTION BUS</span>
         <span class="eng-dist-value">${(0,c.ZV)(e,0)} W TOTAL LOAD</span>
-      </div>`}_renderVoltageOverview(e){if(0===e.length)return"";const t=[],a=[],i=[];for(const r of e){const e=Number(r.state?.state);if(isNaN(e)||e<=0)continue;const s={name:(r.state?.attributes?.friendly_name||r.entity?.entity_id||"").replace(/_/g," ").replace(/\s*(voltage|volt)\s*/gi," ").replace(/\s+/g," ").trim().toUpperCase(),voltage:e,entity:r.entity};e>130?t.push(s):e>=110?a.push(s):i.push(s)}const n=a.length>0?a.reduce((e,t)=>e+t.voltage,0)/a.length:null,o=null!=n?n>=118&&n<=122?"var(--lcars-ice)":"var(--lcars-sunflower)":"var(--lcars-gray)";return r.qy`
-      <div class="eng-section">
-        <div class="eng-section-header"><span class="eng-section-label">VOLTAGE OVERVIEW</span><span class="eng-section-line"></span></div>
-        <div class="eng-voltage-grid">
-          ${t.length>0?r.qy`
-            <div class="eng-voltage-tier">
-              <div class="eng-voltage-tier-header" style="background:var(--lcars-tomato)">
-                <span class="eng-voltage-tier-name">HIGH VOLTAGE</span>
-                <span class="eng-voltage-tier-count">${t.length}</span>
-              </div>
-              ${t.map(e=>r.qy`
-                <div class="eng-voltage-row eng-voltage-high" role="button" tabindex="0"
-                     @click=${()=>(0,s.Hv)(e.entity.entity_id)}
-                     @keydown=${t=>{"Enter"!==t.key&&" "!==t.key||(t.preventDefault(),(0,s.Hv)(e.entity.entity_id))}}>
-                  <span class="eng-voltage-name">${e.name}</span>
-                  <span class="eng-voltage-val" style="color:var(--lcars-tomato)">${(0,c.ZV)(e.voltage,1)} V</span>
-                </div>`)}
-            </div>`:""}
-          <div class="eng-voltage-tier">
-            <div class="eng-voltage-tier-header" style="background:var(--lcars-ice)">
-              <span class="eng-voltage-tier-name">HOME VOLTAGE</span>
-              <span class="eng-voltage-tier-count">${null!=n?`${(0,c.ZV)(n,1)} V AVG`:"N/A"}</span>
-            </div>
-            ${a.length>0?r.qy`
-              <div class="eng-voltage-home-avg" style="color:${o}">${(0,c.ZV)(n,1)} V</div>
-              <div class="eng-voltage-home-detail">${a.length} SENSORS · ${(0,c.ZV)(Math.min(...a.map(e=>e.voltage)),1)}–${(0,c.ZV)(Math.max(...a.map(e=>e.voltage)),1)} V RANGE</div>
-              ${a.map(e=>r.qy`
-                <div class="eng-voltage-row" role="button" tabindex="0"
-                     @click=${()=>(0,s.Hv)(e.entity.entity_id)}
-                     @keydown=${t=>{"Enter"!==t.key&&" "!==t.key||(t.preventDefault(),(0,s.Hv)(e.entity.entity_id))}}>
-                  <span class="eng-voltage-name">${e.name}</span>
-                  <span class="eng-voltage-val">${(0,c.ZV)(e.voltage,1)} V</span>
-                </div>`)}
-            `:r.qy`<div class="eng-voltage-home-detail">NO SENSORS IN RANGE</div>`}
-          </div>
-          ${i.length>0?r.qy`
-            <div class="eng-voltage-tier">
-              <div class="eng-voltage-tier-header" style="background:var(--lcars-sunflower)">
-                <span class="eng-voltage-tier-name">LOW VOLTAGE</span>
-                <span class="eng-voltage-tier-count">${i.length}</span>
-              </div>
-              ${i.map(e=>r.qy`
-                <div class="eng-voltage-row" role="button" tabindex="0"
-                     @click=${()=>(0,s.Hv)(e.entity.entity_id)}
-                     @keydown=${t=>{"Enter"!==t.key&&" "!==t.key||(t.preventDefault(),(0,s.Hv)(e.entity.entity_id))}}>
-                  <span class="eng-voltage-name">${e.name}</span>
-                  <span class="eng-voltage-val" style="color:var(--lcars-sunflower)">${(0,c.ZV)(e.voltage,1)} V</span>
-                </div>`)}
-            </div>`:""}
-        </div>
       </div>`}_getCircuitLabel(e){const t={dedicated:"DEDICATED",infrastructure:"INFRASTRUCTURE",lighting:"LIGHTING",outlets:"OUTLETS",battery:"BATTERY"},a=e.entity?.labels||[];for(const e of a){const a=t[(e||"").toLowerCase()];if(a)return a}if(e.entity?.device_id&&this._hass?.devices){const a=this._hass.devices[e.entity.device_id];for(const e of a?.labels||[]){const a=t[(e||"").toLowerCase()];if(a)return a}}const r=e.entity?.area_id||e.entity?.device_id&&this._hass?.devices?.[e.entity.device_id]?.area_id;if(r&&this._hass?.areas){const e=this._hass.areas[r];for(const a of e?.labels||[]){const e=t[(a||"").toLowerCase()];if(e)return e}}return null}_classifyCircuit(e){const t=e.toLowerCase();return/ecoflow|river|delta\s*\d|jackery|bluetti|battery/i.test(t)?"BATTERY":/heat|hvac|air\s*handler|furnace|hotub|hot\s*tub|spa|pool|pump|compressor|minisplit|dryer|washer|dishwash|water\s*heat|fridge|refrigerat|freezer|microwave|oven|disposal|range|stove|well\s*pump|sump|garage\s*door|ev\s*charg|car\s*charg/i.test(t)?"DEDICATED":/server|udm|poe|\bap\b|network|router|modem|nas|rack|stack|unifi|usw|usg|udmpro|switch\s*\d|patch|ups/i.test(t)?"INFRASTRUCTURE":/light|lamp|sconce|chandelier|fixture|\bled\b|illuminat/i.test(t)?"LIGHTING":/outlet|plug|receptacle|bedroom|kitchen|garage(?!.*light)|closet|hallway|entry|bathroom|living|dining|office/i.test(t)?"OUTLETS":"OTHER"}_renderCircuits(e){if(0===e.length)return"";const t=e.filter(e=>Number(e.state?.state)>1).map(e=>{const t=(e.state?.attributes?.friendly_name||e.entity?.entity_id||"").replace(/_power.*$/i,"").replace(/_(current|energy|voltage)[\w]*$/i,"").replace(/_/g," ").replace(/\s+(l[12])$/i," $1").replace(/\s*(power|current\s*consumption|minute\s*average|current\s*consumption)\s*/gi," ").replace(/\s+/g," ").trim().toUpperCase(),a=Number(e.state?.state)||0,r=this._getCircuitLabel(e)||this._classifyCircuit(t);return{name:t,watts:a,entity:e.entity,category:r}}).sort((e,t)=>t.watts-e.watts),a=t.length>0?t[0].watts:1,i={DEDICATED:{color:"var(--lcars-butterscotch, #ff9966)"},INFRASTRUCTURE:{color:"var(--lcars-ice, #99ccff)"},LIGHTING:{color:"var(--lcars-sunflower, #ffcc99)"},OUTLETS:{color:"var(--lcars-bluey, #8899ff)"},BATTERY:{color:"var(--lcars-african-violet, #cc99ff)"},OTHER:{color:"var(--lcars-gray, #666688)"}},n=new Map;for(const e of t)n.has(e.category)||n.set(e.category,[]),n.get(e.category).push(e);const o=["DEDICATED","OUTLETS","LIGHTING","INFRASTRUCTURE","BATTERY","OTHER"].filter(e=>n.has(e)).map(e=>{const t=n.get(e);return{cat:e,items:t,total:t.reduce((e,t)=>e+t.watts,0)}});return r.qy`
       <div class="eng-section">
         <div class="eng-section-header"><span class="eng-section-label">LOAD CIRCUITS</span><span class="eng-section-line"></span><span class="eng-circuit-count">${t.length} ACTIVE</span></div>
@@ -1837,8 +1821,7 @@
         <div class="eng-main-content">
           ${this._renderSources(e)}
           ${this._renderDistribution(e.totalDraw)}
-          ${t===d||t===p?this._renderVoltageOverview(e.voltageSensors):""}
-          ${t===d||t===p?this._renderCircuits(e.circuits):""}
+          ${"all"===t||"circuits"===t?this._renderCircuits(e.circuits):""}
         </div>
         ${this._renderSystemStatus(e)}
       </div>`}static get styles(){return[i.Bx,r.AH`
@@ -1861,38 +1844,22 @@
       @keyframes eng-scan-line { 0% { left: -15%; } 100% { left: 100%; } }
       .eng-circuit-count { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; color: var(--lcars-gray, #666688); white-space: nowrap; text-transform: uppercase; }
 
-      /* ─── Voltage Overview ─── */
-      .eng-voltage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr)); gap: 0.75rem; }
-      .eng-voltage-tier { display: flex; flex-direction: column; }
-      .eng-voltage-tier-header {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 0.25rem 0.5rem; height: 1.25rem;
+      /* ─── Voltage Sidebar (compact, inside System Status) ─── */
+      .eng-voltage-sidebar {
+        display: flex; flex-direction: column; gap: 0.125rem;
+        border-top: 1px solid rgba(255,153,102,0.15); margin-top: 0.5rem; padding-top: 0.5rem;
         font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
-        color: var(--lcars-black, #000);
-        border-radius: 0 0.75rem 0.75rem 0;
       }
-      .eng-voltage-tier-name { font-size: 0.75rem; letter-spacing: 0.05em; }
-      .eng-voltage-tier-count { font-size: 0.75rem; font-variant-numeric: tabular-nums; }
-      .eng-voltage-home-avg {
-        font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.75rem;
-        text-align: center; padding: 0.375rem 0 0.125rem; font-variant-numeric: tabular-nums;
-      }
-      .eng-voltage-home-detail {
-        font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.7rem;
-        color: var(--lcars-gray, #666688); text-transform: uppercase; text-align: center;
-        padding-bottom: 0.25rem; letter-spacing: 0.04em;
-      }
-      .eng-voltage-row {
+      .eng-volt-label { font-size: 0.7rem; letter-spacing: 0.05em; margin-top: 0.25rem; }
+      .eng-volt-clear { font-size: 0.7rem; color: var(--lcars-gray, #666688); padding-left: 0.25rem; }
+      .eng-volt-row {
         display: flex; justify-content: space-between; align-items: baseline;
-        padding: 0.125rem 0.5rem; cursor: pointer; min-height: 1.5rem;
-        font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
-        transition: background 150ms ease;
+        padding: 0.0625rem 0.25rem; cursor: pointer; transition: background 150ms ease;
       }
-      .eng-voltage-row:hover { background: rgba(153,204,255,0.08); }
-      .eng-voltage-row:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 1px; }
-      .eng-voltage-name { font-size: 0.7rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 14rem; }
-      .eng-voltage-val { font-size: 0.7rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 0.5rem; }
-      .eng-voltage-high .eng-voltage-name { color: var(--lcars-tomato, #ff5555); }
+      .eng-volt-row:hover { background: rgba(153,204,255,0.08); }
+      .eng-volt-row:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 1px; }
+      .eng-volt-name { font-size: 0.625rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 8rem; }
+      .eng-volt-val { font-size: 0.625rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
       /* ─── Load Circuits: Two-Column Split ─── */
       .eng-loads-split { display: grid; grid-template-columns: 1fr 18rem; gap: 1rem; }
@@ -2020,7 +1987,7 @@
         .mini-core-fill.mini-core-idle,
         .mini-core-fill.mini-core-charging { animation: none; }
       }
-    `]}}Promise.race([customElements.whenDefined("hui-masonry-view"),new Promise(e=>setTimeout(e,5e3))]).then(()=>{customElements.get("engineering-card")||customElements.define("engineering-card",$)})},1884(e,t,a){var r=a(7349),s=a(2622),i=a(8851),n=a(6940),o=a(5824);const l="all",c="storage",d="circuits";class p extends r.WF{static get properties(){return{cards:{type:Array},_hass:{type:Object},_config:{type:Object},_filter:{type:String},_siteName:{type:String},_audioMuted:{type:Boolean},_editMode:{type:Boolean}}}constructor(){super(),this.cards=[],this._hass=null,this._config={},this._filter=l,this._siteName="LCARS",this._audioMuted=n.e.isMuted,this._editMode=!1}setConfig(e){this._config=e}set hass(e){this._hass=e,e?.config?.location_name&&(this._siteName=e.config.location_name.toUpperCase()),this.cards&&this.cards.forEach(t=>{t&&(t.hass=e)}),(0,o.X)(e)}_setFilter(e){this._filter=e,n.e.play("navAcknowledge"),i.o6.dispatchEvent(new CustomEvent("lcars-eng-filter",{detail:{filter:e}}))}_toggleMute(){n.e.toggle(),this._audioMuted=n.e.isMuted}_openSidebarReorder(){if(!this._hass?.user?.is_admin)return;let e=this.shadowRoot.querySelector("lcars-sidebar-reorder");e||(e=document.createElement("lcars-sidebar-reorder"),this.shadowRoot.appendChild(e)),e.hass=this._hass,e.open()}_toggleEditMode(){this._editMode=!this._editMode,i.o6.dispatchEvent(new CustomEvent("lcars-eng-edit",{detail:{enabled:this._editMode}}))}render(){const e=a(8330).version;return r.qy`
+    `]}}Promise.race([customElements.whenDefined("hui-masonry-view"),new Promise(e=>setTimeout(e,5e3))]).then(()=>{customElements.get("engineering-card")||customElements.define("engineering-card",w)})},1884(e,t,a){var r=a(7349),s=a(2622),i=a(8851),n=a(6940),o=a(5824);const l="all",c="storage",d="circuits";class p extends r.WF{static get properties(){return{cards:{type:Array},_hass:{type:Object},_config:{type:Object},_filter:{type:String},_siteName:{type:String},_audioMuted:{type:Boolean},_editMode:{type:Boolean}}}constructor(){super(),this.cards=[],this._hass=null,this._config={},this._filter=l,this._siteName="LCARS",this._audioMuted=n.e.isMuted,this._editMode=!1}setConfig(e){this._config=e}set hass(e){this._hass=e,e?.config?.location_name&&(this._siteName=e.config.location_name.toUpperCase()),this.cards&&this.cards.forEach(t=>{t&&(t.hass=e)}),(0,o.X)(e)}_setFilter(e){this._filter=e,n.e.play("navAcknowledge"),i.o6.dispatchEvent(new CustomEvent("lcars-eng-filter",{detail:{filter:e}}))}_toggleMute(){n.e.toggle(),this._audioMuted=n.e.isMuted}_openSidebarReorder(){if(!this._hass?.user?.is_admin)return;let e=this.shadowRoot.querySelector("lcars-sidebar-reorder");e||(e=document.createElement("lcars-sidebar-reorder"),this.shadowRoot.appendChild(e)),e.hass=this._hass,e.open()}_toggleEditMode(){this._editMode=!this._editMode,i.o6.dispatchEvent(new CustomEvent("lcars-eng-edit",{detail:{enabled:this._editMode}}))}render(){const e=a(8330).version;return r.qy`
       <div class="lcars-frame">
         <div class="lcars-elbow-top" aria-hidden="true"></div>
         <div class="lcars-header" role="banner">

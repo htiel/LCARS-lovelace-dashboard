@@ -504,7 +504,7 @@ class LcarsCetaceanCard extends LitElement {
         .cet-summary {
           display: flex; gap: 0.25rem; padding: 0.5rem 1rem;
           background: var(--summary-color, var(--lcars-sky, #aaaaff));
-          border-radius: 0.5rem; color: var(--lcars-black, #000);
+          border-radius: 0; color: var(--lcars-black, #000);
           font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
         }
         .cet-summary__block { flex: 1; display: flex; flex-direction: column; gap: 0.125rem; }
@@ -554,7 +554,7 @@ class LcarsCetaceanCard extends LitElement {
         .cet-bodies-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
         .cet-body-frame {
           flex: 1; min-width: 12rem; border: 3px solid var(--body-color);
-          border-radius: 0.75rem; padding: 1rem; background: var(--lcars-bg, #000);
+          border-radius: 0; padding: 1rem; background: var(--lcars-bg, #000);
           display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
           position: relative; overflow: hidden;
         }
@@ -562,7 +562,7 @@ class LcarsCetaceanCard extends LitElement {
         .cet-body-temp { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 2.5rem; }
         .cet-sp-row { display: flex; align-items: center; gap: 1rem; }
         .cet-sp-btn {
-          width: 2.5rem; height: 2.5rem; border: none; border-radius: 0.375rem;
+          width: 2.5rem; height: 2.5rem; border: none; border-radius: 0;
           background: var(--lcars-gray, #666688); color: var(--lcars-space-white, #f5f6fa);
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.5rem;
           cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -600,7 +600,7 @@ class LcarsCetaceanCard extends LitElement {
           overflow: visible;
         }
         .gauge-zone { height: 100%; }
-        .gauge-zone:first-child { border-radius: 0.375rem 0 0 0.375rem; }
+        .gauge-zone:first-child { border-radius: 0; }
         .gauge-zone:last-child { border-radius: 0 var(--lcars-btn-radius, 1.5rem) var(--lcars-btn-radius, 1.5rem) 0; }
         .gauge-warn-low, .gauge-warn-high { background: var(--lcars-sunflower, #ffcc99); }
         .gauge-optimal { background: var(--lcars-ice, #99ccff); }
@@ -667,7 +667,7 @@ class LcarsCetaceanCard extends LitElement {
         }
         .cet-power-tile {
           display: flex; flex-direction: column; gap: 0.25rem;
-          padding: 0.5rem 0.75rem; border-radius: 0.375rem;
+          padding: 0.5rem 0.75rem; border-radius: 0;
           background: rgba(170,170,255,0.08); cursor: pointer;
           font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
         }

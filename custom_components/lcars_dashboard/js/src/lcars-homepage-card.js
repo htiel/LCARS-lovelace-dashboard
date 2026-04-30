@@ -3410,19 +3410,12 @@ class LcarsHomepageCard extends LitElement {
             100% { transform: scaleY(1); }
           }
 
-          /* ── 4.2 Album Art Viewscreen Glow ── */
+          /* ── 4.2 Album Art Viewscreen ── */
           .media-viewscreen-glow {
-            box-shadow: 0 0 12px 4px var(--lcars-african-violet);
-            animation: lcars-media-glow 3s ease-in-out infinite;
-          }
-          @keyframes lcars-media-glow {
-            0%, 100% { box-shadow: 0 0 6px 2px var(--lcars-african-violet); }
-            50%      { box-shadow: 0 0 14px 6px var(--lcars-african-violet); }
           }
 
           /* ── 4.3 Transport Active State ── */
           .media-transport-btn.active {
-            box-shadow: 0 0 6px 1px var(--lcars-african-violet);
           }
           .media-transport-btn.active::before {
             content: '';
@@ -3464,42 +3457,36 @@ class LcarsHomepageCard extends LitElement {
 
           /* ═══════ Phase 5: ALARM v4.13.0 ═══════ */
 
-          /* ── 5.1 Red Alert Frame Strobe ── */
+          /* ── 5.1 Red Alert Frame Strobe (flat color pulse, no glow) ── */
           .lcars-device-panel[data-state="triggered"] {
             animation: lcars-red-alert var(--lcars-anim-pulse-urgent) linear infinite;
-            box-shadow: 0 0 20px var(--lcars-tomato);
           }
           @keyframes lcars-red-alert {
-            0%, 100% { border-color: var(--lcars-tomato); box-shadow: 0 0 20px var(--lcars-tomato); }
-            50%      { border-color: var(--lcars-tomato); border-color: color-mix(in srgb, var(--lcars-tomato) 40%, black); box-shadow: 0 0 8px var(--lcars-tomato); box-shadow: color-mix(in srgb, var(--lcars-tomato) 40%, black); }
+            0%, 100% { border-color: var(--lcars-tomato); }
+            50%      { border-color: color-mix(in srgb, var(--lcars-tomato) 40%, black); }
           }
 
-          /* ── 5.2 Shield Icon Reactive Glow ── */
+          /* ── 5.2 Shield Icon State Colors (flat, no glow) ── */
           .alarm-shield-icon {
-            transition: filter 500ms ease-out;
+            transition: fill 500ms ease-out;
           }
           .alarm-shield-icon[data-glow="ice"] {
-            filter: drop-shadow(0 0 8px var(--lcars-ice));
           }
           .alarm-shield-icon[data-glow="butterscotch"] {
-            filter: drop-shadow(0 0 8px var(--lcars-butterscotch));
           }
           .alarm-shield-icon[data-glow="butterscotch-pulse"] {
-            filter: drop-shadow(0 0 8px var(--lcars-butterscotch));
-            animation: lcars-shield-armed 3s ease-in-out infinite;
           }
           .alarm-shield-icon[data-glow="tomato"] {
-            filter: drop-shadow(0 0 12px var(--lcars-tomato));
             /* Worf M1: MUST NOT shorten below 0.34s (WCAG 2.3.1) */
             animation: lcars-shield-critical 0.5s linear infinite;
           }
           @keyframes lcars-shield-armed {
-            0%, 100% { filter: drop-shadow(0 0 6px var(--lcars-butterscotch)); }
-            50%      { filter: drop-shadow(0 0 12px var(--lcars-butterscotch)); }
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.7; }
           }
           @keyframes lcars-shield-critical {
-            0%, 100% { filter: drop-shadow(0 0 12px var(--lcars-tomato)); }
-            50%      { filter: drop-shadow(0 0 20px var(--lcars-tomato)); }
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.5; }
           }
 
           /* ── 5.3 Keypad Tactile Flash ── */
@@ -3616,7 +3603,6 @@ class LcarsHomepageCard extends LitElement {
           }
           .sun-dot {
             fill: var(--lcars-gold);
-            filter: drop-shadow(0 0 4px var(--lcars-gold));
             transition: cx 60s linear, cy 60s linear;
           }
 

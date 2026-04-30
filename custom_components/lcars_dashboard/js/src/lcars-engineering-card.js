@@ -359,17 +359,17 @@ class LcarsEngineeringCard extends LitElement {
         position: relative; overflow: hidden;
       }
       .eng-section-line::after {
-        content: ''; position: absolute; top: 0; left: -30%; width: 30%; height: 100%;
-        background: linear-gradient(90deg, transparent, var(--lcars-gold, #ffaa00), transparent);
+        content: ''; position: absolute; top: 0; left: -15%; width: 15%; height: 100%;
+        background: var(--lcars-gold, #ffaa00); opacity: 0.25;
         animation: eng-scan-line 4s ease-in-out infinite;
       }
-      @keyframes eng-scan-line { 0% { left: -30%; } 100% { left: 100%; } }
+      @keyframes eng-scan-line { 0% { left: -15%; } 100% { left: 100%; } }
       .eng-circuit-count, .eng-circuit-remaining { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; color: var(--lcars-gray, #666688); white-space: nowrap; text-transform: uppercase; }
       .eng-sources-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.375rem; position: relative; padding-bottom: 1.5rem; }
-      .eng-source-card { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.75rem; cursor: pointer; border: 2px solid var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem; background: rgba(255,153,102,0.03); font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; transition: border-color 200ms ease; position: relative; }
+      .eng-source-card { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.75rem; cursor: pointer; border: none; border-radius: 0; background: rgba(255,153,102,0.03); font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; transition: background 200ms ease; position: relative; }
       .eng-source-card::after { content: ''; position: absolute; bottom: -1.5rem; left: 50%; width: 4px; height: 1.5rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.65; animation: eng-conduit-flow 2s linear infinite; background-size: 4px 8px; background-image: repeating-linear-gradient(180deg, var(--lcars-butterscotch, #ff9966) 0px, var(--lcars-butterscotch, #ff9966) 4px, transparent 4px, transparent 8px); }
       @keyframes eng-conduit-flow { from { background-position: 0 0; } to { background-position: 0 8px; } }
-      .eng-source-card:hover { border-color: var(--lcars-gold, #ffaa00); }
+      .eng-source-card:hover { background: rgba(255,153,102,0.08); }
       .eng-source-card:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 2px; }
       /* Enriched battery card — mini warp core (Prompt 3 mockup) */
       .eng-battery-card { gap: 0.375rem; }
@@ -388,7 +388,7 @@ class LcarsEngineeringCard extends LitElement {
       .eng-battery-detail { font-size: 0.625rem; color: var(--lcars-gray, #666688); text-align: right; margin-top: auto; letter-spacing: 0.05em; cursor: pointer; }
       .eng-battery-detail:hover { color: var(--lcars-ice, #99ccff); }
       /* Enriched GRID card */
-      .eng-grid-card { border-color: var(--lcars-ice, #99ccff) !important; background: rgba(153,204,255,0.03) !important; }
+      .eng-grid-card { background: rgba(153,204,255,0.03) !important; }
       .eng-grid-header { display: flex; justify-content: space-between; align-items: baseline; width: 100%; }
       .eng-grid-voltage { font-size: 0.625rem; color: var(--lcars-gray, #666688); }
       .eng-grid-power { font-size: 1.75rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; }
@@ -415,42 +415,29 @@ class LcarsEngineeringCard extends LitElement {
       .eng-source-detail { font-size: 0.75rem; color: var(--lcars-ice, #99ccff); }
       .eng-source-status { font-size: 0.75rem; }
       /* Ring gauge text */
-      .ring-gauge .ring-value { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 14px; text-transform: uppercase; font-weight: bold; }
+      .ring-gauge .ring-value { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 14px; text-transform: uppercase; }
       .ring-gauge .ring-sublabel { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 7px; fill: var(--lcars-gray, #666688); text-transform: uppercase; }
       .eng-soc-bar { width: 100%; height: 0.5rem; background: rgba(153,204,255,0.15); border-radius: 0 0.25rem 0.25rem 0; overflow: hidden; }
       .eng-soc-fill { height: 100%; border-radius: 0 0.25rem 0.25rem 0; transition: width 300ms ease; }
       .eng-distribution-bar {
         display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 0.5rem 1rem;
-        background: var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem;
+        background: var(--lcars-butterscotch, #ff9966); border-radius: 0;
         font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
         color: var(--lcars-black, #000); position: relative; margin-bottom: 1rem;
-        box-shadow: 0 0 10px rgba(255,153,102,0.3);
-        animation: eng-bus-glow 3s ease-in-out infinite;
-      }
-      @keyframes eng-bus-glow {
-        0%, 100% { box-shadow: 0 0 8px rgba(255,153,102,0.2); }
-        50% { box-shadow: 0 0 18px rgba(255,153,102,0.45); }
       }
       .eng-distribution-bar::after { content: ''; position: absolute; bottom: -1rem; left: 50%; width: 3px; height: 1rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.4; }
       .eng-dist-label { font-size: 0.875rem; opacity: 0.9; }
       .eng-dist-value { font-size: 1.125rem; font-weight: bold; font-variant-numeric: tabular-nums; }
       .eng-circuit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(10rem, 100%), 1fr)); gap: 0.375rem; }
-      .eng-circuit-card { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.5rem 0.75rem; cursor: pointer; border: 1px solid rgba(255,153,102,0.2); border-radius: 0.25rem; font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; transition: background 150ms ease; }
+      .eng-circuit-card { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.5rem 0.75rem; cursor: pointer; border: none; border-radius: 0; font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; transition: background 150ms ease; }
       .eng-circuit-card:hover { background: rgba(255,153,102,0.08); }
       .eng-circuit-name { font-size: 0.7rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .eng-circuit-watts { font-size: 1.25rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; }
       .eng-circuit-bar { width: 100%; height: 0.375rem; background: rgba(153,204,255,0.1); border-radius: 0 0.25rem 0.25rem 0; overflow: hidden; }
       .eng-circuit-fill {
         height: 100%; border-radius: 0 0.25rem 0.25rem 0; transition: width 300ms ease;
-        position: relative; overflow: hidden;
       }
-      .eng-circuit-fill::after {
-        content: ''; position: absolute; top: 0; left: -50%; width: 50%; height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
-        animation: eng-bar-shimmer 2.5s ease-in-out infinite;
-      }
-      @keyframes eng-bar-shimmer { 0% { left: -50%; } 100% { left: 150%; } }
-      .eng-status-panel { border: 2px solid var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem; padding: 0.75rem; align-self: start; }
+      .eng-status-panel { padding: 0.75rem; align-self: start; }
       .eng-status-grid { display: grid; grid-template-columns: 1fr auto; gap: 0.25rem 0.75rem; font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; }
       .eng-status-key { font-size: 0.75rem; color: var(--lcars-gray, #666688); }
       .eng-status-val { font-size: 0.875rem; color: var(--lcars-space-white, #f5f6fa); text-align: right; font-variant-numeric: tabular-nums; }

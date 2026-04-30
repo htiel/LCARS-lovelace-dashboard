@@ -710,14 +710,14 @@ class LcarsTacticalCard extends LitElement {
 
   /* ═══ Overview Cards (Design Playbook §3.1) ═══ */
   _renderOverview(summary) {
-    const shieldColor = summary.alarmState === 'disarmed' ? '#44cc88' : summary.alarmState === 'triggered' ? '#ff5555' : '#ffcc99';
+    const shieldColor = summary.alarmState === 'disarmed' ? '#99ccff' : summary.alarmState === 'triggered' ? '#ff5555' : '#ffcc99';
     const shieldLabel = summary.alarmState.replace(/_/g, ' ').toUpperCase();
-    const perimColor = summary.perimeterSecure === summary.perimeterTotal ? '#44cc88' : '#ff5555';
+    const perimColor = summary.perimeterSecure === summary.perimeterTotal ? '#99ccff' : '#ff5555';
     const camOnline = summary.allCameras.filter(c => (this._hass?.states?.[c.entity?.entity_id] || c.state)?.state !== 'unavailable').length;
     const camColor = camOnline === summary.allCameras.length ? '#99ccff' : camOnline > 0 ? '#ffcc99' : '#ff5555';
-    const lockColor = summary.locksLocked === summary.locksTotal ? '#44cc88' : '#ff5555';
+    const lockColor = summary.locksLocked === summary.locksTotal ? '#99ccff' : '#ff5555';
     const lockStatus = summary.locksLocked === summary.locksTotal ? 'ALL ENGAGED' : `${summary.locksTotal - summary.locksLocked} UNSECURED`;
-    const hazardColor = summary.safetyAlerts > 0 ? '#ff5555' : summary.safetyTotal > 0 ? '#44cc88' : '#666688';
+    const hazardColor = summary.safetyAlerts > 0 ? '#ff5555' : summary.safetyTotal > 0 ? '#99ccff' : '#666688';
     const hazardStatus = summary.safetyAlerts > 0 ? `${summary.safetyAlerts} ALERT${summary.safetyAlerts > 1 ? 'S' : ''}` : summary.safetyTotal > 0 ? 'ALL CLEAR' : 'NO SENSORS';
 
     return html`
@@ -766,10 +766,10 @@ class LcarsTacticalCard extends LitElement {
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}22" stroke-width="${strokeW}" />
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${strokeW}"
                 stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"
-                stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})"
-                style="transition: stroke-dashoffset 500ms ease; filter: drop-shadow(0 0 4px ${color})" />
+                stroke-linecap="butt" transform="rotate(-90 ${cx} ${cy})"
+                style="transition: stroke-dashoffset 500ms ease" />
         <text x="${cx}" y="${cy - 5}" text-anchor="middle" dominant-baseline="central"
-              class="ring-value" style="fill:${color}; filter: drop-shadow(0 0 3px ${color})">${label}</text>
+              class="ring-value" style="fill:${color}">${label}</text>
         ${sublabel ? svg`<text x="${cx}" y="${cy + 11}" text-anchor="middle" dominant-baseline="central"
               class="ring-sublabel" style="fill:${color}; opacity:0.7">${sublabel}</text>` : ''}
       </svg>`;
@@ -797,21 +797,21 @@ class LcarsTacticalCard extends LitElement {
           <div class="tac-sensor-group">
             <span class="tac-sensor-group-title">DOORS / WINDOWS</span>
             <div class="tac-sensor-row"><span class="tac-sensor-key">TOTAL</span><span class="tac-sensor-val">${summary.perimeterTotal}</span></div>
-            <div class="tac-sensor-row"><span class="tac-sensor-key">SECURE</span><span class="tac-sensor-val" style="color:#44cc88">${summary.perimeterSecure}</span></div>
-            <div class="tac-sensor-row"><span class="tac-sensor-key">OPEN</span><span class="tac-sensor-val" style="color:${perimeterOpen > 0 ? 'var(--lcars-tomato)' : '#44cc88'}">${perimeterOpen}</span></div>
+            <div class="tac-sensor-row"><span class="tac-sensor-key">SECURE</span><span class="tac-sensor-val" style="color:#99ccff">${summary.perimeterSecure}</span></div>
+            <div class="tac-sensor-row"><span class="tac-sensor-key">OPEN</span><span class="tac-sensor-val" style="color:${perimeterOpen > 0 ? 'var(--lcars-tomato)' : '#99ccff'}">${perimeterOpen}</span></div>
           </div>
           <div class="tac-sensor-group">
             <span class="tac-sensor-group-title">MOTION SENSORS</span>
             <div class="tac-sensor-row"><span class="tac-sensor-key">TOTAL</span><span class="tac-sensor-val">${motionTotal}</span></div>
-            <div class="tac-sensor-row"><span class="tac-sensor-key">CLEAR</span><span class="tac-sensor-val" style="color:#44cc88">${motionClear}</span></div>
-            <div class="tac-sensor-row"><span class="tac-sensor-key">TRIGGERED</span><span class="tac-sensor-val" style="color:${motionTriggered > 0 ? 'var(--lcars-tomato)' : '#44cc88'}">${motionTriggered}</span></div>
+            <div class="tac-sensor-row"><span class="tac-sensor-key">CLEAR</span><span class="tac-sensor-val" style="color:#99ccff">${motionClear}</span></div>
+            <div class="tac-sensor-row"><span class="tac-sensor-key">TRIGGERED</span><span class="tac-sensor-val" style="color:${motionTriggered > 0 ? 'var(--lcars-tomato)' : '#99ccff'}">${motionTriggered}</span></div>
           </div>
           ${summary.safetyTotal > 0 ? html`
             <div class="tac-sensor-group">
               <span class="tac-sensor-group-title">HAZARD DETECTORS</span>
               <div class="tac-sensor-row"><span class="tac-sensor-key">TOTAL</span><span class="tac-sensor-val">${summary.safetyTotal}</span></div>
-              <div class="tac-sensor-row"><span class="tac-sensor-key">CLEAR</span><span class="tac-sensor-val" style="color:#44cc88">${safetyClear}</span></div>
-              <div class="tac-sensor-row"><span class="tac-sensor-key">ALERTS</span><span class="tac-sensor-val" style="color:${summary.safetyAlerts > 0 ? 'var(--lcars-tomato)' : '#44cc88'}">${summary.safetyAlerts}</span></div>
+              <div class="tac-sensor-row"><span class="tac-sensor-key">CLEAR</span><span class="tac-sensor-val" style="color:#99ccff">${safetyClear}</span></div>
+              <div class="tac-sensor-row"><span class="tac-sensor-key">ALERTS</span><span class="tac-sensor-val" style="color:${summary.safetyAlerts > 0 ? 'var(--lcars-tomato)' : '#99ccff'}">${summary.safetyAlerts}</span></div>
             </div>
           ` : ''}
         </div>
@@ -874,20 +874,15 @@ class LcarsTacticalCard extends LitElement {
         .tac-ov-card {
           display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
           padding: 0.75rem 0.5rem; cursor: pointer;
-          border: 2px solid var(--lcars-butterscotch, #ff9966); border-radius: 0.5rem;
+          border: none; border-radius: 0;
           background: rgba(255,153,102,0.05);
           font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
-          transition: box-shadow 300ms ease, border-color 300ms ease;
+          transition: background 200ms ease;
         }
-        .tac-ov-card:hover { box-shadow: 0 0 12px rgba(255,153,102,0.25); border-color: var(--lcars-gold, #ffaa00); }
-        .tac-ov-shield { border-color: var(--lcars-sunflower, #ffcc99); }
-        .tac-ov-perimeter { border-color: #44cc88; }
-        .tac-ov-cameras { border-color: var(--lcars-ice, #99ccff); }
-        .tac-ov-locks { border-color: var(--lcars-butterscotch, #ff9966); }
-        .tac-ov-hazard { border-color: var(--lcars-sunflower, #ffcc99); }
+        .tac-ov-card:hover { background: rgba(255,153,102,0.1); }
         .tac-ov-title { font-size: 0.75rem; color: var(--lcars-gray, #666688); letter-spacing: 0.1em; }
         .tac-ov-status { font-size: 0.75rem; }
-        .ring-gauge .ring-value { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 12px; text-transform: uppercase; font-weight: bold; }
+        .ring-gauge .ring-value { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 12px; text-transform: uppercase; }
         .ring-gauge .ring-sublabel { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 8px; }
 
         /* ─── Main Grid (2-column) ─── */
@@ -904,15 +899,14 @@ class LcarsTacticalCard extends LitElement {
           position: relative; overflow: hidden;
         }
         .tac-section-line::after {
-          content: ''; position: absolute; top: 0; left: -30%; width: 30%; height: 100%;
-          background: linear-gradient(90deg, transparent, var(--lcars-gold, #ffaa00), transparent);
+          content: ''; position: absolute; top: 0; left: -15%; width: 15%; height: 100%;
+          background: var(--lcars-gold, #ffaa00); opacity: 0.25;
           animation: tac-scan-line 4s ease-in-out infinite;
         }
-        @keyframes tac-scan-line { 0% { left: -30%; } 100% { left: 100%; } }
+        @keyframes tac-scan-line { 0% { left: -15%; } 100% { left: 100%; } }
 
         /* ─── Sidebar Sections ─── */
         .tac-sidebar-section {
-          border: 2px solid var(--lcars-butterscotch, #ff9966); border-radius: 0.375rem;
           padding: 0.75rem; background: rgba(255,153,102,0.03);
         }
         .tac-sensor-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
@@ -945,9 +939,8 @@ class LcarsTacticalCard extends LitElement {
         .tac-main-viewscreen { margin-top: 0.5rem; }
         .tac-viewscreen-frame {
           position: relative; width: 100%; aspect-ratio: 16/9;
-          border: 3px solid var(--lcars-butterscotch, #ff9966); border-radius: 0.5rem;
+          border: 3px solid var(--lcars-butterscotch, #ff9966); border-radius: 0;
           overflow: hidden; background: var(--lcars-black, #000);
-          box-shadow: 0 0 12px rgba(255,153,102,0.2);
         }
         .tac-viewscreen-frame img { width: 100%; height: 100%; object-fit: cover; }
         .tac-viewscreen-overlay {

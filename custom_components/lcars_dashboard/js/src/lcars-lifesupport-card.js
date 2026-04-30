@@ -143,13 +143,13 @@ class LcarsLifeSupportCard extends LitElement {
     }
     const avgHum = humCount > 0 ? Math.round(humSum / humCount) : null;
 
-    const aqiColor = worstAqi <= 50 ? '#44cc88' : worstAqi <= 100 ? '#ffcc99' : '#ff5555';
-    const aqiCssColor = worstAqi <= 50 ? '#44cc88' : worstAqi <= 100 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
+    const aqiColor = worstAqi <= 50 ? '#99ccff' : worstAqi <= 100 ? '#ffcc99' : '#ff5555';
+    const aqiCssColor = worstAqi <= 50 ? '#99ccff' : worstAqi <= 100 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
     const thermoAvgTemp = thermostats.length > 0 ? Math.round(thermostats.reduce((s, t) => s + (Number(t.state?.attributes?.current_temperature) || 0), 0) / thermostats.length) : null;
     const thermoColor = heating > 0 ? '#ff9966' : cooling > 0 ? '#99ccff' : '#666688';
     const purifierActiveCount = purifiers.filter(p => (this._hass?.states?.[p.entity?.entity_id] || p.state)?.state === 'on').length;
-    const purifierColor = purifierActiveCount === purifiers.length ? '#44cc88' : purifierActiveCount > 0 ? '#99ccff' : '#666688';
-    const envColor = avgTemp != null ? (avgTemp < 68 ? '#8899ff' : avgTemp <= 76 ? '#44cc88' : '#ff9966') : '#99ccff';
+    const purifierColor = purifierActiveCount === purifiers.length ? '#99ccff' : purifierActiveCount > 0 ? '#99ccff' : '#666688';
+    const envColor = avgTemp != null ? (avgTemp < 68 ? '#8899ff' : avgTemp <= 76 ? '#99ccff' : '#ff9966') : '#99ccff';
 
     return html`
       <div class="ls-overview">
@@ -669,14 +669,13 @@ class LcarsLifeSupportCard extends LitElement {
         .ls-overview-card {
           display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
           padding: 0.75rem 0.5rem;
-          border: 2px solid var(--lcars-bluey, #8899ff); border-radius: 0.5rem;
+          border: none; border-radius: 0;
           background: rgba(136,153,255,0.05);
           font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
-          transition: box-shadow 300ms ease, border-color 300ms ease;
+          transition: background 200ms ease;
         }
         .ls-overview-card:hover {
-          box-shadow: 0 0 12px rgba(136,153,255,0.25);
-          border-color: var(--lcars-ice, #99ccff);
+          background: rgba(136,153,255,0.1);
         }
         .ls-ov-title { font-size: 0.75rem; color: var(--lcars-gray, #666688); letter-spacing: 0.1em; }
         .ls-ov-value { font-size: 1.5rem; color: var(--lcars-space-white, #f5f6fa); }
@@ -693,19 +692,12 @@ class LcarsLifeSupportCard extends LitElement {
         .ls-ov-aq .ls-ov-action { background: var(--lcars-sunflower, #ffcc99); color: var(--lcars-black, #000); }
         .ls-ov-env .ls-ov-action { background: var(--lcars-african-violet, #cc99ff); color: var(--lcars-black, #000); }
         .ls-ov-action:hover { filter: brightness(1.2); }
-        /* Colorful overview card accents */
-        .ls-ov-purifier { border-color: var(--lcars-ice, #99ccff); }
-        .ls-ov-thermo { border-color: var(--lcars-butterscotch, #ff9966); }
-        .ls-ov-aq { border-color: var(--lcars-sunflower, #ffcc99); }
-        .ls-ov-env { border-color: var(--lcars-african-violet, #cc99ff); }
+        /* Colorful overview card accents — removed thin borders, rely on spacing */
 
-        /* Ring gauge animated glow */
-        .ring-gauge circle:last-of-type {
-          filter: drop-shadow(0 0 3px currentColor);
-        }
+        /* Ring gauge text */
         .ring-gauge .ring-value {
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 14px;
-          text-transform: uppercase; font-weight: bold;
+          text-transform: uppercase;
         }
         .ring-gauge .ring-sublabel {
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 8px;
@@ -724,11 +716,11 @@ class LcarsLifeSupportCard extends LitElement {
           position: relative; overflow: hidden;
         }
         .ls-section-line::after {
-          content: ''; position: absolute; top: 0; left: -30%; width: 30%; height: 100%;
-          background: linear-gradient(90deg, transparent, var(--lcars-ice, #99ccff), transparent);
+          content: ''; position: absolute; top: 0; left: -15%; width: 15%; height: 100%;
+          background: var(--lcars-ice, #99ccff); opacity: 0.25;
           animation: ls-scan-line 4s ease-in-out infinite;
         }
-        @keyframes ls-scan-line { 0% { left: -30%; } 100% { left: 100%; } }
+        @keyframes ls-scan-line { 0% { left: -15%; } 100% { left: 100%; } }
         .ls-sensor-count {
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1rem;
           color: var(--lcars-ice, #99ccff); white-space: nowrap;
@@ -756,28 +748,18 @@ class LcarsLifeSupportCard extends LitElement {
         .ls-thermo-card {
           display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
           padding: 0.75rem; cursor: pointer;
-          border: 2px solid var(--lcars-bluey, #8899ff); border-radius: 0.375rem;
+          border: none; border-radius: 0;
           background: rgba(136,153,255,0.03);
           font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
-          transition: border-color 200ms ease, box-shadow 500ms ease;
+          transition: background 200ms ease;
         }
         .ls-thermo-card[data-action="heating"] {
           border-color: var(--lcars-butterscotch, #ff9966);
-          animation: ls-thermo-glow-warm 3s ease-in-out infinite;
         }
         .ls-thermo-card[data-action="cooling"] {
           border-color: var(--lcars-ice, #99ccff);
-          animation: ls-thermo-glow-cool 3s ease-in-out infinite;
         }
-        @keyframes ls-thermo-glow-warm {
-          0%, 100% { box-shadow: 0 0 4px rgba(255,153,102,0.1); }
-          50% { box-shadow: 0 0 16px rgba(255,153,102,0.3); }
-        }
-        @keyframes ls-thermo-glow-cool {
-          0%, 100% { box-shadow: 0 0 4px rgba(153,204,255,0.1); }
-          50% { box-shadow: 0 0 16px rgba(153,204,255,0.3); }
-        }
-        .ls-thermo-card:hover { border-color: var(--lcars-gold, #ffaa00); }
+        .ls-thermo-card:hover { background: rgba(136,153,255,0.08); }
         .ls-thermo-card:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 2px; }
         .ls-thermo-name { font-size: 0.875rem; color: var(--lcars-space-white, #f5f6fa); letter-spacing: 0.05em; }
         .ls-thermo-temp { font-size: 2rem; }
@@ -834,12 +816,7 @@ class LcarsLifeSupportCard extends LitElement {
           border-radius: 0 0.25rem 0.25rem 0; overflow: hidden; display: inline-block; vertical-align: middle;
         }
         .ls-filter-fill { height: 100%; border-radius: 0 0.25rem 0.25rem 0; transition: width 300ms ease; position: relative; overflow: hidden; }
-        .ls-filter-fill::after {
-          content: ''; position: absolute; top: 0; left: -50%; width: 50%; height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-          animation: ls-filter-shimmer 2s ease-in-out infinite;
-        }
-        @keyframes ls-filter-shimmer { 0% { left: -50%; } 100% { left: 150%; } }
+
         .ls-filter-pct { font-size: 0.7rem; margin-left: 0.25rem; color: var(--lcars-ice, #99ccff); }
 
         /* ─── Air Quality Panel ─── */
@@ -847,11 +824,6 @@ class LcarsLifeSupportCard extends LitElement {
         .ls-aq-hero {
           display: flex; flex-direction: column; align-items: center; gap: 0.125rem;
           min-width: 5rem;
-          animation: ls-aq-hero-pulse 4s ease-in-out infinite;
-        }
-        @keyframes ls-aq-hero-pulse {
-          0%, 100% { filter: drop-shadow(0 0 2px transparent); }
-          50% { filter: drop-shadow(0 0 8px rgba(153,204,255,0.3)); }
         }
         .ls-aq-score { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 2.5rem; }
         .ls-aq-label { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.75rem; color: var(--lcars-gray, #666688); text-transform: uppercase; }
@@ -867,10 +839,7 @@ class LcarsLifeSupportCard extends LitElement {
         .ls-aq-metric-val { color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; }
 
         /* ─── History Charts (sidebar) ─── */
-        .ls-history-section {
-          border: 2px solid var(--lcars-bluey, #8899ff); border-radius: 0.375rem;
-          padding: 0.75rem; background: rgba(136,153,255,0.03);
-        }
+        .ls-history-section {\n          padding: 0.75rem; background: rgba(136,153,255,0.03);\n        }
         .ls-history-chart {
           display: flex; flex-direction: column; gap: 0.5rem;
         }
@@ -882,12 +851,12 @@ class LcarsLifeSupportCard extends LitElement {
           min-width: 3.5rem;
         }
         .ls-history-chart .lcars-sparkline {
-          width: 100%; height: 3rem; filter: drop-shadow(0 0 2px currentColor);
+          width: 100%; height: 3rem;
         }
 
         /* ─── Sidebar AQ panel override ─── */
         .ls-sidebar .ls-aq-panel { flex-direction: column; }
-        .ls-sidebar .ls-section { border: 2px solid var(--lcars-bluey, #8899ff); border-radius: 0.375rem; padding: 0.75rem; background: rgba(136,153,255,0.03); }
+        .ls-sidebar .ls-section { padding: 0.75rem; background: rgba(136,153,255,0.03); }
 
         /* ─── Per-Room Atmosphere table 7-col ─── */
         .ls-main-content .ls-purifier-table .ls-table-header,

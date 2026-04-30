@@ -69,11 +69,7 @@ export const mediaPanelStyles = css`
   .media-now-playing { padding: 0.5rem; background: rgba(0,0,0,0.5); }
   .media-title { font-family: var(--lcars-font); font-size: var(--lcars-font-size-sub); color: var(--lcars-sunflower); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .media-artist { font-family: var(--lcars-font); font-size: var(--lcars-font-size-data); color: var(--lcars-african-violet); }
-  .media-viewscreen-glow { box-shadow: 0 0 12px 4px var(--lcars-african-violet); animation: lcars-media-glow 3s ease-in-out infinite; }
-  @keyframes lcars-media-glow {
-    0%, 100% { box-shadow: 0 0 6px 2px var(--lcars-african-violet); }
-    50%      { box-shadow: 0 0 14px 6px var(--lcars-african-violet); }
-  }
+  .media-viewscreen-glow { }
 
   /* Audio waveform */
   .lcars-audio-waveform {

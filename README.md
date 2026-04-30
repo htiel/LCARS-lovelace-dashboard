@@ -8,7 +8,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-5.1.0--beta.19-blue)
+![Version](https://img.shields.io/badge/version-5.1.0--beta.30-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 [![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 
@@ -63,24 +63,13 @@ The order is stored in the integration config entry and applied client-side. Non
 
 ### HA Labels for Entity Classification
 
-LCARS uses [Home Assistant Labels](https://www.home-assistant.io/docs/organizing/labels/) (2024.4+) to improve entity classification where automatic detection isn't sufficient. Labels can be applied to entities, devices, or areas — LCARS checks all three levels.
+LCARS auto-classifies entities using name-based heuristics, but you can override any classification using [Home Assistant Labels](https://www.home-assistant.io/docs/organizing/labels/) (2024.4+). Labels can be applied to entities, devices, or areas — LCARS checks all three levels.
 
-#### Camera Location Labels
+Currently supported:
+- **Camera location** (Tactical) — `exterior`/`interior` labels for camera filter
+- **Circuit classification** (Engineering) — `dedicated`/`infrastructure`/`lighting`/`outlets`/`battery` labels for load circuit grouping
 
-The Tactical dashboard's camera filter (ALL / EXTERIOR / INTERIOR) uses labels to classify cameras. Without labels, it falls back to a name-based heuristic (matching keywords like `front`, `garage`, `yard`).
-
-Apply any of these labels to your camera entities, devices, or areas:
-
-| Label | Classification |
-|-------|---------------|
-| `exterior`, `outdoor`, `outside` | Camera shown under EXTERIOR filter |
-| `interior`, `indoor`, `inside` | Camera shown under INTERIOR filter |
-
-**How to apply labels:**
-1. **Settings** → **Devices & Services** → find your camera device
-2. Click the device → **pencil icon** (edit)
-3. Under **Labels**, add `exterior` or `interior`
-4. Alternatively, apply the label to the **area** (e.g., label "Front Yard" as `exterior`) — all cameras in that area inherit the classification
+**For full tagging instructions, examples, and keyword fallback tables, see [TAGGING.md](TAGGING.md).**
 
 ---
 
@@ -164,11 +153,14 @@ Single pane of glass for security. Camera grid (2×3 viewscreen tiles with LCARS
 ### Engineering Dashboard
 Power distribution topology: Sources → Distribution Bus → Load Circuits.
 - **Source row**: GRID card (voltage/frequency/energy/power bar), UPS card, battery cards with animated mini warp core bars (SOC fill, idle pulse, charging stripes)
-- **Distribution bus**: Animated butterscotch bar with per-card conduit connectors and breathing glow
-- **Circuit grid**: Top 24 active circuits sorted by wattage, 4-tier color-coded bars (ice/sunflower/butterscotch/tomato), relative scaling, shimmer animation
-- **System status sidebar**: Total load, grid power, battery count, average SOC, circuit count, health status
+- **Distribution bus**: Butterscotch bar with solid EPS conduit connectors (6px source → 4px trunk) and breathing pulse
+- **Voltage overview**: Three-tier display — HIGH VOLTAGE (>130V, tomato), HOME VOLTAGE (110–130V, auto-averaged, ice), LOW VOLTAGE (<110V, sunflower for doorbells/PoE)
+- **Circuit grid**: Top 15 active circuits sorted by wattage, grouped by category (DEDICATED / OUTLETS / LIGHTING / INFRASTRUCTURE / BATTERY / OTHER), 4-tier color-coded bars, relative scaling
+- **Circuit tagging**: HA Labels override name heuristics — see [TAGGING.md](TAGGING.md) for setup
+- **System status sidebar**: Total load, grid power, battery count, average SOC, total stored kWh, circuit count, health status
 - **Double-count prevention**: Aggregate sensors (totalusage, balance, mainload) excluded; 240V L1/L2 pairs deduplicated
 - **Deep linking**: Battery DETAIL ► navigates to Habitat with `#area:<area_id>` hash
+- **Accessibility**: `prefers-reduced-motion` fallback, keyboard focus on all interactive elements (WCAG 2.1.1)
 - **Integrations**: Emporia Vue, TP-Link Kasa, NUT UPS, EcoFlow batteries, Shelly Pro 3EM
 
 ### Life Support Dashboard

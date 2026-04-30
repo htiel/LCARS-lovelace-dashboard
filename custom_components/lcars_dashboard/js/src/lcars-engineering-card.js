@@ -24,14 +24,41 @@ const FILTER_CIRCUITS = 'circuits';
 
 const POWER_CLASSES = new Set(['battery', 'power', 'energy', 'voltage', 'current']);
 const UPS_KEYWORDS = /ups|battery_charge|battery_runtime|battery_voltage/i;
-const GRID_KEYWORDS = /grid|mains|mainsfromgrid|main.*load|total.*power|vueg3.*main|shelly.*total|3em.*total/i;
-const GRID_SIBLING_KEYWORDS = /grid|mains|main.*load|vueg3.*main|shelly.*total|3em.*total|totalusage/i;
+// 5X-ENG-7: Tightened grid regex — removed overly broad `total.*power` and ambiguous `vueg3.*main`
+const GRID_KEYWORDS = /\bgrid\b|\bmains\b|mainsfromgrid|mainstogrid|main[_.]?(panel|breaker|load|feed)|total[_.]?active[_.]?power|shelly.*total|3em.*total|vueg3[_.]?main[_.]?power/i;
+const GRID_SIBLING_KEYWORDS = /\bgrid\b|\bmains\b|main[_.]?(panel|breaker|load|feed)|shelly.*total|3em.*total|totalusage/i;
 // Aggregate/total sensors that double-count individual circuits
 const AGGREGATE_KEYWORDS = /totalusage|total.*usage|^sensor\.balance|mainload|main.*load|mainsfromgrid|mainstogrid/i;
+// 5X-ENG-7: Grid sensor scoring — whole-home monitors vs per-device monitors
+const GRID_METER_PLATFORMS = new Set(['shelly', 'sense', 'iotawatt', 'brultech', 'neurio', 'rainforest']);
+const DEVICE_MONITOR_PLATFORMS = new Set(['tplink', 'vesync', 'kasa', 'wemo', 'meross', 'tuya', 'tasmota']);
+const CIRCUIT_NAME_KEYWORDS = /plug|outlet|strip|lamp|desk|bedroom|kitchen|garage|bathroom|laundry|office|closet|fridge|dryer|washer|disposal|microwave/i;
 // 5X-ENG-8: Filter out non-storage battery entities
 const STORAGE_PLATFORMS = new Set(['ecoflow_cloud', 'nut', 'victron', 'tesla_powerwall', 'solaredge']);
 const NON_STORAGE_PLATFORMS = new Set(['wallbox', 'insteon', 'blink', 'simplisafe', 'tile', 'switchbot', 'unifiprotect', 'unifi', 'mobile_app', 'nest_protect']);
 const NON_STORAGE_KEYWORDS = /motion.sensor|remote|phone|tablet|watch|tile|tag|lock|camera|protect|switch.?bot|wallbox|vilya|charger|thermostat|meter|doorbell/i;
+
+/** 5X-ENG-7: Score a grid sensor candidate — higher = more confident it's the true grid sensor */
+function _scoreGridCandidate(entry) {
+  const eid = entry.entity.entity_id;
+  const platform = entry.entity.platform || '';
+  let score = 0;
+  // Strong: explicit grid/mains naming
+  if (/\bgrid\b/i.test(eid)) score += 50;
+  if (/\bmains\b/i.test(eid)) score += 50;
+  if (/mainsfromgrid|mainstogrid/i.test(eid)) score += 60;
+  // Strong: known grid meter hardware
+  if (/3em/i.test(eid)) score += 40;
+  if (GRID_METER_PLATFORMS.has(platform)) score += 30;
+  // Medium: breaker/panel terminology
+  if (/main[_.]?(panel|breaker)/i.test(eid)) score += 35;
+  if (/total[_.]?active[_.]?power/i.test(eid)) score += 25;
+  if (/vueg3[_.]?main[_.]?power/i.test(eid)) score += 15;
+  // Penalties: per-device monitors and circuit-like names
+  if (DEVICE_MONITOR_PLATFORMS.has(platform)) score -= 40;
+  if (CIRCUIT_NAME_KEYWORDS.test(eid)) score -= 50;
+  return score;
+}
 
 class LcarsEngineeringCard extends LitElement {
   static get properties() {
@@ -51,9 +78,9 @@ class LcarsEngineeringCard extends LitElement {
   getCardSize() { return 16; }
 
   _discoverAll() {
-    if (!this._hass) return { batteries: [], circuits: [], gridSensors: [], upsSensors: [], totalDraw: 0 };
+    if (!this._hass) return { batteries: [], circuits: [], gridSensors: [], upsSensors: [], voltageSensors: [], totalDraw: 0 };
     const states = this._hass.states || {};
-    const batteries = [], circuits = [], gridSensors = [], upsSensors = [];
+    const batteries = [], circuits = [], gridSensors = [], upsSensors = [], voltageSensors = [];
     const gridSiblings = {};
     let totalDraw = 0;
     const seenDevices = new Set();
@@ -89,6 +116,11 @@ class LcarsEngineeringCard extends LitElement {
           const val = Number(state.state);
           if (!isNaN(val)) totalDraw += val;
           circuits.push(entry);
+        }
+        // Collect all voltage sensors for voltage overview
+        if (dc === 'voltage' && domain === 'sensor') {
+          const val = Number(state.state);
+          if (!isNaN(val) && val > 0) voltageSensors.push(entry);
         }
       }
     }
@@ -146,6 +178,7 @@ class LcarsEngineeringCard extends LitElement {
         else if (/charging.*state|battery.*state/i.test(eid) && !b.siblings.chargeState) b.siblings.chargeState = s;
         else if (/state.of.health/i.test(leid) && !b.siblings.soh) b.siblings.soh = s;
         else if (/\bcycles\b/i.test(leid) && !b.siblings.cycles) b.siblings.cycles = s;
+        else if (!b.siblings.storedKwh && (dc === 'energy' && /remain|stored|available/i.test(leid) || /remain.*kwh|kwh.*remain|energy.*remain|stored.*energy/i.test(leid))) b.siblings.storedKwh = s;
       }
     }
 
@@ -159,23 +192,32 @@ class LcarsEngineeringCard extends LitElement {
       else if (dc === 'current' && !gridSiblings.current) gridSiblings.current = s;
     }
 
-    return { batteries, circuits: dedupedCircuits, gridSensors, upsSensors, totalDraw, gridSiblings };
+    // 5X-ENG-7: Sort grid candidates by confidence score (highest first)
+    gridSensors.sort((a, b) => _scoreGridCandidate(b) - _scoreGridCandidate(a));
+
+    return { batteries, circuits: dedupedCircuits, gridSensors, upsSensors, voltageSensors, totalDraw, gridSiblings };
   }
 
   _getGridPower(data) {
-    // Find grid power sensor with non-zero value
-    const powerSensor = data.gridSensors.find(s =>
-      (s.state?.attributes?.device_class === 'power') && Number(s.state?.state) > 0
-    );
-    if (powerSensor) return Number(powerSensor.state.state);
-    // No solar/generator detected → grid ≈ total draw
+    if (data.gridSensors.length === 0) return data.totalDraw;
+    // 5X-ENG-7: gridSensors pre-sorted by confidence; pick first with valid numeric state.
+    // Accepts 0W — a valid reading (e.g. solar/battery offsetting grid import).
+    for (const s of data.gridSensors) {
+      const val = Number(s.state?.state);
+      if (!isNaN(val)) return val;
+    }
+    // All grid sensors unavailable → fall back to circuit sum
     return data.totalDraw;
   }
 
   _renderSystemStatus(data) {
     const gridPower = this._getGridPower(data);
     let avgSoc = 0, batteryCount = 0;
-    for (const b of data.batteries) { const soc = Number(b.entry.state?.state); if (!isNaN(soc)) { avgSoc += soc; batteryCount++; } }
+    let totalStoredKwh = 0, hasStoredKwh = false;
+    for (const b of data.batteries) {
+      const soc = Number(b.entry.state?.state); if (!isNaN(soc)) { avgSoc += soc; batteryCount++; }
+      if (b.siblings?.storedKwh) { const kwh = Number(b.siblings.storedKwh.state); if (!isNaN(kwh)) { totalStoredKwh += kwh; hasStoredKwh = true; } }
+    }
     if (batteryCount > 0) avgSoc = Math.round(avgSoc / batteryCount);
     return html`
       <div class="eng-status-panel">
@@ -186,6 +228,7 @@ class LcarsEngineeringCard extends LitElement {
           ${batteryCount > 0 ? html`
             <span class="eng-status-key">BATTERIES</span><span class="eng-status-val">${batteryCount} UNITS</span>
             <span class="eng-status-key">AVG SOC</span><span class="eng-status-val">${avgSoc}%</span>
+            ${hasStoredKwh ? html`<span class="eng-status-key">STORED</span><span class="eng-status-val" style="color:var(--lcars-ice)">${formatNumber(totalStoredKwh, 2)} KWH</span>` : ''}
           ` : ''}
           <span class="eng-status-key">CIRCUITS</span><span class="eng-status-val">${data.circuits.length}</span>
           <span class="eng-status-key">HEALTH</span><span class="eng-status-val" style="color:var(--lcars-ice)">NOMINAL</span>
@@ -204,7 +247,9 @@ class LcarsEngineeringCard extends LitElement {
       <div class="eng-section">
         <div class="eng-section-header"><span class="eng-section-label">POWER SOURCES</span><span class="eng-section-line"></span></div>
         <div class="eng-sources-row">
-          <div class="eng-source-card eng-grid-card" @click=${() => data.gridSensors[0] && showMoreInfo(data.gridSensors[0].entity.entity_id)}>
+          <div class="eng-source-card eng-grid-card" role="button" tabindex="0"
+               @click=${() => data.gridSensors[0] && showMoreInfo(data.gridSensors[0].entity.entity_id)}
+               @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); data.gridSensors[0] && showMoreInfo(data.gridSensors[0].entity.entity_id); } }}>
             <div class="eng-grid-header">
               <span class="eng-source-title" style="color:var(--lcars-ice)">GRID</span>
               ${gridVoltage != null ? html`<span class="eng-grid-voltage">${gridVoltage}V</span>` : ''}
@@ -219,7 +264,9 @@ class LcarsEngineeringCard extends LitElement {
             <div class="eng-grid-status">ONLINE</div>
           </div>
           ${data.upsSensors.length > 0 ? html`
-            <div class="eng-source-card" @click=${() => showMoreInfo(data.upsSensors[0].entity.entity_id)}>
+            <div class="eng-source-card" role="button" tabindex="0"
+                 @click=${() => showMoreInfo(data.upsSensors[0].entity.entity_id)}
+                 @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMoreInfo(data.upsSensors[0].entity.entity_id); } }}>
               <span class="eng-source-title" style="color:var(--lcars-sunflower)">UPS</span>
               ${data.upsSensors.filter(s => /charge$|load$|runtime$/i.test(s.entity?.entity_id)).map(s => {
                 const val = s.state?.state;
@@ -261,7 +308,9 @@ class LcarsEngineeringCard extends LitElement {
             const runtimeLabel = isCharging ? 'FULL IN' : isDischarging ? 'EMPTY IN' : 'RUNTIME';
             return html`
               <div class="eng-source-card eng-battery-card" style="border-color:${borderColor}"
-                   @click=${() => showMoreInfo(b.entry.entity.entity_id)}>
+                   role="button" tabindex="0"
+                   @click=${() => showMoreInfo(b.entry.entity.entity_id)}
+                   @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMoreInfo(b.entry.entity.entity_id); } }}>
                 <div class="eng-battery-header">
                   <span class="eng-source-title" style="color:var(--lcars-butterscotch)">${name}</span>
                   ${model ? html`<span class="eng-battery-code">${model}</span>` : ''}
@@ -286,7 +335,9 @@ class LcarsEngineeringCard extends LitElement {
                   ${soh != null && soh < 100 ? html`<span class="eng-bt-key">HEALTH</span><span class="eng-bt-val" style="color:${soh > 80 ? 'var(--lcars-ice)' : 'var(--lcars-sunflower)'}">${soh}%</span>` : ''}
                   ${cycles != null ? html`<span class="eng-bt-key">CYCLES</span><span class="eng-bt-val">${cycles}</span>` : ''}
                 </div>
-                <span class="eng-battery-detail" @click=${(e) => { e.stopPropagation(); navigate(`/lcars-habitat/0#area:${b.area?.area_id || ''}`); }}>DETAIL ►</span>
+                <span class="eng-battery-detail" role="link" tabindex="0"
+                      @click=${(e) => { e.stopPropagation(); navigate(`/lcars-habitat/0#area:${b.area?.area_id || ''}`); }}
+                      @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); navigate(`/lcars-habitat/0#area:${b.area?.area_id || ''}`); } }}>DETAIL ►</span>
               </div>`;
           })}
         </div>
@@ -301,13 +352,122 @@ class LcarsEngineeringCard extends LitElement {
       </div>`;
   }
 
+  _renderVoltageOverview(voltageSensors) {
+    if (voltageSensors.length === 0) return '';
+    const high = [], normal = [], low = [];
+    for (const s of voltageSensors) {
+      const v = Number(s.state?.state);
+      if (isNaN(v) || v <= 0) continue;
+      const name = (s.state?.attributes?.friendly_name || s.entity?.entity_id || '')
+        .replace(/_/g, ' ').replace(/\s*(voltage|volt)\s*/gi, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
+      const item = { name, voltage: v, entity: s.entity };
+      if (v > 130) high.push(item);
+      else if (v >= 110) normal.push(item);
+      else low.push(item);
+    }
+    // Compute home voltage average from normal-range sensors
+    const homeAvg = normal.length > 0
+      ? normal.reduce((sum, i) => sum + i.voltage, 0) / normal.length
+      : null;
+    const homeColor = homeAvg != null
+      ? (homeAvg >= 118 && homeAvg <= 122 ? 'var(--lcars-ice)' : 'var(--lcars-sunflower)')
+      : 'var(--lcars-gray)';
+
+    return html`
+      <div class="eng-section">
+        <div class="eng-section-header"><span class="eng-section-label">VOLTAGE OVERVIEW</span><span class="eng-section-line"></span></div>
+        <div class="eng-voltage-grid">
+          ${high.length > 0 ? html`
+            <div class="eng-voltage-tier">
+              <div class="eng-voltage-tier-header" style="background:var(--lcars-tomato)">
+                <span class="eng-voltage-tier-name">HIGH VOLTAGE</span>
+                <span class="eng-voltage-tier-count">${high.length}</span>
+              </div>
+              ${high.map(h => html`
+                <div class="eng-voltage-row eng-voltage-high" role="button" tabindex="0"
+                     @click=${() => showMoreInfo(h.entity.entity_id)}
+                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMoreInfo(h.entity.entity_id); } }}>
+                  <span class="eng-voltage-name">${h.name}</span>
+                  <span class="eng-voltage-val" style="color:var(--lcars-tomato)">${formatNumber(h.voltage, 1)} V</span>
+                </div>`)}
+            </div>` : ''}
+          <div class="eng-voltage-tier">
+            <div class="eng-voltage-tier-header" style="background:var(--lcars-ice)">
+              <span class="eng-voltage-tier-name">HOME VOLTAGE</span>
+              <span class="eng-voltage-tier-count">${homeAvg != null ? `${formatNumber(homeAvg, 1)} V AVG` : 'N/A'}</span>
+            </div>
+            ${normal.length > 0 ? html`
+              <div class="eng-voltage-home-avg" style="color:${homeColor}">${formatNumber(homeAvg, 1)} V</div>
+              <div class="eng-voltage-home-detail">${normal.length} SENSORS · ${formatNumber(Math.min(...normal.map(n => n.voltage)), 1)}–${formatNumber(Math.max(...normal.map(n => n.voltage)), 1)} V RANGE</div>
+              ${normal.map(n => html`
+                <div class="eng-voltage-row" role="button" tabindex="0"
+                     @click=${() => showMoreInfo(n.entity.entity_id)}
+                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMoreInfo(n.entity.entity_id); } }}>
+                  <span class="eng-voltage-name">${n.name}</span>
+                  <span class="eng-voltage-val">${formatNumber(n.voltage, 1)} V</span>
+                </div>`)}
+            ` : html`<div class="eng-voltage-home-detail">NO SENSORS IN RANGE</div>`}
+          </div>
+          ${low.length > 0 ? html`
+            <div class="eng-voltage-tier">
+              <div class="eng-voltage-tier-header" style="background:var(--lcars-sunflower)">
+                <span class="eng-voltage-tier-name">LOW VOLTAGE</span>
+                <span class="eng-voltage-tier-count">${low.length}</span>
+              </div>
+              ${low.map(l => html`
+                <div class="eng-voltage-row" role="button" tabindex="0"
+                     @click=${() => showMoreInfo(l.entity.entity_id)}
+                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMoreInfo(l.entity.entity_id); } }}>
+                  <span class="eng-voltage-name">${l.name}</span>
+                  <span class="eng-voltage-val" style="color:var(--lcars-sunflower)">${formatNumber(l.voltage, 1)} V</span>
+                </div>`)}
+            </div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  /* ═══ Circuit Classification — HA Labels override, name heuristic fallback ═══ */
+  /* Labels: 'dedicated' → DEDICATED, 'infrastructure' → INFRASTRUCTURE,
+   *         'lighting' → LIGHTING, 'outlets' → OUTLETS, 'battery' → BATTERY
+   *  Checked on entity, device, and area (same pattern as tactical camera labels) */
+  _getCircuitLabel(entry) {
+    const LABEL_MAP = {
+      dedicated: 'DEDICATED', infrastructure: 'INFRASTRUCTURE',
+      lighting: 'LIGHTING', outlets: 'OUTLETS', battery: 'BATTERY',
+    };
+    // Check entity labels
+    const entityLabels = entry.entity?.labels || [];
+    for (const l of entityLabels) {
+      const cat = LABEL_MAP[(l || '').toLowerCase()];
+      if (cat) return cat;
+    }
+    // Check device labels
+    if (entry.entity?.device_id && this._hass?.devices) {
+      const dev = this._hass.devices[entry.entity.device_id];
+      for (const l of (dev?.labels || [])) {
+        const cat = LABEL_MAP[(l || '').toLowerCase()];
+        if (cat) return cat;
+      }
+    }
+    // Check area labels
+    const areaId = entry.entity?.area_id || (entry.entity?.device_id && this._hass?.devices?.[entry.entity.device_id]?.area_id);
+    if (areaId && this._hass?.areas) {
+      const area = this._hass.areas[areaId];
+      for (const l of (area?.labels || [])) {
+        const cat = LABEL_MAP[(l || '').toLowerCase()];
+        if (cat) return cat;
+      }
+    }
+    return null; // No label — caller uses name heuristic
+  }
+
   _classifyCircuit(name) {
     const n = name.toLowerCase();
     if (/ecoflow|river|delta\s*\d|jackery|bluetti|battery/i.test(n)) return 'BATTERY';
-    if (/heat|hvac|air\s*handler|furnace|hotub|hot\s*tub|spa|pool|pump|compressor|minisplit/i.test(n)) return 'HVAC';
-    if (/server|udm|poe|\bap\b|network|router|modem|nas|rack|stack|unifi|usw|usg|udmpro/i.test(n)) return 'NETWORK';
-    if (/light|lamp|sconce|chandelier|fixture|\bled\b|illuminat|hallway|entry/i.test(n)) return 'LIGHTING';
-    if (/outlet|plug|receptacle|bedroom|kitchen|garage(?!.*light)|closet|fridge|refrigerat|freezer|microwave|oven|dishwash|washer|dryer|disposal/i.test(n)) return 'OUTLETS';
+    if (/heat|hvac|air\s*handler|furnace|hotub|hot\s*tub|spa|pool|pump|compressor|minisplit|dryer|washer|dishwash|water\s*heat|fridge|refrigerat|freezer|microwave|oven|disposal|range|stove|well\s*pump|sump|garage\s*door|ev\s*charg|car\s*charg/i.test(n)) return 'DEDICATED';
+    if (/server|udm|poe|\bap\b|network|router|modem|nas|rack|stack|unifi|usw|usg|udmpro|switch\s*\d|patch|ups/i.test(n)) return 'INFRASTRUCTURE';
+    if (/light|lamp|sconce|chandelier|fixture|\bled\b|illuminat/i.test(n)) return 'LIGHTING';
+    if (/outlet|plug|receptacle|bedroom|kitchen|garage(?!.*light)|closet|hallway|entry|bathroom|living|dining|office/i.test(n)) return 'OUTLETS';
     return 'OTHER';
   }
 
@@ -323,7 +483,9 @@ class LcarsEngineeringCard extends LitElement {
           .replace(/\s+/g, ' ').trim()
           .toUpperCase();
         const watts = Number(c.state?.state) || 0;
-        return { name, watts, entity: c.entity, category: this._classifyCircuit(name) };
+        // HA Labels override → name heuristic fallback
+        const category = this._getCircuitLabel(c) || this._classifyCircuit(name);
+        return { name, watts, entity: c.entity, category };
       })
       .sort((a, b) => b.watts - a.watts);
 
@@ -332,12 +494,12 @@ class LcarsEngineeringCard extends LitElement {
 
     // Group by category
     const CATEGORY_META = {
-      'HVAC':     { color: 'var(--lcars-butterscotch, #ff9966)' },
-      'NETWORK':  { color: 'var(--lcars-ice, #99ccff)' },
-      'LIGHTING': { color: 'var(--lcars-sunflower, #ffcc99)' },
-      'OUTLETS':  { color: 'var(--lcars-bluey, #8899ff)' },
-      'BATTERY':  { color: 'var(--lcars-african-violet, #cc99ff)' },
-      'OTHER':    { color: 'var(--lcars-gray, #666688)' },
+      'DEDICATED':      { color: 'var(--lcars-butterscotch, #ff9966)' },
+      'INFRASTRUCTURE': { color: 'var(--lcars-ice, #99ccff)' },
+      'LIGHTING':       { color: 'var(--lcars-sunflower, #ffcc99)' },
+      'OUTLETS':        { color: 'var(--lcars-bluey, #8899ff)' },
+      'BATTERY':        { color: 'var(--lcars-african-violet, #cc99ff)' },
+      'OTHER':          { color: 'var(--lcars-gray, #666688)' },
     };
     const groups = new Map();
     for (const c of active) {
@@ -346,7 +508,7 @@ class LcarsEngineeringCard extends LitElement {
     }
 
     // Fixed category order for layout stability
-    const CATEGORY_ORDER = ['HVAC', 'OUTLETS', 'LIGHTING', 'NETWORK', 'BATTERY', 'OTHER'];
+    const CATEGORY_ORDER = ['DEDICATED', 'OUTLETS', 'LIGHTING', 'INFRASTRUCTURE', 'BATTERY', 'OTHER'];
     const sortedGroups = CATEGORY_ORDER
       .filter(cat => groups.has(cat))
       .map(cat => {
@@ -366,7 +528,9 @@ class LcarsEngineeringCard extends LitElement {
                   <span class="eng-group-total">${formatNumber(g.total, 0)} W</span>
                 </div>
                 ${g.items.map(c => html`
-                  <div class="eng-group-row" @click=${() => showMoreInfo(c.entity.entity_id)}>
+                  <div class="eng-group-row" role="button" tabindex="0"
+                       @click=${() => showMoreInfo(c.entity.entity_id)}
+                       @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMoreInfo(c.entity.entity_id); } }}>
                     <span class="eng-group-circuit">${c.name}</span>
                     <span class="eng-group-watts">${formatNumber(c.watts, 0)} W</span>
                   </div>`)}
@@ -377,7 +541,9 @@ class LcarsEngineeringCard extends LitElement {
             ${active.slice(0, 15).map(c => {
               const pct = Math.min(100, (c.watts / maxWatts) * 100);
               return html`
-                <div class="eng-bar-row" @click=${() => showMoreInfo(c.entity.entity_id)}>
+                <div class="eng-bar-row" role="button" tabindex="0"
+                     @click=${() => showMoreInfo(c.entity.entity_id)}
+                     @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMoreInfo(c.entity.entity_id); } }}>
                   <span class="eng-bar-name">${c.name}</span>
                   <div class="eng-bar-track"><div class="eng-bar-fill" style="width:${pct}%; background:${barColor(c.watts)}"></div></div>
                   <span class="eng-bar-watts">${formatNumber(c.watts, 0)} W</span>
@@ -397,6 +563,7 @@ class LcarsEngineeringCard extends LitElement {
         <div class="eng-main-content">
           ${this._renderSources(data)}
           ${this._renderDistribution(data.totalDraw)}
+          ${(f === FILTER_ALL || f === FILTER_CIRCUITS) ? this._renderVoltageOverview(data.voltageSensors) : ''}
           ${(f === FILTER_ALL || f === FILTER_CIRCUITS) ? this._renderCircuits(data.circuits) : ''}
         </div>
         ${this._renderSystemStatus(data)}
@@ -423,6 +590,39 @@ class LcarsEngineeringCard extends LitElement {
       }
       @keyframes eng-scan-line { 0% { left: -15%; } 100% { left: 100%; } }
       .eng-circuit-count { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; color: var(--lcars-gray, #666688); white-space: nowrap; text-transform: uppercase; }
+
+      /* ─── Voltage Overview ─── */
+      .eng-voltage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr)); gap: 0.75rem; }
+      .eng-voltage-tier { display: flex; flex-direction: column; }
+      .eng-voltage-tier-header {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.25rem 0.5rem; height: 1.25rem;
+        font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
+        color: var(--lcars-black, #000);
+        border-radius: 0 0.75rem 0.75rem 0;
+      }
+      .eng-voltage-tier-name { font-size: 0.75rem; letter-spacing: 0.05em; }
+      .eng-voltage-tier-count { font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+      .eng-voltage-home-avg {
+        font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.75rem;
+        text-align: center; padding: 0.375rem 0 0.125rem; font-variant-numeric: tabular-nums;
+      }
+      .eng-voltage-home-detail {
+        font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.7rem;
+        color: var(--lcars-gray, #666688); text-transform: uppercase; text-align: center;
+        padding-bottom: 0.25rem; letter-spacing: 0.04em;
+      }
+      .eng-voltage-row {
+        display: flex; justify-content: space-between; align-items: baseline;
+        padding: 0.125rem 0.5rem; cursor: pointer; min-height: 1.5rem;
+        font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
+        transition: background 150ms ease;
+      }
+      .eng-voltage-row:hover { background: rgba(153,204,255,0.08); }
+      .eng-voltage-row:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 1px; }
+      .eng-voltage-name { font-size: 0.7rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 14rem; }
+      .eng-voltage-val { font-size: 0.7rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 0.5rem; }
+      .eng-voltage-high .eng-voltage-name { color: var(--lcars-tomato, #ff5555); }
 
       /* ─── Load Circuits: Two-Column Split ─── */
       .eng-loads-split { display: grid; grid-template-columns: 1fr 18rem; gap: 1rem; }
@@ -474,8 +674,9 @@ class LcarsEngineeringCard extends LitElement {
 
       .eng-sources-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.375rem; position: relative; padding-bottom: 1.5rem; }
       .eng-source-card { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.75rem; cursor: pointer; border: none; border-radius: 0; background: rgba(255,153,102,0.03); font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; transition: background 200ms ease; position: relative; }
-      .eng-source-card::after { content: ''; position: absolute; bottom: -1.5rem; left: 50%; width: 4px; height: 1.5rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.65; animation: eng-conduit-flow 2s linear infinite; background-size: 4px 8px; background-image: repeating-linear-gradient(180deg, var(--lcars-butterscotch, #ff9966) 0px, var(--lcars-butterscotch, #ff9966) 4px, transparent 4px, transparent 8px); }
-      @keyframes eng-conduit-flow { from { background-position: 0 0; } to { background-position: 0 8px; } }
+      /* ─── 5X-ENG-1: EPS Conduits — Source → Bus (solid structural bars) ─── */
+      .eng-source-card::after { content: ''; position: absolute; bottom: -1.5rem; left: 50%; transform: translateX(-50%); width: 6px; height: 1.5rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.65; border-radius: 0 0 3px 3px; animation: eng-conduit-pulse 3s ease-in-out infinite; }
+      @keyframes eng-conduit-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.8; } }
       .eng-source-card:hover { background: rgba(255,153,102,0.08); }
       .eng-source-card:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 2px; }
       /* Enriched battery card — mini warp core (Prompt 3 mockup) */
@@ -530,15 +731,25 @@ class LcarsEngineeringCard extends LitElement {
         display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 0.5rem 1rem;
         background: var(--lcars-butterscotch, #ff9966); border-radius: 0;
         font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
-        color: var(--lcars-black, #000); position: relative; margin-bottom: 1rem;
+        color: var(--lcars-black, #000); position: relative; margin-bottom: 1.5rem;
       }
-      .eng-distribution-bar::after { content: ''; position: absolute; bottom: -1rem; left: 50%; width: 3px; height: 1rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.4; }
+      /* 5X-ENG-1: Bus → Circuits trunk conduit (thinner than source conduits per thick→thin rule) */
+      .eng-distribution-bar::after { content: ''; position: absolute; bottom: -1.5rem; left: 50%; transform: translateX(-50%); width: 4px; height: 1.5rem; background: var(--lcars-butterscotch, #ff9966); opacity: 0.4; border-radius: 0 0 2px 2px; animation: eng-conduit-pulse 3s ease-in-out infinite; animation-delay: 1.5s; }
       .eng-dist-label { font-size: 0.875rem; opacity: 0.9; }
       .eng-dist-value { font-size: 1.125rem; font-variant-numeric: tabular-nums; }
       .eng-status-panel { padding: 0.75rem; align-self: start; }
       .eng-status-grid { display: grid; grid-template-columns: 1fr auto; gap: 0.25rem 0.75rem; font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase; }
       .eng-status-key { font-size: 0.75rem; color: var(--lcars-gray, #666688); }
       .eng-status-val { font-size: 0.875rem; color: var(--lcars-space-white, #f5f6fa); text-align: right; font-variant-numeric: tabular-nums; }
+
+      /* ─── 5X-ENG-1: Reduced Motion — disable ALL conduit/flow animations (WCAG 2.3.3) ─── */
+      @media (prefers-reduced-motion: reduce) {
+        .eng-source-card::after { animation: none; opacity: 0.6; }
+        .eng-distribution-bar::after { animation: none; opacity: 0.35; }
+        .eng-section-line::after { animation: none; display: none; }
+        .mini-core-fill.mini-core-idle,
+        .mini-core-fill.mini-core-charging { animation: none; }
+      }
     `];
   }
 }

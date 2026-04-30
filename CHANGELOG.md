@@ -2,6 +2,45 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.1.0-beta.30] — 2026-04-30
+
+### Engineering Dashboard — Power Distribution Enhancements
+
+#### 5X-ENG-1: Power Flow Topology
+- **Solid EPS conduits**: Replaced dashed animated lines with solid 6px structural bars from source cards to distribution bus, and 4px trunk from bus to load circuits (thick→thin per LCARS design rules)
+- **Conduit pulse animation**: Subtle opacity breathing (0.5→0.8) replaces scrolling dash pattern — flat/vector compliant
+- **`prefers-reduced-motion` fallback**: All animations disabled (conduit pulse, section scan line, warp core idle/charging) per WCAG 2.3.3
+
+#### 5X-ENG-2: Load Grouping Summary — Already Shipped
+- Confirmed by Geordi: category classifier, grouped pill headers, and per-category watt totals already shipped with the v5.1.0 engineering redesign. Marked DONE in backlog.
+
+#### Voltage Overview (New Section)
+- **Three-tier voltage display** between Distribution Bus and Load Circuits:
+  - HIGH VOLTAGE (>130V) — tomato, lists each anomalous sensor
+  - HOME VOLTAGE (110–130V) — auto-averaged from all standard sensors, no HA helper needed. Shows sensor count and min–max range
+  - LOW VOLTAGE (<110V) — sunflower, lists each device (doorbells, PoE, etc.)
+- Auto-discovers all `device_class: voltage` sensors across all areas
+
+#### Battery Stored Energy
+- New `storedKwh` sibling in battery discovery — matches EcoFlow remain/stored/available energy entities
+- **STORED** row in System Status sidebar showing total kWh across all batteries for offline capacity awareness
+
+#### Circuit Classification Overhaul
+- **Reclassified categories**: HVAC → DEDICATED (broadened to include dryer, washer, fridge, water heater, EV charger, etc.), NETWORK → INFRASTRUCTURE (server room, UPS, rack equipment)
+- **5 categories + OTHER**: DEDICATED (butterscotch), OUTLETS (bluey), LIGHTING (sunflower), INFRASTRUCTURE (ice), BATTERY (african-violet), OTHER (gray)
+- **HA Labels override**: Same pattern as Tactical camera labels — `dedicated`, `infrastructure`, `lighting`, `outlets`, `battery` labels on entity/device/area override name heuristics. First match wins (entity → device → area)
+
+#### Keyboard Accessibility (WCAG 2.1.1)
+- All interactive elements now have `role="button" tabindex="0"` and `@keydown` handlers: grid card, UPS card, battery cards, circuit group rows, bar chart rows, battery DETAIL link, voltage rows
+
+### Documentation
+- New [TAGGING.md](TAGGING.md) — consolidated tagging instructions for camera location labels and circuit classification labels, with examples, keyword tables, and tips
+- README: HA Labels section updated to reference TAGGING.md; Engineering dashboard description expanded with voltage overview, circuit tagging, stored kWh, and accessibility notes
+
+### Build
+- Bundle: 976 KiB (webpack 5.106.1)
+- Version files: const.py, manifest.json, package.json bumped to 5.1.0-beta.30
+
 ## [5.1.0-beta.16] — 2026-04-27
 
 ### Life Support Dashboard Overhaul

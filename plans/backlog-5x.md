@@ -122,11 +122,11 @@ Add small circular gauge indicators to the 4 overview cards (like mockup). Tempe
 > Visual comparison against ChatGPT Power Distribution mockup (Apr 26 2026). Wesley gap analysis.
 > **GitHub**: [#92](https://github.com/htiel/LCARS-lovelace-dashboard/issues/92)
 
-#### 5X-ENG-1 · Power Flow Topology Visualization — `TODO` · Priority: HIGH · Size: M
-Visual connection between Sources → Distribution Bus → Load Circuits using solid LCARS structural bars as "power conduits". Currently sections are stacked without visual flow connection.
+#### 5X-ENG-1 · Power Flow Topology Visualization — `IN PROGRESS` · Priority: HIGH · Size: M
+Visual connection between Sources → Distribution Bus → Load Circuits using solid LCARS structural bars as "power conduits". Solid 6px EPS conduits from sources, 4px trunk from bus to circuits, `prefers-reduced-motion` fallback, keyboard accessibility on all interactive elements.
 
-#### 5X-ENG-2 · Load Grouping Summary — `TODO` · Priority: MEDIUM · Size: M
-Group summary row above circuit list showing per-category totals (HVAC total, LIGHTING total, etc.). Requires circuit classification logic by entity name heuristics.
+#### 5X-ENG-2 · Load Grouping Summary — `DONE` · Priority: MEDIUM · Size: M
+Group summary row above circuit list showing per-category totals (HVAC total, LIGHTING total, etc.). **Shipped with v5.1.0 engineering redesign** — `_classifyCircuit()` heuristic + `CATEGORY_META` colors + grouped pill headers + per-category watt totals.
 
 #### 5X-ENG-3 · Voltage/Frequency/Current Data — `TODO` · Priority: LOW · Size: S
 Add structured key-value fields to source cards if voltage/frequency entities exist.

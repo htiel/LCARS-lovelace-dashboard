@@ -117,11 +117,6 @@ class LcarsEngineeringCard extends LitElement {
           if (!isNaN(val)) totalDraw += val;
           circuits.push(entry);
         }
-        // Collect all voltage sensors for voltage overview
-        if (dc === 'voltage' && domain === 'sensor') {
-          const val = Number(state.state);
-          if (!isNaN(val) && val > 0) voltageSensors.push(entry);
-        }
       }
     }
     circuits.sort((a, b) => (Number(b.state?.state) || 0) - (Number(a.state?.state) || 0));
@@ -190,6 +185,20 @@ class LcarsEngineeringCard extends LitElement {
       else if (dc === 'frequency' && !gridSiblings.frequency) gridSiblings.frequency = s;
       else if (dc === 'energy' && /today/i.test(eid) && !gridSiblings.energyToday) gridSiblings.energyToday = s;
       else if (dc === 'current' && !gridSiblings.current) gridSiblings.current = s;
+    }
+
+    // Voltage sensors — global scan (not area-filtered) to catch diagnostic entities
+    const seenVoltage = new Set();
+    for (const [eid, s] of Object.entries(states)) {
+      if (!eid.startsWith('sensor.')) continue;
+      const dc = s.attributes?.device_class || '';
+      if (dc !== 'voltage') continue;
+      const val = Number(s.state);
+      if (isNaN(val) || val <= 0) continue;
+      if (seenVoltage.has(eid)) continue;
+      seenVoltage.add(eid);
+      const entity = entities[eid] || { entity_id: eid };
+      voltageSensors.push({ entity, domain: 'sensor', state: s });
     }
 
     // 5X-ENG-7: Sort grid candidates by confidence score (highest first)

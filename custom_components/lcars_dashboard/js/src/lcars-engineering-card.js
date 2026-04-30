@@ -367,7 +367,7 @@ class LcarsEngineeringCard extends LitElement {
           </div>
           <div class="eng-loads-bars">
             <div class="eng-bars-title">LOAD DISTRIBUTION</div>
-            ${active.slice(0, 24).map(c => {
+            ${active.slice(0, 15).map(c => {
               const pct = Math.min(100, (c.watts / maxWatts) * 100);
               return html`
                 <div class="eng-bar-row" @click=${() => showMoreInfo(c.entity.entity_id)}>
@@ -418,11 +418,12 @@ class LcarsEngineeringCard extends LitElement {
       .eng-circuit-count { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; color: var(--lcars-gray, #666688); white-space: nowrap; text-transform: uppercase; }
 
       /* ─── Load Circuits: Two-Column Split ─── */
-      .eng-loads-split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      .eng-loads-split { display: grid; grid-template-columns: 1fr 18rem; gap: 1rem; }
       @media (max-width: 960px) { .eng-loads-split { grid-template-columns: 1fr; } }
 
-      /* Left: Grouped Categories */
-      .eng-loads-grouped { display: flex; flex-direction: column; gap: 0.5rem; }
+      /* Left: Grouped Categories — 2-column masonry */
+      .eng-loads-grouped { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; align-content: start; }
+      @media (max-width: 700px) { .eng-loads-grouped { grid-template-columns: 1fr; } }
       .eng-load-group { display: flex; flex-direction: column; }
       .eng-group-bar {
         display: flex; justify-content: space-between; align-items: center;
@@ -439,8 +440,8 @@ class LcarsEngineeringCard extends LitElement {
         transition: background 150ms ease;
       }
       .eng-group-row:hover { background: rgba(153,204,255,0.08); }
-      .eng-group-circuit { font-size: 0.75rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .eng-group-watts { font-size: 0.75rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 0.5rem; }
+      .eng-group-circuit { font-size: 0.7rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 12rem; }
+      .eng-group-watts { font-size: 0.7rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 0.5rem; }
 
       /* Right: Ranked Bar Chart */
       .eng-loads-bars { display: flex; flex-direction: column; gap: 0.125rem; }
@@ -450,7 +451,7 @@ class LcarsEngineeringCard extends LitElement {
         letter-spacing: 0.05em; margin-bottom: 0.25rem;
       }
       .eng-bar-row {
-        display: grid; grid-template-columns: 8rem 1fr auto; gap: 0.375rem;
+        display: grid; grid-template-columns: 6rem 1fr auto; gap: 0.25rem;
         align-items: center; cursor: pointer; padding: 0.125rem 0;
         font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
         transition: background 150ms ease;

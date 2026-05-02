@@ -148,6 +148,32 @@ class LcarsEngineeringCard extends LitElement {
         }
       }
     }
+
+    // Power-strip dedup (Kasa HS300, Tapo P300, etc.):
+    // Strips expose both a parent total (sensor.<strip>_power) and per-outlet children
+    // (sensor.<strip>_plug_N_power). When both exist, prefer the children — finer granularity,
+    // labelable per outlet, and avoids double-counting the strip total + each outlet.
+    const stripChildRx = /^(sensor\..+?)_(plug|socket|outlet|child)_?\d+_(power|power_minute_average)$/i;
+    const stripParents = new Map(); // base → { id, val }
+    const stripChildBases = new Set();
+    for (const c of circuitMap.values()) {
+      const m = c.entity.entity_id.match(stripChildRx);
+      if (m) stripChildBases.add(m[1]);
+    }
+    for (const c of circuitMap.values()) {
+      const eid = c.entity.entity_id;
+      // Parent candidate: matches a child base AND is itself a plain *_power(_minute_average)
+      const parentRx = new RegExp(`^(sensor\\..+?)_(power|power_minute_average)$`, 'i');
+      const m = eid.match(parentRx);
+      if (m && stripChildBases.has(m[1])) {
+        stripParents.set(eid, Number(c.state?.state) || 0);
+      }
+    }
+    for (const [parentId, parentVal] of stripParents) {
+      totalDraw -= parentVal;
+      circuitMap.delete(parentId);
+    }
+
     const dedupedCircuits = [...circuitMap.values()].sort((a, b) => (Number(b.state?.state) || 0) - (Number(a.state?.state) || 0));
 
     // Enrich batteries with sibling entities — pre-index by device_id (O(n) vs O(n²))
@@ -159,22 +185,51 @@ class LcarsEngineeringCard extends LitElement {
         byDevice.get(e.device_id).push({ eid, state: states[eid], entity: e });
       }
     }
+    // Patterns for multi-port battery flow detection.
+    // Captain's note: batteries (UPS, EcoFlow, Bluetti, Tesla PW) often expose multiple
+    // input ports (AC, Solar/PV, DC) and output ports (AC, DC, USB). We sum per device
+    // to derive true charge/discharge flow, preferring a device-provided total when present.
+    const TOTAL_IN_RX = /total.*(input|in_power|in_watts|charging_power|charge_power)|\b(total_in|input_total|charging_total)\b/i;
+    const TOTAL_OUT_RX = /total.*(output|out_power|out_watts|discharging_power|discharge_power|load_power)|\b(total_out|output_total|load_total)\b/i;
+    const PORT_IN_RX = /(^|_)(input|in|solar|pv|charge|charging|ac_in|dc_in|grid_in)(_power|_watts)?(_|$)/i;
+    const PORT_OUT_RX = /(^|_)(output|out|discharge|discharging|load|ac_out|dc_out|usb|usb_out)(_power|_watts)?(_|$)/i;
+    const sumPorts = (ports) => ports.reduce((a, p) => {
+      const v = Number(p.state); return a + (isNaN(v) ? 0 : v);
+    }, 0);
+
     for (const b of batteries) {
       b.siblings = {};
+      const inPorts = [], outPorts = [];
       const devEntities = byDevice.get(b.deviceId) || [];
       for (const { eid, state: s } of devEntities) {
         const dc = s.attributes?.device_class || '';
         const leid = eid.toLowerCase();
         if (dc === 'voltage' && !b.siblings.voltage) b.siblings.voltage = s;
         else if (dc === 'temperature' && !/pcs/i.test(eid) && !b.siblings.temp) b.siblings.temp = s;
-        else if (dc === 'power' && /total.*in/i.test(eid) && !b.siblings.totalIn) b.siblings.totalIn = s;
-        else if (dc === 'power' && /total.*out/i.test(eid) && !b.siblings.totalOut) b.siblings.totalOut = s;
+        else if (dc === 'power' && TOTAL_IN_RX.test(leid) && !b.siblings.totalIn) b.siblings.totalIn = s;
+        else if (dc === 'power' && TOTAL_OUT_RX.test(leid) && !b.siblings.totalOut) b.siblings.totalOut = s;
+        else if (dc === 'power' && PORT_IN_RX.test(leid)) inPorts.push(s);
+        else if (dc === 'power' && PORT_OUT_RX.test(leid)) outPorts.push(s);
         else if (/remaining.*time|discharge.*remain|charge.*remain/i.test(eid) && !b.siblings.runtime) b.siblings.runtime = s;
         else if (/charging.*state|battery.*state/i.test(eid) && !b.siblings.chargeState) b.siblings.chargeState = s;
         else if (/state.of.health/i.test(leid) && !b.siblings.soh) b.siblings.soh = s;
         else if (/\bcycles\b/i.test(leid) && !b.siblings.cycles) b.siblings.cycles = s;
-        else if (!b.siblings.storedKwh && (dc === 'energy' && /remain|stored|available/i.test(leid) || /remain.*kwh|kwh.*remain|energy.*remain|stored.*energy/i.test(leid))) b.siblings.storedKwh = s;
+        else if (!b.siblings.storedKwh) {
+          // Stored energy detection — broad: device_class=energy OR unit kWh/Wh, with capacity/remain/stored/available naming.
+          const unit = (s.attributes?.unit_of_measurement || '').toLowerCase();
+          const isEnergyish = dc === 'energy' || unit === 'kwh' || unit === 'wh';
+          const hasCapacityName = /remain|stored|available|capacity/i.test(leid);
+          // Exclude cumulative/lifetime totals and daily counters — we want instantaneous stored energy.
+          const isCumulative = /(today|daily|total_increasing|lifetime|life_time|total_(in|out|consumed|delivered|generated))/i.test(leid);
+          if (isEnergyish && hasCapacityName && !isCumulative) b.siblings.storedKwh = s;
+        }
       }
+      // Derive in/out watts: prefer device-provided total summary; otherwise sum per-port sensors.
+      // Avoids double-counting: if device exposes total_in, ignore per-port sums for that side.
+      b.siblings.inPorts = inPorts;
+      b.siblings.outPorts = outPorts;
+      b.siblings.totalInWatts = b.siblings.totalIn ? (Number(b.siblings.totalIn.state) || 0) : sumPorts(inPorts);
+      b.siblings.totalOutWatts = b.siblings.totalOut ? (Number(b.siblings.totalOut.state) || 0) : sumPorts(outPorts);
     }
 
     // Grid siblings: voltage, frequency, energy from grid-related entities
@@ -245,7 +300,15 @@ class LcarsEngineeringCard extends LitElement {
     let totalStoredKwh = 0, hasStoredKwh = false;
     for (const b of data.batteries) {
       const soc = Number(b.entry.state?.state); if (!isNaN(soc)) { avgSoc += soc; batteryCount++; }
-      if (b.siblings?.storedKwh) { const kwh = Number(b.siblings.storedKwh.state); if (!isNaN(kwh)) { totalStoredKwh += kwh; hasStoredKwh = true; } }
+      if (b.siblings?.storedKwh) {
+        const raw = Number(b.siblings.storedKwh.state);
+        if (!isNaN(raw)) {
+          const unit = (b.siblings.storedKwh.attributes?.unit_of_measurement || '').toLowerCase();
+          const kwh = unit === 'wh' ? raw / 1000 : raw;
+          totalStoredKwh += kwh;
+          hasStoredKwh = true;
+        }
+      }
     }
     if (batteryCount > 0) avgSoc = Math.round(avgSoc / batteryCount);
 
@@ -366,9 +429,9 @@ class LcarsEngineeringCard extends LitElement {
             const socHex = soc > 50 ? '#99ccff' : soc > 20 ? '#ffcc99' : '#ff5555';
             const socCssColor = soc > 50 ? 'var(--lcars-ice)' : soc > 20 ? 'var(--lcars-sunflower)' : 'var(--lcars-tomato)';
             const borderColor = socCssColor;
-            // Power flow
-            const totalIn = b.siblings?.totalIn ? Number(b.siblings.totalIn.state) || 0 : 0;
-            const totalOut = b.siblings?.totalOut ? Number(b.siblings.totalOut.state) || 0 : 0;
+            // Power flow — totals are pre-computed in _parse() (device total preferred, else sum of ports)
+            const totalIn = b.siblings?.totalInWatts || 0;
+            const totalOut = b.siblings?.totalOutWatts || 0;
             const isCharging = totalIn > totalOut + 5;
             const isDischarging = totalOut > totalIn + 5;
             const flowLabel = isCharging ? `▲ CHARGING ${formatNumber(totalIn, 0)}W` : isDischarging ? `▼ DISCHARGING ${formatNumber(totalOut, 0)}W` : '━ IDLE';

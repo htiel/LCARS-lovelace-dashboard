@@ -55,8 +55,8 @@ class LcarsLifeSupportCard extends LitElement {
 
   /* ═══ Entity Discovery ═══ */
   _discoverAll() {
-    if (!this._hass) return { thermostats: [], purifiers: [], tempSensors: [], aqSensors: [], fans: [] };
-    const thermostats = [], purifiers = [], tempSensors = [], aqSensors = [], fans = [];
+    if (!this._hass) return { thermostats: [], purifiers: [], tempSensors: [], aqSensors: [], fans: [], presenceSensors: [] };
+    const thermostats = [], purifiers = [], tempSensors = [], aqSensors = [], fans = [], presenceSensors = [];
     const entities = this._hass.entities || {};
     const states = this._hass.states || {};
 
@@ -86,8 +86,12 @@ class LcarsLifeSupportCard extends LitElement {
         // Skip pool/spa climate entities
         if (domain === 'climate' && /pool|spa|fridge|freezer/i.test(e.entity_id)) continue;
 
-        // Skip binary_sensor — safety/smoke/CO sensors belong on Tactical, not Life Support
-        if (domain === 'binary_sensor') continue;
+        // binary_sensor: capture motion/occupancy/presence for per-room presence column;
+        // safety/smoke/CO live on Tactical, not Life Support
+        if (domain === 'binary_sensor') {
+          if (dc === 'motion' || dc === 'occupancy' || dc === 'presence') presenceSensors.push(entry);
+          continue;
+        }
 
         if (domain === 'climate') { thermostats.push(entry); continue; }
         if (domain === 'fan' && PURIFIER_PLATFORMS.has(platform)) { purifiers.push(entry); continue; }
@@ -97,8 +101,8 @@ class LcarsLifeSupportCard extends LitElement {
         if (AIR_CLASSES.has(dc) || /filter_life/i.test(e.entity_id) || /_score$/i.test(e.entity_id)) { aqSensors.push(entry); continue; }
       }
     }
-    console.debug(`[LCARS-LS] Discovery totals: thermostats=${thermostats.length}, purifiers=${purifiers.length}, tempSensors=${tempSensors.length} (areas: ${[...new Set(tempSensors.map(e => e.area?.name))]}), aqSensors=${aqSensors.length} (areas: ${[...new Set(aqSensors.map(e => e.area?.name))]}), fans=${fans.length}`);
-    return { thermostats, purifiers, tempSensors, aqSensors, fans };
+    console.debug(`[LCARS-LS] Discovery totals: thermostats=${thermostats.length}, purifiers=${purifiers.length}, tempSensors=${tempSensors.length} (areas: ${[...new Set(tempSensors.map(e => e.area?.name))]}), aqSensors=${aqSensors.length} (areas: ${[...new Set(aqSensors.map(e => e.area?.name))]}), fans=${fans.length}, presenceSensors=${presenceSensors.length}`);
+    return { thermostats, purifiers, tempSensors, aqSensors, fans, presenceSensors };
   }
 
   /* ═══ Overview Summary Cards (mockup top row) ═══ */
@@ -287,15 +291,14 @@ class LcarsLifeSupportCard extends LitElement {
   }
 
   /* ═══ Temperature & Humidity Grid (mockup middle-right) ═══ */
-  _renderTempGrid(tempSensors) {
+  _renderTempGrid(tempSensors, presenceSensors) {
     // Group by area, show temp + humidity pairs
     const areaMap = new Map();
     for (const e of tempSensors) {
       const areaName = e.area?.name || 'Unknown';
-      if (!areaMap.has(areaName)) areaMap.set(areaName, { temp: null, humidity: null, hasEntities: false });
+      if (!areaMap.has(areaName)) areaMap.set(areaName, { temp: null, humidity: null, presence: null, hasEntities: false });
       const dc = e.state?.attributes?.device_class;
       const val = Number(e.state?.state);
-      const isUnavail = e.state?.state === 'unavailable' || e.state?.state === 'unknown';
       if (dc === 'temperature') {
         areaMap.get(areaName).hasEntities = true;
         if (!isNaN(val)) {
@@ -308,6 +311,20 @@ class LcarsLifeSupportCard extends LitElement {
         if (!isNaN(val)) {
           areaMap.get(areaName).humidity = { entry: e, val };
         }
+      }
+    }
+
+    // Merge presence (motion/occupancy) per-area: room is occupied if ANY sensor is on
+    if (presenceSensors) {
+      for (const e of presenceSensors) {
+        const areaName = e.area?.name || 'Unknown';
+        if (!areaMap.has(areaName)) continue; // only annotate rooms already showing temp/humidity
+        const room = areaMap.get(areaName);
+        const isOn = e.state?.state === 'on';
+        const isAvail = e.state?.state !== 'unavailable' && e.state?.state !== 'unknown';
+        if (!room.presence) room.presence = { occupied: false, hasSignal: false, entry: e };
+        if (isAvail) room.presence.hasSignal = true;
+        if (isOn) { room.presence.occupied = true; room.presence.entry = e; }
       }
     }
 
@@ -329,6 +346,7 @@ class LcarsLifeSupportCard extends LitElement {
             <span class="ls-th">LOCATION</span>
             <span class="ls-th">TEMP</span>
             <span class="ls-th">HUMIDITY</span>
+            <span class="ls-th">PRESENCE</span>
             <span class="ls-th">STATUS</span>
           </div>
           ${rows.map(([name, d]) => {
@@ -339,6 +357,7 @@ class LcarsLifeSupportCard extends LitElement {
                   <span class="ls-td ls-td-name">${name.toUpperCase()}</span>
                   <span class="ls-td" style="color:var(--lcars-gray)">—</span>
                   <span class="ls-td" style="color:var(--lcars-gray)">—</span>
+                  <span class="ls-td" style="color:var(--lcars-gray)">—</span>
                   <span class="ls-td ls-offline-badge" style="color:var(--lcars-gray)">OFFLINE</span>
                 </div>
               `;
@@ -346,11 +365,25 @@ class LcarsLifeSupportCard extends LitElement {
             const tempColor = d.temp ? (d.temp.val < 68 ? 'var(--lcars-bluey)' : d.temp.val <= 76 ? 'var(--lcars-ice)' : 'var(--lcars-butterscotch)') : 'var(--lcars-gray)';
             const status = d.temp ? (d.temp.val >= 65 && d.temp.val <= 78 ? 'NORMAL' : d.temp.val < 65 ? 'COOL' : 'WARM') : '—';
             const statusColor = status === 'NORMAL' ? 'var(--lcars-ice)' : status === 'COOL' ? 'var(--lcars-bluey)' : 'var(--lcars-butterscotch)';
+            // Presence cell: ● occupied (sunflower), ○ vacant (gray), — no sensor
+            const presence = d.presence;
+            const presenceGlyph = !presence ? '—' : (presence.occupied ? '●' : '○');
+            const presenceColor = !presence ? 'var(--lcars-gray)'
+              : presence.occupied ? 'var(--lcars-sunflower)' : 'var(--lcars-bluey)';
+            const presenceLabel = !presence ? 'NO SENSOR'
+              : presence.occupied ? 'OCCUPIED' : 'VACANT';
+            const presenceEid = presence?.entry?.entity?.entity_id;
             return html`
               <div class="ls-table-row" @click=${() => showMoreInfo(d.temp?.entry?.entity?.entity_id || d.humidity?.entry?.entity?.entity_id)}>
                 <span class="ls-td ls-td-name">${name.toUpperCase()}</span>
                 <span class="ls-td" style="color:${tempColor}">${d.temp ? `${Math.round(d.temp.val * 10) / 10}°` : '—'}</span>
                 <span class="ls-td">${d.humidity ? `${Math.round(d.humidity.val)}%` : '—'}</span>
+                <span class="ls-td"
+                  style="color:${presenceColor}; cursor:${presenceEid ? 'pointer' : 'default'}"
+                  title="${presenceLabel}"
+                  @click=${(ev) => { if (presenceEid) { ev.stopPropagation(); showMoreInfo(presenceEid); } }}>
+                  ${presenceGlyph}
+                </span>
                 <span class="ls-td" style="color:${statusColor}">${status}</span>
               </div>
             `;
@@ -536,7 +569,7 @@ class LcarsLifeSupportCard extends LitElement {
   }
 
   /* ═══ Combined Climate Panel (thermostat zones + temp/humidity in one section) ═══ */
-  _renderClimatePanel(thermostats, tempSensors) {
+  _renderClimatePanel(thermostats, tempSensors, presenceSensors) {
     return html`
       <div class="ls-section">
         <div class="ls-section-header">
@@ -545,7 +578,7 @@ class LcarsLifeSupportCard extends LitElement {
         </div>
         <div class="ls-climate-combined">
           ${this._renderThermostats(thermostats)}
-          ${this._renderTempGrid(tempSensors)}
+          ${this._renderTempGrid(tempSensors, presenceSensors)}
         </div>
       </div>
     `;
@@ -635,7 +668,7 @@ class LcarsLifeSupportCard extends LitElement {
         <div class="ls-main-grid">
           <div class="ls-main-content">
             ${(f === FILTER_ALL || f === FILTER_AIR) ? this._renderPurifiers(data.purifiers, data.aqSensors) : ''}
-            ${(f === FILTER_ALL || f === FILTER_CLIMATE) ? this._renderClimatePanel(data.thermostats, data.tempSensors) : ''}
+            ${(f === FILTER_ALL || f === FILTER_CLIMATE) ? this._renderClimatePanel(data.thermostats, data.tempSensors, data.presenceSensors) : ''}
           </div>
           <div class="ls-sidebar">
             ${(f === FILTER_ALL || f === FILTER_AIR) ? this._renderAirQuality(data.aqSensors, data.tempSensors) : ''}
@@ -800,10 +833,10 @@ class LcarsLifeSupportCard extends LitElement {
         .ls-td-model { font-size: 0.7rem; color: var(--lcars-gray, #666688); }
         .ls-th { display: flex; align-items: center; }
 
-        /* Temp grid uses 4 columns */
+        /* Temp grid uses 5 columns (LOCATION TEMP HUMIDITY PRESENCE STATUS) */
         .ls-section:last-of-type .ls-table-header,
         .ls-section:last-of-type .ls-table-row {
-          grid-template-columns: 2fr 1fr 1fr 1fr;
+          grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
         }
         /* Purifier row uses 6 columns */
         .ls-purifier-row {

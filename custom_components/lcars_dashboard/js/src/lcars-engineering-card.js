@@ -200,10 +200,18 @@ class LcarsEngineeringCard extends LitElement {
     for (const b of batteries) {
       b.siblings = {};
       const inPorts = [], outPorts = [];
+      const operationalSwitches = [];
       const devEntities = byDevice.get(b.deviceId) || [];
-      for (const { eid, state: s } of devEntities) {
+      for (const { eid, state: s, entity: ent } of devEntities) {
         const dc = s.attributes?.device_class || '';
         const leid = eid.toLowerCase();
+        // Capture operational switches (skip diagnostic/config category and disabled)
+        if (eid.startsWith('switch.') && !ent?.disabled_by && !ent?.hidden_by) {
+          const cat = ent?.entity_category || s.attributes?.entity_category || '';
+          if (cat !== 'config' && cat !== 'diagnostic') {
+            operationalSwitches.push({ eid, state: s, entity: ent });
+          }
+        }
         if (dc === 'voltage' && !b.siblings.voltage) b.siblings.voltage = s;
         else if (dc === 'temperature' && !/pcs/i.test(eid) && !b.siblings.temp) b.siblings.temp = s;
         else if (dc === 'power' && TOTAL_IN_RX.test(leid) && !b.siblings.totalIn) b.siblings.totalIn = s;
@@ -230,6 +238,8 @@ class LcarsEngineeringCard extends LitElement {
       b.siblings.outPorts = outPorts;
       b.siblings.totalInWatts = b.siblings.totalIn ? (Number(b.siblings.totalIn.state) || 0) : sumPorts(inPorts);
       b.siblings.totalOutWatts = b.siblings.totalOut ? (Number(b.siblings.totalOut.state) || 0) : sumPorts(outPorts);
+      // Operational switches (e.g. EcoFlow USB Enabled, Grid Bypass) — sorted alphabetically for stable layout
+      b.siblings.switches = operationalSwitches.sort((a, c) => a.eid.localeCompare(c.eid));
     }
 
     // Grid siblings: voltage, frequency, energy from grid-related entities
@@ -479,6 +489,27 @@ class LcarsEngineeringCard extends LitElement {
                   ${soh != null && soh < 100 ? html`<span class="eng-bt-key">HEALTH</span><span class="eng-bt-val" style="color:${soh > 80 ? 'var(--lcars-ice)' : 'var(--lcars-sunflower)'}">${soh}%</span>` : ''}
                   ${cycles != null ? html`<span class="eng-bt-key">CYCLES</span><span class="eng-bt-val">${cycles}</span>` : ''}
                 </div>
+                ${b.siblings?.switches?.length ? html`
+                  <div class="eng-battery-switches" role="group" aria-label="${name} controls">
+                    ${b.siblings.switches.map(sw => {
+                      const isOn = sw.state?.state === 'on';
+                      const label = (sw.state?.attributes?.friendly_name || sw.eid.split('.').pop().replace(/_/g, ' '))
+                        .replace(/^.*?(USB Enabled|Grid Bypass|AC Enabled|DC \(?12V\)? Enabled|X-Boost Enabled|AC Always On|Backup Reserve Enabled)$/i, '$1')
+                        .toUpperCase();
+                      const pillColor = isOn ? 'var(--lcars-ice)' : 'var(--lcars-gray)';
+                      const pillBg = isOn ? 'rgba(153,204,255,0.15)' : 'rgba(102,102,136,0.10)';
+                      return html`
+                        <span class="eng-switch-pill"
+                              role="button" tabindex="0"
+                              aria-label="${label}: ${isOn ? 'on' : 'off'}, click to toggle"
+                              style="color:${pillColor}; background:${pillBg}; border-color:${pillColor}"
+                              @click=${(e) => { e.stopPropagation(); showMoreInfo(sw.eid); }}
+                              @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); showMoreInfo(sw.eid); } }}>
+                          <span class="eng-switch-dot" aria-hidden="true">${isOn ? '●' : '○'}</span>
+                          <span class="eng-switch-name">${label}</span>
+                        </span>`;
+                    })}
+                  </div>` : ''}
                 <span class="eng-battery-detail" role="link" tabindex="0"
                       @click=${(e) => { e.stopPropagation(); navigate(`/lcars-habitat/0#area:${b.area?.area_id || ''}`); }}
                       @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); navigate(`/lcars-habitat/0#area:${b.area?.area_id || ''}`); } }}>DETAIL ►</span>
@@ -825,6 +856,23 @@ class LcarsEngineeringCard extends LitElement {
       .eng-battery-volt { font-size: 0.7rem; color: var(--lcars-ice, #99ccff); font-variant-numeric: tabular-nums; }
       .eng-battery-detail { font-size: 0.625rem; color: var(--lcars-gray, #666688); text-align: right; margin-top: auto; letter-spacing: 0.05em; cursor: pointer; }
       .eng-battery-detail:hover { color: var(--lcars-ice, #99ccff); }
+      /* Operational switch pills (e.g. EcoFlow USB Enabled, Grid Bypass) */
+      .eng-battery-switches {
+        display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.375rem;
+        padding-top: 0.375rem; border-top: 1px solid rgba(136,153,255,0.08);
+      }
+      .eng-switch-pill {
+        display: inline-flex; align-items: center; gap: 0.25rem;
+        padding: 0.125rem 0.375rem; border-radius: 0.625rem;
+        border: 1px solid; font-family: var(--lcars-font, 'Antonio', sans-serif);
+        font-size: 0.625rem; letter-spacing: 0.05em; cursor: pointer;
+        transition: filter 150ms ease, transform 100ms ease;
+      }
+      .eng-switch-pill:hover { filter: brightness(1.2); }
+      .eng-switch-pill:focus-visible { outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px; }
+      .eng-switch-pill:active { transform: scale(0.97); }
+      .eng-switch-dot { font-size: 0.75rem; line-height: 1; }
+      .eng-switch-name { white-space: nowrap; }
       /* Enriched GRID card */
       .eng-grid-card { background: rgba(153,204,255,0.03) !important; }
       .eng-grid-header { display: flex; justify-content: space-between; align-items: baseline; width: 100%; }

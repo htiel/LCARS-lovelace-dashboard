@@ -2,6 +2,18 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.1.0-beta.34] — 2026-05-03
+
+### Life Support — Per-Room Presence
+- **Temperature & Humidity Sensors** table gains a new **PRESENCE** column. Each row now shows `●` (occupied, sunflower) / `○` (vacant, bluey) / `—` (no presence sensor) derived from `binary_sensor` `motion`/`occupancy`/`presence` entities scoped to the area. Click the indicator to open the underlying sensor.
+- Discovery: `binary_sensor` motion/occupancy/presence are now collected (previously skipped wholesale). Safety/smoke/CO binaries continue to live on Tactical only.
+- Picks up the 5 new HomeKit-paired Ecobee remote sensors (Quinn's Room, Game Room, Master Bedroom, Duncan's Room, Office) plus the main Ecobee zone, with no YAML changes.
+
+### Engineering — Operational Switch Pills on Battery Cards
+- Battery source cards now render a row of clickable **switch pills** for the device's operational switches (e.g. EcoFlow UPS Air `USB Enabled`, `Grid Bypass`, `AC Enabled`, `X-Boost`, `DC 12V`, `AC Always On`, `Backup Reserve`).
+- Pills exclude `config` and `diagnostic` category switches (no `Beeper` clutter).
+- Pill color reflects state (ice = on, gray = off). Click opens HA's native more-info dialog for toggling.
+
 ## [5.1.0-beta.30] — 2026-04-30
 
 ### Engineering Dashboard — Power Distribution Enhancements

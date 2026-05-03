@@ -2,6 +2,12 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.1.0-beta.35] — 2026-05-03
+
+### Life Support — Sidebar Per-Room Table Layout Fix
+- Fixed cell wrapping in the sidebar **PER-ROOM ENVIRONMENT** table where the 7th column (RH/humidity) wrapped below the room name (e.g. `61%` appearing under `MASTER BEDROOM`).
+- Added sidebar-specific 7-column grid template with compact font and `nowrap`/ellipsis cell behavior.
+
 ## [5.1.0-beta.34] — 2026-05-03
 
 ### Life Support — Per-Room Presence

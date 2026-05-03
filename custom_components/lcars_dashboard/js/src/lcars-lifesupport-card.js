@@ -890,6 +890,21 @@ class LcarsLifeSupportCard extends LitElement {
         /* ─── Sidebar AQ panel override ─── */
         .ls-sidebar .ls-aq-panel { flex-direction: column; }
         .ls-sidebar .ls-section { padding: 0.75rem; background: rgba(136,153,255,0.03); }
+        /* Sidebar Per-Room table: lock to 7 cols, nowrap, compact font (prevents
+           "61%" RH cell from wrapping below room name). Cells truncate w/ ellipsis. */
+        .ls-sidebar .ls-purifier-table .ls-table-header,
+        .ls-sidebar .ls-purifier-table .ls-table-row {
+          grid-template-columns: minmax(4rem, 1.6fr) repeat(6, minmax(1.75rem, 1fr));
+          gap: 0.25rem;
+          font-size: 0.7rem;
+          padding: 0.25rem 0.375rem;
+        }
+        .ls-sidebar .ls-purifier-table .ls-th,
+        .ls-sidebar .ls-purifier-table .ls-td {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
 
         /* ─── Per-Room Atmosphere table 7-col ─── */
         .ls-main-content .ls-purifier-table .ls-table-header,

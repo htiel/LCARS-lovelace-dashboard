@@ -2,6 +2,19 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.1.0-beta.38] — 2026-05-03
+
+### Habitat — Icon-Only Sidebar on Mobile (Captain's call, closes #94)
+
+Following visual review of beta.37, the narrowed (~88 px) Habitat sidebar at ≤ 767 px showed area names truncated to 2-3 characters (`DEC…`, `FR…`, `EN…`) — unrecognizable. **Captain's call:** drop the text label entirely on mobile and let the area's `mdi:` icon carry the affordance. More LCARS-canonical (PADD-style pictograms), no extra component, every area still reachable in one tap.
+
+**Changes:**
+- `.sidebar-area-btn .area-name` and `.sidebar-floor-btn .floor-name` are hidden at ≤ 767 px.
+- Icon size bumped: 18 px → 28 px (areas), 16 px → 24 px (floors). Centered both axes.
+- `aria-label` + `title=` retained — screen readers and long-press still expose the area name.
+- Active-state gold background unchanged.
+- Tablet/desktop (≥ 768 px) behavior identical to beta.37.
+
 ## [5.1.0-beta.37] — 2026-05-03
 
 ### Mobile Navigation Consistency — LCARS Sweep Preserved at All Widths (Geordi ruling)

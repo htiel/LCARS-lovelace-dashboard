@@ -619,8 +619,7 @@ class LcarsDashboardLayout extends LitElement {
         @media (max-width: 767px) {
           :host {
             /* Narrow the entire frame to one elbow unit (~88px) per LCARS PADD canon.
-               Sweep is preserved — never flip to a horizontal nav. Area button labels
-               truncate inline; deferred work: 'MORE ▸' overflow popup for >6 items. */
+               Sweep is preserved — never flip to a horizontal nav. */
             --lcars-sidebar-w: 5.5rem;
             --lcars-elbow-w: 5rem;
             --lcars-elbow-h: 3rem;
@@ -632,16 +631,23 @@ class LcarsDashboardLayout extends LitElement {
             padding: 0.125rem 0.25rem;
             text-align: center;
           }
+          /* Icon-only sidebar buttons on phone (Captain's call, #94).
+             Labels truncate to 2-3 chars at this width — drop them entirely
+             and let the area's mdi: icon (already in the button) carry the
+             affordance. aria-label + title= keep accessibility intact. */
           .sidebar-area-btn,
           .sidebar-floor-btn {
-            font-size: 0.625rem;
-            padding: 0.375rem 0.25rem;
-            letter-spacing: 0.02em;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            justify-content: center;
+            padding: 0.5rem 0.25rem;
+            gap: 0;
           }
-          .sidebar-unassigned-label { font-size: 0.5rem; }
+          .sidebar-area-btn .area-name,
+          .sidebar-floor-btn .floor-name {
+            display: none;
+          }
+          .sidebar-area-btn ha-icon { --mdc-icon-size: 28px; }
+          .sidebar-floor-btn ha-icon { --mdc-icon-size: 24px; }
+          .sidebar-unassigned-label { display: none; }
           .lcars-content { padding: 0.25rem; }
           .mute-btn ha-icon { --mdc-icon-size: 14px; }
         }

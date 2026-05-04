@@ -205,11 +205,17 @@ class LcarsEngineeringCard extends LitElement {
       for (const { eid, state: s, entity: ent } of devEntities) {
         const dc = s.attributes?.device_class || '';
         const leid = eid.toLowerCase();
-        // Capture operational switches (skip diagnostic/config category and disabled)
+        // Capture operational switches (skip diagnostic/config category and disabled).
+        // Pre-compute display label here (memoized) so render path doesn't run regex per frame.
         if (eid.startsWith('switch.') && !ent?.disabled_by && !ent?.hidden_by) {
           const cat = ent?.entity_category || s.attributes?.entity_category || '';
           if (cat !== 'config' && cat !== 'diagnostic') {
-            operationalSwitches.push({ eid, state: s, entity: ent });
+            const rawName = s.attributes?.friendly_name || eid.split('.').pop().replace(/_/g, ' ');
+            const label = rawName
+              .replace(/^.*?(USB Enabled|Grid Bypass|AC Enabled|DC \(?12V\)? Enabled|X-Boost Enabled|AC Always On|Backup Reserve Enabled)$/i, '$1')
+              .toUpperCase()
+              .slice(0, 40); // P3-3 length cap (Worf): defend against malicious/long friendly_name
+            operationalSwitches.push({ eid, state: s, entity: ent, label });
           }
         }
         if (dc === 'voltage' && !b.siblings.voltage) b.siblings.voltage = s;
@@ -238,8 +244,8 @@ class LcarsEngineeringCard extends LitElement {
       b.siblings.outPorts = outPorts;
       b.siblings.totalInWatts = b.siblings.totalIn ? (Number(b.siblings.totalIn.state) || 0) : sumPorts(inPorts);
       b.siblings.totalOutWatts = b.siblings.totalOut ? (Number(b.siblings.totalOut.state) || 0) : sumPorts(outPorts);
-      // Operational switches (e.g. EcoFlow USB Enabled, Grid Bypass) — sorted alphabetically for stable layout
-      b.siblings.switches = operationalSwitches.sort((a, c) => a.eid.localeCompare(c.eid));
+      // Operational switches (e.g. EcoFlow USB Enabled, Grid Bypass) — sorted by computed label for stable, human-readable order
+      b.siblings.switches = operationalSwitches.sort((a, c) => a.label.localeCompare(c.label));
     }
 
     // Grid siblings: voltage, frequency, energy from grid-related entities
@@ -493,9 +499,7 @@ class LcarsEngineeringCard extends LitElement {
                   <div class="eng-battery-switches" role="group" aria-label="${name} controls">
                     ${b.siblings.switches.map(sw => {
                       const isOn = sw.state?.state === 'on';
-                      const label = (sw.state?.attributes?.friendly_name || sw.eid.split('.').pop().replace(/_/g, ' '))
-                        .replace(/^.*?(USB Enabled|Grid Bypass|AC Enabled|DC \(?12V\)? Enabled|X-Boost Enabled|AC Always On|Backup Reserve Enabled)$/i, '$1')
-                        .toUpperCase();
+                      const label = sw.label;
                       const pillColor = isOn ? 'var(--lcars-ice)' : 'var(--lcars-gray)';
                       const pillBg = isOn ? 'rgba(153,204,255,0.15)' : 'rgba(102,102,136,0.10)';
                       return html`

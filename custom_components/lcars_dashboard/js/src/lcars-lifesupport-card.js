@@ -9,7 +9,7 @@
  * SwitchBot meters, VeSync purifiers, HomeKit controllers, WeatherFlow/Link.
  */
 import { LitElement, html, css, svg } from 'lit-element';
-import { lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
+import { lcarsEventBus, showMoreInfo, lcarsLog } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getAllAreasFlat } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
@@ -61,7 +61,7 @@ class LcarsLifeSupportCard extends LitElement {
     const states = this._hass.states || {};
 
     const allAreas = getAllAreasFlat(this._hass);
-    console.debug(`[LCARS-LS] _discoverAll: ${allAreas.length} areas`);
+    lcarsLog.debug(TAG, `_discoverAll: ${allAreas.length} areas`);
 
     for (const { floor, area } of allAreas) {
       const raw = getAreaEntities(this._hass, area.area_id, this._entityCache);
@@ -72,7 +72,7 @@ class LcarsLifeSupportCard extends LitElement {
         return CLIMATE_CLASSES.has(dc) || AIR_CLASSES.has(dc) || e.entity_id.split('.')[0] === 'climate' || /_score$/i.test(e.entity_id);
       });
       if (lsEntities.length > 0) {
-        console.debug(`[LCARS-LS] Area "${area.name}" (${area.area_id}): ${raw.length} total, ${lsEntities.length} LS-relevant:`, lsEntities.map(e => e.entity_id));
+        lcarsLog.debug(TAG, `Area "${area.name}" (${area.area_id}): ${raw.length} total, ${lsEntities.length} LS-relevant:`, lsEntities.map(e => e.entity_id));
       }
       for (const e of raw) {
         const domain = e.entity_id.split('.')[0];
@@ -101,7 +101,7 @@ class LcarsLifeSupportCard extends LitElement {
         if (AIR_CLASSES.has(dc) || /filter_life/i.test(e.entity_id) || /_score$/i.test(e.entity_id)) { aqSensors.push(entry); continue; }
       }
     }
-    console.debug(`[LCARS-LS] Discovery totals: thermostats=${thermostats.length}, purifiers=${purifiers.length}, tempSensors=${tempSensors.length} (areas: ${[...new Set(tempSensors.map(e => e.area?.name))]}), aqSensors=${aqSensors.length} (areas: ${[...new Set(aqSensors.map(e => e.area?.name))]}), fans=${fans.length}, presenceSensors=${presenceSensors.length}`);
+    lcarsLog.debug(TAG, `Discovery totals: thermostats=${thermostats.length}, purifiers=${purifiers.length}, tempSensors=${tempSensors.length}, aqSensors=${aqSensors.length}, fans=${fans.length}, presenceSensors=${presenceSensors.length}`);
     return { thermostats, purifiers, tempSensors, aqSensors, fans, presenceSensors };
   }
 
@@ -335,13 +335,13 @@ class LcarsLifeSupportCard extends LitElement {
     if (rows.length === 0) return '';
 
     return html`
-      <div class="ls-section">
+      <div class="ls-section ls-temp-grid-section">
         <div class="ls-section-header">
           <span class="ls-section-label">TEMPERATURE & HUMIDITY SENSORS</span>
           <span class="ls-section-line"></span>
           <span class="ls-sensor-count">${rows.length} ${rows.length === 1 ? 'ZONE' : 'ZONES'}</span>
         </div>
-        <div class="ls-purifier-table">
+        <div class="ls-purifier-table ls-temp-grid">
           <div class="ls-table-header">
             <span class="ls-th">LOCATION</span>
             <span class="ls-th">TEMP</span>
@@ -379,9 +379,13 @@ class LcarsLifeSupportCard extends LitElement {
                 <span class="ls-td" style="color:${tempColor}">${d.temp ? `${Math.round(d.temp.val * 10) / 10}°` : '—'}</span>
                 <span class="ls-td">${d.humidity ? `${Math.round(d.humidity.val)}%` : '—'}</span>
                 <span class="ls-td"
+                  role="${presenceEid ? 'button' : 'presentation'}"
+                  tabindex="${presenceEid ? '0' : '-1'}"
+                  aria-label="${presenceEid ? `${name.toUpperCase()} presence: ${presenceLabel}` : presenceLabel}"
                   style="color:${presenceColor}; cursor:${presenceEid ? 'pointer' : 'default'}"
                   title="${presenceLabel}"
-                  @click=${(ev) => { if (presenceEid) { ev.stopPropagation(); showMoreInfo(presenceEid); } }}>
+                  @click=${(ev) => { if (presenceEid) { ev.stopPropagation(); showMoreInfo(presenceEid); } }}
+                  @keydown=${(ev) => { if (presenceEid && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); ev.stopPropagation(); showMoreInfo(presenceEid); } }}>
                   ${presenceGlyph}
                 </span>
                 <span class="ls-td" style="color:${statusColor}">${status}</span>
@@ -833,9 +837,10 @@ class LcarsLifeSupportCard extends LitElement {
         .ls-td-model { font-size: 0.7rem; color: var(--lcars-gray, #666688); }
         .ls-th { display: flex; align-items: center; }
 
-        /* Temp grid uses 5 columns (LOCATION TEMP HUMIDITY PRESENCE STATUS) */
-        .ls-section:last-of-type .ls-table-header,
-        .ls-section:last-of-type .ls-table-row {
+        /* Temp grid uses 5 columns (LOCATION TEMP HUMIDITY PRESENCE STATUS) —
+           targeted by explicit class so future appended .ls-section's don't break the layout. */
+        .ls-temp-grid .ls-table-header,
+        .ls-temp-grid .ls-table-row {
           grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
         }
         /* Purifier row uses 6 columns */
@@ -890,10 +895,11 @@ class LcarsLifeSupportCard extends LitElement {
         /* ─── Sidebar AQ panel override ─── */
         .ls-sidebar .ls-aq-panel { flex-direction: column; }
         .ls-sidebar .ls-section { padding: 0.75rem; background: rgba(136,153,255,0.03); }
-        /* Sidebar Per-Room table: lock to 7 cols, nowrap, compact font (prevents
-           "61%" RH cell from wrapping below room name). Cells truncate w/ ellipsis. */
-        .ls-sidebar .ls-purifier-table .ls-table-header,
-        .ls-sidebar .ls-purifier-table .ls-table-row {
+        /* Sidebar Per-Room AQ table: lock to 7 cols, nowrap, compact font (prevents
+           "61%" RH cell from wrapping below room name). Cells truncate w/ ellipsis.
+           Excludes .ls-temp-grid (which renders 5 cells). */
+        .ls-sidebar .ls-purifier-table:not(.ls-temp-grid) .ls-table-header,
+        .ls-sidebar .ls-purifier-table:not(.ls-temp-grid) .ls-table-row {
           grid-template-columns: minmax(4rem, 1.6fr) repeat(6, minmax(1.75rem, 1fr));
           gap: 0.25rem;
           font-size: 0.7rem;
@@ -906,9 +912,9 @@ class LcarsLifeSupportCard extends LitElement {
           text-overflow: ellipsis;
         }
 
-        /* ─── Per-Room Atmosphere table 7-col ─── */
-        .ls-main-content .ls-purifier-table .ls-table-header,
-        .ls-main-content .ls-purifier-table .ls-table-row {
+        /* ─── Per-Room Atmosphere table 7-col (excludes .ls-temp-grid which is 5-col) ─── */
+        .ls-main-content .ls-purifier-table:not(.ls-temp-grid) .ls-table-header,
+        .ls-main-content .ls-purifier-table:not(.ls-temp-grid) .ls-table-row {
           grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr;
         }
       `,

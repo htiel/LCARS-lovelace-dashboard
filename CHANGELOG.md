@@ -2,6 +2,29 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.1.0-beta.36] — 2026-05-03
+
+### Quad-Agent QA Polish (Geordi / Wesley / Worf / Data review of beta.35)
+
+**Architecture / Maintainability (Data P1)**
+- Replaced brittle `.ls-section:last-of-type` selector with explicit `.ls-temp-grid` class on the Life Support **TEMPERATURE & HUMIDITY** table. Future appended `.ls-section`'s no longer silently break the 5-column PRESENCE layout.
+- Tightened sidebar 7-column override (`.ls-sidebar .ls-purifier-table:not(.ls-temp-grid)`) so it cannot accidentally style the 5-cell temp grid if it ever lands in the sidebar.
+- Tightened the main-content 7-column rule the same way.
+
+**Performance (Data P2-1)**
+- Engineering battery card switch labels are now **memoized during enrichment** rather than recomputed on every render. The `friendly_name` regex (USB / Grid Bypass / X-Boost / DC 12V / AC Enabled / Backup Reserve) runs once per state change instead of 12–40 times per `requestUpdate`.
+- Switches now sort by computed label rather than entity_id for stable, human-readable order.
+
+**Accessibility (Worf P3-5)**
+- Life Support **PRESENCE** cell gained `role="button"`, `tabindex="0"`, an `aria-label` (`"<ROOM> presence: OCCUPIED|VACANT|NO SENSOR"`), and Enter/Space keyboard activation. Now matches the keyboard parity already on the Engineering switch pills.
+
+**Security / Defensive (Worf P3-1, P3-3)**
+- Removed three raw `console.debug(...)` calls from `lcars-lifesupport-card.js` (area names, entity IDs, discovery totals leaked to devtools on every render). Now routed through `lcarsLog.debug()` which is gated on `window.__LCARS_DEBUG`.
+- Added a 40-character cap on Engineering battery switch pill labels to defend against malicious or excessively long `friendly_name` values overflowing the layout.
+
+### Notes
+- The **"BETA.33" footer** flagged on the Power dashboard during QA was traced to browser/HACS cache, not a code bug — every layout (`lcars-dashboard-layout`, `lcars-engineering-layout`, `lcars-tactical-layout`, etc.) reads its version from `package.json` at build time. Hard reload after upgrading.
+
 ## [5.1.0-beta.35] — 2026-05-03
 
 ### Life Support — Sidebar Per-Room Table Layout Fix

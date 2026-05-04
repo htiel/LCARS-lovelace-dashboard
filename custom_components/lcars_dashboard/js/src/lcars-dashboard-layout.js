@@ -615,80 +615,35 @@ class LcarsDashboardLayout extends LitElement {
           line-height: var(--lcars-bar-h);
         }
 
-        /* ─── Mobile: Collapse sidebar to top nav ─── */
+        /* ─── Mobile: Hold the LCARS sweep, narrow to one elbow unit (Geordi ruling, beta.36 QA) ─── */
         @media (max-width: 767px) {
-          .lcars-frame {
-            grid-template-columns: 1fr;
-            grid-template-rows: auto auto 1fr auto;
+          :host {
+            /* Narrow the entire frame to one elbow unit (~88px) per LCARS PADD canon.
+               Sweep is preserved — never flip to a horizontal nav. Area button labels
+               truncate inline; deferred work: 'MORE ▸' overflow popup for >6 items. */
+            --lcars-sidebar-w: 5.5rem;
+            --lcars-elbow-w: 5rem;
+            --lcars-elbow-h: 3rem;
+            --lcars-elbow-radius: 2.25rem;
           }
-
-          .lcars-elbow-top,
-          .lcars-elbow-bottom {
-            display: none;
+          .lcars-header-title { font-size: 1.25rem; padding: 0 0.5rem; }
+          .lcars-sidebar-panel {
+            font-size: 0.625rem;
+            padding: 0.125rem 0.25rem;
+            text-align: center;
           }
-
-          .lcars-header {
-            grid-column: 1;
-            grid-row: 1;
-          }
-
-          .lcars-sidebar {
-            grid-column: 1;
-            grid-row: 2;
-            flex-direction: row;
-            overflow-x: auto;
-            overflow-y: hidden;
-            padding: var(--lcars-gap) 0;
-          }
-
-          .lcars-sidebar-panel { display: none; }
-
-          .lcars-sidebar-areas {
-            flex-direction: row;
-            overflow-x: auto;
-            overflow-y: hidden;
-            mask-image: none;
-            -webkit-mask-image: none;
-          }
-
-          .lcars-sidebar-areas::after {
-            display: none;
-          }
-
-          .sidebar-area-btn {
-            flex-shrink: 0;
-            width: auto;
-            min-width: 8rem;
-          }
-
+          .sidebar-area-btn,
           .sidebar-floor-btn {
-            flex-shrink: 0;
-            width: auto;
-            min-width: 6rem;
-            margin-top: 0;
+            font-size: 0.625rem;
+            padding: 0.375rem 0.25rem;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
-
-          .sidebar-unassigned-label {
-            display: none;
-          }
-
-          .lcars-sidebar-areas::after {
-            display: none;
-          }
-
-          .lcars-sidebar-nav {
-            flex-direction: row;
-          }
-
-          .lcars-content {
-            grid-column: 1;
-            grid-row: 3;
-          }
-
-          .lcars-footer {
-            grid-column: 1;
-            grid-row: 4;
-          }
+          .sidebar-unassigned-label { font-size: 0.5rem; }
+          .lcars-content { padding: 0.25rem; }
+          .mute-btn ha-icon { --mdc-icon-size: 14px; }
         }
       `,
     ];

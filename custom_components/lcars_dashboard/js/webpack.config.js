@@ -45,5 +45,15 @@ module.exports = {
     filename: 'lcars-dashboard.js',
     path: path.resolve(__dirname, 'dist')
   },
+  // The 244 KiB default targets public 3G mobile web apps. This bundle is
+  // served once-per-frontend-session over LAN (or HTTPS w/ aggressive cache)
+  // to a kiosk/desktop browser inside Home Assistant — the original threshold
+  // is irrelevant here. Raised to 1.5 MiB; revisit chunk-splitting only if
+  // we exceed it. See Data's analysis (beta.36 review).
+  performance: {
+    maxAssetSize: 1500000,
+    maxEntrypointSize: 1500000,
+    hints: 'warning'
+  },
   devtool: false
 };

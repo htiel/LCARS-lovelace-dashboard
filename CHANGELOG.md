@@ -2,6 +2,21 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.1.0-beta.37] — 2026-05-03
+
+### Mobile Navigation Consistency — LCARS Sweep Preserved at All Widths (Geordi ruling)
+
+Per Geordi's design ruling on the beta.35 mobile QA, the LCARS swept silhouette must be preserved on small screens (PADD canon). Previous behavior on **Habitat** and **Illumination** was to flip the sidebar to a horizontal pill row at ≤ 767px, breaking the elbow geometry and visually degrading to "generic mobile app chrome."
+
+**Changes:**
+- **Habitat** (`lcars-dashboard-layout`): removed mobile horizontal-flip media block. Sidebar now stays vertical, narrowed to one elbow unit (~88 px / 5.5 rem). Area / floor button labels truncate inline with ellipsis.
+- **Illumination** (`lcars-illumination-layout`): same fix — ALL DEVICES / LIGHTS / CIRCUITS pills now stack vertically in the narrow sidebar, matching Tactical / Power / Life Support.
+- **Shared frame tokens** (`lcars-styles.js`): added a global `@media (max-width: 767px)` block that shrinks `--lcars-sidebar-w`, `--lcars-elbow-w`, `--lcars-elbow-h`, and `--lcars-font-size-title`. All five dashboards inherit consistently.
+
+**Result:** all five dashboards now present an identical LCARS frame on mobile — swept elbow + vertical sweep + footer bar — with the same 88 px sidebar width. Bracer Jack uniformity principle satisfied.
+
+**Deferred:** Habitat has many areas; per Geordi a future release should add a `MORE ▸` overflow popup so only the 4-6 most-used areas live in the sidebar and the rest open via popup. Tracked in backlog.
+
 ## [5.1.0-beta.36] — 2026-05-03
 
 ### Quad-Agent QA Polish (Geordi / Wesley / Worf / Data review of beta.35)

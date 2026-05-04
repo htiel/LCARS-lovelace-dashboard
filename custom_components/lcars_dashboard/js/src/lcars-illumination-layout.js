@@ -347,29 +347,26 @@ class LcarsIlluminationLayout extends LitElement {
           flex-shrink: 0;
         }
 
-        /* ─── Mobile ─── */
+        /* ─── Mobile: Hold the LCARS sweep, narrow to one elbow unit (Geordi ruling, beta.36 QA) ─── */
         @media (max-width: 767px) {
-          .lcars-frame {
-            grid-template-columns: 1fr;
-            grid-template-rows: auto auto 1fr auto;
+          :host {
+            /* Narrow the entire frame to one elbow unit (~88px) per LCARS PADD canon.
+               Sweep is preserved — never flip to a horizontal nav. */
+            --lcars-sidebar-w: 5.5rem;
+            --lcars-elbow-w: 5rem;
+            --lcars-elbow-h: 3rem;
+            --lcars-elbow-radius: 2.25rem;
           }
-          .lcars-elbow-top, .lcars-elbow-bottom { display: none; }
-          .lcars-header { grid-column: 1; grid-row: 1; }
-          .lcars-sidebar {
-            grid-column: 1; grid-row: 2;
-            flex-direction: row;
+          .lcars-header-title { font-size: 1.25rem; padding: 0 0.5rem; }
+          .lcars-sidebar-panel {
+            font-size: 0.625rem;
+            padding: 0.125rem 0.25rem;
+            text-align: center;
           }
-          .lcars-sidebar-panel { display: none; }
-          .lcars-sidebar-filters { flex-direction: row; }
-          .sidebar-filter-btn {
-            border-radius: 0; min-height: 3.5rem;
-          }
-          .sidebar-filter-btn:first-child { border-radius: 1rem 0 0 1rem; }
-          .sidebar-filter-btn:last-child { border-radius: 0 1rem 1rem 0; }
-          .filter-count { font-size: 1.5rem; }
-          .filter-label { font-size: 0.75rem; }
-          .lcars-content { grid-column: 1; grid-row: 3; }
-          .lcars-footer { grid-column: 1; grid-row: 4; }
+          .filter-label { font-size: 0.75rem; letter-spacing: 0.04em; }
+          .sidebar-filter-btn { padding: 0.25rem 0.125rem; }
+          .lcars-content { padding: 0.25rem; }
+          .mute-btn ha-icon { --mdc-icon-size: 14px; }
         }
       `,
     ];

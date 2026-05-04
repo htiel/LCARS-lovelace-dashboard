@@ -208,6 +208,22 @@ export const lcarsBaseStyles = css`
       animation-duration: 0.01ms !important;
     }
   }
+
+  /* ─── Mobile: Narrow LCARS frame to one elbow unit (Geordi ruling, beta.36 QA) ───
+     Per LCARS PADD canon, the swept silhouette MUST be preserved at narrow widths.
+     We never flip to a horizontal nav. Instead we shrink the frame tokens so all
+     dashboards (Habitat, Tactical, Power, Life Support, Illumination, Cetacean)
+     consistently inherit the narrow geometry. Per-layout overrides may further
+     tune label sizes for their specific buttons. */
+  @media (max-width: 767px) {
+    :host {
+      --lcars-sidebar-w: 5.5rem;
+      --lcars-elbow-w: 5rem;
+      --lcars-elbow-h: 3rem;
+      --lcars-elbow-radius: 2.25rem;
+      --lcars-font-size-title: 1.25rem;
+    }
+  }
 `;
 
 /**

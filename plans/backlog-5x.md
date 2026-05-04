@@ -39,18 +39,61 @@ Anti-pattern in template/render path that should be eliminated before it spreads
 Targeted audit/update constrained by `lit-html` 1.x compatibility limits. Should follow beta blockers to avoid toolchain destabilization.
 **Aliases**: WORF-SEC-005
 
+---
+
+## Open Bugs (from beta.35 Quad-Agent QA — Geordi/Wesley/Worf/Data, May 2026)
+
+> Full review: `localinfo/qa-screenshots/beta35/REVIEW-SUMMARY.md` (27 screenshots covering 17 Habitat areas + 5 dashboards)
+
+#### 5X-B26 · Power Dashboard Double-Counts Battery Port Telemetry as Circuit Load — `TODO` · Priority: HIGH · Size: M · [#93](https://github.com/htiel/LCARS-lovelace-dashboard/issues/93)
+EcoFlow UPS Air port sensors are counted both as battery flow AND as discrete circuits → ~1 kW phantom load. Fix: exclude any sensor whose `device_id` matches a device that already produced a battery card.
+**Aliases**: Data P1-3, Geordi #6
+
+#### 5X-B27 · Filter prototype_*/debug_*/test_* Entities From Area Discovery — `TODO` · Priority: HIGH · Size: S · [#97](https://github.com/htiel/LCARS-lovelace-dashboard/issues/97)
+PROTOTYPE BUTTON 1-8 visible on Office page in production. Add reserved-prefix filter to area enumeration.
+**Aliases**: Geordi #29
+
+#### 5X-B28 · Habitat Mobile Sidebar — MORE-Popup Overflow For Areas Beyond Top 4-6 — `TODO` · Priority: MEDIUM · Size: M · [#94](https://github.com/htiel/LCARS-lovelace-dashboard/issues/94)
+Beta.37 narrowed sidebar to ~88px on mobile per Geordi. Habitat has 15-30+ areas — needs an LCARS-styled MORE popup so only top N stay visible. Tactical/Power/LS/Lighting unaffected (≤6 buttons).
+**Aliases**: Geordi mobile-spec follow-up
+
+#### 5X-B29 · Tactical Donut Center Text Fails WCAG 1.4.3 — `TODO` · Priority: MEDIUM · Size: S · [#95](https://github.com/htiel/LCARS-lovelace-dashboard/issues/95)
+`0/1 LOCKED` is tomato-on-tomato (~1.5:1). Fix in `lcars-ring-gauge.js` so all donuts render center text on opaque dark background regardless of ring color.
+**Aliases**: Geordi #18
+
+#### 5X-B30 · Off-Palette Green in AQI Rings and RGB Preset Chips — `TODO` · Priority: MEDIUM · Size: S · [#96](https://github.com/htiel/LCARS-lovelace-dashboard/issues/96)
+LCARS canon has no green. Replace AQI "GOOD" tier with `var(--lcars-ice)`; document RGB chip rule.
+**Aliases**: Geordi #26
+
+#### 5X-B31 · Placeholder Rendering — `— 0W` / `—%` Parses As "Minus" — `TODO` · Priority: MEDIUM · Size: S · [#98](https://github.com/htiel/LCARS-lovelace-dashboard/issues/98)
+Replace em-dash-before-unit with bare `—`, `NO DATA`, or grayed last value. Add `formatOrDash(value, unit)` helper to enforce.
+**Aliases**: Geordi #16
+
+#### 5X-B32 · DECK 1/2 Sidebar Headers Use Gradient — Violates Bracer Jack Rule #1 — `TODO` · Priority: MEDIUM · Size: S · [#100](https://github.com/htiel/LCARS-lovelace-dashboard/issues/100)
+Replace gradient with single flat color. Add stylelint rule to flag any future `gradient(` outside whitelisted decorative spots.
+**Aliases**: Geordi #5
+
+#### 5X-B33 · Camera access_token Leaks Via `<img src>` URL — `TODO` · Priority: MEDIUM · Size: M · [#99](https://github.com/htiel/LCARS-lovelace-dashboard/issues/99)
+Token in DOM, history, screenshots, proxy logs. Move to fetch+blob with cookie auth, or migrate to `<ha-camera-stream>`.
+**Aliases**: Worf P2-1 (pre-existing)
+
+#### 5X-F4 · Life Support — Replace Presence Dot With 24h Sparkline Strip — `TODO` · Priority: LOW · Size: S · [#101](https://github.com/htiel/LCARS-lovelace-dashboard/issues/101)
+Top Wesley innovation pick (S effort / L value). Same single-cell footprint, far more information. Recorder data already in HA.
+**Aliases**: Wesley A1
+
 ### Triaged Out (Not LCARS Code Defects)
 
 - **GEO-508** — "DINNING ROOM" is a Home Assistant area naming typo, not an LCARS defect
 - **GEO-514 / WC5-007** (naming portion) — "Neetwork" is HA naming drift; sparse-layout symptom carried in 5X-B17
+- **BETA.33 footer on Power dashboard** — flagged by Geordi/Data in beta.35 review; root-caused to browser/HACS cache. All layouts read version from `package.json` at build time. No code fix needed.
 
 ### Summary
 | Severity | Total | Remaining |
 |----------|-------|-----------|
-| HIGH | 1 | 1 |
-| MEDIUM | 3 | 3 |
-| LOW | 1 | 1 |
-| **Total** | **5** | **5** |
+| HIGH | 3 | 3 |
+| MEDIUM | 9 | 9 |
+| LOW | 2 | 2 |
+| **Total** | **14** | **14** |
 
 ---
 

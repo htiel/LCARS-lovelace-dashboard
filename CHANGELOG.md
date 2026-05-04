@@ -15,6 +15,22 @@ Following visual review of beta.37, the narrowed (~88 px) Habitat sidebar at ≤
 - Active-state gold background unchanged.
 - Tablet/desktop (≥ 768 px) behavior identical to beta.37.
 
+### Accessibility Fixes (from beta.38 spec audit, rolled into release)
+
+**Camera Panel — Keyboard Activation (closes #103, WCAG 2.1.1 Level A)**
+- The per-area `.camera-frame` was previously click-only — keyboard users could not open the camera more-info dialog. Added `role="button"`, `tabindex="0"`, `aria-label`, and an Enter/Space `@keydown` handler. Same pattern as beta.36 PRESENCE / battery / alarm pills.
+
+**Hazard Panel — Alarm `aria-live` Announcement (closes #105, WCAG 4.1.3, safety-critical)**
+- Smoke/CO/heat/safety state changes were previously visual-only. Screen-reader users now get an assertive `role="alert"` announcement on the `⚠ N ALERT` badge and a polite `role="status"` for `ALL CLEAR` transitions.
+
+### Documentation
+
+- Added 7 missing specs reverse-engineered from shipped code: Battery, Camera, Galley, Hazard, Viewport (panels) + Habitat, Illumination (dashboards).
+- README version badge bumped to beta.38; "Responsive" bullet rewritten to reflect Geordi-canon (sweep preserved + Habitat icon-only).
+- `LCARS-UI-ARCHITECTURE.md §10` rewritten — old "horizontal-flip on mobile" approach marked as historical / do-not-implement.
+- `LCARS-ENGINEERING-DASHBOARD-SPEC.md`, `LCARS-LIFESUPPORT-DASHBOARD-SPEC.md` "Updated" lines refreshed.
+- `LCARS-EV-CHARGER-PANEL-SPEC.md`, `LCARS-PORTABLE-AC-ADDENDUM.md` — clarified v5 carry-over status.
+
 ## [5.1.0-beta.37] — 2026-05-03
 
 ### Mobile Navigation Consistency — LCARS Sweep Preserved at All Widths (Geordi ruling)

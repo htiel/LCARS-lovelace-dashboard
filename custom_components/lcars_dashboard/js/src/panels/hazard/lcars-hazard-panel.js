@@ -80,10 +80,13 @@ class LcarsHazardPanel extends LcarsBasePanel {
       return HAZARD_STATUS_CLASSES.has(dc) && e.state?.state === 'on';
     }).length;
 
+    // Safety-critical: wrap in aria-live region so screen readers announce
+    // CLEAR ↔ ALERT transitions. role="alert" + assertive => interrupt SR queue.
+    // (5X-B35 / #105 — beta.38)
     if (alertCount > 0) {
-      return html`<lcars-summary-badge value="⚠ ${alertCount} ALERT" color="var(--lcars-tomato)"></lcars-summary-badge>`;
+      return html`<div role="alert" aria-live="assertive" aria-atomic="true"><lcars-summary-badge value="⚠ ${alertCount} ALERT" color="var(--lcars-tomato)"></lcars-summary-badge></div>`;
     }
-    return html`<lcars-summary-badge value="ALL CLEAR" color="var(--lcars-sunflower)"></lcars-summary-badge>`;
+    return html`<div role="status" aria-live="polite" aria-atomic="true"><lcars-summary-badge value="ALL CLEAR" color="var(--lcars-sunflower)"></lcars-summary-badge></div>`;
   }
 
   /* ─── Render ─── */

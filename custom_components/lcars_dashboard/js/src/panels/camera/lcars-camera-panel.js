@@ -167,7 +167,11 @@ class LcarsCameraPanel extends LcarsBasePanel {
               <div class="camera-frame" data-state="${camState}"
                 style="${idx > 0 ? 'margin-top:var(--lcars-gap);border-top:2px solid var(--panel-frame-color)' : ''}"
                 aria-busy="${camState === 'connecting'}"
-                @click=${() => this._handleEntityClick(entity.entity_id)}>
+                role="button"
+                tabindex="0"
+                aria-label="${name} camera feed, activate to open"
+                @click=${() => this._handleEntityClick(entity.entity_id)}
+                @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleEntityClick(entity.entity_id); } }}>
                 <div class="camera-connecting-overlay" aria-hidden="true">
                   <span class="camera-connecting-text">ESTABLISHING LINK</span>
                 </div>

@@ -3585,7 +3585,11 @@
               <div class="camera-frame" data-state="${o}"
                 style="${a>0?"margin-top:var(--lcars-gap);border-top:2px solid var(--panel-frame-color)":""}"
                 aria-busy="${"connecting"===o}"
-                @click=${()=>this._handleEntityClick(e.entity_id)}>
+                role="button"
+                tabindex="0"
+                aria-label="${n} camera feed, activate to open"
+                @click=${()=>this._handleEntityClick(e.entity_id)}
+                @keydown=${t=>{"Enter"!==t.key&&" "!==t.key||(t.preventDefault(),this._handleEntityClick(e.entity_id))}}>
                 <div class="camera-connecting-overlay" aria-hidden="true">
                   <span class="camera-connecting-text">ESTABLISHING LINK</span>
                 </div>
@@ -7737,7 +7741,7 @@
       transition-duration: 0.01ms !important;
     }
   }
-`,K=new Set(["smoke","gas","carbon_monoxide","heat","safety"]);new Set(["battery"]),customElements.define("lcars-hazard-panel",class extends C{get panelType(){return"hazard"}get defaultPanelTitle(){return"HAZARD DETECTION"}get frameColor(){return this._getAllEntities().some(e=>{const t=e.state?.attributes?.device_class||"";return K.has(t)&&"on"===e.state?.state})?"var(--lcars-tomato)":"var(--lcars-sunflower)"}static get styles(){return[...super.styles,i.AM,Z]}_partitionEntities(){const e=this._getAllEntities(),t=this.hass?.devices||{},a=new Map,r=[];for(const s of e){const e=s.entity?.device_id;e?(a.has(e)||a.set(e,{device:t[e]||null,entries:[]}),a.get(e).entries.push(s)):r.push(s)}return{deviceMap:a,ungrouped:r}}renderBadge(){const e=this._getAllEntities().filter(e=>{const t=e.state?.attributes?.device_class||"";return K.has(t)&&"on"===e.state?.state}).length;return e>0?r.qy`<lcars-summary-badge value="⚠ ${e} ALERT" color="var(--lcars-tomato)"></lcars-summary-badge>`:r.qy`<lcars-summary-badge value="ALL CLEAR" color="var(--lcars-sunflower)"></lcars-summary-badge>`}renderContent(){const{deviceMap:e,ungrouped:t}=this._partitionEntities();return 0===e.size&&0===t.length?r.qy`<div class="hazard-empty">NO HAZARD DETECTORS</div>`:r.qy`
+`,K=new Set(["smoke","gas","carbon_monoxide","heat","safety"]);new Set(["battery"]),customElements.define("lcars-hazard-panel",class extends C{get panelType(){return"hazard"}get defaultPanelTitle(){return"HAZARD DETECTION"}get frameColor(){return this._getAllEntities().some(e=>{const t=e.state?.attributes?.device_class||"";return K.has(t)&&"on"===e.state?.state})?"var(--lcars-tomato)":"var(--lcars-sunflower)"}static get styles(){return[...super.styles,i.AM,Z]}_partitionEntities(){const e=this._getAllEntities(),t=this.hass?.devices||{},a=new Map,r=[];for(const s of e){const e=s.entity?.device_id;e?(a.has(e)||a.set(e,{device:t[e]||null,entries:[]}),a.get(e).entries.push(s)):r.push(s)}return{deviceMap:a,ungrouped:r}}renderBadge(){const e=this._getAllEntities().filter(e=>{const t=e.state?.attributes?.device_class||"";return K.has(t)&&"on"===e.state?.state}).length;return e>0?r.qy`<div role="alert" aria-live="assertive" aria-atomic="true"><lcars-summary-badge value="⚠ ${e} ALERT" color="var(--lcars-tomato)"></lcars-summary-badge></div>`:r.qy`<div role="status" aria-live="polite" aria-atomic="true"><lcars-summary-badge value="ALL CLEAR" color="var(--lcars-sunflower)"></lcars-summary-badge></div>`}renderContent(){const{deviceMap:e,ungrouped:t}=this._partitionEntities();return 0===e.size&&0===t.length?r.qy`<div class="hazard-empty">NO HAZARD DETECTORS</div>`:r.qy`
       <div class="hazard-content">
         <div class="hazard-section-label">DETECTORS</div>
         <div class="hazard-detectors">

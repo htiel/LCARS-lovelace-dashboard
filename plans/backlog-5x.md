@@ -83,13 +83,13 @@ Top Wesley innovation pick (S effort / L value). Same single-cell footprint, far
 
 ## Open Bugs (from beta.38 Spec Audit — May 2026, multi-agent reverse-engineering pass)
 
-#### 5X-B34 · Camera Panel — `.camera-frame` Click-Only, No Keyboard Activation — `TODO` · Priority: HIGH · Size: S · [#103](https://github.com/htiel/LCARS-lovelace-dashboard/issues/103)
-Primary clickable element on the per-area Camera panel is a `<div>` with `@click` only. No `tabindex`, no `@keydown`, no `role="button"`. Violates WCAG 2.1.1 (Level A). Apply same pattern used on battery / alarm / PRESENCE pills in beta.36.
+#### 5X-B34 · Camera Panel — `.camera-frame` Click-Only, No Keyboard Activation — `DONE` (v5.1.0-beta.38) · Priority: HIGH · Size: S · [#103](https://github.com/htiel/LCARS-lovelace-dashboard/issues/103)
+Shipped: added `role="button"`, `tabindex="0"`, `aria-label`, and Enter/Space `@keydown` handler. WCAG 2.1.1 satisfied.
 **Aliases**: Geordi spec-audit camera-1
 
-#### 5X-B35 · Hazard Panel — Alarm State Has No `aria-live` Announcement — `TODO` · Priority: HIGH · Size: S · [#105](https://github.com/htiel/LCARS-lovelace-dashboard/issues/105)
-Smoke/CO/heat/safety alarm transitions render visually only. Screen-reader users get zero notification. Wrap badge in `role="alert" aria-live="assertive"`. Safety-critical. Also includes HZ-04: panel renders calm "NO HAZARD DETECTORS" with sunflower frame on integration outage (fail-open posture).
-**Aliases**: Worf+Geordi HZ-01, HZ-04
+#### 5X-B35 · Hazard Panel — Alarm State Has No `aria-live` Announcement — `DONE` (v5.1.0-beta.38) · Priority: HIGH · Size: S · [#105](https://github.com/htiel/LCARS-lovelace-dashboard/issues/105)
+Shipped: badge wrapped in `role="alert" aria-live="assertive"` (alert state) and `role="status" aria-live="polite"` (clear state). WCAG 4.1.3 satisfied. **Note:** HZ-04 fail-open posture (sunflower frame on integration outage) is *not* fixed in this batch — deferred for follow-up.
+**Aliases**: Worf+Geordi HZ-01 (HZ-04 deferred)
 
 #### 5X-B36 · Audio — `lcars-audio.js` Cues Not Documented in `LCARS-AUDIO-SPEC.md` — `TODO` · Priority: MEDIUM · Size: M · [#107](https://github.com/htiel/LCARS-lovelace-dashboard/issues/107)
 Spec drift: `coverAction`, `lightToggle`, `switchToggle`, `scriptFire`, `climateAdjust` (cross-domain reuse) all exist in code but are absent from the audio spec's 7-sound vocabulary. Audit + sync. Decide on `climateAdjust` → `analogAdjust` rename.
@@ -112,10 +112,10 @@ Edit-mode drag-reorder fails WCAG 2.5.7 (no keyboard alternative). Color preset 
 ### Summary
 | Severity | Total | Remaining |
 |----------|-------|-----------|
-| HIGH | 5 | 5 |
+| HIGH | 5 | 3 |
 | MEDIUM | 13 | 13 |
 | LOW | 2 | 2 |
-| **Total** | **20** | **20** |
+| **Total** | **20** | **18** |
 
 ---
 

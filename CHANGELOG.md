@@ -15,6 +15,19 @@ Following visual review of beta.37, the narrowed (~88 px) Habitat sidebar at ≤
 - Active-state gold background unchanged.
 - Tablet/desktop (≥ 768 px) behavior identical to beta.37.
 
+### Engineering — Battery PASS-THRU State (Captain's spot, hotfix)
+
+The Engineering battery cards previously had three flow states: ▲ CHARGING / ▼ DISCHARGING / ━ IDLE. A UPS in **online mode** (grid → battery → load with balanced flow) was silently labeled IDLE because the net delta was within the 5 W deadband. Captain noticed two UPS units showing IDLE while clearly passing power; only the truly-off `BigBoy-DPU` reads 0/0.
+
+**Fix:** Added a fourth state — `═ PASS-THRU NNN W` (sunflower) — triggered when both `totalIn > 0` and `totalOut > 0` but neither charging nor discharging. Truly idle units (0/0) still read `━ IDLE` (gray).
+
+| State | Symbol | Color | Condition |
+|---|---|---|---|
+| CHARGING | ▲ | ice | `in > out + 5` |
+| DISCHARGING | ▼ | butterscotch | `out > in + 5` |
+| **PASS-THRU** | **═** | **sunflower** | `in > 0 && out > 0` (balanced) |
+| IDLE | ━ | gray | both 0 (or one ≤0) |
+
 ### Accessibility Fixes (from beta.38 spec audit, rolled into release)
 
 **Camera Panel — Keyboard Activation (closes #103, WCAG 2.1.1 Level A)**

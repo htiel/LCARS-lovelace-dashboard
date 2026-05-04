@@ -450,9 +450,23 @@ class LcarsEngineeringCard extends LitElement {
             const totalOut = b.siblings?.totalOutWatts || 0;
             const isCharging = totalIn > totalOut + 5;
             const isDischarging = totalOut > totalIn + 5;
-            const flowLabel = isCharging ? `▲ CHARGING ${formatNumber(totalIn, 0)}W` : isDischarging ? `▼ DISCHARGING ${formatNumber(totalOut, 0)}W` : '━ IDLE';
-            const flowColor = isCharging ? 'var(--lcars-ice)' : isDischarging ? 'var(--lcars-butterscotch)' : 'var(--lcars-gray)';
-            const flowBg = isCharging ? 'rgba(153,204,255,0.15)' : isDischarging ? 'rgba(255,153,102,0.15)' : 'rgba(102,102,136,0.15)';
+            // PASS-THRU: UPS online — grid feeding load through battery, balanced flow.
+            // Triggered when both ports are doing work (>0 W) but net flow is within deadband.
+            // BigBoy-DPU truly idle reads 0/0 → falls through to IDLE; an EcoFlow / NUT UPS
+            // online reads e.g. 200W/200W → PASS-THRU. (Captain's call, beta.38 hotfix)
+            const isPassthrough = !isCharging && !isDischarging && totalIn > 0 && totalOut > 0;
+            const flowLabel = isCharging ? `▲ CHARGING ${formatNumber(totalIn, 0)}W`
+                            : isDischarging ? `▼ DISCHARGING ${formatNumber(totalOut, 0)}W`
+                            : isPassthrough ? `═ PASS-THRU ${formatNumber(totalOut, 0)}W`
+                            : '━ IDLE';
+            const flowColor = isCharging ? 'var(--lcars-ice)'
+                            : isDischarging ? 'var(--lcars-butterscotch)'
+                            : isPassthrough ? 'var(--lcars-sunflower)'
+                            : 'var(--lcars-gray)';
+            const flowBg = isCharging ? 'rgba(153,204,255,0.15)'
+                          : isDischarging ? 'rgba(255,153,102,0.15)'
+                          : isPassthrough ? 'rgba(255,204,153,0.15)'
+                          : 'rgba(102,102,136,0.15)';
             // Telemetry
             const voltage = b.siblings?.voltage ? Number(b.siblings.voltage.state) : null;
             const temp = b.siblings?.temp ? Number(b.siblings.temp.state) : null;
@@ -484,7 +498,7 @@ class LcarsEngineeringCard extends LitElement {
                   </div>
                   <div class="eng-battery-stats">
                     <span class="eng-battery-soc" style="color:${coreColor}">${soc}%</span>
-                    <span class="eng-battery-flow" style="color:${flowColor}">${isCharging ? '▲' : isDischarging ? '▼' : '━'} ${isCharging ? formatNumber(totalIn, 0) : isDischarging ? formatNumber(totalOut, 0) : '0'}W</span>
+                    <span class="eng-battery-flow" style="color:${flowColor}">${isCharging ? '▲' : isDischarging ? '▼' : isPassthrough ? '═' : '━'} ${isCharging ? formatNumber(totalIn, 0) : isDischarging ? formatNumber(totalOut, 0) : isPassthrough ? formatNumber(totalOut, 0) : '0'}W</span>
                     ${voltage != null ? html`<span class="eng-battery-volt">${voltage}V</span>` : ''}
                   </div>
                 </div>

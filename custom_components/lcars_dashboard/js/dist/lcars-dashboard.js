@@ -1710,34 +1710,34 @@
                 ${e.upsSensors.find(e=>/status$/i.test(e.entity?.entity_id))?.state?.state?.toUpperCase()||"ONLINE"}
               </span>
             </div>`:""}
-          ${e.batteries.map(e=>{const t=Number(e.entry.state?.state)||0,a=(e.device?.name||e.entry.state?.attributes?.friendly_name||"BATTERY").toUpperCase(),i=t>50?"var(--lcars-ice)":t>20?"var(--lcars-sunflower)":"var(--lcars-tomato)",n=e.siblings?.totalInWatts||0,o=e.siblings?.totalOutWatts||0,l=n>o+5,d=o>n+5,p=l?`▲ CHARGING ${(0,c.ZV)(n,0)}W`:d?`▼ DISCHARGING ${(0,c.ZV)(o,0)}W`:"━ IDLE",u=l?"var(--lcars-ice)":d?"var(--lcars-butterscotch)":"var(--lcars-gray)",m=l?"rgba(153,204,255,0.15)":d?"rgba(255,153,102,0.15)":"rgba(102,102,136,0.15)",h=e.siblings?.voltage?Number(e.siblings.voltage.state):null,f=e.siblings?.temp?Number(e.siblings.temp.state):null,v=e.siblings?.runtime?.state||null,g=(e.siblings,e.device?.model||""),b=t>80?"var(--lcars-ice)":t>60?"var(--lcars-sky,#aaaaff)":t>40?"var(--lcars-bluey,#8899ff)":t>20?"var(--lcars-butterscotch)":t>10?"var(--lcars-peach,#ff8866)":"var(--lcars-tomato)",y=l?"mini-core-charging":d?"":"mini-core-idle",_=e.siblings?.soh?Number(e.siblings.soh.state):null,w=e.siblings?.cycles?Number(e.siblings.cycles.state):null,x=l?"FULL IN":d?"EMPTY IN":"RUNTIME";return r.qy`
+          ${e.batteries.map(e=>{const t=Number(e.entry.state?.state)||0,a=(e.device?.name||e.entry.state?.attributes?.friendly_name||"BATTERY").toUpperCase(),i=t>50?"var(--lcars-ice)":t>20?"var(--lcars-sunflower)":"var(--lcars-tomato)",n=e.siblings?.totalInWatts||0,o=e.siblings?.totalOutWatts||0,l=n>o+5,d=o>n+5,p=!l&&!d&&n>0&&o>0,u=l?`▲ CHARGING ${(0,c.ZV)(n,0)}W`:d?`▼ DISCHARGING ${(0,c.ZV)(o,0)}W`:p?`═ PASS-THRU ${(0,c.ZV)(o,0)}W`:"━ IDLE",m=l?"var(--lcars-ice)":d?"var(--lcars-butterscotch)":p?"var(--lcars-sunflower)":"var(--lcars-gray)",h=l?"rgba(153,204,255,0.15)":d?"rgba(255,153,102,0.15)":p?"rgba(255,204,153,0.15)":"rgba(102,102,136,0.15)",f=e.siblings?.voltage?Number(e.siblings.voltage.state):null,v=e.siblings?.temp?Number(e.siblings.temp.state):null,g=e.siblings?.runtime?.state||null,b=(e.siblings,e.device?.model||""),y=t>80?"var(--lcars-ice)":t>60?"var(--lcars-sky,#aaaaff)":t>40?"var(--lcars-bluey,#8899ff)":t>20?"var(--lcars-butterscotch)":t>10?"var(--lcars-peach,#ff8866)":"var(--lcars-tomato)",_=l?"mini-core-charging":d?"":"mini-core-idle",w=e.siblings?.soh?Number(e.siblings.soh.state):null,x=e.siblings?.cycles?Number(e.siblings.cycles.state):null,$=l?"FULL IN":d?"EMPTY IN":"RUNTIME";return r.qy`
               <div class="eng-source-card eng-battery-card" style="border-color:${i}"
                    role="button" tabindex="0"
                    @click=${()=>(0,s.Hv)(e.entry.entity.entity_id)}
                    @keydown=${t=>{"Enter"!==t.key&&" "!==t.key||(t.preventDefault(),(0,s.Hv)(e.entry.entity.entity_id))}}>
                 <div class="eng-battery-header">
                   <span class="eng-source-title" style="color:var(--lcars-butterscotch)">${a}</span>
-                  ${g?r.qy`<span class="eng-battery-code">${g}</span>`:""}
+                  ${b?r.qy`<span class="eng-battery-code">${b}</span>`:""}
                 </div>
                 <div class="eng-battery-body">
-                  <div class="mini-core" style="--core-color:${b};--core-charge:${t}">
-                    <div class="mini-core-fill ${y}"></div>
+                  <div class="mini-core" style="--core-color:${y};--core-charge:${t}">
+                    <div class="mini-core-fill ${_}"></div>
                     <div class="mini-core-tick" style="bottom:25%"></div>
                     <div class="mini-core-tick" style="bottom:50%"></div>
                     <div class="mini-core-tick" style="bottom:75%"></div>
                   </div>
                   <div class="eng-battery-stats">
-                    <span class="eng-battery-soc" style="color:${b}">${t}%</span>
-                    <span class="eng-battery-flow" style="color:${u}">${l?"▲":d?"▼":"━"} ${l?(0,c.ZV)(n,0):d?(0,c.ZV)(o,0):"0"}W</span>
-                    ${null!=h?r.qy`<span class="eng-battery-volt">${h}V</span>`:""}
+                    <span class="eng-battery-soc" style="color:${y}">${t}%</span>
+                    <span class="eng-battery-flow" style="color:${m}">${l?"▲":d?"▼":p?"═":"━"} ${l?(0,c.ZV)(n,0):d||p?(0,c.ZV)(o,0):"0"}W</span>
+                    ${null!=f?r.qy`<span class="eng-battery-volt">${f}V</span>`:""}
                   </div>
                 </div>
-                <div class="eng-battery-status" style="background:${m}; color:${u}">${p}</div>
+                <div class="eng-battery-status" style="background:${h}; color:${m}">${u}</div>
                 <div class="eng-battery-telemetry">
-                  ${null!=f?r.qy`<span class="eng-bt-key">TEMP</span><span class="eng-bt-val">${Math.round(f)}°</span>`:""}
-                  ${v?r.qy`<span class="eng-bt-key">${x}</span><span class="eng-bt-val">${v}</span>`:""}
-                  ${null!=_&&_<100?r.qy`<span class="eng-bt-key">HEALTH</span><span class="eng-bt-val" style="color:${_>80?"var(--lcars-ice)":"var(--lcars-sunflower)"}">${_}%</span>`:""}
-                  ${null!=w?r.qy`<span class="eng-bt-key">CYCLES</span><span class="eng-bt-val">${w}</span>`:""}
+                  ${null!=v?r.qy`<span class="eng-bt-key">TEMP</span><span class="eng-bt-val">${Math.round(v)}°</span>`:""}
+                  ${g?r.qy`<span class="eng-bt-key">${$}</span><span class="eng-bt-val">${g}</span>`:""}
+                  ${null!=w&&w<100?r.qy`<span class="eng-bt-key">HEALTH</span><span class="eng-bt-val" style="color:${w>80?"var(--lcars-ice)":"var(--lcars-sunflower)"}">${w}%</span>`:""}
+                  ${null!=x?r.qy`<span class="eng-bt-key">CYCLES</span><span class="eng-bt-val">${x}</span>`:""}
                 </div>
                 ${e.siblings?.switches?.length?r.qy`
                   <div class="eng-battery-switches" role="group" aria-label="${a} controls">

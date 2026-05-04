@@ -53,8 +53,8 @@ EcoFlow UPS Air port sensors are counted both as battery flow AND as discrete ci
 PROTOTYPE BUTTON 1-8 visible on Office page in production. Add reserved-prefix filter to area enumeration.
 **Aliases**: Geordi #29
 
-#### 5X-B28 · Habitat Mobile Sidebar — MORE-Popup Overflow For Areas Beyond Top 4-6 — `TODO` · Priority: MEDIUM · Size: M · [#94](https://github.com/htiel/LCARS-lovelace-dashboard/issues/94)
-Beta.37 narrowed sidebar to ~88px on mobile per Geordi. Habitat has 15-30+ areas — needs an LCARS-styled MORE popup so only top N stay visible. Tactical/Power/LS/Lighting unaffected (≤6 buttons).
+#### 5X-B28 · Habitat Mobile Sidebar — Collapse Area Buttons to Icon-Only — `TODO` · Priority: MEDIUM · Size: S · [#94](https://github.com/htiel/LCARS-lovelace-dashboard/issues/94)
+Beta.37 narrowed sidebar to ~88px on mobile per Geordi. Habitat has 15-30+ areas — at 88px wide, area names truncate to 2-3 chars (unrecognizable). **Captain's call:** drop text entirely on mobile, render only the area's `mdi:` icon centered. More LCARS-canonical (PADD-style pictograms), no new component needed, all areas reachable in one tap. Tactical/Power/LS/Lighting unaffected (≤6 buttons with their own icons).
 **Aliases**: Geordi mobile-spec follow-up
 
 #### 5X-B29 · Tactical Donut Center Text Fails WCAG 1.4.3 — `TODO` · Priority: MEDIUM · Size: S · [#95](https://github.com/htiel/LCARS-lovelace-dashboard/issues/95)

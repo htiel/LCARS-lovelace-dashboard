@@ -243,42 +243,56 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 
 <table>
 <tr>
-<td width="50%">
+<td width="50%" align="center">
+
+<a href="examples/screenshots/habitat.png"><img src="examples/screenshots/habitat.png" alt="Habitat dashboard screenshot" width="420"></a>
 
 **Habitat** — Room-by-room device control with floor-grouped sidebar, auto-detected panels, and area deep linking.
 
 </td>
-<td width="50%">
+<td width="50%" align="center">
+
+<a href="examples/screenshots/tactical.png"><img src="examples/screenshots/tactical.png" alt="Tactical dashboard screenshot" width="420"></a>
 
 **Tactical** — Security dashboard with camera grid, alarm control, door/window sensors, motion dots, and hazard alerts.
 
 </td>
 </tr>
 <tr>
-<td>
+<td align="center">
+
+<a href="examples/screenshots/power.png"><img src="examples/screenshots/power.png" alt="Power Distribution dashboard screenshot" width="420"></a>
 
 **Engineering** — Power distribution topology: grid/UPS/battery sources → animated distribution bus → load circuit grid.
 
 </td>
-<td>
+<td align="center">
+
+<a href="examples/screenshots/life-support.png"><img src="examples/screenshots/life-support.png" alt="Life Support dashboard screenshot" width="420"></a>
 
 **Life Support** — Environmental monitoring with ring gauge overview cards, per-room AQ table, CO₂ sparklines, and climate zones.
 
 </td>
 </tr>
 <tr>
-<td>
+<td align="center">
+
+<a href="examples/screenshots/illumination.png"><img src="examples/screenshots/illumination.png" alt="Illumination dashboard screenshot" width="420"></a>
 
 **Illumination** — Full-width lighting control with brightness bars, color presets, effect strips, scenes, and circuit toggles.
 
 </td>
-<td>
+<td align="center">
+
+<a href="examples/screenshots/cetacean-ops.png"><img src="examples/screenshots/cetacean-ops.png" alt="Cetacean Ops dashboard screenshot" width="420"></a>
 
 **Cetacean Ops** — Pool & spa operations with water body viewscreens, chemistry gauges, pump telemetry, and equipment circuits.
 
 </td>
 </tr>
 </table>
+
+> Screenshots use Star Trek: Lower Decks character/place names to obfuscate real device, area, and person names from the live deployments.
 
 ### Habitat Auto-Detected Panels
 

@@ -81,6 +81,28 @@ Token in DOM, history, screenshots, proxy logs. Move to fetch+blob with cookie a
 Top Wesley innovation pick (S effort / L value). Same single-cell footprint, far more information. Recorder data already in HA.
 **Aliases**: Wesley A1
 
+## Open Bugs (from beta.38 Spec Audit — May 2026, multi-agent reverse-engineering pass)
+
+#### 5X-B34 · Camera Panel — `.camera-frame` Click-Only, No Keyboard Activation — `TODO` · Priority: HIGH · Size: S · [#103](https://github.com/htiel/LCARS-lovelace-dashboard/issues/103)
+Primary clickable element on the per-area Camera panel is a `<div>` with `@click` only. No `tabindex`, no `@keydown`, no `role="button"`. Violates WCAG 2.1.1 (Level A). Apply same pattern used on battery / alarm / PRESENCE pills in beta.36.
+**Aliases**: Geordi spec-audit camera-1
+
+#### 5X-B35 · Hazard Panel — Alarm State Has No `aria-live` Announcement — `TODO` · Priority: HIGH · Size: S · [#105](https://github.com/htiel/LCARS-lovelace-dashboard/issues/105)
+Smoke/CO/heat/safety alarm transitions render visually only. Screen-reader users get zero notification. Wrap badge in `role="alert" aria-live="assertive"`. Safety-critical. Also includes HZ-04: panel renders calm "NO HAZARD DETECTORS" with sunflower frame on integration outage (fail-open posture).
+**Aliases**: Worf+Geordi HZ-01, HZ-04
+
+#### 5X-B36 · Audio — `lcars-audio.js` Cues Not Documented in `LCARS-AUDIO-SPEC.md` — `TODO` · Priority: MEDIUM · Size: M · [#107](https://github.com/htiel/LCARS-lovelace-dashboard/issues/107)
+Spec drift: `coverAction`, `lightToggle`, `switchToggle`, `scriptFire`, `climateAdjust` (cross-domain reuse) all exist in code but are absent from the audio spec's 7-sound vocabulary. Audit + sync. Decide on `climateAdjust` → `analogAdjust` rename.
+**Aliases**: spec-audit audio-1
+
+#### 5X-B37 · Battery Panel — Dead CSS, Redundant Partition in `renderBadge`, Slider <24px Target, Animation Budget — `TODO` · Priority: MEDIUM · Size: M · [#109](https://github.com/htiel/LCARS-lovelace-dashboard/issues/109)
+Six CSS selectors orphaned after panel-frame extraction; `renderBadge()` re-runs full classification pipeline on every render; 20px slider track fails WCAG 2.5.8; 7–9 concurrent animations exceed project budget; English-only regex classifier breaks i18n.
+**Aliases**: Data spec-audit battery-1..5
+
+#### 5X-B38 · Illumination — Drag-Reorder Needs Keyboard Alt; Color Preset Target ≤24px; `--lcars-green` Not in Theme — `TODO` · Priority: MEDIUM · Size: S · [#111](https://github.com/htiel/LCARS-lovelace-dashboard/issues/111)
+Edit-mode drag-reorder fails WCAG 2.5.7 (no keyboard alternative). Color preset buttons at 1.5rem (24px) at WCAG 2.5.8 minimum, sub-pixel risk. `--lcars-green` referenced inline (`#66bb6a`) but not in canonical theme palette.
+**Aliases**: Geordi spec-audit illum-1..3
+
 ### Triaged Out (Not LCARS Code Defects)
 
 - **GEO-508** — "DINNING ROOM" is a Home Assistant area naming typo, not an LCARS defect
@@ -90,10 +112,10 @@ Top Wesley innovation pick (S effort / L value). Same single-cell footprint, far
 ### Summary
 | Severity | Total | Remaining |
 |----------|-------|-----------|
-| HIGH | 3 | 3 |
-| MEDIUM | 9 | 9 |
+| HIGH | 5 | 5 |
+| MEDIUM | 13 | 13 |
 | LOW | 2 | 2 |
-| **Total** | **14** | **14** |
+| **Total** | **20** | **20** |
 
 ---
 

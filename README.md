@@ -8,7 +8,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-5.1.0--beta.30-blue)
+![Version](https://img.shields.io/badge/version-5.1.0--beta.38-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 [![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 
@@ -80,7 +80,7 @@ Currently supported:
 - **Floor-Grouped Sidebar** — Areas grouped by HA floor with clickable floor headers (lilac); click a floor for combined view, click an area to drill down
 - **Smart Name Shortening** — Automatically strips area and device name prefixes from entity names for cleaner display
 - **Device-Grouped Layout** — Entities organized by device, then sorted by domain (cameras first, sensors last)
-- **Responsive** — Mobile-friendly with horizontal area scroll on narrow viewports
+- **Responsive (Geordi-canon, beta.37+)** — On phone widths (≤ 767 px) the LCARS swept silhouette is preserved (PADD canon — never flipped to a horizontal bar). The frame narrows to one elbow unit (~88 px), and on Habitat the area buttons collapse to **icon-only** (the area's `mdi:` icon, with `aria-label` + `title=` for screen readers and long-press)
 - **Panel Reorder** — Edit mode gear pip on each panel for persistent reorder within an area (saved via WebSocket to YAML)
 - **Deep Linking** — URL hash navigation (`#area:<area_id>`) for bookmarking and cross-dashboard links
 

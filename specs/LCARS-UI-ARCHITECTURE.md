@@ -37,7 +37,7 @@ Elbow Outer Radius     = 3.75rem  = 60px
 Elbow Inner Cutout     = 2rem × 3rem, radius 1.875rem
 Header Bar Height      = 1.5rem   = 24px
 Footer Bar Height      = 1.5rem   = 24px
-Sidebar Width          = 12rem    = 192px (desktop), collapsed on mobile
+Sidebar Width          = 10rem    = 160px (desktop), 5.5rem ≈ 88px (mobile ≤767px)
 End Cap Size           = 1.5rem × 1.5rem, radius 0.75rem
 Button Height          = 3rem     = 48px (meets WCAG 2.5.8 target-size 24×24 minimum)
 Button Border Radius   = 0 1.5rem 1.5rem 0  (flat left, round right)
@@ -1323,74 +1323,72 @@ LCARS has a formalized audio language. All 15 sounds are synthesized at runtime 
 
 ## 10. Mobile / Responsive Strategy
 
-LCARS's strict geometric frame doesn't naturally reflow. Strategy: **collapse the sidebar into a top navigation bar** on small screens, maintaining the elbow aesthetic as a horizontal element.
+**Geordi ruling (beta.37, 2026-05-03):** the LCARS swept silhouette is **canon at all widths**. PADD precedent and Bracer Jack's thick→thin perpendicular rule require the elbow + vertical sidebar to be preserved on phones — **never** flip the sidebar to a horizontal pill row, never hide the elbow. The frame narrows; it does not transform.
 
-### Breakpoints
+This supersedes the earlier "collapse to horizontal top nav" approach (kept below for historical reference only — do not implement).
+
+### Breakpoints (current)
 
 ```css
-/* Desktop — full LCARS frame */
-@media (min-width: 769px) {
-  /* Default styles above — sidebar + elbows */
+/* Desktop / tablet (≥ 768 px) — full LCARS frame, full text labels */
+:host {
+  --lcars-sidebar-w: 10rem;
+  --lcars-elbow-w:   8rem;
+  --lcars-elbow-h:   4.5rem;
+  --lcars-elbow-radius: 3.75rem;
+  --lcars-font-size-title: 2rem;
 }
 
-/* Tablet — narrower sidebar */
-@media (max-width: 768px) and (min-width: 481px) {
+/* Phone (≤ 767 px) — narrow to one elbow unit, preserve sweep.
+   Defined globally in lcars-styles.js so all dashboards inherit. */
+@media (max-width: 767px) {
   :host {
-    --lcars-sidebar-width: 8rem;
-    --lcars-elbow-width: 6rem;
-  }
-
-  .lcars-btn--nav {
-    font-size: 0.85rem;
-    padding-left: 0.5rem;
-  }
-}
-
-/* Mobile — sidebar collapses to horizontal top nav */
-@media (max-width: 480px) {
-  .lcars-frame {
-    grid-template-rows: auto auto 1fr auto;
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "header-bar"
-      "sidebar"
-      "content"
-      "footer-bar";
-  }
-
-  .lcars-header {
-    /* Simplified: just the header bar, no elbow */
-    flex-direction: row;
-  }
-
-  .lcars-elbow { display: none; }
-
-  .lcars-sidebar {
-    width: 100%;
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-
-  .lcars-sidebar__nav {
-    flex-direction: row;
-    gap: var(--lcars-gap);
-    padding: var(--lcars-gap);
-  }
-
-  .lcars-btn--nav {
-    white-space: nowrap;
-    border-radius: var(--lcars-btn-radius);  /* Fully rounded on mobile */
-    width: auto;
-    padding: 0 1rem;
-    flex-shrink: 0;
-  }
-
-  .lcars-footer {
-    flex-direction: row;
+    --lcars-sidebar-w:    5.5rem;   /* ~88 px */
+    --lcars-elbow-w:      5rem;
+    --lcars-elbow-h:      3rem;
+    --lcars-elbow-radius: 2.25rem;
+    --lcars-font-size-title: 1.25rem;
   }
 }
 ```
+
+### Sidebar Button Treatment by Dashboard (≤ 767 px)
+
+| Dashboard | Sidebar Buttons | Mobile Behavior |
+|-----------|-----------------|-----------------|
+| **Habitat** | 15–30+ area buttons (per HA areas) | **Icon-only** — render `<ha-icon .icon="${area.icon\|\|'mdi:home-outline'}">`, hide `.area-name` span, center icon (28 px). Same for floor buttons (24 px). `aria-label` + `title=` retained. (beta.38, closes #94) |
+| **Tactical / Engineering / Life Support / Illumination / Cetacean Ops** | 3–6 fixed filter pills (ALL / LIGHTS / etc.) | Stack vertically with text label, narrowed font (0.625 rem). Labels are short enough not to truncate at 88 px. |
+
+### Implementation Pattern (Habitat icon-only — `lcars-dashboard-layout.js`)
+
+```css
+@media (max-width: 767px) {
+  .sidebar-area-btn,
+  .sidebar-floor-btn {
+    justify-content: center;
+    padding: 0.5rem 0.25rem;
+    gap: 0;
+  }
+  .sidebar-area-btn .area-name,
+  .sidebar-floor-btn .floor-name {
+    display: none;
+  }
+  .sidebar-area-btn ha-icon  { --mdc-icon-size: 28px; }
+  .sidebar-floor-btn ha-icon { --mdc-icon-size: 24px; }
+}
+```
+
+The button template always renders both `<ha-icon>` and `<span class="area-name">` — CSS is the single source of truth for which one shows.
+
+### Accessibility on Mobile
+
+- Icon-only buttons **require** `aria-label="${area.name}"` and `title="${area.name}"` for screen readers and long-press tooltips. Both are already in the desktop template, so no per-breakpoint logic is needed.
+- Active-state gold background (`[data-active]`) is preserved at all widths.
+- Tap target: 88 px sidebar × ~48 px button height meets WCAG 2.5.8 (24 × 24 minimum) with margin to spare.
+
+### Historical (do not implement) — pre-beta.37 horizontal-flip approach
+
+Earlier drafts proposed flipping the sidebar to a horizontal scroll bar on phones. Geordi reviewed this against TheLCARS.com and Bracer Jack guidelines and ruled it non-canonical (it visually degrades to "generic mobile app chrome" and breaks the elbow geometry). The horizontal-flip CSS was removed from `lcars-dashboard-layout.js` and `lcars-illumination-layout.js` in beta.37.
 
 ---
 

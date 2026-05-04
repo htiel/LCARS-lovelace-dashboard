@@ -145,7 +145,7 @@ Define these in the `:host` selector of `lcars-dashboard-layout`. All child comp
   --lcars-unit:            7.5rem;
   --lcars-vunit:           3rem;
   --lcars-gap:             0.25rem;
-  --lcars-sidebar-width:   12rem;
+  --lcars-sidebar-w:       10rem;    /* Desktop. Narrows to 5.5rem at ≤767px (see §10). */
   --lcars-header-height:   4.5rem;   /* elbow height */
   --lcars-footer-height:   4.5rem;   /* elbow height */
   --lcars-bar-height:      1.5rem;

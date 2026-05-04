@@ -3,7 +3,7 @@
 > Life Support / Environmental — climate, temperature, humidity, air quality.
 > Frame color: `--lcars-bluey` (#8899ff). Sidebar: african-violet.
 > Filters: ALL / CLIMATE / AIR
-> **Updated**: 2026-04-27 — v5.1.0-beta.16 (3-column layout, per-room AQ, history sparklines)
+> **Updated**: 2026-05-03 — current as of v5.1.0-beta.38. 3-column layout + per-room AQ + history sparklines shipped in v5.1.0-beta.16; per-room PRESENCE column added in v5.1.0-beta.34; sidebar 7-column table fix in v5.1.0-beta.35; quad-agent QA polish (`.ls-temp-grid` class, PRESENCE keyboard a11y, `lcarsLog.debug`) in v5.1.0-beta.36.
 
 ---
 

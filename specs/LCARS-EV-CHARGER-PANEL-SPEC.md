@@ -3,7 +3,7 @@
 **Author**: Geordi La Forge (LCARS UI Design Authority)  
 **Collaborator**: Wesley Crusher (Creative Technology & Experimentation)  
 **Date**: Stardate 2026.04.20  
-**Status**: IMPLEMENTED (v4.23.0-beta.1)  
+**Status**: SHIPPED — implemented in v4.23.0-beta.1; carried over to v5 (panel lives at `js/src/panels/ev-charger/lcars-ev-charger-panel.js`, current as of v5.1.0-beta.38).  
 **Priority**: MEDIUM  
 **Panel Type**: `ev_charger`  
 **Extends**: `LcarsDevicePanelBase` (per LCARS-DEVICE-PANEL-SPEC.md §2)  

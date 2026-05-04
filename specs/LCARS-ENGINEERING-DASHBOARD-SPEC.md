@@ -3,7 +3,7 @@
 > Engineering / Power — all batteries, power sensors, energy monitoring.
 > Frame color: `--lcars-butterscotch` (#ff9966). Sidebar: african-violet.
 > Filters: ALL / STORAGE / CIRCUITS
-> **Updated**: 2026-04-27 — v5.1.0-beta.16 (topology redesign: Sources → Bus → Circuits)
+> **Updated**: 2026-05-03 — current as of v5.1.0-beta.38. Topology + voltage overview + circuit classification shipped in v5.1.0-beta.30; quad-agent QA polish (memoized switch labels, 40-char label cap) shipped in v5.1.0-beta.36.
 
 ---
 

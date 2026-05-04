@@ -2,7 +2,7 @@
 
 **Author**: Geordi La Forge (LCARS UI Design Authority)  
 **Date**: Stardate 2026.04.20  
-**Status**: IMPLEMENTED (v4.23.0-beta.1)  
+**Status**: SHIPPED — implemented in v4.23.0-beta.1; carried over to v5. Auxiliary switch handling lives inside the shared climate panel (`js/src/panels/climate/lcars-climate-panel.js` §4X-56), not a dedicated panel. Current as of v5.1.0-beta.38.  
 **Priority**: MEDIUM  
 **Panel Type**: Climate (Portable AC variant)  
 **Integration**: `midea_ac_lan` (HACS: github.com/wuwentao/midea_ac_lan)  

@@ -19,11 +19,13 @@
 import { LitElement, html, css } from 'lit-element';
 import { lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
+import { lcarsAudio } from './lcars-audio.js';
 import { formatNumber } from './lcars-format-utils.js';
 
 const FILTER_ALL = 'all';
 const FILTER_HEALTH = 'health';
 const FILTER_PERIPHERALS = 'peripherals';
+const FILTER_CLIENTS = 'clients';
 
 // Anchored regex to avoid false positives on substrings (e.g. *_state_changes).
 // WAN latency is matched separately because the prefix can be Google/Cloudflare/Microsoft.
@@ -67,13 +69,22 @@ function _fmtUptime(state) {
 }
 
 class LcarsNetworkCard extends LitElement {
+  // Closed shadow root — Worf 5.4.1 review B2 (parity with Medical §16 + Starship §7).
+  // Network device names + client identifiers must NOT be reachable via
+  // document.querySelector('lcars-network-card').shadowRoot from sibling cards.
+  createRenderRoot() { return this.attachShadow({ mode: 'closed' }); }
+
   static get properties() {
-    return { hass: { type: Object }, _config: { type: Object }, filter: { type: String } };
+    return {
+      hass: { type: Object }, _config: { type: Object }, filter: { type: String },
+      _revealClients: { type: Boolean },  // 5.2.1 — per-session reveal toggle, NOT persisted
+    };
   }
 
   constructor() {
     super();
     this._hass = null; this._config = {}; this.filter = FILTER_ALL;
+    this._revealClients = false;
     this._onFilter = (e) => { this.filter = e.detail.filter; };
   }
 
@@ -217,6 +228,126 @@ class LcarsNetworkCard extends LitElement {
     return [...byDevice.values()];
   }
 
+  /* ═══ Connected Clients (5.2.1) ═══
+   * Worf privacy gate:
+   *   - Hostnames carry data-network="hostname" → screenshot redacts to "client-{hash}"
+   *   - MACs carry data-network="mac"           → screenshot masks last three octets
+   *   - Reveal toggle is per-session ONLY (this._revealClients), never persisted
+   *   - Client list is derived from UniFi device_tracker entities — no scraping,
+   *     no extra WS calls. If UniFi integration not present, the panel is empty.
+   */
+  _hashStr(s) {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0).toString(16).padStart(8, '0').slice(0, 6);
+  }
+
+  _discoverClients() {
+    if (!this._hass) return [];
+    const states = this._hass.states || {};
+    const entities = this._hass.entities || {};
+    const devices = this._hass.devices || {};
+    const out = [];
+
+    for (const [eid, e] of Object.entries(entities)) {
+      if (e.platform !== 'unifi') continue;
+      if (e.disabled_by || e.hidden_by) continue;
+      if (!eid.startsWith('device_tracker.')) continue;
+      const state = states[eid];
+      if (!state) continue;
+      const dev = devices[e.device_id || ''] || {};
+      const attrs = state.attributes || {};
+      const hostname = dev.name_by_user || dev.name || attrs.host_name || attrs.friendly_name || eid.split('.')[1];
+      const mac = (attrs.mac || '').toLowerCase();
+      const ip = attrs.ip || '';
+      const isHome = state.state === 'home';
+      out.push({
+        eid,
+        hostname,
+        hostnameMasked: `client-${this._hashStr(hostname)}`,
+        mac,
+        macMasked: mac ? `${mac.slice(0, 8)}:••:••:••` : '',
+        ip,                              // not rendered; kept for moreInfo navigation
+        connected: isHome,
+        ssid: attrs.essid || attrs.ssid || '',
+        ssidMasked: '••••',
+        firstSeen: attrs.first_seen,
+      });
+    }
+
+    // Sort: connected first, then alpha by masked id (stable across renders, no
+    // dependency on ground-truth hostname so screenshot mode doesn't re-order).
+    out.sort((a, b) => {
+      if (a.connected !== b.connected) return a.connected ? -1 : 1;
+      return a.hostnameMasked.localeCompare(b.hostnameMasked);
+    });
+    return out;
+  }
+
+  // Mask any user-named device to a stable hash unless the per-session reveal
+  // toggle is on. Worf 5.4.1 review M1: device names like "Malick Family UDM Pro"
+  // are operational identity data and must not render in cleartext by default.
+  _maskName(name, prefix = 'device') {
+    if (this._revealClients) return name;
+    return `${prefix}-${this._hashStr(name || '')}`;
+  }
+
+  _toggleReveal() {
+    this._revealClients = !this._revealClients;
+    // Audio feedback — Geordi 5.4.1 review #6 (toggles must announce per AUDIO-SPEC).
+    lcarsAudio.play(this._revealClients ? 'navAcknowledge' : 'negativeAcknowledge');
+    // Auto-revert after 60s so a wall-mounted display does not strand identifiers visible
+    // (Worf m3). Per-session only; never persisted.
+    clearTimeout(this._revealTimer);
+    if (this._revealClients) {
+      this._revealTimer = setTimeout(() => {
+        this._revealClients = false;
+        this.requestUpdate();
+      }, 60_000);
+    }
+    this.requestUpdate();
+  }
+
+  _renderClients(clients) {
+    const connected = clients.filter((c) => c.connected).length;
+    const total = clients.length;
+    const reveal = this._revealClients;
+    return html`
+      <section aria-labelledby="net-clients-h">
+        <header class="clients-head">
+          <h2 id="net-clients-h" class="net-section-h" style="margin:0">
+            Connected Clients · ${connected} / ${total} online
+          </h2>
+          <button class="reveal-toggle ${reveal ? 'on' : ''}"
+                  aria-pressed=${reveal}
+                  @click=${() => this._toggleReveal()}
+                  title="Reveal hostnames + MACs (per-session only; not persisted)">
+            ${reveal ? 'HIDE IDENTIFIERS' : 'REVEAL IDENTIFIERS'}
+          </button>
+        </header>
+        <div class="net-clients-grid">
+          ${clients.map((c) => this._renderClient(c))}
+        </div>
+      </section>`;
+  }
+
+  _renderClient(c) {
+    const display = this._revealClients ? c.hostname : c.hostnameMasked;
+    const mac = this._revealClients ? c.mac : c.macMasked;
+    const ssid = c.ssid ? (this._revealClients ? c.ssid : c.ssidMasked) : '';
+    const dotColor = c.connected ? 'var(--lcars-data-accent, #99cc99)' : 'var(--lcars-gray, #666688)';
+    return html`
+      <button class="client-tile" @click=${() => showMoreInfo(this, c.eid)}>
+        <span class="client-dot" style=${`background:${dotColor}`} aria-hidden="true"></span>
+        <span class="client-name" data-network="hostname">${display}</span>
+        ${mac ? html`<span class="client-mac" data-network="mac">${mac}</span>` : ''}
+        ${ssid ? html`<span class="client-ssid" data-network="ssid">${ssid}</span>` : ''}
+      </button>`;
+  }
+
   /* ═══ Renderers ═══ */
 
   _renderWanStrip(wanSensors) {
@@ -265,7 +396,7 @@ class LcarsNetworkCard extends LitElement {
     return html`
       <article class="net-device" aria-labelledby="net-dev-${d.device_id}">
         <header class="net-device-head">
-          <span class="net-device-name" id="net-dev-${d.device_id}" data-network="hostname">${d.name}</span>
+          <span class="net-device-name" id="net-dev-${d.device_id}" data-network="hostname">${this._maskName(d.name, 'ap')}</span>
           ${d.model ? html`<span class="net-device-model" data-network="model">${d.model}</span>` : ''}
           <span class="net-device-state" style="color:${stateColor}">${(state || 'unknown').toUpperCase()}</span>
         </header>
@@ -299,7 +430,7 @@ class LcarsNetworkCard extends LitElement {
     return html`
       <article class="net-printer" aria-labelledby="net-prn-${p.device_id}">
         <header class="net-device-head">
-          <span class="net-device-name" id="net-prn-${p.device_id}" data-network="hostname">${p.name}</span>
+          <span class="net-device-name" id="net-prn-${p.device_id}" data-network="hostname">${this._maskName(p.name, 'printer')}</span>
           ${p.model ? html`<span class="net-device-model" data-network="model">${p.manufacturer ? `${p.manufacturer} ` : ''}${p.model}</span>` : ''}
           <span class="net-device-state" style="color:${statusColor}">${statusVal.toUpperCase()}</span>
         </header>
@@ -333,11 +464,13 @@ class LcarsNetworkCard extends LitElement {
     }
     const { devices, wanLatency } = this._discoverUnifi();
     const printers = this._discoverPrinters();
+    const clients = this._discoverClients();
     const f = this.filter;
     const showHealth = f === FILTER_ALL || f === FILTER_HEALTH;
     const showPeripherals = f === FILTER_ALL || f === FILTER_PERIPHERALS;
+    const showClients = f === FILTER_ALL || f === FILTER_CLIENTS;
 
-    if (!devices.length && !printers.length && !wanLatency.length) {
+    if (!devices.length && !printers.length && !wanLatency.length && !clients.length) {
       return html`<div class="net-empty" role="status">NO NETWORK INFRASTRUCTURE DETECTED · INSTALL UNIFI OR IPP INTEGRATION</div>`;
     }
 
@@ -358,8 +491,10 @@ class LcarsNetworkCard extends LitElement {
               ${printers.map((p) => this._renderPrinter(p))}
             </div>
           </section>` : ''}
+        ${showClients && clients.length ? this._renderClients(clients) : ''}
         ${showHealth && !devices.length ? html`<div class="net-empty" role="status">No UniFi infrastructure detected</div>` : ''}
         ${showPeripherals && !printers.length ? html`<div class="net-empty" role="status">No peripherals detected (IPP integration adds printers)</div>` : ''}
+        ${showClients && !clients.length ? html`<div class="net-empty" role="status">No connected clients (UniFi device_tracker entities not found)</div>` : ''}
       </div>`;
   }
 
@@ -408,6 +543,46 @@ class LcarsNetworkCard extends LitElement {
         @media (prefers-reduced-motion: reduce) {
           .net-ink-fill { transition: none; }
         }
+
+        /* Connected Clients (5.2.1) */
+        .clients-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin: 0.4rem 0; }
+        .reveal-toggle {
+          background: var(--lcars-bg-elev, #111);
+          color: var(--lcars-ice, #99ccff);
+          border: 1px solid var(--lcars-ice, #99ccff);
+          border-radius: 999px;
+          padding: 0.35rem 0.85rem;
+          min-height: 44px;
+          font: inherit;
+          font-size: 0.7rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          cursor: pointer;
+        }
+        .reveal-toggle:focus-visible { outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px; }
+        .reveal-toggle.on { background: var(--lcars-gold, #ffaa00); color: #000; border-color: var(--lcars-gold, #ffaa00); }
+        .net-clients-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 0.4rem; }
+        .client-tile {
+          background: rgba(153,204,255,0.05);
+          border: 1px solid rgba(153,204,255,0.15);
+          border-radius: 0.4rem;
+          padding: 0.4rem 0.6rem;
+          min-height: 44px;
+          display: grid;
+          grid-template-columns: auto 1fr;
+          grid-template-rows: auto auto;
+          column-gap: 0.5rem;
+          row-gap: 0.15rem;
+          align-items: center;
+          cursor: pointer;
+          color: inherit;
+          font-family: inherit;
+          text-align: left;
+        }
+        .client-tile:focus-visible { outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px; }
+        .client-dot { grid-row: 1 / span 2; width: 10px; height: 10px; border-radius: 50%; }
+        .client-name { font-size: 0.85rem; color: var(--lcars-ice, #99ccff); letter-spacing: 0.04em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .client-mac, .client-ssid { grid-column: 2; font-size: 0.65rem; opacity: 0.7; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
       `,
     ];
   }

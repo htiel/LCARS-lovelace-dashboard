@@ -2,6 +2,65 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.4.1] — 2026-05-04
+
+**Mega-release.** Combines the four scheduled milestones (5.2.1, 5.3.1, 5.4.0, 5.4.1) into a single ship after a full team code review (Data, Geordi, Worf). Bundle: 1.05 MiB (budget 1.5 MiB).
+
+### Added — 5.2.1 · Subspace Relay: Connected Clients
+- New **CLIENTS** sidebar filter (previously deferred). Surfaces every UniFi `device_tracker` entity in a responsive grid with online/offline indicator, hostname (default-redacted), MAC (default-redacted), and SSID.
+- Per-session **REVEAL IDENTIFIERS** toggle reveals plaintext hostnames + MACs + SSIDs. Auto-reverts after 60 seconds (Worf m3); never persisted to localStorage. Toggle plays `navAcknowledge` on reveal, `negativeAcknowledge` on hide (Geordi audio grammar).
+- UniFi infrastructure device names (UDM/AP/Switch) and printer names also flow through the same reveal toggle (Worf M1) — no operational identity strings render in cleartext by default.
+- `lcars-network-card` now uses a **closed shadow root** for parity with Medical (Worf B2).
+
+### Added — 5.3.1 · Medical Bay: Anatomical + Biomedical scan tabs
+- Three focus modes routed via URL hash fragment: `#summary` (default), `#anatomical`, `#biomedical`. Hashchange listener keeps tabs in sync with browser navigation.
+- **Anatomical** tab: front silhouette + posterior placeholder pane (back-silhouette path data deferred to v5.4.2 with `SCAN MODE PENDING` overlay).
+- **Biomedical** tab: decorative ECG strip whose beat count derives from the present `heart_rate` vital + top-down silhouette placeholder. ECG SVG sits inside `data-medical="phi"` so screenshot redaction can mask both the BPM readout and the polyline geometry.
+- Status pill now carries `aria-live="polite"` for parity with Starship (Geordi #5).
+
+### Added — 5.4.0 · Starship Health (Engineering): single-host
+- New dashboard `lcars-starship-health` (registry key `starship-health`, icon `mdi:rocket-launch-outline`). Default-enabled but **admin-gated** (Worf B1) — header surfaces HA Core / OS version, addon counts, and process names which are CVE-fingerprintable.
+- New `<lcars-starship-card>` Vessel Diagnostic Card (closed shadow root): Zone A header (vessel ID + class string + decorative numerics + thermal toggle [ON by default per spec §5.2] + status pill), Zone B `<lcars-anatomical-silhouette>` with starship paths + 13-anchor map (deflector / bridge / main_computer / saucer_section / sensor_array / engineering_hull / warp_core / port_nacelle / starboard_nacelle / port_impulse / starboard_impulse / shuttlebay / cargo_bay), Zone C 12-tile detail grid.
+- New `<lcars-starship-layout>` LCARS frame: gold + butterscotch palette (distinct from Medical's gold + african-violet and Subspace's butterscotch + ice).
+- Threshold engine in `lcars-starship-utils.js`: status precedence OFFLINE > CRITICAL > WARNING > DEGRADED > NOMINAL with sensible engineering defaults for cpu_usage / cpu_temp / gpu_temp / nvme_temp / memory / swap / disk_root / io_wait / load_15m_norm / composite_thermal / entity_health / backup_age_days / addon_stopped.
+- Vessel IDs are 7-char fnv1a hashes of the config-entry ID (no hostnames/IPs/MACs); vessel class strings cycle generic ship-class names (INTREPID/GALAXY/MIRANDA/NOVA/DEFIANT/OBERTH) + OS+version.
+- Hand-authored top-down starship silhouette (~5 KiB inline SVG) with subsystem-named path comments (saucer / neck / engineering hull / nacelles / pylons / impulse engines / shuttlebay / cargo bay). NOT traced from any production asset.
+- WAN-down assertive announce: `aria-live="assertive"` fires on UP→DOWN transition only. State diff moved out of `render()` into `updated()` (Geordi #7) — eliminates spurious announcements under double-render or hot-reload.
+
+### Added — 5.4.1 · Starship Health: tactical tab + multi-host
+- Three focus modes per vessel: `summary` (default 3-zone) / `engineering` (full diagnostics) / `tactical` (placeholder for v5.4.2 side-profile silhouette). Hashchange routing: `#vessel/{id}/{mode}`.
+- Multi-host: every Glances config entry surfaces as an additional vessel in the responsive grid (`grid-template-columns: repeat(auto-fill, minmax(360px, 1fr))`). Single-vessel installs (default) render one card; multi-host installs render N cards.
+
+### Changed — Silhouette primitive generalization
+- `<lcars-biofunction-silhouette>` retired in favor of `<lcars-anatomical-silhouette>` — fully dashboard-neutral primitive accepting `paths` (lit-html template), `anchorMap`, `anchors`, `viewBox`, `redactClass`, and `redactAttr` as injectable properties. Closed shadow root preserved.
+- Medical silhouette path data extracted to `lcars-medical-silhouette-paths.js`; Starship silhouette path data lives in `lcars-starship-utils.js` (consider extracting in v5.5.0 for symmetry).
+- Backward-compat: `<lcars-biofunction-silhouette>` registers as a subclass alias so any external consumer keeps working.
+
+### Fixed (team-review pass)
+- **Worf B1**: `starship-health` now `require_admin: True` (CVE fingerprinting via HA Core/OS version + addon counts + process names).
+- **Worf B2**: `lcars-network-card` now uses closed shadow root.
+- **Data #1 / Geordi #1**: silhouette `data-medical`/`data-starship` attributes now render with their actual values (`"phi"` / `"op"`) instead of empty boolean attributes — screenshot redaction selectors targeting `[data-medical="phi"]` now match SVG callouts.
+- **Geordi #2**: silhouette callout text gets a black stroke (`paint-order: stroke fill`) so ALERT/CRITICAL values stay legible against any background — addresses #cc6666 4.07:1 contrast failure.
+- **Data #4**: `disk_root` regex fixed (`/^sensor\.disk_use_percent_/i`) — DISK anchor now matches all real `system_monitor` mount entities (`disk_use_percent_/`, `_home`, `_media`, etc.).
+- **Data #2 / Worf m6**: `addon_running` regex constrained to `binary_sensor.(addon_|.*_addon_running$|hassio_)` — appliance sensors like `binary_sensor.dishwasher_running` no longer inflate the ADDONS counter.
+- **Geordi #3+#4**: focus tabs in both Medical and Starship cards drop the broken `role="tab"`/`role="tablist"` pattern (would have required arrow-key handlers + `role="tabpanel"` linkage). Use plain `<button aria-pressed>` toggle group instead.
+- **Geordi #6**: thermal toggles + clients reveal toggle now play `navAcknowledge`/`negativeAcknowledge` per AUDIO-SPEC.
+- **Geordi #11**: vessel "× CLOSE" button gets explicit `aria-label="Return to vessel grid"`.
+- **Geordi #17**: thermal-toggle buttons get explicit `aria-label="Toggle thermal overlay"`.
+- **Worf m4**: `wan_reachable` no longer treats `device_tracker` `home` as UP — locked to true binary state values.
+- **Data #10**: removed fabricated noise-band sparklines from Engineering tiles. Sparklines requiring recorder-history sourcing land in v5.4.2.
+- **Data #7**: dropped unused `SYSTEM_PLATFORMS` import from starship-card; **Worf n2**: dropped unused `MEDICAL_PLATFORMS` import from medical-card.
+- **Data #18**: stale `network-layout.js` doc comment ("CLIENTS deferred to 5.2.1") updated to reflect the ship.
+
+### Deferred to v5.4.2
+- Posterior + top-down medical silhouette path data
+- Starship side-profile silhouette (tactical tab)
+- Recorder-history-sourced sparklines for Starship Engineering tiles
+- Per-vessel `starship_thresholds.yaml` loader
+- Top-CPU process-name allowlist redaction (Worf M2)
+- Tab pattern: implement full APG `role="tab"` keyboard model with `role="tabpanel"` linkage if user demand emerges
+- Memoize `discoverVessels` / `_discoverClients` against `hass.entities` reference identity (Data #3)
+
 ## [5.3.0-beta.2] — 2026-05-04
 
 Bugfix release on top of 5.3.0-beta.1, against Captain's first-light dogfooding screenshot.

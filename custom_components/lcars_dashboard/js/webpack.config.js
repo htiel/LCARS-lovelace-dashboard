@@ -43,6 +43,8 @@ module.exports = {
     './src/lcars-network-layout.js',         // 5.2.0: Subspace Relay Layout
     './src/lcars-medical-card.js',           // 5.3.0: Medical Bay (Sickbay) Dashboard
     './src/lcars-medical-layout.js',         // 5.3.0: Medical Bay Layout
+    './src/lcars-starship-card.js',          // 5.4.0: Starship Health (Engineering) Dashboard
+    './src/lcars-starship-layout.js',        // 5.4.0: Starship Health Layout
   ],
   mode: 'production',
   output: {

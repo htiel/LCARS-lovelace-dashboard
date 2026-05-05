@@ -1,0 +1,14 @@
+# LCARS Starship Health (Engineering) Dashboard — Lovelace YAML configuration
+# Per specs/LCARS-STARSHIP-HEALTH-DASHBOARD-SPEC.md
+# 5.4.1 — single-host (default) and multi-host (glances) Vessel Diagnostic Card,
+# summary + engineering + tactical focus tabs (tactical = side-profile placeholder).
+# Privacy: operational telemetry only — no PHI. No hostnames/IPs/MACs/SSIDs/container
+# names rendered in the card. Vessel IDs are 7-char hashes; vessel class strings are
+# generic ship-class names + OS+version. Default-enabled (no admin gate required).
+views:
+  - title: Starship Health
+    icon: mdi:rocket-launch-outline
+    path: home
+    type: custom:lcars-starship-layout
+    cards:
+      - type: custom:lcars-starship-card

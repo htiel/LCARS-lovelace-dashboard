@@ -1,5 +1,5 @@
 DOMAIN = "lcars_dashboard"
-VERSION = "5.3.0-beta.2"
+VERSION = "5.4.1"
 
 # Configuration keys
 CONF_DASHBOARDS = "dashboards"
@@ -21,6 +21,11 @@ DASHBOARD_REGISTRY = {
     # 5X-3.5 / 5.3.0 — Medical Bay per LCARS-MEDICAL-BAY-DASHBOARD-SPEC.md
     # require_admin=True per Worf §16 — PHI-equivalent vitals; default-disabled (DEFAULT_DASHBOARDS gate).
     "medical":       {"default_title": "Medical Bay",   "default_icon": "mdi:medical-bag", "url_path": "lcars-medical",      "require_admin": True, "default_enabled": False},
+    # 5X-3.6 / 5.4.0 — Starship Health (Engineering) per LCARS-STARSHIP-HEALTH-DASHBOARD-SPEC.md
+    # require_admin=True per Worf 5.4.1 review B1: surfaces HA core/OS version, addon counts,
+    # process names — CVE-fingerprintable. Operational telemetry only (no PHI), default-enabled
+    # for the admin role.
+    "starship-health": {"default_title": "Starship Health", "default_icon": "mdi:rocket-launch-outline", "url_path": "lcars-starship-health", "require_admin": True},
 }
 
-MAX_DASHBOARDS = len(DASHBOARD_REGISTRY)  # 8
+MAX_DASHBOARDS = len(DASHBOARD_REGISTRY)  # 9

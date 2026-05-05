@@ -17,6 +17,7 @@ const DASHBOARD_URL_MAP = {
   cetacean: 'lcars-cetacean',
   network: 'lcars-network',
   medical: 'lcars-medical',
+  'starship-health': 'lcars-starship-health',
 };
 
 /**

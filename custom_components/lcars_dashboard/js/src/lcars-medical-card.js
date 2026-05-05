@@ -13,7 +13,8 @@
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsAudio } from './lcars-audio.js';
-import './lcars-biofunction-silhouette.js';
+import './lcars-anatomical-silhouette.js';
+import { MEDICAL_SILHOUETTE_PATHS } from './lcars-medical-silhouette-paths.js';
 import {
   MEDICAL_VITAL_CLASSES,
   ANCHOR_MAP,
@@ -27,7 +28,6 @@ import {
   hasConsent,
   grantConsent,
   formatVital,
-  MEDICAL_PLATFORMS,
   MEDICAL_STATUS,
 } from './lcars-medical-utils.js';
 
@@ -45,6 +45,7 @@ class LcarsMedicalCard extends LitElement {
       _config: { type: Object },
       _consentByFile: { type: Object },
       _thermal: { type: Boolean },
+      _focusMode: { type: String },   // 5.3.1 — 'summary' | 'anatomical' | 'biomedical'
     };
   }
 
@@ -59,6 +60,43 @@ class LcarsMedicalCard extends LitElement {
     this._config = {};
     this._consentByFile = {};
     this._thermal = false;
+    this._focusMode = this._readFocusFromHash();
+    this._onHashChange = () => {
+      const next = this._readFocusFromHash();
+      if (next !== this._focusMode) {
+        this._focusMode = next;
+        this.requestUpdate();
+      }
+    };
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    window.addEventListener('hashchange', this._onHashChange);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener('hashchange', this._onHashChange);
+  }
+
+  _readFocusFromHash() {
+    const h = (window.location.hash || '').replace(/^#/, '').toLowerCase();
+    if (h === 'anatomical' || h === 'biomedical') return h;
+    return 'summary';
+  }
+
+  _setFocus(mode) {
+    if (mode === this._focusMode) return;
+    this._focusMode = mode;
+    if (mode === 'summary') {
+      // Drop the fragment cleanly without scrolling.
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    } else {
+      history.replaceState(null, '', `#${mode}`);
+    }
+    lcarsAudio.play('navAcknowledge');
+    this.requestUpdate();
   }
 
   setConfig(config) {
@@ -75,6 +113,13 @@ class LcarsMedicalCard extends LitElement {
   _grantConsent(fileId) {
     grantConsent(fileId);
     this._consentByFile = { ...this._consentByFile, [fileId]: true };
+    lcarsAudio.play('navAcknowledge');
+    this.requestUpdate();
+  }
+
+  // Geordi 5.4.1 review #6: state-change toggles must announce per AUDIO-SPEC.
+  _toggleThermal() {
+    this._thermal = !this._thermal;
     lcarsAudio.play('navAcknowledge');
     this.requestUpdate();
   }
@@ -136,10 +181,17 @@ class LcarsMedicalCard extends LitElement {
   _renderHeader(profile, fileId, status) {
     const cols = decorativeNumerics(fileId, 3);
     const pillColor = STATUS_COLOR[status] || STATUS_COLOR.NOMINAL;
+    const mode = this._focusMode;
     return html`
       <header class="zone-a">
         <div class="title">MEDICAL REPORT
           <span class="file-id lcars-medical-redactable-id" data-medical="phi">${fileId}</span>
+        </div>
+        <div class="focus-tabs" aria-label="Scan focus mode">
+          ${['summary', 'anatomical', 'biomedical'].map((m) => html`
+            <button class="focus-tab ${mode === m ? 'active' : ''}"
+                    aria-pressed=${mode === m}
+                    @click=${() => this._setFocus(m)}>${m.toUpperCase()}</button>`)}
         </div>
         <div class="numerics" aria-hidden="true">
           ${cols.map((c) => html`<span class="numeric-col">${c}</span>`)}
@@ -147,13 +199,91 @@ class LcarsMedicalCard extends LitElement {
         <div class="header-actions">
           <button class="thermal-toggle ${this._thermal ? 'on' : ''}"
                   aria-pressed=${this._thermal}
+                  aria-label="Toggle thermal overlay"
                   title="Toggle thermal overlay"
-                  @click=${() => { this._thermal = !this._thermal; this.requestUpdate(); }}>
+                  @click=${() => this._toggleThermal()}>
             THERM
           </button>
-          <span class="status-pill" style=${`background:${pillColor};color:#000`}>${status}</span>
+          <span class="status-pill" aria-live="polite"
+                style=${`background:${pillColor};color:#000`}>${status}</span>
         </div>
       </header>
+    `;
+  }
+
+  // 5.3.1 — Anatomical scan: front + back silhouette pair. Back is a placeholder
+  // until back-anchor SVG paths are authored (deferred to 5.4.2 per Riker prio).
+  _renderAnatomicalZone(anchors) {
+    return html`
+      <section class="scan-pair" aria-label="Anatomical front + back scan">
+        <div class="scan-pane" aria-label="Anterior">
+          <div class="scan-cap">ANTERIOR</div>
+          <lcars-anatomical-silhouette
+            .paths=${MEDICAL_SILHOUETTE_PATHS}
+            .anchorMap=${ANCHOR_MAP}
+            .anchors=${anchors}
+            .thermal=${this._thermal}
+            .redactClass=${'lcars-medical-redactable'}
+            .redactAttr=${{ name: 'medical', value: 'phi' }}
+            .ariaLabel=${'Anterior biofunction silhouette'}
+          ></lcars-anatomical-silhouette>
+        </div>
+        <div class="scan-pane placeholder" aria-label="Posterior">
+          <div class="scan-cap">POSTERIOR</div>
+          <div class="scan-pending">SCAN MODE PENDING — 5.4.2</div>
+        </div>
+      </section>
+    `;
+  }
+
+  // 5.3.1 — Biomedical scan: ECG-style HR waveform + top-down silhouette placeholder.
+  // ECG samples are derived directly from the present heart_rate vital (decorative
+  // squarewave around the current value). No PHI leaves the closed shadow root.
+  _renderBiomedicalZone(vitalsByKind, anchors) {
+    const hrVital = vitalsByKind.get('heart_rate');
+    const hrValue = hrVital && !isNaN(hrVital.value) ? hrVital.value : null;
+    return html`
+      <section class="scan-pair" aria-label="Biomedical waveform + top-down scan">
+        <div class="scan-pane">
+          <div class="scan-cap">ECG — HEART RATE</div>
+          ${this._renderEcgWaveform(hrValue)}
+        </div>
+        <div class="scan-pane placeholder" aria-label="Top-down">
+          <div class="scan-cap">TOP-DOWN</div>
+          <div class="scan-pending">SCAN MODE PENDING — 5.4.2</div>
+        </div>
+      </section>
+    `;
+  }
+
+  _renderEcgWaveform(bpm) {
+    // Decorative ECG strip; not a clinical waveform. PHI: heart-rate value only.
+    const haveBpm = bpm != null && !isNaN(bpm);
+    const beats = haveBpm ? Math.max(2, Math.min(8, Math.round(bpm / 12))) : 4;
+    const W = 600, H = 120, mid = H / 2;
+    const pts = [];
+    pts.push(`0,${mid}`);
+    for (let i = 0; i < beats; i++) {
+      const x = ((i + 0.5) * W) / beats;
+      pts.push(`${x - 14},${mid}`);
+      pts.push(`${x - 8},${mid + 6}`);
+      pts.push(`${x - 4},${mid - 38}`);
+      pts.push(`${x},${mid + 30}`);
+      pts.push(`${x + 4},${mid - 6}`);
+      pts.push(`${x + 12},${mid}`);
+    }
+    pts.push(`${W},${mid}`);
+    const stroke = haveBpm ? 'var(--lcars-data-accent, #99cc99)' : 'var(--lcars-gray, #666688)';
+    return html`
+      <div class="ecg-wrap" data-medical="phi">
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Decorative ECG strip">
+          <line x1="0" y1="${mid}" x2="${W}" y2="${mid}" stroke="rgba(153,204,255,0.15)" stroke-width="1"/>
+          <polyline points=${pts.join(' ')} fill="none" stroke=${stroke} stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        <div class="ecg-readout lcars-medical-redactable" data-medical="phi">
+          ${haveBpm ? `${Math.round(bpm)} BPM` : '—'}
+        </div>
+      </div>
     `;
   }
 
@@ -223,7 +353,7 @@ class LcarsMedicalCard extends LitElement {
 
     return html`
       <div class="grid">
-        ${profiles.slice(0, 1).map((profile) => {
+        ${profiles.map((profile) => {
           const fileId = fileIdFor(profile.profileId);
           const consentGranted = this._consentByFile[fileId] ?? hasConsent(fileId);
           const vitalsByKind = consentGranted ? this._reduceVitals(profile.entities) : new Map();
@@ -242,14 +372,24 @@ class LcarsMedicalCard extends LitElement {
             <article class="biofunction-card" aria-labelledby=${`med-h-${fileId}`}>
               <h2 id=${`med-h-${fileId}`} class="sr-only">Biofunction card ${fileId}</h2>
               ${this._renderHeader(profile, fileId, overall)}
-              <section class="zone-b" aria-label="Anatomical vital map">
-                <lcars-biofunction-silhouette
-                  .anchors=${anchors}
-                  .thermal=${this._thermal}
-                ></lcars-biofunction-silhouette>
-                ${!consentGranted ? this._renderConsentGate(fileId) : ''}
-              </section>
-              ${this._renderTiles(vitalsByKind)}
+              ${this._focusMode === 'anatomical' ? this._renderAnatomicalZone(anchors)
+                : this._focusMode === 'biomedical' ? this._renderBiomedicalZone(vitalsByKind, anchors)
+                : html`
+                  <section class="zone-b" aria-label="Anatomical vital map">
+                    <lcars-anatomical-silhouette
+                      .paths=${MEDICAL_SILHOUETTE_PATHS}
+                      .anchorMap=${ANCHOR_MAP}
+                      .anchors=${anchors}
+                      .thermal=${this._thermal}
+                      .redactClass=${'lcars-medical-redactable'}
+                      .redactAttr=${{ name: 'medical', value: 'phi' }}
+                      .ariaLabel=${'Biofunction silhouette'}
+                    ></lcars-anatomical-silhouette>
+                    ${!consentGranted ? this._renderConsentGate(fileId) : ''}
+                  </section>
+                  ${this._renderTiles(vitalsByKind)}
+                `}
+              ${this._focusMode !== 'summary' && !consentGranted ? this._renderConsentGate(fileId) : ''}
             </article>`;
         })}
       </div>
@@ -323,7 +463,7 @@ class LcarsMedicalCard extends LitElement {
           flex: 1 1 auto; position: relative; min-height: 320px;
           display: flex; align-items: center; justify-content: center;
         }
-        lcars-biofunction-silhouette { width: 100%; height: 100%; max-height: 480px; }
+        lcars-anatomical-silhouette { width: 100%; height: 100%; max-height: 480px; }
         .consent-gate {
           position: absolute; inset: 0;
           background: rgba(0,0,0,0.92); backdrop-filter: blur(4px);
@@ -375,6 +515,73 @@ class LcarsMedicalCard extends LitElement {
         }
         @media (max-width: 720px) {
           .zone-c { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* Focus tabs (5.3.1) */
+        .focus-tabs { display: flex; gap: 0.25rem; margin-left: 0.5rem; }
+        .focus-tab {
+          background: var(--lcars-bg-elev, #111);
+          color: var(--lcars-ice, #99ccff);
+          border: 1px solid var(--lcars-african-violet, #cc99cc);
+          border-radius: 999px;
+          padding: 0.25rem 0.7rem;
+          min-height: 32px;
+          font: inherit;
+          font-size: 0.7rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          cursor: pointer;
+        }
+        .focus-tab:focus-visible { outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px; }
+        .focus-tab.active { background: var(--lcars-african-violet, #cc99cc); color: #000; }
+
+        /* Scan-pair layout (anatomical / biomedical modes) */
+        .scan-pair {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.75rem;
+          min-height: 420px;
+        }
+        @media (max-width: 720px) { .scan-pair { grid-template-columns: 1fr; } }
+        .scan-pane {
+          position: relative;
+          background: rgba(153, 204, 255, 0.04);
+          border-left: 3px solid var(--lcars-african-violet, #cc99cc);
+          border-radius: 0 0.4rem 0.4rem 0;
+          display: flex; flex-direction: column;
+          padding: 0.5rem;
+          min-height: 380px;
+        }
+        .scan-cap {
+          font-size: 0.7rem;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: var(--lcars-african-violet, #cc99cc);
+          margin-bottom: 0.4rem;
+        }
+        .scan-pane.placeholder { border-left-color: var(--lcars-gray, #666688); }
+        .scan-pending {
+          flex: 1;
+          display: flex; align-items: center; justify-content: center;
+          color: var(--lcars-gray, #888);
+          font-size: 0.85rem; letter-spacing: 0.1em;
+          text-transform: uppercase;
+          background: repeating-linear-gradient(45deg,
+            rgba(102,102,136,0.05),
+            rgba(102,102,136,0.05) 12px,
+            transparent 12px,
+            transparent 24px);
+          border-radius: 0.3rem;
+        }
+        .ecg-wrap { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
+        .ecg-wrap svg { width: 100%; height: 220px; }
+        .ecg-readout {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 2.2rem;
+          font-weight: 700;
+          color: var(--lcars-data-accent, #99cc99);
+          letter-spacing: 0.08em;
+          text-align: center;
         }
       `,
     ];

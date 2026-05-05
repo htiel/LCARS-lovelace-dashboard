@@ -3,7 +3,8 @@
  *
  * LCARS frame layout for the Subspace Relay (Network) dashboard.
  * Sidebar: ALL / HEALTH / PERIPHERALS / CLIENTS filter buttons.
- *   CLIENTS is disabled in 5.2.0 (deferred to 5.2.1 per Worf privacy gate).
+ *   CLIENTS panel ships in 5.2.1 with default-redacted hostnames+MACs and a
+ *   per-session reveal toggle (auto-reverts after 60s; never persisted).
  * Color: butterscotch frame, ice sidebar — distinct from Engineering's african-violet.
  *
  * v5.2.0-beta.1 — Subspace Relay Dashboard (5X-3.3 retired)
@@ -56,17 +57,6 @@ class LcarsNetworkLayout extends LitElement {
   }
 
   _setFilter(filter) {
-    if (filter === FILTER_CLIENTS) {
-      // Deferred to 5.2.1 — Worf privacy gate not yet wired.
-      // Per Geordi audio grammar: denied actions must announce.
-      lcarsAudio.play('negativeAcknowledge');
-      this._deferredHint = 'Connected Clients panel deferred to 5.2.1 — privacy gate pending';
-      // Auto-clear the hint after 4s so it doesn't linger as stale status
-      clearTimeout(this._deferredHintTimer);
-      this._deferredHintTimer = setTimeout(() => { this._deferredHint = ''; this.requestUpdate(); }, 4000);
-      this.requestUpdate();
-      return;
-    }
     this._filter = filter;
     lcarsAudio.play('navAcknowledge');
     lcarsEventBus.dispatchEvent(new CustomEvent('lcars-net-filter', { detail: { filter } }));
@@ -118,7 +108,7 @@ class LcarsNetworkLayout extends LitElement {
             <button class="sidebar-filter-btn ${this._filter === FILTER_ALL ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_ALL ? 'true' : 'false'}" aria-controls="net-content" tabindex="${this._filter === FILTER_ALL ? '0' : '-1'}" @click=${() => this._setFilter(FILTER_ALL)}><span class="filter-label">ALL</span></button>
             <button class="sidebar-filter-btn ${this._filter === FILTER_HEALTH ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_HEALTH ? 'true' : 'false'}" aria-controls="net-content" tabindex="${this._filter === FILTER_HEALTH ? '0' : '-1'}" @click=${() => this._setFilter(FILTER_HEALTH)}><span class="filter-label">HEALTH</span></button>
             <button class="sidebar-filter-btn ${this._filter === FILTER_PERIPHERALS ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_PERIPHERALS ? 'true' : 'false'}" aria-controls="net-content" tabindex="${this._filter === FILTER_PERIPHERALS ? '0' : '-1'}" @click=${() => this._setFilter(FILTER_PERIPHERALS)}><span class="filter-label">PERIPHERALS</span></button>
-            <button class="sidebar-filter-btn deferred" role="tab" aria-selected="false" aria-disabled="true" aria-controls="net-content" tabindex="-1" title="Connected Clients — deferred to 5.2.1 (privacy gate pending)" @click=${() => this._setFilter(FILTER_CLIENTS)}><span class="filter-label">CLIENTS</span><span class="filter-sublabel">5.2.1</span></button>
+            <button class="sidebar-filter-btn ${this._filter === FILTER_CLIENTS ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_CLIENTS ? 'true' : 'false'}" aria-controls="net-content" tabindex="${this._filter === FILTER_CLIENTS ? '0' : '-1'}" title="Connected Clients (default-redacted; reveal is per-session only)" @click=${() => this._setFilter(FILTER_CLIENTS)}><span class="filter-label">CLIENTS</span></button>
           </div>
           <div class="lcars-sidebar-filler" aria-hidden="true"></div>
         </nav>

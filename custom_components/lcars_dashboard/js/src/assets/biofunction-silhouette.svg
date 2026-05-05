@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  LCARS Biofunction Silhouette — front view, gender-neutral
+  Hand-authored for the LCARS Dashboard project (NOT traced from any Star Trek production asset).
+  Anatomy is intentionally schematic (single closed outline, neutral hip-shoulder ratio ~0.85,
+  no breast contour, no genital indication, short-hair head outline only).
+  Stroke is currentColor so consumers can tint via CSS. No fills, no scripts, no foreignObject,
+  no external references.
+  Anchor map (slot → coordinates as % of viewBox) lives in lcars-medical-utils.js.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 480" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+  <!-- head: oval -->
+  <ellipse cx="100" cy="36" rx="22" ry="28"/>
+  <!-- neck -->
+  <path d="M88 60 L88 78 L112 78 L112 60"/>
+  <!-- shoulders + arms (slightly abducted ~15° so left/right anchors are visually distinct) -->
+  <path d="M88 78 L52 90 L42 200 L36 230 L46 232 L58 200 L66 100"/>
+  <path d="M112 78 L148 90 L158 200 L164 230 L154 232 L142 200 L134 100"/>
+  <!-- torso -->
+  <path d="M66 100 L60 240 L82 250"/>
+  <path d="M134 100 L140 240 L118 250"/>
+  <!-- waist + pelvis -->
+  <path d="M82 250 L78 280 L122 280 L118 250"/>
+  <!-- legs -->
+  <path d="M78 280 L72 380 L70 460 L88 460 L92 380 L96 282"/>
+  <path d="M122 280 L128 380 L130 460 L112 460 L108 380 L104 282"/>
+  <!-- feet (decorative caps) -->
+  <path d="M70 460 L66 470 L92 470 L88 460"/>
+  <path d="M130 460 L134 470 L108 470 L112 460"/>
+  <!-- centerline (very faint guide; consumers can hide via CSS) -->
+  <line x1="100" y1="64" x2="100" y2="280" stroke-opacity="0.15"/>
+</svg>

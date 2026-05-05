@@ -2,6 +2,63 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.3.0-beta.1] — 2026-05-04
+
+First release of the **Medical Bay (Sickbay)** dashboard. Per spec §11 phasing, beta.1 lands Phase 0 (privacy primitives + silhouette asset) plus Phase 1 (single-profile Biofunction Card, summary tab only). Multi-profile grid, focus-mode tabs, and workout calendar tile follow in beta.2/beta.3.
+
+### Dashboard registry
+- New `medical` dashboard entry (`MAX_DASHBOARDS` → 8) with `require_admin: True` and `default_enabled: False`. Disabled by default — Captain must explicitly add `medical` to `dashboards` in config-flow options to register the panel.
+
+### Worf §16 hardening (Phase 0 BLOCKING — applied)
+- **Closed shadow roots** on both `<lcars-medical-card>` and `<lcars-biofunction-silhouette>`. Sibling Lovelace cards cannot reach in via `document.querySelector` (trade: `card_mod` themes cannot pierce PHI surfaces — accepted).
+- Every numeric vital cell carries both `data-medical="phi"` and `class="lcars-medical-redactable"`. The existing `localinfo/screenshot-obfuscator.js` REDACTORS table already had the medical hooks wired.
+- Closed-shadow-root + redaction class apply to **callouts on the silhouette** *and* **detail tiles in Zone C** *and* **the FILE_ID hash in the Zone A header**.
+- `aria-live="off"` on every vital tile — assistive tech must not announce silently changing systolic numbers as someone walks past the room.
+- **No localStorage writes other than a per-profile consent boolean.** No values, no thresholds, no history persisted client-side.
+- **No outbound network requests** originate from the card. Verified by network-tab during build smoke-test.
+- **No `service.set_state`** calls or write-backs to HA — vitals never round-trip through the recorder via this card.
+- **No `${value}` substitutions** in any `console.*` call across `lcars-medical-*.js` (CI guard documented; lint rule to land in beta.2).
+
+### Geordi UI / canonical-LCARS layout
+- Three-zone Biofunction Card per spec §5: header strip (Zone A) + silhouette with anchored callouts (Zone B) + 4×3 detail tile grid (Zone C).
+- Hand-authored gender-neutral silhouette inlined as SVG path data (200×480 viewBox, currentColor stroke, no scripts/foreignObject/external refs). Asset also lives at `js/src/assets/biofunction-silhouette.svg` for reference; the runtime copy is inlined into `lcars-biofunction-silhouette.js` so CSP `default-src 'self'` covers it.
+- 13-slot anatomical anchor map per spec §6.5 (head_top, forehead, throat, heart, lungs ×2, arms ×2, abdomen, legs ×2, feet ×2). Empty slots render as `—` with suppressed leader line for layout stability.
+- Optional **thermal overlay** (toggle in Zone A header) — radial red gradient anchored to ALERT vitals; echoes BIOMEDICAL SCAN 808.
+- Status pill (NOMINAL / ELEVATED / ALERT / OFFLINE) with deterministic color tokens; black text on all status colors for AA contrast.
+- Distinct frame palette: **gold** top elbow + **african-violet** sidebar/bottom — keeps Medical visually distinct from Subspace Relay (butterscotch+ice) and Engineering (butterscotch).
+
+### Data correctness — vital classification + threshold engine
+- `MEDICAL_PLATFORMS` discovery contract: `withings`, `fitbit`, `dexcom`, `garmin_connect`, `oura`, `google_fit`. Allowlist; non-medical entities are ignored even if their platform is `sensor`.
+- `classifyVital()` regex map covers BP (systolic/diastolic pairing), heart rate, SpO2, respiration, weight, body fat, BMI, hydration, sleep score / duration, HRV, body battery, recovery, steps, active minutes, workout distance, last workout, and CGM glucose.
+- Multi-platform conflict resolution: when multiple integrations supply the same `vital_kind`, **last-changed wins** (per spec §12 Open Questions resolution).
+- AHA-aligned default thresholds: BP (sys ≥130 elevated, ≥140 alert; dia ≥85/≥90), resting HR (50–80 nominal), SpO2 (≥95 nominal, <92 alert), respiration (12–20 nominal), CGM glucose (70–140 nominal, <60 or >180 alert), body-battery / sleep / recovery score bands.
+- Status precedence rollup: `OFFLINE` > `ALERT` > `ELEVATED` > `NOMINAL`.
+
+### Per-profile consent gate (spec §7.9)
+- First render of a Biofunction Card per `(file_id, browser)` shows a centered consent overlay. All callouts and tiles render as `—` until tap. Tap persists a single boolean to `localStorage` under `lcars_medical_consent.<file_id>` — no values, no precise timestamps.
+- Consent string includes the residential-not-HIPAA disclaimer (Worf §16 recommended hardening — applied).
+
+### Phase 1 scope
+- **Single-profile** mode: largest entity bucket renders (multi-profile resolver lands in beta.3 with `MEDICAL_PROFILES` three-tier discovery).
+- **Summary tab only** — focus-mode `anatomical` and `biomedical` tabs are spec-deferred to beta.3.
+- **No workout-calendar tile** in this beta (LAST WORKOUT badge renders from sensor data; calendar event strip lands in beta.3).
+- **No `medical_thresholds.yaml` user-overrides loader** in this beta — defaults only. Loader lands in beta.3.
+
+### Audio
+- Audio mode `medical`: data-refresh chirps suppressed; only `navAcknowledge` fires on consent grant and thermal-overlay toggle. The biobed-pulse pattern is intentionally NOT shipped (Worf concurrence — risks pattern-matching real medical alert sounds).
+
+### Bundle
+- Bundle: 1010 KiB → ~1034 KiB (~+24 KiB delta, well under the +35 KiB defer threshold).
+
+### Files
+- New: `custom_components/lcars_dashboard/lovelace/ui-lovelace-medical.yaml`
+- New: `custom_components/lcars_dashboard/js/src/lcars-medical-utils.js`
+- New: `custom_components/lcars_dashboard/js/src/lcars-medical-card.js`
+- New: `custom_components/lcars_dashboard/js/src/lcars-medical-layout.js`
+- New: `custom_components/lcars_dashboard/js/src/lcars-biofunction-silhouette.js`
+- New: `custom_components/lcars_dashboard/js/src/assets/biofunction-silhouette.svg` (reference copy)
+- Updated: `const.py` (registry + version), `manifest.json`, `package.json`, `webpack.config.js`, `lcars-sidebar-reorder.js`
+
 ## [5.2.0-beta.2] — 2026-05-04
 
 Code-review fixes from the senior staff review of beta.1 (Data, Geordi, Worf, Riker — all CONDITIONS verdicts cleared).

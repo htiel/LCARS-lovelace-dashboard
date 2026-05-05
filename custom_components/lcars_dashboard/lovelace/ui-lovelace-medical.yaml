@@ -1,0 +1,12 @@
+# LCARS Medical Bay (Sickbay) Dashboard — Lovelace YAML configuration
+# Per specs/LCARS-MEDICAL-BAY-DASHBOARD-SPEC.md
+# 5.3.0-beta.1 — Phase 1: single-profile Biofunction Card, summary tab.
+# Privacy: dashboard is admin-only (require_admin: True) and disabled by default
+# (DEFAULT_DASHBOARDS gates it). Per-profile consent gate runs client-side.
+views:
+  - title: Medical Bay
+    icon: mdi:medical-bag
+    path: home
+    type: custom:lcars-medical-layout
+    cards:
+      - type: custom:lcars-medical-card

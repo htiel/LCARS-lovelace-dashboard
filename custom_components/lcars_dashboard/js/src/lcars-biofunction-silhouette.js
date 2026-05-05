@@ -62,8 +62,12 @@ class LcarsBiofunctionSilhouette extends LitElement {
       const side = pos.label;
       const xPos = (pos.x / 100) * 200;
       const yPos = (pos.y / 100) * 480;
+      // Place label box INSIDE the viewBox so text stays visible:
+      //   left  side: text-anchor="start" at x=4    (extends rightward from x=4)
+      //   right side: text-anchor="end"   at x=196  (extends leftward  from x=196)
+      //   top   side: text-anchor="middle" at x=100
       const boxX = side === 'left' ? 4 : (side === 'right' ? 196 : 100);
-      const anchor = side === 'left' ? 'end' : (side === 'right' ? 'start' : 'middle');
+      const anchor = side === 'left' ? 'start' : (side === 'right' ? 'end' : 'middle');
       const lineColor = hasValue ? STATUS_COLOR[status] : 'var(--lcars-gray, #666688)';
       const valColor  = hasValue ? STATUS_COLOR[status] : 'var(--lcars-gray, #666688)';
       callouts.push(html`

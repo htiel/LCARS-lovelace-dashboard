@@ -108,18 +108,22 @@ class LcarsMedicalCard extends LitElement {
     return byKind;
   }
 
-  // Build the silhouette anchor map: slot → { value, status, label }
+  // Build the silhouette anchor map: slot → { value, status, label, present }
+  // `present: false` for slots with no resolved entity — these render as “—” but
+  // are EXCLUDED from the rollup so a half-populated dashboard doesn't claim NOMINAL
+  // it can't justify, OR (more importantly) doesn't drag the pill to OFFLINE just
+  // because most slots are empty.
   _buildAnchors(vitalsByKind) {
     const anchors = {};
     for (const vc of MEDICAL_VITAL_CLASSES) {
       if (!vc.anchor) continue;
       const v = vitalsByKind.get(vc.kind);
-      if (!v) {
-        anchors[vc.anchor] = { value: '—', status: MEDICAL_STATUS.NOMINAL, label: vc.label };
+      const numeric = vc && v ? (vc.kind === 'blood_pressure' ? v.systolic : v.value) : NaN;
+      const secondary = vc.kind === 'blood_pressure' ? v?.diastolic : null;
+      if (!v || numeric == null || isNaN(numeric)) {
+        anchors[vc.anchor] = { value: '—', status: MEDICAL_STATUS.OFFLINE, label: vc.label, present: false };
         continue;
       }
-      const numeric = vc.kind === 'blood_pressure' ? v.systolic : v.value;
-      const secondary = vc.kind === 'blood_pressure' ? v.diastolic : null;
       const status = computeStatus(vc.kind, numeric, DEFAULT_THRESHOLDS, secondary);
       const display = vc.kind === 'blood_pressure'
         ? formatVital('blood_pressure', v.systolic, v.diastolic)
@@ -162,19 +166,24 @@ class LcarsMedicalCard extends LitElement {
         ${tiles.map((vc) => {
           const v = vitalsByKind.get(vc.kind);
           let display = '—';
-          let unit = vc.unit;
           let status = MEDICAL_STATUS.OFFLINE;
+          let present = false;
           if (v && v.value != null && !isNaN(v.value)) {
             display = formatVital(vc.kind, v.value);
             status = computeStatus(vc.kind, v.value, DEFAULT_THRESHOLDS);
+            present = true;
           }
-          const color = v ? STATUS_COLOR[status] : 'var(--lcars-gray, #666688)';
+          // Don't paint missing tiles in OFFLINE color — use muted gray so the eye
+          // distinguishes “no integration” from “integration broken”.
+          const color = present
+            ? STATUS_COLOR[status]
+            : 'var(--lcars-gray, #666688)';
           return html`
             <div class="tile">
               <div class="tile-label">${vc.label}</div>
               <div class="tile-value lcars-medical-redactable" data-medical="phi"
                    aria-live="off" style=${`color:${color}`}>${display}</div>
-              <div class="tile-unit">${unit}</div>
+              <div class="tile-unit">${vc.unit}</div>
             </div>`;
         })}
       </section>
@@ -219,9 +228,15 @@ class LcarsMedicalCard extends LitElement {
           const consentGranted = this._consentByFile[fileId] ?? hasConsent(fileId);
           const vitalsByKind = consentGranted ? this._reduceVitals(profile.entities) : new Map();
           const anchors = this._buildAnchors(vitalsByKind);
-          const overall = consentGranted
-            ? rollupStatus(Object.values(anchors).map((a) => a.status).filter(Boolean))
-            : MEDICAL_STATUS.OFFLINE;
+          // Rollup: only consider slots where data is actually present. An empty
+          // dashboard with most anchors unresolved should not show OFFLINE everywhere
+          // — OFFLINE means “data source went stale”, not “user hasn't installed it yet”.
+          const presentStatuses = Object.values(anchors)
+            .filter((a) => a && a.present)
+            .map((a) => a.status);
+          const overall = !consentGranted
+            ? MEDICAL_STATUS.OFFLINE
+            : (presentStatuses.length ? rollupStatus(presentStatuses) : MEDICAL_STATUS.NOMINAL);
 
           return html`
             <article class="biofunction-card" aria-labelledby=${`med-h-${fileId}`}>

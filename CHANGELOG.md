@@ -2,6 +2,15 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.3.0-beta.2] — 2026-05-04
+
+Bugfix release on top of 5.3.0-beta.1, against Captain's first-light dogfooding screenshot.
+
+### Fixed
+- **Silhouette callouts were invisible.** The `text-anchor` for left-side labels was `end` at viewBox `x=4` (text drew leftward off the canvas) and right-side labels were `start` at `x=196` (text drew rightward off the canvas). Swapped: left side now `text-anchor="start"` at `x=4` (extends right, into the canvas) and right side `text-anchor="end"` at `x=196` (extends left, into the canvas). Heart, BP, SpO2, weight, sleep-score, and limb anchors now render their values next to the silhouette as designed.
+- **Status pill stuck on OFFLINE despite NOMINAL vitals.** The rollup was including empty anchor slots and any populated slot whose state parsed to NaN (Withings sensors briefly read `unknown` after restart) — `OFFLINE` has the highest precedence so it dominated. Now the rollup considers only anchors flagged `present: true`. Empty anchors render as `—` for layout stability but no longer drag the pill OFFLINE.
+- Detail tiles now distinguish "no integration installed" (muted gray `—`) from "integration installed but reading offline" (status-tinted `—`). Previously both rendered identically.
+
 ## [5.3.0-beta.1] — 2026-05-04
 
 First release of the **Medical Bay (Sickbay)** dashboard. Per spec §11 phasing, beta.1 lands Phase 0 (privacy primitives + silhouette asset) plus Phase 1 (single-profile Biofunction Card, summary tab only). Multi-profile grid, focus-mode tabs, and workout calendar tile follow in beta.2/beta.3.

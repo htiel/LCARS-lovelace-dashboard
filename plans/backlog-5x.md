@@ -103,6 +103,51 @@ Six CSS selectors orphaned after panel-frame extraction; `renderBadge()` re-runs
 Edit-mode drag-reorder fails WCAG 2.5.7 (no keyboard alternative). Color preset buttons at 1.5rem (24px) at WCAG 2.5.8 minimum, sub-pixel risk. `--lcars-green` referenced inline (`#66bb6a`) but not in canonical theme palette.
 **Aliases**: Geordi spec-audit illum-1..3
 
+## Open Bugs (from 5.4.x dogfooding — May 2026)
+
+> Captain note: 5.4.1 → 5.4.3 chained three "ship the fix, find the next bug behind it" releases.
+> Pick up here next session for a focused bug-squashing pass.
+
+#### 5X-B39 · Medical/Starship — Sparse Anchors Drag Pill Status — `TODO` · Priority: MEDIUM · Size: S · [#116](https://github.com/htiel/LCARS-lovelace-dashboard/issues/116)
+Status pill rollup honors `present: true` for Medical anchors but the `_buildAnchors` path for `else` branch in lcars-medical-card.js does not set `present` (only the offline branch does). Verify same logic is consistent for Starship `_buildAnchors` — empty subsystem anchors should not drag the vessel pill OFFLINE. Inspect with multi-host install.
+**Source**: tonight's live inspection — heart anchor returned `{value: '75', status: 'NOMINAL'}` with no `present` key.
+
+#### 5X-B40 · Starship Health — Dashboard 404 on Default Install — `TODO` · Priority: HIGH · Size: S · [#115](https://github.com/htiel/LCARS-lovelace-dashboard/issues/115)
+`http://ha/lcars-starship-health/home` returns 404 even after 5.4.1+. Likely missing default-enabled toggle or config-flow needs to be re-run after upgrade. Document the manual enable steps in SETUP.md and consider whether `default_enabled: True` is appropriate (currently unset → defaults vary). Note: `require_admin: True` is correct and stays.
+**Source**: tonight's live nav check.
+
+#### 5X-B41 · Anatomical Silhouette — Hand-Authored Geometry Looks Sketchy — `TODO` · Priority: LOW · Size: M · [#117](https://github.com/htiel/LCARS-lovelace-dashboard/issues/117)
+Both Medical (humanoid) and Starship (top-down vessel) are hand-authored line-art at modest fidelity. Consider commissioning a higher-quality SVG path set per consumer (still no production-asset tracing — generic LCARS-styled originals).
+**Source**: Captain ship-it observation, 5.4.3.
+
+#### 5X-B42 · Medical Bay — `<line>` / `<text>` Self-Close Lint Rule — `TODO` · Priority: LOW · Size: XS · [#118](https://github.com/htiel/LCARS-lovelace-dashboard/issues/118)
+Add a lit-html eslint rule (or unit test) that asserts every `<foo ... />` self-close in an `svg`-tagged template has a space before the `/>`. v5.4.2 → v5.4.3 was lost-in-translation chasing this exact whitespace bug.
+**Source**: bug retro from tonight's session.
+
+#### 5X-B43 · Medical Bay — Posterior Silhouette Pending — `TODO` · Priority: MEDIUM · Size: M · [#119](https://github.com/htiel/LCARS-lovelace-dashboard/issues/119)
+Anatomical tab posterior pane is a "SCAN MODE PENDING — 5.4.2" placeholder. Author posterior path data + back-anchor map (different anchor positions: spine/scapula/lumbar/glutes/calves). Was originally promised for 5.4.2 — slipped while chasing the callout bug.
+**Source**: deferred from 5.3.1 + 5.4.1 review batches.
+
+#### 5X-B44 · Starship Health — Tactical Tab Side-Profile Pending — `TODO` · Priority: MEDIUM · Size: M · [#120](https://github.com/htiel/LCARS-lovelace-dashboard/issues/120)
+Tactical focus mode is a `SCAN MODE PENDING` overlay. Author side-profile silhouette + tactical anchor map (shields fore/aft/dorsal/ventral, weapons phaser banks, torpedo bays). Promised for 5.4.2.
+**Source**: deferred from 5.4.1 review batch.
+
+#### 5X-B45 · Starship Health — Engineering Tile Sparklines — `TODO` · Priority: LOW · Size: L · [#121](https://github.com/htiel/LCARS-lovelace-dashboard/issues/121)
+Tiles render value + unit only — no recorder-history sourced sparklines. Add real Glances/system_monitor history pulls (debounced); currently the noise-band fakes were correctly removed by Data review.
+**Source**: Data review item #10, deferred to 5.4.x.
+
+#### 5X-B46 · Starship Health — Per-Vessel Threshold Override Loader — `TODO` · Priority: LOW · Size: M · [#122](https://github.com/htiel/LCARS-lovelace-dashboard/issues/122)
+`STARSHIP_THRESHOLDS` is hard-coded. Add `starship_thresholds.yaml` loader (parallel to `medical_thresholds.yaml` Phase 2 pattern) so per-vessel CPU/temp/disk thresholds can be tuned without code changes.
+**Source**: spec §5.6, deferred from 5.4.0.
+
+#### 5X-B47 · Subspace Relay — Reveal Toggle Polish — `TODO` · Priority: LOW · Size: S · [#123](https://github.com/htiel/LCARS-lovelace-dashboard/issues/123)
+60s auto-revert ships in 5.4.1; verify toast/visible countdown UX so users aren't surprised by the auto-hide. Also confirm `top_cpu_proc` allowlist (Worf M2 deferred) is wired in once relevant.
+**Source**: Worf m3 deferred from 5.4.1.
+
+#### 5X-B48 · Discovery Memoization Across All Cards — `TODO` · Priority: MEDIUM · Size: M · [#124](https://github.com/htiel/LCARS-lovelace-dashboard/issues/124)
+`discoverVessels`, `discoverProfiles`, `_discoverClients` walk `hass.entities` on every render. Memoize against `hass.entities` reference identity (cheap O(1) check). Same fix benefits Network, Medical, Starship.
+**Source**: Data review #3, deferred from 5.4.1.
+
 ### Triaged Out (Not LCARS Code Defects)
 
 - **GEO-508** — "DINNING ROOM" is a Home Assistant area naming typo, not an LCARS defect
@@ -112,10 +157,10 @@ Edit-mode drag-reorder fails WCAG 2.5.7 (no keyboard alternative). Color preset 
 ### Summary
 | Severity | Total | Remaining |
 |----------|-------|-----------|
-| HIGH | 5 | 3 |
-| MEDIUM | 13 | 13 |
-| LOW | 2 | 2 |
-| **Total** | **20** | **18** |
+| HIGH | 6 | 4 |
+| MEDIUM | 17 | 17 |
+| LOW | 5 | 5 |
+| **Total** | **28** | **26** |
 
 ---
 

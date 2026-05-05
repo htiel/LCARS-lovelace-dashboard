@@ -4,11 +4,11 @@
   <img src="https://raw.githubusercontent.com/htiel/LCARS-lovelace-dashboard/4.0/custom_components/lcars_dashboard/logo@2x.png" alt="LCARS Dashboard Logo" width="512">
 </p>
 
-A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer Access/Retrieval System) interface. Six dedicated dashboards — Habitat, Tactical, Engineering, Life Support, Illumination, and Cetacean Ops — each with their own layout, entity classifier, and sidebar filter controls.
+A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer Access/Retrieval System) interface. Nine dedicated dashboards — Habitat, Tactical, Engineering, Life Support, Illumination, Cetacean Ops, Subspace Relay (Network), Medical Bay, and Starship Health — each with their own layout, entity classifier, and sidebar filter controls.
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-5.1.0--beta.38-blue)
+![Version](https://img.shields.io/badge/version-5.4.3-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 [![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 
@@ -28,6 +28,9 @@ Version 5.0 replaces the single monolithic dashboard with a **multi-dashboard sy
 | **Life Support** | Life Support | bluey | ALL / CLIMATE / AIR | Environmental monitoring — thermostats, air purifiers, per-room AQ tables, CO₂ sparklines, ring gauges |
 | **Illumination** | Illumination | sunflower | ALL / LIGHTS / CIRCUITS | Lighting control — brightness bars, color presets, effects, scenes, and lighting circuit toggles |
 | **Cetacean Ops** | Cetacean Ops | sky | ALL / WATER / CHEMISTRY / FEATURES / POWER | Pool & spa operations — water bodies, chemistry gauges, pump telemetry, equipment circuits |
+| **Subspace Relay** | Subspace Relay | butterscotch + ice | ALL / NETWORK / EQUIPMENT / WAN / CLIENTS | Network health — UniFi infrastructure, WAN reachability, peripherals, connected clients (privacy-redacted by default with 60s reveal toggle) |
+| **Medical Bay** | Sickbay | gold + african-violet | SUMMARY / ANATOMICAL / BIOMEDICAL | Biofunction monitor — vitals (HR / BP / SpO₂ / weight / sleep / steps), front silhouette with anchor callouts, decorative ECG strip. Admin-gated, default-disabled, per-profile consent gate |
+| **Starship Health** | Starship Health | gold + butterscotch | SUMMARY / ENGINEERING / TACTICAL | Vessel diagnostic — CPU / mem / temp / disk / WAN / addons rolled up onto a top-down landscape starship silhouette. Admin-gated. Multi-host: every Glances config entry adds a new vessel |
 
 Only **Habitat** is enabled by default. Enable additional dashboards through the integration options flow.
 

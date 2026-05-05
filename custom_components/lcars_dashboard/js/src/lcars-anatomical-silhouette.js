@@ -18,7 +18,7 @@
 // pass their own anchorMap + paths constants. Backward-compat alias
 // <lcars-biofunction-silhouette> is registered for any external user.
 
-import { LitElement, html, css } from 'lit-element';
+import { LitElement, html, svg, css } from 'lit-element';
 
 const STATUS_COLOR = {
   NOMINAL:  'var(--lcars-data-accent, #99cc99)',
@@ -105,7 +105,7 @@ class LcarsAnatomicalSilhouette extends LitElement {
       const lineColor = hasValue ? (STATUS_COLOR[status] || STATUS_COLOR.NOMINAL) : 'var(--lcars-gray, #666688)';
       const valColor = hasValue ? (STATUS_COLOR[status] || STATUS_COLOR.NOMINAL) : 'var(--lcars-gray, #666688)';
       const fontScale = vbH / 480;
-      callouts.push(html`
+      callouts.push(svg`
         <line x1=${xPos} y1=${yPos} x2=${boxX} y2=${yPos}
               stroke=${lineColor} stroke-width=${0.6 * fontScale} stroke-opacity=${hasValue ? 0.9 : 0.3}/>
         <text x=${boxX} y=${yPos - 2 * fontScale} text-anchor=${anchor}

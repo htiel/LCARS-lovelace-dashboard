@@ -2,6 +2,11 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.4.2] — 2026-05-04
+
+### Fixed
+- **Silhouette anchor callouts (HR/BP/SpO2/etc. on Medical and all 13 subsystem readouts on Starship Health) were invisible.** When the silhouette primitive was generalized in 5.4.0, the dynamic `callouts` array was built with the `html` template tag, then interpolated into the parent `<svg>` rendered by another `html` template. lit-html does not propagate SVG namespace through array interpolation — the `<line>` and `<text>` elements were being created in the HTML namespace (uppercase `LINE` tagName) and therefore did not paint. Switched the callout builder to the `svg` template tag from `lit-element`, which correctly stamps the children into the SVG namespace. Affects both `<lcars-anatomical-silhouette>` consumers (Medical Bay anterior + Starship Health summary/engineering).
+
 ## [5.4.1] — 2026-05-04
 
 **Mega-release.** Combines the four scheduled milestones (5.2.1, 5.3.1, 5.4.0, 5.4.1) into a single ship after a full team code review (Data, Geordi, Worf). Bundle: 1.05 MiB (budget 1.5 MiB).

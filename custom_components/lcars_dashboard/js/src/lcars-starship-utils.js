@@ -94,19 +94,21 @@ export function classifyMetric(eid) {
 /* ═══ Anchor map (spec §6) ═══ */
 
 export const STARSHIP_ANCHOR_MAP = Object.freeze({
-  deflector:          { x: 50, y: 4,  label: 'top' },
-  bridge:             { x: 50, y: 12, label: 'left' },
-  main_computer:      { x: 50, y: 22, label: 'right' },
-  saucer_section:     { x: 28, y: 22, label: 'left' },
-  sensor_array:       { x: 72, y: 28, label: 'right' },
-  engineering_hull:   { x: 50, y: 50, label: 'right' },
-  warp_core:          { x: 50, y: 56, label: 'left' },
-  port_nacelle:       { x: 22, y: 70, label: 'left' },
-  starboard_nacelle:  { x: 78, y: 70, label: 'right' },
-  port_impulse:       { x: 38, y: 80, label: 'left' },
-  starboard_impulse:  { x: 62, y: 80, label: 'right' },
-  shuttlebay:         { x: 50, y: 88, label: 'right' },
-  cargo_bay:          { x: 38, y: 92, label: 'left' },
+  // Anchors are percentages of the landscape viewBox (480 × 200).
+  // Forward (saucer) is on the LEFT; aft (nacelles + shuttlebay) is on the RIGHT.
+  deflector:          { x: 6,  y: 50, label: 'left'  },  // bow leading edge
+  bridge:             { x: 22, y: 30, label: 'top'   },  // dorsal saucer hump
+  main_computer:      { x: 22, y: 70, label: 'left'  },  // ventral saucer
+  saucer_section:     { x: 30, y: 18, label: 'top'   },  // upper saucer disc
+  sensor_array:       { x: 30, y: 82, label: 'left'  },  // lower saucer rim
+  engineering_hull:   { x: 60, y: 50, label: 'top'   },  // mid hull
+  warp_core:          { x: 56, y: 65, label: 'left'  },  // ventral hull glow
+  port_nacelle:       { x: 78, y: 18, label: 'top'   },  // upper (port) nacelle
+  starboard_nacelle:  { x: 78, y: 82, label: 'left'  },  // lower (starboard) nacelle
+  port_impulse:       { x: 82, y: 32, label: 'top'   },  // port impulse glow
+  starboard_impulse:  { x: 82, y: 68, label: 'left'  },  // stbd impulse glow
+  shuttlebay:         { x: 90, y: 50, label: 'right' },  // aft hull bay door
+  cargo_bay:          { x: 70, y: 50, label: 'top'   },  // mid-aft hull
 });
 
 /* ═══ Default thresholds (spec §5.6) ═══ */
@@ -285,38 +287,39 @@ export function formatMetric(kind, value, opts = {}) {
   }
 }
 
-/* ═══ Inline silhouette paths (spec §5.7 — top-down hand-authored) ═══
- * Generic LCARS-styled saucer + twin-nacelle layout. Hand-authored, not traced
- * from any production asset. Subsystems are commented; viewBox is 0 0 200 480.
+/* ═══ Inline silhouette paths (spec §5.7 — top-down LANDSCAPE) ═══
+ * Generic LCARS-styled saucer + twin-nacelle layout, ROTATED 90° so the ship
+ * points forward to the LEFT (bow) with nacelles trailing to the RIGHT (aft).
+ * Hand-authored, not traced from any production asset. ViewBox is 0 0 480 200.
  */
 export const STARSHIP_SILHOUETTE_PATHS = svg`
-  <!-- saucer section: round disc at top, ~120 wide -->
-  <ellipse cx="100" cy="58" rx="60" ry="42"/>
-  <!-- deflector arc at the leading edge (top of saucer) -->
-  <path d="M82 18 Q100 8 118 18" stroke-opacity="0.7"/>
-  <!-- inner saucer detail (sensor strip) -->
-  <ellipse cx="100" cy="58" rx="42" ry="26" stroke-opacity="0.35"/>
-  <!-- bridge dome: small center hump -->
-  <circle cx="100" cy="46" r="6" stroke-opacity="0.6"/>
-  <!-- neck / connector down to engineering hull -->
-  <path d="M88 92 L92 130 L108 130 L112 92 Z"/>
-  <!-- engineering hull: rectangular ~70x140 below the neck -->
-  <path d="M70 130 L70 290 Q70 310 90 312 L110 312 Q130 310 130 290 L130 130 Z"/>
-  <!-- warp-core indicator: vertical channel inside the hull -->
-  <line x1="100" y1="160" x2="100" y2="290" stroke-opacity="0.45"/>
-  <!-- shuttlebay: small notch at aft of engineering hull -->
-  <path d="M88 312 L88 322 L112 322 L112 312" stroke-opacity="0.7"/>
-  <!-- port pylon angled outward 15° -->
-  <path d="M80 230 L48 320"/>
-  <!-- starboard pylon -->
-  <path d="M120 230 L152 320"/>
-  <!-- port nacelle: long capsule trailing aft -->
-  <path d="M44 320 L26 330 L20 360 L26 388 L44 398 L48 388 L48 330 Z"/>
-  <!-- starboard nacelle -->
-  <path d="M156 320 L174 330 L180 360 L174 388 L156 398 L152 388 L152 330 Z"/>
-  <!-- impulse engine glow indicators (inner edges of nacelles) -->
-  <line x1="48" y1="350" x2="58" y2="358" stroke-opacity="0.5"/>
-  <line x1="152" y1="350" x2="142" y2="358" stroke-opacity="0.5"/>
-  <!-- cargo bay marker: aft offset on engineering hull -->
-  <circle cx="78" cy="306" r="4" stroke-opacity="0.45"/>
+  <!-- saucer section: ellipse at the bow (left third) -->
+  <ellipse cx="140" cy="100" rx="110" ry="72" />
+  <!-- deflector arc on the leading edge (forward of the saucer) -->
+  <path d="M40 88 Q22 100 40 112" stroke-opacity="0.7" />
+  <!-- inner saucer detail (sensor strip ring) -->
+  <ellipse cx="140" cy="100" rx="78" ry="46" stroke-opacity="0.35" />
+  <!-- bridge dome: small dorsal hump on the saucer -->
+  <circle cx="108" cy="58" r="7" stroke-opacity="0.6" />
+  <!-- neck / connector aft of saucer to engineering hull -->
+  <path d="M236 88 L260 92 L260 108 L236 112 Z" />
+  <!-- engineering hull: tapered bar running aft -->
+  <path d="M260 88 L420 84 Q438 92 438 100 Q438 108 420 116 L260 112 Z" />
+  <!-- warp-core indicator: horizontal channel inside the hull -->
+  <line x1="272" y1="100" x2="410" y2="100" stroke-opacity="0.45" />
+  <!-- shuttlebay: notch at aft tip of engineering hull -->
+  <path d="M438 96 L452 96 L452 104 L438 104" stroke-opacity="0.7" />
+  <!-- port pylon (upper) angled outward from mid-hull -->
+  <path d="M340 84 L360 36" />
+  <!-- starboard pylon (lower) -->
+  <path d="M340 116 L360 164" />
+  <!-- port nacelle (upper): horizontal capsule trailing aft -->
+  <path d="M360 30 L432 26 L450 32 L450 40 L432 46 L360 42 Z" />
+  <!-- starboard nacelle (lower) -->
+  <path d="M360 158 L432 154 L450 160 L450 168 L432 174 L360 170 Z" />
+  <!-- impulse engine glow indicators (aft-inner edges of nacelles) -->
+  <line x1="408" y1="42" x2="398" y2="54" stroke-opacity="0.5" />
+  <line x1="408" y1="158" x2="398" y2="146" stroke-opacity="0.5" />
+  <!-- cargo bay marker: ventral mid-hull -->
+  <circle cx="336" cy="108" r="4" stroke-opacity="0.45" />
 `;

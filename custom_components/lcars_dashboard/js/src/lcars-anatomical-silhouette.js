@@ -107,7 +107,7 @@ class LcarsAnatomicalSilhouette extends LitElement {
       const fontScale = vbH / 480;
       callouts.push(svg`
         <line x1=${xPos} y1=${yPos} x2=${boxX} y2=${yPos}
-              stroke=${lineColor} stroke-width=${0.6 * fontScale} stroke-opacity=${hasValue ? 0.9 : 0.3}/>
+              stroke=${lineColor} stroke-width=${0.6 * fontScale} stroke-opacity=${hasValue ? 0.9 : 0.3} />
         <text x=${boxX} y=${yPos - 2 * fontScale} text-anchor=${anchor}
               fill="var(--lcars-ice, #99ccff)"
               font-size=${9 * fontScale} font-family="Antonio, sans-serif"
@@ -144,7 +144,6 @@ class LcarsAnatomicalSilhouette extends LitElement {
         position: relative;
         width: 100%;
         height: 100%;
-        min-height: 320px;
       }
       svg { display: block; width: 100%; height: 100%; }
       .thermal {

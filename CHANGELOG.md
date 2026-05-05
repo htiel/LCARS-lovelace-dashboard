@@ -2,6 +2,14 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.4.3] — 2026-05-04
+
+### Fixed
+- **Silhouette anchor labels were still invisible after 5.4.2.** The `<line>` self-close in the callout template was emitted as `stroke-opacity="0.9/>"` because the trailing `/` (no separating space) got slurped into the unquoted attribute value when lit-html stamped numeric values. The unterminated `<line>` then absorbed every following sibling — including all `<text>` callouts — causing the labels to render with width=0 (no bbox). Added a leading space before `/>` so the self-close is parsed correctly. Inspecting via shadow-root DOM forensics confirmed `getBBox().width === 0` on every label before the fix and proper bounding boxes after.
+
+### Changed
+- **Starship Health silhouette is now landscape (480 × 200).** The ship now points forward to the LEFT with the saucer on the bow and twin nacelles trailing aft on the RIGHT — far better-suited to wide dashboard cards than the previous portrait 200 × 480 layout. Anchor map updated for the new orientation: deflector forward, bridge dorsal-saucer, port nacelle upper, starboard nacelle lower, shuttlebay aft. Hand-authored geometry, still not traced from any production asset.
+
 ## [5.4.2] — 2026-05-04
 
 ### Fixed

@@ -360,6 +360,7 @@ class LcarsStarshipCard extends LitElement {
             .paths=${STARSHIP_SILHOUETTE_PATHS}
             .anchorMap=${STARSHIP_ANCHOR_MAP}
             .anchors=${anchors}
+            .viewBox=${'0 0 480 200'}
             .thermal=${this._thermal}
             .redactClass=${'lcars-starship-redactable'}
             .redactAttr=${{ name: 'starship', value: 'op' }}
@@ -517,7 +518,7 @@ class LcarsStarshipCard extends LitElement {
           color: var(--lcars-butterscotch, #ff9966);
         }
         .vessel-card.focused .zone-b { min-height: 540px; }
-        lcars-anatomical-silhouette { width: 100%; height: 100%; }
+        lcars-anatomical-silhouette { width: 100%; height: 100%; min-height: 200px; aspect-ratio: 480 / 240; }
         .scan-pending {
           position: absolute; inset: 1rem;
           display: flex; align-items: center; justify-content: center;

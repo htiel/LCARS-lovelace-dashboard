@@ -463,7 +463,7 @@ class LcarsMedicalCard extends LitElement {
           flex: 1 1 auto; position: relative; min-height: 320px;
           display: flex; align-items: center; justify-content: center;
         }
-        lcars-anatomical-silhouette { width: 100%; height: 100%; max-height: 480px; }
+        lcars-anatomical-silhouette { width: 100%; height: 100%; min-height: 320px; max-height: 480px; aspect-ratio: 200 / 480; }
         .consent-gate {
           position: absolute; inset: 0;
           background: rgba(0,0,0,0.92); backdrop-filter: blur(4px);

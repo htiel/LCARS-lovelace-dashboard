@@ -2,6 +2,18 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.4.5] — 2026-05-05
+
+### Fixed
+- **Vessel-diagnostic callouts no longer chop into each other.** With 5.4.4 wiring four additional metric kinds into Starship Health, the populated-anchor count tipped past the silhouette callout renderer's collision threshold — labels collapsed into single edge columns producing readouts like "CPLOTAMP" (CPU TMP + LOAD), "BAGSCKUP" (BACKUP + ADDONS), and a left-edge pile-up of MEM / TX / CORE.
+- **Root cause** was structural: the `lcars-anatomical-silhouette` element interpreted each anchor's `label` field as an edge-column selector with no awareness of how many anchors were on the same edge. Every `top`-labelled anchor snapped to canvas-center-x, every `left` to vbX+inset, and the per-anchor y values stacked into thin vertical bands. On the landscape viewBox (480×200) the auxiliary `fontScale = vbH/480` formula compounded the problem at 0.42×, making labels both small and overprinting.
+
+### Changed
+- **Edge-stagger rail callout layout (Data architectural review).** The silhouette element now buckets active callouts by edge, sorts each bucket along its run-axis (anchor.x for top/bottom, anchor.y for left/right), and distributes slot positions evenly in the [10%, 90%] band of that edge. n=1 keeps the natural anchor coordinate so sparse maps (Medical at n≤3/edge) render unchanged. Iteration uses `Object.keys(anchorMap).sort()` for cross-engine deterministic ordering.
+- **New `bottom` edge** added as the 4th cardinal. Five Starship anchors relabeled — `main_computer`, `sensor_array`, `warp_core`, `starboard_nacelle`, `starboard_impulse` — so the top edge now carries 6 callouts, bottom 5, left and right 1 each.
+- **Typography (Geordi):** `fontScale = clamp(min(vbW/480, vbH/240), 0.75, 1.25)` — landscape-safe with a hard floor and ceiling. Label bumped 9 → 12, value 14 → 16, stacked label-above-value in MSD canon.
+- **Accessibility:** each callout is now wrapped in `<g role="img" aria-label="LABEL, VALUE, status">` so assistive tech announces the readout as a unit. Decorative leader `<line>` and silhouette path `<g>` carry `aria-hidden="true"`. The outer `<svg>` is `role="group"` to prevent the browser collapsing it to a single image. Resolves WCAG 1.3.1 / 4.1.2 failures introduced by the colliding `<text>` elements.
+
 ## [5.4.4] — 2026-05-05
 
 ### Added

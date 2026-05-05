@@ -114,19 +114,22 @@ export function classifyMetric(eid) {
 export const STARSHIP_ANCHOR_MAP = Object.freeze({
   // Anchors are percentages of the landscape viewBox (480 × 200).
   // Forward (saucer) is on the LEFT; aft (nacelles + shuttlebay) is on the RIGHT.
-  deflector:          { x: 6,  y: 50, label: 'left'  },  // bow leading edge
-  bridge:             { x: 22, y: 30, label: 'top'   },  // dorsal saucer hump
-  main_computer:      { x: 22, y: 70, label: 'left'  },  // ventral saucer
-  saucer_section:     { x: 30, y: 18, label: 'top'   },  // upper saucer disc
-  sensor_array:       { x: 30, y: 82, label: 'left'  },  // lower saucer rim
-  engineering_hull:   { x: 60, y: 50, label: 'top'   },  // mid hull
-  warp_core:          { x: 56, y: 65, label: 'left'  },  // ventral hull glow
-  port_nacelle:       { x: 78, y: 18, label: 'top'   },  // upper (port) nacelle
-  starboard_nacelle:  { x: 78, y: 82, label: 'left'  },  // lower (starboard) nacelle
-  port_impulse:       { x: 82, y: 32, label: 'top'   },  // port impulse glow
-  starboard_impulse:  { x: 82, y: 68, label: 'left'  },  // stbd impulse glow
-  shuttlebay:         { x: 90, y: 50, label: 'right' },  // aft hull bay door
-  cargo_bay:          { x: 70, y: 50, label: 'top'   },  // mid-aft hull
+  // 5.4.5 (Data review): edge labels relabeled to match true anchor position so the
+  // silhouette renderer's edge-stagger algorithm has clean inputs. 6 top, 5 bottom,
+  // 1 left, 1 right — symmetric distribution that resolves the 5.4.4 callout chop.
+  deflector:          { x: 6,  y: 50, label: 'left'   },  // bow leading edge
+  bridge:             { x: 22, y: 30, label: 'top'    },  // dorsal saucer hump
+  main_computer:      { x: 22, y: 70, label: 'bottom' },  // ventral saucer
+  saucer_section:     { x: 30, y: 18, label: 'top'    },  // upper saucer disc
+  sensor_array:       { x: 30, y: 82, label: 'bottom' },  // lower saucer rim
+  engineering_hull:   { x: 60, y: 50, label: 'top'    },  // mid hull
+  warp_core:          { x: 56, y: 65, label: 'bottom' },  // ventral hull glow
+  port_nacelle:       { x: 78, y: 18, label: 'top'    },  // upper (port) nacelle
+  starboard_nacelle:  { x: 78, y: 82, label: 'bottom' },  // lower (starboard) nacelle
+  port_impulse:       { x: 82, y: 32, label: 'top'    },  // port impulse glow
+  starboard_impulse:  { x: 82, y: 68, label: 'bottom' },  // stbd impulse glow
+  shuttlebay:         { x: 90, y: 50, label: 'right'  },  // aft hull bay door
+  cargo_bay:          { x: 70, y: 50, label: 'top'    },  // mid-aft hull
 });
 
 /* ═══ Default thresholds (spec §5.6) ═══ */

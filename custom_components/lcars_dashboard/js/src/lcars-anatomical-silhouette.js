@@ -79,56 +79,116 @@ class LcarsAnatomicalSilhouette extends LitElement {
 
   render() {
     const [vbX, vbY, vbW, vbH] = this.viewBox.split(/\s+/).map(Number);
-    const callouts = [];
     const valueClass = this.redactClass || '';
     const attrName = this.redactAttr?.name ? `data-${this.redactAttr.name}` : null;
     const attrValue = this.redactAttr?.value || '';
 
-    for (const [slot, data] of Object.entries(this.anchors || {})) {
+    // Typography (Geordi 5.4.5): clamp landscape-safe so callouts don't collapse
+    // to ~0.4× on landscape silhouettes (vbH=200) where the old vbH/480 formula failed.
+    const rawScale = Math.min(vbW / 480, vbH / 240);
+    const fontScale = Math.max(0.75, Math.min(1.25, rawScale));
+    const labelFontSize = 12 * fontScale;
+    const valueFontSize = 16 * fontScale;
+    const inset = Math.max(vbW, vbH) * 0.015;
+
+    // Pass 1 — bucket active slots by edge. Iterate sorted anchorMap keys for
+    // cross-engine deterministic ordering on ties (Data 5.4.5 review #4).
+    const buckets = { left: [], right: [], top: [], bottom: [] };
+    const slotKeys = Object.keys(this.anchorMap || {}).sort();
+    for (const slot of slotKeys) {
+      if (!Object.prototype.hasOwnProperty.call(this.anchors || {}, slot)) continue;
       const pos = this.anchorMap[slot];
       if (!pos) continue;
+      const edge = pos.label;
+      if (!buckets[edge]) continue;
+      buckets[edge].push({ slot, pos });
+    }
+    // Pass 2 — sort each bucket along its run-axis and assign an evenly-distributed
+    // coordinate in the [10%, 90%] band. n=1 keeps the natural anchor coordinate
+    // so sparse maps (Medical at n≤3/edge) render unchanged from pre-5.4.5.
+    const distributed = {};
+    for (const [edge, list] of Object.entries(buckets)) {
+      if (!list.length) continue;
+      const isHorizontal = edge === 'top' || edge === 'bottom';
+      list.sort((a, b) => isHorizontal ? a.pos.x - b.pos.x : a.pos.y - b.pos.y);
+      const n = list.length;
+      list.forEach((entry, i) => {
+        const coord = (n === 1)
+          ? (isHorizontal ? entry.pos.x : entry.pos.y)
+          : 10 + ((i + 0.5) * (80 / n));
+        distributed[entry.slot] = { pos: entry.pos, edge, distCoord: coord };
+      });
+    }
+
+    // Pass 3 — emit one callout group per slot.
+    const callouts = [];
+    for (const slot of slotKeys) {
+      const dist = distributed[slot];
+      if (!dist) continue;
+      const data = this.anchors[slot];
+      const pos = dist.pos;
+      const edge = dist.edge;
       const status = data?.status || 'NOMINAL';
       const value = data?.value;
       const label = data?.label || '';
       const hasValue = value != null && value !== '—' && value !== '';
-      const side = pos.label;
-      const xPos = (pos.x / 100) * vbW + vbX;
-      const yPos = (pos.y / 100) * vbH + vbY;
-      // Place text INSIDE the canvas:
-      //   left side: text-anchor=start at viewBox left edge + small inset
-      //   right side: text-anchor=end at viewBox right edge - small inset
-      //   top: anchor=middle at canvas center
-      const inset = vbW * 0.02;
-      const boxX = side === 'left' ? vbX + inset
-                 : (side === 'right' ? vbX + vbW - inset : vbX + vbW / 2);
-      const anchor = side === 'left' ? 'start' : (side === 'right' ? 'end' : 'middle');
+      const anchorPx = (pos.x / 100) * vbW + vbX;
+      const anchorPy = (pos.y / 100) * vbH + vbY;
+      let leaderX, leaderY, textAnchor;
+      if (edge === 'left') {
+        leaderX = vbX + inset;
+        leaderY = (dist.distCoord / 100) * vbH + vbY;
+        textAnchor = 'start';
+      } else if (edge === 'right') {
+        leaderX = vbX + vbW - inset;
+        leaderY = (dist.distCoord / 100) * vbH + vbY;
+        textAnchor = 'end';
+      } else if (edge === 'top') {
+        leaderX = (dist.distCoord / 100) * vbW + vbX;
+        leaderY = vbY + 16 * fontScale;
+        textAnchor = 'middle';
+      } else { // bottom
+        leaderX = (dist.distCoord / 100) * vbW + vbX;
+        leaderY = vbY + vbH - 4 * fontScale;
+        textAnchor = 'middle';
+      }
+      // Stack label above value. For top/left/right the leader endpoint sits
+      // between the two lines; for bottom both lines sit above the endpoint so
+      // the value glyph doesn't run off the canvas.
+      const labelDy = (edge === 'bottom') ? -14 * fontScale : -2 * fontScale;
+      const valueDy = (edge === 'bottom') ? -2 * fontScale  : 11 * fontScale;
       const lineColor = hasValue ? (STATUS_COLOR[status] || STATUS_COLOR.NOMINAL) : 'var(--lcars-gray, #666688)';
       const valColor = hasValue ? (STATUS_COLOR[status] || STATUS_COLOR.NOMINAL) : 'var(--lcars-gray, #666688)';
-      const fontScale = vbH / 480;
+      const ariaLabel = `${label}, ${hasValue ? value : 'offline'}, ${String(status).toLowerCase()}`;
       callouts.push(svg`
-        <line x1=${xPos} y1=${yPos} x2=${boxX} y2=${yPos}
-              stroke=${lineColor} stroke-width=${0.6 * fontScale} stroke-opacity=${hasValue ? 0.9 : 0.3} />
-        <text x=${boxX} y=${yPos - 2 * fontScale} text-anchor=${anchor}
-              fill="var(--lcars-ice, #99ccff)"
-              font-size=${9 * fontScale} font-family="Antonio, sans-serif"
-              letter-spacing="0.5" style="text-transform:uppercase">${label}</text>
-        <text x=${boxX} y=${yPos + 11 * fontScale} text-anchor=${anchor}
-              class=${valueClass}
-              data-medical=${attrName === 'data-medical' ? attrValue : null}
-              data-starship=${attrName === 'data-starship' ? attrValue : null}
-              fill=${valColor}
-              font-size=${14 * fontScale} font-family="Antonio, sans-serif"
-              font-weight="700" letter-spacing="0.3"
-              paint-order="stroke fill" stroke="#000" stroke-width=${1.5 * fontScale} stroke-opacity="0.85"
-              >${hasValue ? value : '—'}</text>
+        <g role="img" aria-label=${ariaLabel}>
+          <line aria-hidden="true"
+                x1=${anchorPx} y1=${anchorPy} x2=${leaderX} y2=${leaderY}
+                stroke=${lineColor} stroke-width=${0.6 * fontScale} stroke-opacity=${hasValue ? 0.9 : 0.3} />
+          <text aria-hidden="true"
+                x=${leaderX} y=${leaderY + labelDy} text-anchor=${textAnchor}
+                fill="var(--lcars-ice, #99ccff)"
+                font-size=${labelFontSize} font-family="Antonio, sans-serif"
+                letter-spacing="0.5" style="text-transform:uppercase">${label}</text>
+          <text aria-hidden="true"
+                x=${leaderX} y=${leaderY + valueDy} text-anchor=${textAnchor}
+                class=${valueClass}
+                data-medical=${attrName === 'data-medical' ? attrValue : null}
+                data-starship=${attrName === 'data-starship' ? attrValue : null}
+                fill=${valColor}
+                font-size=${valueFontSize} font-family="Antonio, sans-serif"
+                font-weight="700" letter-spacing="0.3"
+                paint-order="stroke fill" stroke="#000" stroke-width=${1.5 * fontScale} stroke-opacity="0.85"
+                >${hasValue ? value : '—'}</text>
+        </g>
       `);
     }
 
     return html`
       ${this._alertLayers()}
       <svg viewBox=${this.viewBox} preserveAspectRatio="xMidYMid meet"
-           role="img" aria-label=${this.ariaLabel || 'Anatomical silhouette'}>
-        <g stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" fill="none">
+           role="group" aria-label=${this.ariaLabel || 'Anatomical silhouette'}>
+        <g aria-hidden="true" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" fill="none">
           ${this.paths || ''}
         </g>
         ${callouts}

@@ -15,6 +15,7 @@ const DASHBOARD_URL_MAP = {
   environmental: 'lcars-environmental',
   lighting: 'lcars-lighting',
   cetacean: 'lcars-cetacean',
+  network: 'lcars-network',
 };
 
 /**

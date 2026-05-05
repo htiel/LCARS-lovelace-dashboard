@@ -1,0 +1,10 @@
+# LCARS Subspace Relay (Network) Dashboard — Lovelace YAML configuration
+# Per specs/LCARS-SUBSPACE-RELAY-DASHBOARD-SPEC.md
+# 5.2.0-beta.1 — Network Health panel + WAN strip (Connected Clients deferred to 5.2.1)
+views:
+  - title: Subspace Relay
+    icon: mdi:lan
+    path: home
+    type: custom:lcars-network-layout
+    cards:
+      - type: custom:lcars-network-card

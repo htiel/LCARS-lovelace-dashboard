@@ -242,14 +242,20 @@ Motion sensors and Wallbox Vilya showing as battery cards. Filter out non-storag
 
 ---
 
-### 5X-3.3 · "Stellar Cartography" — Network & Presence Dashboard — `TODO` · Priority: LOW · Size: XL
+### 5X-3.3 · "Subspace Relay" — Network Dashboard — `SHIPPED 5.2.0` · Was: Stellar Cartography (LOW · XL)
 
-**Entity filter**: `domain` in {`device_tracker`, `person`, `zone`} + network integrations (UniFi, Netgear)
+**Status:** Retired. Shipped as `Subspace Relay` (network) dashboard in 5.2.0-beta.1/.2. See [specs/LCARS-SUBSPACE-RELAY-DASHBOARD-SPEC.md](../specs/LCARS-SUBSPACE-RELAY-DASHBOARD-SPEC.md) and CHANGELOG entry.
 
-- Network topology by connection type (Wi-Fi, Ethernet, Zigbee, Thread, Bluetooth)
-- Person tracking: home/away, zone-based
-- Device health: signal strength, bandwidth, uptime
-- ESP32 BLE Proxy nodes per room → room-level presence
+**Delivered in 5.2.0:**
+- Network Health panel (UniFi UDM/Switch/AP CPU/MEM/TEMP/UPTIME/CLIENTS/LINK)
+- WAN Status hero strip (latency tiles per probe target)
+- Equipment & Peripherals panel (IPP printers, KCMY ink levels with LOW/CRIT glyphs)
+- `data-network` screenshot redaction hooks
+- `require_admin: True` dashboard registration
+
+**Deferred to 5.2.1:** Connected Clients panel (device_tracker table, pending Worf privacy gate finalization — default-redact hostnames + opt-in reveal).
+
+**Future (post-5.2.1):** Per-port PoE & link-speed grid · cross-dashboard "Red Alert" cascade (lands with Starship Health 5.4.0) · ESP32 mmWave presence cross-correlation (Wesley).
 
 ---
 

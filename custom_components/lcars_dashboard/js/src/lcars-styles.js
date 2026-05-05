@@ -46,6 +46,14 @@ export const lcarsColors = css`
   --lcars-alert: var(--lcars-tomato);
   --lcars-disabled: var(--lcars-gray);
 
+  /* ─── Ink Affordance Tokens (5.2.0 Subspace Relay printer panel) ─── */
+  /* Physical-color affordances for printer ink bars; intentionally off-LCARS-palette
+     because they represent real CMYK pigments. Use ONLY for ink/dye affordances. */
+  --lcars-ink-black:   #2a2a2a;
+  --lcars-ink-cyan:    #00bcd4;
+  --lcars-ink-magenta: #c2185b;
+  --lcars-ink-yellow:  #fbc02d;
+
   /* ─── Sizing Tokens (Jörn Weißenborn grid) ─── */
   --lcars-unit: 7.5rem;
   --lcars-vunit: 3rem;

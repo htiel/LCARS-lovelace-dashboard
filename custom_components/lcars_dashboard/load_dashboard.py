@@ -29,7 +29,7 @@ def _validate_url_path(url_path):
     return url_path
 
 
-def _register_single_dashboard(hass, url_path, yaml_path, title, icon, show_in_sidebar=True):
+def _register_single_dashboard(hass, url_path, yaml_path, title, icon, show_in_sidebar=True, require_admin=False):
     """Register a single Lovelace YAML dashboard with HA's panel system.
 
     Args:
@@ -39,6 +39,7 @@ def _register_single_dashboard(hass, url_path, yaml_path, title, icon, show_in_s
         title: Sidebar panel title
         icon: Sidebar panel icon (mdi: format)
         show_in_sidebar: Whether to show in the sidebar (default True)
+        require_admin: Restrict dashboard to admin users (default False)
     """
     _validate_url_path(url_path)
 
@@ -48,7 +49,7 @@ def _register_single_dashboard(hass, url_path, yaml_path, title, icon, show_in_s
         "title": title,
         "filename": yaml_path,
         "show_in_sidebar": show_in_sidebar,
-        "require_admin": False,
+        "require_admin": bool(require_admin),
     }
 
     full_yaml_path = hass.config.path(yaml_path)
@@ -84,13 +85,14 @@ def load_dashboards(hass, config_entry):
 
         title = config_entry.options.get(f"{db_key}_title", meta["default_title"])
         icon = config_entry.options.get(f"{db_key}_icon", meta["default_icon"])
+        require_admin = meta.get("require_admin", False)
         yaml_path = f"custom_components/lcars_dashboard/lovelace/ui-lovelace-{db_key}.yaml"
 
         # For habitat, use the existing ui-lovelace.yaml
         if db_key == "habitat":
             yaml_path = "custom_components/lcars_dashboard/lovelace/ui-lovelace.yaml"
 
-        if _register_single_dashboard(hass, meta["url_path"], yaml_path, title, icon):
+        if _register_single_dashboard(hass, meta["url_path"], yaml_path, title, icon, require_admin=require_admin):
             registered.append(meta["url_path"])
 
     _LOGGER.info("Registered %d dashboard(s): %s", len(registered), ", ".join(registered))

@@ -1,5 +1,5 @@
 DOMAIN = "lcars_dashboard"
-VERSION = "5.1.0-beta.38"
+VERSION = "5.2.0-beta.2"
 
 # Configuration keys
 CONF_DASHBOARDS = "dashboards"
@@ -15,6 +15,9 @@ DASHBOARD_REGISTRY = {
     "environmental": {"default_title": "Life Support",  "default_icon": "mdi:thermometer",  "url_path": "lcars-environmental"},
     "lighting":      {"default_title": "Illumination",  "default_icon": "mdi:lightbulb",   "url_path": "lcars-lighting"},
     "cetacean":      {"default_title": "Cetacean Ops",  "default_icon": "mdi:dolphin",     "url_path": "lcars-cetacean"},
+    # 5X-3.3 / 5.2.0 — Subspace Relay (Network) per LCARS-SUBSPACE-RELAY-DASHBOARD-SPEC.md
+    # require_admin=True per Worf spec §15 — client/host/MAC data is sensitive even for read-only
+    "network":       {"default_title": "Subspace Relay", "default_icon": "mdi:lan",         "url_path": "lcars-network",      "require_admin": True},
 }
 
-MAX_DASHBOARDS = len(DASHBOARD_REGISTRY)  # 6
+MAX_DASHBOARDS = len(DASHBOARD_REGISTRY)  # 7

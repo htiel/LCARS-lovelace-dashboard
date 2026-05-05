@@ -2,6 +2,65 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.2.0-beta.2] — 2026-05-04
+
+Code-review fixes from the senior staff review of beta.1 (Data, Geordi, Worf, Riker — all CONDITIONS verdicts cleared).
+
+### Worf hardening (BLOCKING for stable, fixed)
+- **Per-dashboard `require_admin` registry flag.** `DASHBOARD_REGISTRY` now supports a per-key `require_admin` bool; `network` defaults to `True` (Subspace Relay surfaces host/client/MAC data, admin-only per spec §15). `_register_single_dashboard` plumbs it through to HA's panel registration. Other dashboards default to `False` (unchanged).
+- WAN-tile probe-target label carries `data-network="hostname"` defensively — public DNS (Google/Cloudflare/Microsoft) remains visible in screenshots, private/self-hosted probe targets get scrubbed.
+- Article-level `aria-label` no longer leaks hostnames into the AX tree; switched to `aria-labelledby` referencing the inner `data-network="hostname"` span (single redaction target).
+
+### Geordi UI/A11y (BLOCKING for stable, fixed)
+- **Ink-bar palette tokens.** Hardcoded CMYK hex (`#222 #00bcd4 #c2185b #fbc02d`) replaced with new `--lcars-ink-{black,cyan,magenta,yellow}` CSS custom properties in `lcars-styles.js` (intentional off-LCARS-palette physical-color affordances, scoped to ink/dye usage only).
+- **Glyph contrast.** `.net-ink.crit .net-ink-glyph` swapped from `#fff` (4.08:1, fail) → `#000` on tomato (~5.7:1, pass) per WCAG 1.4.3 AA.
+- **Tablist semantics completed.** Tabs now carry `aria-controls="net-content"` + roving `tabindex` (active = 0, inactive = -1). The content area gets `id="net-content"` + `role="tabpanel"` + `tabindex="0"`. Arrow-key navigation tracked for cross-dashboard refactor.
+- **`prefers-reduced-motion`** now also gates the sidebar filter-button background transition.
+- **Sub-empty + loading states** all carry `role="status"` so screen readers announce them on filter switch.
+- Unknown/unavailable state color upgraded from `--lcars-gray` (4.0:1, fail) → `--lcars-sky` (~9:1, pass).
+
+### Geordi audio grammar
+- Deferred CLIENTS button now plays `negativeAcknowledge` (per audio spec: denied actions must announce) and surfaces a 4s `role="status" aria-live="polite"` toast hint instead of silently logging to console.
+
+### Data correctness fixes (BLOCKING for stable, fixed)
+- **WAN-latency label regex** rewritten to strip the *suffix* not the prefix — tiles now correctly differentiate Google / Cloudflare / Microsoft (or any custom probe name) instead of all rendering "Latency".
+- **IPP printer status detection** now correctly reads `entity.translation_key === 'printer'` from the entity-registry entry (was incorrectly probing `state.attributes.translation_key`, which doesn't exist there). Eliminates false matches on unrelated enum sensors.
+- **`UNIFI_HEALTH_RE` properly anchored.** Was matching unanchored substrings (`state` would match `*_state_changes`); now requires `_<keyword>$` end-anchors. Excludes future false positives from new UniFi sensor types.
+- **Ink dedupe.** Same color sensor appearing twice (e.g. duplicate config entries) now replaces in place rather than appending.
+- Removed unused `lcarsLog` / `TAG` imports.
+
+### Backlog hygiene
+- `plans/backlog-5x.md` 5X-3.3 "Stellar Cartography" marked **SHIPPED 5.2.0** with delivered/deferred breakdown.
+
+### Known gaps (rolling to 5.2.x)
+- Per-port PoE / link-speed grid on switches (5.2.1+).
+- Cross-card discovery memoization on `(entities, devices)` registry identity (defect shared by Engineering / Cetacean / Life Support — fix in shared `entity_query.js` once layout extraction lands, 5.3.x prerequisite).
+- Promote per-card threshold maps into a single `lcars-thresholds.js` (cross-dashboard consistency).
+- `DASHBOARD_URL_MAP` in `lcars-sidebar-reorder.js` duplicates Python `DASHBOARD_REGISTRY`; generate at build time.
+
+## [5.2.0-beta.1] — 2026-05-04
+
+### Subspace Relay — Network Dashboard (NEW, retires backlog 5X-3.3)
+
+First release of the dedicated Network dashboard ("Subspace Relay"), per [`specs/LCARS-SUBSPACE-RELAY-DASHBOARD-SPEC.md`](specs/LCARS-SUBSPACE-RELAY-DASHBOARD-SPEC.md). Adds a 7th sidebar slot and ships the **Network Health** + **WAN Status** + **Equipment & Peripherals** panels.
+
+**What's in beta.1:**
+- New `network` dashboard key (URL `/lcars-network`) registered in `DASHBOARD_REGISTRY`. `MAX_DASHBOARDS` 6 → 7.
+- New layout `lcars-network-layout` (butterscotch frame, ice sidebar) with ALL / HEALTH / PERIPHERALS / CLIENTS sidebar tabs (CLIENTS gated as deferred to 5.2.1 per Worf privacy review).
+- **Network Health panel** auto-discovers UniFi infrastructure (`platform: unifi`) grouped by device. Per-device tile row: CPU%, MEM%, TEMP, UPTIME, CLIENTS, LINK SPEED. Threshold colors per spec §5 (green ≤ warn, gold = warn, red = crit). UDM-class devices (with temperature sensors) sort first.
+- **WAN Status hero strip** auto-discovers `wan_latency` sensors (Google / Cloudflare / Microsoft style) and renders a per-source latency tile with threshold coloring (60 ms warn, 150 ms crit).
+- **Equipment & Peripherals panel** auto-discovers IPP printers (`platform: ipp`) and renders per-printer status pill + KCMY ink-level bars with `LOW` / `CRIT` text glyph (color-blind safe).
+- All host/MAC/SSID/WAN-IP/model identifiers carry `data-network="*"` attributes; `localinfo/screenshot-obfuscator.js` extended to redact them automatically (Worf hard requirement).
+- Audio: `navAcknowledge` on tab change; mute toggle persists across dashboards.
+- A11y: `role="tablist"` sidebar, 44 × 44 min hit targets, `:focus-visible` outlines, `aria-label` on every interactive element, `prefers-reduced-motion` respected on ink-bar fills.
+
+**Deferred to 5.2.1:**
+- Connected Clients table (device_tracker) — pending Worf privacy gate (default-redact hostnames, opt-in reveal).
+
+**Known limitations:**
+- Per-port PoE / link-speed details on switches not yet rendered (rolls into 5.2.x).
+- WAN-down state surfaces as red latency tile only; cross-dashboard "Red Alert" cascade lands with Starship Health (5.4.0).
+
 ## [5.1.0-beta.38] — 2026-05-03
 
 ### Habitat — Icon-Only Sidebar on Mobile (Captain's call, closes #94)

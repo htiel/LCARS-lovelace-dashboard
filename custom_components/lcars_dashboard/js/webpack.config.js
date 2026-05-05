@@ -39,6 +39,8 @@ module.exports = {
     './src/lcars-lifesupport-layout.js',     // 5X-2.4: Life Support Layout
     './src/lcars-cetacean-card.js',          // 5X-3.1: Cetacean Ops (Pool & Spa) Dashboard
     './src/lcars-cetacean-layout.js',        // 5X-3.1: Cetacean Ops Layout
+    './src/lcars-network-card.js',           // 5.2.0: Subspace Relay (Network) Dashboard
+    './src/lcars-network-layout.js',         // 5.2.0: Subspace Relay Layout
   ],
   mode: 'production',
   output: {

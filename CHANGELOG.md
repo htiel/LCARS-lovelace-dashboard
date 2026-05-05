@@ -2,6 +2,20 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.4.4] — 2026-05-05
+
+### Added
+- **Starship Health now wires up Home Assistant Supervisor + add-on telemetry.** When the Captain enables the supervisor / addon CPU, memory, disk, and version sensors in HA's entity registry, the local-vessel card now lights up four additional anchors and tiles:
+  - **Bridge (CPU)** — accepts `sensor.home_assistant_core_cpu_percent` in addition to the existing `sensor.processor_use` family.
+  - **Main Computer (MEM)** — accepts `sensor.home_assistant_core_memory_percent`.
+  - **Engineering Hull (DISK)** — derives a percent from the `sensor.home_assistant_host_disk_used` / `disk_total` pair when no system_monitor `disk_use_percent_*` is available.
+  - **Shuttlebay (ADDONS)** — addon-running classifier widened from the `addon_/hassio_` prefix to any `binary_sensor.*_running` (the SYSTEM_PLATFORMS gate in `discoverVessels` keeps appliance sensors out, so the Worf m6 / Data #2 isolation guarantee is preserved).
+- **HA Core / Supervisor version tile** also now sources its string from `sensor.home_assistant_operating_system_version` (plain state) when present, falling back to `update.home_assistant_core_update`'s `installed_version` attribute.
+- **New `updates_pending` tile** counts how many `update.*` entities on the vessel are currently `on` (pending). Shows `pending/total`, degrades when > 0.
+
+### Changed
+- `localinfo/combined.entities.csv` regenerated for all 70 enabled hassio entities on the reference HA install. Previous disabled-hidden rows replaced with `suggested_panel_tag = starship`.
+
 ## [5.4.3] — 2026-05-04
 
 ### Fixed

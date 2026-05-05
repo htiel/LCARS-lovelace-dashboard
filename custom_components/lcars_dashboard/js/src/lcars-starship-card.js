@@ -157,6 +157,10 @@ class LcarsStarshipCard extends LitElement {
     const byKind = new Map();
     let stoppedAddons = 0;
     let runningAddons = 0;
+    let updatesPending = 0;
+    let updatesTotal = 0;
+    let diskUsed = null;
+    let diskTotal = null;
     for (const { eid, state } of vessel.entities) {
       const cls = classifyMetric(eid);
       if (!cls) continue;
@@ -166,9 +170,27 @@ class LcarsStarshipCard extends LitElement {
         else stoppedAddons++;
         continue;
       }
+      if (cls.kind === 'updates_pending') {
+        updatesTotal++;
+        if (state.state === 'on') updatesPending++;
+        continue;
+      }
+      // disk_root: if this is the hassio host pair, capture used + total to derive %.
+      if (cls.kind === 'disk_root' && /home_assistant_host_disk_(used|total)$/i.test(eid)) {
+        const n = parseFloat(state.state);
+        if (!isNaN(n)) {
+          if (/disk_used$/i.test(eid)) diskUsed = n;
+          else diskTotal = n;
+        }
+        continue;
+      }
       let value;
-      if (cls.kind === 'wan_reachable' || cls.kind === 'ha_core_version') {
+      if (cls.kind === 'wan_reachable') {
         value = state.state;
+      } else if (cls.kind === 'ha_core_version') {
+        // Prefer the OS version sensor's plain string state; the update entity exposes
+        // installed_version on .attributes (state itself is on/off).
+        value = state.attributes?.installed_version || state.state;
       } else if (cls.kind === 'uptime') {
         value = state.state;   // ISO timestamp; formatMetric converts to days/hours
       } else {
@@ -188,6 +210,24 @@ class LcarsStarshipCard extends LitElement {
         running: runningAddons,
         total: runningAddons + stoppedAddons,
         ts: Date.now(),
+      });
+    }
+    if (updatesTotal) {
+      byKind.set('updates_pending', {
+        kind: 'updates_pending',
+        value: updatesPending,
+        total: updatesTotal,
+        ts: Date.now(),
+      });
+    }
+    // Derived disk_root from hassio host disk_used/disk_total (only when system_monitor
+    // didn't already supply a direct percent reading).
+    if (!byKind.get('disk_root') && diskUsed != null && diskTotal && diskTotal > 0) {
+      byKind.set('disk_root', {
+        kind: 'disk_root',
+        value: Math.round((diskUsed / diskTotal) * 100),
+        ts: Date.now(),
+        raw: `${Math.round(diskUsed)}/${Math.round(diskTotal)} GB`,
       });
     }
     // Derived: composite_thermal — max of cpu/gpu/nvme normalized to 100-x
@@ -286,6 +326,9 @@ class LcarsStarshipCard extends LitElement {
                     : m.value >= t.warning  ? STARSHIP_STATUS.WARNING
                     : m.value >= t.degraded ? STARSHIP_STATUS.DEGRADED
                     : STARSHIP_STATUS.NOMINAL;
+            } else if (cls.kind === 'updates_pending') {
+              display = `${m.value}/${m.total}`;
+              status = m.value > 0 ? STARSHIP_STATUS.DEGRADED : STARSHIP_STATUS.NOMINAL;
             } else if (cls.kind === 'ha_core_version') {
               display = m.value;
               status = STARSHIP_STATUS.NOMINAL;

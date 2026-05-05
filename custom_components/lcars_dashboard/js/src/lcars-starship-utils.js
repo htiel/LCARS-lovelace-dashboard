@@ -39,20 +39,31 @@ export function rollupStarshipStatus(statuses) {
 /* ═══ Metric classifier (spec §4.3) ═══ */
 
 export const STARSHIP_METRIC_CLASSES = [
+  // CPU usage: system_monitor (`processor_use`) OR hassio core (`home_assistant_core_cpu_percent`).
+  // Hassio supervisor / addon CPU sensors are intentionally NOT mapped to the bridge anchor;
+  // they roll up via the per-addon tile path so the headline CPU metric stays HA-core-only.
   { kind: 'cpu_usage',         anchor: 'bridge',             unit: '%',     label: 'CPU',          tile: true,  spark: true,
-    match: (eid) => /^sensor\.processor_use$/i.test(eid) || /processor_use|cpu_used/i.test(eid) },
+    match: (eid) => /^sensor\.processor_use$/i.test(eid)
+      || /processor_use|cpu_used/i.test(eid)
+      || /^sensor\.home_assistant_core_cpu_percent$/i.test(eid) },
   { kind: 'cpu_temp',          anchor: 'port_nacelle',       unit: '°C',    label: 'CPU TMP',      tile: false, spark: true,
     match: (eid) => /processor_temperature|cpu_temperature/i.test(eid) },
   { kind: 'gpu_temp',          anchor: 'starboard_nacelle',  unit: '°C',    label: 'GPU TMP',      tile: false, spark: true,
     match: (eid) => /gpu_.*temperature/i.test(eid) },
   { kind: 'nvme_temp',         anchor: 'starboard_nacelle',  unit: '°C',    label: 'NVME TMP',     tile: false, spark: true,
     match: (eid) => /nvme.*temp|disk_.*temperature/i.test(eid) },
+  // Memory: system_monitor OR hassio core memory %.
   { kind: 'memory',            anchor: 'main_computer',      unit: '%',     label: 'MEM',          tile: false, spark: true,
-    match: (eid) => /memory_use_percent|mem_used_percent/i.test(eid) },
+    match: (eid) => /memory_use_percent|mem_used_percent/i.test(eid)
+      || /^sensor\.home_assistant_core_memory_percent$/i.test(eid) },
   { kind: 'swap',              anchor: null,                 unit: '%',     label: 'SWAP',         tile: true,  spark: true,
     match: (eid) => /swap_use_percent/i.test(eid) },
+  // Disk: system_monitor disk_use_percent_*, glances fs_*_used_percent, OR hassio host disk_used
+  // (paired with disk_total in _reduceMetrics to derive a %).
   { kind: 'disk_root',         anchor: 'engineering_hull',   unit: '%',     label: 'DISK',         tile: false, spark: true,
-    match: (eid) => /^sensor\.disk_use_percent_/i.test(eid) || /fs_._used_percent/i.test(eid) },
+    match: (eid) => /^sensor\.disk_use_percent_/i.test(eid)
+      || /fs_._used_percent/i.test(eid)
+      || /^sensor\.home_assistant_host_disk_(used|total)$/i.test(eid) },
   { kind: 'load_15m',          anchor: 'saucer_section',     unit: '',      label: 'LOAD',         tile: false, spark: true,
     match: (eid) => /load_15m$/i.test(eid) },
   { kind: 'network_rx',        anchor: 'port_impulse',       unit: 'MB/s',  label: 'RX',           tile: false, spark: true,
@@ -61,18 +72,22 @@ export const STARSHIP_METRIC_CLASSES = [
     match: (eid) => /network_out_/i.test(eid) },
   { kind: 'wan_reachable',     anchor: 'deflector',          unit: '',      label: 'WAN',          tile: false, spark: false,
     match: (eid) => /^binary_sensor\.wan_/i.test(eid) },
+  // Addon running: any `binary_sensor.{name}_running` from the hassio platform. The
+  // SYSTEM_PLATFORMS filter in discoverVessels (hassio/supervisor only) gates appliance
+  // sensors out, so widening from `addon_`-prefixed to any `_running$` is safe.
   { kind: 'addon_running',     anchor: 'shuttlebay',         unit: '',      label: 'ADDONS',       tile: true,  spark: false,
-    // Constrain to hassio-style addon entities only (Worf m6, Data #2). Generic
-    // appliance binary_sensors with `_running` in the name MUST NOT be counted.
-    match: (eid) => /^binary_sensor\.(addon_|.*_addon_running$|hassio_)/i.test(eid) },
+    match: (eid) => /^binary_sensor\..*_running$/i.test(eid) },
   { kind: 'backup_age',        anchor: 'cargo_bay',          unit: '',      label: 'BACKUP',       tile: false, spark: false,
     match: (eid) => /^sensor\.backup_.*_last$|backup_state/i.test(eid) },
   { kind: 'entity_health',     anchor: 'sensor_array',       unit: '',      label: 'SENSORS',      tile: false, spark: true },
   { kind: 'composite_thermal', anchor: 'warp_core',          unit: '',      label: 'CORE',         tile: false, spark: true },
   { kind: 'uptime',            anchor: null,                 unit: '',      label: 'UPTIME',       tile: true,  spark: false,
     match: (eid) => /^sensor\.last_boot$/i.test(eid) },
+  // HA Core version: prefer the dedicated OS Version sensor when present (always-fresh
+  // string), fall back to the update entity (which carries installed_version on its attrs).
   { kind: 'ha_core_version',   anchor: null,                 unit: '',      label: 'HA CORE',      tile: true,  spark: false,
-    match: (eid) => /^update\.home_assistant_core_update$/i.test(eid) },
+    match: (eid) => /^update\.home_assistant_core_update$/i.test(eid)
+      || /^sensor\.home_assistant_operating_system_version$/i.test(eid) },
   { kind: 'db_size',           anchor: null,                 unit: '',      label: 'DB SIZE',      tile: true,  spark: false },
   { kind: 'log_alerts',        anchor: null,                 unit: '',      label: 'LOG ALERTS',   tile: true,  spark: false },
   { kind: 'top_cpu_proc',      anchor: null,                 unit: '',      label: 'TOP CPU',      tile: true,  spark: false,
@@ -82,6 +97,9 @@ export const STARSHIP_METRIC_CLASSES = [
   { kind: 'integrations',      anchor: null,                 unit: '',      label: 'INTEGRATIONS', tile: true,  spark: false },
   { kind: 'boot_time',         anchor: null,                 unit: '',      label: 'BOOT TIME',    tile: true,  spark: false },
   { kind: 'coordinators',      anchor: null,                 unit: '',      label: 'COORDS',       tile: true,  spark: false },
+  // Pending update count: counts addon `update.*` entities whose state === 'on'.
+  { kind: 'updates_pending',   anchor: null,                 unit: '',      label: 'UPDATES',      tile: true,  spark: false,
+    match: (eid) => /^update\./i.test(eid) },
 ];
 
 export function classifyMetric(eid) {
@@ -282,6 +300,14 @@ export function formatMetric(kind, value, opts = {}) {
       const hours = Math.floor((ms % 86400000) / 3600000);
       return `${days}d ${hours}h`;
     }
+    case 'updates_pending':
+      // value = pending count, opts.total = total update entities considered
+      return opts.total != null ? `${value} / ${opts.total}` : `${value}`;
+    case 'addon_running':
+      // value = stopped count, opts.total = total addons
+      return opts.total != null ? `${opts.total - value} / ${opts.total}` : `${value}`;
+    case 'ha_core_version':
+      return String(value);
     default:
       return String(value);
   }

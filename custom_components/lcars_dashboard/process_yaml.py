@@ -70,7 +70,8 @@ async def _write_yaml_safe(hass, full_path, data):
 
 def _is_our_file(fname):
     """Check if a file belongs to LCARS Dashboard (skip noisy logging for other HA YAML)."""
-    return 'lcars_dashboard' in fname or 'lcars-dashboard' in fname
+    s = os.fspath(fname) if hasattr(os, "fspath") else str(fname)
+    return 'lcars_dashboard' in s or 'lcars-dashboard' in s
 
 
 def load_yamll(fname, secrets = None, args={}):

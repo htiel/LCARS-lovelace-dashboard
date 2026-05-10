@@ -2,6 +2,12 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.4.6] — 2026-05-10
+
+### Fixed
+- **Blueprint loading no longer fails with `TypeError: argument of type 'PosixPath' is not a container or iterable`.** Home Assistant's blueprint loader passes `pathlib.PosixPath` instances to our monkey-patched YAML loader; `_is_our_file()` in `process_yaml.py` ran a `str in fname` substring check that raises on `PosixPath`. The bare `except Exception` re-raised it as `HomeAssistantError`, surfacing as "Failed to load blueprint" cards in the UI for every third-party blueprint (sbyx low-battery, gmlupatelli unavailable-entities, zenguru84 esphome-auto-update, homeassistant confirmable_notification, etc.) and noisy ERROR tracebacks in the log. Reported by Eric.
+- **Fix:** coerce `fname` via `os.fspath()` before substring checks so both `str` and `PathLike` inputs work. Non-LCARS blueprints now fall through to the normal YAML load path and load successfully.
+
 ## [5.4.5] — 2026-05-05
 
 ### Fixed

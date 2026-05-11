@@ -189,9 +189,11 @@ function fnv1a(s) {
 
 export function vesselIdFor(seed) {
   if (!seed || seed === 'local') return 'VESSEL-LOCAL';
-  // 7-char hash, formatted like "8841-009"
-  const h = fnv1a(seed);
-  return `${h.slice(0, 4)}-${h.slice(4, 7)}`.toUpperCase();
+  // #219 (5.5.8) \u2014 was a 7-char fnv1a hash; per Captain's directive, render the
+  // full vessel key (typically "glances:<device_id>") so operators see the real
+  // identifier in normal operation. Screenshot tool can still redact via the
+  // data-starship="op" attribute on the rendered span.
+  return `VESSEL-${String(seed).toUpperCase()}`;
 }
 
 export function vesselClassFor(seed, osLabel) {

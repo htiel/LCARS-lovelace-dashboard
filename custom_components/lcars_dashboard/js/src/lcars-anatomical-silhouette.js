@@ -10,9 +10,13 @@
 //   - .anchors    — { slot: { value, status, label } }   (caller-supplied)
 //   - .viewBox    — defaults to "0 0 200 480"
 //   - .thermal    — boolean overlay enable
-//   - .redactClass — CSS class to apply to value text nodes (e.g. 'lcars-medical-redactable',
-//                    'lcars-starship-redactable'). Also drives data-{family}=phi/op attribute.
-//   - .redactAttr  — { name, value } the data-* attribute pair (e.g. {name:'medical', value:'phi'})
+//   - .dataAttr   — #219: { name, value } data-* attribute pair applied to value text
+//                    nodes for the screenshot-obfuscator tool to find at capture time.
+//                    NOT used for runtime redaction — values render in cleartext.
+//
+// #219 (5.5.8) — runtime CSS-class redaction wiring removed. The dashboard always
+// renders real values; the localinfo/screenshot-obfuscator.js tool keys off the
+// data-medical / data-starship attributes preserved below.
 //
 // Closed shadow root preserved (Worf §16). Both consumers (Medical + Starship)
 // pass their own anchorMap + paths constants. Backward-compat alias
@@ -39,8 +43,7 @@ class LcarsAnatomicalSilhouette extends LitElement {
       anchors: { type: Object },       // { slot: {value,status,label} }
       viewBox: { type: String },
       thermal: { type: Boolean },
-      redactClass: { type: String },
-      redactAttr: { type: Object },    // { name: 'medical', value: 'phi' }
+      dataAttr: { type: Object },      // #219: { name, value } data-* for screenshot tool only
       ariaLabel: { type: String },
     };
   }
@@ -57,8 +60,7 @@ class LcarsAnatomicalSilhouette extends LitElement {
     this.anchors = {};
     this.viewBox = '0 0 200 480';
     this.thermal = false;
-    this.redactClass = '';
-    this.redactAttr = null;
+    this.dataAttr = null;
     this.ariaLabel = '';
   }
 
@@ -74,15 +76,14 @@ class LcarsAnatomicalSilhouette extends LitElement {
     const layers = alerts.map((p) =>
       `radial-gradient(circle at ${p.x}% ${p.y}%, rgba(239,68,68,0.45) 0%, transparent 30%)`
     ).join(', ');
-    const overlayClass = this.redactClass ? `${this.redactClass}-overlay` : '';
-    return html`<div class=${`thermal ${overlayClass}`} style=${`background:${layers}`}></div>`;
+    return html`<div class="thermal" style=${`background:${layers}`}></div>`;
   }
 
   render() {
     const [vbX, vbY, vbW, vbH] = this.viewBox.split(/\s+/).map(Number);
-    const valueClass = this.redactClass || '';
-    const attrName = this.redactAttr?.name ? `data-${this.redactAttr.name}` : null;
-    const attrValue = this.redactAttr?.value || '';
+    // #219: data-* passthrough for screenshot tool only; no CSS class application.
+    const attrName = this.dataAttr?.name ? `data-${this.dataAttr.name}` : null;
+    const attrValue = this.dataAttr?.value || '';
 
     // Typography (Geordi 5.4.5): clamp landscape-safe so callouts don't collapse
     // to ~0.4× on landscape silhouettes (vbH=200) where the old vbH/480 formula failed.
@@ -173,7 +174,6 @@ class LcarsAnatomicalSilhouette extends LitElement {
                 letter-spacing="0.5" style="text-transform:uppercase">${label}</text>
           <text aria-hidden="true"
                 x=${leaderX} y=${leaderY + valueDy} text-anchor=${textAnchor}
-                class=${valueClass}
                 data-medical=${attrName === 'data-medical' ? attrValue : null}
                 data-starship=${attrName === 'data-starship' ? attrValue : null}
                 fill=${valColor}

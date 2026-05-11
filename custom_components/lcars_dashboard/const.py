@@ -1,5 +1,5 @@
 DOMAIN = "lcars_dashboard"
-VERSION = "5.5.7"
+VERSION = "5.5.8"
 
 # Configuration keys
 CONF_DASHBOARDS = "dashboards"

@@ -3,7 +3,8 @@
 //
 // PRIVACY (Worf §16 BLOCKING):
 //   - Closed shadow root (sibling-card reach-in protection)
-//   - All vital values carry [data-medical="phi"] + .lcars-medical-redactable
+//   - All vital values carry [data-medical="phi"] (screenshot-obfuscator hook only;
+//     #219 removed runtime CSS-class redaction — dashboard renders cleartext)
 //   - aria-live="off" on vital cells (§7.3) — AT must not announce silent BP changes
 //   - No console logs with ${value} (CI lint enforced)
 //   - No outbound network requests
@@ -209,7 +210,7 @@ class LcarsMedicalCard extends LitElement {
     return html`
       <header class="zone-a">
         <div class="title">MEDICAL REPORT
-          <span class="file-id lcars-medical-redactable-id" data-medical="phi">${fileId}</span>
+          <span class="file-id" data-medical="phi">${fileId}</span>
         </div>
         <div class="focus-tabs" aria-label="Scan focus mode">
           ${['summary', 'anatomical', 'biomedical'].map((m) => html`
@@ -247,8 +248,7 @@ class LcarsMedicalCard extends LitElement {
             .anchorMap=${ANCHOR_MAP}
             .anchors=${anchors}
             .thermal=${this._thermal}
-            .redactClass=${'lcars-medical-redactable'}
-            .redactAttr=${{ name: 'medical', value: 'phi' }}
+            .dataAttr=${{ name: 'medical', value: 'phi' }}
             .ariaLabel=${'Anterior biofunction silhouette'}
           ></lcars-anatomical-silhouette>
         </div>
@@ -304,7 +304,7 @@ class LcarsMedicalCard extends LitElement {
           <line x1="0" y1="${mid}" x2="${W}" y2="${mid}" stroke="rgba(153,204,255,0.15)" stroke-width="1"/>
           <polyline points=${pts.join(' ')} fill="none" stroke=${stroke} stroke-width="2" stroke-linejoin="round"/>
         </svg>
-        <div class="ecg-readout lcars-medical-redactable" data-medical="phi">
+        <div class="ecg-readout" data-medical="phi">
           ${haveBpm ? `${Math.round(bpm)} BPM` : '—'}
         </div>
       </div>
@@ -335,7 +335,7 @@ class LcarsMedicalCard extends LitElement {
           return html`
             <div class="tile">
               <div class="tile-label">${vc.label}</div>
-              <div class="tile-value lcars-medical-redactable" data-medical="phi"
+              <div class="tile-value" data-medical="phi"
                    aria-live="off" style=${`color:${color}`}>${display}</div>
               <div class="tile-unit">${vc.unit}</div>
             </div>`;
@@ -405,8 +405,7 @@ class LcarsMedicalCard extends LitElement {
                       .anchorMap=${ANCHOR_MAP}
                       .anchors=${anchors}
                       .thermal=${this._thermal}
-                      .redactClass=${'lcars-medical-redactable'}
-                      .redactAttr=${{ name: 'medical', value: 'phi' }}
+                      .dataAttr=${{ name: 'medical', value: 'phi' }}
                       .ariaLabel=${'Biofunction silhouette'}
                     ></lcars-anatomical-silhouette>
                     ${!consentGranted ? this._renderConsentGate(fileId) : ''}

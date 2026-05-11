@@ -8,8 +8,11 @@
 //   - Closed shadow root.
 //   - Zero outbound network bytes; reads only hass.states.
 //   - No hostnames, IPs, MACs, SSIDs, container names rendered.
-//   - All metric value cells carry .lcars-starship-redactable + data-starship="op".
-//   - Vessel ID + class strings carry .lcars-starship-redactable-id / -class.
+//   - All metric value cells carry data-starship="op" (screenshot-obfuscator hook only).
+//   - Vessel ID + class strings carry data-starship="op|class" (screenshot-obfuscator hook only).
+//   - #219 (5.5.8): runtime CSS-class redaction removed; dashboard renders cleartext.
+//     VESSEL-ID renders the full vessel key (e.g. VESSEL-LOCAL or GLANCES:<device_id>),
+//     not a 7-char fnv1a hash, per Captain's directive.
 //   - aria-live: metric cells "off"; status pill "polite"; WAN DOWN transition "assertive".
 //
 // Focus modes (spec §5.5):
@@ -287,9 +290,9 @@ class LcarsStarshipCard extends LitElement {
       <header class="zone-a">
         <div class="title">
           <span class="title-text">VESSEL DIAGNOSTIC</span>
-          <span class="vessel-id lcars-starship-redactable-id" data-starship="op">${vessel.vesselId}</span>
+          <span class="vessel-id" data-starship="op">${vessel.vesselId}</span>
         </div>
-        <div class="vessel-class lcars-starship-redactable-class" data-starship="class">${vessel.vesselClass}</div>
+        <div class="vessel-class" data-starship="class">${vessel.vesselClass}</div>
         <div class="numerics" aria-hidden="true">
           ${cols.map((c) => html`<span class="numeric-col">${c}</span>`)}
         </div>
@@ -344,7 +347,7 @@ class LcarsStarshipCard extends LitElement {
           return html`
             <button class="tile" @click=${() => m?.eid && showMoreInfo(this, m.eid)}>
               <div class="tile-label">${cls.label}</div>
-              <div class="tile-value lcars-starship-redactable" data-starship="op"
+              <div class="tile-value" data-starship="op"
                    aria-live="off" style=${`color:${color}`}>${display}</div>
               ${cls.unit ? html`<div class="tile-unit">${cls.unit}</div>` : ''}
             </button>`;
@@ -405,8 +408,7 @@ class LcarsStarshipCard extends LitElement {
             .anchors=${anchors}
             .viewBox=${'0 0 480 200'}
             .thermal=${this._thermal}
-            .redactClass=${'lcars-starship-redactable'}
-            .redactAttr=${{ name: 'starship', value: 'op' }}
+            .dataAttr=${{ name: 'starship', value: 'op' }}
             .ariaLabel=${`Starship silhouette for vessel ${vessel.vesselId}`}
           ></lcars-anatomical-silhouette>
           ${tactical ? html`

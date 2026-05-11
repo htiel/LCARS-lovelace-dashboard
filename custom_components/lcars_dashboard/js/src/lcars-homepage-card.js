@@ -176,6 +176,13 @@ class LcarsHomepageCard extends LitElement {
     };
 
     _startCameraRefresh() {
+      // #201 — belt-and-suspenders: if a previous observer survived a
+      // synchronous re-attach (slot change before disconnectedCallback fires),
+      // tear it down so we never run two observers against the same targets.
+      if (this._cameraObserver) {
+        this._cameraObserver.disconnect();
+        this._cameraObserver = null;
+      }
       this._cameraObserver = new IntersectionObserver(
         (entries) => {
           for (const entry of entries) {
@@ -644,12 +651,12 @@ class LcarsHomepageCard extends LitElement {
           }
 
           /* ─── Device Group ─── */
+          /* #204 — LCARS flatness: solid border, no border-image gradient. */
           .device-group {
             margin-bottom: 0.75rem;
             position: relative;
             padding-left: 1rem;
             border-left: 3px solid var(--lcars-gold);
-            border-image: linear-gradient(to bottom, var(--lcars-gold) 70%, transparent) 1;
           }
           .device-group::before {
             content: '';
@@ -996,12 +1003,13 @@ class LcarsHomepageCard extends LitElement {
             border-color: var(--lcars-gray);
             opacity: 1;
           }
-          /* P3 WESLEY-IDEA-002: CRT static effect for offline cameras */
+          /* #203 — LCARS is flat: drop the linear-gradient layer; keep the
+             two repeating-linear-gradient static patterns over a flat solid. */
           .camera-frame[data-state="offline"] .camera-offline-overlay {
-            background:
+            background-color: rgba(30,30,30,1);
+            background-image:
               repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px),
-              repeating-linear-gradient(90deg, rgba(120,120,120,0.02) 0px, rgba(80,80,80,0.04) 1px, transparent 2px, transparent 3px),
-              linear-gradient(180deg, rgba(40,40,40,1) 0%, rgba(25,25,25,1) 100%);
+              repeating-linear-gradient(90deg, rgba(120,120,120,0.02) 0px, rgba(80,80,80,0.04) 1px, transparent 2px, transparent 3px);
             will-change: background-position;
             animation: cam-static-drift 8s linear infinite;
           }

@@ -60,6 +60,10 @@ class LcarsDashboardLayout extends LitElement {
       clearTimeout(this._elbowPressTimer);
       this._elbowPressTimer = null;
     }
+    if (this._deepLinkTimer) {
+      clearTimeout(this._deepLinkTimer);
+      this._deepLinkTimer = null;
+    }
     lcarsLog.debug(TAG, 'disconnectedCallback — layout unmounted');
   }
 
@@ -69,8 +73,12 @@ class LcarsDashboardLayout extends LitElement {
     if (match) {
       const areaId = decodeURIComponent(match[1]);
       lcarsLog.debug(TAG, 'Deep-link: auto-selecting area', areaId);
-      // Use setTimeout to ensure hass and areas are loaded
-      setTimeout(() => {
+      // #206 — track the deferred timer so disconnectedCallback can clear it
+      // (rapid dashboard switch on first load would otherwise dispatch
+      // lcars-area-selected against a detached element 100ms after teardown).
+      if (this._deepLinkTimer) clearTimeout(this._deepLinkTimer);
+      this._deepLinkTimer = setTimeout(() => {
+        this._deepLinkTimer = null;
         if (this._selectedArea !== areaId) {
           this._selectedArea = areaId;
           lcarsEventBus.dispatchEvent(
@@ -710,6 +718,8 @@ class LcarsDashboardLayout extends LitElement {
                 <button class="sidebar-floor-btn"
                   ?data-active=${this._selectedFloor === floor.floor_id}
                   aria-pressed=${this._selectedFloor === floor.floor_id}
+                  aria-label="${floor.name}"
+                  title="${floor.name}"
                   @click=${() => this._selectFloor(floor.floor_id)}>
                   <ha-icon .icon=${floor.icon || 'mdi:home-floor-1'}></ha-icon>
                   <span class="floor-name">${floor.name}</span>

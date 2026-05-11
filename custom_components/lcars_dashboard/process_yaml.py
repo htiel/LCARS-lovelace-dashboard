@@ -26,10 +26,19 @@ _jinja_env = None
 _jinja_base_dir = None
 
 def _get_jinja_env(config_dir=None):
-    """Get or create the sandboxed Jinja2 environment, scoped to config_dir."""
+    """Get or create the sandboxed Jinja2 environment, scoped to config_dir.
+
+    Raises HomeAssistantError when invoked before init_jinja_env() has been called
+    with a real config directory (5X-B41 / #128). Previously this silently fell back
+    to "/" which exposed the entire host filesystem to the Jinja FileSystemLoader.
+    """
     global _jinja_env, _jinja_base_dir
     if _jinja_env is None or (config_dir and config_dir != _jinja_base_dir):
-        base = config_dir or _jinja_base_dir or "/"
+        base = config_dir or _jinja_base_dir
+        if not base:
+            raise HomeAssistantError(
+                "LCARS Jinja environment not initialized; refusing to default to filesystem root"
+            )
         _jinja_base_dir = base
         _jinja_env = SandboxedEnvironment(loader=jinja2.FileSystemLoader(base))
         _jinja_env.filters['fromjson'] = fromjson
@@ -74,7 +83,53 @@ def _is_our_file(fname):
     return 'lcars_dashboard' in s or 'lcars-dashboard' in s
 
 
-def load_yamll(fname, secrets = None, args={}):
+def _compose_node_allow_undefined_kind(self, parent, index):
+    """Composer that tolerates compose_*_node returning None for unknown event kinds.
+
+    Equivalent to yaml.composer.Composer.compose_node but does not raise when
+    the next event is not a Scalar/Sequence/Mapping start (some LCARS templates
+    emit synthesized event streams with edge cases). Confined to our private
+    loader subclass below so we never patch the global yaml.composer.Composer
+    (5X-B42 / #127 — original code monkey-patched the library for every other
+    HA integration in the process).
+    """
+    if self.check_event(yaml.events.AliasEvent):
+        event = self.get_event()
+        anchor = event.anchor
+        if anchor not in self.anchors:
+            raise yaml.composer.ComposerError(
+                None, None, "found undefined alias %r" % anchor, event.start_mark
+            )
+        return self.anchors[anchor]
+    event = self.peek_event()
+    anchor = event.anchor
+    self.descend_resolver(parent, index)
+    node = None
+    if self.check_event(yaml.events.ScalarEvent):
+        node = self.compose_scalar_node(anchor)
+    elif self.check_event(yaml.events.SequenceStartEvent):
+        node = self.compose_sequence_node(anchor)
+    elif self.check_event(yaml.events.MappingStartEvent):
+        node = self.compose_mapping_node(anchor)
+    self.ascend_resolver()
+    return node
+
+
+class LcarsPythonSafeLoader(loader.PythonSafeLoader):
+    """Private PythonSafeLoader subclass for LCARS YAML processing.
+
+    Carries the LCARS !include constructor and the tolerant compose_node
+    override. Scoped so neither the global yaml library nor annotatedyaml's
+    PythonSafeLoader are mutated (5X-B42, 5X-B43 / #127, #135).
+    """
+    compose_node = _compose_node_allow_undefined_kind
+
+
+def _lcars_loader_factory(stream, secrets):
+    return LcarsPythonSafeLoader(stream, secrets)
+
+
+def load_yamll(fname, secrets=None, args={}):
     try:
         process_yaml = False
         with open(fname, encoding="utf-8") as f:
@@ -100,12 +155,12 @@ def load_yamll(fname, secrets = None, args={}):
             _LOGGER.debug("Jinja2 rendered %d chars for %s", len(rendered), fname)
             stream = io.StringIO(rendered)
             stream.name = fname
-            data = loader.yaml.load(stream, Loader=lambda _stream: loader.PythonSafeLoader(_stream, secrets)) or OrderedDict()
+            data = loader.yaml.load(stream, Loader=lambda _stream: _lcars_loader_factory(_stream, secrets)) or OrderedDict()
             _LOGGER.debug("Parsed YAML from Jinja2: %s → %s (%d items)", fname, type(data).__name__, len(data) if isinstance(data, (dict, list)) else 0)
             return data
         else:
             with open(fname, encoding="utf-8") as config_file:
-                data = loader.yaml.load(config_file, Loader=lambda stream: loader.PythonSafeLoader(stream, secrets)) or OrderedDict()
+                data = loader.yaml.load(config_file, Loader=lambda stream: _lcars_loader_factory(stream, secrets)) or OrderedDict()
                 if ours:
                     _LOGGER.debug("Parsed YAML: %s → %s (%d items)", fname, type(data).__name__, len(data) if isinstance(data, (dict, list)) else 0)
                 return data
@@ -151,30 +206,11 @@ def _include_yaml(ldr, node):
         _LOGGER.error("!include file not found: %s (resolved from %s in %s)", fname, fn, ldr.name)
         raise HomeAssistantError(exc)
 
-loader.load_yaml = load_yamll
-loader.PythonSafeLoader.add_constructor("!include", _include_yaml)
-
-def compose_node(self, parent, index):
-    if self.check_event(yaml.events.AliasEvent):
-        event = self.get_event()
-        anchor = event.anchor
-        if anchor not in self.anchors:
-            raise yaml.composer.ComposerError(None, None, "found undefined alias %r"
-                    % anchor, event.start_mark)
-        return self.anchors[anchor]
-    event = self.peek_event()
-    anchor = event.anchor
-    self.descend_resolver(parent, index)
-    if self.check_event(yaml.events.ScalarEvent):
-        node = self.compose_scalar_node(anchor)
-    elif self.check_event(yaml.events.SequenceStartEvent):
-        node = self.compose_sequence_node(anchor)
-    elif self.check_event(yaml.events.MappingStartEvent):
-        node = self.compose_mapping_node(anchor)
-    self.ascend_resolver()
-    return node
-
-yaml.composer.Composer.compose_node = compose_node
+# 5X-B42 / #127, #135: Constructor scoped to our private loader subclass only.
+# Previously: `loader.PythonSafeLoader.add_constructor("!include", _include_yaml)` and
+# `loader.load_yaml = load_yamll` mutated annotatedyaml globally, affecting every
+# other HA integration that used the shared loader.
+LcarsPythonSafeLoader.add_constructor("!include", _include_yaml)
 
 
 async def process_yaml(hass: HomeAssistant, config_entry):
@@ -187,10 +223,19 @@ async def process_yaml(hass: HomeAssistant, config_entry):
     # Check for HKI installation
     hki_path = hass.config.path("hki-user/config")
     if await hass.async_add_executor_job(os.path.exists, hki_path):
-        for fname in loader._find_files(hki_path, "*.yaml"):
-            loaded_yaml = load_yamll(fname)
-            if isinstance(loaded_yaml, dict):
-                llgen_config.update(loaded_yaml)
+        # 5X-B41 / #126: walk + read in executor; both _find_files and load_yamll
+        # do synchronous IO that would block the HA event loop.
+        def _load_hki_files():
+            results = []
+            for fname in loader._find_files(hki_path, "*.yaml"):
+                loaded_yaml = load_yamll(fname)
+                if isinstance(loaded_yaml, dict):
+                    results.append(loaded_yaml)
+            return results
+
+        loaded_chunks = await hass.async_add_executor_job(_load_hki_files)
+        for chunk in loaded_chunks:
+            llgen_config.update(chunk)
 
     configs_path = hass.config.path("lcars-dashboard/configs")
     if await hass.async_add_executor_job(os.path.exists, configs_path):

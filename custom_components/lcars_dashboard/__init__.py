@@ -56,24 +56,65 @@ ALLOWED_SORT_TYPES = frozenset({"sort_order", "sort_order_floor"})
 
 
 # ─── H4: Per-file YAML lock to prevent concurrent read-modify-write races ───
-_yaml_locks = {}
+# Bounded to prevent unbounded growth on adversarial path inputs (5X-B42 / #138).
+# Locks are only ever created for paths that pass _validate_path_component upstream,
+# so growth is naturally limited to legitimate config files, but cap defensively.
+_YAML_LOCKS_MAX = 256
+_yaml_locks: "OrderedDict[str, asyncio.Lock]" = OrderedDict()
 
 def _get_yaml_lock(rel_path):
-    """Get or create an asyncio.Lock for a given YAML file path."""
-    if rel_path not in _yaml_locks:
-        _yaml_locks[rel_path] = asyncio.Lock()
-    return _yaml_locks[rel_path]
+    """Get or create an asyncio.Lock for a given YAML file path (LRU-evicted)."""
+    if rel_path in _yaml_locks:
+        _yaml_locks.move_to_end(rel_path)
+        return _yaml_locks[rel_path]
+    lock = asyncio.Lock()
+    _yaml_locks[rel_path] = lock
+    while len(_yaml_locks) > _YAML_LOCKS_MAX:
+        _yaml_locks.popitem(last=False)
+    return lock
 
 
-# ─── JSON parse helper (C2: guard all json.loads calls) ───
+# ─── B11: depth check for adversarial nested payloads (#130) ───
+def _check_depth(obj, depth=0, max_depth=20):
+    if depth > max_depth:
+        return False
+    if isinstance(obj, dict):
+        return all(_check_depth(v, depth + 1, max_depth) for v in obj.values())
+    if isinstance(obj, list):
+        return all(_check_depth(v, depth + 1, max_depth) for v in obj)
+    return True
+
+
+# ─── JSON parse helper (C2 / #130 / #132: size cap → json.loads → depth cap) ───
+_JSON_MAX_BYTES = 262144  # 256 KB
+
 def _safe_json_loads(connection, msg_id, raw, label="data"):
-    """Parse JSON string, send error result and return None on failure."""
-    try:
-        return json.loads(raw)
-    except (json.JSONDecodeError, ValueError, TypeError) as e:
-        _LOGGER.warning("Invalid JSON in %s: %s", label, e)
-        connection.send_result(msg_id, {"error": f"Invalid JSON in {label}"})
+    """Parse JSON string with size + depth caps. send_error and return None on failure.
+
+    Implements the B11 three-layer pattern for the JSON-to-YAML write path:
+      1. size limit (256 KB)
+      2. json.loads in try/except (JSONDecodeError, ValueError, TypeError, RecursionError)
+      3. depth check (max 20)
+    """
+    if raw is None:
+        connection.send_error(msg_id, "invalid_format", f"Missing {label}")
         return None
+    raw_str = raw if isinstance(raw, str) else str(raw)
+    if len(raw_str) > _JSON_MAX_BYTES:
+        _LOGGER.warning("Rejected %s payload: %d bytes exceeds %d", label, len(raw_str), _JSON_MAX_BYTES)
+        connection.send_error(msg_id, "payload_too_large", f"{label} exceeds 256 KB limit")
+        return None
+    try:
+        parsed = json.loads(raw_str)
+    except (json.JSONDecodeError, ValueError, TypeError, RecursionError) as e:
+        _LOGGER.warning("Invalid JSON in %s: %s", label, e)
+        connection.send_error(msg_id, "invalid_json", f"Invalid JSON in {label}")
+        return None
+    if parsed is not None and not _check_depth(parsed):
+        _LOGGER.warning("%s exceeds max nesting depth", label)
+        connection.send_error(msg_id, "payload_too_deep", f"{label} exceeds maximum nesting depth")
+        return None
+    return parsed
 
 
 # ─── File I/O helpers (proper handle management) ───
@@ -156,7 +197,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         "homepage_header": OrderedDict(),
     }
 
-    _LOGGER.debug("Registering %d websocket commands", 28)
+    _LOGGER.debug("Registering %d websocket commands", 37)
     websocket_api.async_register_command(hass, websocket_get_configuration)
     websocket_api.async_register_command(hass, websocket_get_blueprints)
 
@@ -208,7 +249,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     notifications(hass, DOMAIN)
 
-    _LOGGER.info("LCARS Dashboard v%s setup complete — %d WS commands registered", VERSION, 35)
+    _LOGGER.info("LCARS Dashboard v%s setup complete — %d WS commands registered", VERSION, 37)
     
     return True
 
@@ -1200,7 +1241,7 @@ async def ws_handle_edit_entities_bool_value(
         vol.Optional("domain"): _validate_path_component,
         vol.Optional("position"): str,
         vol.Optional("filename"): _validate_path_component,
-        vol.Optional("page"): str,
+        vol.Optional("page"): vol.In({"areas", "devices"}),
         vol.Optional("rowSpan"): str,
         vol.Optional("colSpan"): str,
         vol.Optional("rowSpanLg"): str,
@@ -1226,47 +1267,59 @@ async def ws_handle_add_card(
     else:
         type = msg["filename"]
 
-    if type:
-        filecontent = card_parsed
+    # 5X-B41 / #129: validate the file-stem we derive from JSON before joining it onto the
+    # filesystem path. card_data.type is attacker-controlled, so guard against traversal
+    # ("../"), separators, and NULs even when "filename" wasn't supplied.
+    if not type:
+        connection.send_error(msg["id"], "invalid_card", "card_data missing type")
+        return
+    try:
+        type = _validate_path_component(type)
+    except vol.Invalid as exc:
+        _LOGGER.warning("Rejected add_card type=%r: %s", type, exc)
+        connection.send_error(msg["id"], "invalid_card_type", str(exc))
+        return
 
-        #filecontent.update({"position": msg["position"]})
-        filecontent["col_span"] = msg["colSpan"]
-        filecontent["row_span"] = msg["rowSpan"]
-        filecontent["col_span_lg"] = msg["colSpanLg"]
-        filecontent["row_span_lg"] = msg["rowSpanLg"]
-        filecontent["col_span_xl"] = msg["colSpanXl"]
-        filecontent["row_span_xl"] = msg["rowSpanXl"]
-        filecontent['position'] = msg["position"]
+    filecontent = card_parsed
 
-        if(msg["page"] == 'areas'):
-            path = "lcars-dashboard/configs/cards/areas/"+msg['area_id']
-        elif(msg["page"] == 'devices'):
-            path = "lcars-dashboard/configs/cards/devices/"+msg['domain']
-        filename = hass.config.path(path+"/"+type+".yaml")
+    #filecontent.update({"position": msg["position"]})
+    filecontent["col_span"] = msg["colSpan"]
+    filecontent["row_span"] = msg["rowSpan"]
+    filecontent["col_span_lg"] = msg["colSpanLg"]
+    filecontent["row_span_lg"] = msg["rowSpanLg"]
+    filecontent["col_span_xl"] = msg["colSpanXl"]
+    filecontent["row_span_xl"] = msg["rowSpanXl"]
+    filecontent['position'] = msg["position"]
 
-        def _write_card():
-            nonlocal filename
-            os.makedirs(os.path.dirname(filename), exist_ok=True)
+    if(msg["page"] == 'areas'):
+        path = "lcars-dashboard/configs/cards/areas/"+msg['area_id']
+    elif(msg["page"] == 'devices'):
+        path = "lcars-dashboard/configs/cards/devices/"+msg['domain']
+    filename = hass.config.path(path+"/"+type+".yaml")
 
-            if not msg["filename"]:
-                if os.path.exists(filename) and os.stat(filename).st_size != 0:
-                    filename = hass.config.path(path+"/"+type+datetime.now().strftime("%Y%m%d%H%M%S")+".yaml")
-                    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    def _write_card():
+        nonlocal filename
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
 
-            with open(filename, "w", encoding="utf-8") as ff:
-                yaml.dump(filecontent, ff, default_flow_style=False, sort_keys=False)
+        if not msg["filename"]:
+            if os.path.exists(filename) and os.stat(filename).st_size != 0:
+                filename = hass.config.path(path+"/"+type+datetime.now().strftime("%Y%m%d%H%M%S")+".yaml")
+                os.makedirs(os.path.dirname(filename), exist_ok=True)
 
-        await hass.async_add_executor_job(_write_card)
+        with open(filename, "w", encoding="utf-8") as ff:
+            yaml.dump(filecontent, ff, default_flow_style=False, sort_keys=False)
 
-        hass.bus.async_fire("lcars_dashboard_homepage_card_reload")
-        hass.bus.async_fire("lcars_dashboard_devicespage_card_reload")
+    await hass.async_add_executor_job(_write_card)
 
-        connection.send_result(
-            msg["id"],
-            {
-                "successful": "card added successfully"
-            },
-        )
+    hass.bus.async_fire("lcars_dashboard_homepage_card_reload")
+    hass.bus.async_fire("lcars_dashboard_devicespage_card_reload")
+
+    connection.send_result(
+        msg["id"],
+        {
+            "successful": "card added successfully"
+        },
+    )
 
 #remove_card
 @websocket_api.require_admin
@@ -1276,7 +1329,7 @@ async def ws_handle_add_card(
         vol.Optional("area_id"): _validate_path_component,
         vol.Optional("domain"): _validate_path_component,
         vol.Optional("filename"): _validate_path_component,
-        vol.Optional("page"): str,
+        vol.Optional("page"): vol.In({"areas", "devices"}),
     }
 )
 @websocket_api.async_response

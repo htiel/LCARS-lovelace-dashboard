@@ -2,6 +2,38 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.5.0] — 2026-05-10
+
+### Security
+- **#127 — YAML loader no longer monkey-patches the global `yaml.composer.Composer`.** The tolerant `compose_node` override and the `!include` constructor are now confined to a private `LcarsPythonSafeLoader` subclass of `annotatedyaml.PythonSafeLoader`. Every other HA integration loading YAML was previously affected by our monkey-patch; now only files routed through our loader factory see the override.
+- **#128 — Jinja `FileSystemLoader` no longer falls back to filesystem root.** `_get_jinja_env()` raises `HomeAssistantError` when invoked before `init_jinja_env()`. The prior `base = config_dir or _jinja_base_dir or "/"` exposed the entire host filesystem to Jinja template includes if any code path reached the environment pre-initialization.
+- **#129 — `ws_handle_add_card` now validates `card_data.type` through `_validate_path_component`.** Path traversal via JSON-supplied `type` (`../`, separators, NULs, hidden-file prefixes) is rejected with `invalid_card_type` before the filesystem path is constructed.
+- **#130 / #132 — JSON write handlers now apply the B11 three-layer guard.** `_safe_json_loads` enforces: 256 KB size cap → `json.loads` in `try/except (JSONDecodeError, ValueError, TypeError, RecursionError)` → `_check_depth(max_depth=20)`. Failure paths return WS errors via `connection.send_error(code, message)` instead of the prior `send_result({"error": ...})` envelope. Codes: `invalid_format`, `payload_too_large`, `invalid_json`, `payload_too_deep`, `invalid_card`, `invalid_card_type`. (Note: `ws_handle_install_blueprint` continues to carry its own inline three-layer guard for the YAML write path — same pattern, scoped to YAML rather than JSON.)
+- **#131 — `page` WS parameter now schema-validated.** `ws_handle_add_card` and `ws_handle_remove_card` constrain `page` to `vol.In({"areas", "devices"})` rather than accepting arbitrary strings.
+- **#138 — `_yaml_locks` bounded.** OrderedDict with LRU eviction at 256 entries to prevent unbounded growth on adversarial path inputs. (Known follow-up: lock-eviction race tracked as [#215](https://github.com/htiel/LCARS-lovelace-dashboard/issues/215) — admin-only, deferred to 5.5.x.)
+- **#133 — Build-chain CVE remediation.** Bumped `css-loader ^5.1.3 → ^6.7.2`, `html-webpack-plugin ^5.3.1 → ^5.5.1`, `postcss-loader ^5.2.0 → ^7.0.2`, `style-loader ^2.0.0 → ^3.3.2`. `npm audit fix` ran clean; `npm audit --audit-level=high` and `npm audit signatures` both report zero vulnerabilities.
+
+### Fixed
+- **#125 — Notifications module no longer crashes with `NameError: _LOGGER is not defined`.** Service calls (`lcars_dashboard.notification_create` / `dismiss` / `mark_read`) raised `NameError` whenever the error branches were taken because `_LOGGER` was referenced but never assigned. Added `_LOGGER = logging.getLogger(__name__)`.
+- **#126 — `process_yaml()` no longer blocks the HA event loop.** The HKI-installation walk (`loader._find_files` + per-file `load_yamll`) was running synchronously inside the async function. Both are now wrapped in `hass.async_add_executor_job`.
+- **#115 — Starship Health (and the other built-in dashboards) now register on a fresh install.** `DEFAULT_DASHBOARDS` was hardcoded to `["habitat"]`, so every dashboard except Habitat 404'd until the user re-ran the options flow. `DEFAULT_DASHBOARDS` is now derived from `DASHBOARD_REGISTRY` and includes every entry where `default_enabled` is not explicitly `False`. **Behavior change on fresh install:** admins now see **8** dashboards in the sidebar (Habitat, Tactical, Power Distribution, Life Support, Illumination, Cetacean Ops, Subspace Relay, Starship Health); non-admins see 6 (Subspace Relay and Starship Health are `require_admin=True`). Medical Bay remains opt-in (`default_enabled=False`, PHI-equivalent vitals). Existing installs are unaffected — `config_entry.options[CONF_DASHBOARDS]` is read first and only falls back to `DEFAULT_DASHBOARDS` when that key is absent.
+- **#135 — `annotatedyaml.load_yaml` is no longer globally reassigned.** Previously the module assigned `loader.load_yaml = load_yamll`, replacing the library entry point for every consumer in the HA process. Removed; LCARS YAML now flows through `_lcars_loader_factory` only.
+- **#136 — Dead `_PANEL_ID_RE` is now wired up.** Used by the sort-order WS handlers as the validation regex against malformed panel IDs.
+- **#137 — WS command count log lines corrected.** `_LOGGER.debug("Registering %d websocket commands", 28)` and `_LOGGER.info("LCARS Dashboard ... %d WS commands registered", 35)` now both read `37` to match the actual `async_register_command` count.
+- **#139 — `MAX_DASHBOARDS` no longer drifts vs the registry.** Replaced the silent `len(DASHBOARD_REGISTRY)` expression with an explicit `MAX_DASHBOARDS = 9` plus a runtime `if/raise` guard. `assert` was rejected because `python -O` would strip it.
+
+### Changed
+- **Three-file version bump:** `const.py`, `manifest.json`, `js/package.json` all read `5.5.0`.
+
+### Release engineering
+
+- **Bundle delta vs v5.4.6 baseline:** raw 1,106,382 B → 1,106,382 B (0 B); gzip 221,524 B → 221,531 B (+7 B). Well within the +5 KiB gzip per-release ceiling.
+- **Baselines captured at 5.5.0:** `lcars-dashboard.js` raw 1,080.5 KB, gzip 216.3 KB. HA startup, homepage first-paint, warp-scrubber FPS, and 30-minute Tactical idle memory will be captured against a running HACS deployment of this release and recorded as the baseline for 5.5.1–5.5.9 deltas. (5.5.1+ are required to report deltas; 5.5.0 establishes the baseline.)
+- **Executable validation:** HA restart on the Captain's instance, `lcars_dashboard.create_notification` service call exercised, no startup errors. Sidebar shows 8 dashboards for admin (Medical correctly omitted).
+- **Rollback criterion:** if HA startup logs any new ERROR-level trace from `custom_components.lcars_dashboard.*` that did not appear in v5.4.6, revert via HACS to v5.4.6 and open a follow-up issue with the trace.
+- **#99 camera spec landed** at [`specs/LCARS-CAMERA-TOKEN-MIGRATION-SPEC.md`](specs/LCARS-CAMERA-TOKEN-MIGRATION-SPEC.md) (prereq for 5.5.2). Geordi sign-off conditional on three LCARS-visual addenda tracked as [#217](https://github.com/htiel/LCARS-lovelace-dashboard/issues/217).
+- **Reviewed by:** Data (architecture, GO), Worf (security, GO conditional on [#215](https://github.com/htiel/LCARS-lovelace-dashboard/issues/215) follow-up), Geordi (LCARS/a11y, GO with carry-overs to 5.5.1 tracked as [#216](https://github.com/htiel/LCARS-lovelace-dashboard/issues/216) and [#217](https://github.com/htiel/LCARS-lovelace-dashboard/issues/217)), Riker (release engineering).
+
 ## [5.4.6] — 2026-05-10
 
 ### Fixed

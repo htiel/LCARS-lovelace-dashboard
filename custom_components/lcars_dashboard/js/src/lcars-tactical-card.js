@@ -101,6 +101,7 @@ class LcarsTacticalCard extends LitElement {
       _focusedCamera: { type: String },   // entity_id of main viewscreen camera
       _patrolActive: { type: Boolean },
       _patrolIndex: { type: Number },
+      _filter: { type: String },          // #144 — 'all'|'access'|'zones' driven by sidebar
     };
   }
 
@@ -119,6 +120,14 @@ class LcarsTacticalCard extends LitElement {
     this._cascadeSoundCount = 0;
     this._lockAllPending = false;
     this._cameraFilter = 'all';  // 'all' | 'exterior' | 'interior'
+    this._filter = 'all';        // #144 — sidebar filter ALL/ACCESS/ZONES
+    this._onSidebarFilter = (e) => {
+      const f = e?.detail?.filter;
+      if (f === 'all' || f === 'access' || f === 'zones') {
+        this._filter = f;
+        this.requestUpdate();
+      }
+    };
   }
 
   setConfig(config) { this._config = config || {}; }
@@ -136,9 +145,14 @@ class LcarsTacticalCard extends LitElement {
   get hass() { return this._hass; }
   getCardSize() { return 16; }
 
-  connectedCallback() { super.connectedCallback(); }
+  connectedCallback() {
+    super.connectedCallback();
+    // #144 — honor the sidebar's ALL/ACCESS/ZONES filter contract
+    lcarsEventBus.addEventListener('lcars-tac-filter', this._onSidebarFilter);
+  }
   disconnectedCallback() {
     super.disconnectedCallback();
+    lcarsEventBus.removeEventListener('lcars-tac-filter', this._onSidebarFilter);
     if (this._patrolTimer) { clearInterval(this._patrolTimer); this._patrolTimer = null; }
     // Clear detection hold timers
     for (const [, cs] of this._cameraStates) { if (cs.timer) clearTimeout(cs.timer); }
@@ -871,18 +885,24 @@ class LcarsTacticalCard extends LitElement {
     const floorGroups = this._getAreasWithTactical();
     const summary = this._getGlobalSummary(floorGroups);
     const isRedAlert = summary.alarmState === 'triggered' || summary.alarmState === 'pending';
+    // #144 — sidebar wins. ALL renders the full dashboard; ACCESS scopes to lock
+    // status + crew (door/identity surfaces); ZONES scopes to perimeter sensor
+    // status + system status. Cameras render in ALL only.
+    const showAccess = this._filter === 'all' || this._filter === 'access';
+    const showZones = this._filter === 'all' || this._filter === 'zones';
+    const showCameras = this._filter === 'all';
 
     return html`
-      <div class="tac-dashboard ${isRedAlert ? 'red-alert' : ''} mode-${this._mode}">
+      <div class="tac-dashboard ${isRedAlert ? 'red-alert' : ''} mode-${this._mode}" data-filter=${this._filter}>
         ${this._renderOverview(summary)}
         <div class="tac-main-grid">
           <div class="tac-main-content">
-            ${this._renderCrewManifest(summary.allPersons)}
-            ${this._renderLockStatus(summary.allLocks, summary.locksTotal, summary.locksLocked)}
-            ${this._renderCameras(summary.allCameras)}
+            ${showAccess ? this._renderCrewManifest(summary.allPersons) : ''}
+            ${showAccess ? this._renderLockStatus(summary.allLocks, summary.locksTotal, summary.locksLocked) : ''}
+            ${showCameras ? this._renderCameras(summary.allCameras) : ''}
           </div>
           <div class="tac-sidebar">
-            ${this._renderSensorSummary(floorGroups, summary)}
+            ${showZones ? this._renderSensorSummary(floorGroups, summary) : ''}
             ${this._renderSystemStatus(summary)}
           </div>
         </div>

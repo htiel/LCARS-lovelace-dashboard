@@ -73,8 +73,10 @@ class LcarsAnatomicalSilhouette extends LitElement {
       })
       .map(([slot]) => this.anchorMap[slot]);
     if (!alerts.length) return '';
+    // #179 — thermal overlay now uses --lcars-tomato (#ff5555) instead of the
+    // off-palette tailwind red #ef4444. Same 45% alpha preserves the heat-bloom feel.
     const layers = alerts.map((p) =>
-      `radial-gradient(circle at ${p.x}% ${p.y}%, rgba(239,68,68,0.45) 0%, transparent 30%)`
+      `radial-gradient(circle at ${p.x}% ${p.y}%, rgba(255,85,85,0.45) 0%, transparent 30%)`
     ).join(', ');
     return html`<div class="thermal" style=${`background:${layers}`}></div>`;
   }

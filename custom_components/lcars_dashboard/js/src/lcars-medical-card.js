@@ -224,6 +224,7 @@ class LcarsMedicalCard extends LitElement {
     return html`
       <header class="zone-a">
         <div class="title">MEDICAL REPORT
+          <span class="file-id-sep" aria-hidden="true">·</span>
           <span class="file-id" data-medical="phi" ?aria-hidden=${this._audioMuted}>${fileId}</span>
         </div>
         <div class="focus-tabs" aria-label="Scan focus mode">
@@ -477,10 +478,13 @@ class LcarsMedicalCard extends LitElement {
           letter-spacing: 0.08em;
         }
         .title { font-weight: 700; font-size: 1rem; flex: 0 0 auto; }
-        .file-id { font-family: 'Courier New', monospace; margin-left: 0.4rem; font-size: 0.95rem; }
+        /* #175 — LCARS separator dot between report title and file id (was bare whitespace). */
+        .file-id-sep { margin: 0 0.25rem 0 0.4rem; opacity: 0.7; }
+        /* #172 — one-font rule: file-id / numeric-col use the LCARS Antonio stack, not Courier. */
+        .file-id { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.95rem; letter-spacing: 0.06em; }
         .numerics { display: flex; gap: 0.6rem; flex: 1 1 auto; justify-content: center; opacity: 0.85; }
         .numeric-col {
-          font-family: 'Courier New', monospace; font-size: 0.85rem;
+          font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.85rem; letter-spacing: 0.06em;
           background: rgba(0,0,0,0.18); padding: 0 0.4rem; border-radius: 0.2rem;
         }
         .header-actions { display: flex; gap: 0.4rem; align-items: center; flex: 0 0 auto; }
@@ -556,12 +560,13 @@ class LcarsMedicalCard extends LitElement {
           .zone-c { grid-template-columns: repeat(2, 1fr); }
         }
 
-        /* Focus tabs (5.3.1) */
+        /* Focus tabs (5.3.1) — #173: --lcars-african-violet fallback corrected from
+           off-palette #cc99cc to the actual palette value #cc99ff. */
         .focus-tabs { display: flex; gap: 0.25rem; margin-left: 0.5rem; }
         .focus-tab {
           background: var(--lcars-bg-elev, #111);
           color: var(--lcars-ice, #99ccff);
-          border: 1px solid var(--lcars-african-violet, #cc99cc);
+          border: 1px solid var(--lcars-african-violet, #cc99ff);
           border-radius: 999px;
           padding: 0.25rem 0.7rem;
           min-height: 32px;
@@ -572,7 +577,7 @@ class LcarsMedicalCard extends LitElement {
           cursor: pointer;
         }
         .focus-tab:focus-visible { outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px; }
-        .focus-tab.active { background: var(--lcars-african-violet, #cc99cc); color: #000; }
+        .focus-tab.active { background: var(--lcars-african-violet, #cc99ff); color: #000; }
 
         /* Scan-pair layout (anatomical / biomedical modes) */
         .scan-pair {
@@ -585,7 +590,7 @@ class LcarsMedicalCard extends LitElement {
         .scan-pane {
           position: relative;
           background: rgba(153, 204, 255, 0.04);
-          border-left: 3px solid var(--lcars-african-violet, #cc99cc);
+          border-left: 3px solid var(--lcars-african-violet, #cc99ff);
           border-radius: 0 0.4rem 0.4rem 0;
           display: flex; flex-direction: column;
           padding: 0.5rem;
@@ -595,7 +600,7 @@ class LcarsMedicalCard extends LitElement {
           font-size: 0.7rem;
           letter-spacing: 0.1em;
           text-transform: uppercase;
-          color: var(--lcars-african-violet, #cc99cc);
+          color: var(--lcars-african-violet, #cc99ff);
           margin-bottom: 0.4rem;
         }
         .scan-pane.placeholder { border-left-color: var(--lcars-gray, #666688); }

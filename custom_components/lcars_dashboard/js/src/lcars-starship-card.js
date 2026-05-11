@@ -46,9 +46,17 @@ const STATUS_COLOR = {
   NOMINAL:  'var(--lcars-data-accent, #99cc99)',
   DEGRADED: 'var(--lcars-sky, #aaaaff)',
   WARNING:  'var(--lcars-gold, #ffaa00)',
-  CRITICAL: 'var(--lcars-alert, #cc6666)',
+  // #195 — CRITICAL now uses --lcars-tomato (parity with medical-card). Previously
+  // CRITICAL shared --lcars-alert with the THERM toggle 'on' state, making the
+  // two visually indistinguishable. Tomato is the LCARS escalation tier.
+  CRITICAL: 'var(--lcars-tomato, #ff5555)',
   OFFLINE:  'var(--lcars-gray, #666688)',
 };
+
+// #192 — vessel metrics older than this are treated as OFFLINE even if numerically
+// valid. 5 min matches system_monitor's default scan interval (60s) plus generous
+// jitter; a host that hasn't reported in this long is effectively unreachable.
+const STALE_METRIC_MS = 5 * 60 * 1000;
 
 class LcarsStarshipCard extends LitElement {
   static get properties() {
@@ -190,6 +198,10 @@ class LcarsStarshipCard extends LitElement {
       let value;
       if (cls.kind === 'wan_reachable') {
         value = state.state;
+      } else if (cls.kind === 'top_cpu_proc' || cls.kind === 'top_memory_proc') {
+        // #191 — top process names are intentionally string-valued; parseFloat would
+        // drop them. Preserve the raw state so the tile displays the process name.
+        value = state.state;
       } else if (cls.kind === 'ha_core_version') {
         // Prefer the OS version sensor's plain string state; the update entity exposes
         // installed_version on .attributes (state itself is on/off).
@@ -257,10 +269,14 @@ class LcarsStarshipCard extends LitElement {
 
   _buildAnchors(byKind) {
     const anchors = {};
+    const now = Date.now();
     for (const cls of STARSHIP_METRIC_CLASSES) {
       if (!cls.anchor) continue;
       const m = byKind.get(cls.kind);
-      if (!m || m.value == null || (typeof m.value === 'number' && isNaN(m.value))) {
+      // #192 — demote stale metrics (>5 min since last_changed) to OFFLINE so the
+      // rollup pill reflects vessel unreachability rather than last-known-good values.
+      const isStale = m && m.ts && (now - m.ts) > STALE_METRIC_MS;
+      if (!m || m.value == null || (typeof m.value === 'number' && isNaN(m.value)) || isStale) {
         anchors[cls.anchor] = { value: '—', status: STARSHIP_STATUS.OFFLINE, label: cls.label, present: false };
         continue;
       }
@@ -490,8 +506,10 @@ class LcarsStarshipCard extends LitElement {
           text-transform: uppercase;
         }
         .vessel-id {
-          font-family: 'JetBrains Mono', 'Fira Code', monospace;
+          /* #193 — one-font rule: vessel-id uses Antonio stack, not JetBrains Mono. */
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
           font-size: 0.95rem;
+          letter-spacing: 0.08em;
           color: var(--lcars-ice, #99ccff);
         }
         .vessel-class {
@@ -503,7 +521,8 @@ class LcarsStarshipCard extends LitElement {
         .numerics {
           grid-row: 1 / span 2; grid-column: 2;
           display: flex; gap: 0.4rem; justify-content: center;
-          font-family: 'JetBrains Mono', 'Fira Code', monospace;
+          /* #193 — numerics row also unified to Antonio. */
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
           font-size: 0.55rem;
           opacity: 0.4;
           line-height: 0.9;

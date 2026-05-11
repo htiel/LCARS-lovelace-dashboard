@@ -42,8 +42,11 @@ function _chemType(eid) {
   if (/ph/i.test(eid)) return 'ph';
   if (/chlorine/i.test(eid)) return 'chlorine';
   if (/alkalinity/i.test(eid)) return 'alkalinity';
+  // #197 — Pentair reports `total_hardness`; WaterGuru reports `calcium_hardness`.
+  // Match hardness BEFORE bare `calcium` so the WaterGuru reading lands on the
+  // hardness gauge (matching range/optima) rather than calcium.
+  if (/calcium_hardness|total_hardness/i.test(eid)) return 'hardness';
   if (/calcium/i.test(eid)) return 'calcium';
-  if (/total_hardness/i.test(eid)) return 'hardness';
   if (/cyanuric/i.test(eid)) return 'cya';
   return null;
 }
@@ -81,6 +84,9 @@ class LcarsCetaceanCard extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     lcarsEventBus.removeEventListener('lcars-cet-filter', this._onFilter);
+    // #198 — cancel pending setpoint debouncer so a detached element does not
+    // fire a callService 1.5s later.
+    if (this._spDebouncer) this._spDebouncer.cancel();
   }
 
   /* ═══ Entity Discovery ═══ */
@@ -606,7 +612,9 @@ class LcarsCetaceanCard extends LitElement {
         .gauge-optimal { background: var(--lcars-ice, #99ccff); }
         .gauge-needle {
           position: absolute; top: -3px; bottom: -3px; width: 3px;
-          background: var(--lcars-black, #000); outline: 1px solid var(--lcars-space-white, #f5f6fa);
+          /* #200 — box-shadow instead of outline so the needle's white halo does
+             not clobber the .langford-gauge :focus-visible outline. */
+          background: var(--lcars-black, #000); box-shadow: 0 0 0 1px var(--lcars-space-white, #f5f6fa);
           left: var(--needle-pos, 0%); pointer-events: none;
           transition: left 300ms ease-out;
         }

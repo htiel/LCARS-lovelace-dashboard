@@ -86,7 +86,7 @@ class LcarsCetaceanLayout extends LitElement {
               <button class="mute-btn" aria-label="Reorder sidebar dashboards" @click=${() => this._openSidebarReorder()}>
                 <ha-icon .icon=${'mdi:sort-variant'}></ha-icon>
               </button>
-              <button class="mute-btn" aria-pressed=${this._editMode} @click=${() => this._toggleEditMode()}>
+              <button class="mute-btn" aria-pressed=${this._editMode} aria-label=${this._editMode ? 'Exit edit mode' : 'Enter edit mode'} @click=${() => this._toggleEditMode()}>
                 <ha-icon .icon=${'mdi:cog-outline'}></ha-icon>
               </button>
             ` : ''}
@@ -128,7 +128,8 @@ class LcarsCetaceanLayout extends LitElement {
         .lcars-header-title { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: var(--lcars-font-size-title, 2rem); color: var(--lcars-sky, #aaaaff); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; line-height: var(--lcars-bar-h, 1.5rem); padding: 0 1rem; }
         .lcars-header-bar { flex: 1; height: var(--lcars-bar-h, 1.5rem); background: var(--lcars-sky, #aaaaff); }
         .lcars-header-endcap { height: var(--lcars-bar-h, 1.5rem); background: var(--lcars-sky, #aaaaff); border-radius: 0; display: flex; align-items: center; padding: 0 0.5rem; }
-        .mute-btn { background: none; border: none; cursor: pointer; color: var(--lcars-black, #000); padding: 0 0.25rem; display: flex; align-items: center; }
+        /* #199 — WCAG 2.5.5 minimum 44x44 hit target. Padding + flex centring keeps the icon visually compact. */
+        .mute-btn { background: none; border: none; cursor: pointer; color: var(--lcars-black, #000); padding: 0 0.25rem; display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
         .mute-btn:focus-visible { outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px; }
         .mute-btn ha-icon { --mdc-icon-size: 18px; }
         .lcars-sidebar { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; gap: var(--lcars-gap, 0.25rem); overflow: hidden; }

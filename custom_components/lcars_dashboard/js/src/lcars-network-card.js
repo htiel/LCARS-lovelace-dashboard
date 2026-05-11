@@ -348,10 +348,17 @@ class LcarsNetworkCard extends LitElement {
     const linkUnit = d.sensors.link_speed?.state?.attributes?.unit_of_measurement || '';
 
     const isOnline = state === 'connected' || state === 'online' || state === 'on';
-    // Use --lcars-sky for unknown/unavailable (gray fails 4.5:1 on dark; sky passes ~9:1)
+    // #187 — unify offline visual treatment. UniFi reports a mix of 'disconnected',
+    // 'off', 'unavailable', and 'unknown' for the same operational state; previously
+    // 'disconnected' fell through to alert-red while 'unavailable' rendered sky.
+    // Treat all four as sky so disconnected tiles render consistently.
+    const isOffline = !isOnline && (
+      state === 'disconnected' || state === 'off' ||
+      state === 'unknown' || state === 'unavailable'
+    );
     const stateColor = isOnline
       ? 'var(--lcars-data-accent, #99cc99)'
-      : (state === 'unknown' || state === 'unavailable' ? 'var(--lcars-sky, #aaaaff)' : 'var(--lcars-alert, #cc6666)');
+      : (isOffline ? 'var(--lcars-sky, #aaaaff)' : 'var(--lcars-alert, #cc6666)');
 
     // article aria-label intentionally omitted — the inner data-network="hostname"
     // span carries the visible name and is the redaction target. Adding the name to
@@ -484,9 +491,12 @@ class LcarsNetworkCard extends LitElement {
             </div>
           </section>` : ''}
         ${showClients && clients.length ? this._renderClients(clients) : ''}
-        ${showHealth && !devices.length ? html`<div class="net-empty" role="status">NO UNIFI INFRASTRUCTURE DETECTED</div>` : ''}
-        ${showPeripherals && !printers.length ? html`<div class="net-empty" role="status">NO PERIPHERALS DETECTED · INSTALL IPP INTEGRATION</div>` : ''}
-        ${showClients && !clients.length ? html`<div class="net-empty" role="status">NO CONNECTED CLIENTS · UNIFI DEVICE_TRACKER NOT FOUND</div>` : ''}
+        ${/* #182 — spec: omit empty sections entirely. Only show the per-section
+             empty state when the user has FILTERED to that section (so the tab
+             does not appear blank); on FILTER_ALL the section just collapses. */ ''}
+        ${f !== FILTER_ALL && showHealth && !devices.length ? html`<div class="net-empty" role="status">NO UNIFI INFRASTRUCTURE DETECTED</div>` : ''}
+        ${f !== FILTER_ALL && showPeripherals && !printers.length ? html`<div class="net-empty" role="status">NO PERIPHERALS DETECTED · INSTALL IPP INTEGRATION</div>` : ''}
+        ${f !== FILTER_ALL && showClients && !clients.length ? html`<div class="net-empty" role="status">NO CONNECTED CLIENTS · UNIFI DEVICE_TRACKER NOT FOUND</div>` : ''}
       </div>`;
   }
 

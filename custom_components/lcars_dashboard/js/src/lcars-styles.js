@@ -15,6 +15,7 @@ export const lcarsColors = css`
   --lcars-gold: #ffaa00;
   --lcars-golden-orange: #ff9900;
   --lcars-gray: #666688;
+  --lcars-green: #66bb6a;
   --lcars-ice: #99ccff;
   --lcars-lilac: #cc55ff;
   --lcars-sunflower: #ffcc99;

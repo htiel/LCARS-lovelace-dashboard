@@ -68,7 +68,16 @@ class LcarsIlluminationCard extends LitElement {
     const old = this._hass;
     this._hass = val;
     if (val && old !== val) {
-      this._entityCache.clear();
+      // #165 + #124 — only invalidate the discovery cache when registries change.
+      // HA replaces the hass object on every state push; clearing on every push
+      // defeated memoization (Data review).
+      if (!old
+          || old.entities !== val.entities
+          || old.devices !== val.devices
+          || old.areas !== val.areas
+          || old.floors !== val.floors) {
+        this._entityCache.clear();
+      }
       this.requestUpdate('hass', old);
     }
   }

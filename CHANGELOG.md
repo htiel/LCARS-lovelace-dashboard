@@ -2,6 +2,81 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.6.6] — 2026-05-10
+
+### Fixed
+- **HOTFIX: Subspace Relay HEALTH panel now detects UniFi infrastructure again.** The `^sensor\.unifi_` prefix anchor introduced with #183 in 5.5.5 produced empty Health panels on every site because modern HA UniFi entity IDs are named after the device (e.g. `sensor.dream_machine_pro_cpu_utilization`, `sensor.u7_pro_xg_uptime`), not `sensor.unifi_*`. `UNIFI_HEALTH_RE` is now suffix-only; the `entity.platform === 'unifi'` gate (which always worked) is the actual integration filter. The `_state` classifier is gated against `_(port|uplink)_` to keep the #183 last-write-wins fix intact.
+
+## [5.6.5] — 2026-05-10
+
+### Fixed (cumulative agent-team review of v5.5.7 → v5.6.4)
+- **MUST-FIX (M1): popup Tab focus trap removed.** The trap shipped in 5.6.0 could not pierce the embedded card's shadow root, so `querySelectorAll` only ever found the close button. Result: Tab cycled stuck on the X (when focus was on the close button) or escaped the modal entirely (when focus was inside the embedded card host). Focus restoration on close + initial close-button focus on open continue to satisfy WCAG 2.4.3.
+- **SHOULD-FIX (S1): popup Escape no longer eats nested-dialog Escape.** The document-capture handler now checks `e.composedPath().includes(this)` before `stopPropagation()`/`close()`, so an `<ha-more-info-dialog>` opened from inside the popup body receives Escape first. Removed duplicate `@keydown` binding on `.popup-backdrop`.
+- **SHOULD-FIX (S2/S3): medical vital-tile `aria-live` reverted to always `off`.** The 5.6.2 unmute → polite flip would queue N polite announcements per render (HR/SpO₂/BP-sys/BP-dia/temp), violating the file-header rule that "AT must not announce silent BP changes". PHI `aria-hidden` gating remains intact; debounced single-region vocalize-on-change is on the AUDIO-SPEC roadmap.
+- **SHOULD-FIX (S4): sidebar reorder list semantics.** `.reorder-body` now carries `role="list"` `aria-label="Dashboard order"` so the `role="listitem"` children get list semantics + 1-of-N positional context.
+- **SHOULD-FIX (S5): tactical filter announcement.** Visually-hidden `role="status"` `aria-live="polite"` announcer reports the active filter when the sidebar dispatches `lcars-tac-filter`.
+- **SHOULD-FIX (S6): camera-static respects `prefers-reduced-motion`.** `cam-static-drift` on the offline-camera overlay is now wrapped in `@media (prefers-reduced-motion: reduce) { animation: none }`.
+
+## [5.6.4] — 2026-05-10
+
+### Code health
+- **#185 — Network layout dead state removed.** `lcars-network-layout.js` no longer declares `_deferredHint`/`_deferredHintTimer` fields, the toast render block, or the disconnectedCallback `clearTimeout`. Nothing in the file ever assigned them.
+
+### Security
+- **#215 — `_yaml_locks` LRU cap raised 256 → 4096.** Worf option 3: every key passes `_validate_path_component` upstream, so an attacker cannot synthesize 4K distinct legitimate paths inside one executor write window. Refcount-based eviction rejected as over-engineering for the admin-only surface; comment block above `_YAML_LOCKS_MAX` documents the threat model and rejected alternatives.
+
+### Triage closures (already-fixed at audit, no code change needed)
+- #136 `_PANEL_ID_RE` is actually used (`__init__.py` L1809 + L1871).
+- #137 WS-count log lines both read literal `37`, matching the actual `Select-String` count of `websocket_api.async_register_command(hass, ...)` calls.
+- #138 `_yaml_locks` growth — already mitigated by the 5X-B42 256-cap LRU; raised to 4096 in this release as part of #215.
+- #139 `MAX_DASHBOARDS` drift — runtime guard already in `const.py` L36-39.
+
+### Deferred
+- #134 Lit 1.x → Lit 3 migration (5.7 backlog; multi-card refactor).
+- #208 Habitat default-load overview pane (5.7 backlog; new render path).
+
+## [5.6.3] — 2026-05-10 — Habitat pass
+
+### Performance
+- **#201 — Camera observer can no longer leak.** `lcars-homepage-card._startCameraRefresh()` now disconnects any prior `IntersectionObserver` before constructing a new one, closing the slot-change re-attach window where two observers could run against the same camera tiles.
+
+### Visual
+- **#203 — LCARS flatness on offline-camera overlay.** Dropped the `linear-gradient(180deg, …)` layer; kept the two `repeating-linear-gradient` scan-line patterns over a flat `background-color: rgba(30,30,30,1)`.
+- **#204 — LCARS flatness on device-group border.** Dropped `border-image: linear-gradient(...)`; kept the solid `border-left: 3px solid var(--lcars-gold)`.
+
+### Accessibility
+- **#205 — Habitat sidebar floor buttons now labeled.** `.sidebar-floor-btn` carries `aria-label` and `title="${floor.name}"` (matches the area-button pattern; recovers labeling on mobile where `.floor-name` text is hidden).
+
+### Code health
+- **#206 — Deep-link timer cleanup.** `lcars-dashboard-layout._applyHashDeepLink()` now tracks the deferred `setTimeout` in `this._deepLinkTimer` and clears it in `disconnectedCallback`, so a rapid dashboard switch on first load can no longer dispatch `lcars-area-selected` against a detached element 100ms after teardown.
+
+## [5.6.2] — 2026-05-10
+
+### Accessibility
+- **#169 — Medical PHI is now `aria-hidden` while the dashboard is muted.** Per Captain's directive, vocalize behavior follows the existing header mute switch instead of a separate Vocalize-vitals toggle. PHI nodes (`file-id`, ECG wrap, every vital tile-value) carry `?aria-hidden=${this._audioMuted}`. `lcarsAudio.mute()`/`unmute()` now dispatch a `lcars-audio-mute-changed` `CustomEvent` on `window` so cards can react in lockstep without polling localStorage.
+
+### Spec
+- **#180 / #181 — Subspace Relay spec aligned to as-shipped button-grid.** §4.6 of `LCARS-SUBSPACE-RELAY-DASHBOARD-SPEC.md` gains an "As-shipped" note documenting that the Connected Clients section ships as a button-tile grid (not a default-collapsed semantic `<table>` with [All]/[Wired]/[Wi-Fi]/[LAN]/[IoT]/[Guest] filter chips), per Captain's 2026-05-10 decision. WAN latency tri-graph reclassified as future enhancement. Any future move to a semantic `<table>` must preserve the same `data-network` attribute hooks.
+
+## [5.6.1] — 2026-05-10
+
+### Fixed
+- **#144 — Tactical card honors sidebar ALL/ACCESS/ZONES filter.** The registered `tactical-card` (v2) now listens for `lcars-tac-filter` events from the sidebar (was only the v1 internal filter). `render()` gates Crew Manifest + Lock Status (access), Cameras (all), Sensor Summary (zones); SystemStatus always renders.
+
+## [5.6.0] — 2026-05-10
+
+### Accessibility
+- **#210 — Popup focus restoration on close.** `lcars-popup` captures `document.activeElement` on `open()` and restores focus to it on `close()`, satisfying WCAG 2.4.3.
+- **#211 — Sparkline `role="img"`.** `lcars-sparkline` wrap div now has the role its `aria-label` always implied; SR users finally hear the alt text.
+- **#212 — Popup Escape works regardless of focus.** Document-level `keydown` listener (capture phase). *Note: the inline Tab focus trap shipped here was found broken in the 5.6.5 review and removed.*
+- **#213 — Sidebar reorder is keyboard-operable.** ArrowUp/ArrowDown moves items, plus 44×44 minimum ▲/▼ buttons per item, fully aria-labelled and disabled-at-ends. WCAG 2.5.7 hard fail closed.
+- **`--lcars-tomato`** substituted for the previously-undefined `--lcars-red-alert` token on `.popup-close:hover`.
+
+## [5.5.8] — 2026-05-10
+
+### Privacy / UX
+- **#219 — Finish in-card deobfuscation across Medical, Anatomical Silhouette, Starship.** Removed all `lcars-*-redactable` CSS-class application sites in `lcars-medical-card.js`, `lcars-anatomical-silhouette.js`, and `lcars-starship-card.js`. The `data-medical` / `data-starship` attribute hooks remain so the out-of-card screenshot redactor (`localinfo/screenshot-obfuscator.js`) keeps working. `vesselIdFor(seed)` now renders the full seed in cleartext (e.g. `VESSEL-LOCAL`, `VESSEL-<UUID>`) — was a 7-char fnv1a hash. `fnv1a()` is retained for `vesselClassFor` and `decorativeNumerics` (creative chrome, not identifier obfuscation).
+
 ## [5.5.1] — 2026-05-10
 
 ### Accessibility

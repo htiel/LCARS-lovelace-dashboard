@@ -29,11 +29,14 @@ const FILTER_CLIENTS = 'clients';
 
 // Anchored regex to avoid false positives on substrings (e.g. *_state_changes).
 // WAN latency is matched separately because the prefix can be Google/Cloudflare/Microsoft.
-// #183 — entity-id pattern for UniFi infrastructure health sensors. Anchored on the
-// `unifi_` prefix so unrelated `*_state` / `*_uptime` entities (e.g. media players,
-// remote integrations) do not get pulled in. The old version matched any `_state$`
-// which sucked in light switches and door sensors.
-const UNIFI_HEALTH_RE = /^sensor\.unifi_.+(_cpu_utilization|_memory_utilization|_uptime|_state|_clients|(?:_cpu|_phy|_local)_temperature|_link_speed)$/i;
+// #183 — entity-id pattern for UniFi infrastructure health sensors. Suffix-only:
+// modern HA UniFi entity IDs are named after the device (e.g.
+// `sensor.dream_machine_pro_cpu_utilization`, `sensor.u7_pro_xg_uptime`), NOT
+// `sensor.unifi_*`. The platform === 'unifi' gate above is the actual integration
+// filter; this regex only classifies the suffix. The previous `^sensor\.unifi_`
+// prefix anchor produced empty Health panels on every site (5.6.6 hotfix).
+// `_state` is gated separately below to exclude `port_*_state` / `uplink_*_state`.
+const UNIFI_HEALTH_RE = /^sensor\..+(_cpu_utilization|_memory_utilization|_uptime|_state|_clients|(?:_cpu|_phy|_local)_temperature|_link_speed)$/i;
 const WAN_LATENCY_RE = /wan.?latency/i;
 const IPP_INK_RE = /_(black|cyan|magenta|yellow)_ink$/i;
 
@@ -157,7 +160,10 @@ class LcarsNetworkCard extends LitElement {
       if (/cpu_utilization$/i.test(eid)) bucket.sensors.cpu = { entity: e, state, eid };
       else if (/memory_utilization$/i.test(eid)) bucket.sensors.memory = { entity: e, state, eid };
       else if (/uptime$/i.test(eid)) bucket.sensors.uptime = { entity: e, state, eid };
-      else if (/state$/i.test(eid)) bucket.sensors.state = { entity: e, state, eid };
+      // 5.6.6: gate _state against port_/uplink_ so per-port state sensors do
+      // not last-write-win over the device-level state. Pair with the
+      // suffix-only UNIFI_HEALTH_RE relaxation above.
+      else if (/_state$/i.test(eid) && !/_(port|uplink)_/i.test(eid)) bucket.sensors.state = { entity: e, state, eid };
       else if (/clients$/i.test(eid)) bucket.sensors.clients = { entity: e, state, eid };
       else if (/(cpu|phy|local)_temperature$/i.test(eid)) {
         // Prefer cpu_temperature over phy/local

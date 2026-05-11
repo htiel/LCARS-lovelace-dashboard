@@ -7778,8 +7778,12 @@ class LcarsHomepageCard extends LitElement {
           const { text: fmtVal } = formatStateValue(state, entity?.entity_category || '');
           const numVal = parseFloat(state.state);
           // Warn if battery < 20% or any numeric > threshold patterns
-          const isBattery = entity.entity_id.includes('battery') ||
-            state.attributes?.device_class === 'battery';
+          // #89 — only flag entities that report device_class=battery in % (storage / power-cell SoC).
+          // The previous entity_id.includes('battery') match swept in unrelated sensors like
+          // `_battery_voltage` (~3 V Li-ion cell), `_battery_low` (boolean string), and
+          // `_battery_status` strings, which triggered spurious red warn outlines.
+          const isBattery = state.attributes?.device_class === 'battery'
+            && (state.attributes?.unit_of_measurement === '%');
           const warn = isBattery && !isNaN(numVal) && numVal < 20;
 
           return this._withEditPip(entity.entity_id, html`

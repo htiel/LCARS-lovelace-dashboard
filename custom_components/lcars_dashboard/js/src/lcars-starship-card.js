@@ -470,7 +470,8 @@ class LcarsStarshipCard extends LitElement {
         }
         .grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+          /* #196 — auto-fit collapses empty tracks; auto-fill left phantom 360px columns at >1600px when only one vessel was registered. */
+          grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
           gap: 1rem;
         }
         .grid.focused {

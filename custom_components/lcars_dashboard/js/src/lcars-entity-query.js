@@ -160,9 +160,18 @@ export function getAreaEntities(hass, areaId, cache = null) {
     if (dev.area_id === areaId) areaDeviceIds.add(dev.id);
   }
 
+  // #97 — development scaffolding entities (prototype_*, debug_*, test_*) leak into
+  // user-facing area panels (notably the Office). Filter them out at the area-discovery
+  // boundary so every downstream classifier (battery, power, tactical, illumination, etc.)
+  // inherits the suppression. We match on the object id (the part after the domain dot)
+  // because the domain itself never starts with a leading-prefix keyword.
+  const DEV_PREFIX_RE = /^(?:prototype|debug|test)_/i;
+
   const result = entityReg.filter((e) => {
     if (e.hidden_by || e.hidden || e.disabled_by) return false;
     if (e.entity_category) return false;
+    const objId = (e.entity_id || '').split('.')[1] || '';
+    if (DEV_PREFIX_RE.test(objId)) return false;
     if (e.area_id === areaId) return true;
     if (!e.area_id && e.device_id && areaDeviceIds.has(e.device_id)) return true;
     return false;

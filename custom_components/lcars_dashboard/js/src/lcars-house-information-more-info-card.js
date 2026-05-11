@@ -26,7 +26,7 @@ import { showMoreInfo } from './lcars-helpers.js';
 
           .detail-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
             gap: var(--lcars-gap);
             padding: 0.5rem 0;
           }

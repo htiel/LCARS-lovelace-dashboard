@@ -28,7 +28,7 @@ export const hazardPanelStyles = css`
   /* ─── Detector Status Grid ─── */
   .hazard-detectors {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
     gap: var(--lcars-gap);
   }
 

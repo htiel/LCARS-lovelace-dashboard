@@ -327,8 +327,8 @@ class LcarsEngineeringCard extends LitElement {
         .eng-area-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; }
         .eng-area-name { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; color: var(--lcars-butterscotch, #ff9966); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
         .eng-area-line { flex: 1; height: 2px; background: var(--lcars-butterscotch, #ff9966); opacity: 0.3; }
-        .eng-devices { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr)); gap: 0.375rem; }
-        .eng-battery-panels { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr)); gap: 0.5rem; margin-bottom: 0.5rem; }
+        .eng-devices { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr)); gap: 0.375rem; }
+        .eng-battery-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); gap: 0.5rem; margin-bottom: 0.5rem; }
         .eng-device { border: 1px solid rgba(255, 153, 102, 0.15); border-radius: 0.5rem; padding: 0.5rem 0.75rem; cursor: pointer; transition: filter 200ms ease; }
         .eng-device:hover { filter: brightness(1.15); }
         .eng-device.battery { border-left: 4px solid var(--lcars-butterscotch, #ff9966); }

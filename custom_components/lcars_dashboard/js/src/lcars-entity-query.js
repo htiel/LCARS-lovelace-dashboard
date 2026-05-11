@@ -163,9 +163,11 @@ export function getAreaEntities(hass, areaId, cache = null) {
   // #97 — development scaffolding entities (prototype_*, debug_*, test_*) leak into
   // user-facing area panels (notably the Office). Filter them out at the area-discovery
   // boundary so every downstream classifier (battery, power, tactical, illumination, etc.)
-  // inherits the suppression. We match on the object id (the part after the domain dot)
-  // because the domain itself never starts with a leading-prefix keyword.
-  const DEV_PREFIX_RE = /^(?:prototype|debug|test)_/i;
+  // inherits the suppression. We match on the object id (the part after the domain dot).
+  // Allow compound device-name prefixes (e.g. `prototypesouth_*`, `testbench_*`) by
+  // accepting any [a-z0-9]* word-tail before the underscore boundary — the original
+  // `^prototype_` regex missed `prototypesouth_prototype_button_1` (Captain's office).
+  const DEV_PREFIX_RE = /^(?:prototype|debug|test)[a-z0-9]*(?:_|$)/i;
 
   const result = entityReg.filter((e) => {
     if (e.hidden_by || e.hidden || e.disabled_by) return false;

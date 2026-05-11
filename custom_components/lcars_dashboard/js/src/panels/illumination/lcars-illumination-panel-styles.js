@@ -32,7 +32,7 @@ export const illuminationPanelStyles = css`
 
   .ilm-lights {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
     gap: 0.375rem;
   }
 
@@ -259,7 +259,7 @@ export const illuminationPanelStyles = css`
 
   .ilm-circuits {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
     gap: 0.375rem;
   }
 

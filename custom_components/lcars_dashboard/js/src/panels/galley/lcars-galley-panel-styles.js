@@ -28,7 +28,7 @@ export const galleyPanelStyles = css`
   /* ─── Appliance Cards ─── */
   .galley-appliances {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
     gap: var(--lcars-gap);
   }
 

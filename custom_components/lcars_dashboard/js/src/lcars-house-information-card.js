@@ -92,7 +92,7 @@ import { showMoreInfo } from './lcars-helpers.js';
 
           .info-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
             gap: var(--lcars-gap);
           }
 

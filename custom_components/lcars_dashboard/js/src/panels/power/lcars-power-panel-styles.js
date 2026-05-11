@@ -98,13 +98,13 @@ export const powerPanelStyles = css`
   /* Circuit tile grid */
   .power-circuits {
     grid-area: circuits; display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
     gap: var(--lcars-gap); max-height: 24rem; overflow-y: auto;
     mask-image: linear-gradient(to bottom, black calc(100% - 2rem), transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 2rem), transparent 100%);
   }
   .lcars-consolidated-power-panel .power-circuits {
-    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.5rem;
   }
   .power-circuit-tile {
     display: flex; flex-direction: column; gap: 0.125rem;
@@ -169,7 +169,7 @@ export const powerPanelStyles = css`
   .power-strip-name { font-size: var(--lcars-font-size-sub); color: var(--lcars-text-heading); text-transform: uppercase; text-wrap: balance; flex: 1; }
   .power-strip-total { font-size: var(--lcars-font-size-data); color: var(--lcars-butterscotch); font-weight: 700; white-space: nowrap; }
   .power-strip-divider { height: 1px; background: var(--panel-frame-color, var(--lcars-butterscotch)); opacity: 0.3; margin-bottom: var(--lcars-gap); }
-  .power-strip-children { display: grid; grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr)); gap: var(--lcars-gap); }
+  .power-strip-children { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: var(--lcars-gap); }
   .power-strip-child-tile { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.375rem 0.5rem; border-left: 3px solid var(--tile-power-color, var(--lcars-gray)); min-height: 3.5rem; }
   .strip-child-controls { display: flex; align-items: center; justify-content: space-between; gap: 0.25rem; }
   .circuit-name { font-size: var(--lcars-font-size-data); color: var(--lcars-space-white); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -284,8 +284,8 @@ export const powerPanelStyles = css`
 
   /* Responsive */
   @media (max-width: 64rem) {
-    .power-circuits { grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); }
-    .lcars-consolidated-power-panel .power-circuits { grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); }
+    .power-circuits { grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); }
+    .lcars-consolidated-power-panel .power-circuits { grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); }
     .power-summary { grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); }
   }
   @media (max-width: 48rem) {

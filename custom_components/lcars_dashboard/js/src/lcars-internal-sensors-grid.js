@@ -507,7 +507,7 @@ class LcarsInternalSensorsGrid extends LitElement {
 
         .sensors-tile-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
           gap: var(--lcars-gap);
         }
 

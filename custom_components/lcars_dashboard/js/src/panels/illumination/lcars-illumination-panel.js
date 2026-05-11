@@ -1,15 +1,15 @@
-﻿/**
+/**
  * lcars-illumination-panel.js
  *
  * Area-level device list for the Illumination dashboard.
  * Renders individual device elements based on capability classification:
- *   Type A (onoff)  â€” simple pill button
- *   Type B (dimmer)  â€” LCARS segmented slider + on/off pill
- *   Type C (full)    â€” slider + color/effect controls
- *   Type D (circuit) â€” switch toggle pill
+ *   Type A (onoff)  — simple pill button
+ *   Type B (dimmer)  — LCARS segmented slider + on/off pill
+ *   Type C (full)    — slider + color/effect controls
+ *   Type D (circuit) — switch toggle pill
  *
- * No panel frame â€” devices render directly under area dividers.
- * v5.0.0-beta.12 â€” Illumination Device Elements
+ * No panel frame — devices render directly under area dividers.
+ * v5.0.0-beta.12 — Illumination Device Elements
  */
 import { LitElement, html, css } from 'lit-element';
 import { isLightingEntity, classifyDevice, classifyLightType } from '../../lcars-entity-utils.js';
@@ -66,7 +66,7 @@ class LcarsIlluminationPanel extends LitElement {
     this._brightnessDebouncer.cancel();
   }
 
-  /* â”€â”€â”€ Entity Partitioning â”€â”€â”€ */
+  /* ─── Entity Partitioning ─── */
 
   _getPartition() {
     const allEntries = this.entities || this.group?.entities || [];
@@ -110,7 +110,7 @@ class LcarsIlluminationPanel extends LitElement {
     return { lights, circuits, scenes };
   }
 
-  /* ─── Render ─── */
+  /* --- Render --- */
 
   render() {
     const { lights, circuits, scenes } = this._getPartition();
@@ -163,7 +163,7 @@ class LcarsIlluminationPanel extends LitElement {
       ` : ''}
     `;
 
-    // Habitat mode: group present → wrap in panel frame
+    // Habitat mode: group present ? wrap in panel frame
     if (this.group) {
       const all = [...lights, ...circuits];
       const active = all.filter(e => {
@@ -196,7 +196,7 @@ class LcarsIlluminationPanel extends LitElement {
       const raw = dev.name_by_user || dev.name || 'ILLUMINATION CONTROL';
       const area = this.hass?.areas?.[this.areaId];
       if (area?.name && raw.toLowerCase().startsWith(area.name.toLowerCase())) {
-        const stripped = raw.slice(area.name.length).trim().replace(/^[-–:]\s*/, '');
+        const stripped = raw.slice(area.name.length).trim().replace(/^[-�:]\s*/, '');
         return stripped || raw;
       }
       return raw;
@@ -251,13 +251,13 @@ class LcarsIlluminationPanel extends LitElement {
     return device;
   }
 
-  /* â”€â”€â”€ Type A: On/Off Pill â”€â”€â”€ */
+  /* ─── Type A: On/Off Pill ─── */
 
   _renderOnOffPill(eid, name, isOn) {
     return html`
       <button class="ilm-pill ${isOn ? 'on' : 'off'}"
               aria-pressed="${isOn ? 'true' : 'false'}"
-              aria-label="${name} â€” ${isOn ? 'ON' : 'OFF'}"
+              aria-label="${name} — ${isOn ? 'ON' : 'OFF'}"
               @click=${() => this._toggleEntity(eid)}
               @contextmenu=${(e) => { e.preventDefault(); showMoreInfo(eid); }}>
         <span class="ilm-pill__indicator ${isOn ? 'active' : ''}"></span>
@@ -267,7 +267,7 @@ class LcarsIlluminationPanel extends LitElement {
     `;
   }
 
-  /* â”€â”€â”€ Type B: Dimmer â”€â”€â”€ */
+  /* ─── Type B: Dimmer ─── */
 
   _renderDimmer(eid, name, isOn, state) {
     const brightness = isOn ? Math.round((state?.attributes?.brightness || 0) / 255 * 100) : 0;
@@ -302,7 +302,7 @@ class LcarsIlluminationPanel extends LitElement {
     `;
   }
 
-  /* â”€â”€â”€ Type C: Full-Featured Light â”€â”€â”€ */
+  /* ─── Type C: Full-Featured Light ─── */
 
   _renderFullLight(eid, name, isOn, state) {
     const brightness = isOn ? Math.round((state?.attributes?.brightness || 0) / 255 * 100) : 0;
@@ -381,13 +381,13 @@ class LcarsIlluminationPanel extends LitElement {
     `;
   }
 
-  /* â”€â”€â”€ Type D: Circuit/Switch Pill â”€â”€â”€ */
+  /* ─── Type D: Circuit/Switch Pill ─── */
 
   _renderCircuitPill(eid, name, isOn) {
     return html`
       <button class="ilm-pill circuit ${isOn ? 'on' : 'off'}"
               aria-pressed="${isOn ? 'true' : 'false'}"
-              aria-label="${name} â€” ${isOn ? 'ON' : 'OFF'}"
+              aria-label="${name} — ${isOn ? 'ON' : 'OFF'}"
               @click=${() => this._toggleEntity(eid)}
               @contextmenu=${(e) => { e.preventDefault(); showMoreInfo(eid); }}>
         <span class="ilm-pill__indicator ${isOn ? 'active' : ''}"></span>
@@ -406,7 +406,7 @@ class LcarsIlluminationPanel extends LitElement {
     this.requestUpdate();
   }
 
-  /* ─── Drag-and-Drop Reorder ─── */
+  /* --- Drag-and-Drop Reorder --- */
 
   _getOrderKey() {
     return `lcars-ilm-order-${this.areaId || 'default'}`;
@@ -545,7 +545,7 @@ class LcarsIlluminationPanel extends LitElement {
     return 'var(--lcars-tomato)';
   }
 
-  /* â”€â”€â”€ Color Presets â”€â”€â”€ */
+  /* ─── Color Presets ─── */
 
   static get COLOR_PRESETS() {
     return [
@@ -564,7 +564,7 @@ class LcarsIlluminationPanel extends LitElement {
     return diff < 20 || diff > 340;
   }
 
-  /* â”€â”€â”€ Service Calls â”€â”€â”€ */
+  /* ─── Service Calls ─── */
 
   _callService(domain, service, data) {
     if (!this.hass) return;
@@ -611,7 +611,7 @@ class LcarsIlluminationPanel extends LitElement {
     this._callService('scene', 'turn_on', { entity_id: entityId });
   }
 
-  /* â”€â”€â”€ Utility â”€â”€â”€ */
+  /* ─── Utility ─── */
 
   _shortName(entry) {
     const raw = entry.state?.attributes?.friendly_name || entry.entity?.entity_id || '';
@@ -621,13 +621,13 @@ class LcarsIlluminationPanel extends LitElement {
     const prefixes = [area.name, area.name.replace(/[''']s$/i, '')];
     for (const p of prefixes) {
       if (result.toLowerCase().startsWith(p.toLowerCase())) {
-        result = result.slice(p.length).trim().replace(/^[-â€“:]\s*/, '');
+        result = result.slice(p.length).trim().replace(/^[-–:]\s*/, '');
       }
     }
     return (result || raw).toUpperCase();
   }
 
-  /* â”€â”€â”€ Styles â”€â”€â”€ */
+  /* ─── Styles ─── */
 
   static get styles() {
     return [
@@ -636,7 +636,7 @@ class LcarsIlluminationPanel extends LitElement {
       css`
         :host { display: block; }
 
-        /* ─── Section Divider ─── */
+        /* --- Section Divider --- */
         .ilm-section-divider {
           display: flex;
           align-items: center;
@@ -658,7 +658,7 @@ class LcarsIlluminationPanel extends LitElement {
           opacity: 0.3;
         }
 
-        /* ─── Drag & Drop (Edit Mode) ─── */
+        /* --- Drag & Drop (Edit Mode) --- */
         .ilm-drag-wrap {
           display: flex;
           align-items: stretch;
@@ -691,7 +691,7 @@ class LcarsIlluminationPanel extends LitElement {
 
         .ilm-devices {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
           gap: 0.375rem;
         }
 
@@ -717,7 +717,7 @@ class LcarsIlluminationPanel extends LitElement {
           padding-left: 0.5rem;
         }
 
-        /* â”€â”€â”€ Shared Pill Button (Type A & D) â”€â”€â”€ */
+        /* ─── Shared Pill Button (Type A & D) ─── */
 
         .ilm-pill {
           display: flex;
@@ -799,7 +799,7 @@ class LcarsIlluminationPanel extends LitElement {
           flex-shrink: 0;
         }
 
-        /* â”€â”€â”€ Dimmer (Type B) â”€â”€â”€ */
+        /* ─── Dimmer (Type B) ─── */
 
         .ilm-dimmer {
           display: flex;
@@ -869,7 +869,7 @@ class LcarsIlluminationPanel extends LitElement {
           text-align: right;
         }
 
-        /* â”€â”€â”€ Full-Featured Light (Type C) â”€â”€â”€ */
+        /* ─── Full-Featured Light (Type C) ─── */
 
         .ilm-full {
           display: flex;
@@ -888,7 +888,7 @@ class LcarsIlluminationPanel extends LitElement {
           align-items: center;
         }
 
-        /* â”€â”€â”€ Color Presets â”€â”€â”€ */
+        /* ─── Color Presets ─── */
 
         .ilm-color-presets {
           display: flex;
@@ -918,7 +918,7 @@ class LcarsIlluminationPanel extends LitElement {
           outline-offset: 2px;
         }
 
-        /* â”€â”€â”€ Effect Strip â”€â”€â”€ */
+        /* ─── Effect Strip ─── */
 
         .ilm-effect-strip {
           display: flex;

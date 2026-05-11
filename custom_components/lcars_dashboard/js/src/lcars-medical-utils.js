@@ -145,8 +145,8 @@ export function classifyVital(state, entityRegistryEntry) {
   if (/_training_readiness$|_recovery_score$/.test(lid)) return { kind: 'recovery_score' };
   if (/_steps$/.test(lid)) return { kind: 'steps' };
   if (/_minutes_very_active$|_intensity/.test(lid)) return { kind: 'active_minutes' };
-  if (/_last_workout_distance/.test(lid) || /_last_activity_distance/.test(lid)) return { kind: 'workout_distance' };
-  if (/_last_workout_/.test(lid) || /_last_activity_/.test(lid)) return { kind: 'last_workout' };
+  if (/_last_workout_distance|_last_activity_distance|_distance_travelled_last_workout|_distance_traveled_last_workout/.test(lid)) return { kind: 'workout_distance' };
+  if (/_last_workout_|_last_activity_/.test(lid)) return { kind: 'last_workout' };
   if (/_glucose_value$/.test(lid)) return { kind: 'glucose' };
   return null;
 }

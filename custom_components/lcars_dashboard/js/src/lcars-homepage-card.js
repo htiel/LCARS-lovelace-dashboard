@@ -1,17 +1,17 @@
-﻿/**
- * LCARS Homepage Card — Main dashboard view with areas
- * Entities grouped by device → domain type with specialized renderers:
- *   camera → LCARS-framed live feed
- *   light/switch/fan/lock → LCARS toggle pill
- *   sensor/binary_sensor → data readout bar
- *   climate → thermostat panel
- *   alarm → alarm panel with PIN keypad
- *   media_player → media panel
- *   pool/spa → aquatics panel
- *   weather → weather panel
- *   irrigation → irrigation panel
- *   cover → position controls
- *   default → LCARS button
+/**
+ * LCARS Homepage Card � Main dashboard view with areas
+ * Entities grouped by device ? domain type with specialized renderers:
+ *   camera ? LCARS-framed live feed
+ *   light/switch/fan/lock ? LCARS toggle pill
+ *   sensor/binary_sensor ? data readout bar
+ *   climate ? thermostat panel
+ *   alarm ? alarm panel with PIN keypad
+ *   media_player ? media panel
+ *   pool/spa ? aquatics panel
+ *   weather ? weather panel
+ *   irrigation ? irrigation panel
+ *   cover ? position controls
+ *   default ? LCARS button
  */
 import { LitElement, html, css } from 'lit-element';
 import { svg, render } from 'lit-html';
@@ -45,7 +45,7 @@ import { getFloorAreas } from './lcars-hierarchy-utils.js';
 import { getAreaEntities, groupEntities } from './lcars-entity-query.js';
 import { lcarsAudio } from './lcars-audio.js';
 
-/* ─── Side-effect imports: extracted components & panels (no webpack entry needed) ─── */
+/* --- Side-effect imports: extracted components & panels (no webpack entry needed) --- */
 import './components/lcars-panel-frame/lcars-panel-frame.js';
 import './components/lcars-sensor-row/lcars-sensor-row.js';
 import './components/lcars-section-divider/lcars-section-divider.js';
@@ -70,8 +70,8 @@ import './panels/ev-charger/lcars-ev-charger-panel.js';
 
 const TAG = 'Homepage';
 
-// ─── Panel Dispatch Registry (4X-21) ────────────────────────────────────────
-// Factory function pattern per Geordi — no unsafeStatic, no dynamic tag injection.
+// --- Panel Dispatch Registry (4X-21) ----------------------------------------
+// Factory function pattern per Geordi � no unsafeStatic, no dynamic tag injection.
 // Each entry returns a lit-html template for the panel type.
 
 const PANEL_TAG_REGISTRY = new Map([
@@ -165,7 +165,7 @@ class LcarsHomepageCard extends LitElement {
       document.removeEventListener('visibilitychange', this._onVisibilityChange);
     }
 
-    /* ─── Camera auto-refresh: pause/resume on tab visibility ─── */
+    /* --- Camera auto-refresh: pause/resume on tab visibility --- */
     _onVisibilityChange = () => {
       if (document.hidden) {
         this._stopCameraTimer();
@@ -176,7 +176,7 @@ class LcarsHomepageCard extends LitElement {
     };
 
     _startCameraRefresh() {
-      // #201 — belt-and-suspenders: if a previous observer survived a
+      // #201 � belt-and-suspenders: if a previous observer survived a
       // synchronous re-attach (slot change before disconnectedCallback fires),
       // tear it down so we never run two observers against the same targets.
       if (this._cameraObserver) {
@@ -267,7 +267,7 @@ class LcarsHomepageCard extends LitElement {
         this._config = config;
         lcarsLog.debug(TAG, 'setConfig:', config);
       } catch (err) {
-        lcarsLog.error(TAG, 'setConfig FAILED — this causes CONFIGURATION ERROR:', err);
+        lcarsLog.error(TAG, 'setConfig FAILED � this causes CONFIGURATION ERROR:', err);
         throw err;
       }
     }
@@ -276,11 +276,11 @@ class LcarsHomepageCard extends LitElement {
       const prev = this._hass;
       this._hass = hass;
       if (!prev) {
-        lcarsLog.debug(TAG, 'First hass received — areas:', Object.keys(hass.areas || {}).length, 'entities:', Object.keys(hass.entities || {}).length);
+        lcarsLog.debug(TAG, 'First hass received � areas:', Object.keys(hass.areas || {}).length, 'entities:', Object.keys(hass.entities || {}).length);
       }
       // Bust entity cache when registries change
       if (prev && (prev.entities !== hass.entities || prev.devices !== hass.devices)) {
-        lcarsLog.debug(TAG, 'Entity/device registry changed — busting cache');
+        lcarsLog.debug(TAG, 'Entity/device registry changed � busting cache');
         this._entityCache.clear();
       }
       // Deselect area if it was removed from HA
@@ -309,8 +309,8 @@ class LcarsHomepageCard extends LitElement {
         }
         lcarsLog.debug(TAG, 'Configuration loaded:', Object.keys(result), 'version:', result.installed_version);
       } catch (e) {
-        lcarsLog.error(TAG, 'Failed to load configuration — WS call failed:', e);
-        // Set empty data so we don't retry endlessly — card still works dynamically from hass
+        lcarsLog.error(TAG, 'Failed to load configuration � WS call failed:', e);
+        // Set empty data so we don't retry endlessly � card still works dynamically from hass
         this.data = {};
       } finally {
         this._configLoading = false;
@@ -349,7 +349,7 @@ class LcarsHomepageCard extends LitElement {
       }, `Edit: ${name}`);
     }
 
-    // 4X-8: Panel reorder handler — opens popup with visual layout editor
+    // 4X-8: Panel reorder handler � opens popup with visual layout editor
     _handlePanelReorder(e, areaId, panelId, allPanels) {
       e.stopPropagation();
       e.preventDefault();
@@ -363,7 +363,7 @@ class LcarsHomepageCard extends LitElement {
       }, `Panel Layout: ${(areaId || '').replace(/_/g, ' ').toUpperCase()}`);
     }
 
-    /* ─── Toggle a light/switch/fan/etc ─── */
+    /* --- Toggle a light/switch/fan/etc --- */
     _handleToggle(entityId) {
       const domain = entityId.split('.')[0];
       lcarsLog.debug(TAG, 'Toggle:', entityId, 'domain:', domain);
@@ -378,17 +378,17 @@ class LcarsHomepageCard extends LitElement {
       }
     }
 
-    /* ─── Entity resolution: delegates to shared lcars-entity-query.js (4X-13) ─── */
+    /* --- Entity resolution: delegates to shared lcars-entity-query.js (4X-13) --- */
     _getAreaEntities(areaId) {
       return getAreaEntities(this._hass, areaId, this._entityCache);
     }
 
-    /* ─── Floor-level entity resolution: union all areas on a floor ─── */
+    /* --- Floor-level entity resolution: union all areas on a floor --- */
     _getFloorAreaIds(floorId) {
       return getFloorAreas(this._hass, floorId);
     }
 
-    /* ─── Fetch config/diagnostic entities for a specific device (battery panels) ─── */
+    /* --- Fetch config/diagnostic entities for a specific device (battery panels) --- */
     _getDeviceCategoryEntities(deviceId) {
       if (!this._hass || !deviceId) return { config: [], diagnostic: [] };
       const entities = Object.values(this._hass.entities || {});
@@ -404,12 +404,12 @@ class LcarsHomepageCard extends LitElement {
       return { config, diagnostic };
     }
 
-    /* ─── Group entities: delegates to shared lcars-entity-query.js (4X-13) ─── */
+    /* --- Group entities: delegates to shared lcars-entity-query.js (4X-13) --- */
     _groupEntities(entities) {
       return groupEntities(this._hass, entities);
     }
 
-    /* ─── Group entries by domain ─── */
+    /* --- Group entries by domain --- */
     _groupByDomain(entries) {
       const groups = new Map();
       entries.forEach((entry) => {
@@ -441,7 +441,7 @@ class LcarsHomepageCard extends LitElement {
       return iconMap[domain] || 'mdi:information-outline';
     }
 
-    /* ─── Wrap an entity element with an edit pip overlay ─── */
+    /* --- Wrap an entity element with an edit pip overlay --- */
     _withEditPip(entityId, content) {
       if (!this._editMode) return content;
       return html`
@@ -473,7 +473,7 @@ class LcarsHomepageCard extends LitElement {
         changed = false;
         for (const p of prefixes) {
           if (result.toLowerCase().startsWith(p.toLowerCase())) {
-            result = result.slice(p.length).trim().replace(/^[-–:]\s*/, '');
+            result = result.slice(p.length).trim().replace(/^[-�:]\s*/, '');
             changed = true;
           }
         }
@@ -494,7 +494,7 @@ class LcarsHomepageCard extends LitElement {
       const area = this._hass?.areas?.[this.selectedArea];
       if (!area?.name) return raw;
       if (raw.toLowerCase().startsWith(area.name.toLowerCase())) {
-        const stripped = raw.slice(area.name.length).trim().replace(/^[-–:]\s*/, '');
+        const stripped = raw.slice(area.name.length).trim().replace(/^[-�:]\s*/, '');
         return stripped || raw;
       }
       return raw;
@@ -518,7 +518,7 @@ class LcarsHomepageCard extends LitElement {
       return `LAST SIGNAL: ${mins}M AGO`;
     }
 
-    /* ─── Segmented sensor bar for numeric values ─── */
+    /* --- Segmented sensor bar for numeric values --- */
     _renderSensorBar(state) {
       const val = parseFloat(state.state);
       if (isNaN(val)) return '';
@@ -547,7 +547,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ──────────── STYLES ──────────── */
+    /* ------------ STYLES ------------ */
     static get styles() {
       return [
         lcarsBaseStyles,
@@ -556,7 +556,7 @@ class LcarsHomepageCard extends LitElement {
         css`
           :host { display: block; }
 
-          /* ─── Content Area Header (Geordi: gold = active area) ─── */
+          /* --- Content Area Header (Geordi: gold = active area) --- */
           .content-area-panel {
             animation: lcars-cascade-in 300ms ease-out both;
             padding-left: 1rem;
@@ -598,7 +598,7 @@ class LcarsHomepageCard extends LitElement {
             outline-offset: 2px;
           }
 
-          /* ─── Floor View ─── */
+          /* --- Floor View --- */
           .content-floor-panel {
             display: flex;
             flex-direction: column;
@@ -632,7 +632,7 @@ class LcarsHomepageCard extends LitElement {
             border-left-width: 2px;
           }
 
-          /* ─── Divider ─── */
+          /* --- Divider --- */
           .lcars-divider {
             display: flex;
             align-items: center;
@@ -650,8 +650,8 @@ class LcarsHomepageCard extends LitElement {
             background: var(--lcars-data-accent);
           }
 
-          /* ─── Device Group ─── */
-          /* #204 — LCARS flatness: solid border, no border-image gradient. */
+          /* --- Device Group --- */
+          /* #204 � LCARS flatness: solid border, no border-image gradient. */
           .device-group {
             margin-bottom: 0.75rem;
             position: relative;
@@ -690,7 +690,7 @@ class LcarsHomepageCard extends LitElement {
             opacity: 0.4;
           }
 
-          /* ─── Domain Sub-header ─── */
+          /* --- Domain Sub-header --- */
           .domain-label {
             font-size: 0.7rem;
             color: var(--lcars-african-violet);
@@ -699,15 +699,15 @@ class LcarsHomepageCard extends LitElement {
             letter-spacing: 0.05em;
           }
 
-          /* ─── Entity Grid (default) ─── */
+          /* --- Entity Grid (default) --- */
           .entity-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
             gap: var(--lcars-gap);
             padding: 0.25rem 0;
           }
 
-          /* ─── Generic Entity Button (fallback) ─── */
+          /* --- Generic Entity Button (fallback) --- */
           .entity-btn {
             display: flex;
             align-items: center;
@@ -738,10 +738,10 @@ class LcarsHomepageCard extends LitElement {
           .entity-btn .entity-state { font-size: 0.75rem; opacity: 0.7; flex-shrink: 0; }
           .entity-btn[data-off] { background: var(--lcars-gray); color: var(--lcars-space-white); }
 
-          /* ═══════ TOGGLE PILL (light / switch / fan / lock) ═══════ */
+          /* ------- TOGGLE PILL (light / switch / fan / lock) ------- */
           .toggle-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
             gap: var(--lcars-gap);
             padding: 0.25rem 0;
           }
@@ -824,10 +824,10 @@ class LcarsHomepageCard extends LitElement {
             transition: width var(--lcars-transition);
           }
 
-          /* ═══════ SENSOR DATA READOUT ═══════ */
+          /* ------- SENSOR DATA READOUT ------- */
           .sensor-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
             gap: var(--lcars-gap);
             padding: 0.25rem 0;
           }
@@ -871,10 +871,10 @@ class LcarsHomepageCard extends LitElement {
           .sensor-readout[data-off] { background: var(--lcars-gray); color: var(--lcars-space-white); }
           .sensor-readout[data-off] .sensor-value { color: var(--lcars-space-white); }
 
-          /* ═══════ CAMERA FEED ═══════ */
+          /* ------- CAMERA FEED ------- */
           .camera-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
             gap: var(--lcars-gap);
             padding: 0.25rem 0;
           }
@@ -925,7 +925,7 @@ class LcarsHomepageCard extends LitElement {
             opacity: 0.7;
           }
 
-          /* ── Camera state overlays ── */
+          /* -- Camera state overlays -- */
           .camera-connecting-overlay,
           .camera-offline-overlay {
             position: absolute;
@@ -1003,7 +1003,7 @@ class LcarsHomepageCard extends LitElement {
             border-color: var(--lcars-gray);
             opacity: 1;
           }
-          /* #203 — LCARS is flat: drop the linear-gradient layer; keep the
+          /* #203 � LCARS is flat: drop the linear-gradient layer; keep the
              two repeating-linear-gradient static patterns over a flat solid. */
           .camera-frame[data-state="offline"] .camera-offline-overlay {
             background-color: rgba(30,30,30,1);
@@ -1038,7 +1038,7 @@ class LcarsHomepageCard extends LitElement {
             height: 100%;
           }
 
-          /* ═══════ DEVICE PANEL (reusable frame for camera / climate / media) ═══════ */
+          /* ------- DEVICE PANEL (reusable frame for camera / climate / media) ------- */
           .device-panels-section {
             display: flex;
             flex-direction: column;
@@ -1047,14 +1047,14 @@ class LcarsHomepageCard extends LitElement {
             margin-bottom: 0.75rem;
           }
 
-          /* ─── Two-column split: entities+left-panels left, right-panels right ─── */
+          /* --- Two-column split: entities+left-panels left, right-panels right --- */
           .area-split-layout {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1rem;
             align-items: start;
           }
-          /* ─── Full-width illumination panel above columns ─── */
+          /* --- Full-width illumination panel above columns --- */
           .area-illumination-full {
             margin-bottom: 1rem;
           }
@@ -1100,7 +1100,7 @@ class LcarsHomepageCard extends LitElement {
             background: var(--lcars-black);
             position: relative;
           }
-          /* Corner bracket — top-left */
+          /* Corner bracket � top-left */
           .lcars-device-panel::before {
             content: '';
             position: absolute;
@@ -1113,7 +1113,7 @@ class LcarsHomepageCard extends LitElement {
             border-radius: 0.75rem 0 0 0;
             pointer-events: none;
           }
-          /* Corner bracket — bottom-right */
+          /* Corner bracket � bottom-right */
           .lcars-device-panel::after {
             content: '';
             position: absolute;
@@ -1148,7 +1148,7 @@ class LcarsHomepageCard extends LitElement {
             opacity: 0.5;
           }
 
-          /* Sensor telemetry readouts — left column */
+          /* Sensor telemetry readouts � left column */
           .device-panel-sensors {
             grid-area: sensors;
             display: flex;
@@ -1199,7 +1199,7 @@ class LcarsHomepageCard extends LitElement {
           .zone-siblings { flex-shrink: 0; display: flex; gap: 0.375rem; margin: 0 0.25rem; }
           .zone-sibling-pip { font-size: 0.625rem; color: var(--lcars-sky, #aaaaff); white-space: nowrap; }
 
-          /* Media viewscreen — right column */
+          /* Media viewscreen � right column */
           .device-panel-media {
             grid-area: media;
             position: relative;
@@ -1219,7 +1219,7 @@ class LcarsHomepageCard extends LitElement {
             border-color: var(--lcars-gray);
           }
 
-          /* Control buttons — bottom row */
+          /* Control buttons � bottom row */
           .device-panel-controls {
             grid-area: controls;
             display: flex;
@@ -1253,7 +1253,7 @@ class LcarsHomepageCard extends LitElement {
           .device-control-btn[data-on] { background: var(--lcars-gold); }
           .device-control-btn[data-off] { background: var(--lcars-gray); color: var(--lcars-space-white); }
 
-          /* ═══════ BATTERY WARP CORE PANEL ═══════ */
+          /* ------- BATTERY WARP CORE PANEL ------- */
           .battery-panel {
             --panel-frame-color: var(--lcars-ice);
             grid-template-columns: minmax(8rem, 1fr) minmax(5rem, 6rem) minmax(8rem, 1.2fr);
@@ -1491,7 +1491,7 @@ class LcarsHomepageCard extends LitElement {
             color: var(--lcars-black, #000);
           }
 
-          /* ═══ Environment Panel ═══ */
+          /* --- Environment Panel --- */
           .env-panel {
             grid-template-areas:
               "header header header"
@@ -1745,10 +1745,10 @@ class LcarsHomepageCard extends LitElement {
             to { background-position-x: 16px; }
           }
 
-          /* ═══════ CLIMATE PANEL ═══════ */
+          /* ------- CLIMATE PANEL ------- */
           .climate-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
             gap: var(--lcars-gap);
             padding: 0.25rem 0;
           }
@@ -1788,10 +1788,10 @@ class LcarsHomepageCard extends LitElement {
           .climate-panel[data-cool] { background: var(--lcars-ice); }
           .climate-panel[data-off] { background: var(--lcars-gray); color: var(--lcars-space-white); }
 
-          /* ═══════ COVER CONTROLS ═══════ */
+          /* ------- COVER CONTROLS ------- */
           .cover-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
             gap: var(--lcars-gap);
             padding: 0.25rem 0;
           }
@@ -1821,10 +1821,10 @@ class LcarsHomepageCard extends LitElement {
           .cover-panel .cover-position { font-size: 0.75rem; opacity: 0.7; flex-shrink: 0; }
           .cover-panel[data-off] { background: var(--lcars-gray); color: var(--lcars-space-white); }
 
-          /* ═══════ MEDIA PLAYER ═══════ */
+          /* ------- MEDIA PLAYER ------- */
           .media-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
             gap: var(--lcars-gap);
             padding: 0.25rem 0;
           }
@@ -1857,7 +1857,7 @@ class LcarsHomepageCard extends LitElement {
           .media-strip .media-state { font-size: 0.65rem; opacity: 0.5; flex-shrink: 0; }
           .media-strip[data-off] { background: var(--lcars-gray); color: var(--lcars-space-white); }
 
-          /* ─── No data ─── */
+          /* --- No data --- */
           .lcars-empty {
             color: var(--lcars-sky, #aaaaff);
             font-size: var(--lcars-font-size-sub);
@@ -1865,7 +1865,7 @@ class LcarsHomepageCard extends LitElement {
             text-align: center;
           }
 
-          /* ═══════ EDIT MODE — Edit Pips ═══════ */
+          /* ------- EDIT MODE � Edit Pips ------- */
           .edit-pip-wrap {
             position: relative;
           }
@@ -1928,9 +1928,9 @@ class LcarsHomepageCard extends LitElement {
           .panel-order-pip:hover { transform: scale(1.2); background: var(--lcars-gold); }
           .panel-order-pip:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
 
-          /* ═══════ ANIMATIONS (Wesley Crusher specials) ═══════ */
+          /* ------- ANIMATIONS (Wesley Crusher specials) ------- */
 
-          /* ── 1. Staggered Cascade Reveal ── */
+          /* -- 1. Staggered Cascade Reveal -- */
           @keyframes lcars-cascade-in {
             0% {
               opacity: 0;
@@ -1955,7 +1955,7 @@ class LcarsHomepageCard extends LitElement {
             animation-delay: calc(var(--i, 0) * 40ms);
           }
 
-          /* ── 2. Sensor Scan Sweep ── */
+          /* -- 2. Sensor Scan Sweep -- */
           @keyframes lcars-scan-sweep {
             0%   { transform: translateX(-100%); }
             100% { transform: translateX(300%); }
@@ -1978,7 +1978,7 @@ class LcarsHomepageCard extends LitElement {
           .sensor-readout:nth-child(5n)::after { animation-delay: 2.4s; }
           .sensor-readout[data-off]::after { animation: none; }
 
-          /* ── 3. Camera Viewscreen Activation ── */
+          /* -- 3. Camera Viewscreen Activation -- */
           @keyframes viewscreen-activate {
             0%   { clip-path: inset(50% 0 50% 0); filter: brightness(2) saturate(0); }
             40%  { clip-path: inset(10% 0 10% 0); filter: brightness(1.5) saturate(0.3); }
@@ -1997,7 +1997,7 @@ class LcarsHomepageCard extends LitElement {
           }
           .camera-frame:active { animation: frame-pulse 400ms ease-out; }
 
-          /* ── 4. Heartbeat Pulse for Active Entities ── */
+          /* -- 4. Heartbeat Pulse for Active Entities -- */
           @keyframes lcars-heartbeat {
             0%, 100% { filter: brightness(1); }
             50%      { filter: brightness(1.1); }
@@ -2015,7 +2015,7 @@ class LcarsHomepageCard extends LitElement {
           .sensor-readout[data-off],
           .toggle-pill[data-off] { animation: lcars-distress 4s ease-in-out infinite; }
 
-          /* ── Device Panel Viewscreen Activation ── */
+          /* -- Device Panel Viewscreen Activation -- */
           .device-panel-media img {
             animation: viewscreen-activate 600ms ease-out both;
           }
@@ -2032,7 +2032,7 @@ class LcarsHomepageCard extends LitElement {
             animation: panel-distress 3s ease-in-out infinite;
           }
 
-          /* ── 5. Segmented Sensor Bar ── */
+          /* -- 5. Segmented Sensor Bar -- */
           .sensor-bar {
             display: flex;
             gap: 2px;
@@ -2079,7 +2079,7 @@ class LcarsHomepageCard extends LitElement {
             .alarm-triggered .alarm-viewscreen { animation: none; }
           }
 
-          /* ═══════ CLIMATE PANEL ═══════ */
+          /* ------- CLIMATE PANEL ------- */
           .climate-panel {
             display: grid;
             grid-template-areas:
@@ -2181,7 +2181,7 @@ class LcarsHomepageCard extends LitElement {
           }
           .climate-aux-strip { display: flex; gap: var(--lcars-gap); flex-wrap: wrap; }
 
-          /* ═══════ ALARM PANEL ═══════ */
+          /* ------- ALARM PANEL ------- */
           .alarm-panel {
             display: grid;
             grid-template-areas:
@@ -2335,7 +2335,7 @@ class LcarsHomepageCard extends LitElement {
             50%      { opacity: 0.5; }
           }
 
-          /* ═══════ MEDIA PANEL ═══════ */
+          /* ------- MEDIA PANEL ------- */
           .media-panel {
             display: grid;
             grid-template-areas:
@@ -2480,7 +2480,7 @@ class LcarsHomepageCard extends LitElement {
             text-align: right;
           }
 
-          /* ═══════ POOL & SPA PANEL ═══════ */
+          /* ------- POOL & SPA PANEL ------- */
           .pool-panel {
             display: grid;
             grid-template-areas:
@@ -2563,7 +2563,7 @@ class LcarsHomepageCard extends LitElement {
             flex-wrap: wrap;
           }
 
-          /* ═══════ WEATHER PANEL ═══════ */
+          /* ------- WEATHER PANEL ------- */
           .weather-panel {
             display: grid;
             grid-template-areas:
@@ -2657,7 +2657,7 @@ class LcarsHomepageCard extends LitElement {
           }
           .forecast-precip { color: var(--lcars-gray); font-size: 0.75rem; }
 
-          /* ═══════ IRRIGATION PANEL ═══════ */
+          /* ------- IRRIGATION PANEL ------- */
           .irrigation-panel {
             display: grid;
             grid-template-areas:
@@ -2737,7 +2737,7 @@ class LcarsHomepageCard extends LitElement {
           }
           .irrigation-standby-btn { min-width: 10rem; }
 
-          /* ═══════ POWER PANEL (4X-3) ═══════ */
+          /* ------- POWER PANEL (4X-3) ------- */
           .power-panel {
             --panel-frame-color: var(--lcars-butterscotch);
             display: grid;
@@ -2864,7 +2864,7 @@ class LcarsHomepageCard extends LitElement {
           .power-circuits {
             grid-area: circuits;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
             gap: var(--lcars-gap);
             max-height: 24rem;
             overflow-y: auto;
@@ -2943,7 +2943,7 @@ class LcarsHomepageCard extends LitElement {
             outline: 2px solid var(--lcars-ice);
             outline-offset: 2px;
           }
-          /* ── LCARS sliding track toggle ── */
+          /* -- LCARS sliding track toggle -- */
           .lcars-track-toggle {
             position: relative;
             display: inline-flex;
@@ -3061,7 +3061,7 @@ class LcarsHomepageCard extends LitElement {
             flex: 1;
           }
           .power-strip-master-toggle {
-            /* Legacy — replaced by lcars-track-toggle */
+            /* Legacy � replaced by lcars-track-toggle */
             display: none;
           }
           .power-strip-master-toggle[data-on] {
@@ -3081,7 +3081,7 @@ class LcarsHomepageCard extends LitElement {
           }
           .power-strip-children {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
             gap: var(--lcars-gap);
           }
           .power-strip-child-tile {
@@ -3099,7 +3099,7 @@ class LcarsHomepageCard extends LitElement {
             gap: 0.25rem;
           }
           .strip-child-toggle {
-            /* Legacy — replaced by lcars-track-toggle */
+            /* Legacy � replaced by lcars-track-toggle */
             display: none;
           }
           .strip-child-toggle[data-on] {
@@ -3223,7 +3223,7 @@ class LcarsHomepageCard extends LitElement {
           /* Responsive */
           @media (max-width: 1023px) {
             .power-circuits {
-              grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+              grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
             }
             .power-summary {
               grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
@@ -3248,17 +3248,17 @@ class LcarsHomepageCard extends LitElement {
             }
           }
 
-          /* ═══════════════════════════════════════════════════════════
-             v4.13.0 — VISUAL ENHANCEMENTS (All Panels)
+          /* -----------------------------------------------------------
+             v4.13.0 � VISUAL ENHANCEMENTS (All Panels)
              Phase 1: Device Panel Base (cascades to all)
-             ═══════════════════════════════════════════════════════════ */
+             ----------------------------------------------------------- */
 
-          /* ── 1.1 Frame Breathing Pulse ── */
+          /* -- 1.1 Frame Breathing Pulse -- */
           .lcars-device-panel {
             animation: lcars-frame-breathe var(--lcars-anim-breathe) ease-in-out infinite;
           }
 
-          /* ── 1.2 Data Pip Footer Strip ── */
+          /* -- 1.2 Data Pip Footer Strip -- */
           .lcars-device-panel .panel-pip-strip {
             position: absolute;
             bottom: 0;
@@ -3270,7 +3270,7 @@ class LcarsHomepageCard extends LitElement {
             border-radius: 0 0 0.25rem 0.75rem;
           }
 
-          /* ── 1.3 Header Numeric Code Watermark ── */
+          /* -- 1.3 Header Numeric Code Watermark -- */
           .panel-numeric-code {
             position: absolute;
             right: var(--lcars-gap);
@@ -3286,7 +3286,7 @@ class LcarsHomepageCard extends LitElement {
             user-select: none;
           }
 
-          /* ── 1.4 Button Press Ripple Flash ── */
+          /* -- 1.4 Button Press Ripple Flash -- */
           .device-control-btn {
             position: relative;
             overflow: hidden;
@@ -3306,7 +3306,7 @@ class LcarsHomepageCard extends LitElement {
             animation: lcars-button-flash var(--lcars-anim-flash) ease-out forwards;
           }
 
-          /* ── 1.5 Viewscreen Power-On Scanline ── */
+          /* -- 1.5 Viewscreen Power-On Scanline -- */
           .device-panel-media .scanline-overlay {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -3327,9 +3327,9 @@ class LcarsHomepageCard extends LitElement {
             animation: lcars-scanline var(--lcars-anim-scan) ease-out forwards;
           }
 
-          /* ═══════ Phase 3: CLIMATE v4.13.0 ═══════ */
+          /* ------- Phase 3: CLIMATE v4.13.0 ------- */
 
-          /* ── 3.1 Arc Gauge Segmented Stroke ── */
+          /* -- 3.1 Arc Gauge Segmented Stroke -- */
           .climate-arc-fill {
             stroke-dasharray: 6 2;
             stroke-linecap: butt;
@@ -3339,7 +3339,7 @@ class LcarsHomepageCard extends LitElement {
             animation: lcars-setpoint-confirm var(--lcars-anim-confirm) ease-out forwards;
           }
 
-          /* ── 3.2 HVAC Action Frame Pulse ── */
+          /* -- 3.2 HVAC Action Frame Pulse -- */
           .lcars-device-panel[data-hvac-action="heating"] {
             animation: lcars-hvac-pulse var(--lcars-anim-pulse) ease-in-out infinite;
             --pulse-color: var(--lcars-butterscotch);
@@ -3353,12 +3353,12 @@ class LcarsHomepageCard extends LitElement {
             50%      { border-color: var(--pulse-color); border-color: color-mix(in srgb, var(--pulse-color) 70%, black); }
           }
 
-          /* ── 3.3 Setpoint Button Glow ── */
+          /* -- 3.3 Setpoint Button Glow -- */
           .lcars-target-temp.confirm {
             animation: lcars-setpoint-confirm var(--lcars-anim-confirm) ease-out forwards;
           }
 
-          /* ── 3.4 Mode Strip Active Indicator ── */
+          /* -- 3.4 Mode Strip Active Indicator -- */
           .lcars-mode-strip {
             position: relative;
           }
@@ -3372,7 +3372,7 @@ class LcarsHomepageCard extends LitElement {
             width: var(--indicator-w, 3rem);
           }
 
-          /* ── 3.5 Ambient Temperature Data Pips ── */
+          /* -- 3.5 Ambient Temperature Data Pips -- */
           .climate-temp-pips {
             display: flex;
             gap: 2px;
@@ -3389,9 +3389,9 @@ class LcarsHomepageCard extends LitElement {
             opacity: 1;
           }
 
-          /* ═══════ Phase 4: MEDIA v4.13.0 ═══════ */
+          /* ------- Phase 4: MEDIA v4.13.0 ------- */
 
-          /* ── 4.1 Audio Waveform (12 bars, scaleY — Data C-1/C-2) ── */
+          /* -- 4.1 Audio Waveform (12 bars, scaleY � Data C-1/C-2) -- */
           .lcars-audio-waveform {
             display: flex;
             align-items: flex-end;
@@ -3424,11 +3424,11 @@ class LcarsHomepageCard extends LitElement {
             100% { transform: scaleY(1); }
           }
 
-          /* ── 4.2 Album Art Viewscreen ── */
+          /* -- 4.2 Album Art Viewscreen -- */
           .media-viewscreen-glow {
           }
 
-          /* ── 4.3 Transport Active State ── */
+          /* -- 4.3 Transport Active State -- */
           .media-transport-btn.active {
           }
           .media-transport-btn.active::before {
@@ -3441,7 +3441,7 @@ class LcarsHomepageCard extends LitElement {
             background: var(--lcars-african-violet);
           }
 
-          /* ── 4.4 Progress Bar Luminous Head ── */
+          /* -- 4.4 Progress Bar Luminous Head -- */
           .media-progress-fill::after {
             content: '';
             position: absolute;
@@ -3457,7 +3457,7 @@ class LcarsHomepageCard extends LitElement {
             50%      { box-shadow: 0 0 8px 3px var(--lcars-gold); }
           }
 
-          /* ── 4.5 Idle Standby Pulse ── */
+          /* -- 4.5 Idle Standby Pulse -- */
           .media-idle-glyph {
             font-size: 2rem;
             color: var(--lcars-african-violet);
@@ -3469,9 +3469,9 @@ class LcarsHomepageCard extends LitElement {
             50%      { opacity: 0.6; }
           }
 
-          /* ═══════ Phase 5: ALARM v4.13.0 ═══════ */
+          /* ------- Phase 5: ALARM v4.13.0 ------- */
 
-          /* ── 5.1 Red Alert Frame Strobe (flat color pulse, no glow) ── */
+          /* -- 5.1 Red Alert Frame Strobe (flat color pulse, no glow) -- */
           .lcars-device-panel[data-state="triggered"] {
             animation: lcars-red-alert var(--lcars-anim-pulse-urgent) linear infinite;
           }
@@ -3480,7 +3480,7 @@ class LcarsHomepageCard extends LitElement {
             50%      { border-color: color-mix(in srgb, var(--lcars-tomato) 40%, black); }
           }
 
-          /* ── 5.2 Shield Icon State Colors (flat, no glow) ── */
+          /* -- 5.2 Shield Icon State Colors (flat, no glow) -- */
           .alarm-shield-icon {
             transition: fill 500ms ease-out;
           }
@@ -3503,7 +3503,7 @@ class LcarsHomepageCard extends LitElement {
             50%      { opacity: 0.5; }
           }
 
-          /* ── 5.3 Keypad Tactile Flash ── */
+          /* -- 5.3 Keypad Tactile Flash -- */
           .alarm-key {
             position: relative;
           }
@@ -3524,7 +3524,7 @@ class LcarsHomepageCard extends LitElement {
             100% { opacity: 0;   transform: translateX(-50%) translateY(-0.75rem); }
           }
 
-          /* ── 5.4 Countdown Urgency Escalation ── */
+          /* -- 5.4 Countdown Urgency Escalation -- */
           .alarm-countdown[data-urgency="calm"]     { color: var(--lcars-sunflower); }
           .alarm-countdown[data-urgency="elevated"] { color: var(--lcars-golden-orange); animation: lcars-urgency-blink var(--lcars-anim-pulse) ease-in-out infinite; }
           .alarm-countdown[data-urgency="high"]     { color: var(--lcars-tomato); animation: lcars-urgency-blink var(--lcars-anim-pulse-urgent) ease-in-out infinite; }
@@ -3538,7 +3538,7 @@ class LcarsHomepageCard extends LitElement {
             50%      { transform: scale(1.05); opacity: 0.7; }
           }
 
-          /* ── 5.5 Zone Status Micro-Pips ── */
+          /* -- 5.5 Zone Status Micro-Pips -- */
           .alarm-zone-pip {
             width: 6px; height: 6px;
             border-radius: 50%;
@@ -3556,16 +3556,16 @@ class LcarsHomepageCard extends LitElement {
             100% { transform: scale(1); }
           }
 
-          /* ═══════ Phase 6: WEATHER v4.13.0 ═══════ */
+          /* ------- Phase 6: WEATHER v4.13.0 ------- */
 
-          /* ── 6.1 Weather Condition Feedback ── */
+          /* -- 6.1 Weather Condition Feedback -- */
           .weather-viewscreen {
             position: relative;
             border-color: var(--weather-glow-color, var(--panel-frame-color));
             transition: border-color 1s ease-out;
           }
 
-          /* ── 6.2 Wind Compass Needle ── */
+          /* -- 6.2 Wind Compass Needle -- */
           .wind-compass {
             position: relative;
             width: 3rem; height: 3rem;
@@ -3589,7 +3589,7 @@ class LcarsHomepageCard extends LitElement {
             100% { transform: rotate(calc(var(--wind-deg, 0deg) + 5deg)); }
           }
 
-          /* ── 6.3 Forecast Range Bars ── */
+          /* -- 6.3 Forecast Range Bars -- */
           .forecast-range-bar {
             width: 3px;
             transform-origin: bottom;
@@ -3602,7 +3602,7 @@ class LcarsHomepageCard extends LitElement {
             to { transform: scaleY(1); }
           }
 
-          /* ── 6.4 Sun Arc ── */
+          /* -- 6.4 Sun Arc -- */
           .sun-arc-track {
             stroke: var(--lcars-gray);
             stroke-width: 2;
@@ -3620,7 +3620,7 @@ class LcarsHomepageCard extends LitElement {
             transition: cx 60s linear, cy 60s linear;
           }
 
-          /* ── 6.5 Precip Pips ── */
+          /* -- 6.5 Precip Pips -- */
           .precip-pips {
             display: grid;
             grid-template-columns: repeat(5, 4px);
@@ -3638,9 +3638,9 @@ class LcarsHomepageCard extends LitElement {
             opacity: 1;
           }
 
-          /* ═══════ Phase 7: POOL/SPA v4.13.0 ═══════ */
+          /* ------- Phase 7: POOL/SPA v4.13.0 ------- */
 
-          /* ── 7.2 Heating Active Indicator ── */
+          /* -- 7.2 Heating Active Indicator -- */
           .pool-heat-bar {
             height: 3px;
             background: var(--lcars-gray);
@@ -3658,7 +3658,7 @@ class LcarsHomepageCard extends LitElement {
             100% { background-position: 200% 0; }
           }
 
-          /* ── 7.3 Chemistry Sensor Badges ── */
+          /* -- 7.3 Chemistry Sensor Badges -- */
           .chem-badge {
             display: inline-flex;
             gap: 0.25rem;
@@ -3679,13 +3679,13 @@ class LcarsHomepageCard extends LitElement {
             50%      { opacity: 0.6; }
           }
 
-          /* ── 7.4 IntelliBrite Swatch Glow ── */
+          /* -- 7.4 IntelliBrite Swatch Glow -- */
           .pool-swatch.active {
             box-shadow: 0 0 8px 2px var(--swatch-color, var(--lcars-ice));
             transition: box-shadow 200ms ease-out;
           }
 
-          /* ── 7.5 Pump Spinner (primary only — Data R-6) ── */
+          /* -- 7.5 Pump Spinner (primary only � Data R-6) -- */
           .lcars-pump-spinner {
             display: inline-flex;
             align-items: center;
@@ -3713,9 +3713,9 @@ class LcarsHomepageCard extends LitElement {
             to { transform: rotate(360deg); }
           }
 
-          /* ═══════ Phase 8: IRRIGATION v4.13.0 ═══════ */
+          /* ------- Phase 8: IRRIGATION v4.13.0 ------- */
 
-          /* ── 8.1 Barberpole Flow ── */
+          /* -- 8.1 Barberpole Flow -- */
           .zone-fill.active {
             background-image: repeating-linear-gradient(
               -45deg,
@@ -3730,7 +3730,7 @@ class LcarsHomepageCard extends LitElement {
             100% { background-position: 11.31px 0; }
           }
 
-          /* ── 8.2 Zone Completion Flash ── */
+          /* -- 8.2 Zone Completion Flash -- */
           .zone-bar.completing {
             animation: lcars-zone-complete 2s ease-out forwards;
           }
@@ -3739,13 +3739,13 @@ class LcarsHomepageCard extends LitElement {
             100% { border-left-color: var(--panel-frame-color); background: transparent; }
           }
 
-          /* ── 8.3 Schedule Countdown Proximity Glow ── */
+          /* -- 8.3 Schedule Countdown Proximity Glow -- */
           .schedule-countdown {
             text-shadow: 0 0 calc(var(--schedule-proximity, 0) * 8px) var(--lcars-ice);
             transition: text-shadow 10s ease-out;
           }
 
-          /* ── 8.4 Rain Delay Badge ── */
+          /* -- 8.4 Rain Delay Badge -- */
           .lcars-rain-badge {
             display: inline-flex;
             align-items: center;
@@ -3763,9 +3763,9 @@ class LcarsHomepageCard extends LitElement {
             50%      { transform: translateY(-1px); }
           }
 
-          /* ═══════ Phase 9: ATMOSCRUBBER v4.13.0 ═══════ */
+          /* ------- Phase 9: ATMOSCRUBBER v4.13.0 ------- */
 
-          /* ── 9.1 Particles (6 max, single merged keyframe — Data C-5/R-4) ── */
+          /* -- 9.1 Particles (6 max, single merged keyframe � Data C-5/R-4) -- */
           .lcars-atmos-particle {
             position: absolute;
             border-radius: 50%;
@@ -3783,7 +3783,7 @@ class LcarsHomepageCard extends LitElement {
             to   { transform: translateY(-100%) translateX(var(--particle-drift, 4px)); opacity: 0; }
           }
 
-          /* ── 9.2 AQI Cylinder Glow ── */
+          /* -- 9.2 AQI Cylinder Glow -- */
           .atmos-cylinder {
             box-shadow: inset 0 0 12px 4px var(--atmos-quality-color, var(--lcars-ice));
             transition: box-shadow 1s ease-out;
@@ -3796,7 +3796,7 @@ class LcarsHomepageCard extends LitElement {
             50%      { box-shadow: inset 0 0 20px 8px var(--atmos-quality-color); }
           }
 
-          /* ── 9.3 Filter Life Segments ── */
+          /* -- 9.3 Filter Life Segments -- */
           .filter-segments {
             display: flex;
             gap: 2px;
@@ -3820,7 +3820,7 @@ class LcarsHomepageCard extends LitElement {
             50%      { opacity: 0.4; }
           }
 
-          /* ── 9.4 Sparkline Scan ── */
+          /* -- 9.4 Sparkline Scan -- */
           .atmos-sparkline-path {
             stroke-dasharray: var(--sparkline-length, 200);
             stroke-dashoffset: var(--sparkline-length, 200);
@@ -3831,7 +3831,7 @@ class LcarsHomepageCard extends LitElement {
             to { stroke-dashoffset: 0; }
           }
 
-          /* ── 9.5 Preset Mode Wipe ── */
+          /* -- 9.5 Preset Mode Wipe -- */
           .atmos-preset-btn {
             position: relative;
             overflow: hidden;
@@ -3849,17 +3849,17 @@ class LcarsHomepageCard extends LitElement {
             width: 100%;
           }
 
-          /* ═══════ Phase 10: AIR PURIFIER v4.13.0 ═══════ */
+          /* ------- Phase 10: AIR PURIFIER v4.13.0 ------- */
 
-          /* ── 10.1 Sensor Row Stagger ── */
+          /* -- 10.1 Sensor Row Stagger -- */
           .purifier-sensor-row {
             animation: lcars-cascade-in 250ms ease-out both;
             animation-delay: calc(var(--sensor-index, 0) * 80ms);
           }
 
-          /* ═══════ Phase 11: TEMP/HUMIDITY GRID v4.13.0 ═══════ */
+          /* ------- Phase 11: TEMP/HUMIDITY GRID v4.13.0 ------- */
 
-          /* ── 11.1 Tile Comfort Glow (Worf R1: COMFORT_COLORS whitelist) ── */
+          /* -- 11.1 Tile Comfort Glow (Worf R1: COMFORT_COLORS whitelist) -- */
           .env-tile.warm {
             box-shadow: 0 0 8px 2px rgba(255, 153, 102, 0.2);
             animation: lcars-warm-glow 3s ease-in-out infinite;
@@ -3885,7 +3885,7 @@ class LcarsHomepageCard extends LitElement {
             50%      { box-shadow: 0 0 10px 3px rgba(136,153,255,0.25); }
           }
 
-          /* ── 11.2 Floor Label Scan-In ── */
+          /* -- 11.2 Floor Label Scan-In -- */
           .env-floor-label {
             position: relative;
             overflow: hidden;
@@ -3904,7 +3904,7 @@ class LcarsHomepageCard extends LitElement {
             to { transform: scaleX(0); }
           }
 
-          /* ── 11.3 Sparkline Draw-On ── */
+          /* -- 11.3 Sparkline Draw-On -- */
           .env-sparkline-path {
             stroke-dasharray: var(--sparkline-length, 200);
             stroke-dashoffset: var(--sparkline-length, 200);
@@ -3912,7 +3912,7 @@ class LcarsHomepageCard extends LitElement {
             animation-delay: calc(var(--tile-index, 0) * var(--lcars-anim-stagger));
           }
 
-          /* ── 11.4 Summary Row Pulse ── */
+          /* -- 11.4 Summary Row Pulse -- */
           .sensors-summary-row {
             animation: lcars-summary-pulse var(--lcars-anim-breathe) ease-in-out infinite;
           }
@@ -3921,7 +3921,7 @@ class LcarsHomepageCard extends LitElement {
             50%      { border-color: var(--lcars-ice); box-shadow: 0 0 4px 1px rgba(153,204,255,0.2); }
           }
 
-          /* ── 11.5 Hot/Cold Alert Pulse ── */
+          /* -- 11.5 Hot/Cold Alert Pulse -- */
           .env-tile.hot-alert {
             animation: lcars-hot-alert-pulse 1.5s ease-in-out infinite, lcars-warm-glow 3s ease-in-out infinite;
           }
@@ -3937,7 +3937,7 @@ class LcarsHomepageCard extends LitElement {
             50%      { border-color: var(--lcars-blue); }
           }
 
-          /* ── 11.6 Value Change Ripple ── */
+          /* -- 11.6 Value Change Ripple -- */
           .env-tile.value-changed {
             animation: lcars-value-ripple 300ms ease-out;
           }
@@ -3947,9 +3947,9 @@ class LcarsHomepageCard extends LitElement {
             100% { box-shadow: inset 4px 0 0 0 transparent; }
           }
 
-          /* ═══════ Phase 2: BATTERY v4.13.0 ═══════ */
+          /* ------- Phase 2: BATTERY v4.13.0 ------- */
 
-          /* ── 2.1 Sensor Pill Badges ── */
+          /* -- 2.1 Sensor Pill Badges -- */
           .battery-pill-badge {
             display: inline-flex;
             overflow: hidden;
@@ -3972,7 +3972,7 @@ class LcarsHomepageCard extends LitElement {
             animation: lcars-value-flash 300ms ease-out;
           }
 
-          /* ── 2.3 Charge State Glow ── */
+          /* -- 2.3 Charge State Glow -- */
           .battery-charge-glow {
             transition: box-shadow 500ms ease-out;
           }
@@ -3980,7 +3980,7 @@ class LcarsHomepageCard extends LitElement {
           .battery-charge-glow[data-level="medium"]  { box-shadow: 0 0 6px 2px rgba(255,153,0,0.25); }
           .battery-charge-glow[data-level="low"]     { box-shadow: 0 0 8px 2px rgba(255,85,85,0.3); }
 
-          /* ═══════ v4.16.0 CONSOLIDATED POWER PANEL (4X-6) ═══════ */
+          /* ------- v4.16.0 CONSOLIDATED POWER PANEL (4X-6) ------- */
 
           /* G-1: Transition separator */
           .device-group + .lcars-consolidated-power-panel {
@@ -3989,7 +3989,7 @@ class LcarsHomepageCard extends LitElement {
             padding-top: var(--lcars-gap, 12px);
           }
 
-          /* Panel frame — G-2: asymmetric border-radius + corner brackets */
+          /* Panel frame � G-2: asymmetric border-radius + corner brackets */
           .lcars-consolidated-power-panel {
             display: flex;
             flex-direction: column;
@@ -4084,7 +4084,7 @@ class LcarsHomepageCard extends LitElement {
           /* Wider circuit grid for left column */
           .lcars-consolidated-power-panel .power-circuits {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
             gap: 0.5rem;
             max-height: 24rem;
             overflow-y: auto;
@@ -4107,7 +4107,7 @@ class LcarsHomepageCard extends LitElement {
             border-radius: 2px;
           }
 
-          /* Truncation pill — G-7 */
+          /* Truncation pill � G-7 */
           .power-show-all-pill {
             display: block;
             margin: 0.5rem auto 0;
@@ -4136,7 +4136,7 @@ class LcarsHomepageCard extends LitElement {
           /* Responsive breakpoints */
           @media (max-width: 1023px) {
             .lcars-consolidated-power-panel .power-circuits {
-              grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+              grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
             }
           }
           @media (max-width: 767px) {
@@ -4150,7 +4150,7 @@ class LcarsHomepageCard extends LitElement {
             }
           }
 
-          /* ═══════ v4.13.0 REDUCED MOTION OVERRIDES ═══════ */
+          /* ------- v4.13.0 REDUCED MOTION OVERRIDES ------- */
           @media (prefers-reduced-motion: reduce) {
             .lcars-device-panel { animation: none; }
             .lcars-device-panel[data-hvac-action="heating"],
@@ -4204,7 +4204,7 @@ class LcarsHomepageCard extends LitElement {
       ];
     }
 
-    /* ──────────── FLOOR VIEW ──────────── */
+    /* ------------ FLOOR VIEW ------------ */
     _renderFloorView(floorId) {
       const floor = this._hass.floors?.[floorId];
       if (!floor) {
@@ -4245,7 +4245,7 @@ class LcarsHomepageCard extends LitElement {
                        aria-label="Alarm: ${(alarmBadge.state?.state || '').replace(/_/g, ' ')}. Tap to view."
                        @click=${() => this._navigateToAlarmArea(alarmBadge)}
                        @keydown=${(e) => e.key === 'Enter' && (e.preventDefault(), this._navigateToAlarmArea(alarmBadge))}>
-                      ◆ ${(alarmBadge.state?.state || '').toUpperCase().replace(/_/g, ' ')}
+                      ? ${(alarmBadge.state?.state || '').toUpperCase().replace(/_/g, ' ')}
                     </a>
                   ` : ''}
                 </h3>
@@ -4257,7 +4257,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ──────────── RENDER ──────────── */
+    /* ------------ RENDER ------------ */
     render() {
       if (!this._hass) {
         lcarsLog.debug(TAG, 'Render: waiting for hass');
@@ -4267,12 +4267,12 @@ class LcarsHomepageCard extends LitElement {
       // Reset tactical dedupe tracking for this render cycle
       this._renderedAlarmDeviceIds.clear();
 
-      // Floor selected — combined view of all areas on that floor
+      // Floor selected � combined view of all areas on that floor
       if (this.selectedFloor) {
         return this._renderFloorView(this.selectedFloor);
       }
 
-      // No area selected — show prompt
+      // No area selected � show prompt
       if (!this.selectedArea) {
         lcarsLog.debug(TAG, 'Render: no area selected');
         return html`<div class="lcars-empty">Select an area</div>`;
@@ -4296,12 +4296,12 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ─── Detect if a device warrants a unified panel ─── */
+    /* --- Detect if a device warrants a unified panel --- */
     _getDevicePanelType(entries) {
       return classifyDevice(entries);
     }
 
-    /* ─── Single-pass partition of device entities for panel rendering ─── */
+    /* --- Single-pass partition of device entities for panel rendering --- */
     _partitionDeviceEntities(entries) {
       const cameras = [];
       const sensors = [];
@@ -4314,7 +4314,7 @@ class LcarsHomepageCard extends LitElement {
       return { cameras, sensors, controls };
     }
 
-    /* ─── v4.13.0: Generate deterministic 6-digit panel code (Data L-4) ─── */
+    /* --- v4.13.0: Generate deterministic 6-digit panel code (Data L-4) --- */
     _generatePanelCode(entityId) {
       let h = 5381;
       for (let i = 0; i < entityId.length; i++) {
@@ -4324,17 +4324,17 @@ class LcarsHomepageCard extends LitElement {
       return `${code.slice(0, 3)}-${code.slice(3)}`;
     }
 
-    /* ─── Dispatch to the correct panel renderer (4X-21: registry-based) ─── */
+    /* --- Dispatch to the correct panel renderer (4X-21: registry-based) --- */
     _renderDevicePanel(panelType, group) {
-      // Irrigation has custom rendering logic — handle separately
+      // Irrigation has custom rendering logic � handle separately
       if (panelType === PANEL_TYPE_IRRIGATION) return this._renderIrrigationPanel(group);
       const factory = PANEL_TAG_REGISTRY.get(panelType);
       return factory ? factory(group, this._hass, this._editMode, this._config) : '';
     }
 
-    /* ─── Sensor indicator color per state (Geordi spec) ─── */
+    /* --- Sensor indicator color per state (Geordi spec) --- */
     _getSensorIndicatorColor(state, entityCategory = '') {
-      // 4X-1: CO₂-specific 3-tier coloring (D-C2 — wire getCo2Color into rendering)
+      // 4X-1: CO2-specific 3-tier coloring (D-C2 � wire getCo2Color into rendering)
       const dc = state?.attributes?.device_class || '';
       if (dc === 'carbon_dioxide') {
         return getCo2Color(state?.state);
@@ -4342,12 +4342,12 @@ class LcarsHomepageCard extends LitElement {
       return getStateColor(state?.entity_id || '', state, entityCategory);
     }
 
-    /* ─── Formatted sensor value (P2: centralized formatting) ─── */
+    /* --- Formatted sensor value (P2: centralized formatting) --- */
     _fmtSensor(state, entity) {
       return formatStateValue(state, entity?.entity_category || '');
     }
 
-    /* ═══ CAMERA DEVICE PANEL RENDERER ═══ */
+    /* --- CAMERA DEVICE PANEL RENDERER --- */
     _renderCameraPanel(group) {
       const { cameras, sensors, controls } = this._partitionDeviceEntities(group.entities);
       const deviceName = this._shortDeviceName(group.device);
@@ -4432,7 +4432,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ═══ BATTERY DEVICE PANEL — WARP CORE VISUALIZATION ═══ */
+    /* --- BATTERY DEVICE PANEL � WARP CORE VISUALIZATION --- */
 
     /* Classify a power entity as input/output by friendly_name patterns */
     _classifyPowerEntity(name) {
@@ -4485,7 +4485,7 @@ class LcarsHomepageCard extends LitElement {
           continue;
         }
 
-        // Power entities → classify as in/out
+        // Power entities ? classify as in/out
         if (dc === 'power' && unit === 'W') {
           const cls = this._classifyPowerEntity(name);
           if (cls) {
@@ -4520,7 +4520,7 @@ class LcarsHomepageCard extends LitElement {
       return { soc, powerIn, powerOut, telemetry, controls, configControls, diagnostics };
     }
 
-    /* ═══ ENVIRONMENT PANEL: partition, color, history, sparkline ═══ */
+    /* --- ENVIRONMENT PANEL: partition, color, history, sparkline --- */
 
     /* Partition environment device entities into functional buckets */
     _partitionEnvironmentEntities(entries, categoryEntities) {
@@ -4549,7 +4549,7 @@ class LcarsHomepageCard extends LitElement {
           continue;
         }
 
-        // AQ-specific device_classes → airQuality
+        // AQ-specific device_classes ? airQuality
         if (AQ_DEVICE_CLASSES.has(dc)) {
           airQuality.push(entry);
           continue;
@@ -4561,7 +4561,7 @@ class LcarsHomepageCard extends LitElement {
           continue;
         }
 
-        // Everything else → telemetry (temperature, humidity, etc.)
+        // Everything else ? telemetry (temperature, humidity, etc.)
         telemetry.push(entry);
       }
 
@@ -4577,15 +4577,15 @@ class LcarsHomepageCard extends LitElement {
       return { score, airQuality, telemetry, filterLife, controls, diagnostics };
     }
 
-    /* Map AQI value → hue angle (120=green → 0=red) for atmoscrubber */
+    /* Map AQI value ? hue angle (120=green ? 0=red) for atmoscrubber */
     _getScrubberHue(aqi) {
       if (aqi == null || aqi <= 50) return 120;
-      if (aqi <= 100) return 120 - ((aqi - 50) / 50) * 70;   // 120→50
-      if (aqi <= 150) return 50 - ((aqi - 100) / 50) * 35;    // 50→15
-      return Math.max(0, 15 - ((aqi - 150) / 100) * 15);       // 15→0
+      if (aqi <= 100) return 120 - ((aqi - 50) / 50) * 70;   // 120?50
+      if (aqi <= 150) return 50 - ((aqi - 100) / 50) * 35;    // 50?15
+      return Math.max(0, 15 - ((aqi - 150) / 100) * 15);       // 15?0
     }
 
-    /* Map AQI value → LCARS color variable name */
+    /* Map AQI value ? LCARS color variable name */
     _getAQColor(aqi) {
       if (aqi == null || aqi <= 50) return 'var(--lcars-ice)';
       if (aqi <= 100) return 'var(--lcars-sunflower)';
@@ -4594,7 +4594,7 @@ class LcarsHomepageCard extends LitElement {
       return 'var(--lcars-tomato)';
     }
 
-    /* Map fan percentage → particle animation duration (lower = faster) */
+    /* Map fan percentage ? particle animation duration (lower = faster) */
     _getScrubberSpeed(fanPercentage) {
       if (fanPercentage == null || fanPercentage === 0) return 20;
       return 2 + (18 * Math.pow(1 - fanPercentage / 100, 1.5));
@@ -4659,7 +4659,7 @@ class LcarsHomepageCard extends LitElement {
             <div class="device-panel-header-line"></div>
             ${scoreEntry ? html`
               <span class="env-score-label" style="color:${aqColor}">
-                ${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : '—'}
+                ${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : '�'}
               </span>
             ` : ''}
             <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(group.device.id)}</span>
@@ -4743,9 +4743,9 @@ class LcarsHomepageCard extends LitElement {
             <div class="atmoscrubber ${isIdle ? 'scrubber-idle' : ''}"
               style="--scrubber-hue:${Math.round(hue)};--scrubber-speed:${scrubberSpeed.toFixed(1)}s;--atmos-quality-color:${aqColor}">
               ${scoreEntry ? html`
-                <div class="scrubber-score">${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : '—'}</div>
+                <div class="scrubber-score">${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : '�'}</div>
               ` : pm25Entry ? html`
-                <div class="scrubber-score">${pm25Val != null && Number.isFinite(pm25Val) ? Math.round(pm25Val) : '—'}</div>
+                <div class="scrubber-score">${pm25Val != null && Number.isFinite(pm25Val) ? Math.round(pm25Val) : '�'}</div>
               ` : ''}
               ${!isIdle ? html`${Array.from({ length: 6 }, (_, i) => html`
                 <div class="lcars-atmos-particle" aria-hidden="true"
@@ -4754,7 +4754,7 @@ class LcarsHomepageCard extends LitElement {
             </div>
           </div>
 
-          <!-- Controls (right) — only for purifiers -->
+          <!-- Controls (right) � only for purifiers -->
           ${!sensorOnly ? html`
             <div class="env-controls" aria-label="${deviceName} controls">
               ${fanEntry ? html`
@@ -4882,7 +4882,7 @@ class LcarsHomepageCard extends LitElement {
           /state.*health|cycles|remain.*time|status|error.*code|battery.*count/.test(name);
       }).slice(0, 8);
 
-      // Filter diagnostics to key items (temp, cycles, status, errors — skip hidden energy readings)
+      // Filter diagnostics to key items (temp, cycles, status, errors � skip hidden energy readings)
       const keyDiagnostics = diagnostics.filter(e => {
         const dc = e.state?.attributes?.device_class || '';
         const name = (e.state?.attributes?.friendly_name || '').toLowerCase();
@@ -5118,14 +5118,14 @@ class LcarsHomepageCard extends LitElement {
                 <div class="io-pair-row">
                   <div class="io-port io-in" aria-label="${pair.label} input: ${inW} watts">
                     <span class="io-label">${pair.label} IN</span>
-                    <span class="io-watts" style="color:var(--lcars-ice)">${inW > 0 ? `${Math.round(inW)}W` : '—'}</span>
+                    <span class="io-watts" style="color:var(--lcars-ice)">${inW > 0 ? `${Math.round(inW)}W` : '�'}</span>
                   </div>
                   <div class="io-conduit io-conduit-in ${inSpeed}"></div>
                   <div class="io-core-gap"></div>
                   <div class="io-conduit io-conduit-out ${outSpeed}"></div>
                   <div class="io-port io-out" aria-label="${pair.label} output: ${outW} watts">
                     <span class="io-label">${pair.label} OUT</span>
-                    <span class="io-watts" style="color:var(--lcars-butterscotch)">${outW > 0 ? `${Math.round(outW)}W` : '—'}</span>
+                    <span class="io-watts" style="color:var(--lcars-butterscotch)">${outW > 0 ? `${Math.round(outW)}W` : '�'}</span>
                   </div>
                 </div>
               `;
@@ -5136,9 +5136,9 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ═══════════════════════════════════════════════════════════════════════ */
-    /* ═══ CLIMATE PANEL — THERMOSTAT (Nest, Ecobee) ═══════════════════════ */
-    /* ═══════════════════════════════════════════════════════════════════════ */
+    /* ----------------------------------------------------------------------- */
+    /* --- CLIMATE PANEL � THERMOSTAT (Nest, Ecobee) ----------------------- */
+    /* ----------------------------------------------------------------------- */
 
     _climateSetpointDebouncer = null;
 
@@ -5183,7 +5183,7 @@ class LcarsHomepageCard extends LitElement {
       const w = 200, h = 130, cx = 100, cy = 120, r = 80;
       const range = maxTemp - minTemp || 1;
       const progress = Math.max(0, Math.min(1, (currentTemp - minTemp) / range));
-      // Arc from 180° (left) to 0° (right)
+      // Arc from 180� (left) to 0� (right)
       const startAngle = Math.PI;
       const endAngle = 0;
       const sweepAngle = startAngle - (startAngle - endAngle) * progress;
@@ -5201,7 +5201,7 @@ class LcarsHomepageCard extends LitElement {
       return html`
         <svg class="climate-arc" viewBox="0 0 ${w} ${h}" role="meter"
           aria-valuemin="${minTemp}" aria-valuemax="${maxTemp}" aria-valuenow="${currentTemp}"
-          aria-label="Temperature: ${currentTemp}°, target ${targetTemp}°">
+          aria-label="Temperature: ${currentTemp}�, target ${targetTemp}�">
           <!-- Background arc -->
           <path d="M ${sx},${sy} A ${r},${r} 0 1,1 ${cx + r},${cy}"
             fill="none" stroke="var(--lcars-disabled)" stroke-width="8" stroke-linecap="round" />
@@ -5215,7 +5215,7 @@ class LcarsHomepageCard extends LitElement {
           <!-- Current temp text -->
           <text x="${cx}" y="${cy - 20}" text-anchor="middle" fill="${actionColor}"
             font-family="var(--lcars-font)" font-size="42" font-weight="bold">
-            ${currentTemp != null && Number.isFinite(currentTemp) ? html`${Math.round(currentTemp)}°` : '—'}
+            ${currentTemp != null && Number.isFinite(currentTemp) ? html`${Math.round(currentTemp)}�` : '�'}
           </text>
         </svg>
       `;
@@ -5290,28 +5290,28 @@ class LcarsHomepageCard extends LitElement {
           <!-- Sensors (left) -->
           <div class="climate-sensors" role="list" aria-label="${deviceName} readings">
             ${currentTemp != null ? html`
-              <div class="device-sensor-line" role="listitem" aria-label="Current temperature: ${currentTemp}°">
+              <div class="device-sensor-line" role="listitem" aria-label="Current temperature: ${currentTemp}�">
                 <div class="sensor-indicator" style="background:${actionColor}"></div>
                 <span class="sensor-label">Current</span>
-                <span class="sensor-state-value" style="color:${actionColor}">${Math.round(currentTemp)}°</span>
+                <span class="sensor-state-value" style="color:${actionColor}">${Math.round(currentTemp)}�</span>
               </div>
             ` : ''}
             ${isDual ? html`
-              <div class="device-sensor-line" role="listitem" aria-label="Heat target: ${targetLow}°">
+              <div class="device-sensor-line" role="listitem" aria-label="Heat target: ${targetLow}�">
                 <div class="sensor-indicator" style="background:var(--lcars-butterscotch)"></div>
                 <span class="sensor-label">Heat To</span>
-                <span class="sensor-state-value" style="color:var(--lcars-butterscotch)">${targetLow}°</span>
+                <span class="sensor-state-value" style="color:var(--lcars-butterscotch)">${targetLow}�</span>
               </div>
-              <div class="device-sensor-line" role="listitem" aria-label="Cool target: ${targetHigh}°">
+              <div class="device-sensor-line" role="listitem" aria-label="Cool target: ${targetHigh}�">
                 <div class="sensor-indicator" style="background:var(--lcars-ice)"></div>
                 <span class="sensor-label">Cool To</span>
-                <span class="sensor-state-value" style="color:var(--lcars-ice)">${targetHigh}°</span>
+                <span class="sensor-state-value" style="color:var(--lcars-ice)">${targetHigh}�</span>
               </div>
             ` : targetTemp != null ? html`
-              <div class="device-sensor-line" role="listitem" aria-label="Target temperature: ${targetTemp}°">
+              <div class="device-sensor-line" role="listitem" aria-label="Target temperature: ${targetTemp}�">
                 <div class="sensor-indicator" style="background:${actionColor}"></div>
                 <span class="sensor-label">Target</span>
-                <span class="sensor-state-value" style="color:${actionColor}">${targetTemp}°</span>
+                <span class="sensor-state-value" style="color:${actionColor}">${targetTemp}�</span>
               </div>
             ` : ''}
             ${humidity ? html`
@@ -5366,23 +5366,23 @@ class LcarsHomepageCard extends LitElement {
               ${isDual ? html`
                 <div class="climate-setpoint-row">
                   <button class="climate-sp-btn" aria-label="Decrease heat target"
-                    @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetLow - step, true, 'low'); }}>−</button>
-                  <span class="climate-sp-label" style="color:var(--lcars-butterscotch)">HEAT ${targetLow}°</span>
+                    @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetLow - step, true, 'low'); }}>-</button>
+                  <span class="climate-sp-label" style="color:var(--lcars-butterscotch)">HEAT ${targetLow}�</span>
                   <button class="climate-sp-btn" aria-label="Increase heat target"
                     @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetLow + step, true, 'low'); }}>+</button>
                 </div>
                 <div class="climate-setpoint-row">
                   <button class="climate-sp-btn" aria-label="Decrease cool target"
-                    @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetHigh - step, true, 'high'); }}>−</button>
-                  <span class="climate-sp-label" style="color:var(--lcars-ice)">COOL ${targetHigh}°</span>
+                    @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetHigh - step, true, 'high'); }}>-</button>
+                  <span class="climate-sp-label" style="color:var(--lcars-ice)">COOL ${targetHigh}�</span>
                   <button class="climate-sp-btn" aria-label="Increase cool target"
                     @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetHigh + step, true, 'high'); }}>+</button>
                 </div>
               ` : targetTemp != null ? html`
                 <div class="climate-setpoint-row">
                   <button class="climate-sp-btn" aria-label="Decrease target temperature"
-                    @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetTemp - step, false); }}>−</button>
-                  <span class="climate-sp-label" style="color:${actionColor}">TARGET ${targetTemp}°</span>
+                    @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetTemp - step, false); }}>-</button>
+                  <span class="climate-sp-label" style="color:${actionColor}">TARGET ${targetTemp}�</span>
                   <button class="climate-sp-btn" aria-label="Increase target temperature"
                     @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetTemp + step, false); }}>+</button>
                 </div>
@@ -5436,9 +5436,9 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ═══════════════════════════════════════════════════════════════════════ */
-    /* ═══ ALARM PANEL — SimpliSafe, Honeywell, Ring ═══════════════════════ */
-    /* ═══════════════════════════════════════════════════════════════════════ */
+    /* ----------------------------------------------------------------------- */
+    /* --- ALARM PANEL � SimpliSafe, Honeywell, Ring ----------------------- */
+    /* ----------------------------------------------------------------------- */
 
     _alarmPinCode = '';
     _alarmPinLimiter = createRateLimiter(3, 60000);
@@ -5583,15 +5583,15 @@ class LcarsHomepageCard extends LitElement {
 
     _getAlarmShieldSymbol(alarmState) {
       switch (alarmState) {
-        case 'disarmed':       return '✓';
+        case 'disarmed':       return '?';
         case 'armed_home':
-        case 'armed_night':    return '◉';
+        case 'armed_night':    return '?';
         case 'armed_away':
-        case 'armed_vacation': return '▲';
-        case 'triggered':      return '✕';
+        case 'armed_vacation': return '?';
+        case 'triggered':      return '?';
         case 'arming':
         case 'pending':
-        case 'disarming':      return '⋯';
+        case 'disarming':      return '?';
         default:               return '?';
       }
     }
@@ -5746,13 +5746,13 @@ class LcarsHomepageCard extends LitElement {
                 `)}
                 <button class="alarm-digit-btn alarm-action-btn" aria-label="Clear code"
                   ?disabled=${this._alarmLockoutSeconds > 0}
-                  @click=${() => this._handleAlarmPinClear()}>⌫</button>
+                  @click=${() => this._handleAlarmPinClear()}>?</button>
                 <button class="alarm-digit-btn" aria-label="Digit 0"
                   ?disabled=${this._alarmLockoutSeconds > 0}
                   @click=${() => this._handleAlarmPinDigit(0)}>0</button>
                 <button class="alarm-digit-btn alarm-action-btn" aria-label="Disarm"
                   ?disabled=${this._alarmLockoutSeconds > 0}
-                  @click=${() => this._handleAlarmDisarm(primary.entity.entity_id)}>⏎</button>
+                  @click=${() => this._handleAlarmDisarm(primary.entity.entity_id)}>?</button>
               </div>
             </div>
           ` : ''}
@@ -5761,9 +5761,9 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ═══════════════════════════════════════════════════════════════════════ */
-    /* ═══ MEDIA PANEL — Apple TV, HomePod, Sonos ═════════════════════════ */
-    /* ═══════════════════════════════════════════════════════════════════════ */
+    /* ----------------------------------------------------------------------- */
+    /* --- MEDIA PANEL � Apple TV, HomePod, Sonos ------------------------- */
+    /* ----------------------------------------------------------------------- */
 
     _isValidArtworkUrl(url) {
       if (!url) return false;
@@ -5772,9 +5772,9 @@ class LcarsHomepageCard extends LitElement {
 
     _getMediaTransportSymbol(state) {
       switch (state) {
-        case 'playing': return '▶';
-        case 'paused':  return '❚❚';
-        default:        return '■';
+        case 'playing': return '?';
+        case 'paused':  return '??';
+        default:        return '�';
       }
     }
 
@@ -5904,7 +5904,7 @@ class LcarsHomepageCard extends LitElement {
             ` : ''}
           </div>
 
-          <!-- Audio Waveform (12 bars, 4 groups — Data C-1/C-2) -->
+          <!-- Audio Waveform (12 bars, 4 groups � Data C-1/C-2) -->
           <div class="lcars-audio-waveform" ?data-paused=${!isPlaying} aria-hidden="true">
             ${Array.from({ length: 12 }, (_, i) => {
               const group = Math.floor(i / 3);
@@ -5921,30 +5921,30 @@ class LcarsHomepageCard extends LitElement {
             <div class="media-transport" aria-label="Transport controls">
               ${supportsShuffle ? html`
                 <button class="media-transport-btn" aria-pressed="${shuffle}" title="Shuffle"
-                  @click=${() => this._handleMediaService(primary.entity.entity_id, 'shuffle_set', { shuffle: !shuffle })}>⇄</button>
+                  @click=${() => this._handleMediaService(primary.entity.entity_id, 'shuffle_set', { shuffle: !shuffle })}>?</button>
               ` : ''}
               ${supportsPrev ? html`
                 <button class="media-transport-btn" title="Previous"
-                  @click=${() => this._handleMediaService(primary.entity.entity_id, 'media_previous_track')}>⏮</button>
+                  @click=${() => this._handleMediaService(primary.entity.entity_id, 'media_previous_track')}>?</button>
               ` : ''}
               <button class="media-transport-btn media-play-btn" title="${isPlaying ? 'Pause' : 'Play'}"
                 @click=${() => this._handleMediaService(primary.entity.entity_id, isPlaying ? 'media_pause' : 'media_play')}>
-                ${isPlaying ? '❚❚' : '▶'}
+                ${isPlaying ? '??' : '?'}
               </button>
               ${supportsNext ? html`
                 <button class="media-transport-btn" title="Next"
-                  @click=${() => this._handleMediaService(primary.entity.entity_id, 'media_next_track')}>⏭</button>
+                  @click=${() => this._handleMediaService(primary.entity.entity_id, 'media_next_track')}>?</button>
               ` : ''}
               ${supportsRepeat ? html`
                 <button class="media-transport-btn" aria-pressed="${repeat !== 'off'}" title="Repeat: ${repeat}"
-                  @click=${() => this._handleMediaService(primary.entity.entity_id, 'repeat_set', { repeat: repeat === 'off' ? 'all' : repeat === 'all' ? 'one' : 'off' })}>🔁</button>
+                  @click=${() => this._handleMediaService(primary.entity.entity_id, 'repeat_set', { repeat: repeat === 'off' ? 'all' : repeat === 'all' ? 'one' : 'off' })}>??</button>
               ` : ''}
             </div>
             ${supportsVolume ? html`
               <div class="media-volume" aria-label="Volume: ${Math.round(volume * 100)}%">
                 <button class="media-mute-btn" aria-pressed="${isMuted}" title="${isMuted ? 'Unmute' : 'Mute'}"
                   @click=${() => this._handleMediaService(primary.entity.entity_id, 'volume_mute', { is_volume_muted: !isMuted })}>
-                  ${isMuted ? '🔇' : '🔊'}
+                  ${isMuted ? '??' : '??'}
                 </button>
                 <div class="media-volume-bar" tabindex="0" role="slider"
                   aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(volume * 100)}"
@@ -5963,9 +5963,9 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ═══════════════════════════════════════════════════════════════════════ */
-    /* ═══ POOL & SPA PANEL — Pentair ScreenLogic ═════════════════════════ */
-    /* ═══════════════════════════════════════════════════════════════════════ */
+    /* ----------------------------------------------------------------------- */
+    /* --- POOL & SPA PANEL � Pentair ScreenLogic ------------------------- */
+    /* ----------------------------------------------------------------------- */
 
     _partitionPoolEntities(entries) {
       const pool = [];
@@ -6034,14 +6034,14 @@ class LcarsHomepageCard extends LitElement {
 
       return html`
         <div class="pool-body-frame" style="--body-color:${bodyColor}" role="region"
-          aria-label="${label}: ${currentTemp != null ? currentTemp + '°' : 'N/A'}, target ${targetTemp || 'N/A'}°">
+          aria-label="${label}: ${currentTemp != null ? currentTemp + '�' : 'N/A'}, target ${targetTemp || 'N/A'}�">
           <div class="pool-body-label" style="color:${bodyColor}">${label}</div>
-          <div class="pool-body-temp">${currentTemp != null ? `${Math.round(currentTemp)}°` : '—'}</div>
+          <div class="pool-body-temp">${currentTemp != null ? `${Math.round(currentTemp)}�` : '�'}</div>
           ${targetTemp != null ? html`
             <div class="pool-setpoint-row">
               <button class="climate-sp-btn" aria-label="Decrease ${label} target"
-                @click=${() => this._handlePoolSetpoint(primary.entity.entity_id, attrs, targetTemp - (step || 1))}>−</button>
-              <span class="pool-target" style="color:${bodyColor}">${targetTemp}°</span>
+                @click=${() => this._handlePoolSetpoint(primary.entity.entity_id, attrs, targetTemp - (step || 1))}>-</button>
+              <span class="pool-target" style="color:${bodyColor}">${targetTemp}�</span>
               <button class="climate-sp-btn" aria-label="Increase ${label} target"
                 @click=${() => this._handlePoolSetpoint(primary.entity.entity_id, attrs, targetTemp + (step || 1))}>+</button>
             </div>
@@ -6069,9 +6069,9 @@ class LcarsHomepageCard extends LitElement {
           <div class="pool-header">
             <span class="device-panel-name">${deviceName}</span>
             <div class="device-panel-header-line"></div>
-            ${poolTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-ice)">POOL ${Math.round(poolTemp)}°</span>` : ''}
-            ${spaTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-butterscotch)">SPA ${Math.round(spaTemp)}°</span>` : ''}
-            ${airTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-space-white)">AIR ${Math.round(Number(airTemp))}°</span>` : ''}
+            ${poolTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-ice)">POOL ${Math.round(poolTemp)}�</span>` : ''}
+            ${spaTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-butterscotch)">SPA ${Math.round(spaTemp)}�</span>` : ''}
+            ${airTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-space-white)">AIR ${Math.round(Number(airTemp))}�</span>` : ''}
             <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(pool[0]?.entity?.entity_id || spa[0]?.entity?.entity_id || group.device.id)}</span>
           </div>
 
@@ -6157,21 +6157,21 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ═══════════════════════════════════════════════════════════════════════ */
-    /* ═══ WEATHER PANEL — Davis Instruments, WeatherFlow ═════════════════ */
-    /* ═══════════════════════════════════════════════════════════════════════ */
+    /* ----------------------------------------------------------------------- */
+    /* --- WEATHER PANEL � Davis Instruments, WeatherFlow ----------------- */
+    /* ----------------------------------------------------------------------- */
 
     _weatherForecastCache = {};
 
     _getWeatherGlyph(condition) {
       const glyphs = {
-        'sunny': '☀', 'clear-night': '●', 'partlycloudy': '◑',
-        'cloudy': '◔', 'fog': '≡', 'rainy': '▽', 'pouring': '▼',
-        'snowy': '✦', 'snowy-rainy': '◆', 'hail': '◆',
-        'windy': '〰', 'windy-variant': '〰',
-        'lightning': '⚡', 'lightning-rainy': '⚡', 'exceptional': '⚠',
+        'sunny': '?', 'clear-night': '?', 'partlycloudy': '?',
+        'cloudy': '?', 'fog': '=', 'rainy': '?', 'pouring': '?',
+        'snowy': '?', 'snowy-rainy': '?', 'hail': '?',
+        'windy': '?', 'windy-variant': '?',
+        'lightning': '?', 'lightning-rainy': '?', 'exceptional': '?',
       };
-      return glyphs[condition] || '○';
+      return glyphs[condition] || '?';
     }
 
     _getWindCardinal(bearing) {
@@ -6220,7 +6220,7 @@ class LcarsHomepageCard extends LitElement {
               <polygon points="40,15 36,24 44,24" fill="var(--lcars-ice)" />
             </g>
           </svg>
-          <div class="wind-reading">${speed || '—'} ${unit || ''} ${cardinal}</div>
+          <div class="wind-reading">${speed || '�'} ${unit || ''} ${cardinal}</div>
         </div>
       `;
     }
@@ -6258,14 +6258,14 @@ class LcarsHomepageCard extends LitElement {
             const widthPct = (((hi - lo) || 1) / overallRange) * 100;
             return html`
               <div class="forecast-tile" role="listitem" tabindex="0"
-                aria-label="${dayName}: ${cond}, high ${hi}°, low ${lo}°${precip != null ? `, ${precip}% precipitation` : ''}">
+                aria-label="${dayName}: ${cond}, high ${hi}�, low ${lo}�${precip != null ? `, ${precip}% precipitation` : ''}">
                 <span class="forecast-day">${dayName}</span>
                 <span class="forecast-glyph" style="color:${glyphColor}">${glyph}</span>
-                <span class="forecast-hi">${hi != null ? html`${Math.round(hi)}°` : '—'}</span>
+                <span class="forecast-hi">${hi != null ? html`${Math.round(hi)}�` : '�'}</span>
                 <div class="forecast-range-bar">
                   <div class="forecast-range-fill" style="left:${leftPct.toFixed(1)}%;width:${widthPct.toFixed(1)}%"></div>
                 </div>
-                <span class="forecast-lo">${lo != null ? html`${Math.round(lo)}°` : '—'}</span>
+                <span class="forecast-lo">${lo != null ? html`${Math.round(lo)}�` : '�'}</span>
                 ${precip != null ? html`<span class="forecast-precip" style="color:${precip > 50 ? 'var(--lcars-sky)' : 'var(--lcars-gray)'}">${precip}%</span>` : ''}
               </div>
             `;
@@ -6370,13 +6370,13 @@ class LcarsHomepageCard extends LitElement {
 
           <!-- Viewscreen (right) -->
           <div class="weather-viewscreen" role="img"
-            aria-label="${condition}: ${currentTemp != null ? currentTemp + '°' : 'N/A'}">
+            aria-label="${condition}: ${currentTemp != null ? currentTemp + '�' : 'N/A'}">
             <svg class="weather-display" viewBox="0 0 200 160">
               <text x="100" y="35" text-anchor="middle" fill="${condColor}"
                 font-family="var(--lcars-font)" font-size="28">${glyph}</text>
               <text x="100" y="85" text-anchor="middle" fill="${condColor}"
                 font-family="var(--lcars-font)" font-size="48" font-weight="bold">
-                ${currentTemp != null ? `${Math.round(currentTemp)}°` : '—'}
+                ${currentTemp != null ? `${Math.round(currentTemp)}�` : '�'}
               </text>
               <text x="100" y="108" text-anchor="middle" fill="var(--lcars-data-accent)"
                 font-family="var(--lcars-font)" font-size="12">
@@ -6393,9 +6393,9 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ═══════════════════════════════════════════════════════════════════════ */
-    /* ═══ IRRIGATION PANEL — Rachio ══════════════════════════════════════ */
-    /* ═══════════════════════════════════════════════════════════════════════ */
+    /* ----------------------------------------------------------------------- */
+    /* --- IRRIGATION PANEL � Rachio -------------------------------------- */
+    /* ----------------------------------------------------------------------- */
 
     _irrigationLimiter = createRateLimiter(5, 10000);
 
@@ -6439,7 +6439,7 @@ class LcarsHomepageCard extends LitElement {
       this._hass.callService('switch', turnOn ? 'turn_on' : 'turn_off', { entity_id: entityId });
     }
 
-    /* ─── Delegate to extracted <lcars-irrigation-panel> component ─── */
+    /* --- Delegate to extracted <lcars-irrigation-panel> component --- */
     _renderIrrigationPanel(group) {
       return html`
         <lcars-irrigation-panel
@@ -6451,42 +6451,42 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ═══════════════════════════════════════════════════════════════════════ */
-    /* ═══ POWER PANEL — Energy Monitoring (4X-3) ═════════════════════════ */
-    /* ═══════════════════════════════════════════════════════════════════════ */
+    /* ----------------------------------------------------------------------- */
+    /* --- POWER PANEL � Energy Monitoring (4X-3) ------------------------- */
+    /* ----------------------------------------------------------------------- */
 
     _powerToggleLimiter = createRateLimiter(10, 10000);
 
-    /* ── Format helpers (Wesley §7) ── */
+    /* -- Format helpers (Wesley �7) -- */
 
     _formatWatts(watts) {
-      if (watts == null) return '—';
+      if (watts == null) return '�';
       const w = Number(watts);
-      if (!Number.isFinite(w)) return '—';
+      if (!Number.isFinite(w)) return '�';
       if (Math.abs(w) >= 10000) return `${(w / 1000).toFixed(1)} kW`;
       return `${Math.round(w)} W`;
     }
 
     _formatEnergy(kwh) {
-      if (kwh == null) return '—';
+      if (kwh == null) return '�';
       const v = Number(kwh);
-      if (!Number.isFinite(v)) return '—';
+      if (!Number.isFinite(v)) return '�';
       return `${v.toFixed(1)} kWh`;
     }
 
-    /* ── Power shape indicator (Geordi §2.3 — color-blind safe) ── */
+    /* -- Power shape indicator (Geordi �2.3 � color-blind safe) -- */
 
     _getPowerIndicator(watts) {
-      if (watts == null || isNaN(watts)) return '✕';
+      if (watts == null || isNaN(watts)) return '?';
       const w = Math.abs(Number(watts));
-      if (w <= 0)    return '○';
-      if (w <= 500)  return '●';
-      if (w <= 1500) return '●━';
-      if (w <= 3000) return '●━━';
-      return '●━━━';
+      if (w <= 0)    return '?';
+      if (w <= 500)  return '?';
+      if (w <= 1500) return '??';
+      if (w <= 3000) return '???';
+      return '????';
     }
 
-    /* ── Partition power device entities (Data C-6) ── */
+    /* -- Partition power device entities (Data C-6) -- */
 
     _partitionPowerEntities(entries) {
       const switches = [];
@@ -6520,7 +6520,7 @@ class LcarsHomepageCard extends LitElement {
       return { switches, powerSensors, energySensors, voltageSensors, currentSensors, diagnostics };
     }
 
-    /* ── Device classification (Geordi §7.2) ── */
+    /* -- Device classification (Geordi �7.2) -- */
 
     _classifyPowerDevice(entries, device) {
       const hasPowerSensor = entries.some(e => {
@@ -6533,21 +6533,21 @@ class LcarsHomepageCard extends LitElement {
       const manufacturer = (device?.manufacturer || '').toLowerCase();
       const model = (device?.model || '').toLowerCase();
 
-      // Emporia Vue — monitoring only, no switches
+      // Emporia Vue � monitoring only, no switches
       if (manufacturer.includes('emporia') || model.includes('vue')) return 'vue';
 
-      // Power strip — HS300 or many switches
+      // Power strip � HS300 or many switches
       const switchCount = entries.filter(e => e.domain === 'switch').length;
       if (switchCount >= 4 || model.includes('hs300') || model.includes('power strip')) return 'strip';
 
       // Smart plug with monitoring (KP115, KP125M, HS110, etc.)
       if (hasSwitch) return 'plug';
 
-      // Sensor-only (non-Vue) — treat as circuit
+      // Sensor-only (non-Vue) � treat as circuit
       return 'vue';
     }
 
-    /* ── Extract primary power/energy sensors ── */
+    /* -- Extract primary power/energy sensors -- */
 
     _getPrimaryPower(group) {
       for (const entry of group.entities) {
@@ -6573,7 +6573,7 @@ class LcarsHomepageCard extends LitElement {
       return null;
     }
 
-    /* ── 240V pair detection (Geordi §7.4) ── */
+    /* -- 240V pair detection (Geordi �7.4) -- */
 
     _detect240VPairs(circuits) {
       const L1L2_PATTERN = /^(.+?)[\s_]*(l[12]|line[\s_]*[12])$/i;
@@ -6612,7 +6612,7 @@ class LcarsHomepageCard extends LitElement {
       return result;
     }
 
-    /* ── Sort circuits power-descending (Wesley §6) ── */
+    /* -- Sort circuits power-descending (Wesley �6) -- */
 
     _sortCircuits(circuits) {
       return [...circuits].sort((a, b) => {
@@ -6625,7 +6625,7 @@ class LcarsHomepageCard extends LitElement {
       });
     }
 
-    /* ── Power strip grouping (Wesley §3.2) ── */
+    /* -- Power strip grouping (Wesley �3.2) -- */
 
     _groupPowerStrips(powerDevices) {
       const strips = new Map();
@@ -6654,7 +6654,7 @@ class LcarsHomepageCard extends LitElement {
       return { strips, standalone };
     }
 
-    /* ── SVG half-arc power distribution (Wesley §1/Q1) ── */
+    /* -- SVG half-arc power distribution (Wesley �1/Q1) -- */
 
     _renderPowerArc(circuits, totalWatts) {
       if (!circuits.length || !totalWatts || totalWatts <= 0) return '';
@@ -6729,7 +6729,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ── Singleton popover (Data C-5) ── */
+    /* -- Singleton popover (Data C-5) -- */
 
     _showCircuitPopover(circuit) {
       const popover = this.shadowRoot?.querySelector('#power-detail-popover');
@@ -6786,7 +6786,7 @@ class LcarsHomepageCard extends LitElement {
       }
     }
 
-    /* ── Circuit tile renderer ── */
+    /* -- Circuit tile renderer -- */
 
     _renderCircuitTile(circuit) {
       const watts = circuit.combinedWatts != null ? circuit.combinedWatts : this._getPrimaryPower(circuit);
@@ -6810,7 +6810,7 @@ class LcarsHomepageCard extends LitElement {
           @click=${() => supportsPopover ? this._showCircuitPopover(circuit) : showMoreInfo(circuit.entities?.[0]?.entity?.entity_id)}
           @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); supportsPopover ? this._showCircuitPopover(circuit) : showMoreInfo(circuit.entities?.[0]?.entity?.entity_id); }}}>
           <div class="power-circuit-name">
-            <span class="power-circuit-indicator" aria-hidden="true">${circuit.is240V ? '●●' : indicator}</span>
+            <span class="power-circuit-indicator" aria-hidden="true">${circuit.is240V ? '??' : indicator}</span>
             <span>${name}</span>
           </div>
           <div class="power-circuit-value-row">
@@ -6821,7 +6821,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ── Switch + monitor device row renderer ── */
+    /* -- Switch + monitor device row renderer -- */
 
     _renderPowerDeviceRow(group) {
       const { switches, powerSensors, energySensors } = this._partitionPowerEntities(group.entities);
@@ -6853,7 +6853,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ── Power strip renderer (Wesley §3.3) ── */
+    /* -- Power strip renderer (Wesley �3.3) -- */
 
     _renderPowerStrip(parentGroup, children) {
       const parentName = this._shortDeviceName(parentGroup.device) || 'Power Strip';
@@ -6930,7 +6930,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ── Summary card renderer (Geordi §4.1) ── */
+    /* -- Summary card renderer (Geordi �4.1) -- */
 
     _renderPowerSummaryCard(label, watts, energy, accentColor, icon) {
       const thresholds = this._config?.power_thresholds || {};
@@ -6955,9 +6955,9 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ═══ CONSOLIDATED POWER PANEL (4X-6) ═══ */
+    /* --- CONSOLIDATED POWER PANEL (4X-6) --- */
 
-    /* ── Aggregate all power groups for an area into a structured collection ── */
+    /* -- Aggregate all power groups for an area into a structured collection -- */
 
     _buildPowerCollection(powerGroups) {
       const circuits = [];
@@ -6984,7 +6984,7 @@ class LcarsHomepageCard extends LitElement {
       const stripChildren = [];
       for (const group of allStrips) {
         if (group.device?.via_device_id && stripDeviceIds.has(group.device.via_device_id)) {
-          stripChildren.push(group); // child outlet — no subType tag
+          stripChildren.push(group); // child outlet � no subType tag
         } else {
           stripParents.push({ ...group, subType: 'strip' }); // genuine parent
         }
@@ -7044,11 +7044,11 @@ class LcarsHomepageCard extends LitElement {
       let totalEnergy = 0;
       for (const group of powerGroups) {
         const devId = group.device?.id;
-        // Skip aggregate circuits (Balance/Total/Mains) — already summed by children (#2)
+        // Skip aggregate circuits (Balance/Total/Mains) � already summed by children (#2)
         if (devId && aggregateCircuitIds.has(devId)) continue;
         // Skip UPS parents when their children are also in the group (#1)
         if (devId && upsParentIds.has(devId)) continue;
-        // Skip strip children — parent already reports their total
+        // Skip strip children � parent already reports their total
         if (devId && stripChildIds.has(devId)) continue;
         const w = this._getPrimaryPower(group);
         const e = this._getPrimaryEnergy(group);
@@ -7066,7 +7066,7 @@ class LcarsHomepageCard extends LitElement {
       };
     }
 
-    /* ── LCARS sliding track toggle ── */
+    /* -- LCARS sliding track toggle -- */
 
     _renderTrackToggle(isOn, ariaLabel, onClick) {
       return html`
@@ -7080,7 +7080,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ── Clickable sensor value wrapper (Geordi G-4) ── */
+    /* -- Clickable sensor value wrapper (Geordi G-4) -- */
 
     _renderClickableValue(entityId, ariaLabel, displayHtml) {
       if (!entityId) return displayHtml;
@@ -7095,7 +7095,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ── Arc adapter for consolidated panel ── */
+    /* -- Arc adapter for consolidated panel -- */
 
     _renderConsolidatedPowerArc(collection) {
       const allSources = [];
@@ -7124,7 +7124,7 @@ class LcarsHomepageCard extends LitElement {
       return this._renderPowerArc(allSources, collection.totalWatts);
     }
 
-    /* ── Consolidated Power Panel Renderer (4X-6 main orchestrator) ── */
+    /* -- Consolidated Power Panel Renderer (4X-6 main orchestrator) -- */
 
     _renderConsolidatedPowerPanel(collection) {
       const { circuits, plugs, strips, totalWatts, totalEnergy, deviceCount } = collection;
@@ -7138,7 +7138,7 @@ class LcarsHomepageCard extends LitElement {
       if (circuits.length > 0) badgeParts.push(`${circuits.length} CIRCUIT${circuits.length !== 1 ? 'S' : ''}`);
       if (plugs.length > 0) badgeParts.push(`${plugs.length} DEVICE${plugs.length !== 1 ? 'S' : ''}`);
       if (strips.length > 0) badgeParts.push(`${strips.length} STRIP${strips.length !== 1 ? 'S' : ''}`);
-      const badge = badgeParts.join(' · ') || 'POWER SYSTEMS';
+      const badge = badgeParts.join(' � ') || 'POWER SYSTEMS';
 
       // Truncation state
       this._expandedPowerSections = this._expandedPowerSections || new Set();
@@ -7155,7 +7155,7 @@ class LcarsHomepageCard extends LitElement {
       return html`
         <div class="lcars-consolidated-power-panel" data-panel-type="power"
           data-alert="${hasCritical ? 'critical' : ''}"
-          role="region" aria-label="Power Systems — ${badge}">
+          role="region" aria-label="Power Systems � ${badge}">
 
           <!-- Header -->
           <div class="consolidated-power-header" role="heading" aria-level="3">
@@ -7243,7 +7243,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ═══ LEGACY SINGLE-DEVICE POWER PANEL (v4.15.0) ═══ */
+    /* --- LEGACY SINGLE-DEVICE POWER PANEL (v4.15.0) --- */
     /** @deprecated Use _renderConsolidatedPowerPanel instead. Retained for potential future single-device detail view. */
 
     _renderPowerPanel(group) {
@@ -7353,7 +7353,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ─── Tactical Dedup: alarm badge for secondary rooms ─── */
+    /* --- Tactical Dedup: alarm badge for secondary rooms --- */
 
     _renderedAlarmDeviceIds = new Set();
 
@@ -7368,7 +7368,7 @@ class LcarsHomepageCard extends LitElement {
 
         // Check if this alarm device was already rendered as a full tactical panel
         if (this._renderedAlarmDeviceIds.has(deviceId)) {
-          // This is a secondary room — return badge info
+          // This is a secondary room � return badge info
           return { entity: e, domain, state };
         }
       }
@@ -7399,14 +7399,14 @@ class LcarsHomepageCard extends LitElement {
       }
     }
 
-    /* ─── Render area content: two-column when cameras present ─── */
+    /* --- Render area content: two-column when cameras present --- */
     _renderAreaContent(entities, areaId) {
       if (entities.length === 0)
         return html`<div class="lcars-empty" role="status">No entities in this area</div>`;
 
       const { byDevice, noDevice } = this._groupEntities(entities);
 
-      // ── Area-level composite panels (4X-17): illumination, tactical, etc. ──
+      // -- Area-level composite panels (4X-17): illumination, tactical, etc. --
       // Hydrate flat entities for classifyArea (need domain + state)
       const hydratedEntries = entities.map(e => {
         const domain = e.entity_id.split('.')[0];
@@ -7433,7 +7433,7 @@ class LcarsHomepageCard extends LitElement {
         }
       }
 
-      // ── Exclude entities consumed by area panels from standalone rendering ──
+      // -- Exclude entities consumed by area panels from standalone rendering --
       const consumedByArea = this._buildAreaPanelFilter(areaPanelTypes, hydratedEntries);
       if (consumedByArea) {
         for (const [devId, group] of byDevice) {
@@ -7445,7 +7445,7 @@ class LcarsHomepageCard extends LitElement {
         ? noDevice.filter(e => !consumedByArea(e))
         : noDevice;
 
-      // Device panel types subsumed by area panels (e.g., alarm → tactical)
+      // Device panel types subsumed by area panels (e.g., alarm ? tactical)
       const subsumedDeviceTypes = new Set();
       if (areaPanelTypes.has(PANEL_TYPE_TACTICAL)) {
         subsumedDeviceTypes.add(PANEL_TYPE_ALARM);
@@ -7462,7 +7462,7 @@ class LcarsHomepageCard extends LitElement {
       for (const group of byDevice.values()) {
         const panelType = this._getDevicePanelType(group.entities);
         if (panelType && subsumedDeviceTypes.has(panelType)) {
-          // Skip — subsumed by area-level composite panel
+          // Skip � subsumed by area-level composite panel
           continue;
         } else if (panelType === PANEL_TYPE_POWER) {
           powerGroups.push({ ...group, panelType });
@@ -7473,7 +7473,7 @@ class LcarsHomepageCard extends LitElement {
         }
       }
 
-      // Build entity groups content (without power — power rendered in left column)
+      // Build entity groups content (without power � power rendered in left column)
       // P3 QA-E02: filter SUPPRESS_DOMAINS + diagnostic entities from fallback rendering
       const _filterAux = (entries) => entries.filter(e =>
         !SUPPRESS_DOMAINS.has(e.domain) && !isDiagnosticEntity(e)
@@ -7551,7 +7551,7 @@ class LcarsHomepageCard extends LitElement {
           }))
         : allPanels;
 
-      // No panels at all → single-column with entities + power
+      // No panels at all ? single-column with entities + power
       if (wrappedPanels.length === 0 && powerGroups.length === 0) return html`${entityContent}${powerTemplate}`;
 
       // Split panels into left and right columns (with column overrides by panelId or panelType)
@@ -7585,7 +7585,7 @@ class LcarsHomepageCard extends LitElement {
       const ilmPanel = leftPanels.find(p => p.panelType === PANEL_TYPE_ILLUMINATION);
       const belowEntityPanels = leftPanels.filter(p => p.panelType !== PANEL_TYPE_ILLUMINATION);
 
-      // Left column: entities → climate/life-support/env → power
+      // Left column: entities ? climate/life-support/env ? power
       const leftColumn = html`
         <div class="area-split-main" role="region" aria-label="Device controls">
           ${entityContent}
@@ -7594,7 +7594,7 @@ class LcarsHomepageCard extends LitElement {
         </div>
       `;
 
-      // No right-column panels → single column (with illumination on top if present)
+      // No right-column panels ? single column (with illumination on top if present)
       if (rightPanels.length === 0) return html`
         ${ilmPanel ? html`<div class="area-illumination-full">${ilmPanel.template}</div>` : ''}
         ${leftColumn}
@@ -7612,7 +7612,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* ─── Build predicate for entities consumed by area-level panels ─── */
+    /* --- Build predicate for entities consumed by area-level panels --- */
     _buildAreaPanelFilter(areaPanelTypes, entityEntries) {
       if (areaPanelTypes.size === 0) return null;
       const predicates = [];
@@ -7620,7 +7620,7 @@ class LcarsHomepageCard extends LitElement {
         predicates.push(isLightingEntity);
         // P3 QA-E01: suppress fan-domain entities when illumination panel is active
         // Fan lights already route to illumination; fan speed entities shouldn't dump to fallback
-        // 4X-59: EXCEPT air purifier fans — exclude fans whose device has AQ sensors
+        // 4X-59: EXCEPT air purifier fans � exclude fans whose device has AQ sensors
         const aqDeviceIds = new Set();
         for (const e of entityEntries) {
           const dc = e.state?.attributes?.device_class || '';
@@ -7668,7 +7668,7 @@ class LcarsHomepageCard extends LitElement {
       return entry => predicates.some(p => p(entry));
     }
 
-    /* ─── Render domain-grouped entity lists ─── */
+    /* --- Render domain-grouped entity lists --- */
     _renderDomainGroups(entries) {
       const domainGroups = this._groupByDomain(entries);
       return html`${domainGroups.map(([domain, items]) => html`
@@ -7677,7 +7677,7 @@ class LcarsHomepageCard extends LitElement {
       `)}`;
     }
 
-    /* ─── Route to the correct renderer per domain ─── */
+    /* --- Route to the correct renderer per domain --- */
     _renderDomainEntities(domain, entries) {
       if (CAMERA_DOMAINS.has(domain)) return this._renderCameras(entries);
       if (TOGGLE_DOMAINS.has(domain)) return this._renderToggles(entries);
@@ -7688,7 +7688,7 @@ class LcarsHomepageCard extends LitElement {
       return this._renderGeneric(entries);
     }
 
-    /* ═══ CAMERA RENDERER ═══ */
+    /* --- CAMERA RENDERER --- */
     _renderCameras(entries) {
       return html`<div class="camera-grid">
         ${entries.map(({ entity, state }, i) => {
@@ -7733,7 +7733,7 @@ class LcarsHomepageCard extends LitElement {
       </div>`;
     }
 
-    /* ═══ TOGGLE RENDERER (light/switch/fan/lock) ═══ */
+    /* --- TOGGLE RENDERER (light/switch/fan/lock) --- */
     _renderToggles(entries) {
       return html`<div class="toggle-grid">
         ${entries.map(({ entity, state }, i) => {
@@ -7767,7 +7767,7 @@ class LcarsHomepageCard extends LitElement {
       </div>`;
     }
 
-    /* ═══ SENSOR RENDERER ═══ */
+    /* --- SENSOR RENDERER --- */
     _renderSensors(entries) {
       return html`<div class="sensor-grid">
         ${entries.map(({ entity, state }, i) => {
@@ -7778,7 +7778,7 @@ class LcarsHomepageCard extends LitElement {
           const { text: fmtVal } = formatStateValue(state, entity?.entity_category || '');
           const numVal = parseFloat(state.state);
           // Warn if battery < 20% or any numeric > threshold patterns
-          // #89 — only flag entities that report device_class=battery in % (storage / power-cell SoC).
+          // #89 � only flag entities that report device_class=battery in % (storage / power-cell SoC).
           // The previous entity_id.includes('battery') match swept in unrelated sensors like
           // `_battery_voltage` (~3 V Li-ion cell), `_battery_low` (boolean string), and
           // `_battery_status` strings, which triggered spurious red warn outlines.
@@ -7801,7 +7801,7 @@ class LcarsHomepageCard extends LitElement {
       </div>`;
     }
 
-    /* ═══ CLIMATE RENDERER ═══ */
+    /* --- CLIMATE RENDERER --- */
     _renderClimates(entries) {
       return html`<div class="climate-grid">
         ${entries.map(({ entity, state }, i) => {
@@ -7809,7 +7809,7 @@ class LcarsHomepageCard extends LitElement {
           const mode = state.state; // heat, cool, heat_cool, off, etc.
           const current = state.attributes?.current_temperature;
           const target = state.attributes?.temperature;
-          const unit = state.attributes?.temperature_unit || '°';
+          const unit = state.attributes?.temperature_unit || '�';
           const isHeat = mode === 'heat' || mode === 'heat_cool';
           const isCool = mode === 'cool';
           const isOff = mode === 'off';
@@ -7823,7 +7823,7 @@ class LcarsHomepageCard extends LitElement {
                 <span class="climate-name">${name}</span>
                 <div class="climate-temps">
                   ${current != null ? html`<span class="climate-current">${current}${unit}</span>` : ''}
-                  ${target != null ? html`<span class="climate-target">→ ${target}${unit}</span>` : ''}
+                  ${target != null ? html`<span class="climate-target">? ${target}${unit}</span>` : ''}
                 </div>
               </div>
               <span class="climate-mode">${mode}</span>
@@ -7833,7 +7833,7 @@ class LcarsHomepageCard extends LitElement {
       </div>`;
     }
 
-    /* ═══ COVER RENDERER ═══ */
+    /* --- COVER RENDERER --- */
     _renderCovers(entries) {
       return html`<div class="cover-grid">
         ${entries.map(({ entity, state }, i) => {
@@ -7853,7 +7853,7 @@ class LcarsHomepageCard extends LitElement {
       </div>`;
     }
 
-    /* ═══ MEDIA PLAYER RENDERER ═══ */
+    /* --- MEDIA PLAYER RENDERER --- */
     _renderMedia(entries) {
       return html`<div class="media-grid">
         ${entries.map(({ entity, state }, i) => {
@@ -7861,7 +7861,7 @@ class LcarsHomepageCard extends LitElement {
           const off = this._isOff(state);
           const title = state.attributes?.media_title || '';
           const artist = state.attributes?.media_artist || '';
-          const nowPlaying = [title, artist].filter(Boolean).join(' — ');
+          const nowPlaying = [title, artist].filter(Boolean).join(' � ');
           return this._withEditPip(entity.entity_id, html`
             <button class="media-strip" ?data-off=${off} style="--i:${i}"
               @click=${() => this._handleEntityClick(entity.entity_id)}
@@ -7878,7 +7878,7 @@ class LcarsHomepageCard extends LitElement {
       </div>`;
     }
 
-    /* ═══ GENERIC BUTTON RENDERER ═══ */
+    /* --- GENERIC BUTTON RENDERER --- */
     _renderGeneric(entries) {
       return html`<div class="entity-grid">
         ${entries.map(({ entity, state }, i) => {
@@ -7904,5 +7904,5 @@ class LcarsHomepageCard extends LitElement {
     customElements.define('homepage-card', LcarsHomepageCard);
     lcarsLog.debug(TAG, 'Custom element registered: homepage-card');
   } else {
-    lcarsLog.warn(TAG, 'Custom element homepage-card already registered — skipping');
+    lcarsLog.warn(TAG, 'Custom element homepage-card already registered � skipping');
   }

@@ -1067,7 +1067,7 @@ class LcarsTacticalCard extends LitElement {
 
         /* ─── Camera Grid ─── */
         .tac-camera-grid {
-          display: grid; grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
+          display: grid; grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
           gap: 0.375rem; overflow: visible;
         }
         .tac-camera-active { padding: 0.5rem 0; }
@@ -1167,7 +1167,7 @@ class LcarsTacticalCard extends LitElement {
 
         /* Lock individual pills */
         .tac-lock-grid {
-          display: grid; grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr));
+          display: grid; grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
           gap: 0.375rem;
         }
         .tac-lock-pill {

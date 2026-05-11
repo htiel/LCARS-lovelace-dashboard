@@ -307,7 +307,7 @@ class LcarsLifeSupportCard extends LitElement {
         .ls-area-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; }
         .ls-area-name { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; color: var(--lcars-bluey, #8899ff); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
         .ls-area-line { flex: 1; height: 2px; background: var(--lcars-bluey, #8899ff); opacity: 0.3; }
-        .ls-devices { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr)); gap: 0.375rem; }
+        .ls-devices { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr)); gap: 0.375rem; }
         .ls-device { border: 1px solid rgba(136, 153, 255, 0.15); border-radius: 0.5rem; padding: 0.5rem 0.75rem; cursor: pointer; transition: filter 200ms ease; }
         .ls-device:hover { filter: brightness(1.15); }
         .ls-device.climate { border-left: 4px solid var(--lcars-bluey, #8899ff); }

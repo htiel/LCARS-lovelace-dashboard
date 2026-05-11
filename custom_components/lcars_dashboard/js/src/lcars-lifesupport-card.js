@@ -779,7 +779,7 @@ class LcarsLifeSupportCard extends LitElement {
 
         /* ─── Thermostat Zone Cards ─── */
         .ls-thermo-grid {
-          display: grid; grid-template-columns: repeat(auto-fill, minmax(min(10rem, 100%), 1fr));
+          display: grid; grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
           gap: 0.375rem;
         }
         .ls-thermo-card {

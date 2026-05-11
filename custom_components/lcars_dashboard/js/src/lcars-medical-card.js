@@ -166,21 +166,28 @@ class LcarsMedicalCard extends LitElement {
       const kind = e.cls.kind;
       const ts = Date.parse(e.state.last_changed || e.state.last_updated || 0);
       const cur = byKind.get(kind);
+      // Withings reports BP in inHg when HA pressure UoM is imperial; convert to mmHg
+      // for plausibility-gate compatibility (sys<40 → invalid would reject e.g. 4.13 inHg
+      // which is actually ~105 mmHg). Audit finding F.
+      const uom = (e.state.attributes && e.state.attributes.unit_of_measurement) || '';
+      const rawVal = parseFloat(e.state.state);
+      const isBp = e.cls.isSystolic || e.cls.isDiastolic;
+      const val = (isBp && uom === 'inHg' && Number.isFinite(rawVal)) ? rawVal * 25.4 : rawVal;
       if (e.cls.isSystolic) {
         const ent = cur || { kind, ts: 0 };
-        ent.systolic = parseFloat(e.state.state);
+        ent.systolic = val;
         ent.systolicEid = e.eid;
         ent.ts = Math.max(ent.ts, ts);
         byKind.set(kind, ent);
       } else if (e.cls.isDiastolic) {
         const ent = cur || { kind, ts: 0 };
-        ent.diastolic = parseFloat(e.state.state);
+        ent.diastolic = val;
         ent.diastolicEid = e.eid;
         ent.ts = Math.max(ent.ts, ts);
         byKind.set(kind, ent);
       } else {
         if (!cur || ts > cur.ts) {
-          byKind.set(kind, { kind, value: parseFloat(e.state.state), eid: e.eid, ts });
+          byKind.set(kind, { kind, value: val, eid: e.eid, ts });
         }
       }
     }
@@ -448,7 +455,7 @@ class LcarsMedicalCard extends LitElement {
         }
         .grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
           gap: 1rem;
         }
         .biofunction-card {

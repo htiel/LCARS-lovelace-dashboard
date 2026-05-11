@@ -635,7 +635,7 @@ class LcarsCetaceanCard extends LitElement {
 
         /* ─── Toggle Buttons ─── */
         .cet-feature-grid, .cet-circuit-grid {
-          display: grid; grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr));
+          display: grid; grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
           gap: 0.375rem;
         }
         .cet-toggle {
@@ -670,7 +670,7 @@ class LcarsCetaceanCard extends LitElement {
 
         /* ─── Power Grid ─── */
         .cet-power-grid {
-          display: grid; grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr));
+          display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
           gap: 0.375rem;
         }
         .cet-power-tile {

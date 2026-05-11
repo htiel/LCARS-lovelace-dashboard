@@ -377,7 +377,7 @@ class LcarsTacticalCard extends LitElement {
 
         /* ─── Camera Grid ─── */
         .tac-camera-grid {
-          display: grid; grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
+          display: grid; grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
           gap: 0.375rem; margin-bottom: 0.75rem;
         }
         .tac-camera {
@@ -430,7 +430,7 @@ class LcarsTacticalCard extends LitElement {
         .tac-area-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; }
         .tac-area-name { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1.25rem; color: var(--lcars-ice, #99ccff); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
         .tac-area-line { flex: 1; height: 2px; background: var(--lcars-ice, #99ccff); opacity: 0.3; }
-        .tac-devices { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr)); gap: 0.375rem; }
+        .tac-devices { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr)); gap: 0.375rem; }
 
         /* ─── Pill Base ─── */
         .tac-pill {

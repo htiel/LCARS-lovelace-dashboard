@@ -581,9 +581,13 @@ class LcarsStarshipCard extends LitElement {
           position: relative;
           min-height: 380px;
           color: var(--lcars-butterscotch, #ff9966);
+          overflow: hidden;
         }
         .vessel-card.focused .zone-b { min-height: 540px; }
-        lcars-anatomical-silhouette { width: 100%; height: 100%; min-height: 200px; aspect-ratio: 480 / 240; }
+        /* aspect-ratio matches the actual viewBox (480x200) — was 480/240, which forced the
+           silhouette element box wider than its column on narrow viewports and pushed
+           the nacelles past the card border (audit finding D). max-width:100% locks it. */
+        lcars-anatomical-silhouette { display: block; width: 100%; max-width: 100%; height: auto; aspect-ratio: 480 / 200; }
         .scan-pending {
           position: absolute; inset: 1rem;
           display: flex; align-items: center; justify-content: center;

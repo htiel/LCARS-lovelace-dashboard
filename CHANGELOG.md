@@ -2,6 +2,27 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.7.0-beta.3] — 2026-05-11 — Visual audit S0/S1 batch
+
+### Fixed (from v5.7.0-beta.2 visual crawl — see `plans/v5.7.0-beta.2-visual-audit.md`)
+- **S0-01..S0-04**: Medical & Starship sidebar filler color + admin chrome (Geordi pixel-pass fixes deployed via fresh bundle; source was already correct in beta.2 but HACS cache served stale per-route bundles).
+- **S0-05**: Bundle drift mitigated by version bump (cache-bust on every dashboard).
+- **S1-01**: Tactical ring gauges bumped 80→96px so `DISARMED` / `VIEWSCREENS` / `TRIGGERED` labels fit the inner mask (`lcars-tactical-card.js`).
+- **S1-06**: Idle media tile collapsed from 12rem viewscreen + L/R bars to compact one-line `STANDBY` pill, applied to all areas (widens 4X-63 fix beyond Master Bedroom). `lcars-media-panel-styles.js`.
+- **S1-08**: Filter-life segment bar at ≤5% now pulses all 10 segments in critical color and animates the pct text. `lcars-environment-panel.js` + styles.
+- **S1-09**: Main Panel circuit grid widened (minmax 11rem→13rem) + `title` attribute on circuit tile for hover-tooltip on long names. `lcars-power-panel-styles.js` + `lcars-power-panel.js`.
+- **S1-10**: Illumination labels get `title` attribute on `.ilm-pill__name` and `.ilm-dimmer__name` for hover-tooltip when ellipsis truncates. `lcars-illumination-panel.js`.
+
+### Chores
+- Moved PII screenshot crawls (`screenshots/v5.7.0-beta.1/`, `screenshots/v5.7.0-beta.2-crawl/`) to `localinfo/` and added gitignore rule; purged from git history via `git filter-repo` + force-push.
+- Pruned GitHub releases tree to one beta (5.7.0-beta.3) + last stable (5.6.6) + last 4.x stable (4.23.0). Older 5.x intermediate releases deleted; tags retained.
+
+### Deferred to next beta (need runtime reproduction)
+- **#221 (S1-05)**: Habitat sidebar active-pill desyncs from rendered area.
+- **#222 (S2-03)**: Unadopted UniFi devices render `ADOPT` button in user dashboards.
+- **#223 (S2-04)**: Camera `ESTABLISHING LINK` placeholder perpetual when offline.
+- Already tracked: Cetacean empty-state (#197/#198), Medical/Starship binding (#191..#195, #175/#176), Subspace MAC-named tiles + disconnected empty tiles (#187).
+
 ## [5.6.6] — 2026-05-10
 
 ### Fixed

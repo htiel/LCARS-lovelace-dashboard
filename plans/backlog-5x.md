@@ -158,6 +158,22 @@ Tiles render value + unit only — no recorder-history sourced sparklines. Add r
 `discoverVessels`, `discoverProfiles`, `_discoverClients` walk `hass.entities` on every render. Memoize against `hass.entities` reference identity (cheap O(1) check). Same fix benefits Network, Medical, Starship.
 **Source**: Data review #3, deferred from 5.4.1.
 
+## Open Bugs (from v5.7.0-beta.2 Visual Audit — May 2026)
+
+> Full audit: [`plans/v5.7.0-beta.2-visual-audit.md`](v5.7.0-beta.2-visual-audit.md). 44-screenshot crawl across 9 dashboards + 18 Habitat areas. S0/S1 batch fixes shipped in v5.7.0-beta.3 (Tactical SHIELDS ring, Media STANDBY collapse, Filter critical at 0%, Power circuit grid, Illumination tooltips, Medical/Starship chrome via cache-bust). Items below deferred — need runtime reproduction.
+
+#### 5X-B49 · Habitat Sidebar Active-Pill Desyncs From Rendered Area — `TODO` · Priority: MEDIUM · Size: S · [#221](https://github.com/htiel/LCARS-lovelace-dashboard/issues/221)
+Clicking Office (idx 14) leaves the sidebar highlighting Game Room (idx 13) as the active gold pill. Event-handler race or `_activeArea` reactive update lags the area-switch by one tick. Reproducible across the area loop.
+**Source**: S1-05.
+
+#### 5X-B50 · Unadopted UniFi Devices Render `ADOPT` Button in User Dashboards — `TODO` · Priority: LOW · Size: S · [#222](https://github.com/htiel/LCARS-lovelace-dashboard/issues/222)
+Server Room shows `IPC-MODEL` unadopted device with `ADOPT DEVICE` button — admin chrome bleeding into normal-user area view. Filter unadopted entities out of area discovery, or render collapsed/disabled.
+**Source**: S2-03.
+
+#### 5X-B51 · Camera `ESTABLISHING LINK` Placeholder Perpetual When Offline — `TODO` · Priority: LOW · Size: S · [#223](https://github.com/htiel/LCARS-lovelace-dashboard/issues/223)
+BREAD CAM in Server Room shows `ESTABLISHING LINK` placeholder indefinitely. Add a timeout-fallback that switches to the offline placeholder after N seconds when no frame arrives.
+**Source**: S2-04.
+
 ### Triaged Out (Not LCARS Code Defects)
 
 - **GEO-508** — "DINNING ROOM" is a Home Assistant area naming typo, not an LCARS defect

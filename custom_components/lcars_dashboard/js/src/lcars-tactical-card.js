@@ -27,6 +27,24 @@ const SAFETY_CLASSES = new Set(['smoke', 'gas', 'safety', 'tamper', 'vibration',
 const MOTION_CLASSES = new Set(['motion', 'occupancy']);
 const ALARM_SEVERITY = { triggered: 5, pending: 4, armed_away: 3, armed_night: 2, armed_home: 2, armed_vacation: 2, arming: 1, disarmed: 0 };
 
+/* #143 — Lock state tri-state mapping (secure / unsecure / fault).
+ * Covers Z-Wave (jammed), Schlage Encode (error→unknown), August (unknown-during-sync),
+ * door-position sensors that expose open/opening, and unavailable integrations. */
+const LOCK_STATE_MAP = {
+  locked:    { tier: 'secure',   label: 'ENGAGED',     icon: 'mdi:lock' },
+  locking:   { tier: 'pending',  label: 'LOCKING',     icon: 'mdi:lock-clock' },
+  unlocked:  { tier: 'unsecure', label: 'UNSECURED',   icon: 'mdi:lock-open' },
+  unlocking: { tier: 'pending',  label: 'UNLOCKING',   icon: 'mdi:lock-clock' },
+  jammed:    { tier: 'fault',    label: 'JAMMED',      icon: 'mdi:lock-alert' },
+  open:      { tier: 'fault',    label: 'DOOR OPEN',   icon: 'mdi:door-open' },
+  opening:   { tier: 'fault',    label: 'OPENING',     icon: 'mdi:door-open' },
+  unavailable: { tier: 'fault', label: 'OFFLINE',     icon: 'mdi:lock-off' },
+  unknown:   { tier: 'fault',    label: 'UNKNOWN',     icon: 'mdi:lock-question' },
+};
+function _resolveLockState(stateVal) {
+  return LOCK_STATE_MAP[stateVal] || LOCK_STATE_MAP.unknown;
+}
+
 /* ─── Perimeter Zone Heuristics (F-01) ─── */
 const ZONE_PATTERNS = [
   { re: /front|entry|porch|foyer/i, zone: 'FRONT', angle: 0 },
@@ -210,7 +228,9 @@ class LcarsTacticalCard extends LitElement {
         if (data.locks) {
           for (const l of data.locks) {
             locksTotal++;
-            if ((this._hass?.states?.[l.entity?.entity_id] || l.state)?.state === 'locked') locksLocked++;
+            // #143 — count only confirmed 'locked'; jammed/open/unavailable count as unsecure.
+            const lockStateVal = (this._hass?.states?.[l.entity?.entity_id] || l.state)?.state;
+            if (lockStateVal === 'locked') locksLocked++;
             allLocks.push(l);
           }
         }
@@ -654,15 +674,19 @@ class LcarsTacticalCard extends LitElement {
         ${allLocks.map(l => {
           const s = this._hass?.states?.[l.entity?.entity_id] || l.state;
           const name = (s?.attributes?.friendly_name || l.entity?.entity_id || '').toUpperCase();
-          const isLocked = s?.state === 'locked';
+          // #143 — tri-state lock display (secure / unsecure / fault).
+          const stateVal = s?.state || 'unknown';
+          const resolved = _resolveLockState(stateVal);
+          const isLocked = stateVal === 'locked';
           return html`
-            <button class="tac-lock-pill ${isLocked ? 'locked' : 'unlocked'}"
+            <button class="tac-lock-pill ${resolved.tier}"
                     role="switch" aria-checked="${isLocked}"
-                    aria-label="${name}: ${isLocked ? 'locked' : 'unlocked'}"
+                    ?disabled=${resolved.tier === 'fault'}
+                    aria-label="${name}: ${resolved.label.toLowerCase()}"
                     @click=${() => this._toggleLock(l.entity.entity_id, isLocked)}>
-              <ha-icon .icon=${isLocked ? 'mdi:lock' : 'mdi:lock-open'} style="--mdc-icon-size:18px"></ha-icon>
+              <ha-icon .icon=${resolved.icon} style="--mdc-icon-size:18px"></ha-icon>
               <span class="tac-lock-name">${name}</span>
-              <span class="tac-lock-state">${isLocked ? 'ENGAGED' : 'UNSECURED'}</span>
+              <span class="tac-lock-state">${resolved.label}</span>
             </button>
           `;
         })}
@@ -710,14 +734,19 @@ class LcarsTacticalCard extends LitElement {
 
   /* ═══ Overview Cards (Design Playbook §3.1) ═══ */
   _renderOverview(summary) {
-    const shieldColor = summary.alarmState === 'disarmed' ? '#99ccff' : summary.alarmState === 'triggered' ? '#ff5555' : '#ffcc99';
+    // #147 — palette tokens only; hex literals removed from render path.
+    const ICE = 'var(--lcars-ice)';
+    const TOMATO = 'var(--lcars-tomato)';
+    const SUNFLOWER = 'var(--lcars-sunflower)';
+    const GRAY = 'var(--lcars-gray)';
+    const shieldColor = summary.alarmState === 'disarmed' ? ICE : summary.alarmState === 'triggered' ? TOMATO : SUNFLOWER;
     const shieldLabel = summary.alarmState.replace(/_/g, ' ').toUpperCase();
-    const perimColor = summary.perimeterSecure === summary.perimeterTotal ? '#99ccff' : '#ff5555';
+    const perimColor = summary.perimeterSecure === summary.perimeterTotal ? ICE : TOMATO;
     const camOnline = summary.allCameras.filter(c => (this._hass?.states?.[c.entity?.entity_id] || c.state)?.state !== 'unavailable').length;
-    const camColor = camOnline === summary.allCameras.length ? '#99ccff' : camOnline > 0 ? '#ffcc99' : '#ff5555';
-    const lockColor = summary.locksLocked === summary.locksTotal ? '#99ccff' : '#ff5555';
+    const camColor = camOnline === summary.allCameras.length ? ICE : camOnline > 0 ? SUNFLOWER : TOMATO;
+    const lockColor = summary.locksLocked === summary.locksTotal ? ICE : TOMATO;
     const lockStatus = summary.locksLocked === summary.locksTotal ? 'ALL ENGAGED' : `${summary.locksTotal - summary.locksLocked} UNSECURED`;
-    const hazardColor = summary.safetyAlerts > 0 ? '#ff5555' : summary.safetyTotal > 0 ? '#99ccff' : '#666688';
+    const hazardColor = summary.safetyAlerts > 0 ? TOMATO : summary.safetyTotal > 0 ? ICE : GRAY;
     const hazardStatus = summary.safetyAlerts > 0 ? `${summary.safetyAlerts} ALERT${summary.safetyAlerts > 1 ? 'S' : ''}` : summary.safetyTotal > 0 ? 'ALL CLEAR' : 'NO SENSORS';
 
     return html`
@@ -797,21 +826,21 @@ class LcarsTacticalCard extends LitElement {
           <div class="tac-sensor-group">
             <span class="tac-sensor-group-title">DOORS / WINDOWS</span>
             <div class="tac-sensor-row"><span class="tac-sensor-key">TOTAL</span><span class="tac-sensor-val">${summary.perimeterTotal}</span></div>
-            <div class="tac-sensor-row"><span class="tac-sensor-key">SECURE</span><span class="tac-sensor-val" style="color:#99ccff">${summary.perimeterSecure}</span></div>
-            <div class="tac-sensor-row"><span class="tac-sensor-key">OPEN</span><span class="tac-sensor-val" style="color:${perimeterOpen > 0 ? 'var(--lcars-tomato)' : '#99ccff'}">${perimeterOpen}</span></div>
+            <div class="tac-sensor-row"><span class="tac-sensor-key">SECURE</span><span class="tac-sensor-val ok">${summary.perimeterSecure}</span></div>
+            <div class="tac-sensor-row"><span class="tac-sensor-key">OPEN</span><span class="tac-sensor-val ${perimeterOpen > 0 ? 'alert' : 'ok'}">${perimeterOpen}</span></div>
           </div>
           <div class="tac-sensor-group">
             <span class="tac-sensor-group-title">MOTION SENSORS</span>
             <div class="tac-sensor-row"><span class="tac-sensor-key">TOTAL</span><span class="tac-sensor-val">${motionTotal}</span></div>
-            <div class="tac-sensor-row"><span class="tac-sensor-key">CLEAR</span><span class="tac-sensor-val" style="color:#99ccff">${motionClear}</span></div>
-            <div class="tac-sensor-row"><span class="tac-sensor-key">TRIGGERED</span><span class="tac-sensor-val" style="color:${motionTriggered > 0 ? 'var(--lcars-tomato)' : '#99ccff'}">${motionTriggered}</span></div>
+            <div class="tac-sensor-row"><span class="tac-sensor-key">CLEAR</span><span class="tac-sensor-val ok">${motionClear}</span></div>
+            <div class="tac-sensor-row"><span class="tac-sensor-key">TRIGGERED</span><span class="tac-sensor-val ${motionTriggered > 0 ? 'alert' : 'ok'}">${motionTriggered}</span></div>
           </div>
           ${summary.safetyTotal > 0 ? html`
             <div class="tac-sensor-group">
               <span class="tac-sensor-group-title">HAZARD DETECTORS</span>
               <div class="tac-sensor-row"><span class="tac-sensor-key">TOTAL</span><span class="tac-sensor-val">${summary.safetyTotal}</span></div>
-              <div class="tac-sensor-row"><span class="tac-sensor-key">CLEAR</span><span class="tac-sensor-val" style="color:#99ccff">${safetyClear}</span></div>
-              <div class="tac-sensor-row"><span class="tac-sensor-key">ALERTS</span><span class="tac-sensor-val" style="color:${summary.safetyAlerts > 0 ? 'var(--lcars-tomato)' : '#99ccff'}">${summary.safetyAlerts}</span></div>
+              <div class="tac-sensor-row"><span class="tac-sensor-key">CLEAR</span><span class="tac-sensor-val ok">${safetyClear}</span></div>
+              <div class="tac-sensor-row"><span class="tac-sensor-key">ALERTS</span><span class="tac-sensor-val ${summary.safetyAlerts > 0 ? 'alert' : 'ok'}">${summary.safetyAlerts}</span></div>
             </div>
           ` : ''}
         </div>
@@ -914,6 +943,15 @@ class LcarsTacticalCard extends LitElement {
         .tac-sensor-row { display: flex; justify-content: space-between; font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.875rem; text-transform: uppercase; padding: 0.125rem 0; }
         .tac-sensor-key { color: var(--lcars-gray, #666688); }
         .tac-sensor-val { color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; }
+        /* #147 — status classes for sensor values (replaces inline style=color:#hex). */
+        .tac-sensor-val.ok { color: var(--lcars-ice, #99ccff); }
+        /* #151 — TRIGGERED / alert values bolder + larger so they stand out next to neutral counts. */
+        .tac-sensor-val.alert {
+          color: var(--lcars-tomato, #ff5555);
+          font-weight: 700;
+          font-size: 1rem;
+          letter-spacing: 0.04em;
+        }
 
         /* ─── Camera Presets ─── */
         .tac-camera-presets { display: flex; gap: 0.25rem; margin-bottom: 0.5rem; }
@@ -954,7 +992,8 @@ class LcarsTacticalCard extends LitElement {
         @keyframes tac-detect-pulse { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
         .tac-viewscreen-live { color: var(--lcars-tomato, #ff5555); font-size: 0.625rem; animation: tac-live-blink 2s step-start infinite; }
         @keyframes tac-live-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-        .tac-viewscreen-time { color: var(--lcars-gray, #666688); font-size: 0.625rem; font-variant-numeric: tabular-nums; }
+        /* #149 — timestamp on dark gradient: lift contrast from gray to space-white. */
+        .tac-viewscreen-time { color: var(--lcars-space-white, #f5f6fa); font-size: 0.75rem; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
         .tac-viewscreen-offline { color: var(--lcars-gray); font-family: var(--lcars-font); text-transform: uppercase; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
 
         /* ─── System Status Grid ─── */
@@ -1080,12 +1119,15 @@ class LcarsTacticalCard extends LitElement {
         .tac-crew-pill.home { background: var(--lcars-ice, #99ccff); color: var(--lcars-black, #000); }
         .tac-crew-pill.away { background: var(--lcars-gray, #666688); color: var(--lcars-space-white, #f5f6fa); }
 
-        /* Lock All button */
+        /* #150 (Geordi review revision) — LOCK ALL is a security action; tomato bg with
+         * BLACK text (not space-white). White-on-tomato was ~3.4:1, failed WCAG 1.4.3.
+         * Black-on-tomato ≈ 5.2:1 and matches every other tomato pill in this file. */
         .tac-lock-all-btn {
-          margin-left: auto; padding: 0.25rem 0.75rem; border: none;
-          border-radius: 0 1rem 1rem 0; background: var(--lcars-gold, #ffaa00);
+          margin-left: auto; padding: 0.375rem 0.75rem; border: none;
+          border-radius: 0 1rem 1rem 0; background: var(--lcars-tomato, #ff5555);
           color: var(--lcars-black, #000); font-family: var(--lcars-font, 'Antonio', sans-serif);
-          font-size: 0.75rem; text-transform: uppercase; cursor: pointer;
+          font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em;
+          text-transform: uppercase; cursor: pointer;
           transition: filter 200ms ease;
         }
         .tac-lock-all-btn:hover { filter: brightness(1.2); }
@@ -1102,13 +1144,32 @@ class LcarsTacticalCard extends LitElement {
           font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 1rem;
           text-transform: uppercase; cursor: pointer; transition: background 200ms ease, filter 200ms ease;
         }
-        .tac-lock-pill.locked {
+        /* #143 (Geordi review revision) — tri-state lock pill: secure (ice), unsecure
+         * (tomato), pending (butterscotch), fault (sunflower, FLAT pulse — stripe
+         * removed). LCARS flatness rule: no gradients. Engineering mini-core charge-pulse
+         * is the precedent. */
+        .tac-lock-pill.secure {
           background: var(--lcars-ice, #99ccff); color: var(--lcars-black, #000);
         }
-        .tac-lock-pill.unlocked {
+        .tac-lock-pill.unsecure {
           background: var(--lcars-tomato, #ff5555); color: var(--lcars-black, #000);
         }
+        .tac-lock-pill.pending {
+          background: var(--lcars-butterscotch, #ff9966); color: var(--lcars-black, #000);
+        }
+        .tac-lock-pill.fault {
+          background: var(--lcars-sunflower, #ffcc99); color: var(--lcars-black, #000);
+          animation: tac-lock-fault-pulse 1.6s ease-in-out infinite;
+        }
+        @keyframes tac-lock-fault-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.65; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .tac-lock-pill.fault { animation: none; }
+        }
         .tac-lock-pill:hover { filter: brightness(1.2); }
+        .tac-lock-pill[disabled] { cursor: not-allowed; opacity: 0.85; }
         .tac-lock-pill:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 2px; }
         .tac-lock-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .tac-lock-state { font-size: 0.75rem; flex-shrink: 0; }

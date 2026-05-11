@@ -380,8 +380,9 @@ class LcarsBatteryPanel extends LcarsBasePanel {
 
         <!-- Warp Core (center) -->
         <div class="warp-core-container" role="meter"
-          aria-valuenow="${charge}" aria-valuemin="0" aria-valuemax="100"
-          aria-label="Battery charge level: ${Math.round(charge)} percent">
+          aria-valuenow="${chargeAvailable ? charge : ''}" aria-valuemin="0" aria-valuemax="100"
+          aria-valuetext="${chargeAvailable ? `${Math.round(charge)} percent` : 'OFFLINE'}"
+          aria-label="${chargeAvailable ? `Battery charge level: ${Math.round(charge)} percent` : 'Battery offline'}">
           <div class="warp-core" style="--core-color:${coreColor};--core-charge:${chargeAvailable ? charge : 0}">
             <div class="warp-core-fill ${isIdle ? 'core-idle' : ''} ${isCharging ? 'core-charging' : ''}">
               <div class="warp-core-stream"></div>

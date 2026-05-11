@@ -56,3 +56,5 @@ dwains-dashboard copy/
 src-backup-3.6/
 custom_components/lcars_dashboard/js/lcars-dashboard.js.map
 localinfo
+
+/.issues-open.txt

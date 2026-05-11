@@ -114,7 +114,10 @@ class LcarsEngineeringCard extends LitElement {
           // Skip aggregate/total sensors that double-count individual circuits
           if (AGGREGATE_KEYWORDS.test(e.entity_id)) continue;
           const val = Number(state.state);
-          if (!isNaN(val)) totalDraw += val;
+          // #157 — totalDraw is consumer-only; negative readings (PV / V2G feed-in) are NOT
+          // house draw. Generation is tracked separately via dedicated PV/grid sensors.
+          // Counting negatives here under-reports load when solar offsets the panel sum.
+          if (!isNaN(val) && val > 0) totalDraw += val;
           circuits.push(entry);
         }
       }
@@ -260,6 +263,22 @@ class LcarsEngineeringCard extends LitElement {
 
     // Voltage sensors — global scan (not area-filtered) to catch diagnostic entities
     const seenVoltage = new Set();
+    // #160 — Z-Wave/Zigbee battery devices expose a `<device>_battery_voltage` sensor
+    // (1.5–4.2 V coin/Li-ion cell). These are NOT mains-feeder voltages and must not
+    // appear in HIGH/LOW VOLTAGE alerts. Filter by entity_id keyword AND by sibling check.
+    const _isBatteryCellVoltage = (eid, ent) => {
+      if (/battery_voltage|cell_voltage|coin|aa_voltage|aaa_voltage/i.test(eid)) return true;
+      // Sibling check: if any entity on the same device has device_class='battery', this
+      // voltage sensor measures the battery cell and is diagnostic.
+      const devId = ent?.device_id;
+      if (!devId) return false;
+      for (const [otherEid, otherEnt] of Object.entries(entities)) {
+        if (otherEnt?.device_id !== devId) continue;
+        if (otherEid === eid) continue;
+        if (states[otherEid]?.attributes?.device_class === 'battery') return true;
+      }
+      return false;
+    };
     for (const [eid, s] of Object.entries(states)) {
       if (!eid.startsWith('sensor.')) continue;
       const dc = s.attributes?.device_class || '';
@@ -267,8 +286,9 @@ class LcarsEngineeringCard extends LitElement {
       const val = Number(s.state);
       if (isNaN(val) || val <= 0) continue;
       if (seenVoltage.has(eid)) continue;
-      seenVoltage.add(eid);
       const entity = entities[eid] || { entity_id: eid };
+      if (_isBatteryCellVoltage(eid, entity)) continue;
+      seenVoltage.add(eid);
       voltageSensors.push({ entity, domain: 'sensor', state: s });
     }
 
@@ -583,6 +603,8 @@ class LcarsEngineeringCard extends LitElement {
   _classifyCircuit(name) {
     const n = name.toLowerCase();
     if (/ecoflow|river|delta\s*\d|jackery|bluetti|battery/i.test(n)) return 'BATTERY';
+    // #161 — Span/Lumin panel circuits (LS-P<n>-<load>) are dedicated breakers; route to DEDICATED.
+    if (/^ls-p\d+\b|\bls\s*p\d+\b/i.test(n)) return 'DEDICATED';
     if (/heat|hvac|air\s*handler|furnace|hotub|hot\s*tub|spa|pool|pump|compressor|minisplit|dryer|washer|dishwash|water\s*heat|fridge|refrigerat|freezer|microwave|oven|disposal|range|stove|well\s*pump|sump|garage\s*door|ev\s*charg|car\s*charg/i.test(n)) return 'DEDICATED';
     if (/server|udm|poe|\bap\b|network|router|modem|nas|rack|stack|unifi|usw|usg|udmpro|switch\s*\d|patch|ups/i.test(n)) return 'INFRASTRUCTURE';
     if (/light|lamp|sconce|chandelier|fixture|\bled\b|illuminat/i.test(n)) return 'LIGHTING';
@@ -848,7 +870,10 @@ class LcarsEngineeringCard extends LitElement {
       .eng-bar-row:focus-visible { outline: 2px solid var(--lcars-space-white); outline-offset: 1px; }
       .eng-bar-name { font-size: 0.7rem; color: var(--lcars-ice, #99ccff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .eng-bar-track { height: 0.75rem; background: transparent; }
-      .eng-bar-fill { height: 100%; border-radius: 0 0.75rem 0.75rem 0; transition: width 300ms ease; }
+      /* #162 \u2014 min-width keeps small loads visible (was rendering as <1px slivers when one
+       * high-draw circuit dominated maxWatts). 4px is below the smallest meaningful tick on
+       * any viewport \u2014 still legible as a presence indicator. */
+      .eng-bar-fill { height: 100%; min-width: 4px; border-radius: 0 0.75rem 0.75rem 0; transition: width 300ms ease; }
       .eng-bar-watts { font-size: 0.625rem; color: var(--lcars-space-white, #f5f6fa); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; min-width: 3.5rem; }
 
       .eng-sources-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.375rem; position: relative; padding-bottom: 1.5rem; }
@@ -864,9 +889,13 @@ class LcarsEngineeringCard extends LitElement {
       .mini-core { position: relative; width: 2rem; flex-shrink: 0; border-radius: 1rem; border: 2px solid var(--core-color); background: var(--lcars-black, #000); overflow: hidden; transition: border-color 1s ease; }
       .mini-core-fill { position: absolute; bottom: 0; left: 0; right: 0; height: calc(var(--core-charge, 0) * 1%); background: var(--core-color); opacity: 0.8; transition: height 1s ease; }
       .mini-core-fill.mini-core-idle { animation: mini-core-pulse 3s ease-in-out infinite; }
-      .mini-core-fill.mini-core-charging { animation: mini-core-flow 2s linear infinite; background-image: repeating-linear-gradient(0deg, transparent 0px, transparent 0.5rem, rgba(255,255,255,0.15) 0.5rem, rgba(255,255,255,0.15) 0.625rem); }
+      /* #163 — Flat charging indicator (LCARS flatness rule).
+       * Was: repeating-linear-gradient barber-pole. Now: solid fill with pulsing brightness.
+       * Same charging affordance without violating the no-gradient rule. */
+      .mini-core-fill.mini-core-charging { animation: mini-core-charge-pulse 1.5s ease-in-out infinite; }
       .mini-core-tick { position: absolute; left: 15%; right: 15%; height: 1px; background: var(--core-color); opacity: 0.3; }
       @keyframes mini-core-pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 0.9; } }
+      @keyframes mini-core-charge-pulse { 0%,100% { opacity: 0.7; filter: brightness(1); } 50% { opacity: 1; filter: brightness(1.25); } }
       @keyframes mini-core-flow { from { background-position: 0 0; } to { background-position: 0 -1.125rem; } }
       .eng-battery-stats { display: flex; flex-direction: column; justify-content: center; gap: 0.125rem; }
       .eng-battery-soc { font-size: 1.5rem; font-weight: bold; line-height: 1; font-variant-numeric: tabular-nums; }

@@ -110,8 +110,9 @@ Full-width strip below header elbow. Three data blocks:
 ## §5 Red Alert Mode
 
 When `alarm_control_panel.state === 'triggered'` or `alarm_control_panel.state === 'pending'`:
-- Frame elbows + header/footer bars pulse `tomato ↔ black` at 1Hz
-- Summary bar: `RED ALERT — INTRUSION DETECTED`
+- **Scope:** Red Alert visual treatment is **confined to the Tactical card region** (inner shield core / summary bar). The dashboard frame elbows, header band, and footer band **remain neutral** and do NOT enter the red-alert state. (Captain decision 2026-05-10 — full-frame escalation was deemed visually overwhelming.)
+- Inner shield core pulses `tomato ↔ black` at 1Hz
+- Summary bar: `RED ALERT — INTRUSION DETECTED` (tomato background)
 - `prefers-reduced-motion`: static tomato, no pulse
 
 ```css

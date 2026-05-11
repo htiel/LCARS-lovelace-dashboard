@@ -9,6 +9,7 @@ import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsEventBus, lcarsLog, openEditPopup } from './lcars-helpers.js';
 import { lcarsAudio } from './lcars-audio.js';
 import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
+import lcarsPkg from '../package.json';
 
 const TAG = 'Layout';
 
@@ -749,7 +750,7 @@ class LcarsDashboardLayout extends LitElement {
         <!-- Footer Bar -->
         <div class="lcars-footer" role="contentinfo">
           <div class="lcars-footer-bar" aria-hidden="true"></div>
-          <span class="lcars-footer-text">LCARS ${require('../package.json').version}</span>
+          <span class="lcars-footer-text">LCARS ${lcarsPkg.version}</span>
           <div class="lcars-footer-endcap" aria-hidden="true"></div>
         </div>
       </div>
@@ -766,10 +767,10 @@ lcarsLog.debug(TAG, 'Waiting for hui-masonry-view (5s timeout)...');
 ready.then(() => {
   if (!customElements.get('lcars-dashboard-layout')) {
     customElements.define('lcars-dashboard-layout', LcarsDashboardLayout);
-    const pkg = require('../package.json');
-    lcarsLog.info(TAG, `v${pkg.version} registered`);
+    const pkgVersion = lcarsPkg.version;
+    lcarsLog.info(TAG, `v${pkgVersion} registered`);
     console.info(
-      `%c LCARS-DASHBOARD \n%c Version ${pkg.version}`,
+      `%c LCARS-DASHBOARD \n%c Version ${pkgVersion}`,
       'color: #ff9966; font-weight: bold; background: black',
       'color: #f5f6fa; font-weight: bold; background: #333'
     );

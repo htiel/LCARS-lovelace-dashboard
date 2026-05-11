@@ -12,6 +12,7 @@ import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsLog, lcarsEventBus } from './lcars-helpers.js';
 import { lcarsAudio } from './lcars-audio.js';
 import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
+import lcarsPkg from '../package.json';
 
 const TAG = 'EngineeringLayout';
 const FILTER_ALL = 'all';
@@ -68,7 +69,7 @@ class LcarsEngineeringLayout extends LitElement {
   }
 
   render() {
-    const version = require('../package.json').version;
+    const version = lcarsPkg.version;
     return html`
       <div class="lcars-frame">
         <div class="lcars-elbow-top" aria-hidden="true"></div>
@@ -76,7 +77,7 @@ class LcarsEngineeringLayout extends LitElement {
           <span class="lcars-header-title">${this._siteName}</span>
           <div class="lcars-header-bar" aria-hidden="true"></div>
           <div class="lcars-header-endcap">
-            <button class="mute-btn" role="switch" aria-checked=${!this._audioMuted} @click=${() => this._toggleMute()}>
+            <button class="mute-btn" role="switch" aria-checked=${!this._audioMuted} aria-label=${this._audioMuted ? 'Unmute LCARS audio' : 'Mute LCARS audio'} @click=${() => this._toggleMute()}>
               <ha-icon .icon=${this._audioMuted ? 'mdi:volume-off' : 'mdi:volume-high'}></ha-icon>
             </button>
             ${this._hass?.user?.is_admin ? html`

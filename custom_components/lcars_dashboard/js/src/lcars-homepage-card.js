@@ -5201,7 +5201,7 @@ class LcarsHomepageCard extends LitElement {
           <!-- Current temp text -->
           <text x="${cx}" y="${cy - 20}" text-anchor="middle" fill="${actionColor}"
             font-family="var(--lcars-font)" font-size="42" font-weight="bold">
-            ${currentTemp != null && Number.isFinite(currentTemp) ? Math.round(currentTemp) : '—'}°
+            ${currentTemp != null && Number.isFinite(currentTemp) ? html`${Math.round(currentTemp)}°` : '—'}
           </text>
         </svg>
       `;
@@ -6247,11 +6247,11 @@ class LcarsHomepageCard extends LitElement {
                 aria-label="${dayName}: ${cond}, high ${hi}°, low ${lo}°${precip != null ? `, ${precip}% precipitation` : ''}">
                 <span class="forecast-day">${dayName}</span>
                 <span class="forecast-glyph" style="color:${glyphColor}">${glyph}</span>
-                <span class="forecast-hi">${hi != null ? Math.round(hi) : '—'}°</span>
+                <span class="forecast-hi">${hi != null ? html`${Math.round(hi)}°` : '—'}</span>
                 <div class="forecast-range-bar">
                   <div class="forecast-range-fill" style="left:${leftPct.toFixed(1)}%;width:${widthPct.toFixed(1)}%"></div>
                 </div>
-                <span class="forecast-lo">${lo != null ? Math.round(lo) : '—'}°</span>
+                <span class="forecast-lo">${lo != null ? html`${Math.round(lo)}°` : '—'}</span>
                 ${precip != null ? html`<span class="forecast-precip" style="color:${precip > 50 ? 'var(--lcars-sky)' : 'var(--lcars-gray)'}">${precip}%</span>` : ''}
               </div>
             `;

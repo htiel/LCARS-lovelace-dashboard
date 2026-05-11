@@ -14,6 +14,7 @@ import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsLog, lcarsEventBus } from './lcars-helpers.js';
 import { lcarsAudio } from './lcars-audio.js';
 import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
+import lcarsPkg from '../package.json';
 
 const TAG = 'IlluminationLayout';
 const FILTER_ALL = 'all';
@@ -93,7 +94,7 @@ class LcarsIlluminationLayout extends LitElement {
   }
 
   render() {
-    const version = require('../package.json').version;
+    const version = lcarsPkg.version;
 
     return html`
       <div class="lcars-frame">

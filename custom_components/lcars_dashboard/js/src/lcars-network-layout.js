@@ -15,6 +15,7 @@ import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsEventBus } from './lcars-helpers.js';
 import { lcarsAudio } from './lcars-audio.js';
 import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
+import lcarsPkg from '../package.json';
 
 const TAG = 'NetworkLayout';
 const FILTER_ALL = 'all';
@@ -81,7 +82,7 @@ class LcarsNetworkLayout extends LitElement {
   }
 
   render() {
-    const version = require('../package.json').version;
+    const version = lcarsPkg.version;
     return html`
       <div class="lcars-frame">
         <div class="lcars-elbow-top" aria-hidden="true"></div>

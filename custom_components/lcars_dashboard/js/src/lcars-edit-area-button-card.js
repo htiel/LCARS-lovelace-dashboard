@@ -4,6 +4,7 @@
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { fireEvent } from './lcars-helpers.js';
+import { showErrorToast } from './lcars-toast.js';
 
 const EDIT_STYLES = css`
   :host { display: block; }
@@ -31,7 +32,7 @@ const EDIT_STYLES = css`
       try {
         await this._hass.callWS({ type: 'lcars_dashboard/area_button/set', ...this._getFormData() });
         fireEvent('lcars_dashboard_reload');
-      } catch (e) { console.error('LCARS Edit: Save failed', e); }
+      } catch (e) { console.error('LCARS Edit: Save failed', e); showErrorToast(e, 'Save failed'); }
     }
 
     _getFormData() {

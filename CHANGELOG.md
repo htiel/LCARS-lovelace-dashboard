@@ -2,6 +2,38 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.5.1] — 2026-05-10
+
+### Accessibility
+- **#95 — Donut center text now passes WCAG 1.4.3 against any ring color.** `lcars-ring-gauge.js` now renders a `var(--lcars-card-bg)` masking disc behind the center text and fixes text fill to `var(--lcars-text)` (`#f5f6fa` on `#000` ≈ 19.85:1, AAA). Tomato-on-tomato regression on Tactical LOCKS donut is closed.
+- **#98 — Empty-cell placeholders no longer parse as "minus zero".** Seven trailing-unit-after-dash sites fixed across `lcars-homepage-card.js`, `panels/weather/lcars-weather-panel.js`, `panels/climate/lcars-climate-panel.js`, `lcars-lifesupport-card.js`. A null temperature now renders as `—` (bare em-dash), not `—°`.
+- **#214 — Mute switch `aria-label` added** on Cetacean, Engineering, and Life Support layouts. The label is dynamic (`'Mute LCARS audio'` ↔ `'Unmute LCARS audio'`) to match the existing pattern in Medical, Network, and Starship. All nine `*-layout.js` files now ship a labeled `role="switch"`. WCAG 4.1.2 satisfied.
+- **#216 — New `lcars-toast.js` accessible error toast.** WS rejection codes (`invalid_format`, `payload_too_large`, `invalid_json`, `payload_too_deep`, `invalid_card`, `invalid_card_type`, `invalid_yaml`, `invalid_blueprint`) now surface as LCARS-styled toasts with `role="alert"` + `aria-atomic="true"` on each toast (not the container, to avoid stacked re-announcement). Each toast includes a `Dismiss notification` close button to satisfy WCAG 2.2.1 (Timing Adjustable), pauses auto-dismiss on hover/focus, and auto-dismisses after 8 s. Wired into the nine `lcars-edit-*-card.js` save paths. Message body is rendered via `textContent` only — no XSS surface even on adversarial backend error messages.
+
+### Code health
+- **#85 — `require('../package.json')` replaced with ES default-import** across nine `*-layout.js` files. Webpack 5 import-warning chain cleaned.
+- **#118 — `tools/check-svg-selfclose.js` lint added.** Pre-build hook (`npm run lint:selfclose`) rejects unquoted-attribute-end + `/>` patterns (the v4.13 regression class — `stroke-opacity=0.9/>` slurping the slash). Build fails on offense. Currently passing 0 offenses on `src/`.
+
+### Security follow-ups (from 5.5.0 review carry-overs)
+- **Worf S2 — `_safe_path` belt-and-suspenders in `ws_handle_add_card`.** Schema already validates each path part via `_validate_path_component`; the final filesystem path is now also routed through `_safe_path(lcars_root, ...)`. Defense-in-depth against any future schema regression.
+- **Worf S3 — `ws_handle_install_blueprint` refactored.** No longer carries its own inline `_check_depth`; uses the module-level helper. Size cap now counts UTF-8 bytes (was character count — exploitable via multi-byte payloads). Error envelope switched from `connection.send_result({"error": msg})` to `connection.send_error(code, msg)` so client `await callWS(...)` rejects properly with a `{code, message}` object the new toast can map. **Breaking change for any external blueprint-installer caller** that read `result.error` on a resolved promise; such callers must switch to `try/catch` around the awaited `callWS`. No internal callers exist in `js/src/`.
+- **Worf S4 — `_safe_json_loads` rejects scalar top-level.** A JSON payload of `"42"`, `"\"foo\""`, or `true`/`false`/`null` now fails with `invalid_json` rather than slipping through and crashing downstream on `.get('type')`. UTF-8 byte length used for the 256 KB cap (closes the multi-byte-bypass that S3 also closed on the YAML path).
+
+### Documentation
+- **#217 — Camera migration spec addendum.** [`specs/LCARS-CAMERA-TOKEN-MIGRATION-SPEC.md`](specs/LCARS-CAMERA-TOKEN-MIGRATION-SPEC.md) §5.1 records the three LCARS-visual constraints Geordi requires before 5.5.2 lifts `<ha-camera-stream>` into Tactical: frame containment, `object-fit: cover` preservation, and the LCARS offline overlay sitting over the streaming element.
+
+### Resolved without code change (verified during 5.5.1 audit)
+- **#96 — Off-palette green in AQI rings.** Verified all AQI-tier color logic in `lcars-color-utils.js`, `lcars-homepage-card.js`, `lcars-lifesupport-card.js`, `panels/lifesupport/lcars-lifesupport-panel.js`, and `panels/environment/lcars-environment-panel.js` already returns `var(--lcars-ice)` for the 0–50 GOOD tier. The remaining `--lcars-green` references in `panels/illumination/lcars-illumination-panel.js` represent the literal output color of user-controllable RGB bulbs (`_hueToLcarsColor` and the `GREEN` color preset), which is canonical for the device, not LCARS chrome.
+- **#100 — DECK sidebar gradient.** Verified `.sidebar-floor-btn` in `lcars-dashboard-layout.js` already uses flat `var(--lcars-lilac)` with `[data-active]` flipping to `var(--lcars-gold)` — no gradient. No `linear-gradient` with magenta/violet/lilac/purple stops exists anywhere in `js/src/`.
+
+### Release engineering
+- **Bundle delta vs v5.5.0:** raw 1,106,382 B → 1,108,509 B (+2,127 B); gzip 221,531 B → 222,047 B (+516 B). Well within the +5 KiB gzip per-release ceiling.
+- **Build chain status.** `npm audit` clean on both `custom_components/lcars_dashboard/js/` and `mcp/image-generator/` (0 vulnerabilities). Frontend transitive `fast-uri` is at 3.1.2 (≥ patched 3.1.2) and `postcss` is at 8.5.14 (≥ patched 8.5.10); Dependabot alerts auto-close on next scan.
+- **Executable validation.** Python compile-clean on all 5 integration files; `npm run build` succeeds with `lint:selfclose` prebuild gate passing 0 offenses.
+- **Rollback criterion:** if HA startup logs any new ERROR-level trace from `custom_components.lcars_dashboard.*` that did not appear in v5.5.0, revert via HACS to v5.5.0 and open a follow-up issue with the trace.
+- **Reviewed by:** Data (architecture, GO), Worf (security, GO), Geordi (LCARS/a11y, GO conditional → must-fixes applied), Riker (release eng., NO-GO → resolved with CHANGELOG + Geordi must-fixes).
+- **Follow-ups tracked for 5.5.2:** Worf S5 (`_safe_json_loads` typed `expected_type` parameter), Worf S6 (promote LCARS palette tokens to `:root` so body-level UI themes correctly), Geordi (normalize three static `'Dashboard sounds'` mute labels to the dynamic pattern). Open issue [#215](https://github.com/htiel/LCARS-lovelace-dashboard/issues/215) (Worf 5.5.0 lock-eviction race) remains scheduled for a 5.5.x follow-up; confirmed not aggravated by 5.5.1.
+
 ## [5.5.0] — 2026-05-10
 
 ### Security

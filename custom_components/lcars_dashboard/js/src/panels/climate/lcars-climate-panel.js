@@ -164,7 +164,7 @@ class LcarsClimatePanel extends LcarsBasePanel {
         <!-- Temperature readout (Compliance #7: mapped to --lcars-font-size-title) -->
         <text x="${cx}" y="${cy - 16}" text-anchor="middle" fill="${actionColor}"
           font-family="var(--lcars-font)" font-size="38" font-weight="bold">
-          ${currentTemp != null && Number.isFinite(currentTemp) ? Math.round(currentTemp) : '—'}°
+          ${currentTemp != null && Number.isFinite(currentTemp) ? html`${Math.round(currentTemp)}°` : '—'}
         </text>
 
         <!-- HVAC action label -->

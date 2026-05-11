@@ -176,7 +176,7 @@ class LcarsLifeSupportCard extends LitElement {
           <span class="ls-ov-action" @click=${() => { this.filter = FILTER_AIR; }}>VIEW DETAILS</span>
         </div>
         <div class="ls-overview-card ls-ov-env">
-          ${avgTemp != null ? renderRingGauge(avgTemp, 100, 80, envColor, `${avgTemp}°`, `${avgHum || '—'}%`) : html`<span class="ls-ov-value">—</span>`}
+          ${avgTemp != null ? renderRingGauge(avgTemp, 100, 80, envColor, `${avgTemp}°`, avgHum != null ? `${avgHum}%` : '—') : html`<span class="ls-ov-value">—</span>`}
           <span class="ls-ov-title">ENVIRONMENT</span>
           <span class="ls-ov-status" style="color:${envColor}">${avgHum != null ? `${avgHum}% HUMIDITY` : ''}</span>
           <span class="ls-ov-action" @click=${() => { this.filter = FILTER_CLIMATE; }}>VIEW DETAILS</span>

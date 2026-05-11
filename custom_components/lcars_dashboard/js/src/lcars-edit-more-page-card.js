@@ -4,6 +4,7 @@
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { fireEvent } from './lcars-helpers.js';
+import { showErrorToast } from './lcars-toast.js';
 
 
   class LcarsEditMorePageCard extends LitElement {
@@ -27,6 +28,7 @@ import { fireEvent } from './lcars-helpers.js';
         fireEvent('lcars_dashboard_reload');
       } catch (e) {
         console.error('LCARS Edit: Failed to save more-page', e);
+        showErrorToast(e, 'Save failed');
       }
     }
 

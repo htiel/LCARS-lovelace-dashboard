@@ -100,8 +100,10 @@ def _safe_json_loads(connection, msg_id, raw, label="data"):
         connection.send_error(msg_id, "invalid_format", f"Missing {label}")
         return None
     raw_str = raw if isinstance(raw, str) else str(raw)
-    if len(raw_str) > _JSON_MAX_BYTES:
-        _LOGGER.warning("Rejected %s payload: %d bytes exceeds %d", label, len(raw_str), _JSON_MAX_BYTES)
+    # Use UTF-8 byte length so multi-byte chars cannot escape the cap (Worf S4 5.5.0 follow-up).
+    raw_bytes_len = len(raw_str.encode("utf-8", errors="strict"))
+    if raw_bytes_len > _JSON_MAX_BYTES:
+        _LOGGER.warning("Rejected %s payload: %d bytes exceeds %d", label, raw_bytes_len, _JSON_MAX_BYTES)
         connection.send_error(msg_id, "payload_too_large", f"{label} exceeds 256 KB limit")
         return None
     try:
@@ -110,7 +112,12 @@ def _safe_json_loads(connection, msg_id, raw, label="data"):
         _LOGGER.warning("Invalid JSON in %s: %s", label, e)
         connection.send_error(msg_id, "invalid_json", f"Invalid JSON in {label}")
         return None
-    if parsed is not None and not _check_depth(parsed):
+    # Reject scalar top-level ("42", "\"foo\"", true/false/null) — downstream paths only handle dict/list (Worf S4).
+    if not isinstance(parsed, (dict, list)):
+        _LOGGER.warning("Rejected %s payload: top-level must be object or array, got %s", label, type(parsed).__name__)
+        connection.send_error(msg_id, "invalid_json", f"{label} must be an object or array")
+        return None
+    if not _check_depth(parsed):
         _LOGGER.warning("%s exceeds max nesting depth", label)
         connection.send_error(msg_id, "payload_too_deep", f"{label} exceeds maximum nesting depth")
         return None
@@ -407,59 +414,44 @@ async def ws_handle_install_blueprint(
 
     _LOGGER.debug("install_blueprint called")
 
-    # WORF-SEC-007: Size limit — reject payloads over 256 KB
+    # B11 three-layer guard for the YAML write path: size cap → safe_load → depth check.
+    # JSON write paths use _safe_json_loads (the JSON analog of this pattern).
     raw_yaml = msg["yamlCode"]
-    if len(raw_yaml) > 262144:
-        _LOGGER.warning("Blueprint payload too large: %d bytes", len(raw_yaml))
-        connection.send_result(msg["id"], {"error": "Blueprint payload exceeds 256 KB limit"})
+    raw_yaml_bytes = len(raw_yaml.encode("utf-8", errors="strict"))
+    if raw_yaml_bytes > _JSON_MAX_BYTES:
+        _LOGGER.warning("Blueprint payload too large: %d bytes", raw_yaml_bytes)
+        connection.send_error(msg["id"], "payload_too_large", "Blueprint payload exceeds 256 KB limit")
         return
 
     try:
         filecontent = yaml.safe_load(raw_yaml)
     except (yaml.YAMLError, RecursionError) as exc:
         _LOGGER.warning("Blueprint YAML parse error: %s", type(exc).__name__)
-        connection.send_result(msg["id"], {"error": "Invalid or malformed YAML"})
+        connection.send_error(msg["id"], "invalid_yaml", "Invalid or malformed YAML")
         return
 
-    # 5X-B11: Reject excessively nested YAML (resource exhaustion defense)
-    def _check_depth(obj, depth=0, max_depth=20):
-        if depth > max_depth:
-            return False
-        if isinstance(obj, dict):
-            return all(_check_depth(v, depth + 1, max_depth) for v in obj.values())
-        if isinstance(obj, list):
-            return all(_check_depth(v, depth + 1, max_depth) for v in obj)
-        return True
+    if not isinstance(filecontent, dict):
+        connection.send_error(msg["id"], "invalid_blueprint", "Blueprint must be a YAML mapping")
+        return
 
-    if filecontent and not _check_depth(filecontent):
+    if not _check_depth(filecontent):
         _LOGGER.warning("Blueprint YAML exceeds maximum nesting depth")
-        connection.send_result(msg["id"], {"error": "Blueprint YAML is too deeply nested"})
+        connection.send_error(msg["id"], "payload_too_deep", "Blueprint YAML is too deeply nested")
         return
 
     if not filecontent.get("blueprint"):
         _LOGGER.warning('no blueprint data')
-        connection.send_result(
-            msg["id"],
-            {
-                "error": "Blueprint has invalid data"
-            },
-        )
+        connection.send_error(msg["id"], "invalid_blueprint", "Blueprint has invalid data")
         return
 
     if not filecontent.get("card"):
         _LOGGER.warning('no card')
-        connection.send_result(
-            msg["id"],
-            {
-                "error": "Blueprint has no card"
-            },
-        )
+        connection.send_error(msg["id"], "invalid_blueprint", "Blueprint has no card")
         return
 
-    # WORF-SEC-007: Validate blueprint name is a non-empty string
     bp_name = filecontent.get("blueprint", {}).get("name")
     if not bp_name or not isinstance(bp_name, str) or not bp_name.strip():
-        connection.send_result(msg["id"], {"error": "Blueprint name is required and must be a string"})
+        connection.send_error(msg["id"], "invalid_blueprint", "Blueprint name is required and must be a string")
         return
 
     filename = slugify(bp_name)+".yaml"
@@ -1292,10 +1284,19 @@ async def ws_handle_add_card(
     filecontent['position'] = msg["position"]
 
     if(msg["page"] == 'areas'):
-        path = "lcars-dashboard/configs/cards/areas/"+msg['area_id']
+        sub = ("configs", "cards", "areas", msg['area_id'])
     elif(msg["page"] == 'devices'):
-        path = "lcars-dashboard/configs/cards/devices/"+msg['domain']
-    filename = hass.config.path(path+"/"+type+".yaml")
+        sub = ("configs", "cards", "devices", msg['domain'])
+    # Defensive containment: schema already validates each part via _validate_path_component,
+    # but route the final path through _safe_path so any future schema regression cannot
+    # escape the lcars-dashboard config root (Worf S2 follow-up).
+    lcars_root = hass.config.path("lcars-dashboard")
+    try:
+        filename = _safe_path(lcars_root, *sub, type + ".yaml")
+    except ValueError as exc:
+        _LOGGER.warning("Rejected add_card path: %s", exc)
+        connection.send_error(msg["id"], "invalid_card_type", "Card path escaped config root")
+        return
 
     def _write_card():
         nonlocal filename
@@ -1303,7 +1304,8 @@ async def ws_handle_add_card(
 
         if not msg["filename"]:
             if os.path.exists(filename) and os.stat(filename).st_size != 0:
-                filename = hass.config.path(path+"/"+type+datetime.now().strftime("%Y%m%d%H%M%S")+".yaml")
+                stamp = datetime.now().strftime("%Y%m%d%H%M%S")
+                filename = _safe_path(lcars_root, *sub, type + stamp + ".yaml")
                 os.makedirs(os.path.dirname(filename), exist_ok=True)
 
         with open(filename, "w", encoding="utf-8") as ff:

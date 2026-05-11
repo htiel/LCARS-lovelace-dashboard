@@ -16,6 +16,7 @@ import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsAudio } from './lcars-audio.js';
 import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
+import lcarsPkg from '../package.json';
 
 class LcarsMedicalLayout extends LitElement {
 
@@ -52,7 +53,7 @@ class LcarsMedicalLayout extends LitElement {
   }
 
   render() {
-    const version = require('../package.json').version;
+    const version = lcarsPkg.version;
     return html`
       <div class="lcars-frame">
         <div class="lcars-elbow-top" aria-hidden="true"></div>

@@ -98,6 +98,16 @@ A migration of a given file is verified when **all** of the following hold:
 6. **Cleanup test:** navigating away from the dashboard view drops the DevTools WebSocket connection within ~2 seconds (no leaked streams).
 7. **Screenshot regression:** one before/after screenshot per migrated surface, attached to the PR.
 
+### 5.1 LCARS visual addenda (Geordi, #217)
+
+Per Geordi LCARS sign-off, the migration to `<ha-camera-stream>` must also satisfy three LCARS-visual constraints before 5.5.2 lifts it into Tactical:
+
+1. **Frame containment.** The `<ha-camera-stream>` element must render inside the existing LCARS frame container (swept corner, elbow, pillar-rounded rectangle). The element MUST NOT use `position: fixed`, escape the shadow DOM via portal, or otherwise break out of the LCARS frame. Verify via DevTools layout inspector: `<ha-camera-stream>` is a descendant of the LCARS camera-tile container at all viewport sizes.
+2. **`object-fit: cover` preservation.** `<ha-camera-stream>` internally renders a `<video>` element that defaults to `object-fit: contain`, which letterboxes inside the LCARS pillar-rounded rectangle. Tactical and Habitat camera tiles use `object-fit: cover` to fill the LCARS frame edge-to-edge. The migration MUST apply `::part(video) { object-fit: cover; }` (or the equivalent CSS variable Home Assistant exposes) to preserve the existing crop. If for any reason `cover` is unavailable on a given HA core version, the spec change MUST explicitly accept that regression and call it out in the release notes.
+3. **Offline overlay over streaming element.** The existing LCARS offline overlay (greyscale screen + label) MUST sit over the streaming element as a sibling absolute-positioned `<div>` toggled by `state === 'unavailable'`. The migration MUST NOT rely on `<ha-camera-stream>`'s internal placeholder (which is not LCARS-styled and would visibly differ between camera platforms).
+
+These three addenda are blocking for 5.5.2 kickoff; they do not block 5.5.0 or 5.5.1 because the migration itself does not land until 5.5.2.
+
 ## 6. Out of scope
 
 - Replacing HA's native authentication.

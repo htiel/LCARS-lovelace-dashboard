@@ -59,7 +59,17 @@ ALLOWED_SORT_TYPES = frozenset({"sort_order", "sort_order_floor"})
 # Bounded to prevent unbounded growth on adversarial path inputs (5X-B42 / #138).
 # Locks are only ever created for paths that pass _validate_path_component upstream,
 # so growth is naturally limited to legitimate config files, but cap defensively.
-_YAML_LOCKS_MAX = 256
+#
+# #215 (Worf, 5.5.0 follow-up): A held lock could in principle be evicted via
+# popitem(last=False) if 4096 distinct slugs arrive while the holder is in its
+# critical section, allowing a second caller for the same path to construct a
+# brand-new Lock object and enter the critical section concurrently. Mitigation
+# (Worf option 3): cap raised to 4096 — every key already passes
+# _validate_path_component, so an attacker cannot synthesize 4K distinct
+# legitimate paths within the lifetime of a single executor write. Refcount-
+# based eviction was considered but rejected as over-engineering for an
+# admin-only surface; revisit if non-admin endpoints ever take this lock.
+_YAML_LOCKS_MAX = 4096
 _yaml_locks: "OrderedDict[str, asyncio.Lock]" = OrderedDict()
 
 def _get_yaml_lock(rel_path):

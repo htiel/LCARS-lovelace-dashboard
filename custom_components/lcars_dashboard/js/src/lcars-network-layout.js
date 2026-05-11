@@ -30,7 +30,6 @@ class LcarsNetworkLayout extends LitElement {
       cards: { type: Array }, _hass: { type: Object }, _config: { type: Object },
       _filter: { type: String }, _siteName: { type: String },
       _audioMuted: { type: Boolean }, _editMode: { type: Boolean },
-      _deferredHint: { type: String },
     };
   }
 
@@ -39,13 +38,10 @@ class LcarsNetworkLayout extends LitElement {
     this.cards = []; this._hass = null; this._config = {};
     this._filter = FILTER_ALL; this._siteName = 'LCARS';
     this._audioMuted = lcarsAudio.isMuted; this._editMode = false;
-    this._deferredHint = '';
-    this._deferredHintTimer = null;
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    if (this._deferredHintTimer) clearTimeout(this._deferredHintTimer);
   }
 
   setConfig(config) { this._config = config; }
@@ -114,7 +110,6 @@ class LcarsNetworkLayout extends LitElement {
           <div class="lcars-sidebar-filler" aria-hidden="true"></div>
         </nav>
         <main id="net-content" class="lcars-content" role="tabpanel" tabindex="0" aria-label="Subspace Relay dashboard">
-          ${this._deferredHint ? html`<div class="net-toast" role="status" aria-live="polite">${this._deferredHint}</div>` : ''}
           ${this.cards?.length > 0 ? this.cards.map((c) => html`${c}`) : html`<div class="lcars-heading">No data available</div>`}
         </main>
         <div class="lcars-elbow-bottom" aria-hidden="true"></div>

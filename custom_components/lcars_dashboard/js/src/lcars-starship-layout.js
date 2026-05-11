@@ -133,7 +133,7 @@ class LcarsStarshipLayout extends LitElement {
         .mute-btn ha-icon { --mdc-icon-size: 18px; }
         .lcars-sidebar { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; gap: var(--lcars-gap, 0.25rem); overflow: hidden; }
         .lcars-sidebar-panel { background: var(--lcars-butterscotch, #ff9966); color: var(--lcars-black, #000); font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: var(--lcars-font-size-data, 0.875rem); text-transform: uppercase; padding: 0.25rem 0.5rem; text-align: right; flex-shrink: 0; }
-        .lcars-sidebar-subpanel { background: var(--lcars-butterscotch, #ff9966); color: var(--lcars-black, #000); font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.75rem; text-transform: uppercase; padding: 0.25rem 0.5rem; text-align: right; opacity: 0.8; flex-shrink: 0; }
+        .lcars-sidebar-subpanel { background: var(--lcars-butterscotch, #ff9966); color: var(--lcars-black, #000); font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.75rem; text-transform: uppercase; padding: 0.25rem 0.5rem; text-align: right; opacity: 0.8; flex-shrink: 0; border-radius: 0 0 0 var(--lcars-btn-radius, 1.5rem); }
         .lcars-sidebar-filler { flex: 1 0 0px; min-height: 0; background: var(--lcars-gray, #666688); border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 0; }
         .lcars-content { grid-column: 2; grid-row: 2; overflow-y: auto; overflow-x: hidden; padding: 0.5rem; scrollbar-width: thin; scrollbar-color: var(--lcars-gray, #666688) transparent; }
         .lcars-elbow-bottom { grid-column: 1; grid-row: 3; background: var(--lcars-butterscotch, #ff9966); border-radius: 0 0 0 var(--lcars-elbow-radius, 3.75rem); position: relative; overflow: hidden; }

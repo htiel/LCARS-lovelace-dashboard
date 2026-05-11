@@ -26,7 +26,8 @@ const STATUS_COLOR = {
   ELEVATED: 'var(--lcars-gold, #ffaa00)',
   WARNING:  'var(--lcars-gold, #ffaa00)',
   ALERT:    'var(--lcars-alert, #cc6666)',
-  CRITICAL: 'var(--lcars-alert, #cc6666)',
+  // #177 — distinct from ALERT (was duplicate alert color)
+  CRITICAL: 'var(--lcars-tomato, #ff6666)',
   OFFLINE:  'var(--lcars-sky, #aaaaff)',
 };
 

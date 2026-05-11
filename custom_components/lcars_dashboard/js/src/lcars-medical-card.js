@@ -35,8 +35,27 @@ const STATUS_COLOR = {
   NOMINAL:  'var(--lcars-data-accent, #99cc99)',
   ELEVATED: 'var(--lcars-gold, #ffaa00)',
   ALERT:    'var(--lcars-alert, #cc6666)',
+  // #177 — CRITICAL distinct from ALERT (was identical alert color, indistinguishable).
+  // Tomato carries higher urgency in the LCARS palette; reserved for life-threatening tier.
+  CRITICAL: 'var(--lcars-tomato, #ff6666)',
   OFFLINE:  'var(--lcars-sky, #aaaaff)',
 };
+
+// #171 — vital is considered stale (OFFLINE) when its last_changed/last_updated timestamp
+// exceeds 24h. Even a numerically valid reading is unsafe to display as live when the
+// integration hasn't reported in a day (sensor offline, sleep tracker not synced, etc.).
+const STALE_VITAL_MS = 24 * 60 * 60 * 1000;
+
+// #174 — blood-pressure plausibility gate. Readings outside human-survivable ranges or
+// inverted systolic<=diastolic indicate a sensor fault and must NOT drive the rollup pill
+// to NOMINAL. Source: AHA reference ranges + safety margin.
+function _bpPlausible(sys, dia) {
+  if (!Number.isFinite(sys) || !Number.isFinite(dia)) return Number.isFinite(sys);  // sys-only OK
+  if (sys < 40 || sys > 300) return false;
+  if (dia < 20 || dia > 200) return false;
+  if (sys <= dia) return false;
+  return true;
+}
 
 class LcarsMedicalCard extends LitElement {
   static get properties() {
@@ -160,12 +179,17 @@ class LcarsMedicalCard extends LitElement {
   // because most slots are empty.
   _buildAnchors(vitalsByKind) {
     const anchors = {};
+    const now = Date.now();
     for (const vc of MEDICAL_VITAL_CLASSES) {
       if (!vc.anchor) continue;
       const v = vitalsByKind.get(vc.kind);
       const numeric = vc && v ? (vc.kind === 'blood_pressure' ? v.systolic : v.value) : NaN;
       const secondary = vc.kind === 'blood_pressure' ? v?.diastolic : null;
-      if (!v || numeric == null || isNaN(numeric)) {
+      // #171 — stale (>24h) readings are demoted to OFFLINE regardless of numeric validity.
+      const isStale = v && v.ts && (now - v.ts) > STALE_VITAL_MS;
+      // #174 — implausible BP (sys<=dia, sys<40, sys>300, dia<20, dia>200) is dropped.
+      const isImplausible = vc.kind === 'blood_pressure' && v && !_bpPlausible(v.systolic, v.diastolic);
+      if (!v || numeric == null || isNaN(numeric) || isStale || isImplausible) {
         anchors[vc.anchor] = { value: '—', status: MEDICAL_STATUS.OFFLINE, label: vc.label, present: false };
         continue;
       }

@@ -13,6 +13,15 @@
 
 const STORAGE_KEY = 'lcars-audio-muted';
 
+// #169 — dispatch a mute-state change so cards (e.g. Medical) can flip PHI
+// aria-hidden gating in lockstep with the header mute button without having
+// to poll localStorage on every render.
+function _emitMuteChange(muted) {
+  try {
+    window.dispatchEvent(new CustomEvent('lcars-audio-mute-changed', { detail: { muted } }));
+  } catch { /* noop — SSR/test envs without window */ }
+}
+
 /** @type {AudioContext|null} */
 let _ctx = null;
 
@@ -244,10 +253,12 @@ export const lcarsAudio = {
 
   mute() {
     try { localStorage.setItem(STORAGE_KEY, 'true'); } catch { /* noop */ }
+    _emitMuteChange(true);
   },
 
   unmute() {
     try { localStorage.setItem(STORAGE_KEY, 'false'); } catch { /* noop */ }
+    _emitMuteChange(false);
   },
 
   toggle() {

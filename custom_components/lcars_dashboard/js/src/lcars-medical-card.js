@@ -66,6 +66,7 @@ class LcarsMedicalCard extends LitElement {
       _consentByFile: { type: Object },
       _thermal: { type: Boolean },
       _focusMode: { type: String },   // 5.3.1 — 'summary' | 'anatomical' | 'biomedical'
+      _audioMuted: { type: Boolean }, // #169 — mirrors lcarsAudio.isMuted to gate PHI aria-hidden
     };
   }
 
@@ -81,10 +82,21 @@ class LcarsMedicalCard extends LitElement {
     this._consentByFile = {};
     this._thermal = false;
     this._focusMode = this._readFocusFromHash();
+    this._audioMuted = lcarsAudio.isMuted;
     this._onHashChange = () => {
       const next = this._readFocusFromHash();
       if (next !== this._focusMode) {
         this._focusMode = next;
+        this.requestUpdate();
+      }
+    };
+    // #169 — PHI aria-hidden + aria-live state follow the header mute switch.
+    // Muted dashboard → PHI hidden from SR (no announcement, no leakage).
+    // Unmuted → PHI announced via aria-live=polite per AUDIO-SPEC.
+    this._onMuteChange = (e) => {
+      const muted = !!e?.detail?.muted;
+      if (muted !== this._audioMuted) {
+        this._audioMuted = muted;
         this.requestUpdate();
       }
     };
@@ -93,11 +105,13 @@ class LcarsMedicalCard extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     window.addEventListener('hashchange', this._onHashChange);
+    window.addEventListener('lcars-audio-mute-changed', this._onMuteChange);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener('hashchange', this._onHashChange);
+    window.removeEventListener('lcars-audio-mute-changed', this._onMuteChange);
   }
 
   _readFocusFromHash() {
@@ -210,7 +224,7 @@ class LcarsMedicalCard extends LitElement {
     return html`
       <header class="zone-a">
         <div class="title">MEDICAL REPORT
-          <span class="file-id" data-medical="phi">${fileId}</span>
+          <span class="file-id" data-medical="phi" ?aria-hidden=${this._audioMuted}>${fileId}</span>
         </div>
         <div class="focus-tabs" aria-label="Scan focus mode">
           ${['summary', 'anatomical', 'biomedical'].map((m) => html`
@@ -299,7 +313,7 @@ class LcarsMedicalCard extends LitElement {
     pts.push(`${W},${mid}`);
     const stroke = haveBpm ? 'var(--lcars-data-accent, #99cc99)' : 'var(--lcars-gray, #666688)';
     return html`
-      <div class="ecg-wrap" data-medical="phi">
+      <div class="ecg-wrap" data-medical="phi" ?aria-hidden=${this._audioMuted}>
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Decorative ECG strip">
           <line x1="0" y1="${mid}" x2="${W}" y2="${mid}" stroke="rgba(153,204,255,0.15)" stroke-width="1"/>
           <polyline points=${pts.join(' ')} fill="none" stroke=${stroke} stroke-width="2" stroke-linejoin="round"/>
@@ -336,7 +350,9 @@ class LcarsMedicalCard extends LitElement {
             <div class="tile">
               <div class="tile-label">${vc.label}</div>
               <div class="tile-value" data-medical="phi"
-                   aria-live="off" style=${`color:${color}`}>${display}</div>
+                   aria-live=${this._audioMuted ? 'off' : 'polite'}
+                   ?aria-hidden=${this._audioMuted}
+                   style=${`color:${color}`}>${display}</div>
               <div class="tile-unit">${vc.unit}</div>
             </div>`;
         })}

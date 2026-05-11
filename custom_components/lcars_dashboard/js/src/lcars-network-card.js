@@ -81,14 +81,12 @@ class LcarsNetworkCard extends LitElement {
   static get properties() {
     return {
       hass: { type: Object }, _config: { type: Object }, filter: { type: String },
-      _revealClients: { type: Boolean },  // 5.2.1 — per-session reveal toggle, NOT persisted
     };
   }
 
   constructor() {
     super();
     this._hass = null; this._config = {}; this.filter = FILTER_ALL;
-    this._revealClients = false;
     this._onFilter = (e) => { this.filter = e.detail.filter; };
   }
 
@@ -233,22 +231,10 @@ class LcarsNetworkCard extends LitElement {
   }
 
   /* ═══ Connected Clients (5.2.1) ═══
-   * Worf privacy gate:
-   *   - Hostnames carry data-network="hostname" → screenshot redacts to "client-{hash}"
-   *   - MACs carry data-network="mac"           → screenshot masks last three octets
-   *   - Reveal toggle is per-session ONLY (this._revealClients), never persisted
-   *   - Client list is derived from UniFi device_tracker entities — no scraping,
-   *     no extra WS calls. If UniFi integration not present, the panel is empty.
+   * #219 — in-card runtime obfuscation removed. Dashboard renders real hostnames/MACs/SSIDs.
+   * Screenshot redaction is handled by localinfo/screenshot-obfuscator.js via the
+   * data-network="hostname|mac|ssid" attributes preserved below.
    */
-  _hashStr(s) {
-    let h = 2166136261;
-    for (let i = 0; i < s.length; i++) {
-      h ^= s.charCodeAt(i);
-      h = Math.imul(h, 16777619);
-    }
-    return (h >>> 0).toString(16).padStart(8, '0').slice(0, 6);
-  }
-
   _discoverClients() {
     if (!this._hass) return [];
     const states = this._hass.states || {};
@@ -271,66 +257,36 @@ class LcarsNetworkCard extends LitElement {
       out.push({
         eid,
         hostname,
-        hostnameMasked: `client-${this._hashStr(hostname)}`,
         mac,
-        macMasked: mac ? `${mac.slice(0, 8)}:••:••:••` : '',
-        ip,                              // not rendered; kept for moreInfo navigation
+        ip,
         connected: isHome,
         ssid: attrs.essid || attrs.ssid || '',
-        ssidMasked: '••••',
         firstSeen: attrs.first_seen,
       });
     }
 
-    // Sort: connected first, then alpha by masked id (stable across renders, no
-    // dependency on ground-truth hostname so screenshot mode doesn't re-order).
     out.sort((a, b) => {
       if (a.connected !== b.connected) return a.connected ? -1 : 1;
-      return a.hostnameMasked.localeCompare(b.hostnameMasked);
+      return (a.hostname || '').localeCompare(b.hostname || '');
     });
     return out;
   }
 
-  // Mask any user-named device to a stable hash unless the per-session reveal
-  // toggle is on. Worf 5.4.1 review M1: device names like "Malick Family UDM Pro"
-  // are operational identity data and must not render in cleartext by default.
-  _maskName(name, prefix = 'device') {
-    if (this._revealClients) return name;
-    return `${prefix}-${this._hashStr(name || '')}`;
-  }
-
-  _toggleReveal() {
-    this._revealClients = !this._revealClients;
-    // Audio feedback — Geordi 5.4.1 review #6 (toggles must announce per AUDIO-SPEC).
-    lcarsAudio.play(this._revealClients ? 'navAcknowledge' : 'negativeAcknowledge');
-    // Auto-revert after 60s so a wall-mounted display does not strand identifiers visible
-    // (Worf m3). Per-session only; never persisted.
-    clearTimeout(this._revealTimer);
-    if (this._revealClients) {
-      this._revealTimer = setTimeout(() => {
-        this._revealClients = false;
-        this.requestUpdate();
-      }, 60_000);
-    }
-    this.requestUpdate();
+  // #219 — was: hash device name when reveal toggle off. Now: render real name.
+  // Screenshot tool handles redaction via data-network="hostname".
+  _maskName(name /* , prefix */) {
+    return name || '';
   }
 
   _renderClients(clients) {
     const connected = clients.filter((c) => c.connected).length;
     const total = clients.length;
-    const reveal = this._revealClients;
     return html`
       <section aria-labelledby="net-clients-h">
         <header class="clients-head">
           <h2 id="net-clients-h" class="net-section-h" style="margin:0">
             Connected Clients · ${connected} / ${total} online
           </h2>
-          <button class="reveal-toggle ${reveal ? 'on' : ''}"
-                  aria-pressed=${reveal}
-                  @click=${() => this._toggleReveal()}
-                  title="Reveal hostnames + MACs (per-session only; not persisted)">
-            ${reveal ? 'HIDE IDENTIFIERS' : 'REVEAL IDENTIFIERS'}
-          </button>
         </header>
         <div class="net-clients-grid">
           ${clients.map((c) => this._renderClient(c))}
@@ -339,16 +295,13 @@ class LcarsNetworkCard extends LitElement {
   }
 
   _renderClient(c) {
-    const display = this._revealClients ? c.hostname : c.hostnameMasked;
-    const mac = this._revealClients ? c.mac : c.macMasked;
-    const ssid = c.ssid ? (this._revealClients ? c.ssid : c.ssidMasked) : '';
     const dotColor = c.connected ? 'var(--lcars-data-accent, #99cc99)' : 'var(--lcars-gray, #666688)';
     return html`
       <button class="client-tile" @click=${() => showMoreInfo(this, c.eid)}>
         <span class="client-dot" style=${`background:${dotColor}`} aria-hidden="true"></span>
-        <span class="client-name" data-network="hostname">${display}</span>
-        ${mac ? html`<span class="client-mac" data-network="mac">${mac}</span>` : ''}
-        ${ssid ? html`<span class="client-ssid" data-network="ssid">${ssid}</span>` : ''}
+        <span class="client-name" data-network="hostname">${c.hostname}</span>
+        ${c.mac ? html`<span class="client-mac" data-network="mac">${c.mac}</span>` : ''}
+        ${c.ssid ? html`<span class="client-ssid" data-network="ssid">${c.ssid}</span>` : ''}
       </button>`;
   }
 
@@ -579,21 +532,6 @@ class LcarsNetworkCard extends LitElement {
 
         /* Connected Clients (5.2.1) */
         .clients-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin: 0.4rem 0; }
-        .reveal-toggle {
-          background: var(--lcars-bg-elev, #111);
-          color: var(--lcars-ice, #99ccff);
-          border: 1px solid var(--lcars-ice, #99ccff);
-          border-radius: 999px;
-          padding: 0.35rem 0.85rem;
-          min-height: 44px;
-          font: inherit;
-          font-size: 0.7rem;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          cursor: pointer;
-        }
-        .reveal-toggle:focus-visible { outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px; }
-        .reveal-toggle.on { background: var(--lcars-gold, #ffaa00); color: #000; border-color: var(--lcars-gold, #ffaa00); }
         .net-clients-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 0.4rem; }
         .client-tile {
           background: rgba(153,204,255,0.05);

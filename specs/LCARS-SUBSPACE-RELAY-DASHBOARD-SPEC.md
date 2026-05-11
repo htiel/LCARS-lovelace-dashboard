@@ -108,6 +108,8 @@ All `device_tracker.*` from platform `unifi`. The 179 disabled-by-default tracke
 
 > **Worf gate**: The clients table must **never** render plaintext MAC addresses or BSSIDs in screenshots. Client hostnames may be PII. Provide a `subspace.clients.redact_hostnames: false` config-flow option (default `false`, but Worf may flip default to `true` after review). The screenshot tool selector hook is `.lcars-network-redactable`.
 
+> **As-shipped (5.5.7+, Captain decision 2026-05-10, #180 / #181):** the Connected Clients section is rendered as a button-tile grid (one button per client, `.client-tile` with hostname/MAC/SSID spans), not a default-collapsed semantic `<table>` with [All]/[Wired]/[Wi-Fi]/[LAN]/[IoT]/[Guest] filter chips, and there is no `.client-tile`-internal redaction. The button-grid surface ships and the spec is updated to match. Reasons: (a) the grid composes with the existing card hover/pop pattern; (b) the per-client identifiers Captain wants visible by default render in cleartext per #219, with screenshot redaction handled out-of-card via `data-network="hostname|mac|ssid"` attributes consumed by `localinfo/screenshot-obfuscator.js`; (c) the WAN latency tri-graph and the §4.6 filter-chip surface remain on the spec roadmap but as future enhancements rather than spec-drift bugs. Any future move to a semantic `<table>` must preserve the same `data-network` attribute hooks.
+
 ---
 
 ## 5. Layout

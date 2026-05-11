@@ -58,3 +58,7 @@ custom_components/lcars_dashboard/js/lcars-dashboard.js.map
 localinfo
 
 /.issues-open.txt
+
+# PII screenshot crawls (live HA dashboards)
+screenshots/v5.*-beta.*/
+screenshots/v5.*-crawl/

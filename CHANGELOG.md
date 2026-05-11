@@ -2,7 +2,15 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
-## [5.7.0-beta.3] — 2026-05-11 — Visual audit S0/S1 batch
+## [5.7.0] — 2026-05-11 — Visual audit S0/S1 batch + sidebar pill polish
+
+Promotion of beta.3 + beta.4 to stable. No further changes since beta.4.
+
+### Fixed (since 5.6.6)
+- **Medical & Starship sidebar subpanel pill** (beta.4): `BIOFUNCTION MONITOR` and `VESSEL STATUS` pills now round their bottom-left corner so they transition cleanly into the gray filler beneath, matching the canonical LCARS pattern used by Engineering/Habitat dashboards.
+- All beta.3 fixes below (S0/S1 batch from v5.7.0-beta.2 visual crawl).
+
+## [5.7.0-beta.3] — 2026-05-11 — Visual audit S0/S1 batch (rolled into 5.7.0)
 
 ### Fixed (from v5.7.0-beta.2 visual crawl — see `plans/v5.7.0-beta.2-visual-audit.md`)
 - **S0-01..S0-04**: Medical & Starship sidebar filler color + admin chrome (Geordi pixel-pass fixes deployed via fresh bundle; source was already correct in beta.2 but HACS cache served stale per-route bundles).

@@ -29,7 +29,11 @@ const FILTER_CLIENTS = 'clients';
 
 // Anchored regex to avoid false positives on substrings (e.g. *_state_changes).
 // WAN latency is matched separately because the prefix can be Google/Cloudflare/Microsoft.
-const UNIFI_HEALTH_RE = /(_cpu_utilization$|_memory_utilization$|_uptime$|_state$|_clients$|(?:_cpu|_phy|_local)_temperature$|_link_speed$)/i;
+// #183 — entity-id pattern for UniFi infrastructure health sensors. Anchored on the
+// `unifi_` prefix so unrelated `*_state` / `*_uptime` entities (e.g. media players,
+// remote integrations) do not get pulled in. The old version matched any `_state$`
+// which sucked in light switches and door sensors.
+const UNIFI_HEALTH_RE = /^sensor\.unifi_.+(_cpu_utilization|_memory_utilization|_uptime|_state|_clients|(?:_cpu|_phy|_local)_temperature|_link_speed)$/i;
 const WAN_LATENCY_RE = /wan.?latency/i;
 const IPP_INK_RE = /_(black|cyan|magenta|yellow)_ink$/i;
 
@@ -419,19 +423,48 @@ class LcarsNetworkCard extends LitElement {
       </button>`;
   }
 
+  // #188 — dedupe manufacturer prefix already embedded in model (e.g. EPSON IPP
+  // reports model='EPSON ET-3850 Series' with manufacturer='EPSON' → was rendered
+  // “EPSON EPSON ET-3850 SERIES”). Case-insensitive prefix check, retains original
+  // casing from the model string.
+  _formatPrinterModel(manufacturer, model) {
+    if (!model) return '';
+    if (!manufacturer) return model;
+    const mfg = manufacturer.trim();
+    if (!mfg) return model;
+    const lc = model.toLowerCase();
+    if (lc.startsWith(mfg.toLowerCase())) return model;
+    return `${mfg} ${model}`;
+  }
+
   _renderPrinter(p) {
     const statusVal = p.status?.state?.state || 'unknown';
-    const statusColor = statusVal === 'idle' ? 'var(--lcars-data-accent, #99cc99)'
-      : statusVal === 'printing' ? 'var(--lcars-gold, #ffaa00)'
-      : statusVal === 'stopped' ? 'var(--lcars-alert, #cc6666)'
-      : 'var(--lcars-gray, #666688)';
+    // #184 — expand status palette: HA IPP integration emits printing, idle, stopped, paused,
+    // processing, server_error. Older switch collapsed everything not-idle/printing/stopped
+    // to gray (“unknown”), which made paused / error states invisible to the operator.
+    let statusColor;
+    switch (statusVal) {
+      case 'idle':
+        statusColor = 'var(--lcars-data-accent, #99cc99)'; break;
+      case 'printing':
+      case 'processing':
+        statusColor = 'var(--lcars-gold, #ffaa00)'; break;
+      case 'stopped':
+      case 'server_error':
+      case 'error':
+        statusColor = 'var(--lcars-alert, #cc6666)'; break;
+      case 'paused':
+        statusColor = 'var(--lcars-sunflower, #ffcc66)'; break;
+      default:
+        statusColor = 'var(--lcars-gray, #666688)';
+    }
     const inkColor = (color) => `var(--lcars-ink-${color}, var(--lcars-gray))`;
 
     return html`
       <article class="net-printer" aria-labelledby="net-prn-${p.device_id}">
         <header class="net-device-head">
           <span class="net-device-name" id="net-prn-${p.device_id}" data-network="hostname">${this._maskName(p.name, 'printer')}</span>
-          ${p.model ? html`<span class="net-device-model" data-network="model">${p.manufacturer ? `${p.manufacturer} ` : ''}${p.model}</span>` : ''}
+          ${p.model ? html`<span class="net-device-model" data-network="model">${this._formatPrinterModel(p.manufacturer, p.model)}</span>` : ''}
           <span class="net-device-state" style="color:${statusColor}">${statusVal.toUpperCase()}</span>
         </header>
         <div class="net-ink-row">
@@ -492,9 +525,9 @@ class LcarsNetworkCard extends LitElement {
             </div>
           </section>` : ''}
         ${showClients && clients.length ? this._renderClients(clients) : ''}
-        ${showHealth && !devices.length ? html`<div class="net-empty" role="status">No UniFi infrastructure detected</div>` : ''}
-        ${showPeripherals && !printers.length ? html`<div class="net-empty" role="status">No peripherals detected (IPP integration adds printers)</div>` : ''}
-        ${showClients && !clients.length ? html`<div class="net-empty" role="status">No connected clients (UniFi device_tracker entities not found)</div>` : ''}
+        ${showHealth && !devices.length ? html`<div class="net-empty" role="status">NO UNIFI INFRASTRUCTURE DETECTED</div>` : ''}
+        ${showPeripherals && !printers.length ? html`<div class="net-empty" role="status">NO PERIPHERALS DETECTED · INSTALL IPP INTEGRATION</div>` : ''}
+        ${showClients && !clients.length ? html`<div class="net-empty" role="status">NO CONNECTED CLIENTS · UNIFI DEVICE_TRACKER NOT FOUND</div>` : ''}
       </div>`;
   }
 
@@ -582,7 +615,10 @@ class LcarsNetworkCard extends LitElement {
         .client-tile:focus-visible { outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px; }
         .client-dot { grid-row: 1 / span 2; width: 10px; height: 10px; border-radius: 50%; }
         .client-name { font-size: 0.85rem; color: var(--lcars-ice, #99ccff); letter-spacing: 0.04em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .client-mac, .client-ssid { grid-column: 2; font-size: 0.65rem; opacity: 0.7; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+        /* #186 (Geordi review revision) — ensure the fallback chain actually lands on a
+         * MONOSPACE font even when --lcars-font-mono is undefined (Antonio is
+         * proportional and would destroy column alignment for MACs/SSIDs). */
+        .client-mac, .client-ssid { grid-column: 2; font-size: 0.65rem; opacity: 0.7; font-family: var(--lcars-font-mono, ui-monospace, 'SF Mono', Consolas, monospace); }
       `,
     ];
   }

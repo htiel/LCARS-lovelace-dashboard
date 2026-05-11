@@ -1243,7 +1243,7 @@ async def ws_handle_edit_entities_bool_value(
         vol.Optional("domain"): _validate_path_component,
         vol.Optional("position"): str,
         vol.Optional("filename"): _validate_path_component,
-        vol.Optional("page"): vol.In({"areas", "devices"}),
+        vol.Required("page"): vol.In({"areas", "devices"}),
         vol.Optional("rowSpan"): str,
         vol.Optional("colSpan"): str,
         vol.Optional("rowSpanLg"): str,
@@ -1293,10 +1293,19 @@ async def ws_handle_add_card(
     filecontent["row_span_xl"] = msg["rowSpanXl"]
     filecontent['position'] = msg["position"]
 
-    if(msg["page"] == 'areas'):
+    if msg["page"] == 'areas':
+        if not msg.get('area_id'):
+            connection.send_error(msg["id"], "invalid_format", "area_id required when page='areas'")
+            return
         sub = ("configs", "cards", "areas", msg['area_id'])
-    elif(msg["page"] == 'devices'):
+    elif msg["page"] == 'devices':
+        if not msg.get('domain'):
+            connection.send_error(msg["id"], "invalid_format", "domain required when page='devices'")
+            return
         sub = ("configs", "cards", "devices", msg['domain'])
+    else:
+        connection.send_error(msg["id"], "invalid_format", "page must be 'areas' or 'devices'")
+        return
     # Defensive containment: schema already validates each part via _validate_path_component,
     # but route the final path through _safe_path so any future schema regression cannot
     # escape the lcars-dashboard config root (Worf S2 follow-up).
@@ -1942,13 +1951,9 @@ async def ws_handle_sidebar_order_get(hass, connection, msg):
 @websocket_api.async_response
 async def ws_handle_sidebar_order_set(hass, connection, msg):
     """Save the dashboard sidebar order and apply to HA sidebar."""
-    import json as _json
-    try:
-        order = _json.loads(msg["order"])
-    except (ValueError, TypeError):
-        connection.send_error(msg["id"], "invalid_format", "order must be a JSON array")
+    order = _safe_json_loads(connection, msg["id"], msg["order"], "order")
+    if order is None:
         return
-
     if not isinstance(order, list):
         connection.send_error(msg["id"], "invalid_format", "order must be a JSON array")
         return

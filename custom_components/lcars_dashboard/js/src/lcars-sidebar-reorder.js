@@ -147,6 +147,27 @@ const REORDER_STYLES = css`
     border-top: 3px solid var(--lcars-butterscotch, #f1df6f);
     padding-top: calc(0.5rem - 3px);
   }
+  .reorder-item:focus-visible { outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px; }
+
+  .item-move {
+    margin-left: auto;
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+  .move-btn {
+    min-width: 44px;
+    min-height: 44px;
+    background: var(--lcars-bg-elev, #111);
+    color: var(--lcars-ice, #99ccff);
+    border: 1px solid var(--lcars-ice, #99ccff);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .move-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .move-btn:focus-visible { outline: 2px solid var(--lcars-ice, #99ccff); outline-offset: 2px; }
 
   .grip-handle {
     display: flex; flex-direction: column; gap: 2px;
@@ -343,6 +364,30 @@ class LcarsSidebarReorder extends LitElement {
     if (e.key === 'Escape') this.close();
   }
 
+  // #212 — keyboard alternative to drag-and-drop (WCAG 2.5.7).
+  // Arrow Up / Down on a focused item moves it; the Move ▲ / ▼ buttons do the same.
+  _moveItem(idx, delta) {
+    const target = idx + delta;
+    if (target < 0 || target >= this._order.length) return;
+    const newOrder = [...this._order];
+    const [moved] = newOrder.splice(idx, 1);
+    newOrder.splice(target, 0, moved);
+    this._order = newOrder;
+    // Restore focus to the moved item at its new index after re-render.
+    this.updateComplete.then(() => {
+      const root = this.shadowRoot;
+      if (!root) return;
+      const items = root.querySelectorAll('.reorder-item');
+      const next = items[target];
+      if (next) next.focus();
+    });
+  }
+
+  _onItemKeydown(e, idx) {
+    if (e.key === 'ArrowUp') { e.preventDefault(); this._moveItem(idx, -1); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); this._moveItem(idx, 1); }
+  }
+
   render() {
     const items = this._order.map((key, idx) => {
       const info = this._dashboards[key] || {};
@@ -352,6 +397,10 @@ class LcarsSidebarReorder extends LitElement {
       return html`
         <div class="${classes.join(' ')}"
           draggable="true"
+          tabindex="0"
+          role="listitem"
+          aria-label="${info.title || key}, position ${idx + 1} of ${this._order.length}. Use arrow keys or Move buttons to reorder."
+          @keydown=${(e) => this._onItemKeydown(e, idx)}
           @dragstart=${(e) => this._onDragStart(e, idx)}
           @dragover=${(e) => this._onDragOver(e, idx)}
           @dragleave=${(e) => this._onDragLeave(e, idx)}
@@ -362,6 +411,16 @@ class LcarsSidebarReorder extends LitElement {
           </div>
           <ha-icon class="item-icon" .icon=${info.icon || 'mdi:monitor-dashboard'}></ha-icon>
           <span class="item-label">${info.title || key}</span>
+          <div class="item-move" role="group" aria-label="Move ${info.title || key}">
+            <button class="move-btn" type="button"
+                    aria-label="Move ${info.title || key} up"
+                    ?disabled=${idx === 0}
+                    @click=${(e) => { e.stopPropagation(); this._moveItem(idx, -1); }}>▲</button>
+            <button class="move-btn" type="button"
+                    aria-label="Move ${info.title || key} down"
+                    ?disabled=${idx === this._order.length - 1}
+                    @click=${(e) => { e.stopPropagation(); this._moveItem(idx, 1); }}>▼</button>
+          </div>
         </div>
       `;
     });

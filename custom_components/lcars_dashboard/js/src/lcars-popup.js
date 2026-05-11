@@ -20,6 +20,19 @@ class LcarsPopup extends LitElement {
       super();
       this._open = false;
       this._card = null;
+      this._lastFocus = null;  // #210 — element to restore focus to on close
+      this._onDocKeydown = (e) => this._handleKeydown(e);
+    }
+
+    connectedCallback() {
+      super.connectedCallback();
+      // #210 — listen at document level so Escape works regardless of focus position
+      document.addEventListener('keydown', this._onDocKeydown, true);
+    }
+
+    disconnectedCallback() {
+      document.removeEventListener('keydown', this._onDocKeydown, true);
+      super.disconnectedCallback();
     }
 
     set hass(hass) {
@@ -45,11 +58,27 @@ class LcarsPopup extends LitElement {
     }
 
     open() {
+      // #210 — capture focus origin so we can restore it on close
+      this._lastFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
       this._open = true;
+      // Defer focus into the popup until lit re-renders the [data-open] backdrop
+      this.updateComplete.then(() => {
+        const root = this.shadowRoot;
+        if (!root) return;
+        const closeBtn = root.querySelector('.popup-close');
+        if (closeBtn) closeBtn.focus();
+      });
     }
 
     close() {
       this._open = false;
+      // #210 — restore focus to the element that opened us
+      const target = this._lastFocus;
+      this._lastFocus = null;
+      if (target && typeof target.focus === 'function') {
+        // wait for DOM to settle so HA can move attention back to the trigger row
+        setTimeout(() => { try { target.focus(); } catch (_) { /* element gone */ } }, 0);
+      }
     }
 
     _handleBackdropClick(e) {
@@ -57,7 +86,23 @@ class LcarsPopup extends LitElement {
     }
 
     _handleKeydown(e) {
-      if (e.key === 'Escape') this.close();
+      if (!this._open) return;
+      if (e.key === 'Escape') { e.stopPropagation(); this.close(); return; }
+      // #210 — trap Tab inside the popup so keyboard focus cannot leak to the
+      // page behind the modal backdrop.
+      if (e.key === 'Tab') {
+        const root = this.shadowRoot;
+        if (!root) return;
+        const focusables = Array.from(root.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )).filter((el) => !el.hasAttribute('disabled') && el.offsetParent !== null);
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = root.activeElement;
+        if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+      }
     }
 
     static get styles() {
@@ -130,7 +175,7 @@ class LcarsPopup extends LitElement {
           }
 
           .popup-close:hover {
-            color: var(--lcars-red-alert);
+            color: var(--lcars-tomato);
           }
 
           .popup-body {

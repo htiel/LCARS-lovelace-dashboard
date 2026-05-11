@@ -55,7 +55,7 @@ export function renderSparkline(points, { color, label = '', width = 120, height
     : `Sparkline: ${lastVal?.toFixed(0) || ''}`;
 
   return html`
-    <div class="${className}-wrap" aria-label="${ariaLabel}">
+    <div class="${className}-wrap" role="img" aria-label="${ariaLabel}">
       ${label ? html`<span class="${className}-label">${label}</span>` : ''}
       <svg class="${className}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
         <polyline points="${d}" fill="none" stroke="${color}" stroke-width="1.5"

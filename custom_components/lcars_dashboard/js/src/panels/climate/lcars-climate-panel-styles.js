@@ -221,6 +221,20 @@ export const climatePanelStyles = css`
     width: 100%;
     margin-bottom: 0.125rem;
   }
+  /* #156 \u2014 Fan-while-off advisory chip. Sits below the FAN strip, polite live region. */
+  .climate-fan-warning {
+    display: inline-block;
+    font-family: var(--lcars-font);
+    font-size: var(--lcars-font-size-data);
+    color: var(--lcars-black);
+    background: var(--lcars-sunflower, #ffcc99);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+    margin-top: 0.25rem;
+    font-weight: 700;
+  }
 
   /* 4X-56: Toggle-style aux button for portable AC switches */
   .climate-toggle-btn { display: flex; align-items: center; gap: 0.375rem; }

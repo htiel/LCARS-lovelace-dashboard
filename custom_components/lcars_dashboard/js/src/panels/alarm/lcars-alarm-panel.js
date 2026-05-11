@@ -13,6 +13,7 @@ import { createRateLimiter } from '../../lcars-service-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { alarmPanelStyles } from './lcars-alarm-panel-styles.js';
 import { lcarsAudio } from '../../lcars-audio.js';
+import { showErrorToast } from '../../lcars-toast.js';
 
 class LcarsAlarmPanel extends LcarsBasePanel {
 
@@ -50,7 +51,14 @@ class LcarsAlarmPanel extends LcarsBasePanel {
     const as = this.group?.entities?.find(e => e.domain === 'alarm_control_panel')?.state;
     const isTransitional = ['arming', 'pending', 'disarming'].includes(as?.state);
     if (isTransitional && this._alarmCountdown == null) {
-      this._startAlarmCountdown(as?.attributes?.delay || 60);
+      // #153 — HA alarm_control_panel exposes the transitional duration via `pending_time`
+      // (when entering pending) and `arming_time` (when arming). Some platforms also use
+      // `next_state_time`. Older code read `attributes.delay` which doesn't exist on most
+      // integrations, leaving the countdown frozen at 60. Prefer real timestamps.
+      const attrs = as?.attributes || {};
+      const next = attrs.next_state_time ? Math.max(0, Math.round((new Date(attrs.next_state_time).getTime() - Date.now()) / 1000)) : null;
+      const seconds = next != null ? next : (attrs.arming_time || attrs.pending_time || attrs.delay || 60);
+      this._startAlarmCountdown(seconds);
     } else if (!isTransitional && this._alarmCountdown != null) {
       this._stopAlarmCountdown();
     }
@@ -126,11 +134,30 @@ class LcarsAlarmPanel extends LcarsBasePanel {
   }
 
   _handleAlarmArm(entityId, mode) {
+    // #152 — honor code_arm_required: refuse to call service if PIN is required but empty.
+    const as = this.hass?.states?.[entityId];
+    const codeArmRequired = as?.attributes?.code_arm_required === true;
+    if (codeArmRequired && !this._alarmPinCode) {
+      lcarsAudio.play('negativeAcknowledge');
+      this._alarmPinError = true;
+      this.requestUpdate();
+      return;
+    }
     lcarsAudio.play('lockToggle');
     const code = this._alarmPinCode || undefined;
-    this.hass.callService('alarm_control_panel', `alarm_arm_${mode}`, {
-      entity_id: entityId, ...(code ? { code } : {}),
-    });
+    // #155 — service call wrapped; failure surfaces an LCARS toast + audio negative-ack
+    // instead of silently no-op'ing on (e.g.) unavailable integrations.
+    (async () => {
+      try {
+        await this.hass.callService('alarm_control_panel', `alarm_arm_${mode}`, {
+          entity_id: entityId, ...(code ? { code } : {}),
+        });
+      } catch (e) {
+        console.error('[lcars-alarm-panel] arm failed:', e);
+        lcarsAudio.play('negativeAcknowledge');
+        showErrorToast(e, 'Arm failed');
+      }
+    })();
     this._alarmPinCode = '';
     this.requestUpdate();
   }
@@ -147,9 +174,19 @@ class LcarsAlarmPanel extends LcarsBasePanel {
     }
     lcarsAudio.play('lockToggle');
     const code = this._alarmPinCode || undefined;
-    this.hass.callService('alarm_control_panel', 'alarm_disarm', {
-      entity_id: entityId, ...(code ? { code } : {}),
-    });
+    (async () => {
+      try {
+        await this.hass.callService('alarm_control_panel', 'alarm_disarm', {
+          entity_id: entityId, ...(code ? { code } : {}),
+        });
+      } catch (e) {
+        // #155 — PIN rejection / unavailable integration: toast + audio. Worf-clean: never
+        // log the code itself.
+        console.error('[lcars-alarm-panel] disarm failed:', e);
+        lcarsAudio.play('negativeAcknowledge');
+        showErrorToast(e, 'Disarm failed');
+      }
+    })();
     this._alarmPinCode = '';
     this.requestUpdate();
   }
@@ -202,8 +239,10 @@ class LcarsAlarmPanel extends LcarsBasePanel {
       case 'disarmed': return '✓';
       case 'armed_home': case 'armed_night': return '◉';
       case 'armed_away': case 'armed_vacation': return '▲';
+      case 'armed_custom_bypass': return '◎';   // #152 — bypass mode (zones disabled)
       case 'triggered': return '✕';
       case 'arming': case 'pending': case 'disarming': return '⋯';
+      case 'unavailable': case 'unknown': return '⌀';  // #152 — offline integration
       default: return '?';
     }
   }

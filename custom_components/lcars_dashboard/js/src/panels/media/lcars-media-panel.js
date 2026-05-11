@@ -13,6 +13,7 @@ import { getPlaybackStateColor } from '../../lcars-color-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { mediaPanelStyles } from './lcars-media-panel-styles.js';
 import { lcarsAudio } from '../../lcars-audio.js';
+import { showErrorToast } from '../../lcars-toast.js';
 
 class LcarsMediaPanel extends LcarsBasePanel {
 
@@ -70,7 +71,16 @@ class LcarsMediaPanel extends LcarsBasePanel {
 
   _handleMediaService(entityId, service, data = {}) {
     lcarsAudio.play('mediaAction');
-    this.hass.callService('media_player', service, { entity_id: entityId, ...data });
+    // #155 — service call wrapped; failures surface a toast instead of silent no-op.
+    (async () => {
+      try {
+        await this.hass.callService('media_player', service, { entity_id: entityId, ...data });
+      } catch (e) {
+        console.error('[lcars-media-panel] service failed:', service, e);
+        lcarsAudio.play('negativeAcknowledge');
+        showErrorToast(e, `${service.replace(/_/g, ' ')} failed`);
+      }
+    })();
   }
 
   _handleVolumeChange(entityId, e) {

@@ -169,7 +169,9 @@ class LcarsWeatherPanel extends LcarsBasePanel {
     const pressure = attrs.pressure;
     const windSpeed = attrs.wind_speed;
     const windBearing = attrs.wind_bearing;
-    const windUnit = attrs.wind_speed_unit || 'mph';
+    // #142 — units read from entity attrs, never hardcoded. Empty string falls back gracefully.
+    const windUnit = attrs.wind_speed_unit || '';
+    const pressureUnit = attrs.pressure_unit || '';
     const lastChanged = ws?.last_changed || ws?.last_updated;
     const lastKnownLabel = isOffline && lastChanged ? humanizeTimestamp(lastChanged) : null;
 
@@ -194,10 +196,10 @@ class LcarsWeatherPanel extends LcarsBasePanel {
             </div>
           ` : ''}
           ${pressure != null ? html`
-            <div class="device-sensor-line" role="listitem" aria-label="Pressure: ${pressure}">
+            <div class="device-sensor-line" role="listitem" aria-label="Pressure: ${pressure}${pressureUnit ? ' ' + pressureUnit : ''}">
               <div class="sensor-indicator" style="background:var(--lcars-data-accent)"></div>
               <span class="sensor-label">Pressure</span>
-              <span class="sensor-state-value">${pressure}</span>
+              <span class="sensor-state-value">${pressure}${pressureUnit ? ' ' + pressureUnit : ''}</span>
             </div>
           ` : ''}
           ${lightning.map(({ entity, state }) => {

@@ -212,9 +212,17 @@ class LcarsClimatePanel extends LcarsBasePanel {
     const hvacAction = attrs.hvac_action || 'off';
     const actionColor = getHvacActionColor(hvacAction);
     const isDual = this._isDualSetpoint(cs);
-    const targetTemp = isDual ? ((Number(attrs.target_temp_low) + Number(attrs.target_temp_high)) / 2) : (attrs.temperature != null ? Number(attrs.temperature) : null);
-    const targetLow = isDual ? Number(attrs.target_temp_low) : null;
-    const targetHigh = isDual ? Number(attrs.target_temp_high) : null;
+    // #154 — Nest/ecobee/Daikin in heat_cool with only one bound reported produce NaN
+    // when averaged. Guard each bound with Number.isFinite before averaging; null when
+    // either side is missing so the arc/center text shows '—' instead of NaN°.
+    const _rawLow = isDual ? Number(attrs.target_temp_low) : NaN;
+    const _rawHigh = isDual ? Number(attrs.target_temp_high) : NaN;
+    const _dualValid = Number.isFinite(_rawLow) && Number.isFinite(_rawHigh);
+    const targetTemp = isDual
+      ? (_dualValid ? (_rawLow + _rawHigh) / 2 : null)
+      : (attrs.temperature != null && Number.isFinite(Number(attrs.temperature)) ? Number(attrs.temperature) : null);
+    const targetLow = isDual && Number.isFinite(_rawLow) ? _rawLow : null;
+    const targetHigh = isDual && Number.isFinite(_rawHigh) ? _rawHigh : null;
     const minTemp = attrs.min_temp != null ? Number(attrs.min_temp) : 45;
     const maxTemp = attrs.max_temp != null ? Number(attrs.max_temp) : 95;
     const hvacModes = attrs.hvac_modes || [];
@@ -382,6 +390,13 @@ class LcarsClimatePanel extends LcarsBasePanel {
                 </button>
               `)}
             </div>
+            ${currentMode === 'off' && currentFanMode && !/^(off|auto)$/i.test(currentFanMode) ? html`
+              <!-- #156 — Fan-while-off advisory: thermostat OFF but fan still running.
+                   Common Nest/ecobee/Honeywell footgun — energy waste with no warning. -->
+              <span class="climate-fan-warning" role="status" aria-live="polite">
+                ⚠ FAN RUNNING WHILE MODE OFF
+              </span>
+            ` : ''}
           ` : ''}
           ${presetModes.length > 0 ? html`
             <span class="climate-aux-strip-label">PRESET</span>

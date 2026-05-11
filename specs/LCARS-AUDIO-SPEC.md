@@ -282,6 +282,7 @@ The `playForEntity(entityId)` helper automatically selects the correct sound:
 | `number` | `climateAdjust` |
 | `sensor` | `entityInfo` |
 | `binary_sensor` | `entityInfo` |
+| `humidifier` | `fanToggle` |
 | `media_player` | `mediaAction` |
 | `camera` | `entityInfo` |
 | *(unknown)* | `acknowledge` |
@@ -312,6 +313,17 @@ Mute state stored in `localStorage` under key `lcars-audio-muted`.
 - When muted: All sounds suppressed. No `AudioContext` created.
 - When unmuted: `AudioContext` created lazily on first user gesture (browser autoplay policy compliant).
 - Toggling mute plays the `toggle` sound (if unmuting) as confirmation.
+
+### 4.4 Mute State Change Event
+
+When `mute()` / `unmute()` / `toggle()` is called, `lcars-audio.js` dispatches a `CustomEvent` on `window` so other components can react in lockstep without polling `localStorage`:
+
+- **Event name**: `lcars-audio-mute-changed`
+- **Detail**: `{ muted: boolean }` — the new state
+- **Target**: `window`
+- **Bubbles**: false
+
+Consumers (e.g. Medical Bay PHI redaction, Starship Health screenshot guard) listen for this event to flip `aria-hidden` / data-attribute redaction in step with the header mute button. The event is fault-tolerant: if `window.dispatchEvent` throws (SSR/test envs), it is silently swallowed.
 
 ---
 

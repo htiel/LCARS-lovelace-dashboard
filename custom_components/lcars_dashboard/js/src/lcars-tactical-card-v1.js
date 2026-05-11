@@ -37,7 +37,7 @@ class LcarsTacticalCard extends LitElement {
 
   constructor() {
     super();
-    this.hass = null;
+    this._hass = null;
     this._config = {};
     this.filter = FILTER_ALL;
     this._entityCache = new Map();

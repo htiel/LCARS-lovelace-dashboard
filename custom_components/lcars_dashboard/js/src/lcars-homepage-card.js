@@ -1017,6 +1017,12 @@ class LcarsHomepageCard extends LitElement {
             from { background-position: 0 0, 0 0, 0 0; }
             to   { background-position: 0 0, 0 -100px, 0 0; }
           }
+          /* 5.6.5 (Geordi S6): respect prefers-reduced-motion on ambient drift. */
+          @media (prefers-reduced-motion: reduce) {
+            .camera-frame[data-state="offline"] .camera-offline-overlay {
+              animation: none;
+            }
+          }
           .camera-frame[data-state="offline"]:hover { border-color: var(--lcars-gold); }
           /* Hide img during connecting so overlay text is visible */
           .camera-frame[data-state="connecting"] img { opacity: 0; }

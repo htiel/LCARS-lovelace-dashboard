@@ -350,7 +350,7 @@ class LcarsMedicalCard extends LitElement {
             <div class="tile">
               <div class="tile-label">${vc.label}</div>
               <div class="tile-value" data-medical="phi"
-                   aria-live=${this._audioMuted ? 'off' : 'polite'}
+                   aria-live="off"
                    ?aria-hidden=${this._audioMuted}
                    style=${`color:${color}`}>${display}</div>
               <div class="tile-unit">${vc.unit}</div>

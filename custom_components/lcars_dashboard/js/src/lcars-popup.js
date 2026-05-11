@@ -87,22 +87,15 @@ class LcarsPopup extends LitElement {
 
     _handleKeydown(e) {
       if (!this._open) return;
-      if (e.key === 'Escape') { e.stopPropagation(); this.close(); return; }
-      // #210 — trap Tab inside the popup so keyboard focus cannot leak to the
-      // page behind the modal backdrop.
-      if (e.key === 'Tab') {
-        const root = this.shadowRoot;
-        if (!root) return;
-        const focusables = Array.from(root.querySelectorAll(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        )).filter((el) => !el.hasAttribute('disabled') && el.offsetParent !== null);
-        if (!focusables.length) return;
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        const active = root.activeElement;
-        if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
-      }
+      if (e.key !== 'Escape') return;
+      // 5.6.5 (Geordi S1, Data S2): scope Escape to events whose composed path
+      // actually traverses this popup. Otherwise the document-capture listener
+      // would intercept Escape in nested HA dialogs (ha-more-info-dialog, etc.)
+      // and close the popup instead of the inner dialog.
+      const path = (typeof e.composedPath === 'function') ? e.composedPath() : [];
+      if (path.length && !path.includes(this)) return;
+      e.stopPropagation();
+      this.close();
     }
 
     static get styles() {
@@ -197,7 +190,6 @@ class LcarsPopup extends LitElement {
           class="popup-backdrop"
           ?data-open=${this._open}
           @click=${this._handleBackdropClick}
-          @keydown=${this._handleKeydown}
           role="dialog"
           aria-modal="true"
           aria-label="${this._config?.title || 'Popup'}"

@@ -894,6 +894,11 @@ class LcarsTacticalCard extends LitElement {
 
     return html`
       <div class="tac-dashboard ${isRedAlert ? 'red-alert' : ''} mode-${this._mode}" data-filter=${this._filter}>
+        <span class="tac-sr-status" role="status" aria-live="polite">${
+          this._filter === 'all' ? 'Tactical view: all sections.'
+          : this._filter === 'access' ? 'Tactical view: access only.'
+          : 'Tactical view: zones only.'
+        }</span>
         ${this._renderOverview(summary)}
         <div class="tac-main-grid">
           <div class="tac-main-content">
@@ -915,6 +920,13 @@ class LcarsTacticalCard extends LitElement {
       lcarsBaseStyles,
       css`
         :host { display: block; }
+        /* 5.6.5 (Geordi S5): visually-hidden status node so AT users hear when
+           the sidebar filter swaps the dashboard between ALL/ACCESS/ZONES. */
+        .tac-sr-status {
+          position: absolute;
+          width: 1px; height: 1px; padding: 0; margin: -1px;
+          overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+        }
         .tac-dashboard { display: flex; flex-direction: column; gap: 0.75rem; }
         .tac-loading { font-family: var(--lcars-font, 'Antonio', sans-serif); color: var(--lcars-gray); text-transform: uppercase; padding: 2rem; text-align: center; font-size: 1.25rem; letter-spacing: 0.1em; }
 

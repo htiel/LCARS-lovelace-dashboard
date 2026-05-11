@@ -438,7 +438,7 @@ class LcarsSidebarReorder extends LitElement {
             <span class="reorder-title">Sidebar Order</span>
             <button class="reorder-close" @click=${() => this.close()} aria-label="Close">&times;</button>
           </div>
-          <div class="reorder-body">
+          <div class="reorder-body" role="list" aria-label="Dashboard order">
             ${items}
           </div>
           <div class="reorder-footer">

@@ -197,13 +197,17 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
             const litCount = Math.round(pct / 10);
             // 4X-59: Color the percentage text to match filter status
             const pctColor = pct < 25 ? 'var(--lcars-tomato)' : pct < 75 ? 'var(--lcars-golden-orange)' : 'var(--lcars-ice)';
+            // 5.7.0-beta.3 (S1-08): at ≤5% the filter is effectively dead — pulse all 10
+            // segments in critical so a 0% reading reads as an alarm, not an empty bar.
+            const isExpired = pct <= 5;
             return html`
               <div class="filter-life-row">
                 <span class="filter-life-label">${name}</span>
-                <span class="filter-life-pct" style="color:${pctColor}">${Math.round(pct)}%</span>
+                <span class="filter-life-pct ${isExpired ? 'expired' : ''}" style="color:${pctColor}">${Math.round(pct)}%</span>
               </div>
               <div class="filter-segments" aria-label="Filter life: ${Math.round(pct)}%">
                 ${Array.from({ length: 10 }, (_, i) => {
+                  if (isExpired) return html`<div class="filter-seg lit critical"></div>`;
                   const seg = i < litCount;
                   const cls = seg ? (pct < 25 ? 'lit critical' : pct < 75 ? 'lit warn' : 'lit') : '';
                   return html`<div class="filter-seg ${cls}"></div>`;

@@ -35,6 +35,17 @@ export const mediaPanelStyles = css`
   .media-idle .media-volume-fill { background: var(--lcars-gray); width: 0% !important; }
   .media-idle .media-volume-pct { color: var(--lcars-gray); }
   .media-idle .media-metadata-extra { display: none; }
+  /* 5.7.0-beta.3 (S1-06 / 4X-63 widen): collapse the standby viewscreen to a
+     compact horizontal pill instead of a 12rem-tall square. */
+  .media-idle .media-viewscreen { border: none; aspect-ratio: auto; }
+  .media-idle .media-viewscreen::before,
+  .media-idle .media-viewscreen::after { display: none; }
+  .media-idle .media-idle-display {
+    flex-direction: row; aspect-ratio: auto; max-height: none;
+    gap: 0.5rem; padding: 0.375rem 0.5rem; justify-content: flex-start;
+  }
+  .media-idle .media-idle-glyph { font-size: 1rem; }
+  .media-idle .media-idle-label { font-size: 0.75rem; letter-spacing: 0.08em; }
 
   .media-header { grid-area: header; display: flex; align-items: center; gap: 0.5rem; }
   .device-panel-name { font-size: var(--lcars-font-size-sub); color: var(--panel-frame-color); text-transform: uppercase; white-space: nowrap; }

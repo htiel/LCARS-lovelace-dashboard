@@ -13,6 +13,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
+import { lcarsEventBus } from './lcars-helpers.js';
 import { lcarsAudio } from './lcars-audio.js';
 import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
 import lcarsPkg from '../package.json';
@@ -25,6 +26,7 @@ class LcarsStarshipLayout extends LitElement {
       _config: { type: Object },
       _siteName: { type: String },
       _audioMuted: { type: Boolean },
+      _editMode: { type: Boolean },
     };
   }
 
@@ -35,6 +37,7 @@ class LcarsStarshipLayout extends LitElement {
     this._config = {};
     this._siteName = 'STARSHIP HEALTH';
     this._audioMuted = lcarsAudio.isMuted;
+    this._editMode = false;
   }
 
   setConfig(config) { this._config = config; }
@@ -48,6 +51,22 @@ class LcarsStarshipLayout extends LitElement {
   _toggleMute() {
     lcarsAudio.toggle();
     this._audioMuted = lcarsAudio.isMuted;
+  }
+
+  _openSidebarReorder() {
+    if (!this._hass?.user?.is_admin) return;
+    let dialog = this.shadowRoot.querySelector('lcars-sidebar-reorder');
+    if (!dialog) {
+      dialog = document.createElement('lcars-sidebar-reorder');
+      this.shadowRoot.appendChild(dialog);
+    }
+    dialog.hass = this._hass;
+    dialog.open();
+  }
+
+  _toggleEditMode() {
+    this._editMode = !this._editMode;
+    lcarsEventBus.dispatchEvent(new CustomEvent('lcars-ship-edit', { detail: { enabled: this._editMode } }));
   }
 
   render() {
@@ -64,6 +83,17 @@ class LcarsStarshipLayout extends LitElement {
                     aria-label=${this._audioMuted ? 'Unmute LCARS audio' : 'Mute LCARS audio'}>
               <ha-icon .icon=${this._audioMuted ? 'mdi:volume-off' : 'mdi:volume-high'}></ha-icon>
             </button>
+            ${this._hass?.user?.is_admin ? html`
+              <button class="mute-btn" aria-label="Reorder sidebar dashboards"
+                      @click=${() => this._openSidebarReorder()}>
+                <ha-icon .icon=${'mdi:sort-variant'}></ha-icon>
+              </button>
+              <button class="mute-btn" aria-pressed=${this._editMode}
+                      aria-label=${this._editMode ? 'Exit configuration mode' : 'Enter configuration mode'}
+                      @click=${() => this._toggleEditMode()}>
+                <ha-icon .icon=${'mdi:cog-outline'}></ha-icon>
+              </button>
+            ` : ''}
           </div>
         </div>
         <nav class="lcars-sidebar" aria-label="Engineering">
@@ -104,7 +134,7 @@ class LcarsStarshipLayout extends LitElement {
         .lcars-sidebar { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; gap: var(--lcars-gap, 0.25rem); overflow: hidden; }
         .lcars-sidebar-panel { background: var(--lcars-butterscotch, #ff9966); color: var(--lcars-black, #000); font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: var(--lcars-font-size-data, 0.875rem); text-transform: uppercase; padding: 0.25rem 0.5rem; text-align: right; flex-shrink: 0; }
         .lcars-sidebar-subpanel { background: var(--lcars-butterscotch, #ff9966); color: var(--lcars-black, #000); font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 0.75rem; text-transform: uppercase; padding: 0.25rem 0.5rem; text-align: right; opacity: 0.8; flex-shrink: 0; }
-        .lcars-sidebar-filler { flex: 1 0 0px; min-height: 0; background: var(--lcars-butterscotch, #ff9966); border-radius: 0 0 0 var(--lcars-btn-radius, 1.5rem); opacity: 0.55; }
+        .lcars-sidebar-filler { flex: 1 0 0px; min-height: 0; background: var(--lcars-gray, #666688); border-radius: var(--lcars-btn-radius, 1.5rem) 0 0 0; }
         .lcars-content { grid-column: 2; grid-row: 2; overflow-y: auto; overflow-x: hidden; padding: 0.5rem; scrollbar-width: thin; scrollbar-color: var(--lcars-gray, #666688) transparent; }
         .lcars-elbow-bottom { grid-column: 1; grid-row: 3; background: var(--lcars-butterscotch, #ff9966); border-radius: 0 0 0 var(--lcars-elbow-radius, 3.75rem); position: relative; overflow: hidden; }
         .lcars-elbow-bottom::after { content: ''; position: absolute; top: 0; right: 0; width: calc(var(--lcars-sidebar-w, 12rem) - var(--lcars-elbow-w, 9.5rem)); height: calc(var(--lcars-elbow-h, 4.5rem) - var(--lcars-bar-h, 1.5rem)); background: var(--lcars-bg, #000); border-radius: 0 0 0 1.5rem; }

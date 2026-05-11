@@ -98,13 +98,13 @@ export const powerPanelStyles = css`
   /* Circuit tile grid */
   .power-circuits {
     grid-area: circuits; display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
     gap: var(--lcars-gap); max-height: 24rem; overflow-y: auto;
     mask-image: linear-gradient(to bottom, black calc(100% - 2rem), transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 2rem), transparent 100%);
   }
   .lcars-consolidated-power-panel .power-circuits {
-    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.5rem;
   }
   .power-circuit-tile {
     display: flex; flex-direction: column; gap: 0.125rem;

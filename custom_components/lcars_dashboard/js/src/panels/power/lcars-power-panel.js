@@ -528,6 +528,7 @@ class LcarsPowerPanel extends LcarsBasePanel {
 
     return html`
       <div class="power-circuit-tile ${tierClass}" style="--circuit-color:${color}" role="listitem" tabindex="0"
+        title="${name}"
         aria-label="${name}: ${watts != null ? Math.round(watts) + ' watts, ' + tier.toLowerCase() : 'unavailable'}${energy != null ? ', ' + energy.toFixed(1) + ' kilowatt hours today' : ''}"
         @click=${() => supportsPopover ? this._showCircuitPopover(circuit) : showMoreInfo(circuit.entities?.[0]?.entity?.entity_id)}
         @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); supportsPopover ? this._showCircuitPopover(circuit) : showMoreInfo(circuit.entities?.[0]?.entity?.entity_id); } }}>

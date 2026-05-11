@@ -313,6 +313,7 @@ export const environmentPanelStyles = css`
   .filter-life-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.5rem; }
   .filter-life-label { flex: 1; font-size: 0.75rem; color: var(--lcars-space-white); text-transform: uppercase; }
   .filter-life-pct { font-size: var(--lcars-font-size-data); font-weight: 700; color: var(--lcars-ice); }
+  .filter-life-pct.expired { animation: lcars-filter-critical 1.5s ease-in-out infinite; }
   .filter-segments { display: flex; gap: 2px; padding: 0 0.5rem 0.375rem; }
   .filter-seg { flex: 1; height: 6px; border-radius: 1px; background: var(--lcars-gray); opacity: 0.3; }
   .filter-seg.lit { background: var(--lcars-ice); opacity: 1; }

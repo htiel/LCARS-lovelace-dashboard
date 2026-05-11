@@ -196,7 +196,7 @@ class LcarsIlluminationPanel extends LitElement {
       const raw = dev.name_by_user || dev.name || 'ILLUMINATION CONTROL';
       const area = this.hass?.areas?.[this.areaId];
       if (area?.name && raw.toLowerCase().startsWith(area.name.toLowerCase())) {
-        const stripped = raw.slice(area.name.length).trim().replace(/^[-–:]\s*/, '');
+        const stripped = raw.slice(area.name.length).trim().replace(/^[-ï¿½:]\s*/, '');
         return stripped || raw;
       }
       return raw;
@@ -261,7 +261,7 @@ class LcarsIlluminationPanel extends LitElement {
               @click=${() => this._toggleEntity(eid)}
               @contextmenu=${(e) => { e.preventDefault(); showMoreInfo(eid); }}>
         <span class="ilm-pill__indicator ${isOn ? 'active' : ''}"></span>
-        <span class="ilm-pill__name">${name}</span>
+        <span class="ilm-pill__name" title="${name}">${name}</span>
         <span class="ilm-pill__state">${isOn ? 'ON' : 'OFF'}</span>
       </button>
     `;
@@ -276,7 +276,7 @@ class LcarsIlluminationPanel extends LitElement {
     return html`
       <div class="ilm-dimmer">
         <div class="ilm-dimmer__header">
-          <span class="ilm-dimmer__name">${name}</span>
+          <span class="ilm-dimmer__name" title="${name}">${name}</span>
           <span class="ilm-type-badge">DIM</span>
           <span class="ilm-dimmer__value">${isOn ? brightness + '%' : 'OFF'}</span>
         </div>
@@ -317,7 +317,7 @@ class LcarsIlluminationPanel extends LitElement {
     return html`
       <div class="ilm-full" role="group" aria-label="${name} controls">
         <div class="ilm-dimmer__header">
-          <span class="ilm-dimmer__name">${name}</span>
+          <span class="ilm-dimmer__name" title="${name}">${name}</span>
           <span class="ilm-type-badge full">${hasColorControl ? 'RGB' : 'FX'}</span>
           <span class="ilm-dimmer__value">${isOn ? brightness + '%' : 'OFF'}</span>
         </div>
@@ -391,7 +391,7 @@ class LcarsIlluminationPanel extends LitElement {
               @click=${() => this._toggleEntity(eid)}
               @contextmenu=${(e) => { e.preventDefault(); showMoreInfo(eid); }}>
         <span class="ilm-pill__indicator ${isOn ? 'active' : ''}"></span>
-        <span class="ilm-pill__name">${name}</span>
+        <span class="ilm-pill__name" title="${name}">${name}</span>
         <span class="ilm-pill__state">${isOn ? 'ON' : 'OFF'}</span>
       </button>
     `;

@@ -766,28 +766,28 @@ class LcarsTacticalCard extends LitElement {
     return html`
       <div class="tac-overview">
         <div class="tac-ov-card tac-ov-shield" @click=${() => { if (summary.alarmEntityId) showMoreInfo(summary.alarmEntityId); }}>
-          ${renderRingGauge(1, 1, 80, shieldColor, shieldLabel, '')}
+          ${renderRingGauge(1, 1, 96, shieldColor, shieldLabel, '')}
           <span class="tac-ov-title">SHIELDS</span>
           <span class="tac-ov-status" style="color:${shieldColor}">${shieldLabel}</span>
         </div>
         <div class="tac-ov-card tac-ov-perimeter">
-          ${renderRingGauge(summary.perimeterSecure, Math.max(summary.perimeterTotal, 1), 80, perimColor, `${summary.perimeterSecure}/${summary.perimeterTotal}`, 'SECURE')}
+          ${renderRingGauge(summary.perimeterSecure, Math.max(summary.perimeterTotal, 1), 96, perimColor, `${summary.perimeterSecure}/${summary.perimeterTotal}`, 'SECURE')}
           <span class="tac-ov-title">PERIMETER</span>
           <span class="tac-ov-status" style="color:${perimColor}">${summary.perimeterSecure === summary.perimeterTotal ? 'ALL SECURE' : `${summary.perimeterTotal - summary.perimeterSecure} BREACH`}</span>
         </div>
         <div class="tac-ov-card tac-ov-cameras">
-          ${renderRingGauge(camOnline, Math.max(summary.allCameras.length, 1), 80, camColor, `${camOnline}/${summary.allCameras.length}`, 'ONLINE')}
+          ${renderRingGauge(camOnline, Math.max(summary.allCameras.length, 1), 96, camColor, `${camOnline}/${summary.allCameras.length}`, 'ONLINE')}
           <span class="tac-ov-title">VIEWSCREENS</span>
           <span class="tac-ov-status" style="color:${camColor}">${camOnline === summary.allCameras.length ? 'ALL ONLINE' : `${summary.allCameras.length - camOnline} OFFLINE`}</span>
         </div>
         <div class="tac-ov-card tac-ov-locks">
-          ${renderRingGauge(summary.locksLocked, Math.max(summary.locksTotal, 1), 80, lockColor, `${summary.locksLocked}/${summary.locksTotal}`, 'LOCKED')}
+          ${renderRingGauge(summary.locksLocked, Math.max(summary.locksTotal, 1), 96, lockColor, `${summary.locksLocked}/${summary.locksTotal}`, 'LOCKED')}
           <span class="tac-ov-title">LOCKS</span>
           <span class="tac-ov-status" style="color:${lockColor}">${lockStatus}</span>
         </div>
         ${summary.safetyTotal > 0 ? html`
           <div class="tac-ov-card tac-ov-hazard">
-            ${renderRingGauge(summary.safetyTotal - summary.safetyAlerts, Math.max(summary.safetyTotal, 1), 80, hazardColor, `${summary.safetyTotal - summary.safetyAlerts}/${summary.safetyTotal}`, 'CLEAR')}
+            ${renderRingGauge(summary.safetyTotal - summary.safetyAlerts, Math.max(summary.safetyTotal, 1), 96, hazardColor, `${summary.safetyTotal - summary.safetyAlerts}/${summary.safetyTotal}`, 'CLEAR')}
             <span class="tac-ov-title">HAZARD DETECTORS</span>
             <span class="tac-ov-status" style="color:${hazardColor}">${hazardStatus}</span>
           </div>

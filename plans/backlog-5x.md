@@ -7,6 +7,16 @@
 
 ---
 
+## Carried Forward From 4.x (4.x branch retired)
+
+> The 4.x backlog file has been archived to `_archive/plans/backlog-4x-final-open-items.md`.
+> The single remaining open 4.x item is reproduced below; it must be re-implemented against 5.x multi-dashboard architecture if revived.
+
+#### 5X-CF-33 · Gear Edit: Persistent Per-Area Device Button Reorder — `TODO` · Priority: MEDIUM · Size: M · [#33](https://github.com/htiel/LCARS-lovelace-dashboard/issues/33)
+Carried from 4X-33. Extended reorder beyond 4X-8's panel-order override — user-defined device button ordering within each Habitat area. Requires translation to 5.x WS write-handler pattern (256K + depth-20 caps, schema validation per Worf B11).
+
+---
+
 ## Status Key
 
 | Tag | Meaning |

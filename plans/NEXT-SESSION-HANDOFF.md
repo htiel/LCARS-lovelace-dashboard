@@ -10,7 +10,9 @@
 
 ## Where we left off
 
-Today shipped the entire **v5.5.8 → v5.6.6 release train (8 releases + 1 spec-only commit)** in one session, including a cumulative agent-team review (Data + Worf + Geordi) and a Captain-spotted hotfix for a UniFi-detection regression. See [plans/v5.6-train-shipped.md](plans/v5.6-train-shipped.md) for the full ledger.
+**2026-05-11 update (Riker):** **[plans/v5.7-bug-elimination-plan.md](v5.7-bug-elimination-plan.md) APPROVED BY CAPTAIN** — 6 release passes (v5.7.0 → v5.7.5) closing 45 open bug-labeled issues. Captain decisions: (1) 6-pass cadence confirmed, (2) `#99` stays in Pass 6, (3) `#164` closed out-of-scope (HA user-config, not LCARS code), (4) `#134` Lit 3 → **v5.8.0 target locked**. Team pre-review consulted Geordi/Worf/Data/Wesley. **Next executable unit:** Pass 1 / v5.7.0 — Subspace + Cetacean + Illumination polish triple. Also archived 4.x backlog (only open item #33 carried forward as `5X-CF-33` in `plans/backlog-5x.md`).
+
+Today shipped the entire **v5.5.8 → v5.6.6 release train (8 releases + 1 spec-only commit)** in one session, including a cumulative agent-team review (Data + Worf + Geordi) and a Captain-spotted hotfix for a UniFi-detection regression. See [plans/v5.6-train-shipped.md](v5.6-train-shipped.md) for the full ledger.
 
 Working tree is clean. Tags 5.5.8/5.6.0/5.6.1/5.6.2/5.6.3/5.6.4/5.6.5/5.6.6 are all on origin/5.0 with matching GitHub releases.
 

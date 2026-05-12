@@ -29,6 +29,9 @@ Carried from 4X-33. Extended reorder beyond 4X-8's panel-order override — user
 
 ## Open Bugs (from Epic 0 QA Review)
 
+#### 5X-B-229 · Chronicle: filter device-config switches (UPS *_ENABLED, *_ALWAYS_ON, etc.) — `TODO` · Priority: LOW · Size: S · [#229](https://github.com/htiel/LCARS-lovelace-dashboard/issues/229)
+Chronicle Mode shows config switches like `UPS AIR AC ENABLED`, `UPS AIR AC ALWAYS ON`, `UPS AIR USB ENABLED` as permanent blue bars. Add `entity_category === 'config'/'diagnostic'` early-exit in `isChronicleEntity()` and extend `CONFIG_TOGGLE_RE` for `*_enabled`/`*_always_on`/`*_beeper`/`*_auto_reboot`/etc. Bundle into next Tactical patch.
+
 #### 5X-B16 · Restore Navigation and Floor Context While Scrolling — `TODO` · Priority: HIGH · Size: M · WSJF: 3.00 · [#83](https://github.com/htiel/LCARS-lovelace-dashboard/issues/83)
 No active dashboard indicator in cross-dashboard nav. Floor context lost during long illumination scroll. Floor separators lack color-blind clarity.
 **Aliases**: WC5-009, WC5-012, GEO-515

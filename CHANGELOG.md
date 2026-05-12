@@ -2,6 +2,55 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.9.0] — Tactical hardening + Chronicle mode (GA)
+
+Stable release of the v5.9 Tactical train. Rolls up beta.1 → beta.3 plus a final
+camera-config-toggle filter polish. Closes #99, #146, #223, #224.
+
+### Headline
+- **Hybrid camera tile** (`<lcars-camera-tile>`) — `<ha-camera-stream>` for focused
+  viewscreens, fetch+blob+Bearer-token for grid tiles. Zero `?token=` in URLs.
+- **Tactical Summary Bar** replacing the ring-gauge cluster — threat glyph, four
+  state-coloured pill quadrants (SHIELDS / PERIMETER / SENSORS / VIEWSCREENS),
+  LAST EVENT pill. Pulse animation on alarm-triggered. 2×2 grid below 720 px.
+- **Chronicle Mode** — per-area 24-hour Gantt timeline of movement & illumination
+  state. Astronomical 4-band sun row, JUMP TO NOW, INCIDENT pills, LIGHTS WASTED
+  alert (lights on + nobody home + sun up), click any row or bar for `hass-more-info`.
+- **8-second camera connect timeout** with 30-second auto-retry while OFFLINE.
+
+### Filter charter (Chronicle)
+Strict whitelist — only entities matching the movement-and-illumination charter
+appear: `light`, `fan`, `lock`, `switch` (sans power-monitoring), `cover`
+(door/window/garage classes), `binary_sensor` with `device_class ∈ {motion,
+occupancy, presence, door, window, opening, garage_door}`, plus regex fallback
+for unclassified door/contact sensors, `alarm_control_panel`. Now also rejects
+camera-config toggles disguised as motion entities — `*_motion_detection`,
+`*_detection_enabled`, `*_alarm_enabled`, `*_recording`, `*_audio_detection`,
+`*_pir_enabled`, `*_ir_lights`, `*_night_vision`, `*_floodlight_on`, etc.
+The actual motion sensors (`device_class: motion`) stay.
+
+### Security
+- Camera access token never enters the URL — `Authorization: Bearer` header only.
+- Chronicle BLOCKING gates from spec §7: default-deny domains
+  (`camera`/`media_player`/`person`/`device_tracker`), sensitive-area regex
+  (`/guest|nursery|bath|bathroom|kid/i`), payload-free logging, no
+  localStorage/IndexedDB, WS history API only, AbortController on every poll,
+  30→60→120→300 s back-off, hidden-tab pause, entity cap 170, hours clamped
+  6–72, 500 ms mode-switch debounce.
+
+### Issues closed
+- #99 — Camera token leak (hybrid migration)
+- #146 — Tactical Summary Bar
+- #223 — Camera ESTABLISHING LINK retry
+- #224 — Chronicle Mode
+
+### Beta history (rolled into this GA)
+- beta.1 — Initial train ship
+- beta.2 — Camera Bearer-auth hotfix + Chronicle Map-iteration hotfix
+- beta.3 — UX pass: strict scope filter, label de-dupe, click-for-more-info,
+  lilac dividers, rounded pill bars, silent-row hide, LIGHTS WASTED indicator,
+  Summary-Bar value pills
+
 ## [5.9.0-beta.3] — Tactical UX pass (Chronicle scope + Summary pills)
 
 Captain's review pass on beta.2. Eight defects tackled — five Chronicle UX,

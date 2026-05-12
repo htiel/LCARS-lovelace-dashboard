@@ -171,6 +171,12 @@ const CHRONICLE_COVER_CLASSES = new Set([
   'door', 'window', 'garage', 'shutter', 'awning', 'blind', 'curtain', 'shade',
 ]);
 const BS_FALLBACK_OBJID_RE = /(_motion|_occupancy|_presence|_door|_window|_contact|_opening|_reedswitch)(?:$|_)/i;
+// Configuration toggles disguised as motion/detection entities — reject across
+// every domain. e.g. `switch.front_door_motion_detection` is the "is motion
+// detection enabled?" toggle, not an actual motion event. Same for the
+// `_detection_enabled`, `_alarm_enabled`, `_recording`, `_audio_recording`
+// helpers exposed by many camera integrations (Reolink, Unifi, Amcrest, etc.).
+const CONFIG_TOGGLE_RE = /(_motion_detection|_motion_enabled|_motion_alarm|_alarm_enabled|_detection_enabled|_detection_switch|_audio_detection|_pir(?:_enabled)?|_recording(?:_enabled)?|_audio_recording|_ftp_upload|_email_on_event|_notifications?|_siren|_floodlight_(?:on|enabled)|_privacy_mode|_ir_lights|_night_vision)(?:$|_)/i;
 
 function isChronicleEntity(eid, hass) {
   if (!eid || typeof eid !== 'string') return false;
@@ -180,6 +186,8 @@ function isChronicleEntity(eid, hass) {
   const objId = eid.slice(dot + 1);
   if (domain === 'camera' || domain === 'media_player' || domain === 'person' || domain === 'device_tracker') return false;
   if (/secret|key|token|password/i.test(eid)) return false;
+  // Reject camera-config toggles regardless of domain
+  if (CONFIG_TOGGLE_RE.test(objId)) return false;
 
   const state = hass?.states?.[eid];
   const dc = state?.attributes?.device_class || '';

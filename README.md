@@ -29,7 +29,7 @@ Version 5.0 replaces the single monolithic dashboard with a **multi-dashboard sy
 | **Illumination** | Illumination | sunflower | ALL / LIGHTS / CIRCUITS | Lighting control — brightness bars, color presets, effects, scenes, and lighting circuit toggles |
 | **Cetacean Ops** | Cetacean Ops | sky | ALL / WATER / CHEMISTRY / FEATURES / POWER | Pool & spa operations — water bodies, chemistry gauges, pump telemetry, equipment circuits |
 | **Subspace Relay** | Subspace Relay | butterscotch + ice | ALL / NETWORK / EQUIPMENT / WAN / CLIENTS | Network health — UniFi infrastructure, WAN reachability, peripherals, connected clients (privacy-redacted by default with 60s reveal toggle) |
-| **Medical Bay** | Sickbay | gold + african-violet | SUMMARY / ANATOMICAL / BIOMEDICAL | Biofunction monitor — vitals (HR / BP / SpO₂ / weight / sleep / steps), front silhouette with anchor callouts, decorative ECG strip. Admin-gated, default-disabled, per-profile consent gate |
+| **Medical Bay** | Sickbay | gold + african-violet | SUMMARY / ANATOMICAL / BIOMEDICAL | Biofunction monitor — vitals (HR / HRV / BP / SpO₂ / body temp Δ / weight / sleep / steps / Oura readiness + sub-scores), front silhouette with anchor callouts, rest-mode banner, enum-aware resilience chip, decorative ECG strip. Admin-gated, default-disabled, per-profile consent gate |
 | **Starship Health** | Starship Health | gold + butterscotch | SUMMARY / ENGINEERING / TACTICAL | Vessel diagnostic — CPU / mem / temp / disk / WAN / addons rolled up onto a top-down landscape starship silhouette. Admin-gated. Multi-host: every Glances config entry adds a new vessel |
 
 Only **Habitat** is enabled by default. Enable additional dashboards through the integration options flow.

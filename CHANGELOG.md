@@ -2,63 +2,15 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
-## [5.8.0-beta.2] — Medical Bay visual-inspection fixes (Geordi + Wesley)
+## [5.8.0] — Sickbay (Medical Bay dashboard)
 
-Visual review of beta.1 with the Captain's Withings-only and Eric's Oura+Withings
-dashboards. Geordi and Wesley returned converging P0/P1 lists; this beta ships every
-P0 plus the trivial P1 cleanups. Creative bigger items (halo wellness ring, data-source
-roster, time-of-day-aware canonical, THERM bloom on alert anchors) deferred to beta.3+.
+The "Sickbay" release closes every open Medical-tagged issue and ships the Medical Bay
+dashboard as a stable feature, consolidating betas 1 and 2 after Geordi + Wesley visual
+review against both Withings-only and Oura+Withings live dashboards. Closes #116, #119
+(relabel + defer to 6.0), #173, #175, #176, #178, #179, #124. Defers #117 (back-anchor
+SVG paths) to 6.0 with `needs-external-artist`.
 
-### Fixed (P0 — ship-blockers)
-- `sleep_score` removed from the silhouette anchor map (`anchor: null`). It was
-  colliding with `body_temp_deviation` at the top-of-head edge, producing a stacked
-  "BODY TEMP / SLEEP" callout pair.
-- `VITAL_SUFFIX_PRIORITY.heart_rate` reordered so `_current_heart_rate` /
-  `_resting_heart_rate` outrank `_average_sleep_heart_rate` /
-  `_lowest_sleep_heart_rate`. Eric's Oura-only HR was rendering the sleep-period
-  average as canonical with the source tag "AVG SLEEP" — clinically wrong for a
-  current-status display.
-- `VITAL_SUFFIX_PRIORITY.hrv` similarly reordered to promote non-sleep HRV variants.
-- `VITAL_SUFFIX_PRIORITY.stress_resilience` gained `_resilience_level` at index 0 so
-  the Oura enum ("Great"/"Strong"/"Solid"/"Low") wins canonical and is routed through
-  `_renderEnumTile`. Beta.1 rendered the numeric `_resilience_score` as "33 SCORE".
-- `.file-id-label` CSS bumped to butterscotch / 95% opacity / weight 700 so the
-  "FILE ID" prefix reads cleanly and no longer visually merges with the adjacent
-  screenshot-obfuscator redaction rect on `.file-id`.
-
-### Fixed (P1)
-- Source-label pill suppressed when it echoes the tile label (e.g. EFFICIENCY ·
-  EFFICIENCY, HRV BAL · BALANCE, VO2 MAX · VO2). Applied in `_renderTiles`,
-  `_renderReadinessTile`, and `_renderEnumTile`.
-- Variant dedupe: `_reduceVitals` now filters duplicate `(label, value)` pairs after
-  the priority sort so HR no longer stacks "HR 111 / HR 111" when Withings ships
-  both `_heart_rate` and `_current_heart_rate` at the same number.
-- Readiness composite tile collapses to a single column when there is no canonical
-  value, eliminating the wide empty gap in Withings-only dashboards.
-- `discoverReadinessSubscores` no longer aborts on a single 'unknown' state — it now
-  `continue`s past unavailable entities to keep scanning for valid ones.
-- Sub-lozenge contrast raised (background `rgba(153,204,255,.05)` → `.12`,
-  border-left `2px` → `3px`, font `.7rem` → `.75rem`).
-
-### Deferred to beta.3+ (Wesley creative roadmap)
-- Halo wellness ring around silhouette head for composite scores.
-- Data-source roster footer chip strip.
-- Time-of-day-aware canonical (overnight variants when in rest mode / pre-09:00).
-- THERM toggle → bloom alert/critical anchors with `--lcars-thermal-bloom`.
-- SLEEP and HRV composite tiles with sub-lozenges (same pattern as READINESS).
-- Signed body-temp deviation glyph (↗ ↘ =).
-- LAST SYNC clinical timestamp in header.
-
-[5.8.0-beta.2]: https://github.com/htiel/LCARS-lovelace-dashboard/releases/tag/5.8.0-beta.2
-
-## [5.8.0-beta.1] — Medical Bay beta consolidation
-
-Captain directive: close every open Medical-tagged issue and pull forward every v5.7.2
-deferral into a single beta. Closes #116, #119 (relabel + defer to 6.0), #173, #175,
-#176, #178, #179, #124. Defers #117 (back-anchor SVG paths) to 6.0 with
-`needs-external-artist`.
-
-### Added (Worf Gaps B + E coverage)
+### Added — Medical Bay
 - **New vital kinds** in `MEDICAL_VITAL_CLASSES`: `readiness` (composite headline +
   contributor sub-lozenges), `body_temp_deviation` (symmetric ±°C bands; CRITICAL at
   |Δ|>1.0°C), `hrv_balance`, `sleep_efficiency`, `activity_score`, `vo2_max`,
@@ -66,8 +18,9 @@ deferral into a single beta. Closes #116, #119 (relabel + defer to 6.0), #173, #
   `DEFAULT_THRESHOLDS` extended with matching bands.
 - **Readiness composite tile** (`_renderReadinessTile`) renders the canonical Oura
   readiness_score 0–100 as a large headline above a 2×2 grid of top sub-score lozenges
-  (`discoverReadinessSubscores` → RESTING HR, HRV BAL, BODY TEMP, RECOVERY, etc.). When
-  fewer than 4 sub-scores are discoverable, the grid shrinks gracefully.
+  (`discoverReadinessSubscores` → RESTING HR, HRV BAL, BODY TEMP, RECOVERY, etc.).
+  Collapses to a single column when there is no canonical value (Withings-only
+  dashboards).
 - **Rest mode banner** (`_renderRestBanner`) surfaces above the silhouette whenever
   Oura's `binary_sensor.*_rest_mode` is `on`. Butterscotch for routine recovery, tomato
   for illness signal. Transition plays a single audio cue (`navAcknowledge` /
@@ -80,9 +33,10 @@ deferral into a single beta. Closes #116, #119 (relabel + defer to 6.0), #173, #
   branches (#178).
 - **`--lcars-thermal-bloom` CSS token** for the thermal heat-bloom gradient — no
   hardcoded literals in the silhouette anymore (#179 follow-through).
-- **FILE ID label + status-pill legend** in the Medical header (#175, #176): a
-  short uppercase `FILE ID` precedes the identifier, and the rollup pill carries a
-  full-tier-description `title` + visually-hidden `aria-describedby` legend.
+- **FILE ID label + status-pill legend** in the Medical header (#175, #176): a short
+  uppercase `FILE ID` precedes the identifier (butterscotch, 95% opacity, weight 700
+  for clean read against the screenshot-obfuscator rect), and the rollup pill carries
+  a full-tier-description `title` + visually-hidden `aria-describedby` legend.
 
 ### Changed
 - `_renderTiles` slice limit raised from 12 → 16 to fit the new Oura tiles.
@@ -92,8 +46,25 @@ deferral into a single beta. Closes #116, #119 (relabel + defer to 6.0), #173, #
 - `formatVital` extended: timestamp values render as `HH:MM` local; enum values are
   uppercased with underscores stripped; `body_temp_deviation` always carries a signed
   `±` and 1 decimal; `sleep_duration` heuristically detects seconds / minutes / hours.
-- Posterior + top-down placeholders re-tagged from `SCAN MODE PENDING — 5.4.2` to
-  `SCAN MODE PENDING — 6.0` per Captain's deferral (#119).
+- `VITAL_SUFFIX_PRIORITY.heart_rate` reordered so `_current_heart_rate` /
+  `_resting_heart_rate` outrank `_average_sleep_heart_rate` /
+  `_lowest_sleep_heart_rate`. Eric's Oura-only HR no longer canonicalizes the
+  sleep-period average as "AVG SLEEP" for current-status display.
+- `VITAL_SUFFIX_PRIORITY.hrv` similarly reordered to promote non-sleep HRV variants.
+- `VITAL_SUFFIX_PRIORITY.stress_resilience` leads with `_resilience_level` so the Oura
+  enum ("Great"/"Strong"/"Solid"/"Low") wins canonical and routes through the enum
+  renderer instead of rendering "33 SCORE".
+- `sleep_score` removed from the silhouette anchor map (was colliding with
+  `body_temp_deviation` at the top-of-head edge).
+- Source-label pill suppressed when it echoes the tile label (EFFICIENCY · EFFICIENCY,
+  HRV BAL · BALANCE, VO2 MAX · VO2).
+- `_reduceVitals` filters duplicate `(label, value)` pairs so HR no longer stacks
+  "HR 111 / HR 111" when Withings ships both `_heart_rate` and `_current_heart_rate`
+  at the same number.
+- `discoverReadinessSubscores` no longer aborts on a single 'unknown' state; sub-lozenge
+  contrast raised so sub-scores register against the dark biofunction body.
+- Posterior + top-down silhouette placeholders re-tagged from `SCAN MODE PENDING —
+  5.4.2` to `SCAN MODE PENDING — 6.0` per Captain's deferral (#119).
 - `_buildAnchors` success branch now sets `present: true` explicitly so the rollup
   gate ignores absent slots (#116).
 
@@ -102,11 +73,15 @@ deferral into a single beta. Closes #116, #119 (relabel + defer to 6.0), #173, #
   an inner `hass.states` reference check (#124). The medical card no longer re-walks
   the entire entity registry on every Lovelace render tick.
 
-### Deferred to 6.0
+### Deferred to 6.0 / beyond
 - **#117** — back-anchor SVG silhouette paths. Tagged `needs-external-artist`. The
   posterior pane continues to render the placeholder caption.
+- Wesley creative roadmap: halo wellness ring; data-source roster footer chip strip;
+  time-of-day-aware canonical; THERM bloom on alert anchors with
+  `--lcars-thermal-bloom`; SLEEP and HRV composite tiles with sub-lozenges; signed
+  body-temp deviation glyph (↗ ↘ =); LAST SYNC clinical timestamp.
 
-[5.8.0-beta.1]: https://github.com/htiel/LCARS-lovelace-dashboard/releases/tag/5.8.0-beta.1
+[5.8.0]: https://github.com/htiel/LCARS-lovelace-dashboard/releases/tag/5.8.0
 
 ## [5.7.2] — Medical Bay multi-source rendering + Oura coverage (5X-F35)
 

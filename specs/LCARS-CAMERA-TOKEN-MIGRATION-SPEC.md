@@ -1,8 +1,8 @@
 # LCARS Camera Token Migration Spec
 
-**Status:** Active · authored 2026-05-10 · author: Worf · reviewers: Data, Geordi
+**Status:** Active · authored 2026-05-10 · revised 2026-05-12 (Captain hybrid decision) · author: Worf · reviewers: Data, Geordi
 **Tracking issue:** #99
-**Blocks:** 5.5.2 (Tactical), 5.5.8 (Habitat)
+**Shipping in:** v5.9.0-beta.1 (with #146 / #223 / #224)
 **Prerequisite for:** 5.5.0 ship (per Riker NO-GO; this spec must exist before 5.5.0 release notes go out)
 
 ## 1. Problem
@@ -23,38 +23,38 @@ The `access_token` query-string parameter is embedded directly into `<img src>`,
 
 **OWASP A02 (Cryptographic Failures), A01 (Broken Access Control).** Tokens are short-lived but tokens-in-URLs is a verified anti-pattern.
 
-## 2. Mechanism selection
+## 2. Mechanism selection — HYBRID (revised 2026-05-12)
 
-Exactly one mechanism is chosen for the migration. Alternatives are documented with their rejection reason.
+**Captain decision (Q2 of v5.9.0 planning):** ship a **hybrid** rather than pure `<ha-camera-stream>`. Pure-`<ha-camera-stream>` was found inadequate by Worf + Data + Wesley:
 
-### Chosen: `ha-camera-stream` web component (option A)
+- `<ha-camera-stream>` uses HLS (or WebRTC where supported), introducing 2–6 s latency that hurts grid-tile UX where the user wants an instantly recognisable frame.
+- A pure fetch-blob path also cannot carry MJPEG (long-lived multipart) and would break streaming entirely on the focused viewscreen.
 
-Use the Home Assistant frontend's existing `<ha-camera-stream>` custom element. It is the canonical HA way to render a camera entity in any custom card. It internally:
+The hybrid:
 
-- Reads `hass.connection` to authenticate via the WebSocket session (no token in URL)
-- Negotiates `hls`, `webrtc`, or `mjpeg` based on the camera's `frontend_stream_type` attribute
-- Handles reconnection, fallback to still-image when streaming fails
-- Is maintained by the HA core team and tracks HA's auth changes
+### Focused / main viewscreen → `<ha-camera-stream>`
 
-Import via `card-tools` or `customElements.get('ha-camera-stream')` after the first frontend render.
+- One element at a time. Latency acceptable for the dwell view.
+- Auth handled internally by the element against `this.hass`.
+- Verified via feature-detect (`customElements.get('ha-camera-stream')`) at render time; fallback to Option A path if undefined.
 
-### Rejected: option B — `async_signed_path` short-lived signed URLs
+### Grid tiles → fetch + cookie + blob URL
 
-`hass.callApi('POST', 'auth/sign_path', { path: '/api/camera_proxy_stream/...', expires: 30 })` returns a signed URL with TTL.
+- `fetch('/api/camera_proxy/' + eid, { credentials: 'include' })` → `Blob` → `URL.createObjectURL(...)` → `<img src=blob:...>`
+- Refresh cadence: every 3 s for active (motion-detected) tiles, every 30 s for idle tiles
+- `URL.revokeObjectURL(prev)` on every refresh AND on `disconnectedCallback` (non-revocation is a memory-leak vector — Worf's hard requirement)
+- Same-origin cookie (`hassToken`) attaches naturally — confirmed by Worf: HA Lovelace custom panels are NOT iframes, they are shadow-DOM web components at the same origin, so `SameSite=Lax` is a non-issue.
 
-**Rejection reason:** Still puts an authentication artifact in `<img src>`. Replaces long-lived token leak with short-lived token leak. Does not address the DevTools/view-source surface. Adds a request-per-render cost and a token-rotation lifecycle the card must manage.
+### Rejected alternatives (kept for historical reference)
 
-### Rejected: option C — cookie-auth via existing HA session
+**Option B — `async_signed_path` short-lived signed URLs**
+Still embeds an auth artifact in `<img src>`. Replaces long-lived leak with short-lived leak. Does not address the DevTools/view-source surface.
 
-Rely on the user's existing `hassToken` cookie scoped to the HA origin.
+**Option C — pure cookie-auth (no blob URL)**
+Browser's image-loader does not forward credentials cookies on `<img>` requests cross-context. Works only on same-origin top-level documents. Fails on iframe-embedded Lovelace.
 
-**Rejection reason:** HA frontend does not consistently set a cookie usable from a Lovelace card context. Cross-origin embeds (HA behind reverse proxy with subdomain) break. Lovelace card iframes in mobile companion app have inconsistent cookie behavior.
-
-### Rejected: option D — proxy through LCARS integration
-
-Add a `/api/lcars_dashboard/camera_proxy/{entity_id}` route in `__init__.py` that re-signs HA's camera stream.
-
-**Rejection reason:** Reinvents HA's camera authentication. Duplicates HA's stream component logic. Adds an attack surface in our integration. We are a frontend dashboard, not a media gateway.
+**Option D — proxy through LCARS integration**
+Reinvents HA's camera authentication. Duplicates HA's stream component logic. Adds attack surface in our integration. We are a frontend dashboard, not a media gateway.
 
 ## 3. Migration surface
 

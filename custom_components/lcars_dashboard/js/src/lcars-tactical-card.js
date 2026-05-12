@@ -17,6 +17,8 @@ import { getAreaEntities } from './lcars-entity-query.js';
 import { isTacticalEntity, isDiagnosticEntity } from './lcars-entity-utils.js';
 import { lcarsAudio } from './lcars-audio.js';
 import { renderRingGauge } from './lcars-ring-gauge.js';
+import './lcars-camera-tile.js';
+import './lcars-tactical-chronicle.js';
 
 const TAG = 'TacticalCard';
 
@@ -123,7 +125,7 @@ class LcarsTacticalCard extends LitElement {
     this._filter = 'all';        // #144 — sidebar filter ALL/ACCESS/ZONES
     this._onSidebarFilter = (e) => {
       const f = e?.detail?.filter;
-      if (f === 'all' || f === 'access' || f === 'zones') {
+      if (f === 'all' || f === 'access' || f === 'zones' || f === 'chronicle') {
         this._filter = f;
         this.requestUpdate();
       }
@@ -593,8 +595,7 @@ class LcarsTacticalCard extends LitElement {
     const eid = entry.entity?.entity_id;
     const state = this._hass?.states?.[eid] || entry.state;
     const name = this._shortCamName(state?.attributes?.friendly_name || eid || '');
-    const imgUrl = state?.attributes?.entity_picture;
-    const feedUrl = imgUrl ? `/api/camera_proxy_stream/${eid}?token=${state?.attributes?.access_token || ''}` : null;
+    const hasFeed = !!state?.attributes?.entity_picture;
     const level = detection?.level || DETECT_IDLE;
     const levelLabel = level === DETECT_PERSON ? 'PERSON DETECTED' : level === DETECT_VEHICLE ? 'VEHICLE DETECTED' : level === DETECT_MOTION ? 'MOTION DETECTED' : '';
     const borderColor = DETECT_COLORS[level];
@@ -602,7 +603,9 @@ class LcarsTacticalCard extends LitElement {
     const timestamp = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
     return html`
       <div class="tac-viewscreen-frame" style="border-color:${borderColor}">
-        ${feedUrl ? html`<img src="${feedUrl}" alt="${name}" @error=${(e) => { e.target.style.display = 'none'; }} />` : html`<span class="tac-viewscreen-offline">VIEWSCREEN OFFLINE</span>`}
+        ${hasFeed
+          ? html`<lcars-camera-tile mode="stream" .hass=${this._hass} entity-id=${eid} label=${name} ?active=${level > DETECT_IDLE}></lcars-camera-tile>`
+          : html`<span class="tac-viewscreen-offline">VIEWSCREEN OFFLINE</span>`}
         <div class="tac-viewscreen-overlay">
           <span class="tac-viewscreen-name">${name}</span>
           ${levelLabel ? html`<span class="tac-viewscreen-detect" style="color:${borderColor}">${levelLabel}</span>` : ''}
@@ -632,11 +635,8 @@ class LcarsTacticalCard extends LitElement {
     const glow = DETECT_GLOW[level] || 'none';
     const levelLabel = level === DETECT_PERSON ? 'PERSON' : level === DETECT_VEHICLE ? 'VEHICLE' : level === DETECT_MOTION ? 'MOTION' : '';
 
-    // Active cameras get live MJPEG stream, idle get still snapshots
+    // Active cameras refresh faster but always use blob+cookie path (no tokens in URL)
     const isActive = level > DETECT_IDLE;
-    const feedUrl = isActive && imgUrl
-      ? `/api/camera_proxy_stream/${eid}?token=${state?.attributes?.access_token || ''}`
-      : imgUrl;
 
     return html`
       <div class="tac-camera" data-state="${camState}" data-level="${level}"
@@ -644,18 +644,14 @@ class LcarsTacticalCard extends LitElement {
            @click=${() => { this._focusedCamera = eid; this.requestUpdate(); showMoreInfo(eid); }}
            role="button" tabindex="0" aria-label="${name}${levelLabel ? ` — ${levelLabel} DETECTED` : ''}">
         <span class="tac-camera__badge">${String(index || 0).padStart(2, '0')}</span>
-        <div class="tac-camera__connecting">
-          <span class="tac-camera__connecting-text">ESTABLISHING LINK</span>
-        </div>
-        <div class="tac-camera__offline">
-          <ha-icon .icon=${'mdi:video-off'} style="--mdc-icon-size:24px"></ha-icon>
-          <span class="tac-camera__offline-text">VIEWSCREEN OFFLINE</span>
-        </div>
-        ${feedUrl ? html`
-          <img src="${feedUrl}" alt="${name}" loading="${isActive ? 'eager' : 'lazy'}"
-               @load=${(e) => { e.target.closest('.tac-camera')?.setAttribute('data-state', 'live'); }}
-               @error=${(e) => { e.target.closest('.tac-camera')?.setAttribute('data-state', 'offline'); }} />
-        ` : ''}
+        ${imgUrl ? html`
+          <lcars-camera-tile mode="snap" .hass=${this._hass} entity-id=${eid} label=${name} ?active=${isActive}></lcars-camera-tile>
+        ` : html`
+          <div class="tac-camera__offline">
+            <ha-icon .icon=${'mdi:video-off'} style="--mdc-icon-size:24px"></ha-icon>
+            <span class="tac-camera__offline-text">VIEWSCREEN OFFLINE</span>
+          </div>
+        `}
         <span class="tac-camera__label">
           ${name}
           ${levelLabel ? html`<span class="tac-camera__detect-badge" style="color:${borderColor}">${levelLabel}</span>` : ''}
@@ -746,54 +742,111 @@ class LcarsTacticalCard extends LitElement {
     `;
   }
 
-  /* ═══ Overview Cards (Design Playbook §3.1) ═══ */
+  /* ═══ Summary Bar (#146 — replaces ring-gauge cluster in v5.9.0) ═══
+   * Geordi: dense single-row bar reads as one shape, scales 2×2 ≤720px.
+   * Color follows alarm-state across the whole bar. Threat glyph far-left,
+   * 4 quadrant tiles in the middle, LAST EVENT pill far-right.
+   */
   _renderOverview(summary) {
-    // #147 — palette tokens only; hex literals removed from render path.
     const ICE = 'var(--lcars-ice)';
     const TOMATO = 'var(--lcars-tomato)';
     const SUNFLOWER = 'var(--lcars-sunflower)';
+    const BUTTERSCOTCH = 'var(--lcars-butterscotch)';
     const GRAY = 'var(--lcars-gray)';
-    const shieldColor = summary.alarmState === 'disarmed' ? ICE : summary.alarmState === 'triggered' ? TOMATO : SUNFLOWER;
-    const shieldLabel = summary.alarmState.replace(/_/g, ' ').toUpperCase();
-    const perimColor = summary.perimeterSecure === summary.perimeterTotal ? ICE : TOMATO;
+
+    const alarmState = summary.alarmState || 'unknown';
+    const barColor = this._getSummaryColor(alarmState);
+    const isRedAlert = alarmState === 'triggered' || alarmState === 'pending';
+    const isArmed = alarmState.startsWith('armed');
+    const threatGlyph = isRedAlert ? '⚡' : isArmed ? '◆' : '❯';
+
+    const shieldLabel = alarmState.replace(/_/g, ' ').toUpperCase();
+
+    const perimOpen = summary.perimeterTotal - summary.perimeterSecure;
+    const perimOk = perimOpen === 0;
+    const perimColor = perimOk ? ICE : TOMATO;
+    const perimText = perimOk ? `${summary.perimeterTotal}/${summary.perimeterTotal} SECURE` : `${perimOpen} BREACH`;
+
     const camOnline = summary.allCameras.filter(c => (this._hass?.states?.[c.entity?.entity_id] || c.state)?.state !== 'unavailable').length;
-    const camColor = camOnline === summary.allCameras.length ? ICE : camOnline > 0 ? SUNFLOWER : TOMATO;
-    const lockColor = summary.locksLocked === summary.locksTotal ? ICE : TOMATO;
-    const lockStatus = summary.locksLocked === summary.locksTotal ? 'ALL ENGAGED' : `${summary.locksTotal - summary.locksLocked} UNSECURED`;
+    const camTotal = summary.allCameras.length;
+    const camColor = camTotal === 0 ? GRAY : camOnline === camTotal ? ICE : camOnline > 0 ? SUNFLOWER : TOMATO;
+    const camText = camTotal === 0 ? 'NONE' : camOnline === camTotal ? `${camTotal}/${camTotal} ONLINE` : `${camTotal - camOnline} OFFLINE`;
+
     const hazardColor = summary.safetyAlerts > 0 ? TOMATO : summary.safetyTotal > 0 ? ICE : GRAY;
-    const hazardStatus = summary.safetyAlerts > 0 ? `${summary.safetyAlerts} ALERT${summary.safetyAlerts > 1 ? 'S' : ''}` : summary.safetyTotal > 0 ? 'ALL CLEAR' : 'NO SENSORS';
+    const sensorText = summary.safetyTotal === 0 ? 'NONE'
+      : summary.safetyAlerts > 0 ? `${summary.safetyAlerts} ALERT${summary.safetyAlerts > 1 ? 'S' : ''}`
+      : 'ALL CLEAR';
+
+    const lastEvent = this._lastEventLabel(summary);
 
     return html`
-      <div class="tac-overview">
-        <div class="tac-ov-card tac-ov-shield" @click=${() => { if (summary.alarmEntityId) showMoreInfo(summary.alarmEntityId); }}>
-          ${renderRingGauge(1, 1, 96, shieldColor, shieldLabel, '')}
-          <span class="tac-ov-title">SHIELDS</span>
-          <span class="tac-ov-status" style="color:${shieldColor}">${shieldLabel}</span>
+      <div class="tac-summary-bar" data-state=${alarmState}
+           style="--bar-color:${barColor}"
+           @click=${() => { if (summary.alarmEntityId) showMoreInfo(summary.alarmEntityId); }}
+           role="region" aria-label="Tactical summary">
+        <div class="tac-sum-glyph" aria-hidden="true">${threatGlyph}</div>
+        <div class="tac-sum-quad tac-sum-shields" style="--quad-color:${barColor}">
+          <span class="tac-sum-label">SHIELDS</span>
+          <span class="tac-sum-value">${shieldLabel}</span>
         </div>
-        <div class="tac-ov-card tac-ov-perimeter">
-          ${renderRingGauge(summary.perimeterSecure, Math.max(summary.perimeterTotal, 1), 96, perimColor, `${summary.perimeterSecure}/${summary.perimeterTotal}`, 'SECURE')}
-          <span class="tac-ov-title">PERIMETER</span>
-          <span class="tac-ov-status" style="color:${perimColor}">${summary.perimeterSecure === summary.perimeterTotal ? 'ALL SECURE' : `${summary.perimeterTotal - summary.perimeterSecure} BREACH`}</span>
+        <div class="tac-sum-quad tac-sum-perim" style="--quad-color:${perimColor}">
+          <span class="tac-sum-label">PERIMETER</span>
+          <span class="tac-sum-value">${perimText}</span>
         </div>
-        <div class="tac-ov-card tac-ov-cameras">
-          ${renderRingGauge(camOnline, Math.max(summary.allCameras.length, 1), 96, camColor, `${camOnline}/${summary.allCameras.length}`, 'ONLINE')}
-          <span class="tac-ov-title">VIEWSCREENS</span>
-          <span class="tac-ov-status" style="color:${camColor}">${camOnline === summary.allCameras.length ? 'ALL ONLINE' : `${summary.allCameras.length - camOnline} OFFLINE`}</span>
+        <div class="tac-sum-quad tac-sum-sensors" style="--quad-color:${hazardColor}">
+          <span class="tac-sum-label">SENSORS</span>
+          <span class="tac-sum-value">${sensorText}</span>
         </div>
-        <div class="tac-ov-card tac-ov-locks">
-          ${renderRingGauge(summary.locksLocked, Math.max(summary.locksTotal, 1), 96, lockColor, `${summary.locksLocked}/${summary.locksTotal}`, 'LOCKED')}
-          <span class="tac-ov-title">LOCKS</span>
-          <span class="tac-ov-status" style="color:${lockColor}">${lockStatus}</span>
+        <div class="tac-sum-quad tac-sum-cams" style="--quad-color:${camColor}">
+          <span class="tac-sum-label">VIEWSCREENS</span>
+          <span class="tac-sum-value">${camText}</span>
         </div>
-        ${summary.safetyTotal > 0 ? html`
-          <div class="tac-ov-card tac-ov-hazard">
-            ${renderRingGauge(summary.safetyTotal - summary.safetyAlerts, Math.max(summary.safetyTotal, 1), 96, hazardColor, `${summary.safetyTotal - summary.safetyAlerts}/${summary.safetyTotal}`, 'CLEAR')}
-            <span class="tac-ov-title">HAZARD DETECTORS</span>
-            <span class="tac-ov-status" style="color:${hazardColor}">${hazardStatus}</span>
+        ${lastEvent ? html`
+          <div class="tac-sum-last" title="${lastEvent.full}">
+            <span class="tac-sum-last-label">LAST EVENT</span>
+            <span class="tac-sum-last-value">${lastEvent.short}</span>
           </div>
         ` : ''}
       </div>
     `;
+  }
+
+  /* ═══ Last Event derivation (#146) ═══ */
+  _lastEventLabel(summary) {
+    if (!this._hass) return null;
+    // Find most-recent state change among alarm, locks, perimeter, hazards
+    const candidates = [];
+    if (summary.alarmEntityId) candidates.push(summary.alarmEntityId);
+    for (const l of (summary.allLocks || [])) candidates.push(l.entity?.entity_id);
+    // perimeter/hazards arrive via floorGroups; keep scope narrow for v1
+    let best = null;
+    let bestT = 0;
+    for (const eid of candidates) {
+      if (!eid) continue;
+      const s = this._hass.states[eid];
+      if (!s) continue;
+      const t = new Date(s.last_changed || s.last_updated || 0).getTime();
+      if (t > bestT) { bestT = t; best = s; }
+    }
+    if (!best) return null;
+    const name = (best.attributes?.friendly_name || best.entity_id).toUpperCase();
+    const stateLabel = String(best.state).replace(/_/g, ' ').toUpperCase();
+    const ageMs = Date.now() - bestT;
+    const ageStr = this._formatEventAge(ageMs);
+    return {
+      short: `${ageStr} · ${stateLabel}`,
+      full: `${name} → ${stateLabel} (${ageStr})`,
+    };
+  }
+
+  _formatEventAge(ms) {
+    if (ms < 0 || !isFinite(ms)) return '—';
+    const mins = Math.floor(ms / 60000);
+    if (mins < 1) return 'NOW';
+    if (mins < 60) return `${mins}M`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}H`;
+    return `${Math.floor(hours / 24)}D`;
   }
 
   /* ═══ SVG Ring Gauge (shared) ═══ */
@@ -882,6 +935,11 @@ class LcarsTacticalCard extends LitElement {
   /* ═══ Main Render ═══ */
   render() {
     if (!this._hass) return html`<div class="tac-loading">INITIALIZING TACTICAL SYSTEMS...</div>`;
+    // #224 — Chronicle mode: replace tactical view entirely with timeline component.
+    if (this._filter === 'chronicle') {
+      const hours = this._config?.chronicle?.hours || 24;
+      return html`<lcars-tactical-chronicle .hass=${this._hass} .hours=${hours}></lcars-tactical-chronicle>`;
+    }
     const floorGroups = this._getAreasWithTactical();
     const summary = this._getGlobalSummary(floorGroups);
     const isRedAlert = summary.alarmState === 'triggered' || summary.alarmState === 'pending';
@@ -930,21 +988,105 @@ class LcarsTacticalCard extends LitElement {
         .tac-dashboard { display: flex; flex-direction: column; gap: 0.75rem; }
         .tac-loading { font-family: var(--lcars-font, 'Antonio', sans-serif); color: var(--lcars-gray); text-transform: uppercase; padding: 2rem; text-align: center; font-size: 1.25rem; letter-spacing: 0.1em; }
 
-        /* ─── Overview Cards ─── */
-        .tac-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.375rem; }
-        .tac-ov-card {
-          display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
-          padding: 0.75rem 0.5rem; cursor: pointer;
-          border: none; border-radius: 0;
+        /* ─── Summary Bar (#146) — replaces ring-gauge overview cards ─── */
+        .tac-summary-bar {
+          display: grid;
+          grid-template-columns: auto repeat(4, minmax(0, 1fr)) auto;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem 0.875rem;
           background: rgba(255,153,102,0.05);
-          font-family: var(--lcars-font, 'Antonio', sans-serif); text-transform: uppercase;
-          transition: background 200ms ease;
+          border-left: 0.375rem solid var(--bar-color, var(--lcars-butterscotch));
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: background 200ms ease, border-color 200ms ease;
         }
-        .tac-ov-card:hover { background: rgba(255,153,102,0.1); }
-        .tac-ov-title { font-size: 0.75rem; color: var(--lcars-gray, #666688); letter-spacing: 0.1em; }
-        .tac-ov-status { font-size: 0.75rem; }
-        .ring-gauge .ring-value { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 12px; text-transform: uppercase; }
-        .ring-gauge .ring-sublabel { font-family: var(--lcars-font, 'Antonio', sans-serif); font-size: 8px; }
+        .tac-summary-bar:hover { background: rgba(255,153,102,0.1); }
+        .tac-summary-bar[data-state="triggered"],
+        .tac-summary-bar[data-state="pending"] {
+          background: rgba(255,85,85,0.08);
+          animation: tac-bar-pulse 1.2s ease-in-out infinite;
+        }
+        @keyframes tac-bar-pulse {
+          0%, 100% { background: rgba(255,85,85,0.08); }
+          50% { background: rgba(255,85,85,0.18); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .tac-summary-bar[data-state="triggered"],
+          .tac-summary-bar[data-state="pending"] { animation: none; }
+        }
+        .tac-sum-glyph {
+          font-size: 1.5rem;
+          color: var(--bar-color, var(--lcars-butterscotch));
+          line-height: 1;
+          padding: 0 0.25rem;
+        }
+        .tac-sum-quad {
+          display: flex;
+          flex-direction: column;
+          gap: 0.125rem;
+          min-width: 0;
+          padding: 0 0.5rem;
+          border-left: 1px solid rgba(255,153,102,0.15);
+        }
+        .tac-sum-quad:first-of-type { border-left: none; }
+        .tac-sum-label {
+          font-size: 0.65rem;
+          color: var(--lcars-gray, #666688);
+          letter-spacing: 0.1em;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .tac-sum-value {
+          font-size: 0.95rem;
+          color: var(--quad-color, var(--lcars-space-white));
+          font-variant-numeric: tabular-nums;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .tac-sum-last {
+          display: flex;
+          flex-direction: column;
+          gap: 0.125rem;
+          padding: 0.25rem 0.625rem;
+          background: rgba(255,153,102,0.08);
+          border-radius: 0.875rem;
+          min-width: 0;
+          max-width: 14rem;
+        }
+        .tac-sum-last-label {
+          font-size: 0.6rem;
+          color: var(--lcars-gray, #666688);
+          letter-spacing: 0.1em;
+        }
+        .tac-sum-last-value {
+          font-size: 0.85rem;
+          color: var(--lcars-peach, #ffcc99);
+          font-variant-numeric: tabular-nums;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        @media (max-width: 720px) {
+          .tac-summary-bar {
+            grid-template-columns: auto 1fr 1fr;
+            grid-template-areas:
+              "glyph shields perim"
+              "glyph sensors cams"
+              "last  last    last";
+            padding: 0.5rem 0.625rem;
+          }
+          .tac-sum-glyph { grid-area: glyph; }
+          .tac-sum-shields { grid-area: shields; }
+          .tac-sum-perim   { grid-area: perim; }
+          .tac-sum-sensors { grid-area: sensors; }
+          .tac-sum-cams    { grid-area: cams; }
+          .tac-sum-last    { grid-area: last; max-width: none; }
+          .tac-sum-quad { border-left: none; padding: 0.125rem 0.25rem; }
+        }
 
         /* ─── Main Grid (2-column) ─── */
         .tac-main-grid { display: grid; grid-template-columns: 1fr 18rem; gap: 1rem; }

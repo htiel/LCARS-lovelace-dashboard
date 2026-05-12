@@ -1,5 +1,5 @@
 /**
- * LCARS Homepage Card — Main dashboard view with areas
+ * LCARS Homepage Card ï¿½ Main dashboard view with areas
  * Entities grouped by device ? domain type with specialized renderers:
  *   camera ? LCARS-framed live feed
  *   light/switch/fan/lock ? LCARS toggle pill
@@ -53,6 +53,7 @@ import './components/lcars-option-strip/lcars-option-strip.js';
 import './components/lcars-setpoint/lcars-setpoint.js';
 import './panels/irrigation/lcars-irrigation-panel.js';
 import './panels/camera/lcars-camera-panel.js';
+import './lcars-camera-tile.js';
 import './panels/environment/lcars-environment-panel.js';
 import './panels/battery/lcars-battery-panel.js';
 import './panels/climate/lcars-climate-panel.js';
@@ -71,7 +72,7 @@ import './panels/ev-charger/lcars-ev-charger-panel.js';
 const TAG = 'Homepage';
 
 // --- Panel Dispatch Registry (4X-21) ----------------------------------------
-// Factory function pattern per Geordi — no unsafeStatic, no dynamic tag injection.
+// Factory function pattern per Geordi ï¿½ no unsafeStatic, no dynamic tag injection.
 // Each entry returns a lit-html template for the panel type.
 
 const PANEL_TAG_REGISTRY = new Map([
@@ -176,7 +177,7 @@ class LcarsHomepageCard extends LitElement {
     };
 
     _startCameraRefresh() {
-      // #201 — belt-and-suspenders: if a previous observer survived a
+      // #201 ï¿½ belt-and-suspenders: if a previous observer survived a
       // synchronous re-attach (slot change before disconnectedCallback fires),
       // tear it down so we never run two observers against the same targets.
       if (this._cameraObserver) {
@@ -267,7 +268,7 @@ class LcarsHomepageCard extends LitElement {
         this._config = config;
         lcarsLog.debug(TAG, 'setConfig:', config);
       } catch (err) {
-        lcarsLog.error(TAG, 'setConfig FAILED — this causes CONFIGURATION ERROR:', err);
+        lcarsLog.error(TAG, 'setConfig FAILED ï¿½ this causes CONFIGURATION ERROR:', err);
         throw err;
       }
     }
@@ -276,11 +277,11 @@ class LcarsHomepageCard extends LitElement {
       const prev = this._hass;
       this._hass = hass;
       if (!prev) {
-        lcarsLog.debug(TAG, 'First hass received — areas:', Object.keys(hass.areas || {}).length, 'entities:', Object.keys(hass.entities || {}).length);
+        lcarsLog.debug(TAG, 'First hass received ï¿½ areas:', Object.keys(hass.areas || {}).length, 'entities:', Object.keys(hass.entities || {}).length);
       }
       // Bust entity cache when registries change
       if (prev && (prev.entities !== hass.entities || prev.devices !== hass.devices)) {
-        lcarsLog.debug(TAG, 'Entity/device registry changed — busting cache');
+        lcarsLog.debug(TAG, 'Entity/device registry changed ï¿½ busting cache');
         this._entityCache.clear();
       }
       // Deselect area if it was removed from HA
@@ -309,8 +310,8 @@ class LcarsHomepageCard extends LitElement {
         }
         lcarsLog.debug(TAG, 'Configuration loaded:', Object.keys(result), 'version:', result.installed_version);
       } catch (e) {
-        lcarsLog.error(TAG, 'Failed to load configuration — WS call failed:', e);
-        // Set empty data so we don't retry endlessly — card still works dynamically from hass
+        lcarsLog.error(TAG, 'Failed to load configuration ï¿½ WS call failed:', e);
+        // Set empty data so we don't retry endlessly ï¿½ card still works dynamically from hass
         this.data = {};
       } finally {
         this._configLoading = false;
@@ -349,7 +350,7 @@ class LcarsHomepageCard extends LitElement {
       }, `Edit: ${name}`);
     }
 
-    // 4X-8: Panel reorder handler — opens popup with visual layout editor
+    // 4X-8: Panel reorder handler ï¿½ opens popup with visual layout editor
     _handlePanelReorder(e, areaId, panelId, allPanels) {
       e.stopPropagation();
       e.preventDefault();
@@ -473,7 +474,7 @@ class LcarsHomepageCard extends LitElement {
         changed = false;
         for (const p of prefixes) {
           if (result.toLowerCase().startsWith(p.toLowerCase())) {
-            result = result.slice(p.length).trim().replace(/^[-–:]\s*/, '');
+            result = result.slice(p.length).trim().replace(/^[-ï¿½:]\s*/, '');
             changed = true;
           }
         }
@@ -494,7 +495,7 @@ class LcarsHomepageCard extends LitElement {
       const area = this._hass?.areas?.[this.selectedArea];
       if (!area?.name) return raw;
       if (raw.toLowerCase().startsWith(area.name.toLowerCase())) {
-        const stripped = raw.slice(area.name.length).trim().replace(/^[-–:]\s*/, '');
+        const stripped = raw.slice(area.name.length).trim().replace(/^[-ï¿½:]\s*/, '');
         return stripped || raw;
       }
       return raw;
@@ -651,7 +652,7 @@ class LcarsHomepageCard extends LitElement {
           }
 
           /* --- Device Group --- */
-          /* #204 — LCARS flatness: solid border, no border-image gradient. */
+          /* #204 ï¿½ LCARS flatness: solid border, no border-image gradient. */
           .device-group {
             margin-bottom: 0.75rem;
             position: relative;
@@ -1003,7 +1004,7 @@ class LcarsHomepageCard extends LitElement {
             border-color: var(--lcars-gray);
             opacity: 1;
           }
-          /* #203 — LCARS is flat: drop the linear-gradient layer; keep the
+          /* #203 ï¿½ LCARS is flat: drop the linear-gradient layer; keep the
              two repeating-linear-gradient static patterns over a flat solid. */
           .camera-frame[data-state="offline"] .camera-offline-overlay {
             background-color: rgba(30,30,30,1);
@@ -1100,7 +1101,7 @@ class LcarsHomepageCard extends LitElement {
             background: var(--lcars-black);
             position: relative;
           }
-          /* Corner bracket — top-left */
+          /* Corner bracket ï¿½ top-left */
           .lcars-device-panel::before {
             content: '';
             position: absolute;
@@ -1113,7 +1114,7 @@ class LcarsHomepageCard extends LitElement {
             border-radius: 0.75rem 0 0 0;
             pointer-events: none;
           }
-          /* Corner bracket — bottom-right */
+          /* Corner bracket ï¿½ bottom-right */
           .lcars-device-panel::after {
             content: '';
             position: absolute;
@@ -1148,7 +1149,7 @@ class LcarsHomepageCard extends LitElement {
             opacity: 0.5;
           }
 
-          /* Sensor telemetry readouts — left column */
+          /* Sensor telemetry readouts ï¿½ left column */
           .device-panel-sensors {
             grid-area: sensors;
             display: flex;
@@ -1199,7 +1200,7 @@ class LcarsHomepageCard extends LitElement {
           .zone-siblings { flex-shrink: 0; display: flex; gap: 0.375rem; margin: 0 0.25rem; }
           .zone-sibling-pip { font-size: 0.625rem; color: var(--lcars-sky, #aaaaff); white-space: nowrap; }
 
-          /* Media viewscreen — right column */
+          /* Media viewscreen ï¿½ right column */
           .device-panel-media {
             grid-area: media;
             position: relative;
@@ -1219,7 +1220,7 @@ class LcarsHomepageCard extends LitElement {
             border-color: var(--lcars-gray);
           }
 
-          /* Control buttons — bottom row */
+          /* Control buttons ï¿½ bottom row */
           .device-panel-controls {
             grid-area: controls;
             display: flex;
@@ -1865,7 +1866,7 @@ class LcarsHomepageCard extends LitElement {
             text-align: center;
           }
 
-          /* ------- EDIT MODE — Edit Pips ------- */
+          /* ------- EDIT MODE ï¿½ Edit Pips ------- */
           .edit-pip-wrap {
             position: relative;
           }
@@ -3061,7 +3062,7 @@ class LcarsHomepageCard extends LitElement {
             flex: 1;
           }
           .power-strip-master-toggle {
-            /* Legacy — replaced by lcars-track-toggle */
+            /* Legacy ï¿½ replaced by lcars-track-toggle */
             display: none;
           }
           .power-strip-master-toggle[data-on] {
@@ -3099,7 +3100,7 @@ class LcarsHomepageCard extends LitElement {
             gap: 0.25rem;
           }
           .strip-child-toggle {
-            /* Legacy — replaced by lcars-track-toggle */
+            /* Legacy ï¿½ replaced by lcars-track-toggle */
             display: none;
           }
           .strip-child-toggle[data-on] {
@@ -3249,7 +3250,7 @@ class LcarsHomepageCard extends LitElement {
           }
 
           /* -----------------------------------------------------------
-             v4.13.0 — VISUAL ENHANCEMENTS (All Panels)
+             v4.13.0 ï¿½ VISUAL ENHANCEMENTS (All Panels)
              Phase 1: Device Panel Base (cascades to all)
              ----------------------------------------------------------- */
 
@@ -3391,7 +3392,7 @@ class LcarsHomepageCard extends LitElement {
 
           /* ------- Phase 4: MEDIA v4.13.0 ------- */
 
-          /* -- 4.1 Audio Waveform (12 bars, scaleY — Data C-1/C-2) -- */
+          /* -- 4.1 Audio Waveform (12 bars, scaleY ï¿½ Data C-1/C-2) -- */
           .lcars-audio-waveform {
             display: flex;
             align-items: flex-end;
@@ -3685,7 +3686,7 @@ class LcarsHomepageCard extends LitElement {
             transition: box-shadow 200ms ease-out;
           }
 
-          /* -- 7.5 Pump Spinner (primary only — Data R-6) -- */
+          /* -- 7.5 Pump Spinner (primary only ï¿½ Data R-6) -- */
           .lcars-pump-spinner {
             display: inline-flex;
             align-items: center;
@@ -3765,7 +3766,7 @@ class LcarsHomepageCard extends LitElement {
 
           /* ------- Phase 9: ATMOSCRUBBER v4.13.0 ------- */
 
-          /* -- 9.1 Particles (6 max, single merged keyframe — Data C-5/R-4) -- */
+          /* -- 9.1 Particles (6 max, single merged keyframe ï¿½ Data C-5/R-4) -- */
           .lcars-atmos-particle {
             position: absolute;
             border-radius: 50%;
@@ -3989,7 +3990,7 @@ class LcarsHomepageCard extends LitElement {
             padding-top: var(--lcars-gap, 12px);
           }
 
-          /* Panel frame — G-2: asymmetric border-radius + corner brackets */
+          /* Panel frame ï¿½ G-2: asymmetric border-radius + corner brackets */
           .lcars-consolidated-power-panel {
             display: flex;
             flex-direction: column;
@@ -4107,7 +4108,7 @@ class LcarsHomepageCard extends LitElement {
             border-radius: 2px;
           }
 
-          /* Truncation pill — G-7 */
+          /* Truncation pill ï¿½ G-7 */
           .power-show-all-pill {
             display: block;
             margin: 0.5rem auto 0;
@@ -4267,12 +4268,12 @@ class LcarsHomepageCard extends LitElement {
       // Reset tactical dedupe tracking for this render cycle
       this._renderedAlarmDeviceIds.clear();
 
-      // Floor selected — combined view of all areas on that floor
+      // Floor selected ï¿½ combined view of all areas on that floor
       if (this.selectedFloor) {
         return this._renderFloorView(this.selectedFloor);
       }
 
-      // No area selected — show prompt
+      // No area selected ï¿½ show prompt
       if (!this.selectedArea) {
         lcarsLog.debug(TAG, 'Render: no area selected');
         return html`<div class="lcars-empty">Select an area</div>`;
@@ -4326,7 +4327,7 @@ class LcarsHomepageCard extends LitElement {
 
     /* --- Dispatch to the correct panel renderer (4X-21: registry-based) --- */
     _renderDevicePanel(panelType, group) {
-      // Irrigation has custom rendering logic — handle separately
+      // Irrigation has custom rendering logic ï¿½ handle separately
       if (panelType === PANEL_TYPE_IRRIGATION) return this._renderIrrigationPanel(group);
       const factory = PANEL_TAG_REGISTRY.get(panelType);
       return factory ? factory(group, this._hass, this._editMode, this._config) : '';
@@ -4334,7 +4335,7 @@ class LcarsHomepageCard extends LitElement {
 
     /* --- Sensor indicator color per state (Geordi spec) --- */
     _getSensorIndicatorColor(state, entityCategory = '') {
-      // 4X-1: CO2-specific 3-tier coloring (D-C2 — wire getCo2Color into rendering)
+      // 4X-1: CO2-specific 3-tier coloring (D-C2 ï¿½ wire getCo2Color into rendering)
       const dc = state?.attributes?.device_class || '';
       if (dc === 'carbon_dioxide') {
         return getCo2Color(state?.state);
@@ -4398,11 +4399,8 @@ class LcarsHomepageCard extends LitElement {
                     <span class="camera-offline-text">VIEWSCREEN OFFLINE</span>
                   </div>
                   ${imgUrl
-                    ? html`<img src="${imgUrl}" alt="${name} camera feed"
-                                data-entity="${entity.entity_id}"
-                                .src=${imgUrl}
-                                @load=${(e) => { const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'live'); f.removeAttribute('aria-busy'); } }}
-                                @error=${(e) => { const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'offline'); f.removeAttribute('aria-busy'); } }} />`
+                    ? html`<lcars-camera-tile mode="snap" .hass=${this._hass} entity-id=${entity.entity_id} label=${name}
+                                data-entity="${entity.entity_id}"></lcars-camera-tile>`
                     : html`<div class="camera-spacer"></div>`
                   }
                 </div>`;
@@ -4432,7 +4430,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* --- BATTERY DEVICE PANEL — WARP CORE VISUALIZATION --- */
+    /* --- BATTERY DEVICE PANEL ï¿½ WARP CORE VISUALIZATION --- */
 
     /* Classify a power entity as input/output by friendly_name patterns */
     _classifyPowerEntity(name) {
@@ -4659,7 +4657,7 @@ class LcarsHomepageCard extends LitElement {
             <div class="device-panel-header-line"></div>
             ${scoreEntry ? html`
               <span class="env-score-label" style="color:${aqColor}">
-                ${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : '—'}
+                ${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : 'ï¿½'}
               </span>
             ` : ''}
             <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(group.device.id)}</span>
@@ -4743,9 +4741,9 @@ class LcarsHomepageCard extends LitElement {
             <div class="atmoscrubber ${isIdle ? 'scrubber-idle' : ''}"
               style="--scrubber-hue:${Math.round(hue)};--scrubber-speed:${scrubberSpeed.toFixed(1)}s;--atmos-quality-color:${aqColor}">
               ${scoreEntry ? html`
-                <div class="scrubber-score">${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : '—'}</div>
+                <div class="scrubber-score">${scoreVal != null && Number.isFinite(scoreVal) ? Math.round(scoreVal) : 'ï¿½'}</div>
               ` : pm25Entry ? html`
-                <div class="scrubber-score">${pm25Val != null && Number.isFinite(pm25Val) ? Math.round(pm25Val) : '—'}</div>
+                <div class="scrubber-score">${pm25Val != null && Number.isFinite(pm25Val) ? Math.round(pm25Val) : 'ï¿½'}</div>
               ` : ''}
               ${!isIdle ? html`${Array.from({ length: 6 }, (_, i) => html`
                 <div class="lcars-atmos-particle" aria-hidden="true"
@@ -4754,7 +4752,7 @@ class LcarsHomepageCard extends LitElement {
             </div>
           </div>
 
-          <!-- Controls (right) — only for purifiers -->
+          <!-- Controls (right) ï¿½ only for purifiers -->
           ${!sensorOnly ? html`
             <div class="env-controls" aria-label="${deviceName} controls">
               ${fanEntry ? html`
@@ -4882,7 +4880,7 @@ class LcarsHomepageCard extends LitElement {
           /state.*health|cycles|remain.*time|status|error.*code|battery.*count/.test(name);
       }).slice(0, 8);
 
-      // Filter diagnostics to key items (temp, cycles, status, errors — skip hidden energy readings)
+      // Filter diagnostics to key items (temp, cycles, status, errors ï¿½ skip hidden energy readings)
       const keyDiagnostics = diagnostics.filter(e => {
         const dc = e.state?.attributes?.device_class || '';
         const name = (e.state?.attributes?.friendly_name || '').toLowerCase();
@@ -5118,14 +5116,14 @@ class LcarsHomepageCard extends LitElement {
                 <div class="io-pair-row">
                   <div class="io-port io-in" aria-label="${pair.label} input: ${inW} watts">
                     <span class="io-label">${pair.label} IN</span>
-                    <span class="io-watts" style="color:var(--lcars-ice)">${inW > 0 ? `${Math.round(inW)}W` : '—'}</span>
+                    <span class="io-watts" style="color:var(--lcars-ice)">${inW > 0 ? `${Math.round(inW)}W` : 'ï¿½'}</span>
                   </div>
                   <div class="io-conduit io-conduit-in ${inSpeed}"></div>
                   <div class="io-core-gap"></div>
                   <div class="io-conduit io-conduit-out ${outSpeed}"></div>
                   <div class="io-port io-out" aria-label="${pair.label} output: ${outW} watts">
                     <span class="io-label">${pair.label} OUT</span>
-                    <span class="io-watts" style="color:var(--lcars-butterscotch)">${outW > 0 ? `${Math.round(outW)}W` : '—'}</span>
+                    <span class="io-watts" style="color:var(--lcars-butterscotch)">${outW > 0 ? `${Math.round(outW)}W` : 'ï¿½'}</span>
                   </div>
                 </div>
               `;
@@ -5137,7 +5135,7 @@ class LcarsHomepageCard extends LitElement {
     }
 
     /* ----------------------------------------------------------------------- */
-    /* --- CLIMATE PANEL — THERMOSTAT (Nest, Ecobee) ----------------------- */
+    /* --- CLIMATE PANEL ï¿½ THERMOSTAT (Nest, Ecobee) ----------------------- */
     /* ----------------------------------------------------------------------- */
 
     _climateSetpointDebouncer = null;
@@ -5183,7 +5181,7 @@ class LcarsHomepageCard extends LitElement {
       const w = 200, h = 130, cx = 100, cy = 120, r = 80;
       const range = maxTemp - minTemp || 1;
       const progress = Math.max(0, Math.min(1, (currentTemp - minTemp) / range));
-      // Arc from 180° (left) to 0° (right)
+      // Arc from 180ï¿½ (left) to 0ï¿½ (right)
       const startAngle = Math.PI;
       const endAngle = 0;
       const sweepAngle = startAngle - (startAngle - endAngle) * progress;
@@ -5201,7 +5199,7 @@ class LcarsHomepageCard extends LitElement {
       return html`
         <svg class="climate-arc" viewBox="0 0 ${w} ${h}" role="meter"
           aria-valuemin="${minTemp}" aria-valuemax="${maxTemp}" aria-valuenow="${currentTemp}"
-          aria-label="Temperature: ${currentTemp}°, target ${targetTemp}°">
+          aria-label="Temperature: ${currentTemp}ï¿½, target ${targetTemp}ï¿½">
           <!-- Background arc -->
           <path d="M ${sx},${sy} A ${r},${r} 0 1,1 ${cx + r},${cy}"
             fill="none" stroke="var(--lcars-disabled)" stroke-width="8" stroke-linecap="round" />
@@ -5215,7 +5213,7 @@ class LcarsHomepageCard extends LitElement {
           <!-- Current temp text -->
           <text x="${cx}" y="${cy - 20}" text-anchor="middle" fill="${actionColor}"
             font-family="var(--lcars-font)" font-size="42" font-weight="bold">
-            ${currentTemp != null && Number.isFinite(currentTemp) ? html`${Math.round(currentTemp)}°` : '—'}
+            ${currentTemp != null && Number.isFinite(currentTemp) ? html`${Math.round(currentTemp)}ï¿½` : 'ï¿½'}
           </text>
         </svg>
       `;
@@ -5290,28 +5288,28 @@ class LcarsHomepageCard extends LitElement {
           <!-- Sensors (left) -->
           <div class="climate-sensors" role="list" aria-label="${deviceName} readings">
             ${currentTemp != null ? html`
-              <div class="device-sensor-line" role="listitem" aria-label="Current temperature: ${currentTemp}°">
+              <div class="device-sensor-line" role="listitem" aria-label="Current temperature: ${currentTemp}ï¿½">
                 <div class="sensor-indicator" style="background:${actionColor}"></div>
                 <span class="sensor-label">Current</span>
-                <span class="sensor-state-value" style="color:${actionColor}">${Math.round(currentTemp)}°</span>
+                <span class="sensor-state-value" style="color:${actionColor}">${Math.round(currentTemp)}ï¿½</span>
               </div>
             ` : ''}
             ${isDual ? html`
-              <div class="device-sensor-line" role="listitem" aria-label="Heat target: ${targetLow}°">
+              <div class="device-sensor-line" role="listitem" aria-label="Heat target: ${targetLow}ï¿½">
                 <div class="sensor-indicator" style="background:var(--lcars-butterscotch)"></div>
                 <span class="sensor-label">Heat To</span>
-                <span class="sensor-state-value" style="color:var(--lcars-butterscotch)">${targetLow}°</span>
+                <span class="sensor-state-value" style="color:var(--lcars-butterscotch)">${targetLow}ï¿½</span>
               </div>
-              <div class="device-sensor-line" role="listitem" aria-label="Cool target: ${targetHigh}°">
+              <div class="device-sensor-line" role="listitem" aria-label="Cool target: ${targetHigh}ï¿½">
                 <div class="sensor-indicator" style="background:var(--lcars-ice)"></div>
                 <span class="sensor-label">Cool To</span>
-                <span class="sensor-state-value" style="color:var(--lcars-ice)">${targetHigh}°</span>
+                <span class="sensor-state-value" style="color:var(--lcars-ice)">${targetHigh}ï¿½</span>
               </div>
             ` : targetTemp != null ? html`
-              <div class="device-sensor-line" role="listitem" aria-label="Target temperature: ${targetTemp}°">
+              <div class="device-sensor-line" role="listitem" aria-label="Target temperature: ${targetTemp}ï¿½">
                 <div class="sensor-indicator" style="background:${actionColor}"></div>
                 <span class="sensor-label">Target</span>
-                <span class="sensor-state-value" style="color:${actionColor}">${targetTemp}°</span>
+                <span class="sensor-state-value" style="color:${actionColor}">${targetTemp}ï¿½</span>
               </div>
             ` : ''}
             ${humidity ? html`
@@ -5367,14 +5365,14 @@ class LcarsHomepageCard extends LitElement {
                 <div class="climate-setpoint-row">
                   <button class="climate-sp-btn" aria-label="Decrease heat target"
                     @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetLow - step, true, 'low'); }}>-</button>
-                  <span class="climate-sp-label" style="color:var(--lcars-butterscotch)">HEAT ${targetLow}°</span>
+                  <span class="climate-sp-label" style="color:var(--lcars-butterscotch)">HEAT ${targetLow}ï¿½</span>
                   <button class="climate-sp-btn" aria-label="Increase heat target"
                     @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetLow + step, true, 'low'); }}>+</button>
                 </div>
                 <div class="climate-setpoint-row">
                   <button class="climate-sp-btn" aria-label="Decrease cool target"
                     @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetHigh - step, true, 'high'); }}>-</button>
-                  <span class="climate-sp-label" style="color:var(--lcars-ice)">COOL ${targetHigh}°</span>
+                  <span class="climate-sp-label" style="color:var(--lcars-ice)">COOL ${targetHigh}ï¿½</span>
                   <button class="climate-sp-btn" aria-label="Increase cool target"
                     @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetHigh + step, true, 'high'); }}>+</button>
                 </div>
@@ -5382,7 +5380,7 @@ class LcarsHomepageCard extends LitElement {
                 <div class="climate-setpoint-row">
                   <button class="climate-sp-btn" aria-label="Decrease target temperature"
                     @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetTemp - step, false); }}>-</button>
-                  <span class="climate-sp-label" style="color:${actionColor}">TARGET ${targetTemp}°</span>
+                  <span class="climate-sp-label" style="color:${actionColor}">TARGET ${targetTemp}ï¿½</span>
                   <button class="climate-sp-btn" aria-label="Increase target temperature"
                     @click=${(e) => { e.stopPropagation(); this._handleClimateSetpoint(primary.entity.entity_id, attrs, targetTemp + step, false); }}>+</button>
                 </div>
@@ -5437,7 +5435,7 @@ class LcarsHomepageCard extends LitElement {
     }
 
     /* ----------------------------------------------------------------------- */
-    /* --- ALARM PANEL — SimpliSafe, Honeywell, Ring ----------------------- */
+    /* --- ALARM PANEL ï¿½ SimpliSafe, Honeywell, Ring ----------------------- */
     /* ----------------------------------------------------------------------- */
 
     _alarmPinCode = '';
@@ -5762,7 +5760,7 @@ class LcarsHomepageCard extends LitElement {
     }
 
     /* ----------------------------------------------------------------------- */
-    /* --- MEDIA PANEL — Apple TV, HomePod, Sonos ------------------------- */
+    /* --- MEDIA PANEL ï¿½ Apple TV, HomePod, Sonos ------------------------- */
     /* ----------------------------------------------------------------------- */
 
     _isValidArtworkUrl(url) {
@@ -5774,7 +5772,7 @@ class LcarsHomepageCard extends LitElement {
       switch (state) {
         case 'playing': return '?';
         case 'paused':  return '??';
-        default:        return '¦';
+        default:        return 'ï¿½';
       }
     }
 
@@ -5904,7 +5902,7 @@ class LcarsHomepageCard extends LitElement {
             ` : ''}
           </div>
 
-          <!-- Audio Waveform (12 bars, 4 groups — Data C-1/C-2) -->
+          <!-- Audio Waveform (12 bars, 4 groups ï¿½ Data C-1/C-2) -->
           <div class="lcars-audio-waveform" ?data-paused=${!isPlaying} aria-hidden="true">
             ${Array.from({ length: 12 }, (_, i) => {
               const group = Math.floor(i / 3);
@@ -5964,7 +5962,7 @@ class LcarsHomepageCard extends LitElement {
     }
 
     /* ----------------------------------------------------------------------- */
-    /* --- POOL & SPA PANEL — Pentair ScreenLogic ------------------------- */
+    /* --- POOL & SPA PANEL ï¿½ Pentair ScreenLogic ------------------------- */
     /* ----------------------------------------------------------------------- */
 
     _partitionPoolEntities(entries) {
@@ -6034,14 +6032,14 @@ class LcarsHomepageCard extends LitElement {
 
       return html`
         <div class="pool-body-frame" style="--body-color:${bodyColor}" role="region"
-          aria-label="${label}: ${currentTemp != null ? currentTemp + '°' : 'N/A'}, target ${targetTemp || 'N/A'}°">
+          aria-label="${label}: ${currentTemp != null ? currentTemp + 'ï¿½' : 'N/A'}, target ${targetTemp || 'N/A'}ï¿½">
           <div class="pool-body-label" style="color:${bodyColor}">${label}</div>
-          <div class="pool-body-temp">${currentTemp != null ? `${Math.round(currentTemp)}°` : '—'}</div>
+          <div class="pool-body-temp">${currentTemp != null ? `${Math.round(currentTemp)}ï¿½` : 'ï¿½'}</div>
           ${targetTemp != null ? html`
             <div class="pool-setpoint-row">
               <button class="climate-sp-btn" aria-label="Decrease ${label} target"
                 @click=${() => this._handlePoolSetpoint(primary.entity.entity_id, attrs, targetTemp - (step || 1))}>-</button>
-              <span class="pool-target" style="color:${bodyColor}">${targetTemp}°</span>
+              <span class="pool-target" style="color:${bodyColor}">${targetTemp}ï¿½</span>
               <button class="climate-sp-btn" aria-label="Increase ${label} target"
                 @click=${() => this._handlePoolSetpoint(primary.entity.entity_id, attrs, targetTemp + (step || 1))}>+</button>
             </div>
@@ -6069,9 +6067,9 @@ class LcarsHomepageCard extends LitElement {
           <div class="pool-header">
             <span class="device-panel-name">${deviceName}</span>
             <div class="device-panel-header-line"></div>
-            ${poolTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-ice)">POOL ${Math.round(poolTemp)}°</span>` : ''}
-            ${spaTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-butterscotch)">SPA ${Math.round(spaTemp)}°</span>` : ''}
-            ${airTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-space-white)">AIR ${Math.round(Number(airTemp))}°</span>` : ''}
+            ${poolTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-ice)">POOL ${Math.round(poolTemp)}ï¿½</span>` : ''}
+            ${spaTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-butterscotch)">SPA ${Math.round(spaTemp)}ï¿½</span>` : ''}
+            ${airTemp != null ? html`<span class="pool-temp-badge" style="color:var(--lcars-space-white)">AIR ${Math.round(Number(airTemp))}ï¿½</span>` : ''}
             <span class="panel-numeric-code" aria-hidden="true">${this._generatePanelCode(pool[0]?.entity?.entity_id || spa[0]?.entity?.entity_id || group.device.id)}</span>
           </div>
 
@@ -6158,7 +6156,7 @@ class LcarsHomepageCard extends LitElement {
     }
 
     /* ----------------------------------------------------------------------- */
-    /* --- WEATHER PANEL — Davis Instruments, WeatherFlow ----------------- */
+    /* --- WEATHER PANEL ï¿½ Davis Instruments, WeatherFlow ----------------- */
     /* ----------------------------------------------------------------------- */
 
     _weatherForecastCache = {};
@@ -6220,7 +6218,7 @@ class LcarsHomepageCard extends LitElement {
               <polygon points="40,15 36,24 44,24" fill="var(--lcars-ice)" />
             </g>
           </svg>
-          <div class="wind-reading">${speed || '—'} ${unit || ''} ${cardinal}</div>
+          <div class="wind-reading">${speed || 'ï¿½'} ${unit || ''} ${cardinal}</div>
         </div>
       `;
     }
@@ -6258,14 +6256,14 @@ class LcarsHomepageCard extends LitElement {
             const widthPct = (((hi - lo) || 1) / overallRange) * 100;
             return html`
               <div class="forecast-tile" role="listitem" tabindex="0"
-                aria-label="${dayName}: ${cond}, high ${hi}°, low ${lo}°${precip != null ? `, ${precip}% precipitation` : ''}">
+                aria-label="${dayName}: ${cond}, high ${hi}ï¿½, low ${lo}ï¿½${precip != null ? `, ${precip}% precipitation` : ''}">
                 <span class="forecast-day">${dayName}</span>
                 <span class="forecast-glyph" style="color:${glyphColor}">${glyph}</span>
-                <span class="forecast-hi">${hi != null ? html`${Math.round(hi)}°` : '—'}</span>
+                <span class="forecast-hi">${hi != null ? html`${Math.round(hi)}ï¿½` : 'ï¿½'}</span>
                 <div class="forecast-range-bar">
                   <div class="forecast-range-fill" style="left:${leftPct.toFixed(1)}%;width:${widthPct.toFixed(1)}%"></div>
                 </div>
-                <span class="forecast-lo">${lo != null ? html`${Math.round(lo)}°` : '—'}</span>
+                <span class="forecast-lo">${lo != null ? html`${Math.round(lo)}ï¿½` : 'ï¿½'}</span>
                 ${precip != null ? html`<span class="forecast-precip" style="color:${precip > 50 ? 'var(--lcars-sky)' : 'var(--lcars-gray)'}">${precip}%</span>` : ''}
               </div>
             `;
@@ -6370,13 +6368,13 @@ class LcarsHomepageCard extends LitElement {
 
           <!-- Viewscreen (right) -->
           <div class="weather-viewscreen" role="img"
-            aria-label="${condition}: ${currentTemp != null ? currentTemp + '°' : 'N/A'}">
+            aria-label="${condition}: ${currentTemp != null ? currentTemp + 'ï¿½' : 'N/A'}">
             <svg class="weather-display" viewBox="0 0 200 160">
               <text x="100" y="35" text-anchor="middle" fill="${condColor}"
                 font-family="var(--lcars-font)" font-size="28">${glyph}</text>
               <text x="100" y="85" text-anchor="middle" fill="${condColor}"
                 font-family="var(--lcars-font)" font-size="48" font-weight="bold">
-                ${currentTemp != null ? `${Math.round(currentTemp)}°` : '—'}
+                ${currentTemp != null ? `${Math.round(currentTemp)}ï¿½` : 'ï¿½'}
               </text>
               <text x="100" y="108" text-anchor="middle" fill="var(--lcars-data-accent)"
                 font-family="var(--lcars-font)" font-size="12">
@@ -6394,7 +6392,7 @@ class LcarsHomepageCard extends LitElement {
     }
 
     /* ----------------------------------------------------------------------- */
-    /* --- IRRIGATION PANEL — Rachio -------------------------------------- */
+    /* --- IRRIGATION PANEL ï¿½ Rachio -------------------------------------- */
     /* ----------------------------------------------------------------------- */
 
     _irrigationLimiter = createRateLimiter(5, 10000);
@@ -6452,29 +6450,29 @@ class LcarsHomepageCard extends LitElement {
     }
 
     /* ----------------------------------------------------------------------- */
-    /* --- POWER PANEL — Energy Monitoring (4X-3) ------------------------- */
+    /* --- POWER PANEL ï¿½ Energy Monitoring (4X-3) ------------------------- */
     /* ----------------------------------------------------------------------- */
 
     _powerToggleLimiter = createRateLimiter(10, 10000);
 
-    /* -- Format helpers (Wesley §7) -- */
+    /* -- Format helpers (Wesley ï¿½7) -- */
 
     _formatWatts(watts) {
-      if (watts == null) return '—';
+      if (watts == null) return 'ï¿½';
       const w = Number(watts);
-      if (!Number.isFinite(w)) return '—';
+      if (!Number.isFinite(w)) return 'ï¿½';
       if (Math.abs(w) >= 10000) return `${(w / 1000).toFixed(1)} kW`;
       return `${Math.round(w)} W`;
     }
 
     _formatEnergy(kwh) {
-      if (kwh == null) return '—';
+      if (kwh == null) return 'ï¿½';
       const v = Number(kwh);
-      if (!Number.isFinite(v)) return '—';
+      if (!Number.isFinite(v)) return 'ï¿½';
       return `${v.toFixed(1)} kWh`;
     }
 
-    /* -- Power shape indicator (Geordi §2.3 — color-blind safe) -- */
+    /* -- Power shape indicator (Geordi ï¿½2.3 ï¿½ color-blind safe) -- */
 
     _getPowerIndicator(watts) {
       if (watts == null || isNaN(watts)) return '?';
@@ -6520,7 +6518,7 @@ class LcarsHomepageCard extends LitElement {
       return { switches, powerSensors, energySensors, voltageSensors, currentSensors, diagnostics };
     }
 
-    /* -- Device classification (Geordi §7.2) -- */
+    /* -- Device classification (Geordi ï¿½7.2) -- */
 
     _classifyPowerDevice(entries, device) {
       const hasPowerSensor = entries.some(e => {
@@ -6533,17 +6531,17 @@ class LcarsHomepageCard extends LitElement {
       const manufacturer = (device?.manufacturer || '').toLowerCase();
       const model = (device?.model || '').toLowerCase();
 
-      // Emporia Vue — monitoring only, no switches
+      // Emporia Vue ï¿½ monitoring only, no switches
       if (manufacturer.includes('emporia') || model.includes('vue')) return 'vue';
 
-      // Power strip — HS300 or many switches
+      // Power strip ï¿½ HS300 or many switches
       const switchCount = entries.filter(e => e.domain === 'switch').length;
       if (switchCount >= 4 || model.includes('hs300') || model.includes('power strip')) return 'strip';
 
       // Smart plug with monitoring (KP115, KP125M, HS110, etc.)
       if (hasSwitch) return 'plug';
 
-      // Sensor-only (non-Vue) — treat as circuit
+      // Sensor-only (non-Vue) ï¿½ treat as circuit
       return 'vue';
     }
 
@@ -6573,7 +6571,7 @@ class LcarsHomepageCard extends LitElement {
       return null;
     }
 
-    /* -- 240V pair detection (Geordi §7.4) -- */
+    /* -- 240V pair detection (Geordi ï¿½7.4) -- */
 
     _detect240VPairs(circuits) {
       const L1L2_PATTERN = /^(.+?)[\s_]*(l[12]|line[\s_]*[12])$/i;
@@ -6612,7 +6610,7 @@ class LcarsHomepageCard extends LitElement {
       return result;
     }
 
-    /* -- Sort circuits power-descending (Wesley §6) -- */
+    /* -- Sort circuits power-descending (Wesley ï¿½6) -- */
 
     _sortCircuits(circuits) {
       return [...circuits].sort((a, b) => {
@@ -6625,7 +6623,7 @@ class LcarsHomepageCard extends LitElement {
       });
     }
 
-    /* -- Power strip grouping (Wesley §3.2) -- */
+    /* -- Power strip grouping (Wesley ï¿½3.2) -- */
 
     _groupPowerStrips(powerDevices) {
       const strips = new Map();
@@ -6654,7 +6652,7 @@ class LcarsHomepageCard extends LitElement {
       return { strips, standalone };
     }
 
-    /* -- SVG half-arc power distribution (Wesley §1/Q1) -- */
+    /* -- SVG half-arc power distribution (Wesley ï¿½1/Q1) -- */
 
     _renderPowerArc(circuits, totalWatts) {
       if (!circuits.length || !totalWatts || totalWatts <= 0) return '';
@@ -6853,7 +6851,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* -- Power strip renderer (Wesley §3.3) -- */
+    /* -- Power strip renderer (Wesley ï¿½3.3) -- */
 
     _renderPowerStrip(parentGroup, children) {
       const parentName = this._shortDeviceName(parentGroup.device) || 'Power Strip';
@@ -6930,7 +6928,7 @@ class LcarsHomepageCard extends LitElement {
       `;
     }
 
-    /* -- Summary card renderer (Geordi §4.1) -- */
+    /* -- Summary card renderer (Geordi ï¿½4.1) -- */
 
     _renderPowerSummaryCard(label, watts, energy, accentColor, icon) {
       const thresholds = this._config?.power_thresholds || {};
@@ -6984,7 +6982,7 @@ class LcarsHomepageCard extends LitElement {
       const stripChildren = [];
       for (const group of allStrips) {
         if (group.device?.via_device_id && stripDeviceIds.has(group.device.via_device_id)) {
-          stripChildren.push(group); // child outlet — no subType tag
+          stripChildren.push(group); // child outlet ï¿½ no subType tag
         } else {
           stripParents.push({ ...group, subType: 'strip' }); // genuine parent
         }
@@ -7044,11 +7042,11 @@ class LcarsHomepageCard extends LitElement {
       let totalEnergy = 0;
       for (const group of powerGroups) {
         const devId = group.device?.id;
-        // Skip aggregate circuits (Balance/Total/Mains) — already summed by children (#2)
+        // Skip aggregate circuits (Balance/Total/Mains) ï¿½ already summed by children (#2)
         if (devId && aggregateCircuitIds.has(devId)) continue;
         // Skip UPS parents when their children are also in the group (#1)
         if (devId && upsParentIds.has(devId)) continue;
-        // Skip strip children — parent already reports their total
+        // Skip strip children ï¿½ parent already reports their total
         if (devId && stripChildIds.has(devId)) continue;
         const w = this._getPrimaryPower(group);
         const e = this._getPrimaryEnergy(group);
@@ -7138,7 +7136,7 @@ class LcarsHomepageCard extends LitElement {
       if (circuits.length > 0) badgeParts.push(`${circuits.length} CIRCUIT${circuits.length !== 1 ? 'S' : ''}`);
       if (plugs.length > 0) badgeParts.push(`${plugs.length} DEVICE${plugs.length !== 1 ? 'S' : ''}`);
       if (strips.length > 0) badgeParts.push(`${strips.length} STRIP${strips.length !== 1 ? 'S' : ''}`);
-      const badge = badgeParts.join(' · ') || 'POWER SYSTEMS';
+      const badge = badgeParts.join(' ï¿½ ') || 'POWER SYSTEMS';
 
       // Truncation state
       this._expandedPowerSections = this._expandedPowerSections || new Set();
@@ -7155,7 +7153,7 @@ class LcarsHomepageCard extends LitElement {
       return html`
         <div class="lcars-consolidated-power-panel" data-panel-type="power"
           data-alert="${hasCritical ? 'critical' : ''}"
-          role="region" aria-label="Power Systems — ${badge}">
+          role="region" aria-label="Power Systems ï¿½ ${badge}">
 
           <!-- Header -->
           <div class="consolidated-power-header" role="heading" aria-level="3">
@@ -7368,7 +7366,7 @@ class LcarsHomepageCard extends LitElement {
 
         // Check if this alarm device was already rendered as a full tactical panel
         if (this._renderedAlarmDeviceIds.has(deviceId)) {
-          // This is a secondary room — return badge info
+          // This is a secondary room ï¿½ return badge info
           return { entity: e, domain, state };
         }
       }
@@ -7462,7 +7460,7 @@ class LcarsHomepageCard extends LitElement {
       for (const group of byDevice.values()) {
         const panelType = this._getDevicePanelType(group.entities);
         if (panelType && subsumedDeviceTypes.has(panelType)) {
-          // Skip — subsumed by area-level composite panel
+          // Skip ï¿½ subsumed by area-level composite panel
           continue;
         } else if (panelType === PANEL_TYPE_POWER) {
           powerGroups.push({ ...group, panelType });
@@ -7473,7 +7471,7 @@ class LcarsHomepageCard extends LitElement {
         }
       }
 
-      // Build entity groups content (without power — power rendered in left column)
+      // Build entity groups content (without power ï¿½ power rendered in left column)
       // P3 QA-E02: filter SUPPRESS_DOMAINS + diagnostic entities from fallback rendering
       const _filterAux = (entries) => entries.filter(e =>
         !SUPPRESS_DOMAINS.has(e.domain) && !isDiagnosticEntity(e)
@@ -7620,7 +7618,7 @@ class LcarsHomepageCard extends LitElement {
         predicates.push(isLightingEntity);
         // P3 QA-E01: suppress fan-domain entities when illumination panel is active
         // Fan lights already route to illumination; fan speed entities shouldn't dump to fallback
-        // 4X-59: EXCEPT air purifier fans — exclude fans whose device has AQ sensors
+        // 4X-59: EXCEPT air purifier fans ï¿½ exclude fans whose device has AQ sensors
         const aqDeviceIds = new Set();
         for (const e of entityEntries) {
           const dc = e.state?.attributes?.device_class || '';
@@ -7715,11 +7713,8 @@ class LcarsHomepageCard extends LitElement {
                 ${lastSignal ? html`<span class="camera-last-signal">${lastSignal}</span>` : ''}
               </div>
               ${imgUrl
-                ? html`<img src="${imgUrl}" alt="${name}"
-                            data-entity="${entity.entity_id}"
-                            .src=${imgUrl}
-                            @load=${(e) => { const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'live'); f.removeAttribute('aria-busy'); } }}
-                            @error=${(e) => { const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'offline'); f.removeAttribute('aria-busy'); } }} />`
+                ? html`<lcars-camera-tile mode="snap" .hass=${this._hass} entity-id=${entity.entity_id} label=${name}
+                            data-entity="${entity.entity_id}"></lcars-camera-tile>`
                 : html`<div class="camera-spacer"></div>`
               }
               <div class="camera-label">
@@ -7778,7 +7773,7 @@ class LcarsHomepageCard extends LitElement {
           const { text: fmtVal } = formatStateValue(state, entity?.entity_category || '');
           const numVal = parseFloat(state.state);
           // Warn if battery < 20% or any numeric > threshold patterns
-          // #89 — only flag entities that report device_class=battery in % (storage / power-cell SoC).
+          // #89 ï¿½ only flag entities that report device_class=battery in % (storage / power-cell SoC).
           // The previous entity_id.includes('battery') match swept in unrelated sensors like
           // `_battery_voltage` (~3 V Li-ion cell), `_battery_low` (boolean string), and
           // `_battery_status` strings, which triggered spurious red warn outlines.
@@ -7809,7 +7804,7 @@ class LcarsHomepageCard extends LitElement {
           const mode = state.state; // heat, cool, heat_cool, off, etc.
           const current = state.attributes?.current_temperature;
           const target = state.attributes?.temperature;
-          const unit = state.attributes?.temperature_unit || '°';
+          const unit = state.attributes?.temperature_unit || 'ï¿½';
           const isHeat = mode === 'heat' || mode === 'heat_cool';
           const isCool = mode === 'cool';
           const isOff = mode === 'off';
@@ -7861,7 +7856,7 @@ class LcarsHomepageCard extends LitElement {
           const off = this._isOff(state);
           const title = state.attributes?.media_title || '';
           const artist = state.attributes?.media_artist || '';
-          const nowPlaying = [title, artist].filter(Boolean).join(' — ');
+          const nowPlaying = [title, artist].filter(Boolean).join(' ï¿½ ');
           return this._withEditPip(entity.entity_id, html`
             <button class="media-strip" ?data-off=${off} style="--i:${i}"
               @click=${() => this._handleEntityClick(entity.entity_id)}
@@ -7904,5 +7899,5 @@ class LcarsHomepageCard extends LitElement {
     customElements.define('homepage-card', LcarsHomepageCard);
     lcarsLog.debug(TAG, 'Custom element registered: homepage-card');
   } else {
-    lcarsLog.warn(TAG, 'Custom element homepage-card already registered — skipping');
+    lcarsLog.warn(TAG, 'Custom element homepage-card already registered ï¿½ skipping');
   }

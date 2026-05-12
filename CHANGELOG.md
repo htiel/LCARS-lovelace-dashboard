@@ -2,6 +2,84 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.9.0-beta.1] — Tactical hardening + Chronicle mode
+
+The v5.9.0 Tactical release train closes every open Tactical-tagged issue and
+introduces Chronicle Mode — a per-area 24h Gantt timeline for after-action review.
+Closes #99, #146, #223, #224. #148 already-fixed in tree (closed pre-train).
+
+### Added — Chronicle mode (#224)
+- **`<lcars-tactical-chronicle>`** component: per-area collapsible 24h Gantt timeline
+  with astronomical 4-band sun row (deep night → twilight → golden hour → daylight),
+  now-indicator, JUMP TO NOW pill, INCIDENT pills on collapsed areas, and dot-cluster
+  alert preview when an area is collapsed.
+- **`<lcars-tactical-history-store>`** module: module-scoped cache backed by HA
+  WebSocket `history/history_during_period` (NOT REST), `minimal_response: true,
+  no_attributes: true, significant_changes_only: true`. 30s polling delta with
+  AbortController, 500ms mode-switch debounce, 30→60→120→300s backoff schedule,
+  hidden-tab pause via `visibilitychange`. Hard cap 170 entities, hours clamped
+  [6, 72]. Spec: `specs/LCARS-TACTICAL-CHRONICLE-MODE-SPEC.md`.
+- **CHRONICLE sidebar button** added to the Tactical layout as a fourth filter
+  (ALL / ACCESS / ZONES / CHRONICLE) — Chronicle replaces the main render path
+  entirely when active.
+- **Deep link from Habitat** — Tactical layout reads `?mode=chronicle` from
+  `window.location.search` on mount and auto-selects the Chronicle filter.
+
+### Security — Chronicle BLOCKING gates (Worf §7)
+- **Default-deny domains** (`camera`, `device_tracker`, `person`, `media_player`) and
+  entity_id patterns (`/secret|key|token|password|api_/i`) — enforced before query.
+- **Default-excluded areas** matching `/guest|nursery|bath|kid/i` unless explicitly
+  added to `chronicle.areas`.
+- **No payload logging** — counts only. Raw arrays dropped after segment build.
+- **No `localStorage` / IndexedDB** — only `sessionStorage` carries
+  collapsed-areas list (area_id only, no state values).
+- **Camera attribute strip** (`entity_picture`, `access_token`,
+  `frontend_stream_type`, `stream_source`, `last_image`) on every history sample,
+  defensively, even though cameras are domain-denied.
+- **Lit `${}` binding only** — no `innerHTML`/`unsafeHTML` in chronicle code path.
+
+### Added — Camera token-leak fix (#99 + #223)
+- **`<lcars-camera-tile>`** new Lit component (hybrid mechanism per
+  `specs/LCARS-CAMERA-TOKEN-MIGRATION-SPEC.md` §2):
+  - `mode="stream"` (focused viewscreen) → `<ha-camera-stream>` web component,
+    auth-via-`hass` (no token in URL); feature-detected with snap-mode fallback.
+  - `mode="snap"` (grid tiles) → `fetch('/api/camera_proxy/' + eid,
+    { credentials: 'include' })` → `Blob` → `URL.createObjectURL(...)` → `<img>`.
+  - 8s connect-timeout state machine: ESTABLISHING → LIVE / OFFLINE.
+  - 30s auto-retry while OFFLINE (#223).
+  - 3s active / 30s idle blob refresh on snap mode.
+  - `URL.revokeObjectURL` on every refresh + `disconnectedCallback`
+    (memory-leak prevention — Worf's hard requirement).
+- **Camera tile migrated into**: `lcars-tactical-card.js` (main viewscreen + grid),
+  `lcars-homepage-card.js` (Habitat area-card cameras × 2), and
+  `panels/camera/lcars-camera-panel.js` (device panel).
+  Zero `?token=` in `<img src>` across the bundle.
+
+### Added — Tactical Summary Bar (#146)
+- **`_renderOverview()` replaced** with a dense full-width Summary Bar:
+  threat glyph (`❯`/`◆`/`⚡`) far-left, four quadrant tiles
+  (SHIELDS / PERIMETER / SENSORS / VIEWSCREENS) center, LAST EVENT pill far-right.
+  Whole-bar color follows alarm state. Pulse animation on `triggered`/`pending`
+  (respects `prefers-reduced-motion`). Collapses to a 2×2 grid below 720px.
+- **Ring-gauge cluster removed** from the Tactical overview surface — bar reads as
+  one shape and frees vertical real estate for the main grid.
+
+### Specs
+- **New**: `specs/LCARS-TACTICAL-CHRONICLE-MODE-SPEC.md` (Chronicle Mode design,
+  §7 BLOCKING security rules).
+- **Revised**: `specs/LCARS-CAMERA-TOKEN-MIGRATION-SPEC.md` §2 (Captain hybrid
+  override of pure-`<ha-camera-stream>` mandate; rationale documented).
+
+### Bundle
+- **`lcars-dashboard.js`**: 1.09 MiB → 1.11 MiB (+20 KiB — within Chronicle budget).
+
+### Issues closed
+- #99 — camera access_token leak (token never in URL across the bundle)
+- #146 — Tactical Summary Bar replaces ring-gauge cluster
+- #223 — Camera ESTABLISHING-LINK reconnect after WAN flap
+- #224 — Chronicle Mode (24h per-area Gantt)
+- #148 — already-fixed pre-train (v1 file not in webpack entries)
+
 ## [5.8.0] — Sickbay (Medical Bay dashboard)
 
 The "Sickbay" release closes every open Medical-tagged issue and ships the Medical Bay

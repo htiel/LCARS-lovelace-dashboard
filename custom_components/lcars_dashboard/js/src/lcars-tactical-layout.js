@@ -18,6 +18,7 @@ const TAG = 'TacticalLayout';
 const FILTER_ALL = 'all';
 const FILTER_ACCESS = 'access';
 const FILTER_ZONES = 'zones';
+const FILTER_CHRONICLE = 'chronicle';
 
 class LcarsTacticalLayout extends LitElement {
 
@@ -38,10 +39,27 @@ class LcarsTacticalLayout extends LitElement {
     this.cards = [];
     this._hass = null;
     this._config = {};
-    this._filter = FILTER_ALL;
+    // #224 — honor ?mode=chronicle deep link from Habitat area cards
+    let initialFilter = FILTER_ALL;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const mode = params.get('mode');
+      if (mode === 'chronicle') initialFilter = FILTER_CHRONICLE;
+    } catch (_) { /* ignore */ }
+    this._filter = initialFilter;
     this._siteName = 'LCARS';
     this._audioMuted = lcarsAudio.isMuted;
     this._editMode = false;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    // Replay the URL-derived filter so the card picks it up on mount
+    if (this._filter !== FILTER_ALL) {
+      Promise.resolve().then(() => {
+        lcarsEventBus.dispatchEvent(new CustomEvent('lcars-tac-filter', { detail: { filter: this._filter } }));
+      });
+    }
   }
 
   setConfig(config) { this._config = config; }
@@ -110,6 +128,9 @@ class LcarsTacticalLayout extends LitElement {
             </button>
             <button class="sidebar-filter-btn ${this._filter === FILTER_ZONES ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_ZONES ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_ZONES)}>
               <span class="filter-label">ZONES</span>
+            </button>
+            <button class="sidebar-filter-btn ${this._filter === FILTER_CHRONICLE ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_CHRONICLE ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_CHRONICLE)}>
+              <span class="filter-label">CHRONICLE</span>
             </button>
           </div>
           <div class="lcars-sidebar-filler" aria-hidden="true"></div>

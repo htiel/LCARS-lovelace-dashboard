@@ -14,6 +14,7 @@ import { showMoreInfo } from '../../lcars-helpers.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { cameraPanelStyles } from './lcars-camera-panel-styles.js';
 import { lcarsAudio } from '../../lcars-audio.js';
+import '../../lcars-camera-tile.js';
 
 /* ── Build a cache-busted camera image URL ── */
 function cameraImageUrl(state) {
@@ -181,11 +182,9 @@ class LcarsCameraPanel extends LcarsBasePanel {
                   ${lastSignal ? html`<span class="camera-last-signal">LAST SIGNAL: ${lastSignal}</span>` : ''}
                 </div>
                 ${imgUrl
-                  ? html`<img src="${imgUrl}" alt="${name} camera feed"
-                              data-entity="${entity.entity_id}"
-                              .src=${imgUrl}
-                              @load=${(e) => { const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'live'); f.removeAttribute('aria-busy'); } }}
-                              @error=${(e) => { const f = e.target.closest('.camera-frame'); if (f) { f.setAttribute('data-state', 'offline'); f.removeAttribute('aria-busy'); } }} />`
+                  ? html`<lcars-camera-tile mode="snap" .hass=${this.hass} entity-id=${entity.entity_id}
+                              label=${name}
+                              data-entity="${entity.entity_id}"></lcars-camera-tile>`
                   : html`<div class="camera-spacer"></div>`
                 }
               </div>`;

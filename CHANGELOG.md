@@ -2,6 +2,47 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.9.0-beta.3] — Tactical UX pass (Chronicle scope + Summary pills)
+
+Captain's review pass on beta.2. Eight defects tackled — five Chronicle UX,
+one Summary-Bar visual, two derived-insight additions.
+
+### Fixed
+- **Chronicle scope: strict whitelist.** beta.1 swept in UPS / EcoFlow G6 power
+  telemetry, AI camera-derived detections (`*_animal`, `*_vehicle`, `*_baby`,
+  `*_package`), and irrigation entities. `isChronicleEntity()` is now a strict
+  whitelist: `light`, `fan`, `lock`, `switch` (sans power-monitoring suffixes),
+  `cover` (door/window/garage classes), `binary_sensor` with `device_class ∈
+  {motion, occupancy, presence, door, window, opening, garage_door}` plus a
+  fallback `object_id` regex for unclassified door/contact/motion sensors,
+  `alarm_control_panel`.
+- **Chronicle row label de-dupe.** "BACKYARD MOTION" under area "Back Yard"
+  now renders as "MOTION". Area prefix stripped (case-insensitive, tolerant of
+  spaces/underscores/dashes). Label column widened from 8rem → 11rem.
+- **Chronicle silent rows hidden.** Entities with zero state changes inside the
+  visible time window are dropped from render — eliminates ~40 % of vertical
+  noise on dense areas.
+- **Chronicle area dividers visible.** Headers now wear an LCARS African-violet
+  end-cap (left 0.5rem bar) + gradient background + space-white bolder name —
+  rooms separate at a glance.
+- **Chronicle bars rounded.** `border-radius` keyed to bar height — proper LCARS
+  pill caps.
+- **Chronicle clickable.** Row label and individual bar segments are buttons
+  that fire `hass-more-info` (entity dialog). Keyboard-accessible (Enter/Space).
+
+### Added
+- **LIGHTS WASTED indicator.** Per area, when any `light.*` is on AND every
+  motion/occupancy/presence binary_sensor is off AND `sun.sun` is
+  `above_horizon`, a tomato `⚠ LIGHTS WASTED` pill renders in the area header.
+  Current-moment evaluation; historical overlay deferred.
+- **Summary Bar values as LCARS capsule pills.** SHIELDS / PERIMETER / SENSORS /
+  VIEWSCREENS values are now rounded color-filled pills (black text, state-keyed
+  background) instead of plain text — matches the LAST EVENT pill and the
+  CREW / LOCK pill grammar everywhere else in the bar.
+
+### Issues
+No new closes — UX iteration on shipped #99/#146/#223/#224.
+
 ## [5.9.0-beta.2] — Tactical hotfix: camera auth + Chronicle render
 
 Two-bug hotfix on beta.1. Both surfaces were inert in production due to subtle

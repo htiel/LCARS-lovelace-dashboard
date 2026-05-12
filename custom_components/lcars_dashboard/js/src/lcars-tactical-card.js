@@ -1040,12 +1040,19 @@ class LcarsTacticalCard extends LitElement {
           text-overflow: ellipsis;
         }
         .tac-sum-value {
-          font-size: 0.95rem;
-          color: var(--quad-color, var(--lcars-space-white));
+          font-size: 0.85rem;
+          font-weight: 700;
+          background: var(--quad-color, var(--lcars-space-white));
+          color: #000;
+          padding: 0.1rem 0.65rem;
+          border-radius: 0.85rem;
+          letter-spacing: 0.08em;
           font-variant-numeric: tabular-nums;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          align-self: flex-start;
+          max-width: 100%;
         }
         .tac-sum-last {
           display: flex;

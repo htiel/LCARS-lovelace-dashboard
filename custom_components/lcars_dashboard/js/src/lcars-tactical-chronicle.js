@@ -157,20 +157,68 @@ const BAND_COLORS = {
 const BAND_OPACITY = { night: 0.6, twilight: 0.5, golden: 0.55, day: 0.35 };
 
 /* ── Entity classification for chronicle ──────────────────────── */
+/**
+ * Strict whitelist for the Movement & Illumination chronicle.
+ * Charter: lights on/off, switches/fans, motion/occupancy/presence, door/window opening,
+ * locks/covers. Excludes power telemetry, AI camera detections (animal/vehicle/baby/
+ * package), UPS/battery/server/sprinkler/irrigation noise — these belong elsewhere.
+ */
+const CHRONICLE_BS_CLASSES = new Set([
+  'motion', 'occupancy', 'presence',
+  'door', 'window', 'opening', 'garage_door',
+]);
+const CHRONICLE_COVER_CLASSES = new Set([
+  'door', 'window', 'garage', 'shutter', 'awning', 'blind', 'curtain', 'shade',
+]);
+const BS_FALLBACK_OBJID_RE = /(_motion|_occupancy|_presence|_door|_window|_contact|_opening|_reedswitch)(?:$|_)/i;
+
 function isChronicleEntity(eid, hass) {
   if (!eid || typeof eid !== 'string') return false;
   const dot = eid.indexOf('.');
   if (dot < 0) return false;
   const domain = eid.slice(0, dot);
+  const objId = eid.slice(dot + 1);
   if (domain === 'camera' || domain === 'media_player' || domain === 'person' || domain === 'device_tracker') return false;
   if (/secret|key|token|password/i.test(eid)) return false;
+
   const state = hass?.states?.[eid];
   const dc = state?.attributes?.device_class || '';
-  // Anything tactical-relevant
-  if (domain === 'light' || domain === 'switch' || domain === 'lock' || domain === 'alarm_control_panel') return true;
-  if (domain === 'binary_sensor') return true;
-  if (state && isTacticalEntity(state)) return true;
+
+  if (domain === 'light') return true;
+  if (domain === 'fan') return true;
+  if (domain === 'lock') return true;
+  if (domain === 'switch') {
+    // Reject power-monitoring / outlet-energy switches by name heuristic
+    if (/(_power|_energy|_watt|_volt|_amp|_current|_ups|_battery|_inverter|_grid|_charge)/i.test(objId)) return false;
+    return true;
+  }
+  if (domain === 'cover') {
+    return !dc || CHRONICLE_COVER_CLASSES.has(dc);
+  }
+  if (domain === 'binary_sensor') {
+    if (dc && CHRONICLE_BS_CLASSES.has(dc)) return true;
+    // Fallback for legacy/unclassified door/motion sensors
+    if (!dc && BS_FALLBACK_OBJID_RE.test(objId)) {
+      // But still reject AI camera detections + power/battery
+      if (/(_vehicle|_animal|_baby|_package|_person|_face|_ups|_battery|_g6|_grid|_charge|_sprinkler|_irrigat)/i.test(objId)) return false;
+      return true;
+    }
+    return false;
+  }
+  if (domain === 'alarm_control_panel') return true;
   return false;
+}
+
+function dedupeAreaPrefix(name, areaName) {
+  if (!name || !areaName) return name || '';
+  const cleanArea = areaName.replace(/[^a-z0-9 ]/gi, ' ').trim();
+  if (!cleanArea) return name;
+  // Build a permissive regex: each area word optional space/underscore between
+  const words = cleanArea.split(/\s+/).filter(Boolean);
+  if (!words.length) return name;
+  const pattern = new RegExp(`^${words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('[ _-]*')}[ _-]*`, 'i');
+  const stripped = name.replace(pattern, '').trim();
+  return stripped || name;
 }
 
 /* ──────────────────────────────────────────────────────────────── */
@@ -196,7 +244,7 @@ export class LcarsTacticalChronicle extends LitElement {
           color: var(--lcars-space-white, #f5f6fa);
           --row-h: 1.75rem;
           --bar-h: 1.125rem;
-          --label-w: 8rem;
+          --label-w: 11rem;
           --axis-h: 1.5rem;
           --sun-h: 0.5rem;
         }
@@ -259,26 +307,43 @@ export class LcarsTacticalChronicle extends LitElement {
           position: absolute; top: 0; height: 100%;
         }
         .chron-area {
-          border-top: 1px solid rgba(255,153,102,0.1);
+          border-top: 2px solid var(--lcars-african-violet, #cc99cc);
         }
         .chron-area-header {
           display: flex; align-items: center; gap: 0.5rem;
-          padding: 0.25rem 0.5rem;
+          padding: 0.35rem 0.5rem 0.35rem 0.75rem;
           cursor: pointer;
-          background: rgba(255,153,102,0.04);
+          background: linear-gradient(
+            90deg,
+            var(--lcars-african-violet, #cc99cc) 0,
+            var(--lcars-african-violet, #cc99cc) 0.5rem,
+            rgba(204,153,204,0.18) 0.5rem,
+            rgba(204,153,204,0.10) 100%
+          );
+          border-left: 0.5rem solid var(--lcars-african-violet, #cc99cc);
           transition: background 150ms ease;
         }
-        .chron-area-header:hover { background: rgba(255,153,102,0.08); }
+        .chron-area-header:hover { background-color: rgba(204,153,204,0.22); }
         .chron-area-toggle {
-          font-size: 0.75rem;
-          color: var(--lcars-butterscotch);
+          font-size: 0.85rem;
+          color: var(--lcars-space-white, #f5f6fa);
           width: 1rem;
         }
         .chron-area-name {
-          font-size: 0.85rem;
-          color: var(--lcars-butterscotch);
-          letter-spacing: 0.1em;
+          font-size: 0.95rem;
+          color: var(--lcars-space-white, #f5f6fa);
+          font-weight: 600;
+          letter-spacing: 0.12em;
           text-transform: uppercase;
+        }
+        .chron-area-wasted {
+          background: var(--lcars-tomato);
+          color: #000;
+          font-size: 0.6rem;
+          padding: 0.0625rem 0.45rem;
+          border-radius: 0.75rem;
+          letter-spacing: 0.1em;
+          font-weight: 700;
         }
         .chron-area-incidents {
           background: var(--lcars-tomato);
@@ -310,13 +375,15 @@ export class LcarsTacticalChronicle extends LitElement {
           border-top: 1px dashed rgba(255,153,102,0.08);
         }
         .chron-row-label {
-          font-size: 0.7rem;
-          color: var(--lcars-gray);
+          font-size: 0.72rem;
+          color: var(--lcars-space-white, #f5f6fa);
           padding: 0 0.5rem;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          cursor: pointer;
         }
+        .chron-row-label:hover { color: var(--lcars-butterscotch); }
         .chron-row-track {
           position: relative;
           height: 100%;
@@ -326,9 +393,13 @@ export class LcarsTacticalChronicle extends LitElement {
           top: 50%;
           transform: translateY(-50%);
           height: var(--bar-h);
-          border-radius: 0.25rem;
+          border-radius: calc(var(--bar-h) / 2);
           min-width: 0.5rem;
           cursor: pointer;
+        }
+        .chron-bar:focus-visible {
+          outline: 2px solid var(--lcars-ice);
+          outline-offset: 1px;
         }
         .chron-bar.alert {
           background-image: repeating-linear-gradient(
@@ -413,17 +484,35 @@ export class LcarsTacticalChronicle extends LitElement {
       if (this.areaScope && this.areaScope !== a.area_id) return;
       const entries = getAreaEntities(this.hass, a.area_id) || [];
       const ents = [];
+      let lightOnCount = 0;
+      let motionPresentCount = 0;
+      let motionTotalCount = 0;
       for (const entry of entries) {
         const eid = entry.entity?.entity_id || entry.entity_id;
         if (!eid) continue;
         if (!isChronicleEntity(eid, this.hass)) continue;
         const state = this.hass.states?.[eid];
         const dc = state?.attributes?.device_class || '';
-        const name = state?.attributes?.friendly_name || eid;
-        ents.push({ eid, name, deviceClass: dc });
+        const friendly = state?.attributes?.friendly_name || eid;
+        const displayName = dedupeAreaPrefix(friendly, a.name);
+        ents.push({ eid, name: friendly, displayName, deviceClass: dc });
+        const domain = eid.split('.')[0];
+        const stateVal = state?.state;
+        if (domain === 'light' && stateVal === 'on') lightOnCount++;
+        if (domain === 'binary_sensor' && (dc === 'motion' || dc === 'occupancy' || dc === 'presence')) {
+          motionTotalCount++;
+          if (stateVal === 'on') motionPresentCount++;
+        }
       }
       if (ents.length === 0) return;
-      out.push({ areaId: a.area_id, areaName: a.name || a.area_id, entities: ents });
+      out.push({
+        areaId: a.area_id,
+        areaName: a.name || a.area_id,
+        entities: ents,
+        lightOnCount,
+        motionPresentCount,
+        motionTotalCount,
+      });
     };
     if (floorMap && typeof floorMap.forEach === 'function') {
       floorMap.forEach((areaList) => {
@@ -431,6 +520,35 @@ export class LcarsTacticalChronicle extends LitElement {
       });
     }
     return out;
+  }
+
+  _sunAboveHorizon() {
+    const s = this.hass?.states?.['sun.sun'];
+    return s?.state === 'above_horizon';
+  }
+
+  _isAreaWasted(area) {
+    if (!area.lightOnCount) return false;
+    if (area.motionTotalCount === 0) return false;
+    if (area.motionPresentCount > 0) return false;
+    return this._sunAboveHorizon();
+  }
+
+  _fireMoreInfo(eid, ev) {
+    if (ev) ev.stopPropagation();
+    if (!eid) return;
+    this.dispatchEvent(new CustomEvent('hass-more-info', {
+      bubbles: true,
+      composed: true,
+      detail: { entityId: eid },
+    }));
+  }
+
+  _onRowKey(eid, ev) {
+    if (ev.key === 'Enter' || ev.key === ' ') {
+      ev.preventDefault();
+      this._fireMoreInfo(eid, ev);
+    }
   }
 
   _toggleArea(areaId) {
@@ -499,8 +617,20 @@ export class LcarsTacticalChronicle extends LitElement {
       return html`<span class="chron-bar ${isAlert ? 'alert' : ''}"
         style="left:${left}%; width:${width}%; background:${color}"
         title="${new Date(s.start).toLocaleTimeString()} → ${new Date(s.end).toLocaleTimeString()}"
-        tabindex="0"></span>`;
+        role="button"
+        tabindex="0"
+        @click=${(ev) => this._fireMoreInfo(eid, ev)}
+        @keydown=${(ev) => this._onRowKey(eid, ev)}></span>`;
     });
+  }
+
+  _entityHasSegments(eid, startMs, endMs) {
+    const segs = tacticalHistorySegments(eid);
+    if (!segs.length) return false;
+    for (const s of segs) {
+      if (s.end >= startMs && s.start <= endMs) return true;
+    }
+    return false;
   }
 
   _renderAreaIncidents(area, startMs, endMs) {
@@ -550,6 +680,8 @@ export class LcarsTacticalChronicle extends LitElement {
         ${groups.map(area => {
           const collapsed = this._collapsed.has(area.areaId);
           const incidents = this._renderAreaIncidents(area, startMs, endMs);
+          const wasted = this._isAreaWasted(area);
+          const visibleEntities = area.entities.filter(e => this._entityHasSegments(e.eid, startMs, endMs));
           return html`
             <div class="chron-area">
               <div class="chron-area-header"
@@ -559,17 +691,23 @@ export class LcarsTacticalChronicle extends LitElement {
                    @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._toggleArea(area.areaId); } }}>
                 <span class="chron-area-toggle">${collapsed ? '▸' : '▾'}</span>
                 <span class="chron-area-name">${shortName(area.areaName)}</span>
+                ${wasted ? html`<span class="chron-area-wasted" title="Lights on but nobody home + sun is up">⚠ LIGHTS WASTED</span>` : ''}
                 ${incidents > 0 ? html`<span class="chron-area-incidents">⚑ ${incidents} INCIDENT${incidents > 1 ? 'S' : ''}</span>` : ''}
                 ${collapsed ? this._renderAreaDots(incidents) : ''}
               </div>
-              ${!collapsed ? html`
+              ${!collapsed && visibleEntities.length > 0 ? html`
                 <div class="chron-rows">
-                  ${area.entities.map(e => {
+                  ${visibleEntities.map(e => {
                     const color = colorForEntity(e.eid, e.deviceClass);
                     const isAlert = isAlertColor(color);
+                    const label = shortName(e.displayName || e.name, e.eid);
                     return html`
                       <div class="chron-row">
-                        <span class="chron-row-label">${shortName(e.name, e.eid)}</span>
+                        <span class="chron-row-label"
+                              role="button" tabindex="0"
+                              title="${e.name} (${e.eid}) — click for details"
+                              @click=${(ev) => this._fireMoreInfo(e.eid, ev)}
+                              @keydown=${(ev) => this._onRowKey(e.eid, ev)}>${label}</span>
                         <div class="chron-row-track">
                           ${this._renderRowBars(e.eid, startMs, endMs, color, isAlert)}
                         </div>

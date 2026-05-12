@@ -1,12 +1,13 @@
 {
   "name": "lcars-dashboard",
   "private": true,
-  "version": "5.7.1",
+  "version": "5.8.0-beta.1",
   "description": "LCARS Dashboard — Home Assistant Lovelace dashboard with Star Trek LCARS UI. Based on Dwains Dashboard by Dwain Scheeren.",
   "scripts": {
-    "build": "npm run lint:selfclose && webpack --mode=production",
+    "build": "npm run lint:selfclose && npm run lint:phi && webpack --mode=production",
     "watch": "webpack --watch --mode=development",
-    "lint:selfclose": "node tools/check-svg-selfclose.js"
+    "lint:selfclose": "node tools/check-svg-selfclose.js",
+    "lint:phi": "node tools/check-phi-logging.js"
   },
   "keywords": [
     "lcars",

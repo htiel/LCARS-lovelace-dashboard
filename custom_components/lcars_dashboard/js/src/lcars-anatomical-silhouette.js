@@ -73,19 +73,30 @@ class LcarsAnatomicalSilhouette extends LitElement {
       })
       .map(([slot]) => this.anchorMap[slot]);
     if (!alerts.length) return '';
-    // #179 — thermal overlay now uses --lcars-tomato (#ff5555) instead of the
-    // off-palette tailwind red #ef4444. Same 45% alpha preserves the heat-bloom feel.
+    // #179 (5.8.0-beta.1) — thermal overlay token. The CSS variable
+    // `--lcars-thermal-bloom` carries the literal rgba; the silhouette never
+    // ships a hardcoded color. Default falls back to a tomato-adjacent value
+    // matching --lcars-tomato (#ff5555 / #ff6666) at 45% alpha.
     const layers = alerts.map((p) =>
-      `radial-gradient(circle at ${p.x}% ${p.y}%, rgba(255,85,85,0.45) 0%, transparent 30%)`
+      `radial-gradient(circle at ${p.x}% ${p.y}%, var(--lcars-thermal-bloom, rgba(255,85,85,0.45)) 0%, transparent 30%)`
     ).join(', ');
     return html`<div class="thermal" style=${`background:${layers}`}></div>`;
   }
 
   render() {
     const [vbX, vbY, vbW, vbH] = this.viewBox.split(/\s+/).map(Number);
-    // #219: data-* passthrough for screenshot tool only; no CSS class application.
-    const attrName = this.dataAttr?.name ? `data-${this.dataAttr.name}` : null;
-    const attrValue = this.dataAttr?.value || '';
+    // #219 / #178 (5.8.0-beta.1): data-* passthrough is now fully generic.
+    // The dataAttr.name determines which `data-*` attribute carries the value at
+    // capture time; no consumer-specific branches. Allowed names are gated to
+    // prevent attribute-injection from misconfigured callers (Worf §3 §5).
+    const ALLOWED_DATA_ATTRS = new Set(['medical', 'starship', 'network', 'tactical']);
+    const rawAttrName = this.dataAttr?.name;
+    const safeAttrName = (rawAttrName && ALLOWED_DATA_ATTRS.has(rawAttrName))
+      ? `data-${rawAttrName}`
+      : null;
+    const attrValue = (safeAttrName && typeof this.dataAttr?.value === 'string')
+      ? this.dataAttr.value
+      : null;
 
     // Typography (Geordi 5.4.5): clamp landscape-safe so callouts don't collapse
     // to ~0.4× on landscape silhouettes (vbH=200) where the old vbH/480 formula failed.
@@ -176,8 +187,10 @@ class LcarsAnatomicalSilhouette extends LitElement {
                 letter-spacing="0.5" style="text-transform:uppercase">${label}</text>
           <text aria-hidden="true"
                 x=${leaderX} y=${leaderY + valueDy} text-anchor=${textAnchor}
-                data-medical=${attrName === 'data-medical' ? attrValue : null}
-                data-starship=${attrName === 'data-starship' ? attrValue : null}
+                data-medical=${safeAttrName === 'data-medical' ? attrValue : null}
+                data-starship=${safeAttrName === 'data-starship' ? attrValue : null}
+                data-network=${safeAttrName === 'data-network' ? attrValue : null}
+                data-tactical=${safeAttrName === 'data-tactical' ? attrValue : null}
                 fill=${valColor}
                 font-size=${valueFontSize} font-family="Antonio, sans-serif"
                 font-weight="700" letter-spacing="0.3"

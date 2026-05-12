@@ -2,6 +2,117 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.8.0-beta.1] — Medical Bay beta consolidation
+
+Captain directive: close every open Medical-tagged issue and pull forward every v5.7.2
+deferral into a single beta. Closes #116, #119 (relabel + defer to 6.0), #173, #175,
+#176, #178, #179, #124. Defers #117 (back-anchor SVG paths) to 6.0 with
+`needs-external-artist`.
+
+### Added (Worf Gaps B + E coverage)
+- **New vital kinds** in `MEDICAL_VITAL_CLASSES`: `readiness` (composite headline +
+  contributor sub-lozenges), `body_temp_deviation` (symmetric ±°C bands; CRITICAL at
+  |Δ|>1.0°C), `hrv_balance`, `sleep_efficiency`, `activity_score`, `vo2_max`,
+  `cardiovascular_age`, `stress_resilience` (enum-typed Oura resilience_level).
+  `DEFAULT_THRESHOLDS` extended with matching bands.
+- **Readiness composite tile** (`_renderReadinessTile`) renders the canonical Oura
+  readiness_score 0–100 as a large headline above a 2×2 grid of top sub-score lozenges
+  (`discoverReadinessSubscores` → RESTING HR, HRV BAL, BODY TEMP, RECOVERY, etc.). When
+  fewer than 4 sub-scores are discoverable, the grid shrinks gracefully.
+- **Rest mode banner** (`_renderRestBanner`) surfaces above the silhouette whenever
+  Oura's `binary_sensor.*_rest_mode` is `on`. Butterscotch for routine recovery, tomato
+  for illness signal. Transition plays a single audio cue (`navAcknowledge` /
+  `navError`) gated through `lcarsAudio.isMuted`.
+- **Enum-aware tile** (`_renderEnumTile`) derives status from the enum string itself
+  (`low|exceptional` → ALERT, `solid|adequate` → ELEVATED) so resilience_level renders
+  as a colored chip rather than a meaningless number.
+- **Generalized `data-*` passthrough** on `lcars-anatomical-silhouette`: allowlist
+  `{medical, starship, network, tactical}` instead of hardcoded medical/starship
+  branches (#178).
+- **`--lcars-thermal-bloom` CSS token** for the thermal heat-bloom gradient — no
+  hardcoded literals in the silhouette anymore (#179 follow-through).
+- **FILE ID label + status-pill legend** in the Medical header (#175, #176): a
+  short uppercase `FILE ID` precedes the identifier, and the rollup pill carries a
+  full-tier-description `title` + visually-hidden `aria-describedby` legend.
+
+### Changed
+- `_renderTiles` slice limit raised from 12 → 16 to fit the new Oura tiles.
+- `classifyVital` reordered so the new kind branches run *before* the legacy
+  `sleep_score` block; `_readiness_score` and `_sleep_efficiency` are no longer
+  swallowed as sleep_score variants.
+- `formatVital` extended: timestamp values render as `HH:MM` local; enum values are
+  uppercased with underscores stripped; `body_temp_deviation` always carries a signed
+  `±` and 1 decimal; `sleep_duration` heuristically detects seconds / minutes / hours.
+- Posterior + top-down placeholders re-tagged from `SCAN MODE PENDING — 5.4.2` to
+  `SCAN MODE PENDING — 6.0` per Captain's deferral (#119).
+- `_buildAnchors` success branch now sets `present: true` explicitly so the rollup
+  gate ignores absent slots (#116).
+
+### Performance
+- `discoverProfiles` memoized via `WeakMap` keyed on `hass.entities` reference, with
+  an inner `hass.states` reference check (#124). The medical card no longer re-walks
+  the entire entity registry on every Lovelace render tick.
+
+### Deferred to 6.0
+- **#117** — back-anchor SVG silhouette paths. Tagged `needs-external-artist`. The
+  posterior pane continues to render the placeholder caption.
+
+[5.8.0-beta.1]: https://github.com/htiel/LCARS-lovelace-dashboard/releases/tag/5.8.0-beta.1
+
+## [5.7.2] — Medical Bay multi-source rendering + Oura coverage (5X-F35)
+
+Captain hybrid decision (#227): show every variant of a vital with a source tag rather
+than coin-flipping the newest-timestamp winner. One canonical per kind still drives the
+silhouette anchor and status rollup; additional sources stack beneath in Zone C tiles.
+
+### Added
+- **`VITAL_SUFFIX_PRIORITY` table + `entityPriority(kind, eid)`** in
+  `lcars-medical-utils.js` — explicit per-kind precedence for heart_rate, sleep_duration,
+  recovery_score, spo2, hrv, sleep_score, steps, active_minutes, workout_distance,
+  last_workout. Lowest index wins the canonical slot; all others render as variants.
+- **`classifyVital` returns `sourceLabel`** (e.g. `RESTING`, `AVG SLEEP`, `DEEP`,
+  `TRAINING`, `READINESS`, `EFFICIENCY`) derived from the matched suffix and rendered on
+  variant rows in Zone C.
+- **Explicit ignore list** at the top of `classifyVital` for Oura chrome/diagnostic/
+  timestamp/enum entities (`_ring_battery_level`, `_breathing_disturbance_index`,
+  `_optimal_bedtime_*`, `_target_calories`, `_stress_day_summary`, `_*_today`, etc.).
+  Worf MUST-FIX.
+- **`tools/check-phi-logging.js` CI guard** — fails the build if `lcars-medical-card.js`,
+  `lcars-medical-utils.js`, or `lcars-anatomical-silhouette.js` contains a `console.*`
+  call that interpolates a value. Wired into `npm run build`. Worf §16 BLOCKING.
+
+### Changed
+- **`_reduceVitals`** in `lcars-medical-card.js` now keeps `variants[]` per kind sorted
+  by priority (tiebreak: newest ts), marks `variants[0].isCanonical = true`, and exposes
+  back-compat `value`/`eid` aliases so `_buildAnchors` and the Biomedical ECG zone keep
+  working unchanged.
+- **Zone C tile rendering** displays the canonical value at full size with its source
+  label in the unit row, then stacks remaining variants beneath with their own labels.
+  Status color from `computeStatus` applies to the canonical only.
+- **Oura entity coverage** — classifier now matches `_resting_heart_rate$`,
+  `_average_heart_rate$`, `_lowest_sleep_heart_rate$`, `_average_sleep_heart_rate$`,
+  `_current_heart_rate$`, `_spo2_average$`, `_total_sleep_duration$`,
+  `_deep_sleep_duration$`, `_rem_sleep_duration$`, `_light_sleep_duration$`,
+  `_time_in_bed$`, `_average_sleep_hrv$`, `_sleep_recovery_score$`,
+  `_daytime_recovery_score$`, `_readiness_score$`, `_sleep_efficiency$`,
+  `_sleep_regularity_score$`, `_high_activity_time$`, `_medium_activity_time$`,
+  `_low_activity_time$`.
+
+### Fixed (security)
+- **Multi-Oura profile-key fallback** in `discoverProfiles` — when `device_id` is absent,
+  Oura entity ids carry the person prefix in `oura_ring_<name>_<metric>`. Previous
+  fallback collapsed two rings in one household into a single profile and could
+  cross-contaminate PHI. New extractor uses the full `oura_ring_<name>` prefix. Worf §4.
+
+### Deferred to 5.8.0
+- New vital kinds (readiness composite, body_temp_deviation, activity_score,
+  sleep_efficiency tile, vo2_max, cardiovascular_age, hrv_balance, stress_resilience).
+- Sleep-stage stacked-bar tile (Geordi recommendation).
+- Readiness composite tile with sub-lozenges.
+- Rest mode banner.
+- Obfuscator regression for enum + timestamp PHI surfaces (Worf Gaps B/E — currently
+  blocked by the explicit ignore list).
+
 ## [5.7.0] — 2026-05-11 — Visual audit S0/S1 batch + sidebar pill polish
 
 Promotion of beta.3 + beta.4 to stable. No further changes since beta.4.

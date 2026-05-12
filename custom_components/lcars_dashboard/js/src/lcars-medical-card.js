@@ -30,6 +30,10 @@ import {
   grantConsent,
   formatVital,
   MEDICAL_STATUS,
+  entityPriority,
+  findRestModeState,
+  classifyRestMode,
+  discoverReadinessSubscores,
 } from './lcars-medical-utils.js';
 
 const STATUS_COLOR = {
@@ -67,6 +71,7 @@ class LcarsMedicalCard extends LitElement {
       _thermal: { type: Boolean },
       _focusMode: { type: String },   // 5.3.1 — 'summary' | 'anatomical' | 'biomedical'
       _audioMuted: { type: Boolean }, // #169 — mirrors lcarsAudio.isMuted to gate PHI aria-hidden
+      _restMode: { type: String },    // 5.8.0-beta.1 (Worf Gap E) — 'off' | 'rest' | 'sick'
     };
   }
 
@@ -83,6 +88,8 @@ class LcarsMedicalCard extends LitElement {
     this._thermal = false;
     this._focusMode = this._readFocusFromHash();
     this._audioMuted = lcarsAudio.isMuted;
+    this._restMode = 'off';
+    this._lastRestMode = 'off';
     this._onHashChange = () => {
       const next = this._readFocusFromHash();
       if (next !== this._focusMode) {
@@ -159,13 +166,16 @@ class LcarsMedicalCard extends LitElement {
   }
 
   // Reduce per-profile entity list into a vital-kind keyed dictionary.
-  // Picks the most-recently-changed sample when multiple platforms supply the same vital.
+  // v5.7.2 (5X-F35) — HYBRID multi-source mode: groups ALL entities of the same kind
+  // into `variants[]`, picks the canonical via VITAL_SUFFIX_PRIORITY. Canonical drives
+  // silhouette anchor + status rollup; variants render stacked under it in Zone C with
+  // their source label (e.g. RESTING, AVG SLEEP, DEEP). Captain decision: show all
+  // sources rather than hide duplicates behind a newest-timestamp coin flip.
   _reduceVitals(entities) {
     const byKind = new Map();
     for (const e of entities) {
       const kind = e.cls.kind;
       const ts = Date.parse(e.state.last_changed || e.state.last_updated || 0);
-      const cur = byKind.get(kind);
       // Withings reports BP in inHg when HA pressure UoM is imperial; convert to mmHg
       // for plausibility-gate compatibility (sys<40 → invalid would reject e.g. 4.13 inHg
       // which is actually ~105 mmHg). Audit finding F.
@@ -173,23 +183,41 @@ class LcarsMedicalCard extends LitElement {
       const rawVal = parseFloat(e.state.state);
       const isBp = e.cls.isSystolic || e.cls.isDiastolic;
       const val = (isBp && uom === 'inHg' && Number.isFinite(rawVal)) ? rawVal * 25.4 : rawVal;
-      if (e.cls.isSystolic) {
-        const ent = cur || { kind, ts: 0 };
-        ent.systolic = val;
-        ent.systolicEid = e.eid;
-        ent.ts = Math.max(ent.ts, ts);
-        byKind.set(kind, ent);
-      } else if (e.cls.isDiastolic) {
-        const ent = cur || { kind, ts: 0 };
-        ent.diastolic = val;
-        ent.diastolicEid = e.eid;
-        ent.ts = Math.max(ent.ts, ts);
-        byKind.set(kind, ent);
-      } else {
-        if (!cur || ts > cur.ts) {
-          byKind.set(kind, { kind, value: val, eid: e.eid, ts });
-        }
+      let cur = byKind.get(kind);
+      if (!cur) {
+        cur = { kind, variants: [], ts: 0 };
+        byKind.set(kind, cur);
       }
+      if (e.cls.isSystolic) {
+        cur.systolic = val;
+        cur.systolicEid = e.eid;
+        cur.ts = Math.max(cur.ts, ts);
+        continue;
+      }
+      if (e.cls.isDiastolic) {
+        cur.diastolic = val;
+        cur.diastolicEid = e.eid;
+        cur.ts = Math.max(cur.ts, ts);
+        continue;
+      }
+      const { priority, label } = entityPriority(kind, e.eid);
+      cur.variants.push({
+        value: val,
+        eid: e.eid,
+        ts,
+        label: e.cls.sourceLabel || label || '',
+        priority,
+      });
+      cur.ts = Math.max(cur.ts, ts);
+    }
+    // Resolve canonical per kind: lowest priority wins; ties broken by newest ts.
+    for (const v of byKind.values()) {
+      if (!v.variants || v.variants.length === 0) continue;
+      v.variants.sort((a, b) => (a.priority - b.priority) || (b.ts - a.ts));
+      v.variants[0].isCanonical = true;
+      // Back-compat aliases so _buildAnchors / _renderBiomedicalZone keep working.
+      v.value = v.variants[0].value;
+      v.eid = v.variants[0].eid;
     }
     return byKind;
   }
@@ -219,7 +247,11 @@ class LcarsMedicalCard extends LitElement {
       const display = vc.kind === 'blood_pressure'
         ? formatVital('blood_pressure', v.systolic, v.diastolic)
         : `${formatVital(vc.kind, numeric)}`;
-      anchors[vc.anchor] = { value: display, status, label: vc.label };
+      // #116 / 5X-B39 — explicit `present: true` so the rollup gate (which filters on
+      // present===true) can't accidentally exclude valid anchors. Earlier shape relied
+      // on falsy absence of `present` and an `else !present` branch, which left this
+      // branch with `present: undefined` → treated as missing by some consumers.
+      anchors[vc.anchor] = { value: display, status, label: vc.label, present: true };
     }
     return anchors;
   }
@@ -228,11 +260,18 @@ class LcarsMedicalCard extends LitElement {
     const cols = decorativeNumerics(fileId, 3);
     const pillColor = STATUS_COLOR[status] || STATUS_COLOR.NOMINAL;
     const mode = this._focusMode;
+    // 5.8.0-beta.1 (#176) — status pill legend. Tooltip describes the meaning of each
+    // status tier; aria-describedby surfaces the same to AT.
+    const pillLegend = `${status} — Biofunction rollup status. NOMINAL: all vitals in range. ELEVATED: at least one vital outside nominal band. ALERT: vital outside warning band. CRITICAL: life-threatening tier. OFFLINE: no recent data.`;
+    const thermLegend = 'Thermal overlay — decorative gradient; not a calibrated thermal map.';
     return html`
       <header class="zone-a">
         <div class="title">MEDICAL REPORT
           <span class="file-id-sep" aria-hidden="true">·</span>
-          <span class="file-id" data-medical="phi" ?aria-hidden=${this._audioMuted}>${fileId}</span>
+          <span class="file-id-label" aria-hidden="true">FILE ID</span>
+          <span class="file-id" data-medical="phi"
+                title="Profile file id (deterministic; not a patient number)"
+                ?aria-hidden=${this._audioMuted}>${fileId}</span>
         </div>
         <div class="focus-tabs" aria-label="Scan focus mode">
           ${['summary', 'anatomical', 'biomedical'].map((m) => html`
@@ -246,20 +285,25 @@ class LcarsMedicalCard extends LitElement {
         <div class="header-actions">
           <button class="thermal-toggle ${this._thermal ? 'on' : ''}"
                   aria-pressed=${this._thermal}
-                  aria-label="Toggle thermal overlay"
-                  title="Toggle thermal overlay"
+                  aria-describedby="med-therm-legend"
+                  title=${thermLegend}
                   @click=${() => this._toggleThermal()}>
             THERM
           </button>
+          <span class="sr-only" id="med-therm-legend">${thermLegend}</span>
           <span class="status-pill" aria-live="polite"
+                aria-describedby="med-status-legend"
+                title=${pillLegend}
                 style=${`background:${pillColor};color:#000`}>${status}</span>
+          <span class="sr-only" id="med-status-legend">${pillLegend}</span>
         </div>
       </header>
     `;
   }
 
   // 5.3.1 — Anatomical scan: front + back silhouette pair. Back is a placeholder
-  // until back-anchor SVG paths are authored (deferred to 5.4.2 per Riker prio).
+  // until back-anchor SVG paths are authored. v5.8.0-beta.1 (#119): formally deferred
+  // to 6.0 — ANTERIOR + BIOMEDICAL cover the operational use case.
   _renderAnatomicalZone(anchors) {
     return html`
       <section class="scan-pair" aria-label="Anatomical front + back scan">
@@ -276,7 +320,7 @@ class LcarsMedicalCard extends LitElement {
         </div>
         <div class="scan-pane placeholder" aria-label="Posterior">
           <div class="scan-cap">POSTERIOR</div>
-          <div class="scan-pending">SCAN MODE PENDING — 5.4.2</div>
+          <div class="scan-pending">SCAN MODE PENDING — 6.0</div>
         </div>
       </section>
     `;
@@ -296,7 +340,7 @@ class LcarsMedicalCard extends LitElement {
         </div>
         <div class="scan-pane placeholder" aria-label="Top-down">
           <div class="scan-cap">TOP-DOWN</div>
-          <div class="scan-pending">SCAN MODE PENDING — 5.4.2</div>
+          <div class="scan-pending">SCAN MODE PENDING — 6.0</div>
         </div>
       </section>
     `;
@@ -333,39 +377,144 @@ class LcarsMedicalCard extends LitElement {
     `;
   }
 
-  _renderTiles(vitalsByKind) {
+  _renderTiles(vitalsByKind, profileKey) {
     const tiles = MEDICAL_VITAL_CLASSES
       .filter((vc) => vc.tile)
-      .slice(0, 12);
+      .slice(0, 16); // 5.8.0-beta.1 — raised from 12 to fit new Oura tiles.
     return html`
       <section class="zone-c" aria-label="Vital detail tiles">
         ${tiles.map((vc) => {
-          const v = vitalsByKind.get(vc.kind);
-          let display = '—';
-          let status = MEDICAL_STATUS.OFFLINE;
-          let present = false;
-          if (v && v.value != null && !isNaN(v.value)) {
-            display = formatVital(vc.kind, v.value);
-            status = computeStatus(vc.kind, v.value, DEFAULT_THRESHOLDS);
-            present = true;
+          // 5.8.0-beta.1 — composite tile (readiness) renders its own sub-lozenge layout.
+          if (vc.composite && vc.kind === 'readiness') {
+            return this._renderReadinessTile(vc, vitalsByKind.get(vc.kind), profileKey);
           }
-          // Don't paint missing tiles in OFFLINE color — use muted gray so the eye
-          // distinguishes “no integration” from “integration broken”.
-          const color = present
-            ? STATUS_COLOR[status]
-            : 'var(--lcars-gray, #666688)';
+          const v = vitalsByKind.get(vc.kind);
+          // v5.7.2 hybrid: render canonical row + any additional variants stacked beneath.
+          const variants = v && v.variants && v.variants.length ? v.variants : null;
+          // 5.8.0-beta.1 — enum-typed value (e.g. stress_resilience as Oura
+          // resilience_level "Strong"/"Solid"/"Low") renders as a label-only chip.
+          const canonicalEntity = profileKey && v && v.eid;
+          if (vc.kind === 'stress_resilience' && variants) {
+            return this._renderEnumTile(vc, variants);
+          }
+          if (!variants) {
+            return html`
+              <div class="tile">
+                <div class="tile-label">${vc.label}</div>
+                <div class="tile-value tile-offline"
+                     style=${`color:var(--lcars-gray, #666688)`}>—</div>
+                <div class="tile-unit">${vc.unit}</div>
+              </div>`;
+          }
+          // Status uses canonical only (Worf §1 isolation: thresholds applied to one number).
+          const canonical = variants[0];
+          const canonicalStatus = (canonical.value != null && !isNaN(canonical.value))
+            ? computeStatus(vc.kind, canonical.value, DEFAULT_THRESHOLDS)
+            : MEDICAL_STATUS.OFFLINE;
+          const canonicalColor = STATUS_COLOR[canonicalStatus] || STATUS_COLOR.OFFLINE;
           return html`
             <div class="tile">
               <div class="tile-label">${vc.label}</div>
               <div class="tile-value" data-medical="phi"
                    aria-live="off"
                    ?aria-hidden=${this._audioMuted}
-                   style=${`color:${color}`}>${display}</div>
-              <div class="tile-unit">${vc.unit}</div>
+                   style=${`color:${canonicalColor}`}>${formatVital(vc.kind, canonical.value)}</div>
+              <div class="tile-unit">${vc.unit}${canonical.label ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
+              ${variants.length > 1 ? html`
+                <div class="tile-variants" aria-label="Additional sources">
+                  ${variants.slice(1).map((vt) => html`
+                    <div class="tile-variant">
+                      <span class="tile-variant-label">${vt.label || '·'}</span>
+                      <span class="tile-variant-value" data-medical="phi"
+                            ?aria-hidden=${this._audioMuted}>${formatVital(vc.kind, vt.value)}</span>
+                    </div>`)}
+                </div>` : ''}
             </div>`;
         })}
       </section>
     `;
+  }
+
+  // 5.8.0-beta.1 — Readiness composite tile (Geordi recommendation).
+  // Headline: Oura readiness_score 0-100 with status band.
+  // Sub-lozenges: top-4 contributing sub-scores (resting_HR, HRV_balance, body_temp,
+  // recovery_index) when present in the Oura entity inventory.
+  _renderReadinessTile(vc, v, profileKey) {
+    const variants = v && v.variants && v.variants.length ? v.variants : null;
+    if (!variants) {
+      return html`
+        <div class="tile tile-composite">
+          <div class="tile-label">${vc.label}</div>
+          <div class="tile-value tile-offline"
+               style=${`color:var(--lcars-gray, #666688)`}>—</div>
+          <div class="tile-unit">${vc.unit}</div>
+        </div>`;
+    }
+    const canonical = variants[0];
+    const status = (canonical.value != null && !isNaN(canonical.value))
+      ? computeStatus('readiness', canonical.value, DEFAULT_THRESHOLDS)
+      : MEDICAL_STATUS.OFFLINE;
+    const color = STATUS_COLOR[status] || STATUS_COLOR.OFFLINE;
+    const subs = profileKey ? discoverReadinessSubscores(this._hass, profileKey) : [];
+    return html`
+      <div class="tile tile-composite">
+        <div class="tile-label">${vc.label}</div>
+        <div class="tile-value tile-value-large" data-medical="phi"
+             aria-live="off"
+             ?aria-hidden=${this._audioMuted}
+             style=${`color:${color}`}>${formatVital('readiness', canonical.value)}</div>
+        <div class="tile-unit">${vc.unit}${canonical.label ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
+        ${subs.length ? html`
+          <div class="tile-sublozenges" aria-label="Readiness contributors">
+            ${subs.map((s) => html`
+              <div class="sublozenge sublozenge-${s.status.toLowerCase()}">
+                <span class="sublozenge-label">${s.label}</span>
+                <span class="sublozenge-value" data-medical="phi"
+                      ?aria-hidden=${this._audioMuted}>${s.value}</span>
+              </div>`)}
+          </div>` : ''}
+      </div>`;
+  }
+
+  // 5.8.0-beta.1 — Enum vital tile (e.g. Oura resilience_level "Great"/"Strong"/"Solid"/"Low").
+  // Status is derived from the enum string itself rather than a numeric threshold.
+  _renderEnumTile(vc, variants) {
+    const canonical = variants[0];
+    const raw = String(canonical.value ?? '').toLowerCase();
+    let status = MEDICAL_STATUS.NOMINAL;
+    if (/low|exceptional/.test(raw))   status = MEDICAL_STATUS.ALERT;
+    else if (/solid|adequate/.test(raw)) status = MEDICAL_STATUS.ELEVATED;
+    else if (!raw || raw === 'unknown' || raw === 'unavailable') status = MEDICAL_STATUS.OFFLINE;
+    const color = STATUS_COLOR[status] || STATUS_COLOR.OFFLINE;
+    return html`
+      <div class="tile">
+        <div class="tile-label">${vc.label}</div>
+        <div class="tile-value tile-value-enum" data-medical="phi"
+             aria-live="off"
+             ?aria-hidden=${this._audioMuted}
+             style=${`color:${color}`}>${formatVital('enum', canonical.value)}</div>
+        <div class="tile-unit">${vc.unit}${canonical.label ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
+      </div>`;
+  }
+
+  // 5.8.0-beta.1 (Worf Gap E) — Rest mode banner. Surfaces when Oura's rest_mode binary
+  // sensor is on OR resilience drops to a "rest required" level. Butterscotch for
+  // routine recovery, tomato for sick/illness. Audio cue on transition handled in
+  // `updated()` lifecycle.
+  _renderRestBanner(profileKey) {
+    if (!profileKey || this._restMode === 'off') return '';
+    const isSick = this._restMode === 'sick';
+    const bg = isSick ? 'var(--lcars-tomato, #ff6666)' : 'var(--lcars-butterscotch, #ffaa44)';
+    const fg = '#000';
+    const text = isSick
+      ? 'ILLNESS SIGNAL DETECTED — REST RECOMMENDED'
+      : 'REST MODE ACTIVE — RECOVERY PROTOCOLS ENGAGED';
+    return html`
+      <div class="rest-banner" role="status" aria-live="polite"
+           style=${`background:${bg};color:${fg}`}>
+        <span class="rest-banner-icon" aria-hidden="true">${isSick ? '⚠' : '◐'}</span>
+        <span class="rest-banner-text">${text}</span>
+      </div>`;
   }
 
   _renderConsentGate(fileId) {
@@ -406,6 +555,15 @@ class LcarsMedicalCard extends LitElement {
           const consentGranted = this._consentByFile[fileId] ?? hasConsent(fileId);
           const vitalsByKind = consentGranted ? this._reduceVitals(profile.entities) : new Map();
           const anchors = this._buildAnchors(vitalsByKind);
+          // 5.8.0-beta.1 (Worf Gap E) — rest mode lookup runs once per render. Result
+          // is cached on the instance so the audio-cue transition logic in updated()
+          // can compare against the previous value without re-walking hass.states.
+          if (consentGranted) {
+            const rm = findRestModeState(this._hass, profile.profileId);
+            this._restMode = classifyRestMode(rm ? rm.state : null);
+          } else {
+            this._restMode = 'off';
+          }
           // Rollup: only consider slots where data is actually present. An empty
           // dashboard with most anchors unresolved should not show OFFLINE everywhere
           // — OFFLINE means “data source went stale”, not “user hasn't installed it yet”.
@@ -420,6 +578,7 @@ class LcarsMedicalCard extends LitElement {
             <article class="biofunction-card" aria-labelledby=${`med-h-${fileId}`}>
               <h2 id=${`med-h-${fileId}`} class="sr-only">Biofunction card ${fileId}</h2>
               ${this._renderHeader(profile, fileId, overall)}
+              ${this._renderRestBanner(profile.profileId)}
               ${this._focusMode === 'anatomical' ? this._renderAnatomicalZone(anchors)
                 : this._focusMode === 'biomedical' ? this._renderBiomedicalZone(vitalsByKind, anchors)
                 : html`
@@ -434,13 +593,27 @@ class LcarsMedicalCard extends LitElement {
                     ></lcars-anatomical-silhouette>
                     ${!consentGranted ? this._renderConsentGate(fileId) : ''}
                   </section>
-                  ${this._renderTiles(vitalsByKind)}
+                  ${this._renderTiles(vitalsByKind, profile.profileId)}
                 `}
               ${this._focusMode !== 'summary' && !consentGranted ? this._renderConsentGate(fileId) : ''}
             </article>`;
         })}
       </div>
     `;
+  }
+
+  // 5.8.0-beta.1 (Worf Gap E) — audio cue on rest-mode transition. One ackPositive
+  // chime entering rest/sick mode, one ackNegative exiting back to 'off'. Mute switch
+  // honored via lcarsAudio.isMuted internally (no extra check needed here).
+  updated() {
+    if (this._restMode !== this._lastRestMode) {
+      if (this._lastRestMode === 'off' && this._restMode !== 'off') {
+        lcarsAudio.play(this._restMode === 'sick' ? 'navError' : 'navAcknowledge');
+      } else if (this._restMode === 'off' && this._lastRestMode !== 'off') {
+        lcarsAudio.play('navAcknowledge');
+      }
+      this._lastRestMode = this._restMode;
+    }
   }
 
   static get styles() {
@@ -563,8 +736,96 @@ class LcarsMedicalCard extends LitElement {
         .tile-unit {
           font-size: 0.65rem; letter-spacing: 0.06em; opacity: 0.75;
         }
+        .tile-source {
+          color: var(--lcars-african-violet, #cc99ff);
+          letter-spacing: 0.1em;
+          margin-left: 0.15rem;
+        }
+        .tile-variants {
+          margin-top: 0.25rem;
+          display: flex; flex-direction: column; gap: 0.1rem;
+          border-top: 1px solid rgba(153, 204, 255, 0.18);
+          padding-top: 0.2rem;
+        }
+        .tile-variant {
+          display: flex; justify-content: space-between; align-items: baseline;
+          gap: 0.5rem; font-size: 0.7rem;
+        }
+        .tile-variant-label {
+          color: var(--lcars-african-violet, #cc99ff);
+          letter-spacing: 0.08em; opacity: 0.85;
+        }
+        .tile-variant-value {
+          color: var(--lcars-ice, #99ccff);
+          font-variant-numeric: tabular-nums;
+        }
+        .tile-offline {
+          font-size: 1.4rem; font-weight: 700; line-height: 1;
+        }
+        /* 5.8.0-beta.1 — Composite tile (readiness). Spans 2 columns on wide screens
+           to give the headline + sub-lozenges room. Geordi recommendation. */
+        .tile-composite {
+          grid-column: span 2;
+        }
+        .tile-value-large {
+          font-size: 2rem; font-weight: 700; line-height: 1;
+        }
+        .tile-value-enum {
+          font-size: 1.1rem; font-weight: 600; letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+        .tile-sublozenges {
+          margin-top: 0.4rem;
+          display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.25rem;
+        }
+        .sublozenge {
+          display: flex; justify-content: space-between; align-items: baseline;
+          padding: 0.2rem 0.45rem;
+          border-radius: 0.6rem;
+          font-size: 0.7rem;
+          background: rgba(153, 204, 255, 0.05);
+          border-left: 2px solid var(--lcars-ice, #99ccff);
+        }
+        .sublozenge-label {
+          color: var(--lcars-ice, #99ccff);
+          letter-spacing: 0.08em; opacity: 0.85;
+        }
+        .sublozenge-value {
+          font-weight: 700; font-variant-numeric: tabular-nums;
+        }
+        .sublozenge-nominal  { border-left-color: var(--lcars-data-accent, #99cc99); }
+        .sublozenge-elevated { border-left-color: var(--lcars-gold, #ffaa00); }
+        .sublozenge-alert    { border-left-color: var(--lcars-alert, #cc6666); }
+        .sublozenge-offline  { border-left-color: var(--lcars-gray, #666688); opacity: 0.6; }
+        /* 5.8.0-beta.1 (Worf Gap E) — Rest mode banner. Butterscotch for routine
+           rest-mode; tomato for sick. Strong visual weight so it isn't missed in a
+           glance scan of vitals. */
+        .rest-banner {
+          display: flex; align-items: center; gap: 0.6rem;
+          padding: 0.5rem 0.8rem;
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-weight: 700; letter-spacing: 0.08em;
+          text-transform: uppercase;
+          border-radius: 0 0.6rem 0.6rem 0;
+          border-left: 4px solid #000;
+          margin-bottom: 0.5rem;
+        }
+        .rest-banner-icon { font-size: 1.2rem; line-height: 1; }
+        .rest-banner-text { font-size: 0.85rem; }
+        /* 5.8.0-beta.1 (#175) — FILE ID label clarifies the identifier. */
+        .file-id-label {
+          font-size: 0.65rem; letter-spacing: 0.12em;
+          color: var(--lcars-ice, #99ccff); opacity: 0.7;
+          margin-right: 0.25rem;
+        }
         @media (max-width: 720px) {
           .zone-c { grid-template-columns: repeat(2, 1fr); }
+          .tile-composite { grid-column: span 2; }
+          .tile-value-large { font-size: 1.5rem; }
+        }
+        @media (max-width: 480px) {
+          .tile-sublozenges { grid-template-columns: 1fr; }
+          .rest-banner-text { font-size: 0.75rem; }
         }
 
         /* Focus tabs (5.3.1) — #173: --lcars-african-violet fallback corrected from

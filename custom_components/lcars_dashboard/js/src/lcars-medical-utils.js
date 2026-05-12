@@ -27,7 +27,10 @@ export const MEDICAL_VITAL_CLASSES = [
   { kind: 'bmi',                anchor: null,         label: 'BMI',         unit: '',     spark: false, tile: true },
   { kind: 'hydration',          anchor: null,         label: 'HYDRATION',   unit: 'L',    spark: false, tile: true },
   { kind: 'readiness',          anchor: null,         label: 'READINESS',   unit: '/100', spark: true,  tile: true, composite: true },
-  { kind: 'sleep_score',        anchor: 'head_top',   label: 'SLEEP',       unit: '/100', spark: true,  tile: true },
+  // v5.8.0-beta.2 (Geordi+Wesley P0): sleep_score is a wellness metric, not an
+  // anatomical vital. Anchoring it at 'head_top' collided with body_temp_deviation
+  // at 'forehead' (both routed to the top edge bucket). Tile-only now.
+  { kind: 'sleep_score',        anchor: null,         label: 'SLEEP',       unit: '/100', spark: true,  tile: true },
   { kind: 'sleep_duration',     anchor: null,         label: 'SLEEP TIME',  unit: 'h',    spark: false, tile: true },
   { kind: 'sleep_efficiency',   anchor: null,         label: 'EFFICIENCY',  unit: '%',    spark: false, tile: true },
   { kind: 'hrv',                anchor: null,         label: 'HRV',         unit: 'ms',   spark: true,  tile: true },
@@ -177,14 +180,18 @@ const IGNORE_SUFFIXES = [
 // All other matches become tile variants displayed with their sourceLabel.
 // VITAL_SUFFIX_PRIORITY entries: { re, label } where label is the LCARS-style source tag.
 export const VITAL_SUFFIX_PRIORITY = {
+  // v5.8.0-beta.2 (Geordi+Wesley P0): real-time / resting variants outrank
+  // sleep-period averages. Previously _average_sleep_heart_rate was index 1 and
+  // won the canonical slot on Oura-only profiles, which is clinically wrong for
+  // a 'current status' display.
   heart_rate: [
-    { re: /_resting_heart_rate$/,            label: 'RESTING' },
-    { re: /_average_sleep_heart_rate$/,      label: 'AVG SLEEP' },
-    { re: /_lowest_sleep_heart_rate$/,       label: 'LOW SLEEP' },
-    { re: /_average_heart_rate$/,            label: 'AVG' },
     { re: /_current_heart_rate$/,            label: 'CURRENT' },
     { re: /_heart_pulse$/,                   label: 'PULSE' },
+    { re: /_resting_heart_rate$/,            label: 'RESTING' },
+    { re: /_average_heart_rate$/,            label: 'AVG' },
     { re: /_heart_rate$/,                    label: 'HR' },
+    { re: /_average_sleep_heart_rate$/,      label: 'AVG SLEEP' },
+    { re: /_lowest_sleep_heart_rate$/,       label: 'LOW SLEEP' },
   ],
   sleep_duration: [
     { re: /_total_sleep_duration$/,          label: 'TOTAL' },
@@ -208,11 +215,13 @@ export const VITAL_SUFFIX_PRIORITY = {
     { re: /_latest_spo2$/,                   label: 'LATEST' },
     { re: /_oxygen_saturation$/,             label: 'SAT' },
   ],
+  // v5.8.0-beta.2 (Geordi+Wesley P0): same as heart_rate — promote current /
+  // non-sleep variants above sleep-period averages.
   hrv: [
-    { re: /_average_sleep_hrv$/,             label: 'AVG SLEEP' },
+    { re: /_hrv$/,                           label: 'HRV' },
     { re: /_hrv_last_night_average$/,        label: 'LAST NIGHT' },
     { re: /_hrv_last_night$/,                label: 'LAST NIGHT' },
-    { re: /_hrv$/,                           label: 'HRV' },
+    { re: /_average_sleep_hrv$/,             label: 'AVG SLEEP' },
   ],
   sleep_score: [
     { re: /_sleep_score$/,                   label: 'SCORE' },
@@ -242,7 +251,12 @@ export const VITAL_SUFFIX_PRIORITY = {
     { re: /_cardio_capacity_score$/,         label: 'OURA' },
     { re: /_vo2_max$/,                       label: 'VO2' },
   ],
+  // v5.8.0-beta.2 (Geordi+Wesley P0): Oura's `_resilience_level` is the
+  // human-readable enum (Great/Strong/Solid/Low). Numeric resilience scores were
+  // winning canonical and rendering '33 SCORE' instead of 'STRONG'. The enum is
+  // routed to the _renderEnumTile path via classifier `isEnum` flag.
   stress_resilience: [
+    { re: /_resilience_level$/,              label: '' },
     { re: /_resilience$/,                    label: 'RESILIENCE' },
     { re: /_stress_resilience$/,             label: 'STRESS' },
     { re: /_resilience_score$/,              label: 'SCORE' },
@@ -571,17 +585,18 @@ const READINESS_SUBSCORE_ORDER = Object.keys(READINESS_SUBSCORE_LABELS);
 
 export function discoverReadinessSubscores(hass, profileKey) {
   if (!hass || !hass.states || !profileKey) return [];
-  const needle = String(profileKey).toLowerCase();
+  const needle = String(profileKey).toLowerCase().replace(/^oura_ring_/, '');
   const out = [];
   for (const key of READINESS_SUBSCORE_ORDER) {
     const re = new RegExp(`_${key}$`);
     for (const eid of Object.keys(hass.states)) {
       const lid = eid.toLowerCase();
       if (!re.test(lid)) continue;
-      if (!lid.includes(needle.replace(/^oura_ring_/, ''))) continue;
+      if (needle && !lid.includes(needle)) continue;
       const raw = parseFloat(hass.states[eid].state);
-      if (!Number.isFinite(raw)) break;
-      // Sub-score status mirrors readiness band (70/50 nominal/elev cutoffs).
+      // v5.8.0-beta.2 — if this entity's state is 'unknown'/'unavailable', keep
+      // scanning for another entity with the same suffix instead of giving up.
+      if (!Number.isFinite(raw)) continue;
       let status = 'NOMINAL';
       if (raw < 50)       status = 'ALERT';
       else if (raw < 70)  status = 'ELEVATED';

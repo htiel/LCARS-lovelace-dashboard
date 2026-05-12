@@ -214,6 +214,17 @@ class LcarsMedicalCard extends LitElement {
     for (const v of byKind.values()) {
       if (!v.variants || v.variants.length === 0) continue;
       v.variants.sort((a, b) => (a.priority - b.priority) || (b.ts - a.ts));
+      // v5.8.0-beta.2 (Geordi+Wesley P1) — dedupe variants by (label, value) pair.
+      // Multiple Withings/Oura entities can land on the same kind with the same
+      // value (e.g. `_heart_rate` and `_current_heart_rate` both at 111), producing
+      // duplicate rows like "HR 111 / HR 111".
+      const seen = new Set();
+      v.variants = v.variants.filter((vt) => {
+        const k = `${vt.label || ''}::${vt.value}`;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
       v.variants[0].isCanonical = true;
       // Back-compat aliases so _buildAnchors / _renderBiomedicalZone keep working.
       v.value = v.variants[0].value;
@@ -412,6 +423,9 @@ class LcarsMedicalCard extends LitElement {
             ? computeStatus(vc.kind, canonical.value, DEFAULT_THRESHOLDS)
             : MEDICAL_STATUS.OFFLINE;
           const canonicalColor = STATUS_COLOR[canonicalStatus] || STATUS_COLOR.OFFLINE;
+          // v5.8.0-beta.2 (Geordi+Wesley P1) — source pill suppressed when the source
+          // label echoes the tile label (e.g. EFFICIENCY · EFFICIENCY).
+          const showSrc = canonical.label && canonical.label.toUpperCase() !== vc.label.toUpperCase();
           return html`
             <div class="tile">
               <div class="tile-label">${vc.label}</div>
@@ -419,7 +433,7 @@ class LcarsMedicalCard extends LitElement {
                    aria-live="off"
                    ?aria-hidden=${this._audioMuted}
                    style=${`color:${canonicalColor}`}>${formatVital(vc.kind, canonical.value)}</div>
-              <div class="tile-unit">${vc.unit}${canonical.label ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
+              <div class="tile-unit">${vc.unit}${showSrc ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
               ${variants.length > 1 ? html`
                 <div class="tile-variants" aria-label="Additional sources">
                   ${variants.slice(1).map((vt) => html`
@@ -442,8 +456,11 @@ class LcarsMedicalCard extends LitElement {
   _renderReadinessTile(vc, v, profileKey) {
     const variants = v && v.variants && v.variants.length ? v.variants : null;
     if (!variants) {
+      // v5.8.0-beta.2 (Wesley P1) — when readiness has no data, collapse to a normal
+      // 1-col tile (drop `tile-composite` span) so Withings-only dashboards don't show
+      // a wide empty rectangle in the middle of the grid.
       return html`
-        <div class="tile tile-composite">
+        <div class="tile">
           <div class="tile-label">${vc.label}</div>
           <div class="tile-value tile-offline"
                style=${`color:var(--lcars-gray, #666688)`}>—</div>
@@ -456,6 +473,7 @@ class LcarsMedicalCard extends LitElement {
       : MEDICAL_STATUS.OFFLINE;
     const color = STATUS_COLOR[status] || STATUS_COLOR.OFFLINE;
     const subs = profileKey ? discoverReadinessSubscores(this._hass, profileKey) : [];
+    const showSrc = canonical.label && canonical.label.toUpperCase() !== vc.label.toUpperCase();
     return html`
       <div class="tile tile-composite">
         <div class="tile-label">${vc.label}</div>
@@ -463,7 +481,7 @@ class LcarsMedicalCard extends LitElement {
              aria-live="off"
              ?aria-hidden=${this._audioMuted}
              style=${`color:${color}`}>${formatVital('readiness', canonical.value)}</div>
-        <div class="tile-unit">${vc.unit}${canonical.label ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
+        <div class="tile-unit">${vc.unit}${showSrc ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
         ${subs.length ? html`
           <div class="tile-sublozenges" aria-label="Readiness contributors">
             ${subs.map((s) => html`
@@ -486,6 +504,7 @@ class LcarsMedicalCard extends LitElement {
     else if (/solid|adequate/.test(raw)) status = MEDICAL_STATUS.ELEVATED;
     else if (!raw || raw === 'unknown' || raw === 'unavailable') status = MEDICAL_STATUS.OFFLINE;
     const color = STATUS_COLOR[status] || STATUS_COLOR.OFFLINE;
+    const showSrc = canonical.label && canonical.label.toUpperCase() !== vc.label.toUpperCase();
     return html`
       <div class="tile">
         <div class="tile-label">${vc.label}</div>
@@ -493,7 +512,7 @@ class LcarsMedicalCard extends LitElement {
              aria-live="off"
              ?aria-hidden=${this._audioMuted}
              style=${`color:${color}`}>${formatVital('enum', canonical.value)}</div>
-        <div class="tile-unit">${vc.unit}${canonical.label ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
+        <div class="tile-unit">${vc.unit}${showSrc ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
       </div>`;
   }
 
@@ -780,11 +799,13 @@ class LcarsMedicalCard extends LitElement {
         }
         .sublozenge {
           display: flex; justify-content: space-between; align-items: baseline;
-          padding: 0.2rem 0.45rem;
+          padding: 0.25rem 0.55rem;
           border-radius: 0.6rem;
-          font-size: 0.7rem;
-          background: rgba(153, 204, 255, 0.05);
-          border-left: 2px solid var(--lcars-ice, #99ccff);
+          font-size: 0.75rem;
+          /* 5.8.0-beta.2 (Geordi P1) — raise background contrast so sub-lozenges
+             register against the dark biofunction card body. */
+          background: rgba(153, 204, 255, 0.12);
+          border-left: 3px solid var(--lcars-ice, #99ccff);
         }
         .sublozenge-label {
           color: var(--lcars-ice, #99ccff);
@@ -812,11 +833,14 @@ class LcarsMedicalCard extends LitElement {
         }
         .rest-banner-icon { font-size: 1.2rem; line-height: 1; }
         .rest-banner-text { font-size: 0.85rem; }
-        /* 5.8.0-beta.1 (#175) — FILE ID label clarifies the identifier. */
+        /* 5.8.0-beta.1 (#175) — FILE ID label clarifies the identifier.
+           5.8.0-beta.2 (Wesley P0) — butterscotch + higher opacity so the label
+           reads cleanly against the dark header AND doesn't visually merge with
+           the screenshot-obfuscator's redaction rect on the adjacent file-id span. */
         .file-id-label {
-          font-size: 0.65rem; letter-spacing: 0.12em;
-          color: var(--lcars-ice, #99ccff); opacity: 0.7;
-          margin-right: 0.25rem;
+          font-size: 0.7rem; letter-spacing: 0.14em; font-weight: 700;
+          color: var(--lcars-butterscotch, #ffaa44); opacity: 0.95;
+          margin-right: 0.45rem;
         }
         @media (max-width: 720px) {
           .zone-c { grid-template-columns: repeat(2, 1fr); }

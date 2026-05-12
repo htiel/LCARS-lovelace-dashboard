@@ -122,6 +122,23 @@ class LcarsEngineeringCard extends LitElement {
         }
       }
     }
+
+    // #93 — Exclude port telemetry from devices that produced a battery card.
+    // EcoFlow/UPS/Powerwall expose per-port power sensors (AC/DC/USB in/out) with
+    // device_class='power' that fall into the circuit scan, double-counting battery
+    // flow as discrete circuit loads (~1 kW phantom on a charging EcoFlow UPS Air).
+    const batteryDeviceIds = new Set(batteries.map((b) => b.deviceId));
+    if (batteryDeviceIds.size > 0) {
+      for (let i = circuits.length - 1; i >= 0; i--) {
+        const did = circuits[i].entity.device_id;
+        if (did && batteryDeviceIds.has(did)) {
+          const v = Number(circuits[i].state?.state);
+          if (!isNaN(v) && v > 0) totalDraw -= v;
+          circuits.splice(i, 1);
+        }
+      }
+    }
+
     circuits.sort((a, b) => (Number(b.state?.state) || 0) - (Number(a.state?.state) || 0));
 
     // Deduplicate 240V paired circuits: if both _l1 and _l2 exist, keep only the combined sensor
@@ -320,6 +337,23 @@ class LcarsEngineeringCard extends LitElement {
 
   _getGridPower(data) {
     if (data.gridSensors.length === 0) return data.totalDraw;
+    // #88 — Split-phase mains: when an Emporia Vue (or similar whole-home monitor)
+    // exposes per-leg sensors (mainload1 + mainload2, _l1_/_l2_, leg1/leg2) on a single
+    // device, picking only the first leg under-reports grid draw (e.g. shows 0W while
+    // house draws 2550W if leg 2 happens to be idle). Sum legs from the same device.
+    if (data.gridSensors.length > 1) {
+      const deviceIds = new Set(data.gridSensors.map((s) => s.entity.device_id).filter(Boolean));
+      const splitPhaseRx = /(_|\b)(l\d+|leg\d+|mainload\d+|load\d+|phase\d+)(_|\b)/i;
+      const allSplitPhase = data.gridSensors.every((s) => splitPhaseRx.test(s.entity.entity_id));
+      if (deviceIds.size === 1 && allSplitPhase) {
+        let sum = 0, anyValid = false;
+        for (const s of data.gridSensors) {
+          const v = Number(s.state?.state);
+          if (!isNaN(v)) { sum += v; anyValid = true; }
+        }
+        if (anyValid) return sum;
+      }
+    }
     // 5X-ENG-7: gridSensors pre-sorted by confidence; pick first with valid numeric state.
     // Accepts 0W — a valid reading (e.g. solar/battery offsetting grid import).
     for (const s of data.gridSensors) {

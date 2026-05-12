@@ -237,6 +237,12 @@ class LcarsIlluminationCard extends LitElement {
           return html`
             ${floor ? html`
               <div class="ilm-floor-header">
+                <span class="ilm-floor-glyph" aria-hidden="true">
+                  <ha-icon .icon=${floor.icon || 'mdi:layers'}></ha-icon>
+                  ${floor.level !== undefined && floor.level !== null
+                    ? html`<span class="ilm-floor-level">${floor.level}</span>`
+                    : ''}
+                </span>
                 <span class="ilm-floor-name">${floor.name || 'FLOOR'}</span>
                 <span class="ilm-floor-line"></span>
               </div>
@@ -331,10 +337,24 @@ class LcarsIlluminationCard extends LitElement {
         :host { display: block; }
         .ilm-dashboard { padding: 0.25rem; }
 
-        /* ─── Floor Header ─── */
+        /* ─── Floor Header (#83: sticky + non-color glyph for WCAG 1.4.1) ─── */
         .ilm-floor-header {
           display: flex; align-items: center; gap: 0.5rem;
           margin: 1rem 0 0.5rem 0;
+          position: sticky; top: 0; z-index: 5;
+          background: var(--lcars-bg, #000);
+          padding: 0.25rem 0;
+        }
+        .ilm-floor-glyph {
+          display: inline-flex; align-items: center; gap: 0.125rem;
+          color: var(--lcars-ice, #99ccff);
+          flex-shrink: 0;
+        }
+        .ilm-floor-glyph ha-icon { --mdc-icon-size: 1.25rem; }
+        .ilm-floor-level {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.875rem; font-variant-numeric: tabular-nums;
+          min-width: 1ch; text-align: center;
         }
         .ilm-floor-name {
           font-family: var(--lcars-font, 'Antonio', sans-serif);

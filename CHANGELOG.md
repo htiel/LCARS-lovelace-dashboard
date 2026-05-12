@@ -2,6 +2,24 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.9.0-beta.2] — Tactical hotfix: camera auth + Chronicle render
+
+Two-bug hotfix on beta.1. Both surfaces were inert in production due to subtle
+defects in code paths that were not reachable in the dev sandbox.
+
+### Fixed
+- **Camera tiles stuck on "ESTABLISHING LINK"**: `/api/camera_proxy/` requires a
+  `Authorization: Bearer <access_token>` header. The beta.1 fetch used
+  `credentials: 'include'` only and got back HTTP 403. `<lcars-camera-tile>` now
+  reads the token from `hass.auth.accessToken` / `hass.auth.data.access_token` and
+  attaches it as a request header (still never in the URL — token-leak invariant
+  from #99 preserved). Stream mode (`<ha-camera-stream>`) was already correct.
+- **Chronicle Mode: "NO TACTICAL ENTITIES IN SCOPE"**: `_gatherEntities()` treated
+  `getAreasByFloor()` as `Array<{areas:[…]}>`, but the helper returns
+  `Map<floorId, Array<Area>>`. Net effect: the inner loop iterated zero areas
+  and Chronicle short-circuited to the empty state on every account.
+  `_gatherEntities()` now uses `Map.forEach` over the area lists.
+
 ## [5.9.0-beta.1] — Tactical hardening + Chronicle mode
 
 The v5.9.0 Tactical release train closes every open Tactical-tagged issue and

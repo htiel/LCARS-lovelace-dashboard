@@ -189,10 +189,13 @@ export class LcarsCameraTile extends LitElement {
     const ctrl = this._abortCtrl;
     try {
       const url = `/api/camera_proxy/${encodeURIComponent(this.entityId)}`;
+      const token = this.hass?.auth?.accessToken || this.hass?.auth?.data?.access_token;
+      const headers = { 'Accept': 'image/jpeg,image/png,image/*;q=0.8' };
+      if (token) headers.Authorization = `Bearer ${token}`;
       const resp = await fetch(url, {
         credentials: 'include',
         signal: ctrl.signal,
-        headers: { 'Accept': 'image/jpeg,image/png,image/*;q=0.8' },
+        headers,
       });
       if (ctrl.signal.aborted) return;
       if (!resp.ok) { this._goOffline(); return; }

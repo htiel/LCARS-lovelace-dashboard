@@ -407,25 +407,28 @@ export class LcarsTacticalChronicle extends LitElement {
 
   _gatherEntities() {
     if (!this.hass) return [];
-    const floors = getAreasByFloor(this.hass) || [];
+    const floorMap = getAreasByFloor(this.hass);
     const out = [];
-    for (const f of floors) {
-      for (const a of (f.areas || [])) {
-        if (this.areaScope && this.areaScope !== a.area_id) continue;
-        const entries = getAreaEntities(this.hass, a.area_id) || [];
-        const ents = [];
-        for (const entry of entries) {
-          const eid = entry.entity?.entity_id || entry.entity_id;
-          if (!eid) continue;
-          if (!isChronicleEntity(eid, this.hass)) continue;
-          const state = this.hass.states?.[eid];
-          const dc = state?.attributes?.device_class || '';
-          const name = state?.attributes?.friendly_name || eid;
-          ents.push({ eid, name, deviceClass: dc });
-        }
-        if (ents.length === 0) continue;
-        out.push({ areaId: a.area_id, areaName: a.name || a.area_id, entities: ents });
+    const visit = (a) => {
+      if (this.areaScope && this.areaScope !== a.area_id) return;
+      const entries = getAreaEntities(this.hass, a.area_id) || [];
+      const ents = [];
+      for (const entry of entries) {
+        const eid = entry.entity?.entity_id || entry.entity_id;
+        if (!eid) continue;
+        if (!isChronicleEntity(eid, this.hass)) continue;
+        const state = this.hass.states?.[eid];
+        const dc = state?.attributes?.device_class || '';
+        const name = state?.attributes?.friendly_name || eid;
+        ents.push({ eid, name, deviceClass: dc });
       }
+      if (ents.length === 0) return;
+      out.push({ areaId: a.area_id, areaName: a.name || a.area_id, entities: ents });
+    };
+    if (floorMap && typeof floorMap.forEach === 'function') {
+      floorMap.forEach((areaList) => {
+        for (const a of (areaList || [])) visit(a);
+      });
     }
     return out;
   }

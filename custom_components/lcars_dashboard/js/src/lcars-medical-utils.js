@@ -74,7 +74,13 @@ export const ANCHOR_MAP = {
 // arrive in Phase 2 (5.3.0-beta.3).
 export const DEFAULT_THRESHOLDS = {
   blood_pressure: { sysAlert: 140, sysElev: 130, diaAlert: 90, diaElev: 85 },
-  heart_rate:     { nominalMin: 50, nominalMax: 80, elevMax: 100, alertMax: 100, alertMin: 40 },
+  // 5.10.0-beta.3 — bands widened: Withings `_heart_pulse` and Oura `_heart_rate`
+  // feed POINT-IN-TIME readings (scale grip, live ring sample), not resting HR.
+  // Tight resting bands (50-80 nominal, 100 alert) misfire during normal activity.
+  // Resting HR proper is exposed only via attributes (Oura readiness) or Apple
+  // Health `_resting_heart_rate` entities; reverting to tight bands is planned
+  // once the card consumes those sources directly (see backlog "Oura attribute extraction").
+  heart_rate:     { nominalMin: 50, nominalMax: 100, elevMax: 130, alertMax: 150, alertMin: 40 },
   spo2:           { nominalMin: 95, elevMin: 92 },
   respiration_rate: { nominalMin: 12, nominalMax: 20, elevMax: 24 },
   glucose:        { nominalMin: 70, nominalMax: 140, elevLow: 60, elevHigh: 180 },

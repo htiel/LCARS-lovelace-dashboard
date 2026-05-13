@@ -2,6 +2,22 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.10.0-beta.3] — Heart-rate threshold recalibration
+
+### Sickbay
+- **Heart-rate bands widened** in `lcars-medical-utils.js` `DEFAULT_THRESHOLDS`.
+  New: `nominalMax: 100`, `elevMax: 130`, `alertMax: 150` (was 80/100/100).
+  Withings `_heart_pulse` and Oura `_heart_rate` (HACS `nitobuendia`) feed
+  POINT-IN-TIME readings — scale grip, live ring sample — not resting HR.
+  The prior tight resting-HR bands (50–80 nominal, 100 alert) misfired on
+  any normal activity, painting the silhouette red during a brisk walk or
+  immediately after standing up.
+- **Resting HR is preserved as a future path**: Apple Health `_resting_heart_rate`
+  entities and any integration that exposes a dedicated resting-HR entity already
+  match our existing classifier and will get the strict bands back once the
+  card consumes them as a separate `kind`. Backlog: pull Oura's resting HR out
+  of the `sensor.oura_readiness` `resting_heart_rate` attribute (Option B).
+
 ## [5.10.0-beta.2] — Sickbay biofunction silhouette redesign
 
 ### Sickbay

@@ -2,6 +2,35 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.10.0-beta.1] — Sickbay body composition + Tactical noise filter
+
+### Sickbay (#230)
+- **5 new body-composition vital kinds** mapped from Withings: `bone_mass`,
+  `muscle_mass`, `fat_mass`, `lean_mass` (fat-free mass), `visceral_fat`. All
+  render as Zone C tiles with 2-decimal kg precision.
+- **3 new last-workout variants**: `KCAL` (calories burnt), `ELEV` (elevation
+  change), `PAUSE` (pause during workout). Captured by extended classifier
+  regex `_calories_burnt_last_workout$ | _elevation_change_last_workout$ |
+  _pause_during_last_workout$` plus catch-all extension to `/_last_workout$/`.
+
+### Tactical Chronicle (#229)
+- **`entity_category` early-exit** in `isChronicleEntity()` — entities
+  HA-categorised as `config` or `diagnostic` are now rejected before any
+  domain check. Catches the bulk of vendor helper toggles automatically.
+- **Extended `CONFIG_TOGGLE_RE`** for status-LED / appliance-config noise:
+  `*_display`, `*_panel_light`, `*_status_light`, `*_status_led`,
+  `*_indicator_led`, `*_beeper`, `*_buzzer`, `*_audible_alarm`,
+  `*_audible_warning`, `*_auto_reboot`, `*_auto_restart`, `*_power_cycle`,
+  `*_always_on`, `*_ac_enabled`, `*_usb_enabled`, `*_schedule_enabled`,
+  `*_timer_enabled`, `*_child_lock`.
+- **New `APPLIANCE_FAN_RE`** rejects `fan.*` entities for purifiers,
+  humidifiers, dehumidifiers, ionizers, air-quality units, diffusers. Real
+  room-ventilation fans (ceiling/exhaust/floor) still admitted.
+
+### Closed
+- Closes #229 (Chronicle device-config switch noise).
+- Closes #230 (Sickbay Withings body-composition + workout sensors).
+
 ## [5.9.0] — Tactical hardening + Chronicle mode (GA)
 
 Stable release of the v5.9 Tactical train. Rolls up beta.1 → beta.3 plus a final

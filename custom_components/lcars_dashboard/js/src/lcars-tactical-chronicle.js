@@ -176,7 +176,15 @@ const BS_FALLBACK_OBJID_RE = /(_motion|_occupancy|_presence|_door|_window|_conta
 // detection enabled?" toggle, not an actual motion event. Same for the
 // `_detection_enabled`, `_alarm_enabled`, `_recording`, `_audio_recording`
 // helpers exposed by many camera integrations (Reolink, Unifi, Amcrest, etc.).
-const CONFIG_TOGGLE_RE = /(_motion_detection|_motion_enabled|_motion_alarm|_alarm_enabled|_detection_enabled|_detection_switch|_audio_detection|_pir(?:_enabled)?|_recording(?:_enabled)?|_audio_recording|_ftp_upload|_email_on_event|_notifications?|_siren|_floodlight_(?:on|enabled)|_privacy_mode|_ir_lights|_night_vision)(?:$|_)/i;
+// Also catches UPS/appliance config toggles (display LEDs, beepers, always-on,
+// auto-reboot) and status-LED entities that pass as `light.*` on some vendors.
+const CONFIG_TOGGLE_RE = /(_motion_detection|_motion_enabled|_motion_alarm|_alarm_enabled|_detection_enabled|_detection_switch|_audio_detection|_pir(?:_enabled)?|_recording(?:_enabled)?|_audio_recording|_ftp_upload|_email_on_event|_notifications?|_siren|_floodlight_(?:on|enabled)|_privacy_mode|_ir_lights|_night_vision|_display(?:_enabled)?|_panel_light|_status_light|_status_led|_indicator_led|_beeper|_buzzer|_audible_alarm|_audible_warning|_auto_reboot|_auto_restart|_power_cycle|_always_on|_ac_enabled|_usb_enabled|_schedule_enabled|_timer_enabled|_child_lock)(?:$|_)/i;
+
+// Appliance-fan suffixes — the `fan.*` domain is admitted for room ventilation
+// (ceiling/exhaust/floor fans). Air purifiers, humidifiers, dehumidifiers, etc.
+// are exposed as fan entities by their integrations but represent appliance
+// state, not human movement, and pollute Chronicle. Reject by name heuristic.
+const APPLIANCE_FAN_RE = /(_purifier|_humidifier|_dehumidifier|_air_quality|_ionizer|_diffuser)(?:$|_)/i;
 
 function isChronicleEntity(eid, hass) {
   if (!eid || typeof eid !== 'string') return false;
@@ -186,14 +194,21 @@ function isChronicleEntity(eid, hass) {
   const objId = eid.slice(dot + 1);
   if (domain === 'camera' || domain === 'media_player' || domain === 'person' || domain === 'device_tracker') return false;
   if (/secret|key|token|password/i.test(eid)) return false;
-  // Reject camera-config toggles regardless of domain
+  // Reject camera/UPS/appliance config toggles regardless of domain
   if (CONFIG_TOGGLE_RE.test(objId)) return false;
+  // Reject HA-categorised config / diagnostic entities — most vendors tag
+  // helper toggles correctly; this catches everything CONFIG_TOGGLE_RE misses.
+  const reg = hass?.entities?.[eid];
+  if (reg?.entity_category === 'config' || reg?.entity_category === 'diagnostic') return false;
 
   const state = hass?.states?.[eid];
   const dc = state?.attributes?.device_class || '';
 
   if (domain === 'light') return true;
-  if (domain === 'fan') return true;
+  if (domain === 'fan') {
+    if (APPLIANCE_FAN_RE.test(objId)) return false;
+    return true;
+  }
   if (domain === 'lock') return true;
   if (domain === 'switch') {
     // Reject power-monitoring / outlet-energy switches by name heuristic

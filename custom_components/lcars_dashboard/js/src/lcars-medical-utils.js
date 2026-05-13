@@ -24,6 +24,11 @@ export const MEDICAL_VITAL_CLASSES = [
   { kind: 'body_temp_deviation',anchor: 'forehead',   label: 'BODY TEMP',   unit: '°C',   spark: true,  tile: true },
   { kind: 'weight',             anchor: 'abdomen',    label: 'WEIGHT',      unit: 'kg',   spark: true,  tile: true },
   { kind: 'body_fat_pct',       anchor: null,         label: 'BODY FAT',    unit: '%',    spark: false, tile: true },
+  { kind: 'fat_mass',           anchor: null,         label: 'FAT MASS',    unit: 'kg',   spark: true,  tile: true },
+  { kind: 'lean_mass',          anchor: null,         label: 'LEAN',        unit: 'kg',   spark: true,  tile: true },
+  { kind: 'muscle_mass',        anchor: null,         label: 'MUSCLE',      unit: 'kg',   spark: true,  tile: true },
+  { kind: 'bone_mass',          anchor: null,         label: 'BONE',        unit: 'kg',   spark: true,  tile: true },
+  { kind: 'visceral_fat',       anchor: null,         label: 'VISCERAL',    unit: '',     spark: false, tile: true },
   { kind: 'bmi',                anchor: null,         label: 'BMI',         unit: '',     spark: false, tile: true },
   { kind: 'hydration',          anchor: null,         label: 'HYDRATION',   unit: 'L',    spark: false, tile: true },
   { kind: 'readiness',          anchor: null,         label: 'READINESS',   unit: '/100', spark: true,  tile: true, composite: true },
@@ -281,6 +286,9 @@ export const VITAL_SUFFIX_PRIORITY = {
     { re: /_last_workout_intensity$/,        label: 'INTENSITY' },
     { re: /_last_workout_duration$/,         label: 'DURATION' },
     { re: /_last_workout_calories$/,         label: 'KCAL' },
+    { re: /_calories_burnt_last_workout$/,   label: 'KCAL' },
+    { re: /_elevation_change_last_workout$/, label: 'ELEV' },
+    { re: /_pause_during_last_workout$/,     label: 'PAUSE' },
     { re: /_last_workout_/,                  label: 'WORKOUT' },
     { re: /_last_activity_/,                 label: 'ACTIVITY' },
   ],
@@ -334,6 +342,11 @@ export function classifyVital(state, entityRegistryEntry) {
   if (/_weight$/.test(lid) && !/_goal$/.test(lid)) return withLabel({ kind: 'weight' });
   if (/_weight_goal$/.test(lid)) return { kind: 'weight_goal' };
   if (/_fat_ratio$|_body_fat$/.test(lid)) return withLabel({ kind: 'body_fat_pct' });
+  if (/_fat_mass$/.test(lid)) return withLabel({ kind: 'fat_mass' });
+  if (/_(fat_free_mass|lean_body_mass|lean_mass)$/.test(lid)) return withLabel({ kind: 'lean_mass' });
+  if (/_muscle_mass$/.test(lid)) return withLabel({ kind: 'muscle_mass' });
+  if (/_bone_mass$/.test(lid)) return withLabel({ kind: 'bone_mass' });
+  if (/_visceral_fat(_index)?$/.test(lid)) return withLabel({ kind: 'visceral_fat' });
   if (/_bmi$/.test(lid)) return withLabel({ kind: 'bmi' });
   if (/_hydration$/.test(lid)) return withLabel({ kind: 'hydration' });
 
@@ -370,7 +383,7 @@ export function classifyVital(state, entityRegistryEntry) {
   if (/_(high_activity_time|medium_activity_time|low_activity_time|minutes_very_active|intensity)$/.test(lid)) return withLabel({ kind: 'active_minutes' });
 
   if (/_last_workout_distance$|_last_activity_distance$|_distance_travelled_last_workout$|_distance_traveled_last_workout$/.test(lid)) return withLabel({ kind: 'workout_distance' });
-  if (/_last_workout_|_last_activity_/.test(lid)) return withLabel({ kind: 'last_workout' });
+  if (/_last_workout_|_last_activity_|_last_workout$|_last_activity$|_calories_burnt_last_workout$|_elevation_change_last_workout$|_pause_during_last_workout$/.test(lid)) return withLabel({ kind: 'last_workout' });
 
   if (/_glucose_value$/.test(lid)) return withLabel({ kind: 'glucose' });
 
@@ -496,6 +509,13 @@ export function formatVital(kind, value, secondary = null) {
       return `${sign}${Math.abs(value).toFixed(1)}`;
     }
     case 'weight':
+      return value.toFixed(1);
+    case 'fat_mass':
+    case 'lean_mass':
+    case 'muscle_mass':
+    case 'bone_mass':
+      return value.toFixed(2);
+    case 'visceral_fat':
       return value.toFixed(1);
     case 'hrv':
     case 'glucose':

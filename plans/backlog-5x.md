@@ -29,8 +29,8 @@ Carried from 4X-33. Extended reorder beyond 4X-8's panel-order override — user
 
 ## Open Bugs (from Epic 0 QA Review)
 
-#### 5X-B-230 · Sickbay: map 3 new Withings workout sensors (calories/elevation/pause) — `TODO` · Priority: LOW · Size: XS · [#230](https://github.com/htiel/LCARS-lovelace-dashboard/issues/230)
-Withings re-added 2026-05-05 with 14 entities. Three workout sensors fall through `classifyVital` because the metric is in the prefix (`<metric>_last_workout`), not the suffix. Extend the catch-all regex to `/_last_workout(_|$)/` and add KCAL/ELEV/PAUSE entries to `VITAL_SUFFIX_PRIORITY.last_workout`.
+#### 5X-B-230 · Sickbay: map Withings body-composition + workout sensors (bone/muscle/fat/visceral + 3 workout) — `TODO` · Priority: LOW · Size: S · [#230](https://github.com/htiel/LCARS-lovelace-dashboard/issues/230)
+Withings re-added 2026-05-05 with 14 entities. **8 sensors unmapped**: 5 body-composition (bone_mass / muscle_mass / fat_mass / fat_free_mass / visceral_fat) + 3 workout (calories_burnt / elevation_change / pause_during _last_workout). Add 5 new VITAL_KINDS, 5 classifier regexes, extend last_workout catch-all to `/_last_workout(_|$)/`, add KCAL/ELEV/PAUSE priority entries. Geordi consult recommended for silhouette anchor placement.
 
 #### 5X-B-229 · Chronicle: filter device-config switches (UPS *_ENABLED, *_ALWAYS_ON, etc.) — `TODO` · Priority: LOW · Size: S · [#229](https://github.com/htiel/LCARS-lovelace-dashboard/issues/229)
 Chronicle Mode shows config switches like `UPS AIR AC ENABLED`, `UPS AIR AC ALWAYS ON`, `UPS AIR USB ENABLED` as permanent blue bars. Add `entity_category === 'config'/'diagnostic'` early-exit in `isChronicleEntity()` and extend `CONFIG_TOGGLE_RE` for `*_enabled`/`*_always_on`/`*_beeper`/`*_auto_reboot`/etc. Bundle into next Tactical patch.

@@ -193,6 +193,10 @@ Server Room shows `IPC-MODEL` unadopted device with `ADOPT DEVICE` button — ad
 BREAD CAM in Server Room shows `ESTABLISHING LINK` placeholder indefinitely. Add a timeout-fallback that switches to the offline placeholder after N seconds when no frame arrives.
 **Source**: S2-04.
 
+#### 5X-B52 · Sickbay Cardiac Silhouette Mirrored — Heart Renders on Anatomical Right — `TODO` · Priority: LOW · Size: XS
+Wireframe Anatomy silhouette (shipped v5.10.0-beta.2) draws the cardiac shape on the viewer's left side of the figure (x ≈ 80–100), which is the patient's anatomical *right*. Standard medical convention for a front-facing diagram is heart on viewer's right (patient's left). Fix is a horizontal mirror of the cardiac path in `lcars-medical-silhouette-paths.js` line ~74 (substitute each x with 200-x: 84→116, 78→122, 82→118, 88→112, 92→108, 96→104, 104→96, 98→102, 90→110, 86→114). Re-anchor `lcars-anatomical-silhouette.js` `heart` slot accordingly so HR callout still lands on the cardiac shape. Apply on the next Sickbay touch — no separate release.
+**Source**: Captain spot-check, May 13 2026.
+
 ### Triaged Out (Not LCARS Code Defects)
 
 - **GEO-508** — "DINNING ROOM" is a Home Assistant area naming typo, not an LCARS defect

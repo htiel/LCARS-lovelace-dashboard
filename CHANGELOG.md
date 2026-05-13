@@ -2,6 +2,31 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.10.0-beta.2] — Sickbay biofunction silhouette redesign
+
+### Sickbay
+- **Wireframe Anatomy silhouette** (Wesley Option 4 / X-Ray Mode) replaces the
+  prior stick-figure-with-volume in `lcars-medical-silhouette-paths.js`. Now
+  uses idealized 8-head proportions (1 head = 60px in 200x480 viewBox) with
+  proper anatomical landmarks: chin y=60, nipples y=120, navel y=180, crotch
+  y=240, knees y=360, ankles y=460. Elbows land at navel level, wrists at
+  crotch — anatomically correct arm hang.
+- **Internal anatomy layer** at 35% opacity behind the outline: clavicle,
+  sternum, 5 rib-pair arcs, cardiac silhouette (anchored under HR callout),
+  diaphragm arc, dashed spinal hint, pelvic ring, femurs, tibias. Reads as
+  TNG biofunction monitor / tricorder schematic.
+- **Cardiac silhouette uses `currentColor` + `fill-opacity`** — inherits the
+  full-figure recolor on alert/critical states (heart goes red when whole
+  silhouette goes tomato; thermal-bloom radial overlay still anchored on heart).
+- All 9 callout anchors (forehead, throat, heart, left/right arm, abdomen,
+  left/right leg, right foot) verified to land within Geordi's tolerance zones.
+- ~3.8 KB inline SVG, 53 elements. Within 12 KB beta-2 budget (Captain raised
+  ceiling from Geordi's original 4 KB / 50-element cap to enable X-Ray internals).
+
+### Notes
+- Supersedes `5.10.0-beta.1`. The body-composition + Tactical noise filter
+  changes from beta.1 are included unchanged.
+
 ## [5.10.0-beta.1] — Sickbay body composition + Tactical noise filter
 
 ### Sickbay (#230)

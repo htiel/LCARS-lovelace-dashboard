@@ -1,64 +1,19 @@
-dwains-theme/configs
-.HA_VERSION
-.storage/
-automations.yaml
-configuration.yaml
-groups.yaml
-home-assistant.log
-home-assistant_v2.db
-scenes.yaml
-scripts.yaml
-secrets.yaml
-dwains-theme/.vscode/*
-dwains-theme/resources/custom_resources.yaml
-dwains-theme/addons/house_information/*/
-!dwains_theme/addons/house_information/hello-house-information/
-custom_components/*/
-!custom_components/lcars_dashboard
-custom_components/lcars_dashboard/__pycache__/
+# Python
+__pycache__/
+*.py[cod]
+.venv/
 custom_components/lcars_dashboard/.installed
-generate_icon.py
-www/
-packages/
-packages/dwains-theme/
-customize.yaml
-google_calendars.yaml
-zigbee.db
-known_devices.yaml
-home-assistant_v2.db-shm
-home-assistant_v2.db-wal
-.vscode/settings.json
-neighbours/
-tts/
-.google.token
-dwainconfig/
-dwains-dashboard/
-dwains-dashboardd/
-/themes/
-test/
-image/
-._.DS_Store
-._configuration.yaml
-.DS_Store
-blueprints/
-._*
-.fuse_hidden002e3c9700002485
-home-assistant.log.1
-home-assistant.log.fault
-minimalist-templates/
-lovelace-minimalist.yaml
 
-test.yaml
-H8HF46~F
-HQVM5K~K
-HVFWCC~H
-dwains-dashboard copy/
-src-backup-3.6/
+# Built JS source map (bundle itself is committed for HACS)
 custom_components/lcars_dashboard/js/lcars-dashboard.js.map
-localinfo
 
+# Local-only utilities and notes
+generate_icon.py
+localinfo
+localinfo/
 /.issues-open.txt
 
-# PII screenshot crawls (live HA dashboards)
-screenshots/v5.*-beta.*/
-screenshots/v5.*-crawl/
+# Editor / OS
+.vscode/settings.json
+.DS_Store
+._*

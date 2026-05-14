@@ -1,115 +1,72 @@
-# LCARS Dashboard — Next Session Handoff
+# LCARS Dashboard — Next Session Handoff (autonomous run 2026-05-10+)
 
-**Author:** Copilot (REDACTED) on behalf of Captain
-**Generated:** 2026-05-10 end-of-day
-**Branch:** `5.0` (default + only active)
-**Last shipped:** **v5.6.6** (hotfix), commit `08c847f`
-**Open issues:** 57 (46 with `bug` label)
+**Author:** Copilot (REDACTED) on behalf of Captain (autonomous run)
+**Branch:** `5.0`
+**Last shipped:** **v5.10.0-beta.5** (commit `b075690`, tag pushed, GitHub release published)
+**Open issues:** **10** (was 17 at session start → 7 closed this session)
 
----
-
-## Where we left off
-
-**2026-05-11 update (Riker):** **[plans/v5.7-bug-elimination-plan.md](v5.7-bug-elimination-plan.md) APPROVED BY CAPTAIN** — 6 release passes (v5.7.0 → v5.7.5) closing 45 open bug-labeled issues. Captain decisions: (1) 6-pass cadence confirmed, (2) `#99` stays in Pass 6, (3) `#164` closed out-of-scope (HA user-config, not LCARS code), (4) `#134` Lit 3 → **v5.8.0 target locked**. Team pre-review consulted Geordi/Worf/Data/Wesley. **Next executable unit:** Pass 1 / v5.7.0 — Subspace + Cetacean + Illumination polish triple. Also archived 4.x backlog (only open item #33 carried forward as `5X-CF-33` in `plans/backlog-5x.md`).
-
-Today shipped the entire **v5.5.8 → v5.6.6 release train (8 releases + 1 spec-only commit)** in one session, including a cumulative agent-team review (Data + Worf + Geordi) and a Captain-spotted hotfix for a UniFi-detection regression. See [plans/v5.6-train-shipped.md](v5.6-train-shipped.md) for the full ledger.
-
-Working tree is clean. Tags 5.5.8/5.6.0/5.6.1/5.6.2/5.6.3/5.6.4/5.6.5/5.6.6 are all on origin/5.0 with matching GitHub releases.
+> Prior handoff archived at `plans/NEXT-SESSION-HANDOFF.v5.6.md`.
 
 ---
 
-## Repo conventions cheat sheet (read first)
+## Closed this session
 
-- **3-file version sync** (must always match): `custom_components/lcars_dashboard/const.py` `VERSION`, `custom_components/lcars_dashboard/manifest.json` `version`, `custom_components/lcars_dashboard/js/package.json` `version`.
-- **Bundle build:** `cd custom_components/lcars_dashboard/js; npm run build` (webpack 5.106.1, ~3s, must succeed before commit).
-- **Release pattern:**
-  ```powershell
-  git tag X.Y.Z <SHA>
-  git push origin 5.0 X.Y.Z
-  gh release create X.Y.Z --target 5.0 --title "vX.Y.Z — ..." --notes "..."
-  gh issue close N -c "Shipped in vX.Y.Z."
-  ```
-- **gh issue create with body:** must use `--body-file .tmp.md` not heredoc (PowerShell limitation).
-- **Address Captain as "Captain"**, William Riker as "Commander", etc.
-- **HACS deploy is via GitHub releases only** — `ha.malick.us` is behind Cloudflare proxy, SSH/SCP do NOT work.
-- **Pattern observed 7+ times this train:** before editing for an issue, grep the file — many "open" issues are already-fixed in tree with comments citing the issue number. Close with line citation rather than re-fixing.
-- **Closed shadow root cards:** medical, network, starship — never break the `mode: 'closed'` invariant.
-- **Screenshot redaction is OUT-OF-CARD ONLY:** `localinfo/screenshot-obfuscator.js` keys off `data-medical|data-network|data-starship` attributes. Cards never apply runtime CSS-class obfuscation (Captain's #219 directive). Preserve the `data-*` hooks on every PHI/identity node.
-- **Audio mute event:** `lcarsAudio.mute()`/`unmute()` dispatch `lcars-audio-mute-changed` `CustomEvent` on `window`. Use this for any per-card mute-aware behavior (e.g. PHI aria-hidden gating).
+| # | Title | Resolution |
+|---|---|---|
+| #208 | Habitat audit — area headers | Shipped in v5.10.0-beta.4 (`96815c9`) — home overview + floor headers + dispatcher |
+| #221 | Habitat audit — area not selecting | Shipped in v5.10.0-beta.4 — `_selectArea()` requestUpdate fix |
+| #222 | Habitat audit — Unifi unadopted devices | Shipped in v5.10.0-beta.4 — `_isUnadoptedDevice()` filter |
+| #132 | `_safe_json_loads` send_error consistency | Already-fixed-in-tree — `__init__.py:101-135` already calls `connection.send_error` on every failure branch |
+| #133 | loader-utils CVE chain | Already-fixed-in-tree — package.json bumps + `npm audit` = 0 vulns |
+| #134 | Lit migration off EOL `lit-element@2.x` / `lit-html@1.x` | Shipped in v5.10.0-beta.5 — migrated to `lit@^2.8.0` family (transitively `lit-element@3.3.3` + `lit-html@2.8.0`, still pinned as direct deps). API-compatible, 0 source changes, bundle −5.5 KB |
+| #86 | npm dep audit | Closed by #134 — `npm audit` 0 vulns; lit-html 1.x constraint cited in AC is also removed |
 
 ---
 
-## Captain's standing decisions (carry forward)
+## Remaining 10 — Captain triage required
 
-1. **#169** — vocalize via header mute switch only (no separate toggle). Vocalize-on-change should be a debounced single-region announcer per AUDIO-SPEC, NOT per-tile `aria-live=polite`. Per-tile MUST remain `aria-live="off"`.
-2. **#180/#181** — Subspace Relay button-grid is canonical. Spec updated to match. Don't rebuild as semantic table without preserving `data-network` attribute hooks.
-3. **#144** — Tactical card honors sidebar `lcars-tac-filter` events: `all|access|zones`.
-4. **#145** — Red Alert is card-internal only. Frame elbows/header/footer do NOT enter red-alert state. Spec follow-up still owed.
-5. **#219** — Identifier obfuscation is screenshot-time only.
-6. **VESSEL-ID** — Full UUID/seed in cleartext (no fnv1a hash for the operator-visible ID).
-7. **#208** — Habitat empty-pane on default load: deferred to 5.7.
-8. **#134** — Lit 1.x → Lit 3 migration: deferred to 5.7.
+Per `memories/repo/lcars-lovelace-dashboard.md` policy and `lcars-train-lessons.md` ("Captain triage decisions can collapse a release"), the agent stopped the autonomous run after these grep-before-edit findings:
 
----
+### Already-mooted-by-redesign (recommend close)
 
-## Top of next-session backlog (suggested triage order)
+| # | Title | Finding |
+|---|---|---|
+| #123 | Subspace reveal toggle UX polish | The reveal toggle was **removed by #219** (cleartext-by-default policy; redaction moved to screenshot obfuscator only). `lcars-network-card.js:281` comment confirms: `// #219 — was: hash device name when reveal toggle off. Now: render real name.` No `_revealTimer` / setTimeout / countdown remains in `lcars-network-layout.js`. Only stale header comment + tooltip text reference an obsolete behavior. **Recommend: close #123 as obsolete-by-#219**, OR scope down to the `top_cpu_proc` allowlist sub-item (no allowlist found in tree — that part is real TODO) |
 
-The 46 remaining `bug`-labeled issues cluster by surface. Highest-value clusters first:
+### Genuine TODOs needing design input
 
-### Tier A — Subspace Relay polish (small wins, Captain-visible)
-- **#187** — Network: U7 MESH and SERVERROOM-WIFI6 disconnected tiles render inconsistently (visual)
-- **#182** — Subspace Relay shows "No X detected" placeholders; spec requires omission
-- **#189** — Network: connected clients show raw MACs by default (HIDE IDENTIFIERS is opt-in) — security/privacy
+| # | Title | Scope |
+|---|---|---|
+| #87 | Cross-dashboard deep links (5X-B25) | Dep #83 (5X-B16) is closed, so unblocked. LOW pri / M size. Needs deep-link URL format design + nav-shell integration. **Defer to next train.** |
+| #101 | Life Support: 24h occupancy sparkline | P2 / S size but requires HA recorder history API integration (new pattern). Wesley A1 design needed. **Defer or queue with Wesley input.** |
+| #120 | Starship tactical-tab side-profile | "SCAN MODE PENDING — v5.4.2" placeholder still in `lcars-starship-card.js:432`. Needs Wesley silhouette + tactical anchor map design. **Defer to next train.** |
+| #121 | Starship engineering-tile sparklines | `spark: true` flags set in `STARSHIP_KINDS` but no recorder pull wired. Needs Data review of debounce/cache pattern. **Defer to next train.** |
+| #122 | Per-vessel `starship_thresholds.yaml` loader | `STARSHIP_THRESHOLDS` still `Object.freeze({…})` in `lcars-starship-utils.js:137`. Issue cites "parallel to medical_thresholds.yaml Phase 2 pattern" but **`lcars-medical-utils.js:91` confirms the medical loader is also still TODO** (comment: "user override planned via medical_thresholds.yaml (Phase 2 loader)"). Pattern needs to be designed from scratch; #122 effectively blocks on doing the medical loader first. **Defer to a dedicated YAML-config train.** |
 
-### Tier B — Starship Health (4 visual + 2 spec, all in `lcars-starship-card.js`)
-- #191, #192, #193, #194, #195, #196 — single-file pass
+### Train 4 — new integration features (blocked on Captain entity confirmation)
 
-### Tier C — Cetacean Ops (4 issues, single-file)
-- #197 (calcium_hardness), #198 (debouncer cleanup), #199 (mute-btn drift), #200 (gauge-needle outline)
-
-### Tier D — Medical visual polish (PHI gating already done in this train)
-- #172, #173, #175, #176, #178, #179
-
-### Tier E — Illumination (#165–#168)
-Single dashboard pass; #165 cache-clear regression looks high-impact.
-
-### Tier F — Tactical follow-ups
-- #145 spec-side (decision recorded; spec text still needs update)
-- #146 (full-width Tactical Summary Bar hero — spec)
-- #148 (constructor setter ordering — codehealth)
-
-### Tier G — Power/Engineering (older 4.x escapees)
-- #93 (double-counted battery), #88 (grid 0W), #89 (non-storage battery cards), #109 (battery panel codehealth), #159 (DETAIL link overlap)
-
-### Tier H — Cross-cutting
-- #134 (Lit 3 — defer)
-- #133 (loader-utils CVEs in webpack chain — research first)
-- #131 (add_card vol.In allowlist gap — security)
-- #132 (`_safe_json_loads` success-with-error-key — security)
-- #130 (six WS write handlers missing 256K/depth-20 caps — security)
-- #208 (Habitat empty-pane — feature, defer)
+| # | Title | Blocker |
+|---|---|---|
+| #225 | Bambu Lab H2C — Fabrication panel | Wesley creative addendum + Captain entity-confirmation gate per Train 4 plan |
+| #226 | ThermoWorks Cloud — Galley probes | Same |
+| #227 | Oura Ring — Medical Bay elevation | Same |
+| #228 | Life360 — Habitat presence aggregation | Same |
 
 ---
 
-## Recommended next session opening move
+## Recommended next moves (Captain)
 
-```powershell
-cd c:/Users/leithma/LocalRepos/LCARS-lovelace-dashboard
-git fetch --tags
-git log --oneline 5.6.6..HEAD       # should be empty
-git status                          # should be clean
-gh issue list --state open --label bug --limit 50
-```
-
-Then ask Captain which tier to attack. Tier A (Subspace polish) is the smallest, fastest, and most visible win after today's UniFi hotfix — recommended starting point.
+1. **Quick close** #123 as obsolete-by-#219 (or comment with allowlist-only sub-scope retained).
+2. **Triage decision** on #87/#101/#120/#121/#122 — are these still wanted in 5.x, or should they be deferred to 6.x? `lcars-train-lessons.md` warns against sunk-cost on planned releases.
+3. **Train 4 kickoff** (#225-#228) needs your entity-confirmation pass before any code is written. Could be batched into a single review session.
+4. **Dependabot drift**: GitHub web UI still shows 10 stale alerts (fast-uri@3.1.2, postcss@8.5.14, hono in `mcp/`). All installed versions already patched. Safe to dismiss-as-fixed if alerts don't refresh after this push.
 
 ---
 
-## Memory & convention reminders
+## Build / verification state
 
-- **User memory** `/memories/data-limits-policy.md` — file size warnings at 90% of GitHub/VS Code limits.
-- **User memory** `/memories/lcars-release-workflow.md` — release commands, deploy constraints, version-bump file list.
-- **Repo memory** at `/memories/repo/` may contain additional facts; check before assuming.
-- **Always grep before editing** — many open issues are already-fixed (pattern matched 7+ times in this train).
-- **Build before commit, always.** The bundle ships in the repo (HACS).
-- **Single-line comments only**, no multi-line docstrings on edits unless adding new public API. Cite issue # when fixing one.
+- `npm run build` green (webpack 5.106.1, 2.8s, 0 errors)
+- `npm audit` 0 vulnerabilities
+- Bundle: **1,173,053 bytes** (−5.5 KB vs beta.4)
+- Three-file version sync verified: `const.py` / `manifest.json` / `js/package.json` all on `5.10.0-beta.5`
+- HACS deploy: pre-release published; ha.malick.us update via HACS UI (Cloudflare-proxied, no SSH)

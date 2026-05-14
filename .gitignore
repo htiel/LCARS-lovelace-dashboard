@@ -20,3 +20,6 @@ localinfo/
 .vscode/settings.json
 .DS_Store
 ._*
+
+# Internal-only agent definitions (reference internal pre-release models)
+.github/agents/*.agent.md

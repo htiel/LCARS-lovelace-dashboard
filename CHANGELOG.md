@@ -2,6 +2,16 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.10.0-beta.5] — Lit framework migration
+
+### Security / Dependencies
+- **#134** — Migrate frontend off EOL `lit-element@2.x` / `lit-html@1.x` onto supported
+  `lit@^2.8.0` (transitively `lit-element@^3.3.3` + `lit-html@^2.8.0`, still pinned as
+  direct deps for source-import compatibility). Resolves CWE-1104. No source-level
+  breaking changes — `static get properties()` and LitElement lifecycle hooks remain
+  API-compatible. `npm audit` clean (0 vulns). Bundle: 1,178,574 → 1,173,053 bytes
+  (−5.5 KB; lit-html 2.x is leaner than 1.x).
+
 ## [5.10.0-beta.3] — Heart-rate threshold recalibration
 
 ### Sickbay

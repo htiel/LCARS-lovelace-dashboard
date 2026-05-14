@@ -21,6 +21,4 @@ localinfo/
 .DS_Store
 ._*
 
-# Internal-only agent definitions (reference internal pre-release models)
-# Folder is symlinked to OneDrive on dev machines; do not commit any contents.
 .github/agents/

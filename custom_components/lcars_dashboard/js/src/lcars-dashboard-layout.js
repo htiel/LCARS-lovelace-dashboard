@@ -168,8 +168,13 @@ class LcarsDashboardLayout extends LitElement {
         new CustomEvent('lcars-floor-selected', { detail: { floorId: null } })
       );
     }
+    const prev = this._selectedArea;
     this._selectedArea = this._selectedArea === areaId ? null : areaId;
     lcarsLog.debug(TAG, 'Area selected:', this._selectedArea || '(deselected)');
+    // #221 — defensive requestUpdate so the sidebar active-pill repaints in
+    // the same tick as the click; covers any Lit 1.x reactive-property edge
+    // case where the auto-update was deferred past the next paint frame.
+    this.requestUpdate('_selectedArea', prev);
     // Update hash for deep-link persistence
     if (this._selectedArea) {
       history.replaceState(null, '', `${location.pathname}#area:${this._selectedArea}`);

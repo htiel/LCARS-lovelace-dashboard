@@ -198,13 +198,13 @@ Tiles render value + unit only — no recorder-history sourced sparklines. Add r
 
 > Full audit: [`plans/v5.7.0-beta.2-visual-audit.md`](v5.7.0-beta.2-visual-audit.md). 44-screenshot crawl across 9 dashboards + 18 Habitat areas. S0/S1 batch fixes shipped in v5.7.0-beta.3 (Tactical SHIELDS ring, Media STANDBY collapse, Filter critical at 0%, Power circuit grid, Illumination tooltips, Medical/Starship chrome via cache-bust). Items below deferred — need runtime reproduction.
 
-#### 5X-B49 · Habitat Sidebar Active-Pill Desyncs From Rendered Area — `TODO` · Priority: MEDIUM · Size: S · [#221](https://github.com/htiel/LCARS-lovelace-dashboard/issues/221)
+#### 5X-B49 · Habitat Sidebar Active-Pill Desyncs From Rendered Area — `DONE` (v5.10.0-beta.4) · Priority: MEDIUM · Size: S · [#221](https://github.com/htiel/LCARS-lovelace-dashboard/issues/221)
 Clicking Office (idx 14) leaves the sidebar highlighting Game Room (idx 13) as the active gold pill. Event-handler race or `_activeArea` reactive update lags the area-switch by one tick. Reproducible across the area loop.
-**Source**: S1-05.
+**Source**: S1-05. **Fix**: belt-and-suspenders `requestUpdate()` in `lcars-dashboard-layout.js` `_selectArea` + `_navigateToAlarmArea` in `lcars-homepage-card.js` now dispatches `lcars-area-selected` so sidebar stays synced when the alarm-jump path mutates the panel area directly.
 
-#### 5X-B50 · Unadopted UniFi Devices Render `ADOPT` Button in User Dashboards — `TODO` · Priority: LOW · Size: S · [#222](https://github.com/htiel/LCARS-lovelace-dashboard/issues/222)
+#### 5X-B50 · Unadopted UniFi Devices Render `ADOPT` Button in User Dashboards — `DONE` (v5.10.0-beta.4) · Priority: LOW · Size: S · [#222](https://github.com/htiel/LCARS-lovelace-dashboard/issues/222)
 Server Room shows `IPC-MODEL` unadopted device with `ADOPT DEVICE` button — admin chrome bleeding into normal-user area view. Filter unadopted entities out of area discovery, or render collapsed/disabled.
-**Source**: S2-03.
+**Source**: S2-03. **Fix**: `_isUnadoptedDevice` guard in `lcars-homepage-card.js` drops `unifi`/`unifiprotect` device groups whose only live entity is a `button.*_adopt` (all other entities `unavailable`/`unknown`) before classification.
 
 #### 5X-B51 · Camera `ESTABLISHING LINK` Placeholder Perpetual When Offline — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: LOW · Size: S · [#223](https://github.com/htiel/LCARS-lovelace-dashboard/issues/223)
 BREAD CAM in Server Room shows `ESTABLISHING LINK` placeholder indefinitely. Add a timeout-fallback that switches to the offline placeholder after N seconds when no frame arrives.
@@ -228,7 +228,7 @@ Wireframe Anatomy silhouette (shipped v5.10.0-beta.2) draws the cardiac shape on
 | LOW | 5 | 1 (5X-F4 / #101) |
 | **Total** | **28** | **9** |
 
-> Remaining 5X-B49/#221, 5X-B50/#222 (visual audit) and 5X-SEC/DEPS items #132/#133/#134/#208 are tracked in [backlog-zero-plan.md](backlog-zero-plan.md) train manifests rather than this Epic 1 summary. The Pass 0 reconciliation closed 24 backlog rows + 2 won't-fix/deferred dispositions.
+> 5X-B49/#221, 5X-B50/#222, and #208 (Habitat default-load home overview) shipped in v5.10.0-beta.4. Remaining 5X-SEC/DEPS items #132/#133/#134 are tracked in [backlog-zero-plan.md](backlog-zero-plan.md) train manifests rather than this Epic 1 summary. The Pass 0 reconciliation closed 24 backlog rows + 2 won't-fix/deferred dispositions.
 
 ---
 

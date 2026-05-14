@@ -41,7 +41,7 @@ import { clampSetpoint, clampValue, createRateLimiter, createDebouncer } from '.
 import { renderSparkline, fetchSparklineData } from './lcars-sparkline.js';
 import { fetchForecasts } from './lcars-weather-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from './lcars-shared-animations.js';
-import { getFloorAreas } from './lcars-hierarchy-utils.js';
+import { getFloorAreas, getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
 import { getAreaEntities, groupEntities } from './lcars-entity-query.js';
 import { lcarsAudio } from './lcars-audio.js';
 
@@ -4201,8 +4201,156 @@ class LcarsHomepageCard extends LitElement {
             .camera-offline-text { animation: none; }
             .camera-frame[data-state="offline"] .camera-offline-overlay { animation: none; }
           }
+
+          /* #208 — home overview (default pane when no area is selected) */
+          .home-overview { padding-left: 1rem; }
+          .home-overview-floor {
+            margin: 0 0 1.5rem 0;
+          }
+          .home-overview-floor-header {
+            font-family: var(--lcars-font);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-orange);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin: 0 0 0.5rem 0;
+            padding: 0.25rem 0 0.25rem 1rem;
+            border-left: 3px solid var(--lcars-orange);
+            cursor: pointer;
+            background: none;
+            border-top: 0;
+            border-right: 0;
+            border-bottom: 0;
+            text-align: left;
+            width: 100%;
+          }
+          .home-overview-floor-header:hover { color: var(--lcars-gold); border-left-color: var(--lcars-gold); }
+          .home-overview-floor-header:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
+          .home-overview-area-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 0.5rem;
+            padding-left: 1rem;
+          }
+          .home-overview-area-tile {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+            padding: 0.6rem 0.75rem;
+            background: var(--lcars-panel);
+            border: 0;
+            border-left: 4px solid var(--lcars-data-accent);
+            color: var(--lcars-text);
+            font-family: var(--lcars-font);
+            text-transform: uppercase;
+            cursor: pointer;
+            text-align: left;
+            min-height: 56px; /* WCAG 2.5.5 */
+          }
+          .home-overview-area-tile:hover {
+            background: var(--lcars-panel-hover, var(--lcars-bg-secondary, #222));
+            border-left-color: var(--lcars-gold);
+          }
+          .home-overview-area-tile:focus-visible {
+            outline: 2px solid var(--lcars-ice);
+            outline-offset: 2px;
+          }
+          .home-overview-area-name {
+            font-size: var(--lcars-font-size-title);
+            color: var(--lcars-gold);
+            letter-spacing: 0.04em;
+          }
+          .home-overview-area-meta {
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-data-accent);
+            display: flex;
+            gap: 0.5rem;
+            align-items: baseline;
+          }
+          .home-overview-alarm-badge {
+            font-weight: bold;
+            letter-spacing: 0.08em;
+          }
         `,
       ];
+    }
+
+    /* ------------ HOME OVERVIEW (#208) ------------ */
+    _renderHomeOverview() {
+      const floors = getFloors(this._hass);
+      const floorMap = getAreasByFloor(this._hass);
+      const homeName = (this._hass?.config?.location_name || 'HOME').toUpperCase();
+      const sections = floors
+        .map(floor => ({ floor, areas: floorMap.get(floor.floor_id) || [] }))
+        .filter(s => s.areas.length > 0);
+      const unassigned = floorMap.get(null) || [];
+      if (unassigned.length > 0) sections.push({ floor: null, areas: unassigned });
+
+      if (sections.length === 0) {
+        return html`<div class="lcars-empty">No areas configured</div>`;
+      }
+
+      return html`
+        <div class="content-area-panel home-overview">
+          <h2 class="content-area-header">${homeName} — OVERVIEW</h2>
+          ${sections.map(({ floor, areas }) => html`
+            <div class="home-overview-floor">
+              ${floor ? html`
+                <button class="home-overview-floor-header"
+                        type="button"
+                        @click=${() => this._selectFloorFromOverview(floor.floor_id)}
+                        aria-label="View ${floor.name} floor">
+                  ${floor.name}
+                </button>
+              ` : html`<div class="home-overview-floor-header" aria-hidden="true">Unassigned</div>`}
+              <div class="home-overview-area-grid">
+                ${areas.map(area => {
+                  const entities = this._getAreaEntities(area.area_id);
+                  const alarm = this._getAlarmBadgeForArea(area.area_id, entities);
+                  const alarmState = alarm?.state?.state || '';
+                  return html`
+                    <button class="home-overview-area-tile"
+                            type="button"
+                            @click=${() => this._selectAreaFromOverview(area.area_id)}
+                            aria-label="Select ${area.name}, ${entities.length} entities${alarm ? `, alarm ${alarmState.replace(/_/g,' ')}` : ''}">
+                      <span class="home-overview-area-name">${area.name}</span>
+                      <span class="home-overview-area-meta">
+                        <span>${entities.length} ENT</span>
+                        ${alarm ? html`<span class="home-overview-alarm-badge"
+                                              style="color:${getAlarmStateColor(alarmState || 'unavailable')}">
+                                          ${alarmState.toUpperCase().replace(/_/g,' ')}
+                                        </span>` : ''}
+                      </span>
+                    </button>
+                  `;
+                })}
+              </div>
+            </div>
+          `)}
+        </div>
+      `;
+    }
+
+    _selectAreaFromOverview(areaId) {
+      this.selectedArea = areaId;
+      this.selectedFloor = null;
+      lcarsEventBus.dispatchEvent(
+        new CustomEvent('lcars-area-selected', { detail: { areaId } })
+      );
+      this.requestUpdate();
+    }
+
+    _selectFloorFromOverview(floorId) {
+      this.selectedFloor = floorId;
+      this.selectedArea = null;
+      lcarsEventBus.dispatchEvent(
+        new CustomEvent('lcars-floor-selected', { detail: { floorId } })
+      );
+      this.requestUpdate();
     }
 
     /* ------------ FLOOR VIEW ------------ */
@@ -4273,10 +4421,9 @@ class LcarsHomepageCard extends LitElement {
         return this._renderFloorView(this.selectedFloor);
       }
 
-      // No area selected � show prompt
+      // No area selected -- render home overview (#208)
       if (!this.selectedArea) {
-        lcarsLog.debug(TAG, 'Render: no area selected');
-        return html`<div class="lcars-empty">Select an area</div>`;
+        return this._renderHomeOverview();
       }
 
       // Find the area object
@@ -4300,6 +4447,27 @@ class LcarsHomepageCard extends LitElement {
     /* --- Detect if a device warrants a unified panel --- */
     _getDevicePanelType(entries) {
       return classifyDevice(entries);
+    }
+
+    /* --- #222: Detect UniFi/unifiprotect devices stuck in unadopted state --- */
+    _isUnadoptedDevice(entries) {
+      if (!entries || entries.length === 0) return false;
+      const platforms = new Set(entries.map(e => e.entity?.platform).filter(Boolean));
+      if (!platforms.has('unifi') && !platforms.has('unifiprotect')) return false;
+      const hasAdoptButton = entries.some(e =>
+        e.domain === 'button' && /(?:^|[._-])adopt(?:[._-]|$)/i.test(e.entity?.entity_id || '')
+      );
+      if (!hasAdoptButton) return false;
+      // Sanity: confirm the device is actually offline (everything except the
+      // adopt button is unavailable/unknown). Adopted-but-recently-rebooted
+      // devices may have an adopt button visible briefly with live entities,
+      // so we don't drop those.
+      const liveNonAdopt = entries.some(e => {
+        if (e.domain === 'button') return false;
+        const s = e.state?.state;
+        return s && s !== 'unavailable' && s !== 'unknown';
+      });
+      return !liveNonAdopt;
     }
 
     /* --- Single-pass partition of device entities for panel rendering --- */
@@ -7393,6 +7561,12 @@ class LcarsHomepageCard extends LitElement {
       if (primaryArea) {
         this.selectedArea = primaryArea;
         this.selectedFloor = null;
+        // #221 — dispatch event so sidebar active-pill stays in sync with the
+        // panel jump (was previously only updating local state, leaving the
+        // sidebar highlight stuck on the previous area).
+        lcarsEventBus.dispatchEvent(
+          new CustomEvent('lcars-area-selected', { detail: { areaId: primaryArea } })
+        );
         this.requestUpdate();
       }
     }
@@ -7458,6 +7632,12 @@ class LcarsHomepageCard extends LitElement {
       const normalDevices = [];
       const powerGroups = [];
       for (const group of byDevice.values()) {
+        // #222 — drop unadopted UniFi devices (admin "ADOPT DEVICE" chrome
+        // bleeding into normal-user area dashboards). The unifiprotect /
+        // unifi integration exposes a `button.*_adopt` entity on devices
+        // that haven't been claimed by the controller; their other
+        // entities are all `unavailable` until adoption completes.
+        if (this._isUnadoptedDevice(group.entities)) continue;
         const panelType = this._getDevicePanelType(group.entities);
         if (panelType && subsumedDeviceTypes.has(panelType)) {
           // Skip � subsumed by area-level composite panel

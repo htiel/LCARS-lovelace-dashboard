@@ -18,6 +18,7 @@ const TAG = 'EngineeringLayout';
 const FILTER_ALL = 'all';
 const FILTER_LIVE = 'live';
 const FILTER_DAILY = 'daily';
+const FILTER_FABRICATION = 'fabrication';
 
 class LcarsEngineeringLayout extends LitElement {
 
@@ -96,6 +97,7 @@ class LcarsEngineeringLayout extends LitElement {
             <button class="sidebar-filter-btn ${this._filter === FILTER_ALL ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_ALL ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_ALL)}><span class="filter-label">ALL</span></button>
             <button class="sidebar-filter-btn ${this._filter === FILTER_LIVE ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_LIVE ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_LIVE)}><span class="filter-label">LIVE</span></button>
             <button class="sidebar-filter-btn ${this._filter === FILTER_DAILY ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_DAILY ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_DAILY)}><span class="filter-label">DAILY</span></button>
+            <button class="sidebar-filter-btn ${this._filter === FILTER_FABRICATION ? 'active' : ''}" role="tab" aria-selected="${this._filter === FILTER_FABRICATION ? 'true' : 'false'}" @click=${() => this._setFilter(FILTER_FABRICATION)}><span class="filter-label">FAB</span></button>
           </div>
           <div class="lcars-sidebar-filler" aria-hidden="true"></div>
         </nav>

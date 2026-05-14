@@ -2,6 +2,37 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.10.0-beta.8] — Train 4 #1: ThermoWorks PROBES + Bambu Fabrication
+
+### Galley (#226)
+- **ThermoWorks Cloud probe thermometers are now first-class Galley citizens.** Added `thermoworks_cloud` to `GALLEY_PLATFORMS` and to `PLATFORM_PANEL_MAP` in `lcars-entity-utils.js`; existing detector auto-routes BlueDOT / Signals / Smoke X4 / RFX Meat devices into the Galley card.
+- **New PROBES cluster** in the Galley card renders alongside APPLIANCES with its own section header (`PROBES · N`). `_partitionEntities()` splits the discovered device map by `platform` (appliances vs probes) so the two grids render independently.
+- **Per-probe card:** device name + last-4 of device-id slug (disambiguates the eight commonly-identical "RFX MEAT" devices), up to 6 channel chips (`CH1 195°F`, `CH2 75°F`, ...), battery % (tomato `<20%`), signal strength, and a relative-time `LAST` indicator on stale probes.
+- **Border color tracks hottest channel** (converted to °C): gray idle / butterscotch `<60°C` / gold `60–90°C` / tomato `>90°C` (smoking).
+- **STALE detection:** `>15min` since `*_last_seen` (or since channel reading) desaturates the card to 55% opacity and adds a `STALE` pill. Stale probes hidden by default with a `SHOW ALL (N STALE)` / `HIDE STALE` toggle alongside the section header.
+- **Badge counts active appliances + fresh probes separately** (`"2 COOK · 4 PROBE"`).
+
+### Engineering (#225)
+- **New `FAB` sidebar tab** in the Engineering dashboard (`lcars-engineering-layout.js`) routes to a Fabrication subpanel rendered by `_renderFabrication()` in `lcars-engineering-card.js`. Decision (Data): a single 3D printer does not earn a top-level dashboard slot, so Bambu lives inside Engineering as the fourth filter tab alongside `ALL / LIVE / DAILY`.
+- **Discovery:** `_discoverFabrication()` scans `hass.entities` for `platform === 'bambu_lab'`, groups by printer slug (`h2c_31b8ap612800082`-style prefix), resolves display name preferring the primary device (filters out `_AMS_` / `_ExternalSpool` / `_HotendRack` sub-device names).
+- **Per-printer card:**
+  - Status pill + current stage in the header; error border (tomato) when `*_print_error` is set or `*_hms_errors > 0`.
+  - Progress track with `*_print_progress` fill + `L 247/1245` / `ETA 47m` / task name meta.
+  - Temperature tiles for `BED` / `L NOZ` / `R NOZ` / `CHAMBER` with target deltas; tile color tracks heating state.
+  - Chamber camera `<img>` sourced from `image.*_cover_image` `entity_picture`.
+  - AMS row: humidity label + one pill per tray with filament color swatch and `T{N} · {type}` label.
+  - Footer: print-type and speed-profile meta, `CHAMBER LIGHT` / `BED LIGHT` toggle buttons (call `light.turn_on` / `light.turn_off`).
+- **Hidden:** `*_mqtt_*`, `*_ip_address`, `*_firmware`, `*_wi_fi_signal`, `*_sd_card_status`, `*_developer_lan_mode`, `*_hotendrack_*`, fan-speed sensors — diagnostic noise without operator value.
+
+### Documentation
+- **New spec:** `specs/LCARS-FABRICATION-PANEL-SPEC.md` (sidebar tab placement, discovery, per-printer card anatomy, hidden list, follow-ons).
+- **Updated:** `specs/LCARS-GALLEY-PANEL-SPEC.md` §2 — `thermoworks_cloud` added to platform table; new §2.1 (sub-cluster partitioning) and §2.2 (PROBES cluster behavior).
+
+### Notes
+- Closes #225 (Bambu Lab integration) and #226 (ThermoWorks probes).
+- Habitat per-area surfaces (Kitchen PROBES-active tile, Office printer-status tile) deferred to a follow-on release.
+- Primary live test surface is Eric's ha.sabetti.com (has both integrations). Captain doesn't have either device on ha.malick.us yet — visual confirmation will come from Eric.
+
 ## [5.10.0-beta.7] — Home Overview LCARS compliance + Chronicle network-switch filter
 
 ### Habitat

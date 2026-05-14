@@ -71,15 +71,45 @@ get defaultPanelTitle() { return 'GALLEY SYSTEMS'; }
 The panel auto-discovers entities from a known set of integration platforms via `GALLEY_PLATFORMS`:
 
 ```js
-const GALLEY_PLATFORMS = new Set(['ge_home', 'smartthinq_sensors']);
+const GALLEY_PLATFORMS = new Set(['ge_home', 'smartthinq_sensors', 'thermoworks_cloud']);
 ```
 
 | Platform | Vendor | Typical Devices |
 |----------|--------|-----------------|
 | `ge_home` | GE Appliances (SmartHQ) | Wall ovens, microwaves, ice makers, dishwashers |
 | `smartthinq_sensors` | LG (SmartThinQ) | Refrigerators, washers, dryers |
+| `thermoworks_cloud` | ThermoWorks Cloud | Smoke/Signals/RFX wireless probe thermometers (#226) |
 
 Entity collection is performed by the inherited `_getAllEntities()` helper, then platform-filtered upstream by the panel auto-grouping pipeline. The constant is declared as a module-level `Set` for O(1) membership checks.
+
+### 2.1 Sub-Cluster Partitioning (v5.10+)
+
+`_partitionEntities()` splits the discovered entries into two parallel maps by inspecting `entity.platform`:
+
+| Map | Predicate | Section Header | Rendered By |
+|-----|-----------|----------------|-------------|
+| `applianceMap` | `platform !== 'thermoworks_cloud'` | `APPLIANCES` | `_renderApplianceCard()` |
+| `probeMap` | `platform === 'thermoworks_cloud'` | `PROBES · N` | `_renderProbeCard()` |
+
+The two clusters render independently in their own grids inside `renderContent()`. The badge counts active appliances *and* fresh probes separately (`"2 COOK · 4 PROBE"`).
+
+### 2.2 PROBES Cluster Behavior (#226)
+
+Each probe card represents one ThermoWorks device (BlueDOT, Signals, Smoke X4, RFX Meat, etc.) and renders:
+
+- **Header:** `name_by_user || name` from device registry, plus the last-4 of the device-id slug (`·1628`) to disambiguate the eight commonly-identical "RFX MEAT" devices.
+- **Channels:** Up to 6 channel chips (`CH1 75°F`, `CH2 195°F`, ...) sourced from `*_ch_{N}_temperature` sensors. Empty channels render as `—`.
+- **Border color** is driven by the hottest channel temperature converted to °C:
+  - `< 60°C` → butterscotch (warm-up / serving)
+  - `60–90°C` → gold (cooking)
+  - `> 90°C` → tomato (hot / smoking)
+  - no reading / stale → gray
+- **Foot row:** Battery % (tomato if `<20%`), Signal strength, and STALE relative timestamp.
+- **STALE detection:** `Date.now() - last_seen > 15min` (or `>= 15min` since the channel state last updated, as fallback). Stale cards desaturate to 55% opacity and tag a `STALE` pill in the header.
+- **STALE-hide toggle:** When any stale probes exist, a `SHOW ALL (N STALE)` / `HIDE STALE` button appears next to the section header. Default is to hide stale probes.
+- **Click → more-info** on the primary channel entity (or battery if no channels exist).
+
+Sort order within visible probes: `fresh → recent → stale`, ties broken by hottest channel.
 
 ---
 

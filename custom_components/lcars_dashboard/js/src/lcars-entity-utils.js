@@ -139,8 +139,8 @@ const HAZARD_FALSE_POSITIVE_PLATFORMS = new Set(['tplink', 'kasa']);
 const PRESENCE_PLATFORMS = new Set(['aqara']);
 
 // ─── Galley/Appliance Detection ─────────────────────────────────────────────
-// Known appliance platforms (4X-40)
-const GALLEY_PLATFORMS = new Set(['ge_home', 'smartthinq_sensors']);
+// Known appliance platforms (4X-40, #226 thermoworks_cloud)
+const GALLEY_PLATFORMS = new Set(['ge_home', 'smartthinq_sensors', 'thermoworks_cloud']);
 const AQ_FAN_PLATFORMS = new Set([
   'ha_blueair', 'vesync', 'smartthinq_sensors',
   'xiaomi_miio', 'xiaomi_home',           // Xiaomi/Zhimi purifiers
@@ -175,6 +175,7 @@ const PLATFORM_PANEL_MAP = new Map([
   // Appliances
   ['ge_home', PANEL_TYPE_GALLEY],
   ['smartthinq_sensors', PANEL_TYPE_GALLEY],
+  ['thermoworks_cloud', PANEL_TYPE_GALLEY],
   // Air purifiers → environment/atmoscrubber
   ['ha_blueair', PANEL_TYPE_ENVIRONMENT],
   ['vesync', PANEL_TYPE_ENVIRONMENT],

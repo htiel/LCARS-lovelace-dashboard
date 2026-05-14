@@ -21,6 +21,10 @@ const TAG = 'EngineeringCard';
 const FILTER_ALL = 'all';
 const FILTER_LIVE = 'live';
 const FILTER_DAILY = 'daily';
+const FILTER_FABRICATION = 'fabrication';
+
+// #225 — Bambu Lab 3D printer integration; routed to Fabrication subpanel
+const FABRICATION_PLATFORMS = new Set(['bambu_lab']);
 
 const POWER_CLASSES = new Set(['battery', 'power', 'energy', 'voltage', 'current']);
 const UPS_KEYWORDS = /ups|battery_charge|battery_runtime|battery_voltage/i;
@@ -332,7 +336,45 @@ class LcarsEngineeringCard extends LitElement {
     // 5X-ENG-7: Sort grid candidates by confidence score (highest first)
     gridSensors.sort((a, b) => _scoreGridCandidate(b) - _scoreGridCandidate(a));
 
-    return { batteries, circuits: dedupedCircuits, dailyCircuits, gridSensors, upsSensors, voltageSensors, totalDraw, totalDailyEnergy, hasDailyEnergy, gridSiblings };
+    return { batteries, circuits: dedupedCircuits, dailyCircuits, gridSensors, upsSensors, voltageSensors, totalDraw, totalDailyEnergy, hasDailyEnergy, gridSiblings, fabrication: this._discoverFabrication(states, entities) };
+  }
+
+  /* ─── Fabrication discovery (#225) ─── */
+  _discoverFabrication(states, entities) {
+    const printers = new Map(); // deviceId → group
+    for (const [eid, ent] of Object.entries(entities)) {
+      if (!FABRICATION_PLATFORMS.has(ent?.platform)) continue;
+      const devId = ent.device_id;
+      if (!devId) continue;
+      const dev = this._hass?.devices?.[devId] || null;
+      // Identify the printer device (vs siblings like AMS, ExternalSpool, HotendRack).
+      // Printer-domain entities (print_status, print_progress, etc.) anchor the group.
+      const slug = this._fabPrinterSlug(eid);
+      if (!slug) continue;
+      if (!printers.has(slug)) {
+        printers.set(slug, { slug, devices: new Map(), states: {} });
+      }
+      const group = printers.get(slug);
+      if (dev) group.devices.set(devId, dev);
+      if (states[eid]) group.states[eid] = states[eid];
+    }
+    // Resolve display name: prefer the *primary* device (no `_AMS_`, `_ExternalSpool`, `_HotendRack` suffix)
+    const out = [];
+    for (const g of printers.values()) {
+      let primaryDev = null;
+      for (const d of g.devices.values()) {
+        if (!/_(AMS_|ExternalSpool|HotendRack)/i.test(d.name || '')) { primaryDev = d; break; }
+      }
+      const displayName = (primaryDev?.name_by_user || primaryDev?.name || g.slug.toUpperCase());
+      out.push({ slug: g.slug, name: displayName, states: g.states });
+    }
+    return { printers: out };
+  }
+
+  /** Extract printer slug from a bambu_lab entity_id (e.g. sensor.h2c_31b8ap612800082_print_status → 'h2c_31b8ap612800082') */
+  _fabPrinterSlug(eid) {
+    const m = eid.match(/^[a-z_]+\.([a-z0-9]+_[a-z0-9]+)_/i);
+    return m ? m[1].toLowerCase() : null;
   }
 
   _getGridPower(data) {
@@ -805,10 +847,195 @@ class LcarsEngineeringCard extends LitElement {
       </div>`;
   }
 
+  /* ─── Fabrication renderer (#225) ─── */
+  _renderFabrication(fab) {
+    if (!fab || fab.printers.length === 0) {
+      return html`<div class="eng-loading">NO FABRICATION DEVICES DETECTED</div>`;
+    }
+    return html`
+      <div class="eng-section">
+        <div class="eng-section-header">
+          <span class="eng-section-label">FABRICATION</span>
+          <span class="eng-section-line"></span>
+          <span class="eng-circuit-count">${fab.printers.length} UNIT${fab.printers.length === 1 ? '' : 'S'}</span>
+        </div>
+        <div class="eng-fab-grid">
+          ${fab.printers.map(p => this._renderFabPrinter(p))}
+        </div>
+      </div>`;
+  }
+
+  _fabFind(states, slug, suffixRx) {
+    for (const [eid, s] of Object.entries(states)) {
+      if (!eid.includes(slug)) continue;
+      if (suffixRx.test(eid)) return { eid, state: s };
+    }
+    return null;
+  }
+  _fabFindAll(states, slug, suffixRx) {
+    const out = [];
+    for (const [eid, s] of Object.entries(states)) {
+      if (!eid.includes(slug)) continue;
+      if (suffixRx.test(eid)) out.push({ eid, state: s });
+    }
+    return out.sort((a, b) => a.eid.localeCompare(b.eid));
+  }
+
+  _fabTempTile(label, current, target) {
+    const cv = current ? Number(current.state?.state) : NaN;
+    const tv = target ? Number(target.state?.state) : NaN;
+    const unit = current?.state?.attributes?.unit_of_measurement || '°C';
+    const heating = !isNaN(cv) && !isNaN(tv) && tv > 0 && Math.abs(cv - tv) > 2;
+    const color = heating ? 'var(--lcars-tomato)' : (!isNaN(tv) && tv > 0 ? 'var(--lcars-butterscotch)' : 'var(--lcars-gray)');
+    return html`
+      <div class="eng-fab-tile" role="button" tabindex="0"
+           @click=${() => current && showMoreInfo(current.eid)}
+           @keydown=${(e) => { if ((e.key === 'Enter' || e.key === ' ') && current) { e.preventDefault(); showMoreInfo(current.eid); } }}>
+        <div class="eng-fab-tile-label">${label}</div>
+        <div class="eng-fab-tile-value" style="color:${color}">
+          ${isNaN(cv) ? '—' : Math.round(cv)}<span class="eng-fab-tile-unit">${unit}</span>
+        </div>
+        ${!isNaN(tv) && tv > 0 ? html`<div class="eng-fab-tile-target">→ ${Math.round(tv)}${unit}</div>` : ''}
+      </div>`;
+  }
+
+  _renderFabPrinter(p) {
+    const s = p.states;
+    const slug = p.slug;
+    // Discover key sensors via suffix matching
+    const status = this._fabFind(s, slug, /_print_status$/);
+    const stage = this._fabFind(s, slug, /_current_stage$/);
+    const progress = this._fabFind(s, slug, /_print_progress$/);
+    const remaining = this._fabFind(s, slug, /_remaining_time$/);
+    const startTime = this._fabFind(s, slug, /_start_time$/);
+    const endTime = this._fabFind(s, slug, /_end_time$/);
+    const currentLayer = this._fabFind(s, slug, /_current_layer$/);
+    const totalLayers = this._fabFind(s, slug, /_total_layer_count$/);
+    const bed = this._fabFind(s, slug, /_bed_temperature$/);
+    const bedTarget = this._fabFind(s, slug, /_target_bed_temperature$/);
+    const leftNozzle = this._fabFind(s, slug, /_left_nozzle_temperature$/);
+    const leftTarget = this._fabFind(s, slug, /_target_left_nozzle_temperature$/);
+    const rightNozzle = this._fabFind(s, slug, /_right_nozzle_temperature$/);
+    const rightTarget = this._fabFind(s, slug, /_target_right_nozzle_temperature$/);
+    const chamber = this._fabFind(s, slug, /_chamber_temperature$/);
+    const printType = this._fabFind(s, slug, /_print_type$/);
+    const speedProfile = this._fabFind(s, slug, /_print_speed_profile$/);
+    const taskName = this._fabFind(s, slug, /_task_name$/);
+    const chamberLight = this._fabFind(s, slug, /^light\..*_chamber_light$/);
+    const heatbedLight = this._fabFind(s, slug, /^light\..*_heatbed_light$/);
+    const printError = this._fabFind(s, slug, /_print_error$/);
+    const hmsErrors = this._fabFind(s, slug, /_hms_errors$/);
+    const chamberImg = this._fabFind(s, slug, /^image\..*_(cover_image|chamber_image|camera)$/);
+    const amsHumidity = this._fabFindAll(s, slug, /_ams_humidity$/);
+    const amsTrays = this._fabFindAll(s, slug, /_ams_tray_\d+$/);
+
+    // Error border
+    const errVal = (printError?.state?.state || '').toLowerCase();
+    const hmsVal = Number(hmsErrors?.state?.state) || 0;
+    const hasError = (errVal && errVal !== 'no_error' && errVal !== 'none' && errVal !== 'unknown' && errVal !== '0') || hmsVal > 0;
+    const statusVal = (status?.state?.state || 'idle').toUpperCase();
+    const isPrinting = /running|printing/i.test(statusVal);
+    const borderColor = hasError ? 'var(--lcars-tomato)' : (isPrinting ? 'var(--lcars-gold)' : 'var(--lcars-gray)');
+
+    const progressVal = Number(progress?.state?.state);
+    const progressPct = !isNaN(progressVal) ? Math.max(0, Math.min(100, progressVal)) : 0;
+
+    // Build chamber camera URL via HA auth (entity_picture attribute)
+    let camSrc = null;
+    if (chamberImg?.state?.attributes?.entity_picture) {
+      camSrc = chamberImg.state.attributes.entity_picture;
+    }
+
+    const renderTrayChip = (t) => {
+      const attr = t.state?.attributes || {};
+      const filament = attr.type || attr.name || 'EMPTY';
+      const color = attr.color || attr.tray_color || '#444';
+      const idx = (t.eid.match(/_tray_(\d+)$/) || [])[1] || '?';
+      return html`
+        <span class="eng-fab-tray" title="${filament}"
+              @click=${() => showMoreInfo(t.eid)}
+              role="button" tabindex="0">
+          <span class="eng-fab-tray-swatch" style="background:${color.startsWith('#') ? color : '#' + color}"></span>
+          <span class="eng-fab-tray-label">T${idx} · ${filament}</span>
+        </span>`;
+    };
+
+    const toggleLight = (lightEntry) => {
+      if (!lightEntry) return;
+      const on = lightEntry.state?.state === 'on';
+      this._hass.callService('light', on ? 'turn_off' : 'turn_on', { entity_id: lightEntry.eid });
+    };
+
+    return html`
+      <div class="eng-fab-printer" style="border-left-color:${borderColor}">
+        <div class="eng-fab-head">
+          <span class="eng-fab-name">${p.name}</span>
+          <span class="eng-fab-status" style="background:${borderColor};color:var(--lcars-black,#000)">${statusVal}</span>
+          ${stage?.state?.state && stage.state.state !== 'idle' ? html`<span class="eng-fab-stage">${stage.state.state.toUpperCase()}</span>` : ''}
+          ${hasError ? html`<span class="eng-fab-error" title="${errVal || hmsVal + ' HMS'}">! ERROR</span>` : ''}
+        </div>
+
+        ${isPrinting || progressPct > 0 ? html`
+          <div class="eng-fab-progress-row">
+            <div class="eng-fab-progress-track">
+              <div class="eng-fab-progress-fill" style="width:${progressPct}%; background:${borderColor}"></div>
+              <span class="eng-fab-progress-text">${progressPct.toFixed(0)}%</span>
+            </div>
+            <div class="eng-fab-progress-meta">
+              ${currentLayer?.state?.state && totalLayers?.state?.state ? html`<span>L ${currentLayer.state.state}/${totalLayers.state.state}</span>` : ''}
+              ${remaining?.state?.state && remaining.state.state !== '0' ? html`<span>ETA ${remaining.state.state}m</span>` : ''}
+              ${taskName?.state?.state && taskName.state.state !== 'unknown' ? html`<span class="eng-fab-task" title="${taskName.state.state}">${taskName.state.state}</span>` : ''}
+            </div>
+          </div>` : ''}
+
+        <div class="eng-fab-body">
+          <div class="eng-fab-temps">
+            ${this._fabTempTile('BED', bed, bedTarget)}
+            ${leftNozzle ? this._fabTempTile('L NOZ', leftNozzle, leftTarget) : ''}
+            ${rightNozzle ? this._fabTempTile('R NOZ', rightNozzle, rightTarget) : ''}
+            ${chamber ? this._fabTempTile('CHAMBER', chamber, null) : ''}
+          </div>
+
+          ${camSrc ? html`
+            <div class="eng-fab-cam">
+              <img src="${camSrc}" alt="Chamber camera for ${p.name}" loading="lazy" />
+            </div>` : ''}
+        </div>
+
+        ${amsTrays.length > 0 ? html`
+          <div class="eng-fab-ams">
+            <span class="eng-fab-ams-label">AMS${amsHumidity.length > 0 && amsHumidity[0].state?.state !== 'unknown' ? ` · ${amsHumidity[0].state.state}%RH` : ''}</span>
+            ${amsTrays.map(renderTrayChip)}
+          </div>` : ''}
+
+        <div class="eng-fab-foot">
+          ${printType?.state?.state && printType.state.state !== 'unknown' ? html`<span class="eng-fab-meta">${printType.state.state.toUpperCase()}</span>` : ''}
+          ${speedProfile?.state?.state ? html`<span class="eng-fab-meta">SPD ${speedProfile.state.state.toUpperCase()}</span>` : ''}
+          ${chamberLight ? html`
+            <button class="eng-fab-light ${chamberLight.state?.state === 'on' ? 'on' : ''}"
+                    @click=${() => toggleLight(chamberLight)}
+                    aria-pressed="${chamberLight.state?.state === 'on' ? 'true' : 'false'}">CHAMBER LIGHT</button>` : ''}
+          ${heatbedLight ? html`
+            <button class="eng-fab-light ${heatbedLight.state?.state === 'on' ? 'on' : ''}"
+                    @click=${() => toggleLight(heatbedLight)}
+                    aria-pressed="${heatbedLight.state?.state === 'on' ? 'true' : 'false'}">BED LIGHT</button>` : ''}
+        </div>
+      </div>`;
+  }
+
   render() {
     if (!this._hass) return html`<div class="eng-loading">INITIALIZING ENGINEERING SYSTEMS...</div>`;
     const data = this._discoverAll();
     const f = this.filter;
+    if (f === FILTER_FABRICATION) {
+      return html`
+        <div class="eng-dashboard">
+          <div class="eng-main-content">
+            ${this._renderFabrication(data.fabrication)}
+          </div>
+          ${this._renderSystemStatus(data)}
+        </div>`;
+    }
     return html`
       <div class="eng-dashboard">
         <div class="eng-main-content">
@@ -1009,6 +1236,92 @@ class LcarsEngineeringCard extends LitElement {
         .mini-core-fill.mini-core-idle,
         .mini-core-fill.mini-core-charging { animation: none; }
       }
+
+      /* ─── Fabrication subpanel (#225) ─── */
+      .eng-fab-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 0.75rem; }
+      .eng-fab-printer {
+        display: flex; flex-direction: column; gap: 0.5rem;
+        padding: 0.625rem 0.75rem;
+        border-left: 3px solid var(--lcars-gray);
+        border-radius: 0 var(--lcars-btn-radius, 1.5rem) var(--lcars-btn-radius, 1.5rem) 0;
+        background: rgba(255,255,255,0.03);
+      }
+      .eng-fab-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+      .eng-fab-name { font-family: var(--lcars-font); font-size: 1rem; color: var(--lcars-space-white); text-transform: uppercase; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .eng-fab-status {
+        font-family: var(--lcars-font); font-size: 0.7rem;
+        padding: 0.1rem 0.5rem; border-radius: 0.75rem;
+        letter-spacing: 0.08em;
+      }
+      .eng-fab-stage { font-family: var(--lcars-font); font-size: 0.7rem; color: var(--lcars-gray); text-transform: uppercase; }
+      .eng-fab-error {
+        font-family: var(--lcars-font); font-size: 0.7rem;
+        padding: 0.1rem 0.5rem; border-radius: 0.75rem;
+        background: var(--lcars-tomato, #ff5555); color: var(--lcars-black, #000);
+        letter-spacing: 0.08em;
+      }
+      .eng-fab-progress-row { display: flex; flex-direction: column; gap: 0.25rem; }
+      .eng-fab-progress-track {
+        position: relative; height: 1.1rem;
+        background: rgba(255,255,255,0.08); border-radius: 0.5rem; overflow: hidden;
+      }
+      .eng-fab-progress-fill { position: absolute; left: 0; top: 0; bottom: 0; transition: width 500ms ease; }
+      .eng-fab-progress-text {
+        position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        font-family: var(--lcars-font); font-size: 0.7rem; color: var(--lcars-space-white);
+        font-variant-numeric: tabular-nums;
+      }
+      .eng-fab-progress-meta {
+        display: flex; flex-wrap: wrap; gap: 0.75rem;
+        font-family: var(--lcars-font); font-size: 0.7rem; color: var(--lcars-gray);
+        text-transform: uppercase; font-variant-numeric: tabular-nums;
+      }
+      .eng-fab-task { color: var(--lcars-ice); max-width: 18rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .eng-fab-body { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: start; }
+      @container (max-width: 22rem) {
+        .eng-fab-body { grid-template-columns: 1fr; }
+      }
+      .eng-fab-temps { display: grid; grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr)); gap: 0.25rem; }
+      .eng-fab-tile {
+        display: flex; flex-direction: column; align-items: center; gap: 0.1rem;
+        padding: 0.35rem 0.4rem;
+        background: rgba(255,255,255,0.04); border-radius: 0.4rem;
+        cursor: pointer; transition: background 150ms ease;
+      }
+      .eng-fab-tile:hover { background: rgba(255,255,255,0.08); }
+      .eng-fab-tile:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+      .eng-fab-tile-label { font-family: var(--lcars-font); font-size: 0.6rem; color: var(--lcars-gray); letter-spacing: 0.06em; }
+      .eng-fab-tile-value { font-family: var(--lcars-font); font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+      .eng-fab-tile-unit { font-size: 0.6rem; opacity: 0.7; margin-left: 0.1rem; }
+      .eng-fab-tile-target { font-family: var(--lcars-font); font-size: 0.6rem; color: var(--lcars-gray); font-variant-numeric: tabular-nums; }
+      .eng-fab-cam {
+        width: 8rem; max-width: 100%;
+        border-radius: 0.4rem; overflow: hidden;
+        background: var(--lcars-black, #000);
+      }
+      .eng-fab-cam img { display: block; width: 100%; height: auto; object-fit: cover; }
+      .eng-fab-ams { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; padding-top: 0.25rem; border-top: 1px solid rgba(255,255,255,0.06); }
+      .eng-fab-ams-label { font-family: var(--lcars-font); font-size: 0.65rem; color: var(--lcars-gray); text-transform: uppercase; letter-spacing: 0.06em; }
+      .eng-fab-tray {
+        display: inline-flex; align-items: center; gap: 0.25rem;
+        padding: 0.1rem 0.4rem; border-radius: 0.4rem;
+        background: rgba(255,255,255,0.05); cursor: pointer;
+        font-family: var(--lcars-font); font-size: 0.65rem; color: var(--lcars-space-white);
+        text-transform: uppercase;
+      }
+      .eng-fab-tray:hover { background: rgba(255,255,255,0.1); }
+      .eng-fab-tray:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+      .eng-fab-tray-swatch { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 50%; border: 1px solid rgba(0,0,0,0.4); }
+      .eng-fab-foot { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+      .eng-fab-meta { font-family: var(--lcars-font); font-size: 0.65rem; color: var(--lcars-gray); letter-spacing: 0.06em; }
+      .eng-fab-light {
+        font-family: var(--lcars-font); font-size: 0.65rem;
+        padding: 0.15rem 0.6rem; border-radius: var(--lcars-btn-radius, 1.5rem);
+        background: var(--lcars-bluey, #8899ff); color: var(--lcars-black, #000);
+        border: 0; cursor: pointer; text-transform: uppercase; letter-spacing: 0.06em;
+      }
+      .eng-fab-light.on { background: var(--lcars-gold); }
+      .eng-fab-light:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
     `];
   }
 }

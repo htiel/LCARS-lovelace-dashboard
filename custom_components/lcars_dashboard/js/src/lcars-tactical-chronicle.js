@@ -213,6 +213,9 @@ function isChronicleEntity(eid, hass) {
   if (domain === 'switch') {
     // Reject power-monitoring / outlet-energy switches by name heuristic
     if (/(_power|_energy|_watt|_volt|_amp|_current|_ups|_battery|_inverter|_grid|_charge)/i.test(objId)) return false;
+    // Reject network / uplink / connectivity toggles (Unifi DPU 4G failover,
+    // WAN switches, port-poe toggles, modem reset, etc.) — config, not movement.
+    if (/(_4g|_5g|_lte|_cellular|_modem|_failover|_wan(?:_|$)|_uplink|_poe(?:_|$)|_port_\d|_vpn(?:_|$)|_wifi(?:_|$)|_radio(?:_|$)|_ssid|_guest_network|_iot_network|_led(?:_|$))/i.test(objId)) return false;
     return true;
   }
   if (domain === 'cover') {

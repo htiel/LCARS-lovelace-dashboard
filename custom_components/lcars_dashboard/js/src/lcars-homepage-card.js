@@ -4237,39 +4237,39 @@ class LcarsHomepageCard extends LitElement {
           }
           .home-overview-area-tile {
             display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.25rem;
-            padding: 0.6rem 0.75rem;
-            background: var(--lcars-panel);
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            padding: 0 1rem;
+            background: var(--lcars-african-violet);
             border: 0;
-            border-left: 4px solid var(--lcars-data-accent);
-            color: var(--lcars-text);
+            border-radius: 0 var(--lcars-btn-radius, 1.5rem) var(--lcars-btn-radius, 1.5rem) 0;
+            color: var(--lcars-black, #000);
             font-family: var(--lcars-font);
             text-transform: uppercase;
             cursor: pointer;
             text-align: left;
-            min-height: 56px; /* WCAG 2.5.5 */
+            min-height: var(--lcars-btn-height, 48px);
           }
-          .home-overview-area-tile:hover {
-            background: var(--lcars-panel-hover, var(--lcars-bg-secondary, #222));
-            border-left-color: var(--lcars-gold);
-          }
+          .home-overview-area-tile:hover { background: var(--lcars-gold); }
           .home-overview-area-tile:focus-visible {
             outline: 2px solid var(--lcars-ice);
             outline-offset: 2px;
           }
           .home-overview-area-name {
-            font-size: var(--lcars-font-size-title);
-            color: var(--lcars-gold);
+            font-size: var(--lcars-font-size-data);
+            color: var(--lcars-black, #000);
             letter-spacing: 0.04em;
+            font-weight: 600;
           }
           .home-overview-area-meta {
             font-size: var(--lcars-font-size-data);
-            color: var(--lcars-data-accent);
+            color: var(--lcars-black, #000);
             display: flex;
             gap: 0.5rem;
             align-items: baseline;
+            opacity: 0.7;
           }
           .home-overview-alarm-badge {
             font-weight: bold;

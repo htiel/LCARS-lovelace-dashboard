@@ -2,6 +2,14 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.10.0-beta.7] — Home Overview LCARS compliance + Chronicle network-switch filter
+
+### Habitat
+- **Home Overview area tiles re-shaped as LCARS pill buttons** (Geordi compliance review). Was: rectangular tile, `border-left: 4px solid` accent, area name in `--lcars-font-size-title` (2rem). Now: right-rounded pill (`border-radius: 0 var(--lcars-btn-radius) var(--lcars-btn-radius) 0`), solid `--lcars-african-violet` fill, dark text, area name + entity-count meta on one row in `--lcars-font-size-data`. Matches the sidebar area-pill aesthetic. Hover swaps to gold. Min-height bound to `--lcars-btn-height` for WCAG 2.5.5.
+
+### Tactical
+- **Chronicle now filters out network / uplink / connectivity switches.** The DPU 4G failover toggle (and siblings: WAN, LTE, cellular, modem, VPN, PoE port toggles, WiFi/SSID/guest-network, radio, status-LEDs) were leaking into the Movement & Illumination timeline because the pre-existing power-only reject regex didn't cover network config. New regex on the `switch.*` branch in `isChronicleEntity()` (`lcars-tactical-chronicle.js`) rejects `_4g|_5g|_lte|_cellular|_modem|_failover|_wan|_uplink|_poe|_port_N|_vpn|_wifi|_radio|_ssid|_guest_network|_iot_network|_led`.
+
 ## [5.10.0-beta.6] — Revert Lit migration (cluster hotfix)
 
 ### Hotfix

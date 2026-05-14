@@ -2,6 +2,44 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.10.0] — Stable promotion (Train 4)
+
+Stable promotion of the 5.10 line, rolling up all `5.10.0-beta.{1..9}` work into one shipping release. Highlights since v5.9.0:
+
+### Sickbay
+- Heart-rate band recalibration (`nominalMax: 100 / elevMax: 130 / alertMax: 150`) for point-in-time pulse readings (Withings, Oura). Resting-HR remains a follow-on path. _(beta.3)_
+- Biometric source mix tweaks. _(beta.2)_
+
+### Habitat
+- Visual polish on the Home Overview area tiles, re-shaped as LCARS pill buttons (right-rounded `--lcars-african-violet` fills, sidebar-pill aesthetic, hover→gold, WCAG-compliant min-height). _(beta.4, beta.7)_
+
+### Tactical
+- Chronicle now filters out network/uplink/connectivity switches (DPU 4G failover, WAN, LTE, cellular, modem, VPN, PoE port toggles, WiFi/SSID/guest-network, radio, status-LEDs) — they were leaking into the Movement & Illumination timeline. _(beta.7)_
+
+### Galley (#226 — ThermoWorks PROBES)
+- ThermoWorks Cloud probe thermometers (BlueDOT, Signals, Smoke X4, RFX Meat) are first-class Galley citizens. Added `thermoworks_cloud` to `GALLEY_PLATFORMS` and `PLATFORM_PANEL_MAP` in `lcars-entity-utils.js`.
+- New PROBES cluster alongside APPLIANCES with section header (`PROBES · N`). `_partitionEntities()` splits the device map by platform.
+- Per-probe card with name + last-4 device-id slug (RFX MEAT disambig), 6 channel chips, battery (tomato `<20%`), signal, STALE pill (`>15min` since `_last_seen`).
+- Border color tracks hottest channel: gray idle / butterscotch `<60°C` / gold `60–90°C` / tomato `>90°C`.
+- STALE-hide toggle, sort fresh→recent→stale, badge counts cooking + probes separately (`2 COOK · 4 PROBE`). _(beta.8)_
+
+### Engineering — Fabrication subpanel (#225)
+- New `FAB` sidebar tab in the Engineering dashboard alongside `ALL / LIVE / DAILY`, rendering Bambu Lab printers via `_renderFabrication()`. Discovery groups entities by printer slug and resolves display name preferring the primary device.
+- Per-printer card: status pill, tomato error border (`*_print_error` / `*_hms_errors`), progress track + `L X/Y` / `ETA Nm` / task name, temperature tiles (`BED / L NOZ / R NOZ / CHAMBER`) with target deltas, chamber camera `<img>` from `image.*_cover_image`, AMS humidity row + per-tray filament pills, `CHAMBER LIGHT` / `BED LIGHT` toggle buttons.
+- Hidden as diagnostic noise: `*_mqtt_*`, `*_ip_address`, `*_firmware`, `*_wi_fi_signal`, `*_sd_card_status`, `*_developer_lan_mode`, `*_hotendrack_*`, fan-speed sensors. _(beta.8)_
+- **Fabrication WATCH cameras (label-tagged):** Tag any HA camera with the label `fabrication`, `fab`, `printer`, `printers`, `3d_printer`, or `3dprinter` (entity, device, or area) to surface it in a `WATCH` row beneath the printer grid. 16:9 snapshot tile from `entity_picture`, name overlay, click → live more-info. Empty-state guard relaxed so the WATCH row renders without a Bambu printer present. _(beta.9)_
+
+### Hotfix line
+- Reverted `b075690` (Lit migration originally shipped in beta.5) — broke shared card chrome across #235 (Subspace Relay AP tile grid), #236 (Sickbay anatomical silhouette + vitals layout), #237 (Engineering 4×3 tile grid / pill tabs / corner-docked badges). #134 re-opened for a future, properly-reviewed migration. _(beta.6)_
+
+### Documentation
+- New: `specs/LCARS-FABRICATION-PANEL-SPEC.md`.
+- Updated: `specs/LCARS-GALLEY-PANEL-SPEC.md` §2.1/§2.2 (PROBES cluster).
+- Updated: `TAGGING.md` — new "Fabrication Camera Labels" section.
+
+### Issues closed
+- #225, #226 (Train 4 #1).
+
 ## [5.10.0-beta.9] — Fabrication WATCH cameras (label-tagged)
 
 ### Engineering — FAB tab

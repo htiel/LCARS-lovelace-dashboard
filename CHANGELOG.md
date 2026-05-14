@@ -2,6 +2,18 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.10.0-beta.6] — Revert Lit migration (cluster hotfix)
+
+### Hotfix
+- **Reverted `b075690` (#134 Lit migration shipped in beta.5)** — the swap to the
+  `lit@2.8` family broke shared card chrome across **#235** (Subspace Relay AP tile
+  grid), **#236** (Sickbay anatomical silhouette + vitals layout), and **#237**
+  (Starship Engineering 4×3 tile grid / pill tabs / corner-docked badges). Captain
+  confirmed side-by-side regression vs v5.8.0. Reverting restores `lit-element@^2.2.1`
+  / `lit-html@^1.1.2` direct deps (still EOL — **#134 re-opened**; will redo with
+  proper Geordi/Data review pass next train). Bundle returns to 1,178,574 bytes
+  (beta.4 baseline). `npm audit` still clean.
+
 ## [5.10.0-beta.3] — Heart-rate threshold recalibration
 
 ### Sickbay

@@ -2,6 +2,18 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.10.0-beta.9] — Fabrication WATCH cameras (label-tagged)
+
+### Engineering — FAB tab
+- **External cameras pointed at a printer can now be surfaced on the FAB tab.** Tag a camera (entity, device, or area) with the HA label `fabrication`, `fab`, `printer`, `printers`, `3d_printer`, or `3dprinter` and it shows up in a new `WATCH` row beneath the printer grid. Each camera renders as a 16:9 snapshot tile (sourced from `entity_picture`) with the friendly name overlaid; click → live more-info dialog. `NO SIGNAL` placeholder when the camera doesn't expose `entity_picture` yet.
+- **Section header counter extended to `N UNITS · M CAM`** when cameras are present.
+- **Empty-state guard relaxed:** the FAB tab is no longer empty when you have only a tagged camera and no Bambu integration. Captain who runs a non-Bambu printer with a Reolink pointed at it gets the WATCH row by itself.
+- New helper `_entityHasLabel(ent, labelSet)` reuses the entity → device → area precedence chain that circuit/camera labels already use.
+
+### Documentation
+- **TAGGING.md:** New "Fabrication Camera Labels" section.
+- **specs/LCARS-FABRICATION-PANEL-SPEC.md:** New §5.1 (WATCH camera discovery + render).
+
 ## [5.10.0-beta.8] — Train 4 #1: ThermoWorks PROBES + Bambu Fabrication
 
 ### Galley (#226)

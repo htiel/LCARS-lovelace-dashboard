@@ -39,6 +39,26 @@ When no label is present, cameras are classified by entity ID keywords:
 
 ---
 
+## Fabrication Camera Labels (Engineering → FAB tab)
+
+The Engineering dashboard's **FAB** sidebar tab renders a `WATCH` row of cameras you've pointed at your 3D printer(s) — handy when you want a real shot of the print bed alongside the printer's built-in chamber camera (or as a substitute when the printer doesn't expose a camera image entity).
+
+| Label | Surfaces |
+|-------|----------|
+| `fabrication`, `fab`, `printer`, `printers`, `3d_printer`, `3dprinter` | Camera appears in the Engineering → FAB tab `WATCH` row |
+
+### Example
+
+You have a Reolink camera pointed at your Bambu H2C in the office.
+
+1. **Settings** → **Devices & Services** → find the Reolink device
+2. Edit → add label: `fabrication`
+3. Camera now appears in Engineering → **FAB** under `WATCH` (snapshot tile, click → live more-info)
+
+The label can be applied at the entity, device, or area level (entity wins). Tagging the entire "Office" area as `fabrication` will surface every camera in that area on the FAB tab.
+
+---
+
 ## Circuit Classification Labels (Engineering Dashboard)
 
 The Engineering dashboard groups load circuits into categories. Without labels, circuits are classified by name heuristics (matching keywords like `dryer`, `server`, `light`). Add a label to override.

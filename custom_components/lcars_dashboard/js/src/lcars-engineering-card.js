@@ -849,18 +849,84 @@ class LcarsEngineeringCard extends LitElement {
 
   /* ─── Fabrication renderer (#225) ─── */
   _renderFabrication(fab) {
-    if (!fab || fab.printers.length === 0) {
+    const cameras = this._discoverFabricationCameras();
+    if ((!fab || fab.printers.length === 0) && cameras.length === 0) {
       return html`<div class="eng-loading">NO FABRICATION DEVICES DETECTED</div>`;
     }
+    const printers = fab?.printers || [];
     return html`
       <div class="eng-section">
         <div class="eng-section-header">
           <span class="eng-section-label">FABRICATION</span>
           <span class="eng-section-line"></span>
-          <span class="eng-circuit-count">${fab.printers.length} UNIT${fab.printers.length === 1 ? '' : 'S'}</span>
+          <span class="eng-circuit-count">${printers.length} UNIT${printers.length === 1 ? '' : 'S'}${cameras.length > 0 ? ` · ${cameras.length} CAM` : ''}</span>
         </div>
-        <div class="eng-fab-grid">
-          ${fab.printers.map(p => this._renderFabPrinter(p))}
+        ${printers.length > 0 ? html`
+          <div class="eng-fab-grid">
+            ${printers.map(p => this._renderFabPrinter(p))}
+          </div>` : ''}
+        ${cameras.length > 0 ? this._renderFabCameras(cameras) : ''}
+      </div>`;
+  }
+
+  /** Discover cameras tagged with the `fabrication` (or `fab`) HA label.
+   *  Checks entity, device, and area labels (same precedence as circuit labels). */
+  _discoverFabricationCameras() {
+    const FAB_LABELS = new Set(['fabrication', 'fab', 'printer', 'printers', '3d_printer', '3dprinter']);
+    const entities = this._hass?.entities || {};
+    const states = this._hass?.states || {};
+    const out = [];
+    for (const [eid, ent] of Object.entries(entities)) {
+      if (!eid.startsWith('camera.')) continue;
+      if (!this._entityHasLabel(ent, FAB_LABELS)) continue;
+      const state = states[eid];
+      if (!state) continue;
+      const friendly = state.attributes?.friendly_name
+        || this._hass?.devices?.[ent.device_id]?.name_by_user
+        || this._hass?.devices?.[ent.device_id]?.name
+        || eid.replace('camera.', '').replace(/_/g, ' ');
+      out.push({ eid, state, name: friendly.toUpperCase() });
+    }
+    return out.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /** Generic label check across entity → device → area. */
+  _entityHasLabel(ent, labelSet) {
+    const check = (labels) => {
+      for (const l of labels || []) {
+        if (labelSet.has((l || '').toLowerCase())) return true;
+      }
+      return false;
+    };
+    if (check(ent?.labels)) return true;
+    const dev = ent?.device_id ? this._hass?.devices?.[ent.device_id] : null;
+    if (check(dev?.labels)) return true;
+    const areaId = ent?.area_id || dev?.area_id;
+    if (areaId) {
+      const area = this._hass?.areas?.[areaId];
+      if (check(area?.labels)) return true;
+    }
+    return false;
+  }
+
+  _renderFabCameras(cameras) {
+    return html`
+      <div class="eng-fab-cameras">
+        <div class="eng-fab-cameras-label">WATCH</div>
+        <div class="eng-fab-cameras-grid">
+          ${cameras.map(c => {
+            const pic = c.state?.attributes?.entity_picture;
+            return html`
+              <div class="eng-fab-cam-tile" role="button" tabindex="0"
+                   @click=${() => showMoreInfo(c.eid)}
+                   @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMoreInfo(c.eid); } }}
+                   aria-label="Open ${c.name} camera">
+                ${pic
+                  ? html`<img src="${pic}" alt="${c.name}" loading="lazy" />`
+                  : html`<div class="eng-fab-cam-placeholder">NO SIGNAL</div>`}
+                <span class="eng-fab-cam-name">${c.name}</span>
+              </div>`;
+          })}
         </div>
       </div>`;
   }
@@ -1322,6 +1388,38 @@ class LcarsEngineeringCard extends LitElement {
       }
       .eng-fab-light.on { background: var(--lcars-gold); }
       .eng-fab-light:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+
+      /* ─── Fabrication WATCH cameras (label-tagged) ─── */
+      .eng-fab-cameras { margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.08); }
+      .eng-fab-cameras-label {
+        font-family: var(--lcars-font); font-size: 0.7rem; color: var(--lcars-gray);
+        letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.35rem;
+      }
+      .eng-fab-cameras-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+        gap: 0.5rem;
+      }
+      .eng-fab-cam-tile {
+        position: relative; cursor: pointer;
+        background: var(--lcars-black, #000);
+        border-radius: 0.4rem; overflow: hidden;
+        aspect-ratio: 16 / 9;
+      }
+      .eng-fab-cam-tile:focus-visible { outline: 2px solid var(--lcars-ice); outline-offset: 2px; }
+      .eng-fab-cam-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .eng-fab-cam-placeholder {
+        position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        font-family: var(--lcars-font); font-size: 0.7rem; color: var(--lcars-gray);
+        letter-spacing: 0.08em;
+      }
+      .eng-fab-cam-name {
+        position: absolute; left: 0; right: 0; bottom: 0;
+        padding: 0.15rem 0.4rem;
+        background: rgba(0,0,0,0.6);
+        font-family: var(--lcars-font); font-size: 0.65rem;
+        color: var(--lcars-space-white); letter-spacing: 0.06em;
+        text-overflow: ellipsis; white-space: nowrap; overflow: hidden;
+      }
     `];
   }
 }

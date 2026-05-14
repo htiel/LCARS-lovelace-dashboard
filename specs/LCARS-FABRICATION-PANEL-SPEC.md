@@ -117,6 +117,26 @@ These exist on the Bambu Lab integration but add noise without operator value on
 
 ---
 
+## 5.1 WATCH — Label-tagged External Cameras (v5.10.0-beta.9)
+
+Many users point a separate camera (Reolink, UniFi Protect, Frigate, etc.) at their printer because the built-in chamber cam is low-res or the printer isn't a Bambu (no chamber image entity at all). The FAB tab honors this with a `WATCH` row beneath the printer grid.
+
+**Discovery:** `_discoverFabricationCameras()` scans `hass.entities` for `entity_id.startsWith('camera.')` and checks the entity → device → area label chain (same precedence as circuit labels) for any of:
+
+```js
+new Set(['fabrication', 'fab', 'printer', 'printers', '3d_printer', '3dprinter'])
+```
+
+**Render:** Each tagged camera renders as a 16:9 snapshot tile via `<img src=entity_picture>` with the camera's friendly name overlaid at the bottom. Click → `showMoreInfo()` opens the live stream. If `entity_picture` is missing the tile shows `NO SIGNAL`.
+
+**Counter:** When cameras are present the section header reads `N UNITS · M CAM`.
+
+The empty-state guard is conditional: `_renderFabrication()` returns `NO FABRICATION DEVICES DETECTED` only when *both* `printers.length === 0` AND `cameras.length === 0`. A Captain who has a printer-watch camera tagged but no Bambu printer still gets the WATCH row.
+
+See [TAGGING.md](../TAGGING.md#fabrication-camera-labels-engineering--fab-tab) for the user-facing label instructions.
+
+---
+
 ## 6. Performance
 
 - One discovery pass per render; O(N) over `hass.entities` filtered to `platform === 'bambu_lab'`.

@@ -58,7 +58,7 @@ export const ANCHOR_MAP = {
   head_top:   { x: 50, y:  4, label: 'top' },
   forehead:   { x: 50, y: 10, label: 'top' },
   throat:     { x: 50, y: 17, label: 'right' },
-  heart:      { x: 44, y: 33, label: 'left' },
+  heart:      { x: 56, y: 33, label: 'right' },
   left_lung:  { x: 38, y: 30, label: 'left' },
   right_lung: { x: 62, y: 30, label: 'right' },
   left_arm:   { x: 18, y: 42, label: 'left' },

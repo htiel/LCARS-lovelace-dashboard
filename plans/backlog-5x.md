@@ -7,12 +7,29 @@
 
 ---
 
+## Pass 0 Reconciliation Status (2026-05-13)
+
+A grep-before-edit reconciliation against the live tree was executed on 2026-05-13. See [PASS-0-LEDGER.md](PASS-0-LEDGER.md) for full disposition table and inline `// #NNN` evidence citations.
+
+| Disposition | Count |
+|---|---|
+| Already-shipped (5.5.x) — flipped from `TODO` to `DONE (Pass 0 reconciliation 2026-05-13)` | 24 GH-tracked + 1 hand-noted (5X-B52) |
+| Won't-fix per Captain decision (5X-B41 / #117 silhouettes) | 1 |
+| Deferred to 6.x per Captain decision (#220 multi-user) | 1 (no backlog row) |
+| Wesley IoT — Voice / NFC sections deleted (Captain Q1 / Q6 out-of-scope) | 2 sub-sections |
+| Wesley IoT — mmWave preserved + promoted to Train 4 (Captain decision) | 1 sub-section |
+| Open and scheduled into [backlog-zero-plan.md](backlog-zero-plan.md) trains 1 / 2a / 2b / 3 / 4 | 17 GH issues |
+
+Open issue count dropped from **41 → 17** during Pass 0. All work is documented inline below (status badge + close-citation) and in the master ledger.
+
+---
+
 ## Carried Forward From 4.x (4.x branch retired)
 
 > The 4.x backlog file has been archived to `_archive/plans/backlog-4x-final-open-items.md`.
 > The single remaining open 4.x item is reproduced below; it must be re-implemented against 5.x multi-dashboard architecture if revived.
 
-#### 5X-CF-33 · Gear Edit: Persistent Per-Area Device Button Reorder — `TODO` · Priority: MEDIUM · Size: M · [#33](https://github.com/htiel/LCARS-lovelace-dashboard/issues/33)
+#### 5X-CF-33 · Gear Edit: Persistent Per-Area Device Button Reorder — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: M · [#33](https://github.com/htiel/LCARS-lovelace-dashboard/issues/33)
 Carried from 4X-33. Extended reorder beyond 4X-8's panel-order override — user-defined device button ordering within each Habitat area. Requires translation to 5.x WS write-handler pattern (256K + depth-20 caps, schema validation per Worf B11).
 
 ---
@@ -29,11 +46,11 @@ Carried from 4X-33. Extended reorder beyond 4X-8's panel-order override — user
 
 ## Open Bugs (from Epic 0 QA Review)
 
-#### 5X-B16 · Restore Navigation and Floor Context While Scrolling — `TODO` · Priority: HIGH · Size: M · WSJF: 3.00 · [#83](https://github.com/htiel/LCARS-lovelace-dashboard/issues/83)
+#### 5X-B16 · Restore Navigation and Floor Context While Scrolling — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: HIGH · Size: M · WSJF: 3.00 · [#83](https://github.com/htiel/LCARS-lovelace-dashboard/issues/83)
 No active dashboard indicator in cross-dashboard nav. Floor context lost during long illumination scroll. Floor separators lack color-blind clarity.
 **Aliases**: WC5-009, WC5-012, GEO-515
 
-#### 5X-B17 · Compact Sparse Areas and Cap Deck Scroll Length — `TODO` · Priority: MEDIUM · Size: L · WSJF: 2.20 · [#84](https://github.com/htiel/LCARS-lovelace-dashboard/issues/84)
+#### 5X-B17 · Compact Sparse Areas and Cap Deck Scroll Length — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: L · WSJF: 2.20 · [#84](https://github.com/htiel/LCARS-lovelace-dashboard/issues/84)
 Single-light and low-entity areas waste 80%+ viewport. Deck/floor view expands to 7800px+ unusable scroll. Absorbs the sparse-room portion of the Neetwork complaint.
 **Aliases**: WC5-002, WC5-005, GEO-514, WC5-007
 
@@ -41,7 +58,7 @@ Single-light and low-entity areas waste 80%+ viewport. Deck/floor view expands t
 Link related panels/destinations directly once shell/nav state is reliable.
 **Aliases**: WC5-014
 
-#### 5X-B23 · Remove `require()` from Render Template Path — `TODO` · Priority: MEDIUM · Size: S · WSJF: 2.00 · [#85](https://github.com/htiel/LCARS-lovelace-dashboard/issues/85)
+#### 5X-B23 · Remove `require()` from Render Template Path — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: S · WSJF: 2.00 · [#85](https://github.com/htiel/LCARS-lovelace-dashboard/issues/85)
 Anti-pattern in template/render path that should be eliminated before it spreads.
 **Aliases**: GEO-516
 
@@ -55,35 +72,35 @@ Targeted audit/update constrained by `lit-html` 1.x compatibility limits. Should
 
 > Full review: `localinfo/qa-screenshots/beta35/REVIEW-SUMMARY.md` (27 screenshots covering 17 Habitat areas + 5 dashboards)
 
-#### 5X-B26 · Power Dashboard Double-Counts Battery Port Telemetry as Circuit Load — `TODO` · Priority: HIGH · Size: M · [#93](https://github.com/htiel/LCARS-lovelace-dashboard/issues/93)
+#### 5X-B26 · Power Dashboard Double-Counts Battery Port Telemetry as Circuit Load — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: HIGH · Size: M · [#93](https://github.com/htiel/LCARS-lovelace-dashboard/issues/93)
 EcoFlow UPS Air port sensors are counted both as battery flow AND as discrete circuits → ~1 kW phantom load. Fix: exclude any sensor whose `device_id` matches a device that already produced a battery card.
 **Aliases**: Data P1-3, Geordi #6
 
-#### 5X-B27 · Filter prototype_*/debug_*/test_* Entities From Area Discovery — `TODO` · Priority: HIGH · Size: S · [#97](https://github.com/htiel/LCARS-lovelace-dashboard/issues/97)
+#### 5X-B27 · Filter prototype_*/debug_*/test_* Entities From Area Discovery — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: HIGH · Size: S · [#97](https://github.com/htiel/LCARS-lovelace-dashboard/issues/97)
 PROTOTYPE BUTTON 1-8 visible on Office page in production. Add reserved-prefix filter to area enumeration.
 **Aliases**: Geordi #29
 
-#### 5X-B28 · Habitat Mobile Sidebar — Collapse Area Buttons to Icon-Only — `TODO` · Priority: MEDIUM · Size: S · [#94](https://github.com/htiel/LCARS-lovelace-dashboard/issues/94)
+#### 5X-B28 · Habitat Mobile Sidebar — Collapse Area Buttons to Icon-Only — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: S · [#94](https://github.com/htiel/LCARS-lovelace-dashboard/issues/94)
 Beta.37 narrowed sidebar to ~88px on mobile per Geordi. Habitat has 15-30+ areas — at 88px wide, area names truncate to 2-3 chars (unrecognizable). **Captain's call:** drop text entirely on mobile, render only the area's `mdi:` icon centered. More LCARS-canonical (PADD-style pictograms), no new component needed, all areas reachable in one tap. Tactical/Power/LS/Lighting unaffected (≤6 buttons with their own icons).
 **Aliases**: Geordi mobile-spec follow-up
 
-#### 5X-B29 · Tactical Donut Center Text Fails WCAG 1.4.3 — `TODO` · Priority: MEDIUM · Size: S · [#95](https://github.com/htiel/LCARS-lovelace-dashboard/issues/95)
+#### 5X-B29 · Tactical Donut Center Text Fails WCAG 1.4.3 — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: S · [#95](https://github.com/htiel/LCARS-lovelace-dashboard/issues/95)
 `0/1 LOCKED` is tomato-on-tomato (~1.5:1). Fix in `lcars-ring-gauge.js` so all donuts render center text on opaque dark background regardless of ring color.
 **Aliases**: Geordi #18
 
-#### 5X-B30 · Off-Palette Green in AQI Rings and RGB Preset Chips — `TODO` · Priority: MEDIUM · Size: S · [#96](https://github.com/htiel/LCARS-lovelace-dashboard/issues/96)
+#### 5X-B30 · Off-Palette Green in AQI Rings and RGB Preset Chips — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: S · [#96](https://github.com/htiel/LCARS-lovelace-dashboard/issues/96)
 LCARS canon has no green. Replace AQI "GOOD" tier with `var(--lcars-ice)`; document RGB chip rule.
 **Aliases**: Geordi #26
 
-#### 5X-B31 · Placeholder Rendering — `— 0W` / `—%` Parses As "Minus" — `TODO` · Priority: MEDIUM · Size: S · [#98](https://github.com/htiel/LCARS-lovelace-dashboard/issues/98)
+#### 5X-B31 · Placeholder Rendering — `— 0W` / `—%` Parses As "Minus" — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: S · [#98](https://github.com/htiel/LCARS-lovelace-dashboard/issues/98)
 Replace em-dash-before-unit with bare `—`, `NO DATA`, or grayed last value. Add `formatOrDash(value, unit)` helper to enforce.
 **Aliases**: Geordi #16
 
-#### 5X-B32 · DECK 1/2 Sidebar Headers Use Gradient — Violates Bracer Jack Rule #1 — `TODO` · Priority: MEDIUM · Size: S · [#100](https://github.com/htiel/LCARS-lovelace-dashboard/issues/100)
+#### 5X-B32 · DECK 1/2 Sidebar Headers Use Gradient — Violates Bracer Jack Rule #1 — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: S · [#100](https://github.com/htiel/LCARS-lovelace-dashboard/issues/100)
 Replace gradient with single flat color. Add stylelint rule to flag any future `gradient(` outside whitelisted decorative spots.
 **Aliases**: Geordi #5
 
-#### 5X-B33 · Camera access_token Leaks Via `<img src>` URL — `TODO` · Priority: MEDIUM · Size: M · [#99](https://github.com/htiel/LCARS-lovelace-dashboard/issues/99)
+#### 5X-B33 · Camera access_token Leaks Via `<img src>` URL — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: M · [#99](https://github.com/htiel/LCARS-lovelace-dashboard/issues/99)
 Token in DOM, history, screenshots, proxy logs. Move to fetch+blob with cookie auth, or migrate to `<ha-camera-stream>`.
 **Aliases**: Worf P2-1 (pre-existing)
 
@@ -95,7 +112,7 @@ Top Wesley innovation pick (S effort / L value). Same single-cell footprint, far
 
 > Five items from the 2026-05-12 parse of Eric's `core.*` registry. 303 new entity rows appended to `localinfo/combined.entities.csv`. Each integration needs primary-dashboard placement AND habitat room-view surfacing where appropriate. See `/memories/repo/erics-new-integrations.md` for Data's full mapping report.
 
-#### 5X-F32 · Tactical Chronicle Mode — Per-Room 24h State History Timeline — `TODO` · Priority: MEDIUM · Size: L · [#224](https://github.com/htiel/LCARS-lovelace-dashboard/issues/224)
+#### 5X-F32 · Tactical Chronicle Mode — Per-Room 24h State History Timeline — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: L · [#224](https://github.com/htiel/LCARS-lovelace-dashboard/issues/224)
 Extend Tactical with a `chronicle` mode rendering per-area stacked state-history Gantt over 24h (lights / occupancy / motion / fans / sun). Reuses Tactical Redesign Vision §3.4 timeline data source at full breadth. Habitat area cards expose "CHRONICLE →" deep link. New spec: `LCARS-TACTICAL-CHRONICLE-MODE-SPEC.md`.
 
 #### 5X-F33 · Bambu Lab H2C Integration — New Fabrication Panel (Engineering) — `TODO` · Priority: MEDIUM · Size: M · [#225](https://github.com/htiel/LCARS-lovelace-dashboard/issues/225)
@@ -120,15 +137,15 @@ Shipped: added `role="button"`, `tabindex="0"`, `aria-label`, and Enter/Space `@
 Shipped: badge wrapped in `role="alert" aria-live="assertive"` (alert state) and `role="status" aria-live="polite"` (clear state). WCAG 4.1.3 satisfied. **Note:** HZ-04 fail-open posture (sunflower frame on integration outage) is *not* fixed in this batch — deferred for follow-up.
 **Aliases**: Worf+Geordi HZ-01 (HZ-04 deferred)
 
-#### 5X-B36 · Audio — `lcars-audio.js` Cues Not Documented in `LCARS-AUDIO-SPEC.md` — `TODO` · Priority: MEDIUM · Size: M · [#107](https://github.com/htiel/LCARS-lovelace-dashboard/issues/107)
+#### 5X-B36 · Audio — `lcars-audio.js` Cues Not Documented in `LCARS-AUDIO-SPEC.md` — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: M · [#107](https://github.com/htiel/LCARS-lovelace-dashboard/issues/107)
 Spec drift: `coverAction`, `lightToggle`, `switchToggle`, `scriptFire`, `climateAdjust` (cross-domain reuse) all exist in code but are absent from the audio spec's 7-sound vocabulary. Audit + sync. Decide on `climateAdjust` → `analogAdjust` rename.
 **Aliases**: spec-audit audio-1
 
-#### 5X-B37 · Battery Panel — Dead CSS, Redundant Partition in `renderBadge`, Slider <24px Target, Animation Budget — `TODO` · Priority: MEDIUM · Size: M · [#109](https://github.com/htiel/LCARS-lovelace-dashboard/issues/109)
+#### 5X-B37 · Battery Panel — Dead CSS, Redundant Partition in `renderBadge`, Slider <24px Target, Animation Budget — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: M · [#109](https://github.com/htiel/LCARS-lovelace-dashboard/issues/109)
 Six CSS selectors orphaned after panel-frame extraction; `renderBadge()` re-runs full classification pipeline on every render; 20px slider track fails WCAG 2.5.8; 7–9 concurrent animations exceed project budget; English-only regex classifier breaks i18n.
 **Aliases**: Data spec-audit battery-1..5
 
-#### 5X-B38 · Illumination — Drag-Reorder Needs Keyboard Alt; Color Preset Target ≤24px; `--lcars-green` Not in Theme — `TODO` · Priority: MEDIUM · Size: S · [#111](https://github.com/htiel/LCARS-lovelace-dashboard/issues/111)
+#### 5X-B38 · Illumination — Drag-Reorder Needs Keyboard Alt; Color Preset Target ≤24px; `--lcars-green` Not in Theme — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: S · [#111](https://github.com/htiel/LCARS-lovelace-dashboard/issues/111)
 Edit-mode drag-reorder fails WCAG 2.5.7 (no keyboard alternative). Color preset buttons at 1.5rem (24px) at WCAG 2.5.8 minimum, sub-pixel risk. `--lcars-green` referenced inline (`#66bb6a`) but not in canonical theme palette.
 **Aliases**: Geordi spec-audit illum-1..3
 
@@ -137,23 +154,23 @@ Edit-mode drag-reorder fails WCAG 2.5.7 (no keyboard alternative). Color preset 
 > Captain note: 5.4.1 → 5.4.3 chained three "ship the fix, find the next bug behind it" releases.
 > Pick up here next session for a focused bug-squashing pass.
 
-#### 5X-B39 · Medical/Starship — Sparse Anchors Drag Pill Status — `TODO` · Priority: MEDIUM · Size: S · [#116](https://github.com/htiel/LCARS-lovelace-dashboard/issues/116)
+#### 5X-B39 · Medical/Starship — Sparse Anchors Drag Pill Status — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: S · [#116](https://github.com/htiel/LCARS-lovelace-dashboard/issues/116)
 Status pill rollup honors `present: true` for Medical anchors but the `_buildAnchors` path for `else` branch in lcars-medical-card.js does not set `present` (only the offline branch does). Verify same logic is consistent for Starship `_buildAnchors` — empty subsystem anchors should not drag the vessel pill OFFLINE. Inspect with multi-host install.
 **Source**: tonight's live inspection — heart anchor returned `{value: '75', status: 'NOMINAL'}` with no `present` key.
 
-#### 5X-B40 · Starship Health — Dashboard 404 on Default Install — `TODO` · Priority: HIGH · Size: S · [#115](https://github.com/htiel/LCARS-lovelace-dashboard/issues/115)
+#### 5X-B40 · Starship Health — Dashboard 404 on Default Install — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: HIGH · Size: S · [#115](https://github.com/htiel/LCARS-lovelace-dashboard/issues/115)
 `http://ha/lcars-starship-health/home` returns 404 even after 5.4.1+. Likely missing default-enabled toggle or config-flow needs to be re-run after upgrade. Document the manual enable steps in SETUP.md and consider whether `default_enabled: True` is appropriate (currently unset → defaults vary). Note: `require_admin: True` is correct and stays.
 **Source**: tonight's live nav check.
 
-#### 5X-B41 · Anatomical Silhouette — Hand-Authored Geometry Looks Sketchy — `TODO` · Priority: LOW · Size: M · [#117](https://github.com/htiel/LCARS-lovelace-dashboard/issues/117)
+#### 5X-B41 · Anatomical Silhouette — Hand-Authored Geometry Looks Sketchy — `WONT-FIX` (Captain decision 2026-05-13 — silhouettes fine as-shipped) · Priority: LOW · Size: M · [#117](https://github.com/htiel/LCARS-lovelace-dashboard/issues/117)
 Both Medical (humanoid) and Starship (top-down vessel) are hand-authored line-art at modest fidelity. Consider commissioning a higher-quality SVG path set per consumer (still no production-asset tracing — generic LCARS-styled originals).
 **Source**: Captain ship-it observation, 5.4.3.
 
-#### 5X-B42 · Medical Bay — `<line>` / `<text>` Self-Close Lint Rule — `TODO` · Priority: LOW · Size: XS · [#118](https://github.com/htiel/LCARS-lovelace-dashboard/issues/118)
+#### 5X-B42 · Medical Bay — `<line>` / `<text>` Self-Close Lint Rule — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: LOW · Size: XS · [#118](https://github.com/htiel/LCARS-lovelace-dashboard/issues/118)
 Add a lit-html eslint rule (or unit test) that asserts every `<foo ... />` self-close in an `svg`-tagged template has a space before the `/>`. v5.4.2 → v5.4.3 was lost-in-translation chasing this exact whitespace bug.
 **Source**: bug retro from tonight's session.
 
-#### 5X-B43 · Medical Bay — Posterior Silhouette Pending — `TODO` · Priority: MEDIUM · Size: M · [#119](https://github.com/htiel/LCARS-lovelace-dashboard/issues/119)
+#### 5X-B43 · Medical Bay — Posterior Silhouette Pending — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: M · [#119](https://github.com/htiel/LCARS-lovelace-dashboard/issues/119)
 Anatomical tab posterior pane is a "SCAN MODE PENDING — 5.4.2" placeholder. Author posterior path data + back-anchor map (different anchor positions: spine/scapula/lumbar/glutes/calves). Was originally promised for 5.4.2 — slipped while chasing the callout bug.
 **Source**: deferred from 5.3.1 + 5.4.1 review batches.
 
@@ -173,7 +190,7 @@ Tiles render value + unit only — no recorder-history sourced sparklines. Add r
 60s auto-revert ships in 5.4.1; verify toast/visible countdown UX so users aren't surprised by the auto-hide. Also confirm `top_cpu_proc` allowlist (Worf M2 deferred) is wired in once relevant.
 **Source**: Worf m3 deferred from 5.4.1.
 
-#### 5X-B48 · Discovery Memoization Across All Cards — `TODO` · Priority: MEDIUM · Size: M · [#124](https://github.com/htiel/LCARS-lovelace-dashboard/issues/124)
+#### 5X-B48 · Discovery Memoization Across All Cards — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: M · [#124](https://github.com/htiel/LCARS-lovelace-dashboard/issues/124)
 `discoverVessels`, `discoverProfiles`, `_discoverClients` walk `hass.entities` on every render. Memoize against `hass.entities` reference identity (cheap O(1) check). Same fix benefits Network, Medical, Starship.
 **Source**: Data review #3, deferred from 5.4.1.
 
@@ -189,11 +206,11 @@ Clicking Office (idx 14) leaves the sidebar highlighting Game Room (idx 13) as t
 Server Room shows `IPC-MODEL` unadopted device with `ADOPT DEVICE` button — admin chrome bleeding into normal-user area view. Filter unadopted entities out of area discovery, or render collapsed/disabled.
 **Source**: S2-03.
 
-#### 5X-B51 · Camera `ESTABLISHING LINK` Placeholder Perpetual When Offline — `TODO` · Priority: LOW · Size: S · [#223](https://github.com/htiel/LCARS-lovelace-dashboard/issues/223)
+#### 5X-B51 · Camera `ESTABLISHING LINK` Placeholder Perpetual When Offline — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: LOW · Size: S · [#223](https://github.com/htiel/LCARS-lovelace-dashboard/issues/223)
 BREAD CAM in Server Room shows `ESTABLISHING LINK` placeholder indefinitely. Add a timeout-fallback that switches to the offline placeholder after N seconds when no frame arrives.
 **Source**: S2-04.
 
-#### 5X-B52 · Sickbay Cardiac Silhouette Mirrored — Heart Renders on Anatomical Right — `TODO` · Priority: LOW · Size: XS
+#### 5X-B52 · Sickbay Cardiac Silhouette Mirrored — Heart Renders on Anatomical Right — `DONE` (Pass 0 reconciliation 2026-05-13 — fix shipped, see GH #234) · Priority: LOW · Size: XS
 Wireframe Anatomy silhouette (shipped v5.10.0-beta.2) draws the cardiac shape on the viewer's left side of the figure (x ≈ 80–100), which is the patient's anatomical *right*. Standard medical convention for a front-facing diagram is heart on viewer's right (patient's left). Fix is a horizontal mirror of the cardiac path in `lcars-medical-silhouette-paths.js` line ~74 (substitute each x with 200-x: 84→116, 78→122, 82→118, 88→112, 92→108, 96→104, 104→96, 98→102, 90→110, 86→114). Re-anchor `lcars-anatomical-silhouette.js` `heart` slot accordingly so HR callout still lands on the cardiac shape. Apply on the next Sickbay touch — no separate release.
 **Source**: Captain spot-check, May 13 2026.
 
@@ -203,13 +220,15 @@ Wireframe Anatomy silhouette (shipped v5.10.0-beta.2) draws the cardiac shape on
 - **GEO-514 / WC5-007** (naming portion) — "Neetwork" is HA naming drift; sparse-layout symptom carried in 5X-B17
 - **BETA.33 footer on Power dashboard** — flagged by Geordi/Data in beta.35 review; root-caused to browser/HACS cache. All layouts read version from `package.json` at build time. No code fix needed.
 
-### Summary
-| Severity | Total | Remaining |
-|----------|-------|-----------|
-| HIGH | 6 | 4 |
-| MEDIUM | 17 | 17 |
-| LOW | 5 | 5 |
-| **Total** | **28** | **26** |
+### Summary (post Pass 0 reconciliation 2026-05-13)
+| Severity | Total | Remaining (open + scheduled) |
+|----------|-------|-------|
+| HIGH | 6 | 1 (5X-F35 / #227) |
+| MEDIUM | 17 | 7 (5X-B12/#86, 5X-B25/#87, 5X-B44/#120, 5X-B45/#121, 5X-B46/#122, 5X-B47/#123, 5X-F33/#225) |
+| LOW | 5 | 1 (5X-F4 / #101) |
+| **Total** | **28** | **9** |
+
+> Remaining 5X-B49/#221, 5X-B50/#222 (visual audit) and 5X-SEC/DEPS items #132/#133/#134/#208 are tracked in [backlog-zero-plan.md](backlog-zero-plan.md) train manifests rather than this Epic 1 summary. The Pass 0 reconciliation closed 24 backlog rows + 2 won't-fix/deferred dispositions.
 
 ---
 
@@ -305,10 +324,10 @@ SVG ring gauge for each battery showing state of charge. Arc fills proportional 
 #### 5X-ENG-10 · Power Flow Donut/Ring — `TODO` · Priority: LOW · Size: M
 Circular ring chart showing power source contribution proportions (Grid/Battery/Solar). Alternative to 5X-ENG-6 stacked bar — circles now allowed. Ring segments proportional to wattage contribution.
 
-#### 5X-ENG-7 · Grid 0W Investigation — `TODO` · Priority: HIGH · Size: S · [#88](https://github.com/htiel/LCARS-lovelace-dashboard/issues/88)
+#### 5X-ENG-7 · Grid 0W Investigation — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: HIGH · Size: S · [#88](https://github.com/htiel/LCARS-lovelace-dashboard/issues/88)
 Grid shows 0W ONLINE while house draws 2550W. Likely wrong entity matched by GRID_KEYWORDS regex or missing grid sensor. Investigate Emporia Vue main panel entity.
 
-#### 5X-ENG-8 · Battery Classification Cleanup — `TODO` · Priority: MEDIUM · Size: S · [#89](https://github.com/htiel/LCARS-lovelace-dashboard/issues/89)
+#### 5X-ENG-8 · Battery Classification Cleanup — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: S · [#89](https://github.com/htiel/LCARS-lovelace-dashboard/issues/89)
 Motion sensors and Wallbox Vilya showing as battery cards. Filter out non-storage battery entities (device_class=battery but not actual energy storage devices).
 
 ---
@@ -356,13 +375,9 @@ Motion sensors and Wallbox Vilya showing as battery cards. Filter out non-storag
 ## Wesley's IoT / Hardware Ideas (Backlog — Unscheduled)
 
 ### mmWave Room Presence
-ESP32-C3 + HLK-LD2410B per room (~$8/node). `binary_sensor.room_occupancy`. Rooms with presence get brighter nav button + "life signs detected." ESPHome YAML, no C++.
+ESP32-C3 + HLK-LD2410B per room (~$8/node). `binary_sensor.room_occupancy`. Rooms with presence get brighter nav button + "life signs detected." ESPHome YAML, no C++. **In scope** for Train 4 / 5.10.0 (Captain decision 2026-05-13: Eric has Aqara FP1E + FP2 mmWave hardware in production).
 
-### Voice "Computer"
-ESP32-S3 + Micro Wake Word + I2S mic/speaker → "Computer, red alert" triggers automations. Show as "comm terminals" on Comm dashboard.
-
-### NFC Access Panels
-ESP32 + PN532 NFC at entry points. Tag scan → `tag_scanned` event → arm/disarm/unlock. Show as "access log" on Security dashboard. *Worf: validate tag IDs server-side.*
+_Voice "Computer" and NFC Access Panels removed 2026-05-13 per Captain decision Q1 / Q6: out of scope for the 5.x line; revisit in 6.x if/when warranted._
 
 ---
 

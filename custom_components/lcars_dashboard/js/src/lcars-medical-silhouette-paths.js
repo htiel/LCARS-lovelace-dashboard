@@ -71,8 +71,8 @@ export const MEDICAL_SILHOUETTE_PATHS = svg`
     <path d="M68 146 Q100 152 132 146"/>
     <path d="M68 160 Q100 166 132 160"/>
     <path d="M70 174 Q100 180 130 174"/>
-    <!-- Cardiac silhouette (anchored at heart slot) — fill inherits currentColor -->
-    <path d="M84 152 Q78 146 82 140 Q88 136 92 144 Q96 138 100 142 Q104 148 98 154 Q92 164 90 170 Q86 162 84 152 Z"
+    <!-- #5X-B52 — cardiac silhouette mirrored to viewer's right (patient's left) per medical convention -->
+    <path d="M116 152 Q122 146 118 140 Q112 136 108 144 Q104 138 100 142 Q96 148 102 154 Q108 164 110 170 Q114 162 116 152 Z"
           fill="currentColor" fill-opacity="0.18"/>
     <!-- Diaphragm arc -->
     <path d="M70 188 Q100 200 130 188"/>

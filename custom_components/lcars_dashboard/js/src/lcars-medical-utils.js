@@ -58,12 +58,10 @@ export const MEDICAL_VITAL_CLASSES = [
   { kind: 'visceral_fat',       anchor: null,         label: 'VISCERAL',    unit: '',     spark: false, tile: true },
   { kind: 'bmi',                anchor: null,         label: 'BMI',         unit: '',     spark: false, tile: true },
   { kind: 'hydration',          anchor: null,         label: 'HYDRATION',   unit: 'L',    spark: false, tile: true },
-  // 5.12.0-beta.7 — SLEEP and SLEEP TIME promoted ahead of READINESS so the
-  // sleep block fills row-1 col-4 / row-2 col-1 (Captain visual review).
-  // v5.8.0-beta.2 (Geordi+Wesley P0): sleep_score is a wellness metric, not an
-  // anatomical vital. Tile-only.
-  { kind: 'sleep_score',        anchor: null,         label: 'SLEEP',       unit: '/100', spark: true,  tile: true },
+  // 5.12.0-beta.8 — SLEEP TIME (with deep/rem/light breakdown) is the row-1
+  // sleep tile; SLEEP score follows on row 2. Captain visual review on beta.7.
   { kind: 'sleep_duration',     anchor: null,         label: 'SLEEP TIME',  unit: 'h',    spark: false, tile: true },
+  { kind: 'sleep_score',        anchor: null,         label: 'SLEEP',       unit: '/100', spark: true,  tile: true },
   { kind: 'readiness',          anchor: null,         label: 'READINESS',   unit: '/100', spark: true,  tile: true, composite: true },
   { kind: 'sleep_efficiency',   anchor: null,         label: 'EFFICIENCY',  unit: '%',    spark: false, tile: true },
   // 5.12.0-beta.6 — sleep apnea screening (Apple Watch breathing disturbances).

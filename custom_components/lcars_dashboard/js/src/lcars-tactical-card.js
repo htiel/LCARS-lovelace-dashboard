@@ -552,13 +552,14 @@ class LcarsTacticalCard extends LitElement {
           if (this._cameraFilter === 'interior') return !/front|back|drive|garage|yard|outdoor|porch|door/i.test(name);
           return true;
         });
-    // Separate active vs idle
-    const active = [], idle = [];
-    for (const cam of filtered) {
-      const det = this._getCameraDetection(cam.entity.entity_id);
-      if (det) active.push({ cam, det });
-      else idle.push(cam);
-    }
+    // Stable render order keyed by entity_id. Reordering on motion would make
+    // lit-html 1.x reuse <lcars-camera-tile> elements in place with a new
+    // entity-id prop, forcing every shifted tile back through ESTABLISHING
+    // for ~8 s. Visual priority for active cameras is conveyed per-tile via
+    // border color / scale / glow / z-index — not by DOM order.
+    const stable = [...filtered].sort((a, b) =>
+      (a.entity?.entity_id || '').localeCompare(b.entity?.entity_id || '')
+    );
     // Main viewscreen (focused camera)
     const focusedEid = this._focusedCamera;
     const focusedCam = focusedEid ? allCameras.find(c => c.entity.entity_id === focusedEid) : null;
@@ -580,8 +581,7 @@ class LcarsTacticalCard extends LitElement {
         `)}
       </div>
       <div class="tac-camera-grid">
-        ${[...active.map(({ cam, det }, i) => this._renderCamera(cam, det, i + 1)),
-           ...idle.map((cam, i) => this._renderCamera(cam, null, active.length + i + 1))]}
+        ${stable.map((cam, i) => this._renderCamera(cam, this._getCameraDetection(cam.entity.entity_id), i + 1))}
       </div>
       ${focusedCam ? html`
         <div class="tac-main-viewscreen">

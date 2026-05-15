@@ -34,6 +34,10 @@ const STATE_ONLY_BRIDGE_DOMAINS = new Set(['hae', 'apple_health']);
 // Vital kinds in display order. Anchor slot = where on the silhouette the value renders.
 // `tile` = whether it gets a Zone C detail tile.  `spark` = sparkline-eligible.
 // `composite` = renders a multi-sub-lozenge tile (Oura-style readiness breakdown).
+//   - 'true' — readiness composite (sub-lozenges of contributing scores)
+//   - 'body_comp' — weight composite that absorbs body_fat_pct/fat_mass/lean_mass/
+//     muscle_mass/bone_mass/visceral_fat/bmi/hydration as breakdown rows. Children
+//     are skipped from the standalone tile loop. (5.12.0-beta.6)
 export const MEDICAL_VITAL_CLASSES = [
   { kind: 'blood_pressure',     anchor: 'left_arm',   label: 'BP',          unit: 'mmHg', spark: true,  tile: false, paired: true },
   { kind: 'heart_rate',         anchor: 'heart',      label: 'HR',          unit: 'bpm',  spark: true,  tile: true },
@@ -42,7 +46,10 @@ export const MEDICAL_VITAL_CLASSES = [
   // 5.11.0-beta.3 — TEMP relocated from 'forehead' (top edge, clipped the head
   // ellipse) to 'left_chest' (left edge above BP) per Captain visual review.
   { kind: 'body_temp_deviation',anchor: 'left_chest', label: 'TEMP',        unit: '°C',   spark: true,  tile: true },
-  { kind: 'weight',             anchor: 'abdomen',    label: 'WEIGHT',      unit: 'kg',   spark: true,  tile: true },
+  // 5.12.0-beta.6 — weight is now a composite tile that pulls body_fat_pct,
+  // fat_mass, lean_mass, muscle_mass, bone_mass, visceral_fat, bmi, hydration as
+  // breakdown rows. Those kinds are filtered from the standalone tile loop.
+  { kind: 'weight',             anchor: 'abdomen',    label: 'WEIGHT',      unit: 'kg',   spark: true,  tile: true, composite: 'body_comp' },
   { kind: 'body_fat_pct',       anchor: null,         label: 'BODY FAT',    unit: '%',    spark: false, tile: true },
   { kind: 'fat_mass',           anchor: null,         label: 'FAT MASS',    unit: 'kg',   spark: true,  tile: true },
   { kind: 'lean_mass',          anchor: null,         label: 'LEAN',        unit: 'kg',   spark: true,  tile: true },
@@ -58,6 +65,8 @@ export const MEDICAL_VITAL_CLASSES = [
   { kind: 'sleep_score',        anchor: null,         label: 'SLEEP',       unit: '/100', spark: true,  tile: true },
   { kind: 'sleep_duration',     anchor: null,         label: 'SLEEP TIME',  unit: 'h',    spark: false, tile: true },
   { kind: 'sleep_efficiency',   anchor: null,         label: 'EFFICIENCY',  unit: '%',    spark: false, tile: true },
+  // 5.12.0-beta.6 — sleep apnea screening (Apple Watch breathing disturbances).
+  { kind: 'sleep_breathing',    anchor: null,         label: 'BREATHING',   unit: '',     spark: true,  tile: true },
   { kind: 'hrv',                anchor: null,         label: 'HRV',         unit: 'ms',   spark: true,  tile: true },
   { kind: 'hrv_balance',        anchor: null,         label: 'HRV BAL',     unit: '/100', spark: false, tile: true },
   { kind: 'body_battery',       anchor: null,         label: 'BODY BATT',   unit: '/100', spark: true,  tile: true },
@@ -68,6 +77,13 @@ export const MEDICAL_VITAL_CLASSES = [
   { kind: 'activity_score',     anchor: null,         label: 'ACTIVITY',    unit: '/100', spark: false, tile: true },
   { kind: 'steps',              anchor: 'right_foot', label: 'STEPS',       unit: '',     spark: true,  tile: true },
   { kind: 'active_minutes',     anchor: 'left_leg',   label: 'ACTIVE',      unit: 'min',  spark: false, tile: true },
+  // 5.12.0-beta.6 — HAE Apple Health energy expenditure (active + basal).
+  { kind: 'calories_burned',    anchor: null,         label: 'CALORIES',    unit: 'kcal', spark: true,  tile: true },
+  // 5.12.0-beta.6 — HAE Apple Health gait analytics (walking speed, asymmetry,
+  // step length, 6-min walk test, stairs, flights). Multi-row composite tile.
+  { kind: 'mobility',           anchor: null,         label: 'MOBILITY',    unit: '',     spark: false, tile: true, composite: 'mobility' },
+  // 5.12.0-beta.6 — HAE Apple Watch hearing-safety dB exposure (env + headphone).
+  { kind: 'audio_exposure',     anchor: null,         label: 'AUDIO',       unit: 'dB',   spark: false, tile: true, composite: 'audio' },
   { kind: 'workout_distance',   anchor: 'right_leg',  label: 'DISTANCE',    unit: 'km',   spark: false, tile: false },
   { kind: 'last_workout',       anchor: null,         label: 'LAST WORKOUT',unit: '',     spark: false, tile: true },
 ];
@@ -248,6 +264,14 @@ export const VITAL_SUFFIX_PRIORITY = {
     { re: /_sleep_duration$/,                label: 'SLEEP' },
     { re: /_minutes_asleep$/,                label: 'ASLEEP' },
     { re: /_sleep_.*hours$/,                 label: 'HOURS' },
+    // 5.12.0-beta.6 — HAE Apple Health sleep stage entities.
+    { re: /_sleep_analysis_totalsleep$/,     label: 'TOTAL' },
+    { re: /_sleep_analysis_deep$/,           label: 'DEEP' },
+    { re: /_sleep_analysis_rem$/,            label: 'REM' },
+    { re: /_sleep_analysis_core$/,           label: 'LIGHT' },
+    { re: /_sleep_analysis_asleep$/,         label: 'ASLEEP' },
+    { re: /_sleep_analysis_inbed$/,          label: 'IN BED' },
+    { re: /_sleep_analysis_awake$/,          label: 'AWAKE' },
   ],
   recovery_score: [
     { re: /_sleep_recovery_score$/,          label: 'SLEEP' },
@@ -283,6 +307,9 @@ export const VITAL_SUFFIX_PRIORITY = {
     { re: /_temperature_deviation$/,         label: 'CORE' },
     { re: /_body_temperature_deviation$/,    label: 'BODY' },
     { re: /_skin_temperature_deviation$/,    label: 'SKIN' },
+    // 5.12.0-beta.6 — Apple Watch reports a baseline-relative wrist temperature
+    // overnight; treat as a deviation reading.
+    { re: /_apple_sleeping_wrist_temperature$/, label: 'WRIST' },
   ],
   hrv_balance: [
     { re: /_hrv_balance_score$/,             label: 'BALANCE' },
@@ -310,6 +337,8 @@ export const VITAL_SUFFIX_PRIORITY = {
   ],
   steps: [
     { re: /_steps$/,                         label: 'STEPS' },
+    // 5.12.0-beta.6 — HAE Apple Health uses _step_count not _steps.
+    { re: /_step_count$/,                    label: 'STEPS' },
   ],
   active_minutes: [
     { re: /_high_activity_time$/,            label: 'HIGH' },
@@ -317,6 +346,11 @@ export const VITAL_SUFFIX_PRIORITY = {
     { re: /_low_activity_time$/,             label: 'LOW' },
     { re: /_minutes_very_active$/,           label: 'VIGOROUS' },
     { re: /_intensity$/,                     label: 'INTENSITY' },
+    // 5.12.0-beta.6 — HAE Apple Health activity ring entities.
+    { re: /_apple_exercise_time$/,           label: 'EXERCISE' },
+    { re: /_apple_stand_time$/,              label: 'STAND' },
+    { re: /_apple_stand_hour$/,              label: 'STAND HRS' },
+    { re: /_physical_effort$/,               label: 'EFFORT' },
   ],
   workout_distance: [
     { re: /_last_workout_distance$/,                  label: 'LAST' },
@@ -333,6 +367,29 @@ export const VITAL_SUFFIX_PRIORITY = {
     { re: /_pause_during_last_workout$/,     label: 'PAUSE' },
     { re: /_last_workout_/,                  label: 'WORKOUT' },
     { re: /_last_activity_/,                 label: 'ACTIVITY' },
+  ],
+  // 5.12.0-beta.6 — new HAE-driven kinds. Labels echo the breakdown row text.
+  calories_burned: [
+    { re: /_active_energy$/,                 label: 'ACTIVE' },
+    { re: /_basal_energy_burned$/,           label: 'BASAL' },
+  ],
+  mobility: [
+    { re: /_walking_speed$/,                 label: 'SPEED' },
+    { re: /_walking_step_length$/,           label: 'STEP LEN' },
+    { re: /_walking_asymmetry_percentage$/,  label: 'ASYMMETRY' },
+    { re: /_walking_double_support_percentage$/, label: 'DBL SUPP' },
+    { re: /_walking_running_distance$/,      label: 'DISTANCE' },
+    { re: /_six_minute_walking_test_distance$/, label: '6MWT' },
+    { re: /_flights_climbed$/,               label: 'FLIGHTS' },
+    { re: /_stair_speed_up$/,                label: 'STAIRS UP' },
+    { re: /_stair_speed_down$/,              label: 'STAIRS DN' },
+  ],
+  audio_exposure: [
+    { re: /_environmental_audio_exposure$/,  label: 'AMBIENT' },
+    { re: /_headphone_audio_exposure$/,      label: 'HEADPHONE' },
+  ],
+  sleep_breathing: [
+    { re: /_breathing_disturbances$/,        label: 'DISTURB' },
   ],
 };
 
@@ -425,12 +482,30 @@ export function classifyVital(state, entityRegistryEntry) {
   if (/_(vo2_max|cardio_capacity_score)$/.test(lid)) return withLabel({ kind: 'vo2_max' });
   if (/_cardiovascular_age$/.test(lid)) return withLabel({ kind: 'cardiovascular_age' });
 
+  // 5.12.0-beta.6 — HAE Apple Health additions. Order matters: keep these before
+  // the more permissive sleep/activity matchers fall through.
+  // body_temp_deviation extension (Apple sleeping wrist temperature)
+  if (/_apple_sleeping_wrist_temperature$/.test(lid)) return withLabel({ kind: 'body_temp_deviation' });
+  // Energy expenditure — active + basal calories.
+  if (/_active_energy$|_basal_energy_burned$/.test(lid)) return withLabel({ kind: 'calories_burned' });
+  // Mobility / gait analytics.
+  if (/_(walking_speed|walking_step_length|walking_asymmetry_percentage|walking_double_support_percentage|walking_running_distance|six_minute_walking_test_distance|flights_climbed|stair_speed_up|stair_speed_down)$/.test(lid)) return withLabel({ kind: 'mobility' });
+  // Hearing safety — environmental + headphone dB exposure.
+  if (/_(environmental_audio_exposure|headphone_audio_exposure)$/.test(lid)) return withLabel({ kind: 'audio_exposure' });
+  // Sleep apnea screening — Apple Watch breathing disturbances.
+  if (/_breathing_disturbances$/.test(lid)) return withLabel({ kind: 'sleep_breathing' });
+  // Apple step_count is the same metric as Withings _steps; fold into existing kind.
+  if (/_step_count$/.test(lid)) return withLabel({ kind: 'steps' });
+  // Apple activity rings — fold into active_minutes.
+  if (/_(apple_exercise_time|apple_stand_time|apple_stand_hour|physical_effort)$/.test(lid)) return withLabel({ kind: 'active_minutes' });
+
   // Sleep score — Oura sleep_score primary + regularity as a variant. (readiness_score
   // and sleep_efficiency MOVED OUT to first-class kinds above.)
   if (/_sleep_score$|_sleep_regularity_score$/.test(lid)) return withLabel({ kind: 'sleep_score' });
 
   // Sleep duration — total + per-stage (deep/rem/light) + time_in_bed all map; priority list ranks them.
-  if (/_total_sleep_duration$|_deep_sleep_duration$|_rem_sleep_duration$|_light_sleep_duration$|_sleep_duration$|_time_in_bed$|_sleep_.*hours$|_minutes_asleep$/.test(lid)) return withLabel({ kind: 'sleep_duration' });
+  // 5.12.0-beta.6 — also accept HAE Apple Health `_sleep_analysis_*` set.
+  if (/_total_sleep_duration$|_deep_sleep_duration$|_rem_sleep_duration$|_light_sleep_duration$|_sleep_duration$|_time_in_bed$|_sleep_.*hours$|_minutes_asleep$|_sleep_analysis_(totalsleep|asleep|inbed|deep|rem|core|awake)$/.test(lid)) return withLabel({ kind: 'sleep_duration' });
 
   // HRV (raw, milliseconds) — base reading; balance_score went to hrv_balance above.
   // 5.11.0-beta.2: HAE Apple Health emits `_heart_rate_variability` (also ms).
@@ -896,6 +971,17 @@ export function formatVital(kind, value, secondary = null) {
     case 'body_fat_pct':
     case 'vo2_max':
       return `${value.toFixed(1)}`;
+    // 5.12.0-beta.6 — new HAE-derived kind formats.
+    case 'calories_burned':
+      return value >= 1000 ? `${(value / 1000).toFixed(1)}k` : String(Math.round(value));
+    case 'audio_exposure':
+      return String(Math.round(value));
+    case 'sleep_breathing':
+      return String(Math.round(value));
+    case 'mobility':
+      // mobility is a composite kind; concrete formatting happens per-row in the
+      // composite renderer. This fallback is for sparkline / status code paths.
+      return Number.isFinite(value) ? value.toFixed(2) : String(value);
     case 'body_temp_deviation': {
       // Signed deviation; format with sign + 1 decimal (e.g. +0.4, -0.1).
       const sign = value > 0 ? '+' : (value < 0 ? '−' : '');

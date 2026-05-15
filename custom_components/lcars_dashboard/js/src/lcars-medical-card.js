@@ -63,6 +63,21 @@ function _bpPlausible(sys, dia) {
   return true;
 }
 
+// 5.12.0-beta.6 — body composition composite. The WEIGHT tile absorbs these
+// kinds as breakdown rows so the BIOMEDICAL grid isn't an 8-tile sprawl.
+// Order is the row order shown inside the tile.
+const BODY_COMP_CHILDREN = [
+  { kind: 'muscle_mass',  label: 'MUSCLE' },
+  { kind: 'lean_mass',    label: 'LEAN' },
+  { kind: 'fat_mass',     label: 'FAT' },
+  { kind: 'body_fat_pct', label: 'BODY FAT' },
+  { kind: 'bone_mass',    label: 'BONE' },
+  { kind: 'visceral_fat', label: 'VISCERAL' },
+  { kind: 'hydration',    label: 'HYDRO' },
+  { kind: 'bmi',          label: 'BMI' },
+];
+const BODY_COMP_CHILD_KINDS = new Set(BODY_COMP_CHILDREN.map((c) => c.kind));
+
 class LcarsMedicalCard extends LitElement {
   static get properties() {
     return {
@@ -248,13 +263,14 @@ class LcarsMedicalCard extends LitElement {
     for (const v of byKind.values()) {
       if (!v.variants || v.variants.length === 0) continue;
       v.variants.sort((a, b) => (a.priority - b.priority) || (b.ts - a.ts));
-      // v5.8.0-beta.2 (Geordi+Wesley P1) — dedupe variants by (label, value) pair.
-      // Multiple Withings/Oura entities can land on the same kind with the same
-      // value (e.g. `_heart_rate` and `_current_heart_rate` both at 111), producing
-      // duplicate rows like "HR 111 / HR 111".
+      // 5.12.0-beta.6 — dedupe by label only (was `${label}::${value}`). The same
+      // semantic label coming from multiple integrations (e.g. HAE `_heart_rate_avg`
+      // 84 vs Oura `_average_heart_rate` 77 both labeled AVG) was producing two
+      // visually-identical AVG rows with divergent numbers, which is confusing.
+      // First-by-priority wins; the alternate source value is dropped.
       const seen = new Set();
       v.variants = v.variants.filter((vt) => {
-        const k = `${vt.label || ''}::${vt.value}`;
+        const k = (vt.label || '').toUpperCase();
         if (seen.has(k)) return false;
         seen.add(k);
         return true;
@@ -425,8 +441,12 @@ class LcarsMedicalCard extends LitElement {
   }
 
   _renderTiles(vitalsByKind, profileKey) {
+    // 5.12.0-beta.6 — body composition is now a composite tile owned by `weight`;
+    // the standalone tiles for these kinds are skipped and rendered as breakdown
+    // rows inside the WEIGHT tile. Frees ~7 grid slots for new HAE-derived kinds
+    // (CALORIES, MOBILITY, AUDIO, BREATHING, sleep stages, activity rings).
     const tiles = MEDICAL_VITAL_CLASSES
-      .filter((vc) => vc.tile)
+      .filter((vc) => vc.tile && !BODY_COMP_CHILD_KINDS.has(vc.kind))
       .slice(0, 16); // 5.8.0-beta.1 — raised from 12 to fit new Oura tiles.
     return html`
       <section class="zone-c" aria-label="Vital detail tiles">
@@ -434,6 +454,10 @@ class LcarsMedicalCard extends LitElement {
           // 5.8.0-beta.1 — composite tile (readiness) renders its own sub-lozenge layout.
           if (vc.composite && vc.kind === 'readiness') {
             return this._renderReadinessTile(vc, vitalsByKind.get(vc.kind), profileKey);
+          }
+          // 5.12.0-beta.6 — weight composite absorbs body comp children.
+          if (vc.composite === 'body_comp' && vc.kind === 'weight') {
+            return this._renderBodyCompositionTile(vc, vitalsByKind);
           }
           const v = vitalsByKind.get(vc.kind);
           // v5.7.2 hybrid: render canonical row + any additional variants stacked beneath.
@@ -481,6 +505,61 @@ class LcarsMedicalCard extends LitElement {
         })}
       </section>
     `;
+  }
+
+  // 5.12.0-beta.6 — Body Composition composite tile.
+  // Headline: WEIGHT (Withings primary). Breakdown rows pull canonical values
+  // from sibling kinds (fat_mass / lean_mass / muscle_mass / bone_mass /
+  // visceral_fat / body_fat_pct / bmi / hydration). Each row formats its own
+  // value through formatVital(child.kind, value) and shows its unit suffix.
+  // Replaces the 8-tile body-comp grid sprawl with one tall tile.
+  _renderBodyCompositionTile(vc, vitalsByKind) {
+    const v = vitalsByKind.get('weight');
+    const variants = v && v.variants && v.variants.length ? v.variants : null;
+    if (!variants) {
+      return html`
+        <div class="tile">
+          <div class="tile-label">${vc.label}</div>
+          <div class="tile-value tile-offline"
+               style=${`color:var(--lcars-gray, #666688)`}>—</div>
+          <div class="tile-unit">${vc.unit}</div>
+        </div>`;
+    }
+    const canonical = variants[0];
+    const canonicalStatus = (canonical.value != null && !isNaN(canonical.value))
+      ? computeStatus('weight', canonical.value, DEFAULT_THRESHOLDS)
+      : MEDICAL_STATUS.OFFLINE;
+    const canonicalColor = STATUS_COLOR[canonicalStatus] || STATUS_COLOR.OFFLINE;
+    const rows = [];
+    for (const child of BODY_COMP_CHILDREN) {
+      const cv = vitalsByKind.get(child.kind);
+      const cvar = cv && cv.variants && cv.variants.length ? cv.variants[0] : null;
+      if (!cvar || cvar.value == null || isNaN(cvar.value)) continue;
+      const meta = MEDICAL_VITAL_CLASSES.find((c) => c.kind === child.kind);
+      const unit = meta ? meta.unit : '';
+      rows.push({
+        label: child.label,
+        value: formatVital(child.kind, cvar.value),
+        unit,
+      });
+    }
+    return this._wrapTile(vc.label, canonical.eid, html`
+      <div class="tile-label">${vc.label}</div>
+      <div class="tile-value" data-medical="phi"
+           aria-live="off"
+           ?aria-hidden=${this._audioMuted}
+           style=${`color:${canonicalColor}`}>${formatVital('weight', canonical.value)}</div>
+      <div class="tile-unit">${vc.unit}</div>
+      ${rows.length ? html`
+        <div class="tile-variants" aria-label="Body composition">
+          ${rows.map((r) => html`
+            <div class="tile-variant">
+              <span class="tile-variant-label">${r.label}</span>
+              <span class="tile-variant-value" data-medical="phi"
+                    ?aria-hidden=${this._audioMuted}>${r.value}${r.unit ? html` <span class="tile-variant-unit">${r.unit}</span>` : ''}</span>
+            </div>`)}
+        </div>` : ''}
+    `);
   }
 
   // 5.8.0-beta.1 — Readiness composite tile (Geordi recommendation).

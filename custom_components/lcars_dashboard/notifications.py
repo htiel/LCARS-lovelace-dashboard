@@ -1,8 +1,8 @@
 import os
 import logging
 import json
-import io
-import time
+# DeadCodePass: import io   # unused — flagged v5.13.0-beta.1 cleanup audit
+# DeadCodePass: import time  # unused — flagged v5.13.0-beta.1 cleanup audit
 import voluptuous as vol
 import homeassistant.util.dt as dt_util
 

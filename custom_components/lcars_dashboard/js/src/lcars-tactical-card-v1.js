@@ -1,3 +1,9 @@
+/* DeadCodePass:start — entire file is dead code per v5.13.0-beta.1 cleanup audit.
+ * Superseded by lcars-tactical-card.js (which registers the same
+ * `tactical-card` custom element). This v1 file is NOT in webpack entries
+ * and is not imported anywhere; it is not bundled.
+ * Pending full deletion next pass if v5.13.0-beta.1 ships clean.
+ */
 /**
  * lcars-tactical-card.js
  *

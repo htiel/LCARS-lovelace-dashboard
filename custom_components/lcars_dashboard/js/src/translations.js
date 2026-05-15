@@ -1,3 +1,10 @@
+/* DeadCodePass:start — entire file is dead code per v5.13.0-beta.1 cleanup audit.
+ * - Zero imports from any other source in custom_components/lcars_dashboard/js/src/**
+ * - Not listed in custom_components/lcars_dashboard/js/webpack.config.js entries
+ * - Not bundled into js/dist/lcars-dashboard.js
+ * Pending full deletion next pass if v5.13.0-beta.1 ships clean.
+ * Original 1700+ line translation dictionary preserved below for revert.
+ */
 // Add additional languages with their ISO 639-1 language code
 
 const translations = {

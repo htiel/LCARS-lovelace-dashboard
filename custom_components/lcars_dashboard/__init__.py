@@ -245,7 +245,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     websocket_api.async_register_command(hass, ws_handle_edit_homepage_header)
 
-    websocket_api.async_register_command(hass, ws_handle_edit_more_page_button)
+    # DeadCodePass: ws_handle_edit_more_page_button — zero JS callers (grepped js/src/**).
+    # Registration + handler commented out v5.13.0-beta.1; pending deletion next pass.
+    # websocket_api.async_register_command(hass, ws_handle_edit_more_page_button)
     websocket_api.async_register_command(hass, ws_handle_edit_more_page)
     websocket_api.async_register_command(hass, ws_handle_remove_more_page)
     websocket_api.async_register_command(hass, ws_handle_add_more_page_to_navbar)
@@ -265,13 +267,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     # v5.12.0-beta.1 — Medical Bay multi-user binding store (spec §4.5).
     # Adds 2 more WS commands; total goes from 37 to 39.
+    # DeadCodePass: total now 38 after commenting out ws_handle_edit_more_page_button (v5.13.0-beta.1).
     register_medical_profiles(hass)
 
     await load_plugins(hass, DOMAIN)
 
     notifications(hass, DOMAIN)
 
-    _LOGGER.info("LCARS Dashboard v%s setup complete — %d WS commands registered", VERSION, 39)
+    _LOGGER.info("LCARS Dashboard v%s setup complete — %d WS commands registered", VERSION, 38)
     
     return True
 
@@ -733,7 +736,7 @@ async def ws_handle_edit_device_card(
     filename = hass.config.path(path+"/"+msg['domain']+".yaml")
 
 
-    #ff = open(filename, 'w+')
+    # DeadCodePass: legacy dead comment — #ff = open(filename, 'w+')
     def _write_card():
 
         os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -808,7 +811,7 @@ async def ws_handle_edit_device_popup(
     filename = hass.config.path(path+"/"+msg['domain']+".yaml")
 
 
-    #ff = open(filename, 'w+')
+    # DeadCodePass: legacy dead comment — #ff = open(filename, 'w+')
     def _write_card():
 
         os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -1008,7 +1011,7 @@ async def ws_handle_edit_entity_card(
     filename = hass.config.path(path+"/"+msg['entityId']+".yaml")
 
 
-    #ff = open(filename, 'w+')
+    # DeadCodePass: legacy dead comment — #ff = open(filename, 'w+')
     def _write_card():
 
         os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -1067,7 +1070,7 @@ async def ws_handle_edit_entity_popup(
     filename = hass.config.path(path+"/"+msg['entityId']+".yaml")
 
 
-    #ff = open(filename, 'w+')
+    # DeadCodePass: legacy dead comment — #ff = open(filename, 'w+')
     def _write_card():
 
         os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -1387,47 +1390,51 @@ async def ws_handle_remove_card(
 
 
 #edit_more_page_button
-#NOT USED
-@websocket_api.require_admin
-@websocket_api.websocket_command(
-    {
-        vol.Required("type"): "lcars_dashboard/edit_more_page_button",
-        vol.Optional("more_page"): _validate_path_component,
-        vol.Optional("name"): str,
-        vol.Optional("icon"): str,
-        vol.Optional("showInNavbar"): bool,
-    }
-)
-@websocket_api.async_response
-async def ws_handle_edit_more_page_button(
-    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
-) -> None:
-    """Handle saving editing more page button."""
-
-    if (msg["more_page"]):
-        config_rel_path = f"lcars-dashboard/configs/more_pages/{msg['more_page']}/config.yaml"
-
-        async with _get_yaml_lock(config_rel_path):
-            configFile = await _read_yaml_file(hass, config_rel_path)
-
-            configFile.update({
-                "name": msg["name"],
-                "icon": msg["icon"],
-                "show_in_navbar": msg["showInNavbar"],
-            })
-
-            await _write_yaml_file(hass, config_rel_path, configFile)
-
-    # Trigger a reload event after saving
-    hass.bus.async_fire("lcars_dashboard_homepage_card_reload")
-
-    # Send the response back to the connection
-    connection.send_result(
-        msg["id"],
-        {
-            "successful": "More page button saved"
-        },
-    )
+# DeadCodePass:start — ws_handle_edit_more_page_button has zero JS callers
+# (grepped lcars-dashboard/js/src/** for 'edit_more_page_button' — only references
+# are in this file: the registration line and this handler). Source comment
+# already says #NOT USED. Commented out v5.13.0-beta.1; pending deletion.
+# @websocket_api.require_admin
+# @websocket_api.websocket_command(
+#     {
+#         vol.Required("type"): "lcars_dashboard/edit_more_page_button",
+#         vol.Optional("more_page"): _validate_path_component,
+#         vol.Optional("name"): str,
+#         vol.Optional("icon"): str,
+#         vol.Optional("showInNavbar"): bool,
+#     }
+# )
+# @websocket_api.async_response
+# async def ws_handle_edit_more_page_button(
+#     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+# ) -> None:
+#     """Handle saving editing more page button."""
+#
+#     if (msg["more_page"]):
+#         config_rel_path = f"lcars-dashboard/configs/more_pages/{msg['more_page']}/config.yaml"
+#
+#         async with _get_yaml_lock(config_rel_path):
+#             configFile = await _read_yaml_file(hass, config_rel_path)
+#
+#             configFile.update({
+#                 "name": msg["name"],
+#                 "icon": msg["icon"],
+#                 "show_in_navbar": msg["showInNavbar"],
+#             })
+#
+#             await _write_yaml_file(hass, config_rel_path, configFile)
+#
+#     # Trigger a reload event after saving
+#     hass.bus.async_fire("lcars_dashboard_homepage_card_reload")
+#
+#     # Send the response back to the connection
+#     connection.send_result(
+#         msg["id"],
+#         {
+#             "successful": "More page button saved"
+#         },
+#     )
+# DeadCodePass:end
 
 
 #edit_more_page
@@ -1515,12 +1522,12 @@ async def ws_handle_remove_more_page(
     """Handle remove more page command."""
 
     path_to_more_page = _safe_path(hass.config.path("lcars-dashboard"), "configs", "more_pages", msg["foldername"], "page.yaml")
-    #_LOGGER.warning(f"Removing more_page: {msg["foldername"]} -- {path_to_more_page}")
+    # DeadCodePass: legacy dead comment — #_LOGGER.warning(f"Removing more_page: {msg["foldername"]} -- {path_to_more_page}")
 
-    #if os.path.exists(path_to_more_page):
+    # DeadCodePass: legacy dead comment — #if os.path.exists(path_to_more_page):
     if await hass.async_add_executor_job(os.path.exists, path_to_more_page):
         #remove folder and content
-        #shutil.rmtree(hass.config.path("lcars-dashboard/configs/more_pages/"+msg["foldername"]), ignore_errors=True)
+        # DeadCodePass: legacy dead comment — #shutil.rmtree(hass.config.path("lcars-dashboard/configs/more_pages/"+msg["foldername"]), ignore_errors=True)
         folder_path = _safe_path(hass.config.path("lcars-dashboard"), "configs", "more_pages", msg["foldername"])
         await hass.async_add_executor_job(shutil.rmtree, folder_path, True)
 
@@ -1553,18 +1560,21 @@ async def ws_handle_add_more_page_to_navbar(
 ) -> None:
     """Handle add more page to navbar command."""
 
-    #if os.path.exists(hass.config.path("lcars-dashboard/configs/more_pages/"+msg["more_page"]+"/config.yaml")):
-    #    with open(hass.config.path("lcars-dashboard/configs/more_pages/"+msg["more_page"]+"/config.yaml")) as f:
-    #        configFile = yaml.safe_load(f)
-    #else:
-    #    configFile = OrderedDict()
+    # DeadCodePass:start — dead config-mutation block (15 lines). Active path now
+    # only fires reload events; commented body retained for revert during beta.
+    # if os.path.exists(hass.config.path("lcars-dashboard/configs/more_pages/"+msg["more_page"]+"/config.yaml")):
+    #     with open(hass.config.path("lcars-dashboard/configs/more_pages/"+msg["more_page"]+"/config.yaml")) as f:
+    #         configFile = yaml.safe_load(f)
+    # else:
+    #     configFile = OrderedDict()
     #
-    #    configFile.update({
-    #        "show_in_navbar": "True"
-    #    })
+    #     configFile.update({
+    #         "show_in_navbar": "True"
+    #     })
     #
-    #    with open(hass.config.path("lcars-dashboard/configs/more_pages/"+msg["more_page"]+"/config.yaml"), 'w') as f:
-    #        yaml.safe_dump(configFile, f, default_flow_style=False)
+    #     with open(hass.config.path("lcars-dashboard/configs/more_pages/"+msg["more_page"]+"/config.yaml"), 'w') as f:
+    #         yaml.safe_dump(configFile, f, default_flow_style=False)
+    # DeadCodePass:end
 
     #call reload config to rebuild the yaml for pages too
     hass.bus.async_fire("lcars_dashboard_reload")

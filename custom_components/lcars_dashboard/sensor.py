@@ -9,9 +9,13 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    """Setup sensor platform."""
-    async_add_entities([LcarsVersionSensor(hass)])
+# DeadCodePass:start — async_setup_platform is the legacy YAML-platform entry point.
+# This integration is config-entry-only (config_flow: true in manifest.json), so HA
+# never invokes this function. Flagged v5.13.0-beta.1 cleanup audit; pending deletion.
+# async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
+#     """Setup sensor platform."""
+#     async_add_entities([LcarsVersionSensor(hass)])
+# DeadCodePass:end
 
 
 async def async_setup_entry(hass, config_entry, async_add_devices):

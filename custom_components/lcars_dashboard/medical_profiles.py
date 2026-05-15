@@ -10,7 +10,7 @@ Storage: lcars-dashboard/configs/medical_profiles.yaml (atomic writes, per-file
 asyncio lock, size + depth caps reused from __init__.py).
 
 WS surface:
-  - lcars_dashboard/medical_profiles/get  (any authenticated user)
+  - lcars_dashboard/medical_profiles/get  (admin: full mapping; non-admin: own profile only)
   - lcars_dashboard/medical_profiles/set  (admin only)
 
 Both commands return / accept the full mapping object; partial updates are the
@@ -190,17 +190,52 @@ async def ws_medical_profiles_get(
     connection: websocket_api.ActiveConnection,
     msg: Mapping[str, Any],
 ) -> None:
-    """Return the persisted medical profile mapping (or the empty default).
+    """Return the persisted medical profile mapping, scoped to the viewer.
 
-    Not admin-gated: the frontend needs to read the mapping for every viewer in
-    order to render person-scoped headers. Per-user value masking (spec §7.7)
-    is enforced client-side from `respect_user_scoping` + viewer identity.
+    Per-user trust model (v5.13.0-beta.1, Worf S1-1 fix):
+      - Admin: receives the full mapping (every profile + bindings + overrides).
+        Required so the binding editor and admin dashboards can render and edit
+        the entire household.
+      - Non-admin / kiosk: receives only the profile linked to the viewer's own
+        `person.*` (matched via `person.<slug>.user_id == connection.user.id`).
+        Bindings and entity_overrides are returned for that single profile only
+        — they reveal the viewer's own integration accounts, which the viewer
+        already controls. No other household member's bindings are exposed.
+      - Viewer with no linked person (kiosk-only HA user): receives an empty
+        profiles list; the frontend falls back to the v5.11 heuristic bucket.
     """
     from . import _read_yaml_file  # local import to avoid circular at module load
 
     raw = await _read_yaml_file(hass, MEDICAL_PROFILES_PATH)
     mapping = _normalize_loaded(raw)
-    connection.send_result(msg["id"], mapping)
+
+    user = connection.user
+    if user is not None and user.is_admin:
+        connection.send_result(msg["id"], mapping)
+        return
+
+    viewer_user_id = user.id if user is not None else None
+    viewer_person_id: str | None = None
+    if viewer_user_id:
+        for state in hass.states.async_all("person"):
+            if state.attributes.get("user_id") == viewer_user_id:
+                viewer_person_id = state.entity_id
+                break
+
+    filtered_profiles = (
+        [p for p in mapping.get("profiles", []) if p.get("id") == viewer_person_id]
+        if viewer_person_id
+        else []
+    )
+
+    connection.send_result(
+        msg["id"],
+        {
+            "version": mapping.get("version", 1),
+            "respect_user_scoping": mapping.get("respect_user_scoping", True),
+            "profiles": filtered_profiles,
+        },
+    )
 
 
 @websocket_api.require_admin

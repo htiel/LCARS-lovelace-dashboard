@@ -28,14 +28,16 @@ import {
   TOGGLE_DOMAINS, SENSOR_DOMAINS, COVER_DOMAINS,
   AQ_DEVICE_CLASSES, AQ_ENTITY_SUFFIX_RE,
   DOMAIN_LABELS, DOMAIN_ORDER,
-  isLightingEntity, isClimateEntity, isEnvironmentEntity, isAmbientSensor,
+  // DeadCodePass: dropped unused imports — isClimateEntity, isEnvironmentEntity, isAmbientSensor (used only inside panels/lifesupport/ + panels/illumination/, not this file). v5.13.0-beta.1.
+  isLightingEntity,
   isTacticalEntity, PANEL_TYPE_TACTICAL,
   isViewportEntity, PANEL_TYPE_VIEWPORT,
   PANEL_TYPE_HAZARD, PANEL_TYPE_GALLEY, PANEL_TYPE_EV_CHARGER,
   isDiagnosticEntity,
   SUPPRESS_DOMAINS,
 } from './lcars-entity-utils.js';
-import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor, getCo2Color, getTempColor, getTempComfortClass, getSafeComfortColor, COMFORT_COLORS, getRainDelayInfo, getPowerColor, getPowerLabel, getGridBalanceColor } from './lcars-color-utils.js';
+// DeadCodePass: dropped unused imports from lcars-color-utils.js — getTempComfortClass, getSafeComfortColor, COMFORT_COLORS, getRainDelayInfo, getGridBalanceColor (no call sites in this file; only one CSS-comment mention of COMFORT_COLORS). v5.13.0-beta.1.
+import { getStateColor, getAqiColor, getHvacActionColor, getAlarmStateColor, getPlaybackStateColor, getPoolBodyColor, getWeatherConditionColor, getIrrigationZoneColor, getComfortColor, getCo2Color, getTempColor, getPowerColor, getPowerLabel } from './lcars-color-utils.js';
 import { formatNumber, formatStateValue, canonicalLabel } from './lcars-format-utils.js';
 import { clampSetpoint, clampValue, createRateLimiter, createDebouncer } from './lcars-service-utils.js';
 import { renderSparkline, fetchSparklineData } from './lcars-sparkline.js';

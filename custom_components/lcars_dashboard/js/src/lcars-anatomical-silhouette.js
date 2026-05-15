@@ -130,7 +130,7 @@ class LcarsAnatomicalSilhouette extends LitElement {
     const labelFontSize = 9 * fontScale;
     const valueFontSize = 11 * fontScale;
     const tabHeight = 16 * fontScale;
-    const tabPadX = 4 * fontScale;
+    const tabPadX = 6 * fontScale;
     const tabRadius = tabHeight / 2;
     const dotRadius = 2.5 * fontScale;
     const leaderStroke = 1.5 * fontScale;
@@ -209,8 +209,8 @@ class LcarsAnatomicalSilhouette extends LitElement {
       const valueLen = displayValue.length || 1;
       const labelLetterSpacing = 0.5;
       const valueLetterSpacing = 0.3;
-      const labelW = labelLen * labelFontSize * 0.62 + Math.max(0, labelLen - 1) * labelLetterSpacing;
-      const valueW = valueLen * valueFontSize * 0.62 + Math.max(0, valueLen - 1) * valueLetterSpacing;
+      const labelW = labelLen * labelFontSize * 0.70 + Math.max(0, labelLen - 1) * labelLetterSpacing;
+      const valueW = valueLen * valueFontSize * 0.70 + Math.max(0, valueLen - 1) * valueLetterSpacing;
       const textW = (label ? labelW + sepDx : 0) + valueW;
       const tabWidth = Math.max(48 * fontScale, textW + tabPadX * 2);
 

@@ -192,7 +192,6 @@ const IGNORE_SUFFIXES = [
   /_stress_day_summary$/,                                             // enum chrome
   /_(mindfulness_sessions|meditation_duration|tag_count|tags)_today$/,// behavioral counts
   /_workouts_today$/,                                                 // count; last_workout suffices
-  /_(percentage|percent)$/,                                           // ambiguous derived %
   /_(deep|rem|light)_sleep_percentage$/,                              // explicit Oura case
   /_awake_time$/,                                                     // surfaces via sleep_duration variants instead
 ];
@@ -205,14 +204,25 @@ export const VITAL_SUFFIX_PRIORITY = {
   // sleep-period averages. Previously _average_sleep_heart_rate was index 1 and
   // won the canonical slot on Oura-only profiles, which is clinically wrong for
   // a 'current status' display.
+  // v5.11.0-beta.2: bare `_heart_rate$` MOVED TO LAST position because it was
+  // matching `_lowest_sleep_heart_rate`, `_maximum_heart_rate`, `_minimum_heart_rate`
+  // etc. as the literal suffix `_heart_rate` IS present at end of those strings,
+  // and the linear `for` loop returned the first hit. Specific Oura/HAE max/min
+  // and HAE day-bucket variants now have their own labels above the fallback.
   heart_rate: [
     { re: /_current_heart_rate$/,            label: 'CURRENT' },
     { re: /_heart_pulse$/,                   label: 'PULSE' },
     { re: /_resting_heart_rate$/,            label: 'RESTING' },
+    { re: /_walking_heart_rate_average$/,    label: 'WALK AVG' },
+    { re: /_maximum_heart_rate$/,            label: 'MAX' },
+    { re: /_minimum_heart_rate$/,            label: 'MIN' },
+    { re: /_heart_rate_max$/,                label: 'MAX' },
+    { re: /_heart_rate_min$/,                label: 'MIN' },
+    { re: /_heart_rate_avg$/,                label: 'AVG' },
     { re: /_average_heart_rate$/,            label: 'AVG' },
-    { re: /_heart_rate$/,                    label: 'HR' },
-    { re: /_average_sleep_heart_rate$/,      label: 'AVG SLEEP' },
     { re: /_lowest_sleep_heart_rate$/,       label: 'LOW SLEEP' },
+    { re: /_average_sleep_heart_rate$/,      label: 'AVG SLEEP' },
+    { re: /_heart_rate$/,                    label: 'HR' },
   ],
   sleep_duration: [
     { re: /_total_sleep_duration$/,          label: 'TOTAL' },
@@ -242,6 +252,7 @@ export const VITAL_SUFFIX_PRIORITY = {
     { re: /_hrv$/,                           label: 'HRV' },
     { re: /_hrv_last_night_average$/,        label: 'LAST NIGHT' },
     { re: /_hrv_last_night$/,                label: 'LAST NIGHT' },
+    { re: /_heart_rate_variability$/,        label: 'HRV' },
     { re: /_average_sleep_hrv$/,             label: 'AVG SLEEP' },
   ],
   sleep_score: [
@@ -407,7 +418,8 @@ export function classifyVital(state, entityRegistryEntry) {
   if (/_total_sleep_duration$|_deep_sleep_duration$|_rem_sleep_duration$|_light_sleep_duration$|_sleep_duration$|_time_in_bed$|_sleep_.*hours$|_minutes_asleep$/.test(lid)) return withLabel({ kind: 'sleep_duration' });
 
   // HRV (raw, milliseconds) — base reading; balance_score went to hrv_balance above.
-  if (/_(hrv|hrv_last_night|hrv_last_night_average|average_sleep_hrv)$/.test(lid)) return withLabel({ kind: 'hrv' });
+  // 5.11.0-beta.2: HAE Apple Health emits `_heart_rate_variability` (also ms).
+  if (/_(hrv|hrv_last_night|hrv_last_night_average|average_sleep_hrv|heart_rate_variability)$/.test(lid)) return withLabel({ kind: 'hrv' });
 
   if (/_body_battery$/.test(lid)) return withLabel({ kind: 'body_battery' });
 

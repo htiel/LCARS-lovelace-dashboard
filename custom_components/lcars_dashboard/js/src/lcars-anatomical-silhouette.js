@@ -137,12 +137,12 @@ class LcarsAnatomicalSilhouette extends LitElement {
     const tabStroke = 1 * fontScale;
     const sepDx = 4 * fontScale;
     const canvasInset = 8 * fontScale;
-    // 5.11.0-beta.4 — tab clearance OUTSIDE the body coord box. Pinning the
+    // 5.11.0-beta.5 — tab clearance OUTSIDE the body coord box. Pinning the
     // flat (body-facing) side at a fixed distance from the body silhouette
     // means tab borders never grow inward toward the body regardless of label
     // length — tab growth always extends INTO the gutter (rounded end at canvas
-    // edge, flat end facing body).
-    const bodyClearance = 4;
+    // edge, flat end facing body). Bumped 4 → 12 viewBox units per Captain.
+    const bodyClearance = 12;
 
     // Pass 1 — bucket active slots by edge. Iterate sorted anchorMap keys for
     // cross-engine deterministic ordering on ties (Data 5.4.5 review #4).
@@ -156,20 +156,29 @@ class LcarsAnatomicalSilhouette extends LitElement {
       if (!buckets[edge]) continue;
       buckets[edge].push({ slot, pos });
     }
-    // Pass 2 — sort each bucket along its run-axis and assign an evenly-distributed
-    // coordinate in the [10%, 90%] band. n=1 keeps the natural anchor coordinate
-    // so sparse maps (Medical at n≤3/edge) render unchanged from pre-5.4.5.
+    // Pass 2 — anchor-aligned slot allocation with 1D collision avoidance.
+    // 5.11.0-beta.5: previous even-distribution pushed slot Y far from anchor Y
+    // even for 2–3 callouts/edge, forcing long vertical leader segments that
+    // ran along the body-facing border of intermediate tabs (visible as "line
+    // through WEIGHT/TEMP" in beta.4). Now each tab sits AT its anchor
+    // coordinate and is only pushed outward when it would overlap the previous
+    // tab in the bucket. Result: vertical leader length = 0 in the common
+    // (n≤3/edge) case, eliminating cross-tab leader intrusions.
     const distributed = {};
+    // Convert tab footprint (in viewBox units) to a body-coord percentage so
+    // collision math operates in the same coordinate space as anchor x/y.
+    const tabFootprintCoord = (range) => (tabHeight * 1.15) / range * 100;
     for (const [edge, list] of Object.entries(buckets)) {
       if (!list.length) continue;
       const isHorizontal = edge === 'top' || edge === 'bottom';
       list.sort((a, b) => isHorizontal ? a.pos.x - b.pos.x : a.pos.y - b.pos.y);
-      const n = list.length;
-      list.forEach((entry, i) => {
-        const coord = (n === 1)
-          ? (isHorizontal ? entry.pos.x : entry.pos.y)
-          : 10 + ((i + 0.5) * (80 / n));
+      const minGap = tabFootprintCoord(isHorizontal ? bbW : bbH);
+      let prev = -Infinity;
+      list.forEach((entry) => {
+        const preferred = isHorizontal ? entry.pos.x : entry.pos.y;
+        const coord = Math.max(preferred, prev + minGap);
         distributed[entry.slot] = { pos: entry.pos, edge, distCoord: coord };
+        prev = coord;
       });
     }
 

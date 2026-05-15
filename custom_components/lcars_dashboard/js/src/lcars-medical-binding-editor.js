@@ -124,6 +124,7 @@ const STYLES = css`
   }
   .be-row.unmapped { border-left: 2px solid var(--lcars-gold, #ffaa00); }
   .be-row.mapped { border-left: 2px solid var(--lcars-data-accent, #99cc99); }
+  .be-row.candidate { border-left: 2px solid var(--lcars-african-violet, #cc99ff); opacity: 0.85; }
 
   .be-row-label {
     display: flex; flex-direction: column; gap: 0.15rem;
@@ -409,11 +410,20 @@ class LcarsMedicalBindingEditor extends LitElement {
   _renderBindingRow(item) {
     const current = this._bindingMap[item.bindingKey] || UNMAPPED;
     const mapped = current !== UNMAPPED;
+    const total = item.count || 0;
+    const classified = (typeof item.classifiedCount === 'number') ? item.classifiedCount : total;
+    const deviceLabel = item.deviceLabel ? ` · ${item.deviceLabel}` : '';
+    const countLabel = item.unmanaged
+      ? `${total} entit${total === 1 ? 'y' : 'ies'} · no medical vitals yet`
+      : (classified === total
+          ? `${total} entit${total === 1 ? 'y' : 'ies'}`
+          : `${classified}/${total} classified`);
+    const rowClass = mapped ? 'mapped' : (item.unmanaged ? 'candidate' : 'unmapped');
     return html`
-      <div class="be-row ${mapped ? 'mapped' : 'unmapped'}">
+      <div class="be-row ${rowClass}">
         <div class="be-row-label">
           <span class="be-binding-key" title=${item.bindingKey}>${item.bindingKey}</span>
-          <span class="be-binding-meta">${item.platform} · ${item.count} entit${item.count === 1 ? 'y' : 'ies'} · e.g. ${item.sampleEntityId}</span>
+          <span class="be-binding-meta">${item.platform}${deviceLabel} · ${countLabel} · e.g. ${item.sampleEntityId}</span>
         </div>
         <select class="be-select"
                 aria-label="Map ${item.bindingKey} to a person"

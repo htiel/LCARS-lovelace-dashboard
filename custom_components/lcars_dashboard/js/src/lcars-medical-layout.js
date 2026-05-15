@@ -14,7 +14,6 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { lcarsEventBus } from './lcars-helpers.js';
 import { lcarsAudio } from './lcars-audio.js';
 import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
 import './lcars-medical-binding-editor.js';
@@ -29,7 +28,6 @@ class LcarsMedicalLayout extends LitElement {
       _config: { type: Object },
       _siteName: { type: String },
       _audioMuted: { type: Boolean },
-      _editMode: { type: Boolean },
     };
   }
 
@@ -40,7 +38,6 @@ class LcarsMedicalLayout extends LitElement {
     this._config = {};
     this._siteName = 'SICKBAY';
     this._audioMuted = lcarsAudio.isMuted;
-    this._editMode = false;
   }
 
   setConfig(config) { this._config = config; }
@@ -78,11 +75,6 @@ class LcarsMedicalLayout extends LitElement {
     dialog.open();
   }
 
-  _toggleEditMode() {
-    this._editMode = !this._editMode;
-    lcarsEventBus.dispatchEvent(new CustomEvent('lcars-med-edit', { detail: { enabled: this._editMode } }));
-  }
-
   render() {
     const version = lcarsPkg.version;
     return html`
@@ -102,13 +94,8 @@ class LcarsMedicalLayout extends LitElement {
                       @click=${() => this._openSidebarReorder()}>
                 <ha-icon .icon=${'mdi:sort-variant'}></ha-icon>
               </button>
-              <button class="mute-btn" aria-label="Map medical profiles to Home Assistant users"
+              <button class="mute-btn" aria-label="Map medical profiles to Home Assistant persons"
                       @click=${() => this._openBindingEditor()}>
-                <ha-icon .icon=${'mdi:account-multiple-outline'}></ha-icon>
-              </button>
-              <button class="mute-btn" aria-pressed=${this._editMode}
-                      aria-label=${this._editMode ? 'Exit configuration mode' : 'Enter configuration mode'}
-                      @click=${() => this._toggleEditMode()}>
                 <ha-icon .icon=${'mdi:cog-outline'}></ha-icon>
               </button>
             ` : ''}

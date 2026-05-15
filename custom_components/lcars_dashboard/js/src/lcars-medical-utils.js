@@ -730,11 +730,48 @@ export function discoverProfiles(hass) {
 // discoverProfiles() walk. Used by the Phase 2 editor UI to populate the
 // "available bindings to map" picker. Always re-walks (no cache) because the
 // caller is the admin editing surface, not a hot render path.
+//
+// 5.12.0-beta.3 — also surfaces `mobile_app` device bindings even when no
+// entity passes classifyVital. The iOS Companion App is a legitimate Apple
+// Health bridge but only forwards health vitals when the user enables them in
+// the iOS Sensors settings; pre-mapping the device to a person ensures any
+// future Apple Health data lands in the right bucket without a second round
+// of Captain action. These rows are flagged `unmanaged: true` and carry a
+// `classifiedCount` of 0 so the editor can render them with a clear hint.
 export function listObservedBindings(hass) {
   if (!hass) return [];
   const reg = hass.entities || {};
+  const dev = hass.devices || {};
   const states = hass.states || {};
-  const out = new Map(); // bindingKey -> { count, samplePlatform, sampleEntityId }
+  const out = new Map(); // bindingKey -> { count, classifiedCount, platform, sampleEntityId, deviceLabel?, unmanaged? }
+
+  const bump = (bindingKey, info, classified) => {
+    let hit = out.get(bindingKey);
+    if (!hit) {
+      hit = { count: 0, classifiedCount: 0, platform: info.platform, sampleEntityId: info.sampleEntityId };
+      if (info.deviceLabel) hit.deviceLabel = info.deviceLabel;
+      out.set(bindingKey, hit);
+    }
+    hit.count++;
+    if (classified) hit.classifiedCount++;
+    // Prefer a classified entity as the sample for clarity in the editor.
+    if (classified && info.sampleEntityId && hit.classifiedCount === 1) {
+      hit.sampleEntityId = info.sampleEntityId;
+    }
+  };
+
+  const deviceLabelFor = (deviceId) => {
+    if (!deviceId) return null;
+    const d = dev[deviceId];
+    if (!d) return null;
+    const name = d.name_by_user || d.name || null;
+    if (!name) return null;
+    if (d.manufacturer && d.model) return `${name} (${d.manufacturer} ${d.model})`;
+    if (d.model) return `${name} (${d.model})`;
+    return name;
+  };
+
+  // Pass 1 — every entity classifyVital recognizes.
   for (const eid of Object.keys(states)) {
     const reEntry = reg[eid];
     const cls = classifyVital(states[eid], reEntry);
@@ -742,26 +779,64 @@ export function listObservedBindings(hass) {
     const objId = eid.split('.')[1] || '';
     let bindingKey;
     let platform;
+    let deviceLabel = null;
     if (!reEntry || STATE_ONLY_BRIDGE_PLATFORMS.has(reEntry?.platform)) {
       bindingKey = `hae:${objId.split('_')[0] || 'biobed'}`;
       platform = 'hae';
     } else if (reEntry.config_entry_id) {
       platform = reEntry.platform || 'unknown';
       bindingKey = `${platform}:${reEntry.config_entry_id}`;
+      deviceLabel = deviceLabelFor(reEntry.device_id);
     } else if (reEntry.device_id) {
       platform = reEntry.platform || 'unknown';
       bindingKey = `${platform}:${reEntry.device_id}`;
+      deviceLabel = deviceLabelFor(reEntry.device_id);
     } else {
       platform = reEntry.platform || 'unknown';
       bindingKey = `${platform}:_`;
     }
-    const hit = out.get(bindingKey);
-    if (hit) {
-      hit.count++;
-    } else {
-      out.set(bindingKey, { count: 1, platform, sampleEntityId: eid });
-    }
+    bump(bindingKey, { platform, sampleEntityId: eid, deviceLabel }, true);
   }
+
+  // Pass 2 — surface every mobile_app device as a candidate binding even when
+  // no entity passed classifyVital. Apple Health forwarding via the iOS
+  // Companion App is opt-in; pre-mapping the device avoids a chicken-and-egg.
+  const mobileDevicesSeen = new Set();
+  for (const eid of Object.keys(states)) {
+    const reEntry = reg[eid];
+    if (reEntry?.platform !== 'mobile_app') continue;
+    if (!reEntry.device_id) continue;
+    mobileDevicesSeen.add(reEntry.device_id);
+  }
+  for (const deviceId of mobileDevicesSeen) {
+    const bindingKey = `mobile_app:${deviceId}`;
+    if (out.has(bindingKey)) continue; // already counted as a classified binding
+    // Pick a representative sensor for this device (any entity is fine).
+    let sample = null;
+    for (const eid of Object.keys(states)) {
+      const r = reg[eid];
+      if (r?.platform === 'mobile_app' && r.device_id === deviceId) { sample = eid; break; }
+    }
+    if (!sample) continue;
+    const deviceLabel = deviceLabelFor(deviceId);
+    out.set(bindingKey, {
+      count: 0,
+      classifiedCount: 0,
+      platform: 'mobile_app',
+      sampleEntityId: sample,
+      deviceLabel: deviceLabel || null,
+      unmanaged: true,
+    });
+  }
+  // Pass 3 — count every entity belonging to a surfaced mobile_app binding.
+  for (const eid of Object.keys(states)) {
+    const reEntry = reg[eid];
+    if (reEntry?.platform !== 'mobile_app' || !reEntry.device_id) continue;
+    const bindingKey = `mobile_app:${reEntry.device_id}`;
+    const hit = out.get(bindingKey);
+    if (hit) hit.count++;
+  }
+
   return Array.from(out.entries()).map(([bindingKey, info]) => ({ bindingKey, ...info }));
 }
 

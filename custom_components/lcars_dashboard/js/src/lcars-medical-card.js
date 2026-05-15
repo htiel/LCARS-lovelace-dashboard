@@ -445,9 +445,10 @@ class LcarsMedicalCard extends LitElement {
     // the standalone tiles for these kinds are skipped and rendered as breakdown
     // rows inside the WEIGHT tile. Frees ~7 grid slots for new HAE-derived kinds
     // (CALORIES, MOBILITY, AUDIO, BREATHING, sleep stages, activity rings).
+    // 5.12.0-beta.7 — raised slice from 16 to 20 to surface the new HAE kinds.
     const tiles = MEDICAL_VITAL_CLASSES
       .filter((vc) => vc.tile && !BODY_COMP_CHILD_KINDS.has(vc.kind))
-      .slice(0, 16); // 5.8.0-beta.1 — raised from 12 to fit new Oura tiles.
+      .slice(0, 20);
     return html`
       <section class="zone-c" aria-label="Vital detail tiles">
         ${tiles.map((vc) => {
@@ -587,9 +588,15 @@ class LcarsMedicalCard extends LitElement {
     const color = STATUS_COLOR[status] || STATUS_COLOR.OFFLINE;
     const subs = profileKey ? discoverReadinessSubscores(this._hass, profileKey) : [];
     const showSrc = canonical.label && canonical.label.toUpperCase() !== vc.label.toUpperCase();
+    // 5.12.0-beta.7 — only span 2 cols + use the large headline when contributing
+    // sub-lozenges are actually present. Without subs the tile collapses to a
+    // normal 1-col tile so it stops creating a giant empty rectangle in the grid
+    // (Captain visual review on beta.6).
+    const compositeClass = subs.length ? 'tile-composite' : '';
+    const valueClass = subs.length ? 'tile-value tile-value-large' : 'tile-value';
     return this._wrapTile(vc.label, canonical.eid, html`
       <div class="tile-label">${vc.label}</div>
-      <div class="tile-value tile-value-large" data-medical="phi"
+      <div class=${valueClass} data-medical="phi"
            aria-live="off"
            ?aria-hidden=${this._audioMuted}
            style=${`color:${color}`}>${formatVital('readiness', canonical.value)}</div>
@@ -603,7 +610,7 @@ class LcarsMedicalCard extends LitElement {
                     ?aria-hidden=${this._audioMuted}>${s.value}</span>
             </div>`)}
         </div>` : ''}
-    `, 'tile-composite');
+    `, compositeClass);
   }
 
   // 5.8.0-beta.1 — Enum vital tile (e.g. Oura resilience_level).
@@ -916,6 +923,15 @@ class LcarsMedicalCard extends LitElement {
         .tile-variant-value {
           color: var(--lcars-ice, #99ccff);
           font-variant-numeric: tabular-nums;
+        }
+        /* 5.12.0-beta.7 (Geordi) — body-comp breakdown rows render an inline unit
+           after the value (e.g. "65.65 KG"); subordinate it per LCARS label hierarchy
+           so it doesn't compete with the numeric value. */
+        .tile-variant-unit {
+          font-size: 0.55rem;
+          opacity: 0.75;
+          letter-spacing: 0.06em;
+          margin-left: 0.15rem;
         }
         .tile-offline {
           font-size: 1.4rem; font-weight: 700; line-height: 1;

@@ -23,6 +23,14 @@ export const MEDICAL_PLATFORMS = new Set([
 // entry). When a state-only entity matches a vital suffix pattern, we still admit it.
 const STATE_ONLY_BRIDGE_PLATFORMS = new Set(['apple_health', 'hae', 'health_auto_export']);
 
+// 5.12.0-beta.4 — entity-id domains used by state-only HAE/Apple Health bridges.
+// HAE (Health Auto Export) registers entities under its OWN domain `hae.*`
+// (e.g. `hae.leith_heart_rate_avg`) rather than `sensor.*`. The binding editor
+// sweeps every entity in these domains into the `hae:<prefix>` bucket so the
+// Captain can map ALL of an Apple Health user's data to a person, not just
+// the subset that happens to match a current classifyVital suffix pattern.
+const STATE_ONLY_BRIDGE_DOMAINS = new Set(['hae', 'apple_health']);
+
 // Vital kinds in display order. Anchor slot = where on the silhouette the value renders.
 // `tile` = whether it gets a Zone C detail tile.  `spark` = sparkline-eligible.
 // `composite` = renders a multi-sub-lozenge tile (Oura-style readiness breakdown).
@@ -743,7 +751,8 @@ export function listObservedBindings(hass) {
   const reg = hass.entities || {};
   const dev = hass.devices || {};
   const states = hass.states || {};
-  const out = new Map(); // bindingKey -> { count, classifiedCount, platform, sampleEntityId, deviceLabel?, unmanaged? }
+  const out = new Map(); // bindingKey -> { count, classifiedCount, platform, sampleEntityId, deviceLabel? }
+  const classifiedEids = new Set();
 
   const bump = (bindingKey, info, classified) => {
     let hit = out.get(bindingKey);
@@ -776,11 +785,12 @@ export function listObservedBindings(hass) {
     const reEntry = reg[eid];
     const cls = classifyVital(states[eid], reEntry);
     if (!cls) continue;
+    classifiedEids.add(eid);
     const objId = eid.split('.')[1] || '';
     let bindingKey;
     let platform;
     let deviceLabel = null;
-    if (!reEntry || STATE_ONLY_BRIDGE_PLATFORMS.has(reEntry?.platform)) {
+    if (!reEntry || STATE_ONLY_BRIDGE_PLATFORMS.has(reEntry?.platform) || STATE_ONLY_BRIDGE_DOMAINS.has(eid.split('.')[0])) {
       bindingKey = `hae:${objId.split('_')[0] || 'biobed'}`;
       platform = 'hae';
     } else if (reEntry.config_entry_id) {
@@ -798,7 +808,20 @@ export function listObservedBindings(hass) {
     bump(bindingKey, { platform, sampleEntityId: eid, deviceLabel }, true);
   }
 
-  // Pass 2 — surface every mobile_app device as a candidate binding even when
+  // Pass 2 — sweep every entity in a state-only bridge domain (hae.*, apple_health.*)
+  // under `hae:<prefix>`. Catches the 24 of 32 hae.leith_* entities whose names
+  // (active_energy, basal_energy_burned, sleep_analysis_*, walking_*, etc.) don't
+  // map to a current classifyVital suffix but still belong in the user's bucket.
+  for (const eid of Object.keys(states)) {
+    const domain = eid.split('.')[0];
+    if (!STATE_ONLY_BRIDGE_DOMAINS.has(domain)) continue;
+    if (classifiedEids.has(eid)) continue;
+    const objId = eid.split('.')[1] || '';
+    const prefix = objId.split('_')[0] || 'biobed';
+    bump(`hae:${prefix}`, { platform: 'hae', sampleEntityId: eid }, false);
+  }
+
+  // Pass 3 — surface every mobile_app device as a candidate binding even when
   // no entity passed classifyVital. Apple Health forwarding via the iOS
   // Companion App is opt-in; pre-mapping the device avoids a chicken-and-egg.
   const mobileDevicesSeen = new Set();
@@ -811,7 +834,7 @@ export function listObservedBindings(hass) {
   for (const deviceId of mobileDevicesSeen) {
     const bindingKey = `mobile_app:${deviceId}`;
     if (out.has(bindingKey)) continue; // already counted as a classified binding
-    // Pick a representative sensor for this device (any entity is fine).
+    // Pick a representative sensor for this device.
     let sample = null;
     for (const eid of Object.keys(states)) {
       const r = reg[eid];
@@ -825,10 +848,8 @@ export function listObservedBindings(hass) {
       platform: 'mobile_app',
       sampleEntityId: sample,
       deviceLabel: deviceLabel || null,
-      unmanaged: true,
     });
   }
-  // Pass 3 — count every entity belonging to a surfaced mobile_app binding.
   for (const eid of Object.keys(states)) {
     const reEntry = reg[eid];
     if (reEntry?.platform !== 'mobile_app' || !reEntry.device_id) continue;
@@ -837,7 +858,11 @@ export function listObservedBindings(hass) {
     if (hit) hit.count++;
   }
 
-  return Array.from(out.entries()).map(([bindingKey, info]) => ({ bindingKey, ...info }));
+  return Array.from(out.entries()).map(([bindingKey, info]) => ({
+    bindingKey,
+    ...info,
+    unmanaged: info.classifiedCount === 0,
+  }));
 }
 
 // Stable, deterministic 7-char file id from a profile key. No PII — the input itself is a

@@ -8,11 +8,19 @@
 //   - .paths      — lit-html template of the SVG <g> child paths (silhouette outline)
 //   - .anchorMap  — { slot: { x%, y%, label: 'left'|'right'|'top' } }
 //   - .anchors    — { slot: { value, status, label } }   (caller-supplied)
-//   - .viewBox    — defaults to "0 0 200 480"
+//   - .viewBox    — defaults to "0 0 200 480" — outer SVG canvas (with gutter for callouts)
+//   - .bodyBox    — defaults to viewBox — INNER coord system for anchor x/y %.
+//                   When wider than viewBox, the body sits centered inside a
+//                   gutter that hosts callouts; when equal to viewBox, the
+//                   silhouette is gutter-less (back-compat for Starship/Tactical/Network).
 //   - .thermal    — boolean overlay enable
 //   - .dataAttr   — #219: { name, value } data-* attribute pair applied to value text
 //                    nodes for the screenshot-obfuscator tool to find at capture time.
 //                    NOT used for runtime redaction — values render in cleartext.
+//
+// 5.11.0-beta.3 — Tactical Readout Tab callout style (Geordi spec): each anchor
+// emits a stadium-capped <path> tab + filled <circle> body terminator + orthogonal
+// L-leader <polyline>. Replaces the prior diagonal-line + naked-text layout.
 //
 // #219 (5.5.8) — runtime CSS-class redaction wiring removed. The dashboard always
 // renders real values; the localinfo/screenshot-obfuscator.js tool keys off the
@@ -42,6 +50,7 @@ class LcarsAnatomicalSilhouette extends LitElement {
       anchorMap: { type: Object },     // { slot: {x,y,label} }
       anchors: { type: Object },       // { slot: {value,status,label} }
       viewBox: { type: String },
+      bodyBox: { type: String },       // 5.11.0-beta.3 — inner coord system for anchors
       thermal: { type: Boolean },
       dataAttr: { type: Object },      // #219: { name, value } data-* for screenshot tool only
       ariaLabel: { type: String },
@@ -59,6 +68,7 @@ class LcarsAnatomicalSilhouette extends LitElement {
     this.anchorMap = {};
     this.anchors = {};
     this.viewBox = '0 0 200 480';
+    this.bodyBox = '';
     this.thermal = false;
     this.dataAttr = null;
     this.ariaLabel = '';
@@ -73,18 +83,30 @@ class LcarsAnatomicalSilhouette extends LitElement {
       })
       .map(([slot]) => this.anchorMap[slot]);
     if (!alerts.length) return '';
+    // 5.11.0-beta.3 — convert body-coord % to canvas-coord % so thermal blooms
+    // line up with the centered silhouette when a wider viewBox + inner bodyBox
+    // is in use (Geordi tactical-readout-tab gutter mode).
+    const [vbX, vbY, vbW, vbH] = this.viewBox.split(/\s+/).map(Number);
+    const [bbX, bbY, bbW, bbH] = (this.bodyBox || this.viewBox).split(/\s+/).map(Number);
+    const toCanvasX = (px) => (((px / 100) * bbW + bbX) - vbX) / vbW * 100;
+    const toCanvasY = (py) => (((py / 100) * bbH + bbY) - vbY) / vbH * 100;
     // #179 (5.8.0-beta.1) — thermal overlay token. The CSS variable
     // `--lcars-thermal-bloom` carries the literal rgba; the silhouette never
     // ships a hardcoded color. Default falls back to a tomato-adjacent value
     // matching --lcars-tomato (#ff5555 / #ff6666) at 45% alpha.
     const layers = alerts.map((p) =>
-      `radial-gradient(circle at ${p.x}% ${p.y}%, var(--lcars-thermal-bloom, rgba(255,85,85,0.45)) 0%, transparent 30%)`
+      `radial-gradient(circle at ${toCanvasX(p.x)}% ${toCanvasY(p.y)}%, var(--lcars-thermal-bloom, rgba(255,85,85,0.45)) 0%, transparent 30%)`
     ).join(', ');
     return html`<div class="thermal" style=${`background:${layers}`}></div>`;
   }
 
   render() {
     const [vbX, vbY, vbW, vbH] = this.viewBox.split(/\s+/).map(Number);
+    // 5.11.0-beta.3 — bodyBox decouples anchor coordinates from the outer SVG
+    // viewBox so the canvas can have a callout gutter without shifting body
+    // landmarks. When .bodyBox is unset, anchor % map directly against viewBox
+    // (back-compat for Starship/Tactical/Network silhouettes).
+    const [bbX, bbY, bbW, bbH] = (this.bodyBox || this.viewBox).split(/\s+/).map(Number);
     // #219 / #178 (5.8.0-beta.1): data-* passthrough is now fully generic.
     // The dataAttr.name determines which `data-*` attribute carries the value at
     // capture time; no consumer-specific branches. Allowed names are gated to
@@ -102,9 +124,19 @@ class LcarsAnatomicalSilhouette extends LitElement {
     // to ~0.4× on landscape silhouettes (vbH=200) where the old vbH/480 formula failed.
     const rawScale = Math.min(vbW / 480, vbH / 240);
     const fontScale = Math.max(0.75, Math.min(1.25, rawScale));
-    const labelFontSize = 12 * fontScale;
-    const valueFontSize = 16 * fontScale;
-    const inset = Math.max(vbW, vbH) * 0.015;
+    // 5.11.0-beta.3 — Tactical Readout Tab style (Geordi spec):
+    // single-line LABEL + VALUE inside a stadium-capped <path> tab,
+    // small filled circle anchor terminator, orthogonal-L leader.
+    const labelFontSize = 9 * fontScale;
+    const valueFontSize = 11 * fontScale;
+    const tabHeight = 16 * fontScale;
+    const tabPadX = 4 * fontScale;
+    const tabRadius = tabHeight / 2;
+    const dotRadius = 2.5 * fontScale;
+    const leaderStroke = 1.5 * fontScale;
+    const tabStroke = 1 * fontScale;
+    const sepDx = 4 * fontScale;
+    const canvasInset = 8 * fontScale;
 
     // Pass 1 — bucket active slots by edge. Iterate sorted anchorMap keys for
     // cross-engine deterministic ordering on ties (Data 5.4.5 review #4).
@@ -135,7 +167,7 @@ class LcarsAnatomicalSilhouette extends LitElement {
       });
     }
 
-    // Pass 3 — emit one callout group per slot.
+    // Pass 3 — emit one tactical-readout-tab callout group per slot.
     const callouts = [];
     for (const slot of slotKeys) {
       const dist = distributed[slot];
@@ -147,55 +179,112 @@ class LcarsAnatomicalSilhouette extends LitElement {
       const value = data?.value;
       const label = data?.label || '';
       const hasValue = value != null && value !== '—' && value !== '';
-      const anchorPx = (pos.x / 100) * vbW + vbX;
-      const anchorPy = (pos.y / 100) * vbH + vbY;
-      let leaderX, leaderY, textAnchor;
+      const displayValue = hasValue ? String(value) : '—';
+
+      // Anchor in BODY coords (decoupled from outer viewBox).
+      const anchorPx = (pos.x / 100) * bbW + bbX;
+      const anchorPy = (pos.y / 100) * bbH + bbY;
+
+      // Approximate single-line text width (Antonio is condensed; 0.52/0.55 em ratios
+      // are conservative overestimates so the tab frames the text without clipping).
+      const labelW = (label.length || 0) * labelFontSize * 0.52;
+      const valueW = (displayValue.length || 1) * valueFontSize * 0.55;
+      const textW = (label ? labelW + sepDx : 0) + valueW;
+      const tabWidth = Math.max(48 * fontScale, textW + tabPadX * 2);
+
+      let tabPath, leaderPoints, textAnchor, textX, slotY;
+
       if (edge === 'left') {
-        leaderX = vbX + inset;
-        leaderY = (dist.distCoord / 100) * vbH + vbY;
+        slotY = (dist.distCoord / 100) * bbH + bbY;
+        const tabX = vbX + canvasInset;
+        const tabRightX = tabX + tabWidth;
+        const tabY = slotY - tabHeight / 2;
+        const tabBotY = tabY + tabHeight;
+        // Stadium: flat LEFT (canvas edge), rounded RIGHT (faces body).
+        tabPath = `M ${tabX},${tabY} L ${tabRightX - tabRadius},${tabY}`
+          + ` A ${tabRadius},${tabRadius} 0 0 1 ${tabRightX - tabRadius},${tabBotY}`
+          + ` L ${tabX},${tabBotY} Z`;
+        // Orthogonal-L leader: anchor → (tabRightX, anchorPy) → (tabRightX, slotY).
+        leaderPoints = `${anchorPx},${anchorPy} ${tabRightX},${anchorPy} ${tabRightX},${slotY}`;
         textAnchor = 'start';
+        textX = tabX + tabPadX;
       } else if (edge === 'right') {
-        leaderX = vbX + vbW - inset;
-        leaderY = (dist.distCoord / 100) * vbH + vbY;
+        slotY = (dist.distCoord / 100) * bbH + bbY;
+        const tabRightX = vbX + vbW - canvasInset;
+        const tabX = tabRightX - tabWidth;
+        const tabY = slotY - tabHeight / 2;
+        const tabBotY = tabY + tabHeight;
+        // Stadium: rounded LEFT (faces body), flat RIGHT (canvas edge).
+        tabPath = `M ${tabX + tabRadius},${tabY} L ${tabRightX},${tabY}`
+          + ` L ${tabRightX},${tabBotY} L ${tabX + tabRadius},${tabBotY}`
+          + ` A ${tabRadius},${tabRadius} 0 0 1 ${tabX + tabRadius},${tabY} Z`;
+        leaderPoints = `${anchorPx},${anchorPy} ${tabX},${anchorPy} ${tabX},${slotY}`;
         textAnchor = 'end';
+        textX = tabRightX - tabPadX;
       } else if (edge === 'top') {
-        leaderX = (dist.distCoord / 100) * vbW + vbX;
-        leaderY = vbY + 16 * fontScale;
+        const slotX = (dist.distCoord / 100) * bbW + bbX;
+        const tabY = vbY + canvasInset / 2;
+        const tabBotY = tabY + tabHeight;
+        const tabX = slotX - tabWidth / 2;
+        const tabRightX = tabX + tabWidth;
+        // Full stadium (rounded both ends).
+        tabPath = `M ${tabX + tabRadius},${tabY} L ${tabRightX - tabRadius},${tabY}`
+          + ` A ${tabRadius},${tabRadius} 0 0 1 ${tabRightX - tabRadius},${tabBotY}`
+          + ` L ${tabX + tabRadius},${tabBotY}`
+          + ` A ${tabRadius},${tabRadius} 0 0 1 ${tabX + tabRadius},${tabY} Z`;
+        const kinkY = tabBotY + 4 * fontScale;
+        leaderPoints = `${anchorPx},${anchorPy} ${anchorPx},${kinkY} ${slotX},${kinkY} ${slotX},${tabBotY}`;
         textAnchor = 'middle';
+        textX = slotX;
+        slotY = tabY + tabHeight / 2;
       } else { // bottom
-        leaderX = (dist.distCoord / 100) * vbW + vbX;
-        leaderY = vbY + vbH - 4 * fontScale;
+        const slotX = (dist.distCoord / 100) * bbW + bbX;
+        const tabBotY = vbY + vbH - canvasInset / 2;
+        const tabY = tabBotY - tabHeight;
+        const tabX = slotX - tabWidth / 2;
+        const tabRightX = tabX + tabWidth;
+        tabPath = `M ${tabX + tabRadius},${tabY} L ${tabRightX - tabRadius},${tabY}`
+          + ` A ${tabRadius},${tabRadius} 0 0 1 ${tabRightX - tabRadius},${tabBotY}`
+          + ` L ${tabX + tabRadius},${tabBotY}`
+          + ` A ${tabRadius},${tabRadius} 0 0 1 ${tabX + tabRadius},${tabY} Z`;
+        const kinkY = tabY - 4 * fontScale;
+        leaderPoints = `${anchorPx},${anchorPy} ${anchorPx},${kinkY} ${slotX},${kinkY} ${slotX},${tabY}`;
         textAnchor = 'middle';
+        textX = slotX;
+        slotY = tabY + tabHeight / 2;
       }
-      // Stack label above value. For top/left/right the leader endpoint sits
-      // between the two lines; for bottom both lines sit above the endpoint so
-      // the value glyph doesn't run off the canvas.
-      const labelDy = (edge === 'bottom') ? -14 * fontScale : -2 * fontScale;
-      const valueDy = (edge === 'bottom') ? -2 * fontScale  : 11 * fontScale;
+
       const lineColor = hasValue ? (STATUS_COLOR[status] || STATUS_COLOR.NOMINAL) : 'var(--lcars-gray, #666688)';
-      const valColor = hasValue ? (STATUS_COLOR[status] || STATUS_COLOR.NOMINAL) : 'var(--lcars-gray, #666688)';
       const ariaLabel = `${label}, ${hasValue ? value : 'offline'}, ${String(status).toLowerCase()}`;
       callouts.push(svg`
         <g role="img" aria-label=${ariaLabel}>
-          <line aria-hidden="true"
-                x1=${anchorPx} y1=${anchorPy} x2=${leaderX} y2=${leaderY}
-                stroke=${lineColor} stroke-width=${0.6 * fontScale} stroke-opacity=${hasValue ? 0.9 : 0.3} />
-          <text aria-hidden="true"
-                x=${leaderX} y=${leaderY + labelDy} text-anchor=${textAnchor}
-                fill="var(--lcars-ice, #99ccff)"
-                font-size=${labelFontSize} font-family="Antonio, sans-serif"
-                letter-spacing="0.5" style="text-transform:uppercase">${label}</text>
-          <text aria-hidden="true"
-                x=${leaderX} y=${leaderY + valueDy} text-anchor=${textAnchor}
-                data-medical=${safeAttrName === 'data-medical' ? attrValue : null}
-                data-starship=${safeAttrName === 'data-starship' ? attrValue : null}
-                data-network=${safeAttrName === 'data-network' ? attrValue : null}
-                data-tactical=${safeAttrName === 'data-tactical' ? attrValue : null}
-                fill=${valColor}
-                font-size=${valueFontSize} font-family="Antonio, sans-serif"
-                font-weight="700" letter-spacing="0.3"
-                paint-order="stroke fill" stroke="#000" stroke-width=${1.5 * fontScale} stroke-opacity="0.85"
-                >${hasValue ? value : '—'}</text>
+          <polyline aria-hidden="true" fill="none" points=${leaderPoints}
+                    stroke=${lineColor} stroke-width=${leaderStroke}
+                    stroke-opacity=${hasValue ? 0.9 : 0.35}
+                    stroke-linecap="round" stroke-linejoin="round" />
+          <circle aria-hidden="true" cx=${anchorPx} cy=${anchorPy} r=${dotRadius}
+                  fill=${lineColor} fill-opacity=${hasValue ? 1 : 0.4} />
+          <path aria-hidden="true" d=${tabPath}
+                fill=${lineColor} fill-opacity=${hasValue ? 0.15 : 0.08}
+                stroke=${lineColor} stroke-width=${tabStroke}
+                stroke-opacity=${hasValue ? 0.9 : 0.4} />
+          <text x=${textX} y=${slotY} text-anchor=${textAnchor}
+                dominant-baseline="central"
+                font-family="Antonio, sans-serif"
+                style="text-transform:uppercase">
+            <tspan fill="var(--lcars-ice, #99ccff)"
+                   font-size=${labelFontSize}
+                   letter-spacing="0.5">${label}</tspan>
+            <tspan fill=${lineColor}
+                   font-size=${valueFontSize}
+                   font-weight="700"
+                   letter-spacing="0.3"
+                   dx=${sepDx}
+                   data-medical=${safeAttrName === 'data-medical' ? attrValue : null}
+                   data-starship=${safeAttrName === 'data-starship' ? attrValue : null}
+                   data-network=${safeAttrName === 'data-network' ? attrValue : null}
+                   data-tactical=${safeAttrName === 'data-tactical' ? attrValue : null}>${displayValue}</tspan>
+          </text>
         </g>
       `);
     }

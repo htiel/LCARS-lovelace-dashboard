@@ -31,7 +31,9 @@ export const MEDICAL_VITAL_CLASSES = [
   { kind: 'heart_rate',         anchor: 'heart',      label: 'HR',          unit: 'bpm',  spark: true,  tile: true },
   { kind: 'spo2',               anchor: 'right_arm',  label: 'SpO2',        unit: '%',    spark: true,  tile: false },
   { kind: 'respiration_rate',   anchor: 'throat',     label: 'RESP',        unit: 'brpm', spark: false, tile: false },
-  { kind: 'body_temp_deviation',anchor: 'forehead',   label: 'BODY TEMP',   unit: '°C',   spark: true,  tile: true },
+  // 5.11.0-beta.3 — TEMP relocated from 'forehead' (top edge, clipped the head
+  // ellipse) to 'left_chest' (left edge above BP) per Captain visual review.
+  { kind: 'body_temp_deviation',anchor: 'left_chest', label: 'TEMP',        unit: '°C',   spark: true,  tile: true },
   { kind: 'weight',             anchor: 'abdomen',    label: 'WEIGHT',      unit: 'kg',   spark: true,  tile: true },
   { kind: 'body_fat_pct',       anchor: null,         label: 'BODY FAT',    unit: '%',    spark: false, tile: true },
   { kind: 'fat_mass',           anchor: null,         label: 'FAT MASS',    unit: 'kg',   spark: true,  tile: true },
@@ -62,12 +64,15 @@ export const MEDICAL_VITAL_CLASSES = [
   { kind: 'last_workout',       anchor: null,         label: 'LAST WORKOUT',unit: '',     spark: false, tile: true },
 ];
 
-// Anchor map (slot → {x,y} as % of 200x480 silhouette viewBox).
+// Anchor map (slot → {x,y} as % of 200x480 silhouette bodyBox).
 // Left/right are VIEWER-perspective (matches LCARS reference imagery, not anatomical).
 export const ANCHOR_MAP = {
   head_top:   { x: 50, y:  4, label: 'top' },
   forehead:   { x: 50, y: 10, label: 'top' },
   throat:     { x: 50, y: 17, label: 'right' },
+  // 5.11.0-beta.3 — left_chest hosts BODY TEMP. Sits above left_arm so Pass 2
+  // distribution (left edge) renders TEMP just above BP without overlap.
+  left_chest: { x: 38, y: 36, label: 'left' },
   heart:      { x: 56, y: 33, label: 'right' },
   left_lung:  { x: 38, y: 30, label: 'left' },
   right_lung: { x: 62, y: 30, label: 'right' },

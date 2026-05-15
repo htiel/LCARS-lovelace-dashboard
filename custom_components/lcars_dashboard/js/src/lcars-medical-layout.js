@@ -17,6 +17,7 @@ import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsEventBus } from './lcars-helpers.js';
 import { lcarsAudio } from './lcars-audio.js';
 import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
+import './lcars-medical-binding-editor.js';
 import lcarsPkg from '../package.json';
 
 class LcarsMedicalLayout extends LitElement {
@@ -66,6 +67,17 @@ class LcarsMedicalLayout extends LitElement {
     dialog.open();
   }
 
+  _openBindingEditor() {
+    if (!this._hass?.user?.is_admin) return;
+    let dialog = this.shadowRoot.querySelector('lcars-medical-binding-editor');
+    if (!dialog) {
+      dialog = document.createElement('lcars-medical-binding-editor');
+      this.shadowRoot.appendChild(dialog);
+    }
+    dialog.hass = this._hass;
+    dialog.open();
+  }
+
   _toggleEditMode() {
     this._editMode = !this._editMode;
     lcarsEventBus.dispatchEvent(new CustomEvent('lcars-med-edit', { detail: { enabled: this._editMode } }));
@@ -89,6 +101,10 @@ class LcarsMedicalLayout extends LitElement {
               <button class="mute-btn" aria-label="Reorder sidebar dashboards"
                       @click=${() => this._openSidebarReorder()}>
                 <ha-icon .icon=${'mdi:sort-variant'}></ha-icon>
+              </button>
+              <button class="mute-btn" aria-label="Map medical profiles to Home Assistant users"
+                      @click=${() => this._openBindingEditor()}>
+                <ha-icon .icon=${'mdi:account-multiple-outline'}></ha-icon>
               </button>
               <button class="mute-btn" aria-pressed=${this._editMode}
                       aria-label=${this._editMode ? 'Exit configuration mode' : 'Enter configuration mode'}

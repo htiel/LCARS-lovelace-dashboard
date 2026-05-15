@@ -443,56 +443,207 @@ export function classifyVital(state, entityRegistryEntry) {
   return null;
 }
 
-// Discover unique medical profiles by walking hass.states and classifying every entity
-// the resolver recognizes as medical. Buckets entities into profiles using the most
-// specific signal available:
-//   1. HAE / Apple Health bridge entities — leading object_id segment (Captain confirmed:
-//      `leith` is the per-user prefix configured in the Health Auto Export iOS app and
-//      is authoritative for person identity; future household members would pick their
-//      own prefix). Used as the profile key.
-//   2. Registry entries with a device_id or config_entry_id — grouped under that key.
+// 5.12.0-beta.1 — Medical profile binding store accessor.
 //
-// 5.11.0-beta.1 (S0-1): no persistent binding yet — to keep the Captain's single-user
-// dashboard rendering as ONE card (instead of shattering into one card per integration
-// account), all non-HAE buckets are merged into the primary HAE bucket. When the binding
-// editor (Phase B) lands, this collapse is replaced with per-profile bucketing driven
-// by `medical_profiles.yaml`. The broken `oura_ring_(.+?)_[a-z]/i` regex is gone.
+// Fetches the persisted Captain-curated mapping (lcars-dashboard/configs/medical_profiles.yaml)
+// once per hass.connection and caches the result on a WeakMap. Listens to
+// `lcars_dashboard_medical_profiles_updated` bus events to invalidate so other
+// connected sessions pick up admin edits without a refresh.
+//
+// Async-by-nature, but the resolver below is synchronous — discoverProfiles()
+// reads the cached map. First call returns null (no mapping yet), and the
+// resolver falls back to the heuristic. Once the WS round-trip completes the
+// renderer re-runs (lit reactivity on the same hass object) with the mapping
+// available.
+const _profileMapCache = new WeakMap(); // key: hass.connection, value: { mapping, byBinding, ready, fetching, listenerOff }
+
+function _kickProfileMapFetch(hass) {
+  const conn = hass?.connection;
+  if (!conn) return null;
+  let entry = _profileMapCache.get(conn);
+  if (entry) return entry.mapping;
+  entry = { mapping: null, byBinding: new Map(), ready: false, fetching: true, listenerOff: null };
+  _profileMapCache.set(conn, entry);
+
+  const apply = (raw) => {
+    const mapping = raw && typeof raw === 'object' ? raw : null;
+    entry.mapping = mapping;
+    entry.byBinding = new Map();
+    if (mapping && Array.isArray(mapping.profiles)) {
+      for (const p of mapping.profiles) {
+        if (!p || typeof p !== 'object') continue;
+        const pid = typeof p.id === 'string' ? p.id : null;
+        if (!pid) continue;
+        const bindings = Array.isArray(p.bindings) ? p.bindings : [];
+        for (const b of bindings) {
+          if (typeof b === 'string') entry.byBinding.set(b, pid);
+        }
+      }
+    }
+    entry.ready = true;
+    // Bust the discoverProfiles cache so the next render rebuilds with the new mapping.
+    _discoverProfilesCache = new WeakMap();
+  };
+
+  conn.sendMessagePromise({ type: 'lcars_dashboard/medical_profiles/get' })
+    .then(apply)
+    .catch(() => apply(null))
+    .finally(() => { entry.fetching = false; });
+
+  // Subscribe to update events for live invalidation.
+  try {
+    const sub = conn.subscribeEvents(
+      () => {
+        entry.ready = false;
+        conn.sendMessagePromise({ type: 'lcars_dashboard/medical_profiles/get' })
+          .then(apply)
+          .catch(() => apply(null));
+      },
+      'lcars_dashboard_medical_profiles_updated',
+    );
+    if (sub && typeof sub.then === 'function') {
+      sub.then((off) => { entry.listenerOff = off; }).catch(() => {});
+    }
+  } catch (_) { /* subscribeEvents unavailable in some test harnesses */ }
+
+  return null;
+}
+
+// Public accessor for the cached mapping. Returns the canonical
+// { version, respect_user_scoping, profiles: [...] } object once loaded; null
+// before the first WS round-trip completes.
+export function getMedicalProfileMap(hass) {
+  if (!hass) return null;
+  const conn = hass.connection;
+  if (!conn) return null;
+  if (!_profileMapCache.has(conn)) _kickProfileMapFetch(hass);
+  return _profileMapCache.get(conn)?.mapping || null;
+}
+
+// Returns the binding-key -> person.* map derived from the persisted mapping,
+// or an empty Map until the WS round-trip completes.
+export function getMedicalBindingIndex(hass) {
+  if (!hass) return new Map();
+  const conn = hass.connection;
+  if (!conn) return new Map();
+  if (!_profileMapCache.has(conn)) _kickProfileMapFetch(hass);
+  return _profileMapCache.get(conn)?.byBinding || new Map();
+}
+
+// Looks up the friendly label for a profile id, falling back to the HA
+// person friendly_name and finally to the raw id.
+export function profileLabelFor(hass, profileId) {
+  if (!profileId) return '';
+  const mapping = getMedicalProfileMap(hass);
+  if (mapping?.profiles) {
+    const hit = mapping.profiles.find((p) => p && p.id === profileId);
+    if (hit?.label) return hit.label;
+  }
+  if (profileId.startsWith('person.') && hass?.states?.[profileId]) {
+    const fn = hass.states[profileId].attributes?.friendly_name;
+    if (fn) return fn;
+  }
+  return profileId;
+}
+
+// Discover unique medical profiles by walking hass.states and classifying every entity
+// the resolver recognizes as medical.
+//
+// Per-entity binding key derivation (used to look up a Captain-curated mapping):
+//   1. HAE / Apple Health bridge entities — `hae:<prefix>` (object_id leading segment).
+//   2. Registry entries with a config_entry_id — `<platform>:<config_entry_id>`.
+//   3. Registry entries with only a device_id — `<platform>:<device_id>`.
+//   4. Other registry entries — `<platform>:_` as a catch-all.
+//
+// Bucketing rules (5.12.0-beta.1):
+//   - If a Captain-curated mapping exists (medical_profiles.yaml via WS) and the
+//     entity's binding key is mapped to a `person.*`, the entity goes in that
+//     person's bucket. Per-entity overrides (`include` / `exclude`) take priority.
+//   - Otherwise the entity goes in an `unmapped:<bindingKey>` bucket so it still
+//     surfaces and the Captain can see what needs mapping.
+//   - When NO mapping is configured at all, behavior is identical to v5.11.0:
+//     HAE-prefix collapse with non-HAE buckets merged into the primary.
 //
 // Cache key includes (hass.entities, hass.states) reference identity — HA mutates these
 // by replacement, not in-place, so reference equality is a sound invalidation signal.
-const _discoverProfilesCache = new WeakMap();
+let _discoverProfilesCache = new WeakMap();
 export function discoverProfiles(hass) {
   if (!hass) return [];
   const reg = hass.entities || {};
   const states = hass.states || {};
+  // Kick off (or refresh) the mapping fetch as a side effect of the first call.
+  _kickProfileMapFetch(hass);
+  const bindingIndex = getMedicalBindingIndex(hass);
+  const mappingActive = bindingIndex.size > 0;
+
+  // Per-entity overrides: build (eid -> profileId) and (eid -> 'EXCLUDED') maps.
+  const entityIncludes = new Map();
+  const entityExcludes = new Set();
+  if (mappingActive) {
+    const mapping = getMedicalProfileMap(hass);
+    if (mapping?.profiles) {
+      for (const p of mapping.profiles) {
+        const overrides = p?.entity_overrides || {};
+        for (const eid of overrides.include || []) entityIncludes.set(eid, p.id);
+        for (const eid of overrides.exclude || []) entityExcludes.add(eid);
+      }
+    }
+  }
+
   let bucket = _discoverProfilesCache.get(reg);
-  if (bucket && bucket.states === states) return bucket.result;
+  if (bucket && bucket.states === states && bucket.bindingIndex === bindingIndex) {
+    return bucket.result;
+  }
 
   // Provisional bucketing. `kind` records WHICH signal produced the key so the
   // post-walk collapse logic can prefer HAE-prefix profiles (authoritative per Captain).
   const provisional = new Map();
   const haePrefixKeys = new Set();
+  // 5.12.0-beta.1 — `bindingKeysSeen` records every binding key encountered on this
+  // walk so the editor UI (Phase 2) can offer all of them as mapping candidates.
+  const bindingKeysSeen = new Set();
 
   for (const eid of Object.keys(states)) {
+    if (entityExcludes.has(eid)) continue;
+
     const reEntry = reg[eid];
     const cls = classifyVital(states[eid], reEntry);
     if (!cls) continue;
 
     const objId = eid.split('.')[1] || '';
     let profileKey;
+    let bindingKey;
     let isHae = false;
 
     if (!reEntry || STATE_ONLY_BRIDGE_PLATFORMS.has(reEntry.platform)) {
       // State-only HAE / Apple Health bridge — leading prefix is the user identifier.
       profileKey = objId.split('_')[0] || 'biobed';
+      bindingKey = `hae:${profileKey}`;
       isHae = true;
       haePrefixKeys.add(profileKey);
-    } else if (reEntry.device_id) {
-      profileKey = `device:${reEntry.device_id}`;
     } else if (reEntry.config_entry_id) {
       profileKey = `entry:${reEntry.config_entry_id}`;
+      bindingKey = `${reEntry.platform || 'unknown'}:${reEntry.config_entry_id}`;
+    } else if (reEntry.device_id) {
+      profileKey = `device:${reEntry.device_id}`;
+      bindingKey = `${reEntry.platform || 'unknown'}:${reEntry.device_id}`;
     } else {
       profileKey = objId.split('_')[0] || 'biobed';
+      bindingKey = `${reEntry.platform || 'unknown'}:_`;
+    }
+    bindingKeysSeen.add(bindingKey);
+
+    // 5.12.0-beta.1 — Captain mapping takes priority. Per-entity include override
+    // beats binding-level mapping; both override the heuristic profileKey.
+    let mappedTo = entityIncludes.get(eid) || bindingIndex.get(bindingKey) || null;
+    if (mappedTo) {
+      profileKey = mappedTo;
+      isHae = false;
+    } else if (mappingActive) {
+      // Mapping is configured but doesn't cover this binding — surface it under a
+      // dedicated unmapped bucket so the Captain can see what needs assignment.
+      profileKey = `unmapped:${bindingKey}`;
+      isHae = false;
     }
 
     if (!provisional.has(profileKey)) {
@@ -500,7 +651,10 @@ export function discoverProfiles(hass) {
         profileId: profileKey,
         entities: [],
         platforms: new Set(),
+        bindings: new Set(),
         isHae,
+        isMapped: !!mappedTo,
+        isUnmapped: mappingActive && !mappedTo,
       });
     }
     const p = provisional.get(profileKey);
@@ -509,46 +663,106 @@ export function discoverProfiles(hass) {
       state: states[eid],
       cls,
       platform: reEntry?.platform || (isHae ? 'hae' : ''),
+      bindingKey,
     });
+    p.bindings.add(bindingKey);
     if (reEntry?.platform) p.platforms.add(reEntry.platform);
     if (isHae && !reEntry?.platform) p.platforms.add('hae');
   }
 
-  // Collapse: pick the primary HAE prefix bucket (largest if multiple); merge all
-  // non-HAE buckets into it. Other HAE prefix buckets remain as separate profiles
-  // (multi-person households where each person has their own HAE prefix).
-  const allBuckets = Array.from(provisional.values());
-  const haeBuckets = allBuckets.filter((b) => b.isHae);
-  const nonHaeBuckets = allBuckets.filter((b) => !b.isHae);
-
   let result;
-  if (haeBuckets.length > 0) {
-    haeBuckets.sort((a, b) => b.entities.length - a.entities.length);
-    const primary = haeBuckets[0];
-    for (const nh of nonHaeBuckets) {
-      for (const e of nh.entities) primary.entities.push(e);
-      for (const p of nh.platforms) primary.platforms.add(p);
+  if (mappingActive) {
+    // Captain-curated bucketing: take provisional buckets as-is. Order: mapped
+    // person.* profiles first (in mapping definition order), then unmapped buckets.
+    const mapping = getMedicalProfileMap(hass);
+    const personOrder = (mapping?.profiles || []).map((p) => p.id);
+    const ordered = [];
+    for (const pid of personOrder) {
+      const b = provisional.get(pid);
+      if (b) ordered.push(b);
     }
-    result = haeBuckets;
-  } else if (nonHaeBuckets.length > 0) {
-    // No HAE bridge present — collapse all integration buckets into one synthetic profile.
-    const merged = {
-      profileId: 'biobed',
-      entities: [],
-      platforms: new Set(),
-      isHae: false,
-    };
-    for (const nh of nonHaeBuckets) {
-      for (const e of nh.entities) merged.entities.push(e);
-      for (const p of nh.platforms) merged.platforms.add(p);
+    for (const [key, b] of provisional) {
+      if (key.startsWith('unmapped:')) ordered.push(b);
     }
-    result = [merged];
+    result = ordered;
   } else {
-    result = [];
+    // Legacy collapse (unchanged from v5.11.0): pick the primary HAE prefix bucket
+    // (largest if multiple); merge all non-HAE buckets into it. Other HAE prefix
+    // buckets remain as separate profiles (multi-person HAE households).
+    const allBuckets = Array.from(provisional.values());
+    const haeBuckets = allBuckets.filter((b) => b.isHae);
+    const nonHaeBuckets = allBuckets.filter((b) => !b.isHae);
+
+    if (haeBuckets.length > 0) {
+      haeBuckets.sort((a, b) => b.entities.length - a.entities.length);
+      const primary = haeBuckets[0];
+      for (const nh of nonHaeBuckets) {
+        for (const e of nh.entities) primary.entities.push(e);
+        for (const p of nh.platforms) primary.platforms.add(p);
+        for (const bk of nh.bindings) primary.bindings.add(bk);
+      }
+      result = haeBuckets;
+    } else if (nonHaeBuckets.length > 0) {
+      // No HAE bridge present — collapse all integration buckets into one synthetic profile.
+      const merged = {
+        profileId: 'biobed',
+        entities: [],
+        platforms: new Set(),
+        bindings: new Set(),
+        isHae: false,
+      };
+      for (const nh of nonHaeBuckets) {
+        for (const e of nh.entities) merged.entities.push(e);
+        for (const p of nh.platforms) merged.platforms.add(p);
+        for (const bk of nh.bindings) merged.bindings.add(bk);
+      }
+      result = [merged];
+    } else {
+      result = [];
+    }
   }
 
-  _discoverProfilesCache.set(reg, { states, result });
+  _discoverProfilesCache.set(reg, { states, bindingIndex, result });
   return result;
+}
+
+// 5.12.0-beta.1 — return the union of binding keys observed in the most recent
+// discoverProfiles() walk. Used by the Phase 2 editor UI to populate the
+// "available bindings to map" picker. Always re-walks (no cache) because the
+// caller is the admin editing surface, not a hot render path.
+export function listObservedBindings(hass) {
+  if (!hass) return [];
+  const reg = hass.entities || {};
+  const states = hass.states || {};
+  const out = new Map(); // bindingKey -> { count, samplePlatform, sampleEntityId }
+  for (const eid of Object.keys(states)) {
+    const reEntry = reg[eid];
+    const cls = classifyVital(states[eid], reEntry);
+    if (!cls) continue;
+    const objId = eid.split('.')[1] || '';
+    let bindingKey;
+    let platform;
+    if (!reEntry || STATE_ONLY_BRIDGE_PLATFORMS.has(reEntry?.platform)) {
+      bindingKey = `hae:${objId.split('_')[0] || 'biobed'}`;
+      platform = 'hae';
+    } else if (reEntry.config_entry_id) {
+      platform = reEntry.platform || 'unknown';
+      bindingKey = `${platform}:${reEntry.config_entry_id}`;
+    } else if (reEntry.device_id) {
+      platform = reEntry.platform || 'unknown';
+      bindingKey = `${platform}:${reEntry.device_id}`;
+    } else {
+      platform = reEntry.platform || 'unknown';
+      bindingKey = `${platform}:_`;
+    }
+    const hit = out.get(bindingKey);
+    if (hit) {
+      hit.count++;
+    } else {
+      out.set(bindingKey, { count: 1, platform, sampleEntityId: eid });
+    }
+  }
+  return Array.from(out.entries()).map(([bindingKey, info]) => ({ bindingKey, ...info }));
 }
 
 // Stable, deterministic 7-char file id from a profile key. No PII — the input itself is a

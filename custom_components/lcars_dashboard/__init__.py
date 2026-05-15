@@ -10,6 +10,7 @@ from .load_dashboard import load_dashboards, unload_dashboards
 from .const import DOMAIN, VERSION, CONF_DASHBOARDS, CONF_DASHBOARD_ORDER, DASHBOARD_REGISTRY, DEFAULT_DASHBOARDS
 from .process_yaml import process_yaml, reload_configuration
 from .notifications import notifications
+from .medical_profiles import register_medical_profiles
 from datetime import datetime
 
 import voluptuous as vol
@@ -214,7 +215,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         "homepage_header": OrderedDict(),
     }
 
-    _LOGGER.debug("Registering %d websocket commands", 37)
+    _LOGGER.debug("Registering %d websocket commands", 39)
     websocket_api.async_register_command(hass, websocket_get_configuration)
     websocket_api.async_register_command(hass, websocket_get_blueprints)
 
@@ -262,11 +263,15 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     websocket_api.async_register_command(hass, ws_handle_sidebar_order_get)
     websocket_api.async_register_command(hass, ws_handle_sidebar_order_set)
 
+    # v5.12.0-beta.1 — Medical Bay multi-user binding store (spec §4.5).
+    # Adds 2 more WS commands; total goes from 37 to 39.
+    register_medical_profiles(hass)
+
     await load_plugins(hass, DOMAIN)
 
     notifications(hass, DOMAIN)
 
-    _LOGGER.info("LCARS Dashboard v%s setup complete — %d WS commands registered", VERSION, 37)
+    _LOGGER.info("LCARS Dashboard v%s setup complete — %d WS commands registered", VERSION, 39)
     
     return True
 

@@ -200,10 +200,17 @@ class LcarsAnatomicalSilhouette extends LitElement {
       const anchorPx = (pos.x / 100) * bbW + bbX;
       const anchorPy = (pos.y / 100) * bbH + bbY;
 
-      // Approximate single-line text width (Antonio is condensed; 0.52/0.55 em ratios
-      // are conservative overestimates so the tab frames the text without clipping).
-      const labelW = (label.length || 0) * labelFontSize * 0.52;
-      const valueW = (displayValue.length || 1) * valueFontSize * 0.55;
+      // Approximate single-line text width. 5.11.0-beta.6: bumped per-char
+      // ratios (Antonio uppercase W/M/H/E run wider than 0.52em; bold digits
+      // 8/0/6 run wider than 0.55em) and added an explicit letter-spacing
+      // contribution. Previous estimate underflowed for "WEIGHT 82.1" by ~6
+      // viewBox units, causing the trailing "1" to escape the tab on the right.
+      const labelLen = label.length || 0;
+      const valueLen = displayValue.length || 1;
+      const labelLetterSpacing = 0.5;
+      const valueLetterSpacing = 0.3;
+      const labelW = labelLen * labelFontSize * 0.62 + Math.max(0, labelLen - 1) * labelLetterSpacing;
+      const valueW = valueLen * valueFontSize * 0.62 + Math.max(0, valueLen - 1) * valueLetterSpacing;
       const textW = (label ? labelW + sepDx : 0) + valueW;
       const tabWidth = Math.max(48 * fontScale, textW + tabPadX * 2);
 

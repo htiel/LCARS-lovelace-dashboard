@@ -78,7 +78,9 @@ export const ANCHOR_MAP = {
   right_lung: { x: 62, y: 30, label: 'right' },
   left_arm:   { x: 18, y: 42, label: 'left' },
   right_arm:  { x: 82, y: 42, label: 'right' },
-  abdomen:    { x: 50, y: 52, label: 'right' },
+  // 5.11.0-beta.4 — abdomen moved from y=52 (crotch level) to y=38 (navel)
+  // per Captain: no callout dots on sensitive body areas.
+  abdomen:    { x: 50, y: 38, label: 'right' },
   left_leg:   { x: 41, y: 75, label: 'left' },
   right_leg:  { x: 59, y: 75, label: 'right' },
   left_foot:  { x: 39, y: 96, label: 'left' },

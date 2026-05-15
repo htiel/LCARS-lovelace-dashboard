@@ -137,6 +137,12 @@ class LcarsAnatomicalSilhouette extends LitElement {
     const tabStroke = 1 * fontScale;
     const sepDx = 4 * fontScale;
     const canvasInset = 8 * fontScale;
+    // 5.11.0-beta.4 — tab clearance OUTSIDE the body coord box. Pinning the
+    // flat (body-facing) side at a fixed distance from the body silhouette
+    // means tab borders never grow inward toward the body regardless of label
+    // length — tab growth always extends INTO the gutter (rounded end at canvas
+    // edge, flat end facing body).
+    const bodyClearance = 4;
 
     // Pass 1 — bucket active slots by edge. Iterate sorted anchorMap keys for
     // cross-engine deterministic ordering on ties (Data 5.4.5 review #4).
@@ -196,31 +202,33 @@ class LcarsAnatomicalSilhouette extends LitElement {
 
       if (edge === 'left') {
         slotY = (dist.distCoord / 100) * bbH + bbY;
-        const tabX = vbX + canvasInset;
-        const tabRightX = tabX + tabWidth;
-        const tabY = slotY - tabHeight / 2;
-        const tabBotY = tabY + tabHeight;
-        // Stadium: flat LEFT (canvas edge), rounded RIGHT (faces body).
-        tabPath = `M ${tabX},${tabY} L ${tabRightX - tabRadius},${tabY}`
-          + ` A ${tabRadius},${tabRadius} 0 0 1 ${tabRightX - tabRadius},${tabBotY}`
-          + ` L ${tabX},${tabBotY} Z`;
-        // Orthogonal-L leader: anchor → (tabRightX, anchorPy) → (tabRightX, slotY).
-        leaderPoints = `${anchorPx},${anchorPy} ${tabRightX},${anchorPy} ${tabRightX},${slotY}`;
-        textAnchor = 'start';
-        textX = tabX + tabPadX;
-      } else if (edge === 'right') {
-        slotY = (dist.distCoord / 100) * bbH + bbY;
-        const tabRightX = vbX + vbW - canvasInset;
+        // Tab pinned at body-left edge with bodyClearance gap, growing LEFT into gutter.
+        const tabRightX = bbX - bodyClearance;
         const tabX = tabRightX - tabWidth;
         const tabY = slotY - tabHeight / 2;
         const tabBotY = tabY + tabHeight;
-        // Stadium: rounded LEFT (faces body), flat RIGHT (canvas edge).
+        // Stadium: rounded LEFT (canvas edge), flat RIGHT (faces body).
         tabPath = `M ${tabX + tabRadius},${tabY} L ${tabRightX},${tabY}`
           + ` L ${tabRightX},${tabBotY} L ${tabX + tabRadius},${tabBotY}`
           + ` A ${tabRadius},${tabRadius} 0 0 1 ${tabX + tabRadius},${tabY} Z`;
-        leaderPoints = `${anchorPx},${anchorPy} ${tabX},${anchorPy} ${tabX},${slotY}`;
+        // Orthogonal-L leader: anchor → (tabRightX, anchorPy) → (tabRightX, slotY).
+        leaderPoints = `${anchorPx},${anchorPy} ${tabRightX},${anchorPy} ${tabRightX},${slotY}`;
         textAnchor = 'end';
         textX = tabRightX - tabPadX;
+      } else if (edge === 'right') {
+        slotY = (dist.distCoord / 100) * bbH + bbY;
+        // Tab pinned at body-right edge with bodyClearance gap, growing RIGHT into gutter.
+        const tabX = (bbX + bbW) + bodyClearance;
+        const tabRightX = tabX + tabWidth;
+        const tabY = slotY - tabHeight / 2;
+        const tabBotY = tabY + tabHeight;
+        // Stadium: flat LEFT (faces body), rounded RIGHT (canvas edge).
+        tabPath = `M ${tabX},${tabY} L ${tabRightX - tabRadius},${tabY}`
+          + ` A ${tabRadius},${tabRadius} 0 0 1 ${tabRightX - tabRadius},${tabBotY}`
+          + ` L ${tabX},${tabBotY} Z`;
+        leaderPoints = `${anchorPx},${anchorPy} ${tabX},${anchorPy} ${tabX},${slotY}`;
+        textAnchor = 'start';
+        textX = tabX + tabPadX;
       } else if (edge === 'top') {
         const slotX = (dist.distCoord / 100) * bbW + bbX;
         const tabY = vbY + canvasInset / 2;

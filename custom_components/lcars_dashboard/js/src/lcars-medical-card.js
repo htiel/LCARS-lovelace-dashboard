@@ -14,6 +14,7 @@
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsAudio } from './lcars-audio.js';
+import { showMoreInfo } from './lcars-helpers.js';
 import './lcars-anatomical-silhouette.js';
 import { MEDICAL_SILHOUETTE_PATHS } from './lcars-medical-silhouette-paths.js';
 import {
@@ -163,6 +164,39 @@ class LcarsMedicalCard extends LitElement {
     this._thermal = !this._thermal;
     lcarsAudio.play('navAcknowledge');
     this.requestUpdate();
+  }
+
+  // 5.11.0-beta.1 (Captain explicit ask): tiles backed by a real entity open the
+  // standard HA more-info dialog when activated. Audio cue on activation matches
+  // the rest of the dashboard's interaction grammar; PHI is never logged.
+  _openMoreInfo(entityId) {
+    if (!entityId) return;
+    lcarsAudio.play('navAcknowledge');
+    showMoreInfo(entityId);
+  }
+
+  _tileKeydown(ev, entityId) {
+    if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'Spacebar') {
+      ev.preventDefault();
+      this._openMoreInfo(entityId);
+    }
+  }
+
+  // Wraps a tile body in either a clickable shell (when an entity_id is bound)
+  // or a plain shell. Two literal templates avoid lit-html 1.x conditional-attribute
+  // pitfalls (no `?tabindex` — that prefix is reserved for HTML boolean attributes).
+  _wrapTile(label, entityId, body, extraClass = '') {
+    if (entityId) {
+      const aria = `${label} — open details`;
+      return html`
+        <div class="tile tile-clickable ${extraClass}"
+             tabindex="0" role="button" aria-label=${aria}
+             @click=${() => this._openMoreInfo(entityId)}
+             @keydown=${(ev) => this._tileKeydown(ev, entityId)}>
+          ${body}
+        </div>`;
+    }
+    return html`<div class="tile ${extraClass}">${body}</div>`;
   }
 
   // Reduce per-profile entity list into a vital-kind keyed dictionary.
@@ -404,7 +438,6 @@ class LcarsMedicalCard extends LitElement {
           const variants = v && v.variants && v.variants.length ? v.variants : null;
           // 5.8.0-beta.1 — enum-typed value (e.g. stress_resilience as Oura
           // resilience_level "Strong"/"Solid"/"Low") renders as a label-only chip.
-          const canonicalEntity = profileKey && v && v.eid;
           if (vc.kind === 'stress_resilience' && variants) {
             return this._renderEnumTile(vc, variants);
           }
@@ -426,24 +459,23 @@ class LcarsMedicalCard extends LitElement {
           // v5.8.0-beta.2 (Geordi+Wesley P1) — source pill suppressed when the source
           // label echoes the tile label (e.g. EFFICIENCY · EFFICIENCY).
           const showSrc = canonical.label && canonical.label.toUpperCase() !== vc.label.toUpperCase();
-          return html`
-            <div class="tile">
-              <div class="tile-label">${vc.label}</div>
-              <div class="tile-value" data-medical="phi"
-                   aria-live="off"
-                   ?aria-hidden=${this._audioMuted}
-                   style=${`color:${canonicalColor}`}>${formatVital(vc.kind, canonical.value)}</div>
-              <div class="tile-unit">${vc.unit}${showSrc ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
-              ${variants.length > 1 ? html`
-                <div class="tile-variants" aria-label="Additional sources">
-                  ${variants.slice(1).map((vt) => html`
-                    <div class="tile-variant">
-                      <span class="tile-variant-label">${vt.label || '·'}</span>
-                      <span class="tile-variant-value" data-medical="phi"
-                            ?aria-hidden=${this._audioMuted}>${formatVital(vc.kind, vt.value)}</span>
-                    </div>`)}
-                </div>` : ''}
-            </div>`;
+          return this._wrapTile(vc.label, canonical.eid, html`
+            <div class="tile-label">${vc.label}</div>
+            <div class="tile-value" data-medical="phi"
+                 aria-live="off"
+                 ?aria-hidden=${this._audioMuted}
+                 style=${`color:${canonicalColor}`}>${formatVital(vc.kind, canonical.value)}</div>
+            <div class="tile-unit">${vc.unit}${showSrc ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
+            ${variants.length > 1 ? html`
+              <div class="tile-variants" aria-label="Additional sources">
+                ${variants.slice(1).map((vt) => html`
+                  <div class="tile-variant">
+                    <span class="tile-variant-label">${vt.label || '·'}</span>
+                    <span class="tile-variant-value" data-medical="phi"
+                          ?aria-hidden=${this._audioMuted}>${formatVital(vc.kind, vt.value)}</span>
+                  </div>`)}
+              </div>` : ''}
+          `);
         })}
       </section>
     `;
@@ -474,46 +506,57 @@ class LcarsMedicalCard extends LitElement {
     const color = STATUS_COLOR[status] || STATUS_COLOR.OFFLINE;
     const subs = profileKey ? discoverReadinessSubscores(this._hass, profileKey) : [];
     const showSrc = canonical.label && canonical.label.toUpperCase() !== vc.label.toUpperCase();
-    return html`
-      <div class="tile tile-composite">
-        <div class="tile-label">${vc.label}</div>
-        <div class="tile-value tile-value-large" data-medical="phi"
-             aria-live="off"
-             ?aria-hidden=${this._audioMuted}
-             style=${`color:${color}`}>${formatVital('readiness', canonical.value)}</div>
-        <div class="tile-unit">${vc.unit}${showSrc ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
-        ${subs.length ? html`
-          <div class="tile-sublozenges" aria-label="Readiness contributors">
-            ${subs.map((s) => html`
-              <div class="sublozenge sublozenge-${s.status.toLowerCase()}">
-                <span class="sublozenge-label">${s.label}</span>
-                <span class="sublozenge-value" data-medical="phi"
-                      ?aria-hidden=${this._audioMuted}>${s.value}</span>
-              </div>`)}
-          </div>` : ''}
-      </div>`;
+    return this._wrapTile(vc.label, canonical.eid, html`
+      <div class="tile-label">${vc.label}</div>
+      <div class="tile-value tile-value-large" data-medical="phi"
+           aria-live="off"
+           ?aria-hidden=${this._audioMuted}
+           style=${`color:${color}`}>${formatVital('readiness', canonical.value)}</div>
+      <div class="tile-unit">${vc.unit}${showSrc ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
+      ${subs.length ? html`
+        <div class="tile-sublozenges" aria-label="Readiness contributors">
+          ${subs.map((s) => html`
+            <div class="sublozenge sublozenge-${s.status.toLowerCase()}">
+              <span class="sublozenge-label">${s.label}</span>
+              <span class="sublozenge-value" data-medical="phi"
+                    ?aria-hidden=${this._audioMuted}>${s.value}</span>
+            </div>`)}
+        </div>` : ''}
+    `, 'tile-composite');
   }
 
-  // 5.8.0-beta.1 — Enum vital tile (e.g. Oura resilience_level "Great"/"Strong"/"Solid"/"Low").
+  // 5.8.0-beta.1 — Enum vital tile (e.g. Oura resilience_level).
   // Status is derived from the enum string itself rather than a numeric threshold.
+  //
+  // 5.11.0-beta.1 (S0-2): Oura v2.0.0 changed resilience vocabulary from
+  // 'Great/Strong/Solid/Low' to 'limited/adequate/solid/strong/exceptional'. The
+  // pre-2.0 mapping (`solid|adequate` → ELEVATED, `low|exceptional` → ALERT) inverted
+  // safety semantics for the new vocabulary — 'exceptional' (best) flagged as ALERT,
+  // 'limited' (worst) was unmatched. Rewritten to the new vocabulary; legacy `great`
+  // still routes to NOMINAL.
   _renderEnumTile(vc, variants) {
     const canonical = variants[0];
     const raw = String(canonical.value ?? '').toLowerCase();
     let status = MEDICAL_STATUS.NOMINAL;
-    if (/low|exceptional/.test(raw))   status = MEDICAL_STATUS.ALERT;
-    else if (/solid|adequate/.test(raw)) status = MEDICAL_STATUS.ELEVATED;
-    else if (!raw || raw === 'unknown' || raw === 'unavailable') status = MEDICAL_STATUS.OFFLINE;
+    if (!raw || raw === 'unknown' || raw === 'unavailable') {
+      status = MEDICAL_STATUS.OFFLINE;
+    } else if (/limited|low/.test(raw)) {
+      status = MEDICAL_STATUS.ALERT;
+    } else if (/adequate/.test(raw)) {
+      status = MEDICAL_STATUS.ELEVATED;
+    } else if (/solid|strong|exceptional|great/.test(raw)) {
+      status = MEDICAL_STATUS.NOMINAL;
+    }
     const color = STATUS_COLOR[status] || STATUS_COLOR.OFFLINE;
     const showSrc = canonical.label && canonical.label.toUpperCase() !== vc.label.toUpperCase();
-    return html`
-      <div class="tile">
-        <div class="tile-label">${vc.label}</div>
-        <div class="tile-value tile-value-enum" data-medical="phi"
-             aria-live="off"
-             ?aria-hidden=${this._audioMuted}
-             style=${`color:${color}`}>${formatVital('enum', canonical.value)}</div>
-        <div class="tile-unit">${vc.unit}${showSrc ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
-      </div>`;
+    return this._wrapTile(vc.label, canonical.eid, html`
+      <div class="tile-label">${vc.label}</div>
+      <div class="tile-value tile-value-enum" data-medical="phi"
+           aria-live="off"
+           ?aria-hidden=${this._audioMuted}
+           style=${`color:${color}`}>${formatVital('enum', canonical.value)}</div>
+      <div class="tile-unit">${vc.unit}${showSrc ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
+    `);
   }
 
   // 5.8.0-beta.1 (Worf Gap E) — Rest mode banner. Surfaces when Oura's rest_mode binary
@@ -744,6 +787,19 @@ class LcarsMedicalCard extends LitElement {
           padding: 0.35rem 0.5rem;
           display: flex; flex-direction: column; gap: 0.1rem;
           border-radius: 0 0.25rem 0.25rem 0;
+        }
+        /* 5.11.0-beta.1 (Captain) — clickable tiles open HA more-info dialog. */
+        .tile-clickable {
+          cursor: pointer;
+          transition: background 0.12s ease, border-color 0.12s ease;
+        }
+        .tile-clickable:hover {
+          background: rgba(153, 204, 255, 0.12);
+          border-left-color: var(--lcars-gold, #ffaa00);
+        }
+        .tile-clickable:focus-visible {
+          outline: 2px solid var(--lcars-ice, #99ccff);
+          outline-offset: 2px;
         }
         .tile-label {
           font-size: 0.65rem; letter-spacing: 0.08em;

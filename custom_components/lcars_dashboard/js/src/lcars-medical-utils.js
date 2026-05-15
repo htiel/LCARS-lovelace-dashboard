@@ -11,7 +11,17 @@ export const MEDICAL_PLATFORMS = new Set([
   'garmin_connect',
   'oura',
   'google_fit',
+  // 5.11.0-beta.1 — Apple Health via Health Auto Export iOS app (state-only,
+  // no entity_registry entry). Discovery walks hass.states and admits entities
+  // without a registry entry whose suffix matches a vital pattern; see classifyVital.
+  'apple_health',
+  'hae',
+  'health_auto_export',
 ]);
+
+// 5.11.0-beta.1 — bridge platforms whose entities are state-only (no entity_registry
+// entry). When a state-only entity matches a vital suffix pattern, we still admit it.
+const STATE_ONLY_BRIDGE_PLATFORMS = new Set(['apple_health', 'hae', 'health_auto_export']);
 
 // Vital kinds in display order. Anchor slot = where on the silhouette the value renders.
 // `tile` = whether it gets a Zone C detail tile.  `spark` = sparkline-eligible.
@@ -314,10 +324,17 @@ export function entityPriority(kind, eid) {
 
 // Match a HA state object to a vital_kind. Pattern-based; tolerant to platform variation.
 // Returns { kind, sourceLabel, isSystolic, isDiastolic } or null.
+//
+// 5.11.0-beta.1 — admits entities WITHOUT an entity_registry entry (state-only
+// HAE / Apple Health bridges write directly to hass.states). The platform gate
+// still rejects entities whose registry entry exists but isn't a medical integration
+// (so a zigbee `sensor.bedroom_temperature` cannot be misclassified).
 export function classifyVital(state, entityRegistryEntry) {
   const eid = state.entity_id;
   const platform = entityRegistryEntry?.platform || '';
-  if (!MEDICAL_PLATFORMS.has(platform)) return null;
+  // Reject only when a registry entry exists AND its platform is non-medical.
+  // Missing registry entry → state-only bridge → fall through to suffix matching.
+  if (entityRegistryEntry && !MEDICAL_PLATFORMS.has(platform)) return null;
   const lid = eid.toLowerCase();
 
   // Worf MUST-FIX: drop chrome/diagnostic/timestamp/enum suffixes BEFORE any vital regex
@@ -338,22 +355,33 @@ export function classifyVital(state, entityRegistryEntry) {
   if (/_diastolic.*blood.*pressure$|_diastolic_blood_pressure$/.test(lid)) return { kind: 'blood_pressure', isDiastolic: true, sourceLabel: 'DIA' };
 
   // Heart rate — explicit suffix set; `_score` variants are NOT HR (Oura readiness components).
-  if (/_(heart_pulse|heart_rate|resting_heart_rate|current_heart_rate|average_heart_rate|lowest_sleep_heart_rate|average_sleep_heart_rate)$/.test(lid)) return withLabel({ kind: 'heart_rate' });
+  // 5.11.0-beta.1 (S0-3): `_resting_heart_rate` is a 0-100 SCORE (not BPM) on Oura
+  // post-v2.0.0; for Oura it's intentionally dropped here so it doesn't poison the
+  // heart_rate threshold gate. For HAE/Apple Health/Withings/Fitbit/Garmin etc.
+  // the same suffix really is BPM, so route normally.
+  if (/_resting_heart_rate$/.test(lid)) {
+    if (platform === 'oura') return null;
+    return withLabel({ kind: 'heart_rate' });
+  }
+  // 5.11.0-beta.1 — HAE Apple Health emits `_heart_rate_avg`, `_heart_rate_max`,
+  // `_heart_rate_min` (all BPM). Add to the heart_rate kind so they stack as variants.
+  if (/_(heart_pulse|heart_rate|current_heart_rate|average_heart_rate|lowest_sleep_heart_rate|average_sleep_heart_rate|heart_rate_avg|heart_rate_max|heart_rate_min|walking_heart_rate_average)$/.test(lid)) return withLabel({ kind: 'heart_rate' });
 
-  // SpO2 — accept Oura's `_average` suffix and the standard.
-  if (/_(spo2|spo2_average|oxygen_saturation|latest_spo2)$/.test(lid)) return withLabel({ kind: 'spo2' });
+  // SpO2 — accept Oura's `_average` suffix and the standard. HAE: `_blood_oxygen_saturation`.
+  if (/_(spo2|spo2_average|oxygen_saturation|latest_spo2|blood_oxygen_saturation)$/.test(lid)) return withLabel({ kind: 'spo2' });
 
   if (/_respiration|_respiratory_rate$|_latest_respiration$/.test(lid)) return withLabel({ kind: 'respiration_rate' });
 
   if (/_weight$/.test(lid) && !/_goal$/.test(lid)) return withLabel({ kind: 'weight' });
   if (/_weight_goal$/.test(lid)) return { kind: 'weight_goal' };
-  if (/_fat_ratio$|_body_fat$/.test(lid)) return withLabel({ kind: 'body_fat_pct' });
+  // 5.11.0-beta.1 — HAE: `_body_fat_percentage`, `_body_mass_index`.
+  if (/_fat_ratio$|_body_fat$|_body_fat_percentage$/.test(lid)) return withLabel({ kind: 'body_fat_pct' });
   if (/_fat_mass$/.test(lid)) return withLabel({ kind: 'fat_mass' });
   if (/_(fat_free_mass|lean_body_mass|lean_mass)$/.test(lid)) return withLabel({ kind: 'lean_mass' });
   if (/_muscle_mass$/.test(lid)) return withLabel({ kind: 'muscle_mass' });
   if (/_bone_mass$/.test(lid)) return withLabel({ kind: 'bone_mass' });
   if (/_visceral_fat(_index)?$/.test(lid)) return withLabel({ kind: 'visceral_fat' });
-  if (/_bmi$/.test(lid)) return withLabel({ kind: 'bmi' });
+  if (/_(bmi|body_mass_index)$/.test(lid)) return withLabel({ kind: 'bmi' });
   if (/_hydration$/.test(lid)) return withLabel({ kind: 'hydration' });
 
   // 5.8.0-beta.1 — new Oura-derived vital kinds (5X-F35d). Must precede sleep_score so
@@ -396,11 +424,23 @@ export function classifyVital(state, entityRegistryEntry) {
   return null;
 }
 
-// Discover unique medical profiles by extracting the leading "<profile>_" prefix from
-// classified entity ids. Phase 1: returns at most one (single-profile mode).
-// 5.8.0-beta.1 (5X-B48 #124): memoized against (hass.entities, hass.states) reference
-// identity — HA mutates these by replacement, not in-place, so reference equality is
-// a sound cache key. Cuts discovery walks from every render to first-of-tick.
+// Discover unique medical profiles by walking hass.states and classifying every entity
+// the resolver recognizes as medical. Buckets entities into profiles using the most
+// specific signal available:
+//   1. HAE / Apple Health bridge entities — leading object_id segment (Captain confirmed:
+//      `leith` is the per-user prefix configured in the Health Auto Export iOS app and
+//      is authoritative for person identity; future household members would pick their
+//      own prefix). Used as the profile key.
+//   2. Registry entries with a device_id or config_entry_id — grouped under that key.
+//
+// 5.11.0-beta.1 (S0-1): no persistent binding yet — to keep the Captain's single-user
+// dashboard rendering as ONE card (instead of shattering into one card per integration
+// account), all non-HAE buckets are merged into the primary HAE bucket. When the binding
+// editor (Phase B) lands, this collapse is replaced with per-profile bucketing driven
+// by `medical_profiles.yaml`. The broken `oura_ring_(.+?)_[a-z]/i` regex is gone.
+//
+// Cache key includes (hass.entities, hass.states) reference identity — HA mutates these
+// by replacement, not in-place, so reference equality is a sound invalidation signal.
 const _discoverProfilesCache = new WeakMap();
 export function discoverProfiles(hass) {
   if (!hass) return [];
@@ -409,37 +449,87 @@ export function discoverProfiles(hass) {
   let bucket = _discoverProfilesCache.get(reg);
   if (bucket && bucket.states === states) return bucket.result;
 
-  const profiles = new Map();
+  // Provisional bucketing. `kind` records WHICH signal produced the key so the
+  // post-walk collapse logic can prefer HAE-prefix profiles (authoritative per Captain).
+  const provisional = new Map();
+  const haePrefixKeys = new Set();
 
-  for (const eid of Object.keys(hass.states)) {
+  for (const eid of Object.keys(states)) {
     const reEntry = reg[eid];
-    if (!reEntry || !MEDICAL_PLATFORMS.has(reEntry.platform)) continue;
-    const cls = classifyVital(hass.states[eid], reEntry);
+    const cls = classifyVital(states[eid], reEntry);
     if (!cls) continue;
-    // Profile id = device_id when present (canonical).
-    // Worf 5X-F35e §4 hardening: when device_id is absent, Oura entity ids carry the
-    // person prefix in segments 2..N-1 (`oura_ring_<name>_<metric>`). Falling back to
-    // segment[0] alone would collapse two rings in one household into a single profile,
-    // cross-contaminating PHI. Extract the person prefix instead.
+
     const objId = eid.split('.')[1] || '';
-    const ouraMatch = objId.match(/^oura_ring_(.+?)_[a-z]/i);
-    const profileKey = reEntry.device_id
-      || (ouraMatch ? `oura_ring_${ouraMatch[1]}` : null)
-      || objId.split('_')[0]
-      || 'biobed';
-    if (!profiles.has(profileKey)) {
-      profiles.set(profileKey, { profileId: profileKey, entities: [], platforms: new Set() });
+    let profileKey;
+    let isHae = false;
+
+    if (!reEntry || STATE_ONLY_BRIDGE_PLATFORMS.has(reEntry.platform)) {
+      // State-only HAE / Apple Health bridge — leading prefix is the user identifier.
+      profileKey = objId.split('_')[0] || 'biobed';
+      isHae = true;
+      haePrefixKeys.add(profileKey);
+    } else if (reEntry.device_id) {
+      profileKey = `device:${reEntry.device_id}`;
+    } else if (reEntry.config_entry_id) {
+      profileKey = `entry:${reEntry.config_entry_id}`;
+    } else {
+      profileKey = objId.split('_')[0] || 'biobed';
     }
-    const p = profiles.get(profileKey);
-    p.entities.push({ eid, state: hass.states[eid], cls, platform: reEntry.platform });
-    p.platforms.add(reEntry.platform);
+
+    if (!provisional.has(profileKey)) {
+      provisional.set(profileKey, {
+        profileId: profileKey,
+        entities: [],
+        platforms: new Set(),
+        isHae,
+      });
+    }
+    const p = provisional.get(profileKey);
+    p.entities.push({
+      eid,
+      state: states[eid],
+      cls,
+      platform: reEntry?.platform || (isHae ? 'hae' : ''),
+    });
+    if (reEntry?.platform) p.platforms.add(reEntry.platform);
+    if (isHae && !reEntry?.platform) p.platforms.add('hae');
   }
 
-  // Phase 1 single-profile mode: collapse to the largest bucket if >1 (multi-profile deferred).
-  const list = Array.from(profiles.values());
-  list.sort((a, b) => b.entities.length - a.entities.length);
-  _discoverProfilesCache.set(reg, { states, result: list });
-  return list;
+  // Collapse: pick the primary HAE prefix bucket (largest if multiple); merge all
+  // non-HAE buckets into it. Other HAE prefix buckets remain as separate profiles
+  // (multi-person households where each person has their own HAE prefix).
+  const allBuckets = Array.from(provisional.values());
+  const haeBuckets = allBuckets.filter((b) => b.isHae);
+  const nonHaeBuckets = allBuckets.filter((b) => !b.isHae);
+
+  let result;
+  if (haeBuckets.length > 0) {
+    haeBuckets.sort((a, b) => b.entities.length - a.entities.length);
+    const primary = haeBuckets[0];
+    for (const nh of nonHaeBuckets) {
+      for (const e of nh.entities) primary.entities.push(e);
+      for (const p of nh.platforms) primary.platforms.add(p);
+    }
+    result = haeBuckets;
+  } else if (nonHaeBuckets.length > 0) {
+    // No HAE bridge present — collapse all integration buckets into one synthetic profile.
+    const merged = {
+      profileId: 'biobed',
+      entities: [],
+      platforms: new Set(),
+      isHae: false,
+    };
+    for (const nh of nonHaeBuckets) {
+      for (const e of nh.entities) merged.entities.push(e);
+      for (const p of nh.platforms) merged.platforms.add(p);
+    }
+    result = [merged];
+  } else {
+    result = [];
+  }
+
+  _discoverProfilesCache.set(reg, { states, result });
+  return result;
 }
 
 // Stable, deterministic 7-char file id from a profile key. No PII — the input itself is a
@@ -568,12 +658,17 @@ export function formatVital(kind, value, secondary = null) {
 //   'sick'    — Oura illness signal (tomato banner, audio alert on transition)
 // Pulled from hass.states[<oura_*_rest_mode_state>] when present. Single string in;
 // no PHI logged. Caller may pass either the raw state string or a state object.
+//
+// 5.11.0-beta.1 (S1-1): Oura v2.6.0 made `rest_mode` a binary_sensor with `on`/`off`
+// state strings. The pre-2.6 enum lane (`sick|illness|fever|rest|recovery|low|moderate`)
+// stays first so the legacy entity still classifies; the new `on` literal routes to 'rest'.
 export function classifyRestMode(stateOrString) {
   if (!stateOrString) return 'off';
   const s = (typeof stateOrString === 'string' ? stateOrString : stateOrString.state || '').toLowerCase();
   if (!s || s === 'off' || s === 'none' || s === 'unknown' || s === 'unavailable') return 'off';
   if (/sick|illness|fever/.test(s)) return 'sick';
   if (/rest|recovery|low|moderate/.test(s)) return 'rest';
+  if (s === 'on') return 'rest';
   return 'off';
 }
 

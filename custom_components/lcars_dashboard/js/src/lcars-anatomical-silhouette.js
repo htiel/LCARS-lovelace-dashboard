@@ -164,21 +164,59 @@ class LcarsAnatomicalSilhouette extends LitElement {
     // coordinate and is only pushed outward when it would overlap the previous
     // tab in the bucket. Result: vertical leader length = 0 in the common
     // (n≤3/edge) case, eliminating cross-tab leader intrusions.
+    // 5.13.2-beta.2: horizontal-edge collision used `tabHeight` for footprint
+    // — wrong axis. Tabs along the top/bottom extend horizontally, so footprint
+    // = tabWidth. And tabWidth varies per label, so use proper half-footprint
+    // pairwise spacing (prev far-edge + this near-edge + gap).
     const distributed = {};
-    // Convert tab footprint (in viewBox units) to a body-coord percentage so
-    // collision math operates in the same coordinate space as anchor x/y.
-    const tabFootprintCoord = (range) => (tabHeight * 1.15) / range * 100;
+    // Estimate THIS tab's width in viewBox units from label+value text length.
+    // Mirrors the per-tab calc used in pass 3 below; kept in sync.
+    const labelLetterSpacing = 0.5;
+    const valueLetterSpacing = 0.3;
+    const estimateTabWidth = (slot) => {
+      const data = this.anchors[slot];
+      const label = data?.label || '';
+      const value = data?.value;
+      const hasValue = value != null && value !== '—' && value !== '';
+      const displayValue = hasValue ? String(value) : '—';
+      const labelLen = label.length || 0;
+      const valueLen = displayValue.length || 1;
+      const labelW = labelLen * labelFontSize * 0.70 + Math.max(0, labelLen - 1) * labelLetterSpacing;
+      const valueW = valueLen * valueFontSize * 0.70 + Math.max(0, valueLen - 1) * valueLetterSpacing;
+      const textW = (label ? labelW + sepDx : 0) + valueW;
+      return Math.max(48 * fontScale, textW + tabPadX * 2);
+    };
+    const interTabGap = 4 * fontScale;
     for (const [edge, list] of Object.entries(buckets)) {
       if (!list.length) continue;
       const isHorizontal = edge === 'top' || edge === 'bottom';
       list.sort((a, b) => isHorizontal ? a.pos.x - b.pos.x : a.pos.y - b.pos.y);
-      const minGap = tabFootprintCoord(isHorizontal ? bbW : bbH);
-      let prev = -Infinity;
-      list.forEach((entry) => {
+      const range = isHorizontal ? bbW : bbH;
+      const halfs = list.map((entry) => {
+        const footprintPx = isHorizontal ? estimateTabWidth(entry.slot) : tabHeight;
+        return (footprintPx / 2) / range * 100;
+      });
+      const gapCoord = interTabGap / range * 100;
+      const positions = new Array(list.length);
+      let prevFar = -Infinity;
+      list.forEach((entry, i) => {
         const preferred = isHorizontal ? entry.pos.x : entry.pos.y;
-        const coord = Math.max(preferred, prev + minGap);
-        distributed[entry.slot] = { pos: entry.pos, edge, distCoord: coord };
-        prev = coord;
+        const minCenter = i === 0 ? halfs[i] : prevFar + gapCoord + halfs[i];
+        const coord = Math.max(preferred, minCenter);
+        positions[i] = coord;
+        prevFar = coord + halfs[i];
+      });
+      const maxEdge = 100 - halfs[halfs.length - 1];
+      if (positions[positions.length - 1] > maxEdge) {
+        positions[positions.length - 1] = maxEdge;
+        for (let i = positions.length - 2; i >= 0; i--) {
+          const maxCenter = positions[i + 1] - halfs[i + 1] - gapCoord - halfs[i];
+          if (positions[i] > maxCenter) positions[i] = maxCenter;
+          else break;
+        }
+      }
+      list.forEach((entry, i) => {
+        distributed[entry.slot] = { pos: entry.pos, edge, distCoord: positions[i] };
       });
     }
 

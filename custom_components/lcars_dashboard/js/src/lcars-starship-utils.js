@@ -148,22 +148,34 @@ export function classifyMetric(eid) {
 export const STARSHIP_ANCHOR_MAP = Object.freeze({
   // Anchors are percentages of the landscape viewBox (480 × 200).
   // Forward (saucer) is on the LEFT; aft (nacelles + shuttlebay) is on the RIGHT.
-  // 5.4.5 (Data review): edge labels relabeled to match true anchor position so the
-  // silhouette renderer's edge-stagger algorithm has clean inputs. 6 top, 5 bottom,
-  // 1 left, 1 right — symmetric distribution that resolves the 5.4.4 callout chop.
-  deflector:          { x: 6,  y: 50, label: 'left'   },  // bow leading edge
-  bridge:             { x: 22, y: 30, label: 'top'    },  // dorsal saucer hump
-  main_computer:      { x: 22, y: 70, label: 'bottom' },  // ventral saucer
-  saucer_section:     { x: 30, y: 18, label: 'top'    },  // upper saucer disc
-  sensor_array:       { x: 30, y: 82, label: 'bottom' },  // lower saucer rim
-  engineering_hull:   { x: 60, y: 50, label: 'top'    },  // mid hull
-  warp_core:          { x: 56, y: 65, label: 'bottom' },  // ventral hull glow
-  port_nacelle:       { x: 78, y: 18, label: 'top'    },  // upper (port) nacelle
-  starboard_nacelle:  { x: 78, y: 82, label: 'bottom' },  // lower (starboard) nacelle
-  port_impulse:       { x: 82, y: 32, label: 'top'    },  // port impulse glow
-  starboard_impulse:  { x: 82, y: 68, label: 'bottom' },  // stbd impulse glow
-  shuttlebay:         { x: 90, y: 50, label: 'right'  },  // aft hull bay door
-  cargo_bay:          { x: 70, y: 50, label: 'top'    },  // mid-aft hull
+  // 5.13.2-beta.2 (Captain visual redesign): full respread to eliminate the
+  // right-side pile-up (CPU TMRX over BACKUP, NVME TMRX clipped, SENSORS over MEM).
+  // Each edge now has 4–5 anchors with sufficient x-spread that the silhouette's
+  // pairwise-collision algorithm leaves them at their preferred positions.
+  //
+  // Edge distribution:
+  //   left  (1): deflector
+  //   right (1): shuttlebay
+  //   top   (5): saucer_section, bridge, engineering_hull, port_impulse, port_nacelle
+  //   bottom (5): sensor_array, main_computer, warp_core, starboard_impulse, starboard_nacelle
+  //   cargo_bay is bottom (between warp_core and starboard_impulse)
+  //
+  // The dot's (x,y) terminates on the body landmark; the label position is
+  // determined by `label` edge. Y values are kept inside the silhouette body
+  // so leader length stays short.
+  deflector:          { x: 35, y: 50, label: 'left'   },  // bow leading edge (saucer fore-rim)
+  saucer_section:     { x: 12, y: 30, label: 'top'    },  // upper saucer disc, far-forward
+  bridge:             { x: 27, y: 30, label: 'top'    },  // dorsal saucer hump
+  engineering_hull:   { x: 50, y: 35, label: 'top'    },  // mid hull, dorsal
+  port_impulse:       { x: 68, y: 35, label: 'top'    },  // port impulse (mid-pylon junction)
+  port_nacelle:       { x: 85, y: 12, label: 'top'    },  // port nacelle, dorsal-aft
+  sensor_array:       { x: 12, y: 70, label: 'bottom' },  // lower saucer rim, far-forward
+  main_computer:      { x: 27, y: 70, label: 'bottom' },  // ventral saucer
+  warp_core:          { x: 50, y: 65, label: 'bottom' },  // ventral hull glow
+  cargo_bay:          { x: 62, y: 65, label: 'bottom' },  // mid-aft hull
+  starboard_impulse:  { x: 72, y: 65, label: 'bottom' },  // stbd impulse glow
+  starboard_nacelle:  { x: 85, y: 88, label: 'bottom' },  // stbd nacelle, ventral-aft
+  shuttlebay:         { x: 96, y: 50, label: 'right'  },  // aft hull bay door
 });
 
 /* ═══ Default thresholds (spec §5.6) ═══ */
@@ -362,38 +374,61 @@ export function formatMetric(kind, value, opts = {}) {
 }
 
 /* ═══ Inline silhouette paths (spec §5.7 — top-down LANDSCAPE) ═══
- * Generic LCARS-styled saucer + twin-nacelle layout, ROTATED 90° so the ship
- * points forward to the LEFT (bow) with nacelles trailing to the RIGHT (aft).
- * Hand-authored, not traced from any production asset. ViewBox is 0 0 480 200.
+ * Galaxy-class proportions, top-down view (bow LEFT, stern RIGHT).
+ * Real Galaxy-class dimensions used as design reference: 642m length, 466m beam,
+ * 503m nacelle length. ViewBox 0 0 480 200 mapped so 1 unit ≈ 1.34m fore-aft.
+ *
+ * Layout:
+ *   - Saucer disc: large near-circular ellipse, forward third
+ *   - Neck: narrow connector between saucer-aft and engineering hull
+ *   - Engineering (secondary) hull: tapered oblong amidships
+ *   - Pylons: angled outboard from engineering hull
+ *   - Nacelles: long parallel tubes flanking aft, mounted above + below
+ *   - Bussard collectors: forward tip of each nacelle (warp coil glow)
+ *   - Deflector: arc forward of secondary hull (visible through saucer rear)
+ *   - Shuttlebay: aft notch at engineering hull tip
  */
 export const STARSHIP_SILHOUETTE_PATHS = svg`
-  <!-- saucer section: ellipse at the bow (left third) -->
-  <ellipse cx="140" cy="100" rx="110" ry="72" />
-  <!-- deflector arc on the leading edge (forward of the saucer) -->
-  <path d="M40 88 Q22 100 40 112" stroke-opacity="0.7" />
-  <!-- inner saucer detail (sensor strip ring) -->
-  <ellipse cx="140" cy="100" rx="78" ry="46" stroke-opacity="0.35" />
-  <!-- bridge dome: small dorsal hump on the saucer -->
-  <circle cx="108" cy="58" r="7" stroke-opacity="0.6" />
-  <!-- neck / connector aft of saucer to engineering hull -->
-  <path d="M236 88 L260 92 L260 108 L236 112 Z" />
-  <!-- engineering hull: tapered bar running aft -->
-  <path d="M260 88 L420 84 Q438 92 438 100 Q438 108 420 116 L260 112 Z" />
-  <!-- warp-core indicator: horizontal channel inside the hull -->
-  <line x1="272" y1="100" x2="410" y2="100" stroke-opacity="0.45" />
-  <!-- shuttlebay: notch at aft tip of engineering hull -->
-  <path d="M438 96 L452 96 L452 104 L438 104" stroke-opacity="0.7" />
-  <!-- port pylon (upper) angled outward from mid-hull -->
-  <path d="M340 84 L360 36" />
-  <!-- starboard pylon (lower) -->
-  <path d="M340 116 L360 164" />
-  <!-- port nacelle (upper): horizontal capsule trailing aft -->
-  <path d="M360 30 L432 26 L450 32 L450 40 L432 46 L360 42 Z" />
-  <!-- starboard nacelle (lower) -->
-  <path d="M360 158 L432 154 L450 160 L450 168 L432 174 L360 170 Z" />
-  <!-- impulse engine glow indicators (aft-inner edges of nacelles) -->
-  <line x1="408" y1="42" x2="398" y2="54" stroke-opacity="0.5" />
-  <line x1="408" y1="158" x2="398" y2="146" stroke-opacity="0.5" />
-  <!-- cargo bay marker: ventral mid-hull -->
-  <circle cx="336" cy="108" r="4" stroke-opacity="0.45" />
+  <!-- Saucer disc: forward third, near-circular -->
+  <ellipse cx="128" cy="100" rx="96" ry="82" />
+  <!-- Sensor strip ring on saucer dorsal surface -->
+  <ellipse cx="128" cy="100" rx="72" ry="58" stroke-opacity="0.32" />
+  <!-- Inner cabin band -->
+  <ellipse cx="128" cy="100" rx="40" ry="30" stroke-opacity="0.22" />
+  <!-- Bridge dome: small dorsal hump on saucer center -->
+  <circle cx="128" cy="100" r="8" stroke-opacity="0.6" />
+  <!-- Neck: short trapezoid connecting saucer-aft to engineering hull -->
+  <path d="M218 90 L240 86 L240 114 L218 110 Z" />
+  <!-- Engineering (secondary) hull: tapered oblong amidships -->
+  <path d="M240 84 L400 80 Q422 88 422 100 Q422 112 400 120 L240 116 Z" />
+  <!-- Warp core: longitudinal channel inside engineering hull -->
+  <line x1="250" y1="100" x2="410" y2="100" stroke-opacity="0.5" />
+  <!-- Shuttlebay: aft notch at engineering hull tip -->
+  <path d="M422 96 L438 96 L438 104 L422 104" stroke-opacity="0.7" />
+  <!-- Cargo bay marker: ventral mid-aft hull -->
+  <circle cx="300" cy="108" r="3" stroke-opacity="0.5" />
+  <!-- Deflector dish: forward arc of secondary hull (visible aft of saucer) -->
+  <path d="M238 92 Q230 100 238 108" stroke-opacity="0.7" />
+  <!-- Impulse engines: trailing edge of saucer, dorsal + ventral -->
+  <line x1="218" y1="94" x2="212" y2="90" stroke-opacity="0.55" />
+  <line x1="218" y1="106" x2="212" y2="110" stroke-opacity="0.55" />
+  <!-- Port pylon (upper): angled outboard from engineering hull amidships -->
+  <path d="M286 82 L316 32" stroke-width="2.5" />
+  <path d="M298 82 L328 32" stroke-opacity="0.5" />
+  <!-- Starboard pylon (lower): mirror -->
+  <path d="M286 118 L316 168" stroke-width="2.5" />
+  <path d="M298 118 L328 168" stroke-opacity="0.5" />
+  <!-- Port nacelle (upper): parallel tube extending aft, mounted above engineering plane -->
+  <path d="M308 24 L450 22 Q464 26 464 32 L464 36 Q464 42 450 46 L308 44 Q302 40 302 34 Q302 28 308 24 Z" />
+  <!-- Starboard nacelle (lower): mirror -->
+  <path d="M308 156 L450 154 Q464 158 464 164 L464 168 Q464 174 450 178 L308 176 Q302 172 302 166 Q302 160 308 156 Z" />
+  <!-- Bussard collectors: red glow at fore-tip of each nacelle -->
+  <circle cx="310" cy="34" r="4" stroke-opacity="0.85" />
+  <circle cx="310" cy="166" r="4" stroke-opacity="0.85" />
+  <!-- Nacelle cap glow: aft-tip impulse-like markers -->
+  <line x1="456" y1="30" x2="460" y2="38" stroke-opacity="0.55" />
+  <line x1="456" y1="170" x2="460" y2="162" stroke-opacity="0.55" />
+  <!-- Warp coil detail lines on each nacelle (longitudinal subdivisions) -->
+  <line x1="325" y1="34" x2="450" y2="32" stroke-opacity="0.3" />
+  <line x1="325" y1="166" x2="450" y2="168" stroke-opacity="0.3" />
 `;

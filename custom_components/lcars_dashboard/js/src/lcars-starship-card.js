@@ -53,6 +53,25 @@ const STATUS_COLOR = {
   OFFLINE:  'var(--lcars-gray, #666688)',
 };
 
+// 5.13.2-beta.2 — Composite tile groups. Mirrors the Medical Bay body-comp
+// pattern (one headline tile + a stack of breakdown rows) so the starship grid
+// stops sprawling across 12 small tiles when the host exposes related metrics.
+// Each group: a tile-composite headline (kind matches an existing
+// STARSHIP_METRIC_CLASSES entry) plus children whose values are pulled from
+// the same byKind map and rendered as inline rows below the headline.
+const STARSHIP_COMPOSITE_GROUPS = [
+  { headlineKind: 'cpu_usage',         label: 'CPU',        unit: '%',
+    children: ['load_15m', 'io_wait', 'top_cpu_proc'] },
+  { headlineKind: 'disk_root',         label: 'DISK',       unit: '%',
+    children: ['db_size', 'backup_age'] },
+  { headlineKind: 'composite_thermal', label: 'CORE',       unit: '',
+    children: ['cpu_temp', 'gpu_temp', 'nvme_temp'] },
+  { headlineKind: 'addon_running',     label: 'SUPERVISOR', unit: '',
+    children: ['updates_pending', 'container_health', 'ha_core_version'] },
+];
+const STARSHIP_COMPOSITE_HEADLINES = new Set(STARSHIP_COMPOSITE_GROUPS.map((g) => g.headlineKind));
+const STARSHIP_COMPOSITE_CHILDREN  = new Set(STARSHIP_COMPOSITE_GROUPS.flatMap((g) => g.children));
+
 // #192 — vessel metrics older than this are treated as OFFLINE even if numerically
 // valid. 5 min matches system_monitor's default scan interval (60s) plus generous
 // jitter; a host that hasn't reported in this long is effectively unreachable.
@@ -327,38 +346,94 @@ class LcarsStarshipCard extends LitElement {
     `;
   }
 
+  // Shared display+status formatter used by both standalone tiles and the
+  // composite headline/child rows. Returns { display, status, present }.
+  _formatTileMetric(kind, m) {
+    if (!m || m.value == null || (typeof m.value === 'number' && isNaN(m.value))) {
+      return { display: '—', status: STARSHIP_STATUS.OFFLINE, present: false };
+    }
+    if (kind === 'addon_running') {
+      const t = STARSHIP_THRESHOLDS.addon_stopped;
+      const status = m.value >= t.critical ? STARSHIP_STATUS.CRITICAL
+                  : m.value >= t.warning  ? STARSHIP_STATUS.WARNING
+                  : m.value >= t.degraded ? STARSHIP_STATUS.DEGRADED
+                  : STARSHIP_STATUS.NOMINAL;
+      return { display: `${m.running}/${m.total}`, status, present: true };
+    }
+    if (kind === 'updates_pending') {
+      const status = m.value > 0 ? STARSHIP_STATUS.DEGRADED : STARSHIP_STATUS.NOMINAL;
+      return { display: `${m.value}/${m.total}`, status, present: true };
+    }
+    if (kind === 'ha_core_version') {
+      return { display: m.value, status: STARSHIP_STATUS.NOMINAL, present: true };
+    }
+    return {
+      display: formatMetric(kind, m.value),
+      status: computeStarshipStatus(kind, m.value),
+      present: true,
+    };
+  }
+
+  // 5.13.2-beta.2 — Composite tile renderer (mirrors Medical Bay body-comp).
+  // Headline metric uses the large value style; child metrics render as a
+  // tile-variants stack below with label / value / unit columns. If no
+  // children resolve, the tile collapses to a normal 1-col tile so we don't
+  // leave wide empty rectangles in the grid (Captain visual-review pattern
+  // already established for the Readiness tile).
+  _renderCompositeTile(group, byKind) {
+    const headline = byKind.get(group.headlineKind);
+    const cls = STARSHIP_METRIC_CLASSES.find((c) => c.kind === group.headlineKind);
+    const unit = group.unit ?? (cls ? cls.unit : '');
+    const { display, status, present } = this._formatTileMetric(group.headlineKind, headline);
+    const color = present ? STATUS_COLOR[status] : 'var(--lcars-gray, #666688)';
+    const rows = [];
+    for (const childKind of group.children) {
+      const cm = byKind.get(childKind);
+      const { display: cdisp, present: cpres } = this._formatTileMetric(childKind, cm);
+      if (!cpres) continue;
+      const cMeta = STARSHIP_METRIC_CLASSES.find((c) => c.kind === childKind);
+      rows.push({
+        label: cMeta ? cMeta.label : childKind.toUpperCase(),
+        value: cdisp,
+        unit:  cMeta ? cMeta.unit : '',
+        eid:   cm?.eid,
+      });
+    }
+    const compositeClass = rows.length ? 'tile tile-composite' : 'tile';
+    const valueClass = rows.length ? 'tile-value tile-value-large' : 'tile-value';
+    return html`
+      <button class=${compositeClass}
+              @click=${() => headline?.eid && showMoreInfo(this, headline.eid)}>
+        <div class="tile-label">${group.label}</div>
+        <div class=${valueClass} data-starship="op"
+             aria-live="off" style=${`color:${color}`}>${display}</div>
+        ${unit ? html`<div class="tile-unit">${unit}</div>` : ''}
+        ${rows.length ? html`
+          <div class="tile-variants" aria-label=${`${group.label} breakdown`}>
+            ${rows.map((r) => html`
+              <div class="tile-variant">
+                <span class="tile-variant-label">${r.label}</span>
+                <span class="tile-variant-value" data-starship="op">${r.value}${r.unit ? html` <span class="tile-variant-unit">${r.unit}</span>` : ''}</span>
+              </div>`)}
+          </div>` : ''}
+      </button>`;
+  }
+
   _renderTiles(byKind) {
-    const tiles = STARSHIP_METRIC_CLASSES.filter((c) => c.tile).slice(0, 12);
+    // Composites render first (CPU / DISK / CORE / SUPERVISOR), then standalone
+    // tiles with composite headlines + children filtered out so we don't
+    // double-display the same metric.
+    const standalone = STARSHIP_METRIC_CLASSES.filter((c) =>
+      c.tile
+      && !STARSHIP_COMPOSITE_HEADLINES.has(c.kind)
+      && !STARSHIP_COMPOSITE_CHILDREN.has(c.kind)
+    ).slice(0, 12);
     return html`
       <section class="zone-c" aria-label="Vessel detail metrics">
-        ${tiles.map((cls) => {
+        ${STARSHIP_COMPOSITE_GROUPS.map((g) => this._renderCompositeTile(g, byKind))}
+        ${standalone.map((cls) => {
           const m = byKind.get(cls.kind);
-          let display = '—';
-          let status = STARSHIP_STATUS.OFFLINE;
-          let present = false;
-          if (m && m.value != null && !(typeof m.value === 'number' && isNaN(m.value))) {
-            present = true;
-            if (cls.kind === 'addon_running') {
-              display = `${m.running}/${m.total}`;
-              const t = STARSHIP_THRESHOLDS.addon_stopped;
-              status = m.value >= t.critical ? STARSHIP_STATUS.CRITICAL
-                    : m.value >= t.warning  ? STARSHIP_STATUS.WARNING
-                    : m.value >= t.degraded ? STARSHIP_STATUS.DEGRADED
-                    : STARSHIP_STATUS.NOMINAL;
-            } else if (cls.kind === 'updates_pending') {
-              display = `${m.value}/${m.total}`;
-              status = m.value > 0 ? STARSHIP_STATUS.DEGRADED : STARSHIP_STATUS.NOMINAL;
-            } else if (cls.kind === 'ha_core_version') {
-              display = m.value;
-              status = STARSHIP_STATUS.NOMINAL;
-            } else {
-              display = formatMetric(cls.kind, m.value);
-              status = computeStarshipStatus(cls.kind, m.value);
-            }
-          }
-          // Sparklines deferred to v5.4.2 (Data 5.4.1 review #10) — noise-band
-          // fabrication is misleading on an Engineering panel; recorder-history
-          // sourcing lands with the next minor.
+          const { display, status, present } = this._formatTileMetric(cls.kind, m);
           const color = present ? STATUS_COLOR[status] : 'var(--lcars-gray, #666688)';
           return html`
             <button class="tile" @click=${() => m?.eid && showMoreInfo(this, m.eid)}>
@@ -628,6 +703,39 @@ class LcarsStarshipCard extends LitElement {
         .tile-value { font-size: 1.15rem; font-weight: 700; line-height: 1; }
         .tile-unit { font-size: 0.6rem; letter-spacing: 0.06em; opacity: 0.65; }
         .tile-spark { margin-top: 0.2rem; }
+        /* 5.13.2-beta.2 — composite tiles (CPU/DISK/CORE/SUPERVISOR). Mirrors
+           the Medical Bay body-comp pattern: one wide tile spans 2 columns and
+           stacks breakdown rows under a large headline value. */
+        .tile-composite { grid-column: span 2; }
+        .tile-value-large { font-size: 1.7rem; font-weight: 700; line-height: 1; }
+        .tile-variants {
+          margin-top: 0.3rem;
+          display: flex; flex-direction: column; gap: 0.1rem;
+          border-top: 1px solid rgba(255, 153, 102, 0.22);
+          padding-top: 0.25rem;
+        }
+        .tile-variant {
+          display: flex; justify-content: space-between; align-items: baseline;
+          gap: 0.5rem; font-size: 0.7rem;
+        }
+        .tile-variant-label {
+          color: var(--lcars-african-violet, #cc99ff);
+          letter-spacing: 0.08em; opacity: 0.9;
+        }
+        .tile-variant-value {
+          color: var(--lcars-ice, #99ccff);
+          font-variant-numeric: tabular-nums;
+        }
+        .tile-variant-unit {
+          font-size: 0.55rem;
+          opacity: 0.75;
+          letter-spacing: 0.06em;
+          margin-left: 0.15rem;
+        }
+        @media (max-width: 720px) {
+          .tile-composite { grid-column: span 2; }
+          .tile-value-large { font-size: 1.35rem; }
+        }
       `,
     ];
   }

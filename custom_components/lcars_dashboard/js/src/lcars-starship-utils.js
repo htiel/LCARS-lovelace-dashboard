@@ -18,7 +18,16 @@ export const SYSTEM_PLATFORMS = new Set([
   'hassio',          // Core (Supervisor) — addons, host info, OS update
   'supervisor',      // Core alias for hassio
   'glances',         // HACS — cross-host telemetry, GPU+NVMe temp, SMART
+  'beszel',          // Hypothetical future native HA integration (no such integration exists today).
 ]);
+
+// Generic platforms (rest/template/mqtt/scrape) are NOT in SYSTEM_PLATFORMS — too broad.
+// Entities from these platforms are admitted only when their entity_id matches a
+// known telemetry naming prefix (currently: `beszel_`, for users bridging a Beszel Hub
+// via REST sensors). Extend this set carefully — every admitted naming prefix becomes
+// part of the vessel rollup and counts against per-anchor metrics.
+const NAMEGATED_PLATFORMS = new Set(['rest', 'template', 'mqtt', 'scrape', 'command_line']);
+const NAMEGATE_PREFIXES = [/^sensor\.beszel_/i, /^binary_sensor\.beszel_/i];
 
 export const STARSHIP_STATUS = Object.freeze({
   NOMINAL: 'NOMINAL',
@@ -45,31 +54,43 @@ export const STARSHIP_METRIC_CLASSES = [
   { kind: 'cpu_usage',         anchor: 'bridge',             unit: '%',     label: 'CPU',          tile: true,  spark: true,
     match: (eid) => /^sensor\.processor_use$/i.test(eid)
       || /processor_use|cpu_used/i.test(eid)
-      || /^sensor\.home_assistant_core_cpu_percent$/i.test(eid) },
+      || /^sensor\.home_assistant_core_cpu_percent$/i.test(eid)
+      || /^sensor\.beszel_.*_cpu(_pct|_percent|_usage)?$/i.test(eid) },
   { kind: 'cpu_temp',          anchor: 'port_nacelle',       unit: '°C',    label: 'CPU TMP',      tile: false, spark: true,
-    match: (eid) => /processor_temperature|cpu_temperature/i.test(eid) },
+    match: (eid) => /processor_temperature|cpu_temperature/i.test(eid)
+      || /^sensor\.beszel_.*_(cpu_)?temp(erature)?$/i.test(eid) },
   { kind: 'gpu_temp',          anchor: 'starboard_nacelle',  unit: '°C',    label: 'GPU TMP',      tile: false, spark: true,
-    match: (eid) => /gpu_.*temperature/i.test(eid) },
+    match: (eid) => /gpu_.*temperature/i.test(eid)
+      || /^sensor\.beszel_.*_gpu_temp(erature)?$/i.test(eid) },
   { kind: 'nvme_temp',         anchor: 'starboard_nacelle',  unit: '°C',    label: 'NVME TMP',     tile: false, spark: true,
-    match: (eid) => /nvme.*temp|disk_.*temperature/i.test(eid) },
+    match: (eid) => /nvme.*temp|disk_.*temperature/i.test(eid)
+      || /^sensor\.beszel_.*_(nvme|disk)_temp(erature)?$/i.test(eid) },
   // Memory: system_monitor OR hassio core memory %.
   { kind: 'memory',            anchor: 'main_computer',      unit: '%',     label: 'MEM',          tile: false, spark: true,
     match: (eid) => /memory_use_percent|mem_used_percent/i.test(eid)
-      || /^sensor\.home_assistant_core_memory_percent$/i.test(eid) },
+      || /^sensor\.home_assistant_core_memory_percent$/i.test(eid)
+      || /^sensor\.beszel_.*_(mem|memory)(_pct|_percent|_usage)?$/i.test(eid) },
   { kind: 'swap',              anchor: null,                 unit: '%',     label: 'SWAP',         tile: true,  spark: true,
-    match: (eid) => /swap_use_percent/i.test(eid) },
+    match: (eid) => /swap_use_percent/i.test(eid)
+      || /^sensor\.beszel_.*_swap(_pct|_percent|_usage)?$/i.test(eid) },
   // Disk: system_monitor disk_use_percent_*, glances fs_*_used_percent, OR hassio host disk_used
   // (paired with disk_total in _reduceMetrics to derive a %).
   { kind: 'disk_root',         anchor: 'engineering_hull',   unit: '%',     label: 'DISK',         tile: false, spark: true,
     match: (eid) => /^sensor\.disk_use_percent_/i.test(eid)
       || /fs_._used_percent/i.test(eid)
-      || /^sensor\.home_assistant_host_disk_(used|total)$/i.test(eid) },
+      || /^sensor\.home_assistant_host_disk_(used|total)$/i.test(eid)
+      || /^sensor\.beszel_.*_disk(_pct|_percent|_usage|_used_percent)?$/i.test(eid) },
   { kind: 'load_15m',          anchor: 'saucer_section',     unit: '',      label: 'LOAD',         tile: false, spark: true,
-    match: (eid) => /load_15m$/i.test(eid) },
+    match: (eid) => /load_15m$/i.test(eid)
+      || /^sensor\.beszel_.*_load(_15m?|_avg)?$/i.test(eid) },
   { kind: 'network_rx',        anchor: 'port_impulse',       unit: 'MB/s',  label: 'RX',           tile: false, spark: true,
-    match: (eid) => /network_in_/i.test(eid) },
+    match: (eid) => /network_in_/i.test(eid)
+      || /^sensor\.beszel_.*_(net|network)_in$/i.test(eid)
+      || /^sensor\.beszel_.*_rx$/i.test(eid) },
   { kind: 'network_tx',        anchor: 'starboard_impulse',  unit: 'MB/s',  label: 'TX',           tile: false, spark: true,
-    match: (eid) => /network_out_/i.test(eid) },
+    match: (eid) => /network_out_/i.test(eid)
+      || /^sensor\.beszel_.*_(net|network)_out$/i.test(eid)
+      || /^sensor\.beszel_.*_tx$/i.test(eid) },
   { kind: 'wan_reachable',     anchor: 'deflector',          unit: '',      label: 'WAN',          tile: false, spark: false,
     match: (eid) => /^binary_sensor\.wan_/i.test(eid) },
   // Addon running: any `binary_sensor.{name}_running` from the hassio platform. The
@@ -77,6 +98,12 @@ export const STARSHIP_METRIC_CLASSES = [
   // sensors out, so widening from `addon_`-prefixed to any `_running$` is safe.
   { kind: 'addon_running',     anchor: 'shuttlebay',         unit: '',      label: 'ADDONS',       tile: true,  spark: false,
     match: (eid) => /^binary_sensor\..*_running$/i.test(eid) },
+  // Beszel Docker/Podman container running state — shares the shuttlebay rollup.
+  // Beszel agents commonly expose `binary_sensor.beszel_<system>_<container>_running`
+  // or `sensor.beszel_<system>_containers_running` (count).
+  { kind: 'container_health',  anchor: null,                 unit: '',      label: 'CONTAINERS',   tile: true,  spark: false,
+    match: (eid) => /^binary_sensor\.beszel_.*_(container|docker)_.*_running$/i.test(eid)
+      || /^sensor\.beszel_.*_(containers|docker)_(running|count|total)$/i.test(eid) },
   { kind: 'backup_age',        anchor: 'cargo_bay',          unit: '',      label: 'BACKUP',       tile: false, spark: false,
     match: (eid) => /^sensor\.backup_.*_last$|backup_state/i.test(eid) },
   { kind: 'entity_health',     anchor: 'sensor_array',       unit: '',      label: 'SENSORS',      tile: false, spark: true },
@@ -88,14 +115,21 @@ export const STARSHIP_METRIC_CLASSES = [
   { kind: 'ha_core_version',   anchor: null,                 unit: '',      label: 'HA CORE',      tile: true,  spark: false,
     match: (eid) => /^update\.home_assistant_core_update$/i.test(eid)
       || /^sensor\.home_assistant_operating_system_version$/i.test(eid) },
-  { kind: 'db_size',           anchor: null,                 unit: '',      label: 'DB SIZE',      tile: true,  spark: false },
-  { kind: 'log_alerts',        anchor: null,                 unit: '',      label: 'LOG ALERTS',   tile: true,  spark: false },
+  { kind: 'db_size',           anchor: null,                 unit: '',      label: 'DB SIZE',      tile: true,  spark: false,
+    match: (eid) => /^sensor\.(recorder_)?database_size$/i.test(eid)
+      || /^sensor\.recorder_.*size$/i.test(eid) },
+  { kind: 'log_alerts',        anchor: null,                 unit: '',      label: 'LOG ALERTS',   tile: true,  spark: false,
+    match: (eid) => /^sensor\.system_log/i.test(eid)
+      || /^sensor\.log_alerts_24h$/i.test(eid) },
   { kind: 'top_cpu_proc',      anchor: null,                 unit: '',      label: 'TOP CPU',      tile: true,  spark: false,
     match: (eid) => /^sensor\.process_/i.test(eid) },
   { kind: 'io_wait',           anchor: null,                 unit: '%',     label: 'I/O WAIT',     tile: true,  spark: false,
-    match: (eid) => /cpu_iowait|io_wait/i.test(eid) },
+    match: (eid) => /cpu_iowait|io_wait/i.test(eid)
+      || /^sensor\.beszel_.*_iowait$/i.test(eid) },
   { kind: 'integrations',      anchor: null,                 unit: '',      label: 'INTEGRATIONS', tile: true,  spark: false },
-  { kind: 'boot_time',         anchor: null,                 unit: '',      label: 'BOOT TIME',    tile: true,  spark: false },
+  // boot_time = formatted timestamp ("today 06:30"); same source as uptime but rendered differently.
+  { kind: 'boot_time',         anchor: null,                 unit: '',      label: 'BOOT TIME',    tile: true,  spark: false,
+    match: (eid) => /^sensor\.last_boot$/i.test(eid) },
   { kind: 'coordinators',      anchor: null,                 unit: '',      label: 'COORDS',       tile: true,  spark: false },
   // Pending update count: counts addon `update.*` entities whose state === 'on'.
   { kind: 'updates_pending',   anchor: null,                 unit: '',      label: 'UPDATES',      tile: true,  spark: false,
@@ -223,13 +257,22 @@ export function discoverVessels(hass) {
   };
 
   for (const [eid, e] of Object.entries(entities)) {
-    if (!SYSTEM_PLATFORMS.has(e.platform)) continue;
+    const isSystem = SYSTEM_PLATFORMS.has(e.platform);
+    const isNameGated = NAMEGATED_PLATFORMS.has(e.platform)
+      && NAMEGATE_PREFIXES.some((rx) => rx.test(eid));
+    if (!isSystem && !isNameGated) continue;
     if (e.disabled_by || e.hidden_by) continue;
     const state = states[eid];
     if (!state) continue;
     let key = 'local';
     if (e.platform === 'glances' && e.device_id) {
       key = `glances:${e.device_id}`;
+    } else if (e.platform === 'beszel' && e.device_id) {
+      key = `beszel:${e.device_id}`;
+    } else if (isNameGated) {
+      // Beszel REST-bridge entities don't carry a device_id; group them all under
+      // a single synthetic 'beszel-hub' vessel so they don't pollute the local rollup.
+      key = 'beszel-hub';
     }
     const dev = devices[e.device_id || ''] || {};
     const v = ensure(key, dev.model || '');

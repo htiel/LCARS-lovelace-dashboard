@@ -3,7 +3,7 @@
 **Audit date**: Stardate 2026-04-18
 **Auditor**: Worf, Son of Mogh — Chief of Security
 **Scope**: XSS, injection, authentication, dependencies, data exposure, input validation
-**Homes audited**: Leith, Eric (via code review)
+**Homes audited**: mariner, Boimler (via code review)
 
 > *"A warrior does not abandon his post because standing is uncomfortable."*
 

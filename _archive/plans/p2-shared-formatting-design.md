@@ -547,12 +547,12 @@ Set via inline style: `style="--sparkline-color:${color}"`. This provides visual
 
 ### Manual verification checklist (post-implementation):
 
-1. **Raw decimal fix**: Navigate to Eric's Family Room, Outside, Garage — confirm all sensor values show ≤1 decimal place
+1. **Raw decimal fix**: Navigate to Boimler's Family Room, Outside, Garage — confirm all sensor values show ≤1 decimal place
 2. **Button READY**: Check any room with TP-Link Kasa devices — "Restart" should show "READY" in gray, not "UNKNOWN" in red
 3. **Sensor NO DATA**: Find any sensor in `unknown` state — should show "NO DATA" in muted color
 4. **Unavailable diagnostic**: Check Nest Protect diagnostic rows — "OFFLINE" in gray, not "UNKNOWN" in red
 5. **Sparkline labels**: Check Life Support panels — labels should read "PM₂.₅", "CO₂", "VOC", "TEMP", not truncated full names
-6. **Pool chemistry**: Check Eric's Pool panel — labels should read "CA HARD", "CYA", "FREE CL", etc.
+6. **Pool chemistry**: Check Boimler's Pool panel — labels should read "CA HARD", "CYA", "FREE CL", etc.
 7. **Large number abbreviation**: Check camera Storage sensor — should show "2.6 GB", not "2613487.599616 MB"
 8. **Power panel untouched**: Verify power panel `_formatWatts()` / `_formatEnergy()` still work correctly (regression check)
 9. **Color semantics**: Confirm no false-red indicators on diagnostic entities across both homes

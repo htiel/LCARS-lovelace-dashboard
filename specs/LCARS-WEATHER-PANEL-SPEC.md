@@ -1528,7 +1528,7 @@ All animations respect `prefers-reduced-motion` per WCAG 2.3.3.
 
 ## 10. HA Entity Mapping
 
-### Target Devices (from Eric's HA Instance)
+### Target Devices (from Boimler's HA Instance)
 
 | Device                        | Integration             | Entity                                       | Key Features                                              |
 |-------------------------------|-------------------------|----------------------------------------------|-----------------------------------------------------------|

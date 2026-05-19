@@ -81,7 +81,7 @@ Stable promotion of the 5.10 line, rolling up all `5.10.0-beta.{1..9}` work into
 ### Notes
 - Closes #225 (Bambu Lab integration) and #226 (ThermoWorks probes).
 - Habitat per-area surfaces (Kitchen PROBES-active tile, Office printer-status tile) deferred to a follow-on release.
-- Primary live test surface is Eric's ha.sabetti.com (has both integrations). Captain doesn't have either device on ha.malick.us yet — visual confirmation will come from Eric.
+- Primary live test surface is Boimler's ha.boimler.example (has both integrations). Captain doesn't have either device on ha.mariner.example yet — visual confirmation will come from Boimler.
 
 ## [5.10.0-beta.7] — Home Overview LCARS compliance + Chronicle network-switch filter
 
@@ -405,7 +405,7 @@ SVG paths) to 6.0 with `needs-external-artist`.
   `±` and 1 decimal; `sleep_duration` heuristically detects seconds / minutes / hours.
 - `VITAL_SUFFIX_PRIORITY.heart_rate` reordered so `_current_heart_rate` /
   `_resting_heart_rate` outrank `_average_sleep_heart_rate` /
-  `_lowest_sleep_heart_rate`. Eric's Oura-only HR no longer canonicalizes the
+  `_lowest_sleep_heart_rate`. Boimler's Oura-only HR no longer canonicalizes the
   sleep-period average as "AVG SLEEP" for current-status display.
 - `VITAL_SUFFIX_PRIORITY.hrv` similarly reordered to promote non-sleep HRV variants.
 - `VITAL_SUFFIX_PRIORITY.stress_resilience` leads with `_resilience_level` so the Oura
@@ -665,7 +665,7 @@ Promotion of beta.3 + beta.4 to stable. No further changes since beta.4.
 ## [5.4.6] — 2026-05-10
 
 ### Fixed
-- **Blueprint loading no longer fails with `TypeError: argument of type 'PosixPath' is not a container or iterable`.** Home Assistant's blueprint loader passes `pathlib.PosixPath` instances to our monkey-patched YAML loader; `_is_our_file()` in `process_yaml.py` ran a `str in fname` substring check that raises on `PosixPath`. The bare `except Exception` re-raised it as `HomeAssistantError`, surfacing as "Failed to load blueprint" cards in the UI for every third-party blueprint (sbyx low-battery, gmlupatelli unavailable-entities, zenguru84 esphome-auto-update, homeassistant confirmable_notification, etc.) and noisy ERROR tracebacks in the log. Reported by Eric.
+- **Blueprint loading no longer fails with `TypeError: argument of type 'PosixPath' is not a container or iterable`.** Home Assistant's blueprint loader passes `pathlib.PosixPath` instances to our monkey-patched YAML loader; `_is_our_file()` in `process_yaml.py` ran a `str in fname` substring check that raises on `PosixPath`. The bare `except Exception` re-raised it as `HomeAssistantError`, surfacing as "Failed to load blueprint" cards in the UI for every third-party blueprint (sbyx low-battery, gmlupatelli unavailable-entities, zenguru84 esphome-auto-update, homeassistant confirmable_notification, etc.) and noisy ERROR tracebacks in the log. Reported by Boimler.
 - **Fix:** coerce `fname` via `os.fspath()` before substring checks so both `str` and `PathLike` inputs work. Non-LCARS blueprints now fall through to the normal YAML load path and load successfully.
 
 ## [5.4.5] — 2026-05-05
@@ -1283,7 +1283,7 @@ Full Data subagent code review identified 23 issues across all Python and JS fil
 #### Shared Formatting Foundation (RC8-1)
 1. **Data-size scaling (QA-E10):** Raw byte values (B) now auto-scale to KB/MB/GB/TB with appropriate decimal precision.
 2. **ISO timestamp humanization (QA-E11):** Raw ISO 8601 timestamps render as "JUST NOW", "5M AGO", "2H AGO", "3D AGO", or short date (e.g., "APR 15").
-3. **Possessive name stripping (QA-E09):** Area and device names with possessives (e.g., "Leith's Office") are now stripped correctly during entity name shortening.
+3. **Possessive name stripping (QA-E09):** Area and device names with possessives (e.g., "mariner's Office") are now stripped correctly during entity name shortening.
 
 #### Weather Offline Degradation (RC8-2)
 4. **Gray offline skeleton (GEORDI-021):** Weather panel shows grayed-out frame, "OFFLINE" badge, and skeleton viewscreen when weather entity is unavailable/unknown.
@@ -1321,7 +1321,7 @@ Full Data subagent code review identified 23 issues across all Python and JS fil
 
 ### Fixed — Site Crawl Bug Fixes: Tactical, Camera, Viewport (P6)
 
-**3 bugs fixed** from full 19-room site crawl of ha.malick.us.
+**3 bugs fixed** from full 19-room site crawl of ha.mariner.example.
 
 #### Tactical Panel
 1. **Camera motion bleed (CRAWL-001):** Camera-device motion/occupancy sensors no longer appear in the Tactical MOTION section. Filter applied at area classification, entity consumption, and tactical partition levels. Standalone motion sensors (e.g., Aqara) still route correctly to Tactical.
@@ -1454,7 +1454,7 @@ Full Data subagent code review identified 23 issues across all Python and JS fil
 
 1. **Illumination switch catch-all removed (DATA-001, GEORDI-004, GEORDI-005):** The illumination panel no longer absorbs every unclaimed `switch` entity into "Circuits." Only switches matching `isLightingEntity()` appear. Fixes irrigation zones (Rachio), EcoFlow config switches, appliance controls, and cross-domain switches leaking into lighting panels across ~15 rooms in both homes.
 
-2. **Diagnostic entity_category filtering (DATA-002, DATA-011, GEORDI-002, GEORDI-012):** Hazard detector now ignores `entity_category: diagnostic/config` binary sensors. TP-Link Kasa devices (HS200, KP200) with diagnostic CO Status sensors no longer misclassify ceiling fans, outlets, and switches as hazard/life-support devices. Fixes ~7 rooms in Eric's home.
+2. **Diagnostic entity_category filtering (DATA-002, DATA-011, GEORDI-002, GEORDI-012):** Hazard detector now ignores `entity_category: diagnostic/config` binary sensors. TP-Link Kasa devices (HS200, KP200) with diagnostic CO Status sensors no longer misclassify ceiling fans, outlets, and switches as hazard/life-support devices. Fixes ~7 rooms in Boimler's home.
 
 **Additional classification fixes:**
 - GE Home refrigerator climate entities excluded from area-level Life Support (DATA-004, GEORDI-010) — fridges route to Galley panel instead of rendering HVAC arcs at 5°F

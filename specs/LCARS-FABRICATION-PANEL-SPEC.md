@@ -113,7 +113,7 @@ These exist on the Bambu Lab integration but add noise without operator value on
 
 ## 5. Multi-Printer Layout
 
-`_renderFabrication()` lays printers out in a `repeat(auto-fit, minmax(20rem, 1fr))` grid. Order: discovery order (Object iteration of `hass.entities`). At a single-printer install (current state on Eric's and the Captain's HA) this collapses to a single full-width card.
+`_renderFabrication()` lays printers out in a `repeat(auto-fit, minmax(20rem, 1fr))` grid. Order: discovery order (Object iteration of `hass.entities`). At a single-printer install (current state on Boimler's and the Captain's HA) this collapses to a single full-width card.
 
 ---
 
@@ -148,7 +148,7 @@ See [TAGGING.md](../TAGGING.md#fabrication-camera-labels-engineering--fab-tab) f
 ## 7. Open Follow-Ons
 
 - **Habitat office-area printer-status pill.** Captain's primary ask was "add the 3d printer to engineering"; a per-area surface on the Habitat dashboard is a separate v5.11+ effort.
-- **Multi-printer support.** Eric and the Captain run a single H2C each. Discovery handles multiple slugs but visual layout has not been stress-tested at N>1.
+- **Multi-printer support.** Boimler and the Captain run a single H2C each. Discovery handles multiple slugs but visual layout has not been stress-tested at N>1.
 - **Filament-runout alerts.** Bambu exposes `*_filament_runout`; integration into the alarm/tactical dashboards is deferred.
 - **Fan telemetry surface.** Could earn a collapsible sub-row if operator demand surfaces.
 

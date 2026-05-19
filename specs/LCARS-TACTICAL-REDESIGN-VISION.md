@@ -114,7 +114,7 @@ Heightened awareness. Perimeter schematic gains shield arcs. Cameras become more
 │ │   └─────┘ └─────┘ └─────┘        │  │           ◉              │ │ │
 │ ├───────────────────────────────────┤  ├───────────────────────────┤ │ │
 │ │  CREW MANIFEST      │ SAFETY     │  │  MOTION TRACE            │ │ │
-│ │  👤 Leith   HOME    │ 🔥×0 CLEAR │  │  ● FrontYard   3m ago   │ │ │
+│ │  👤 mariner   HOME    │ 🔥×0 CLEAR │  │  ● FrontYard   3m ago   │ │ │
 │ │  👤 Guest   AWAY    │ 💨×0 CLEAR │  │  ○ Driveway    1h ago   │ │ │
 │ │  📱 2 phones home   │ 🪟×0 CLEAR │  │  ○ Backyard    4h ago   │ │ │
 │ ├──────────────────────────────────────────────────────────────────┤ │ │
@@ -364,7 +364,7 @@ A compact panel showing presence awareness — who's home and who isn't.
 tactical:
   show_crew_manifest: true  # default: true
   crew_entities:
-    - person.leith
+    - person.mariner
     - person.guest
 ```
 
@@ -586,7 +586,7 @@ tactical:
 
 6. **Motion ripples are sonar pings.** When a motion sensor fires, a ripple emanates from its position on the schematic. Multiple simultaneous triggers create overlapping ripples. It looks like an active sensor sweep, and it conveys spatial information instantly — "movement at the perimeter, north-west quadrant."
 
-7. **The crew knows who's aboard.** The Crew Manifest isn't just a nice-to-have — it contextualizes every other piece of information. Motion at the front door at 8am when Leith is showing "AWAY" means something different than when they're "HOME." A real tactical officer knows who's on the ship.
+7. **The crew knows who's aboard.** The Crew Manifest isn't just a nice-to-have — it contextualizes every other piece of information. Motion at the front door at 8am when mariner is showing "AWAY" means something different than when they're "HOME." A real tactical officer knows who's on the ship.
 
 8. **LCARS design language, not generic dashboards.** Swept camera brackets, pill-shaped perimeter labels, hexagonal shield core, elliptical schematic — nothing is default-rectangular. Every visual element uses the curves, sweeps, and rounded geometries that define LCARS. The frame isn't decoration — it's *part of the display*.
 
@@ -766,7 +766,7 @@ Instead of CSS `border` or `gap` to separate the radial arc display from the vie
 The structural bar between the arc display and the timeline isn't just a visual separator — it contains the **Crew Manifest** and **Motion Trace** data, rendered as LCARS pill labels *within* the bar itself, like how the Engineering II panel embeds numbered readouts in its horizontal bars:
 
 ```
-  ═══╡ 👤 Leith HOME │ 👤 Guest AWAY │ ● FrontYard 3m │ ○ Driveway 1h ╞═══
+  ═══╡ 👤 mariner HOME │ 👤 Guest AWAY │ ● FrontYard 3m │ ○ Driveway 1h ╞═══
        ^--- crew manifest pills ---^   ^--- motion trace pills --------^
 ```
 
@@ -1231,7 +1231,7 @@ Every feature, its final approved form, and provenance.
 | F-01 | **Perimeter Schematic** | Concentric arc segments per zone. Pill-shaped sensor nodes embedded ON arcs. Auto-layout by area name heuristic (front→top, back→bottom, side→left/right, garage→top-right). SVG `<path>` arcs with gaps between zones. | APPROVED | Wesley (R1), Geordi (R2) | 1–2 |
 | F-02 | **Shield Status Core** | **Rounded rectangle** (not hexagon). Displays alarm state label + crew count. Tap opens alarm panel overlay. Center of radial arc display. | APPROVED | Geordi (R2) overruled Wesley (R1) | 2 |
 | F-03 | **Shield Countdown** | Depleting arc segments around shield core during pending state. Arc depletion matches exit/entry delay timer. Falls back to numeric text under `prefers-reduced-motion`. | APPROVED | Wesley (R1), Worf (R3) | 1, 3 |
-| F-04 | **Shield Core Subtext** | Below shield core: `"DISARMED BY LEITH · 07:32"` (Cruise). At night (22:00–06:00): `"0 OVERNIGHT"` badge showing overnight event count. | APPROVED | Wesley (R4), Geordi (R4) | 4 |
+| F-04 | **Shield Core Subtext** | Below shield core: `"DISARMED BY mariner · 07:32"` (Cruise). At night (22:00–06:00): `"0 OVERNIGHT"` badge showing overnight event count. | APPROVED | Wesley (R4), Geordi (R4) | 4 |
 | F-05 | **3-Mode Adaptive Layout** | Cruise (disarmed) → Tactical (armed) → Red Alert (triggered). Layout density increases with threat level. | APPROVED | Wesley (R1), all (R2–R4) | 1 |
 | F-06 | **Auto-Escalation** | Mode auto-promotes Cruise→Tactical→Red Alert ONLY when alarm is armed. When disarmed, detection highlighting occurs but NO mode change. De-escalation after 60s cooldown with no active detections. | APPROVED | Worf (R3) | 3 |
 | F-07 | **Motion Trace (2-tier)** | 0–5 min: bright `--lcars-sunflower` dot. 5 min–2 hr: faded `--lcars-gray` dot. Beyond 2 hr: removed from trace. Sorted most-recent-first. | APPROVED | Wesley (R2), Geordi (R2) | 2 |
@@ -1243,7 +1243,7 @@ Every feature, its final approved form, and provenance.
 | F-13 | **Detection Sound** | First person = `alert`. Second person on DIFFERENT camera within 60s = `alert` again. Third+ person = silent. Vehicle = `doorEvent`. Motion/animal/package = silent. 10s per-camera cooldown. Mute toggle respected. Red Alert suppresses detection sounds. | APPROVED | Worf (R3), revised R4 | 3–4 |
 | F-14 | **Camera Patrol Mode** | Cruise mode only. 10s dwell per camera, auto-cycles. Stops on person/vehicle detection. Manual restart required after threat. Not available in Tactical/Red Alert. | APPROVED | Worf (R3, §C.4), Wesley (R4) | 3–4 |
 | F-15 | **Red Alert Layout** | Full-width main viewscreen (auto-selected camera nearest breach). 3-column strip below: CREW MANIFEST (30%) \| LAST 5 EVENTS (40%) \| ACTIONS (30%). Crew manifest shown, NOT suppressed. | APPROVED | Worf (R4), Geordi (R4) | 4 |
-| F-16 | **Red Alert Header** | `"RED ALERT — FRONT DOOR BREACH — 00:42 ELAPSED"` (pulsing tomato bar). Second line: `"Armed by LEITH at 22:00"`. | APPROVED | Worf (R4) | 4 |
+| F-16 | **Red Alert Header** | `"RED ALERT — FRONT DOOR BREACH — 00:42 ELAPSED"` (pulsing tomato bar). Second line: `"Armed by mariner at 22:00"`. | APPROVED | Worf (R4) | 4 |
 | F-17 | **Red Alert Actions** | Two action buttons: SILENCE (sunflower, left) \| DISARM (tomato, hold-800ms confirm, right). 2rem gap between them. No accidental disarm — hold required. | APPROVED | Worf (R4) | 4 |
 | F-18 | **Detection Trace** | In-memory ring buffer (50 events max). Shown in Red Alert as "LAST 5 EVENTS" column — approach path from camera detection history. Persists 5 min after Red Alert clears, then garbage collected. | APPROVED | Worf (R3, §C.6) | 3 |
 | F-19 | **Lock Status Bar** | Structural LCARS bar: `"LOCKS: 4/4 ENGAGED"` (all locked) or `"LOCKS: 3/4 · 1 UNSECURED [LOCK ALL]"` (unlocked present). `[LOCK ALL]` button appears ONLY when unsecured locks exist. | APPROVED | Wesley (R4), Worf (R4) | 4 |
@@ -1280,7 +1280,7 @@ Every feature, its final approved form, and provenance.
 │  │  SIDE  ──────┤  │  │  ╭───────────╮  │  │  ├────── GARAGE         │  │  │
 │  │              │  │  │  │ DISARMED  │  │  │  │                      │  │  │
 │  │              │  │  │  │ 👤×2 HOME │  │  │  │                      │  │  │
-│  │              │  │  │  │LEITH·07:32│  │  │  │                      │  │  │
+│  │              │  │  │  │mariner·07:32│  │  │  │                      │  │  │
 │  │              ╰──┤  │  ╰───────────╯  │  ├──╯                      │  │  │
 │  │                 ╰──┤  ╭━━━━━━━━━━━╮  ├──╯                         │  │  │
 │  │                    ╰──┤ ◖○     ○◗ ├──╯                            │  │  │
@@ -1337,7 +1337,7 @@ Every feature, its final approved form, and provenance.
 │  │            BACK                  │  │  └───────────────────────┘  │  │  │
 │  └──────────────────────────────────┘  └──────────────────────────────┘  │  │
 │                                                                         │  │
-│  ═══╡ 👤 Leith HOME │ 👤 Guest AWAY │ LOCKS: 4/4 ENGAGED ╞═════════    │  │
+│  ═══╡ 👤 mariner HOME │ 👤 Guest AWAY │ LOCKS: 4/4 ENGAGED ╞═════════    │  │
 │  ═══╡ ● FrontYard 3m │ ○ Driveway 1h │ ○ Backyard 4h ╞══════════════   │  │
 │                                                                         │  │
 │  ▮▮▮░░░░▮░░░▮▮▮░░░░░░░▮▮░░░░░░░░░░░░░░░░░░░░░  24H→NOW ──── 3rem     │  │
@@ -1387,7 +1387,7 @@ Every feature, its final approved form, and provenance.
 ```
 ┌═▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓═┐
 │ ╭▓▓▓▓▓╮  ▓▓ RED ALERT — FRONT DOOR BREACH — 00:42 ELAPSED ▓▓ [🔇][⚙]   │
-│ │▓▓▓▓▓│  Armed by LEITH at 22:00                                        │
+│ │▓▓▓▓▓│  Armed by mariner at 22:00                                        │
 ├─╰▓▓▓▓▓╯─────────────────────────────────────────────────────────────────┐│
 │                                                                          ││
 │  ┌── MAIN VIEWSCREEN (full width) ───────────────────────────────────┐  ││
@@ -1406,7 +1406,7 @@ Every feature, its final approved form, and provenance.
 │                                                                          ││
 │  ┌─ CREW MANIFEST ─┐  ┌─ LAST 5 EVENTS ─────────┐  ┌─ ACTIONS ──────┐ ││
 │  │  (30%)           │  │  (40%)                   │  │  (30%)         │ ││
-│  │  👤 Leith  HOME  │  │  03:12 ● FY   PERSON    │  │                │ ││
+│  │  👤 mariner  HOME  │  │  03:12 ● FY   PERSON    │  │                │ ││
 │  │  👤 Guest  AWAY  │  │  03:12 ● DW   PERSON    │  │  ╭──────────╮  │ ││
 │  │  📱 2 phones     │  │  03:13 ● FD   PERSON    │  │  │ SILENCE  │  │ ││
 │  │                  │  │  03:13 ✦ FD   BREACH     │  │  ╰──────────╯  │ ││

@@ -50,7 +50,7 @@ This repo is configured to push as **htiel** with no login prompt:
 
 ```powershell
 git config --local user.name "htiel"
-git config --local user.email "htiel@users.noreply.github.com"
+git config --local user.email "<your-username>@users.noreply.github.com"
 git config --local credential.https://github.com.username htiel
 ```
 
@@ -136,8 +136,8 @@ cd custom_components\lcars_dashboard\js
 npm run build
 
 # Copy to HA config repo
-$src = "C:\Users\leith\LocalRepros\LCARS-lovelace-dashboard\custom_components\lcars_dashboard"
-$dst = "C:\Users\leith\LocalRepros\HomeAssistantConfig\custom_components\lcars_dashboard"
+$src = "C:\Users\<your-username>\LocalRepros\LCARS-lovelace-dashboard\custom_components\lcars_dashboard"
+$dst = "C:\Users\<your-username>\LocalRepros\HomeAssistantConfig\custom_components\lcars_dashboard"
 Copy-Item "$src\js\lcars-dashboard.js" "$dst\js\" -Force
 Copy-Item "$src\const.py" "$dst\" -Force
 Copy-Item "$src\manifest.json" "$dst\" -Force

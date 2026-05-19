@@ -185,7 +185,7 @@ No data class is duplicated across dashboards. Document this matrix in `LCARS-CO
 
 ### 7.1 Captain's order
 
-A new IPP printer (`sensor.epson_et_3850_series` + ink-level sensors `*_black_ink|cyan_ink|magenta_ink|yellow_ink` + `*_uptime`, area `master_bedroom`, platform `ipp`) was added to HA and is currently unrouted — `_diff_malick.py` puts the ink sensors in the generic `device` bucket. Captain has asked whether the printer belongs here or in its own micro-dashboard.
+A new IPP printer (`sensor.epson_et_3850_series` + ink-level sensors `*_black_ink|cyan_ink|magenta_ink|yellow_ink` + `*_uptime`, area `master_bedroom`, platform `ipp`) was added to HA and is currently unrouted — `_diff_mariner.py` puts the ink sensors in the generic `device` bucket. Captain has asked whether the printer belongs here or in its own micro-dashboard.
 
 ### 7.2 Recommendation
 
@@ -220,11 +220,11 @@ PERIPHERAL_KINDS = {
 }
 ```
 
-### 7.4 `_diff_malick.py` routing change
+### 7.4 `_diff_mariner.py` routing change
 
 Today the four ink sensors land in the generic `device` bucket. Add an **`infra_peripheral`** tag for entities matching `PERIPHERAL_PLATFORMS`. The Subspace Relay card consumes the `infra_peripheral` bucket to populate this sub-panel. This is the same tag-as-routing convention used by `pool_spa`. Concrete change:
 
-- Add `INFRA_PERIPHERAL_PLATFORMS = {'ipp'}` to `_diff_malick.py` constants.
+- Add `INFRA_PERIPHERAL_PLATFORMS = {'ipp'}` to `_diff_mariner.py` constants.
 - In the entity classifier, when `platform in INFRA_PERIPHERAL_PLATFORMS`, set `tag = 'infra_peripheral'` (overrides generic `device` bucket).
 - Add a unit-test fixture using a fictional printer entity (no real model strings).
 
@@ -318,7 +318,7 @@ Audio mode `network`:
 
 ### Phase 4 — Equipment & Peripherals sub-panel (5.2.0-beta.2 cont.)
 
-18. Add `INFRA_PERIPHERAL_PLATFORMS = {'ipp'}` to `_diff_malick.py`; route matching entities to the `infra_peripheral` tag. Add a fixture-based unit test.
+18. Add `INFRA_PERIPHERAL_PLATFORMS = {'ipp'}` to `_diff_mariner.py`; route matching entities to the `infra_peripheral` tag. Add a fixture-based unit test.
 19. Add `PERIPHERAL_PLATFORMS` and `PERIPHERAL_KINDS` to `lcars-network-utils.js`.
 20. Implement Equipment & Peripherals section in `lcars-network-card.js` (printer rendering per §7.5, ink-color ramp).
 
@@ -331,7 +331,7 @@ Audio mode `network`:
 
 ### Phase 6 — Power boundary cleanup (5.2.0-beta.3)
 
-25. Per §6 matrix: ensure per-port PoE sensors are NOT routed into the Power Distribution dashboard's circuit list. Add an exclusion to `_diff_malick.py`.
+25. Per §6 matrix: ensure per-port PoE sensors are NOT routed into the Power Distribution dashboard's circuit list. Add an exclusion to `_diff_mariner.py`.
 26. Cross-link this spec from `LCARS-CONSOLIDATED-POWER-PANEL-SPEC.md`.
 27. Update `plans/backlog-5x.md`: retire `5X-3.3`, link to this spec; add `5X-3.4 · Habitat Presence Panel` (LOW); add `5X-3.6 · Promote Equipment Panel to Infrastructure Dashboard — DEFERRED`.
 
@@ -364,7 +364,7 @@ Audio mode `network`:
 - [ ] Printer panel renders four ink levels with color ramp; ink < 25% renders `var(--lcars-tomato)`.
 - [ ] `<lcars-gauge>` extraction does not regress Habitat visually or behaviorally.
 - [ ] Clients table excludes `disabled_by != null` trackers and respects `.lcars-network-redactable` selector.
-- [ ] `_diff_malick.py` routes IPP entities to the `infra_peripheral` tag (verified by test fixture).
+- [ ] `_diff_mariner.py` routes IPP entities to the `infra_peripheral` tag (verified by test fixture).
 - [ ] Bundle size delta ≤ +25 KiB; total bundle < 945 KiB.
 - [ ] Worf signs off on Phase 5 (clients table) before stable.
 - [ ] Geordi signs off on port grid (Phase 2) and biobed-strip-equivalent visual style.
@@ -485,7 +485,7 @@ Audio-mode resolved, clients table re-architected, tri-graph differentiation add
 6. Confirmed: NAS/UPS health belongs here; UPS wattage and circuit impact stay in Power Distribution.
 
 ### Sequencing & dependencies
-Keep ship order at `5.2.0 -> 5.3.0 -> 5.4.0`, but split scope inside this release: ship WAN strip, Network Health, shared primitives, registry plumbing, and Equipment/Peripherals in `5.2.0`; move Connected Clients to `5.2.1` unless Worf signs hostname/IP/MAC redaction and screenshot coverage before beta freeze. Dependency chain: registry `default_enabled` plumbing -> `<lcars-gauge>` extraction -> `<lcars-sparkline>` -> WAN/Health -> `_diff_malick.py` peripheral routing -> clients hardening. Backlog hygiene: retire `5X-3.3` on merge; keep `5X-3.4 Habitat Presence Panel`; keep `5X-3.6 Promote Equipment Panel to Infrastructure Dashboard`; add a distinct follow-on for deferred clients if split rather than overloading `5X-3.3` again. Capacity: 19 points if clients defer, 22 if included. Critical path: shared primitive extraction plus WAN/Health integration.
+Keep ship order at `5.2.0 -> 5.3.0 -> 5.4.0`, but split scope inside this release: ship WAN strip, Network Health, shared primitives, registry plumbing, and Equipment/Peripherals in `5.2.0`; move Connected Clients to `5.2.1` unless Worf signs hostname/IP/MAC redaction and screenshot coverage before beta freeze. Dependency chain: registry `default_enabled` plumbing -> `<lcars-gauge>` extraction -> `<lcars-sparkline>` -> WAN/Health -> `_diff_mariner.py` peripheral routing -> clients hardening. Backlog hygiene: retire `5X-3.3` on merge; keep `5X-3.4 Habitat Presence Panel`; keep `5X-3.6 Promote Equipment Panel to Infrastructure Dashboard`; add a distinct follow-on for deferred clients if split rather than overloading `5X-3.3` again. Capacity: 19 points if clients defer, 22 if included. Critical path: shared primitive extraction plus WAN/Health integration.
 
 ### Story breakdown (epic → stories)
 Epic: Subspace Relay v5.2.x
@@ -508,7 +508,7 @@ Epic: Subspace Relay v5.2.x
 |---|---:|---:|---:|---:|---|
 | Client hostname/IP/MAC leaks in screenshots or DOM | 8 | 5 | 5 | 200 | Default hostname redaction `true`, screenshot selector audit, Worf review before clients ship |
 | Latency-data churn corrupts sparkline cache or misorders samples | 6 | 5 | 6 | 180 | Ring buffer keyed per anchor, monotonic timestamp guard, 5s throttle |
-| PoE data double-owned with Power dashboard | 7 | 4 | 5 | 140 | `_diff_malick.py` exclusion test plus boundary cross-link in Power spec |
+| PoE data double-owned with Power dashboard | 7 | 4 | 5 | 140 | `_diff_mariner.py` exclusion test plus boundary cross-link in Power spec |
 | Disabled-by-default trackers reappear in clients table | 5 | 6 | 5 | 150 | Entity-registry `disabled_by` filter with fixture coverage |
 | IPP sensors stay in generic device bucket and peripherals panel renders empty | 4 | 6 | 4 | 96 | Add `infra_peripheral` routing test fixture and dashboard empty-state QA |
 

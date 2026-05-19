@@ -122,7 +122,7 @@ Keyed by `(platform, entity_id_pattern | device_class | unit)` → `metric_kind`
 
 ### 4.4 Concrete entity table (HA OS host, today, Captain's install)
 
-Verified from session intel (`malick-json`).
+Verified from session intel (`mariner-json`).
 
 | Entity | `metric_kind` | Notes |
 |---|---|---|

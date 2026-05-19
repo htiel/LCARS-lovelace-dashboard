@@ -108,9 +108,9 @@ Token in DOM, history, screenshots, proxy logs. Move to fetch+blob with cookie a
 Top Wesley innovation pick (S effort / L value). Same single-cell footprint, far more information. Recorder data already in HA.
 **Aliases**: Wesley A1
 
-## New Features (from Eric's HA dump parse — May 2026)
+## New Features (from Boimler's HA dump parse — May 2026)
 
-> Five items from the 2026-05-12 parse of Eric's `core.*` registry. 303 new entity rows appended to `localinfo/combined.entities.csv`. Each integration needs primary-dashboard placement AND habitat room-view surfacing where appropriate. See `/memories/repo/erics-new-integrations.md` for Data's full mapping report.
+> Five items from the 2026-05-12 parse of Boimler's `core.*` registry. 303 new entity rows appended to `localinfo/combined.entities.csv`. Each integration needs primary-dashboard placement AND habitat room-view surfacing where appropriate. See `/memories/repo/erics-new-integrations.md` for Data's full mapping report.
 
 #### 5X-F32 · Tactical Chronicle Mode — Per-Room 24h State History Timeline — `DONE` (Pass 0 reconciliation 2026-05-13) · Priority: MEDIUM · Size: L · [#224](https://github.com/htiel/LCARS-lovelace-dashboard/issues/224)
 Extend Tactical with a `chronicle` mode rendering per-area stacked state-history Gantt over 24h (lights / occupancy / motion / fans / sun). Reuses Tactical Redesign Vision §3.4 timeline data source at full breadth. Habitat area cards expose "CHRONICLE →" deep link. New spec: `LCARS-TACTICAL-CHRONICLE-MODE-SPEC.md`.
@@ -122,7 +122,7 @@ Extend Tactical with a `chronicle` mode rendering per-area stacked state-history
 72 entities across 11 Signals/Smoke X probes. Add `'thermoworks_cloud'` to `GALLEY_PLATFORMS`; render PROBES cluster alongside OVENS/LAUNDRY. Kitchen Habitat area surfaces "PROBES ACTIVE: N" when any reported in last hour. Stale-hide >15min by default.
 
 #### 5X-F35 · Oura Ring — Elevate Medical Bay Dashboard Spec → Implementation — `TODO` · Priority: HIGH · Size: L · [#227](https://github.com/htiel/LCARS-lovelace-dashboard/issues/227)
-64 entities (Eric's ring). HA core integration. Trigger event to ship Medical Bay first release. Primary callouts: sleep_score, readiness, HRV, sleep_duration, body_temp_deviation. **Worf gate required** — PHI redaction. NOT surfaced in Habitat (opt-in Medical Bay only).
+64 entities (Boimler's ring). HA core integration. Trigger event to ship Medical Bay first release. Primary callouts: sleep_score, readiness, HRV, sleep_duration, body_temp_deviation. **Worf gate required** — PHI redaction. NOT surfaced in Habitat (opt-in Medical Bay only).
 
 #### 5X-F36 · Life360 — Habitat Presence Aggregation (Opt-In) — `TODO` · Priority: MEDIUM · Size: M · [#228](https://github.com/htiel/LCARS-lovelace-dashboard/issues/228)
 15 entities (14 family trackers + 1 connectivity). Aggregate into per-area Personnel pill alongside mobile_app/tile/unifi sources; dedupe by person. Resident family default-on; extended family opt-in expand. Connectivity → Starship Health. **Worf gate required** — extend screenshot obfuscator for friendly names + lat/lng.
@@ -375,7 +375,7 @@ Motion sensors and Wallbox Vilya showing as battery cards. Filter out non-storag
 ## Wesley's IoT / Hardware Ideas (Backlog — Unscheduled)
 
 ### mmWave Room Presence
-ESP32-C3 + HLK-LD2410B per room (~$8/node). `binary_sensor.room_occupancy`. Rooms with presence get brighter nav button + "life signs detected." ESPHome YAML, no C++. **In scope** for Train 4 / 5.10.0 (Captain decision 2026-05-13: Eric has Aqara FP1E + FP2 mmWave hardware in production).
+ESP32-C3 + HLK-LD2410B per room (~$8/node). `binary_sensor.room_occupancy`. Rooms with presence get brighter nav button + "life signs detected." ESPHome YAML, no C++. **In scope** for Train 4 / 5.10.0 (Captain decision 2026-05-13: Boimler has Aqara FP1E + FP2 mmWave hardware in production).
 
 _Voice "Computer" and NFC Access Panels removed 2026-05-13 per Captain decision Q1 / Q6: out of scope for the 5.x line; revisit in 6.x if/when warranted._
 

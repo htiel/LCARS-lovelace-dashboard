@@ -9,7 +9,7 @@ Assumptions:
 - Removed Geordi items GEORDI-011, GEORDI-020, and GEORDI-023 are excluded because the report itself closes them.
 - Worf's commentary on WESLEY-IDEA-009, WESLEY-IDEA-010, and WESLEY-IDEA-015 is treated as implementation constraint input, not separate backlog items.
 - External Home Assistant configuration issues still receive a pass assignment so they have an explicit disposition.
-- Eric's post-P2 visual QA findings are assigned only to P3-P9 because P1 and P2 already shipped; those passes are updated for status only, not rescoping.
+- Boimler's post-P2 visual QA findings are assigned only to P3-P9 because P1 and P2 already shipped; those passes are updated for status only, not rescoping.
 - The April 19 crawl bugs are re-scored against the live backlog; because they cluster around tactical, camera, entity-utils, and homepage-card work, they form a standalone patch-focused P6 and the existing media pass slides to P6b.
 - Aggregate pass WSJF is computed as `sum(BV + TC + RR) / sum(JS)` across the items assigned to that pass.
 
@@ -63,24 +63,24 @@ Assumptions:
 | GEORDI-022 | Geordi | Bug | Gray out offline irrigation controller and zones | `lcars-irrigation-panel.js` | 8 | 5 | 5 | 2 | 9.00 | P7 |
 | GEORDI-024 | Geordi | Bug | Collapse or limit diagnostics flood | `lcars-environment-panel.js`, disclosure helpers | 8 | 5 | 8 | 3 | 7.00 | P3 |
 | GEORDI-025 | Geordi | Ops | Link Color label is HA naming issue | HA config, optional alias mapping | 2 | 1 | 1 | 1 | 4.00 | P9 |
-| GEORDI-026 | Geordi | Ops | Ephraim/Elysia mismatch is HA naming drift | HA config, optional alias mapping | 2 | 1 | 1 | 1 | 4.00 | P9 |
+| GEORDI-026 | Geordi | Ops | Freeman/Freeman mismatch is HA naming drift | HA config, optional alias mapping | 2 | 1 | 1 | 1 | 4.00 | P9 |
 | GEORDI-027 | Geordi | Bug | Warn at 100% media volume | `lcars-media-panel.js` volume fill | 3 | 3 | 2 | 1 | 8.00 | P6b |
 | GEORDI-028 | Geordi | Bug | Humanize Pentair hex/model names | `lcars-base-panel.js::_shortDeviceName`, pool/power naming | 3 | 2 | 2 | 2 | 3.50 | P4 |
 | GEORDI-029 | Geordi | Audit | Verify focus visibility on dynamic content | panel styles, sensor-row shadow focus, shell interactions | 5 | 5 | 8 | 5 | 3.60 | P8 |
 | GEORDI-030 | Geordi | Audit | Increase low-contrast sensor indicator visibility | `lcars-styles.js`, panel styles, sensor-row | 5 | 5 | 8 | 3 | 6.00 | P8 |
 | GEORDI-031 | Geordi | Audit | Verify reduced-motion compliance everywhere | shared animations, panel styles | 3 | 3 | 8 | 3 | 4.67 | P8 |
 | GEORDI-032 | Geordi | Enabler | Standardize canonical short sensor labels | new label utility, base panel | 8 | 5 | 5 | 3 | 6.00 | P2 |
-| QA-E01 | Eric QA | Bug | Route ceiling fans to illumination or suppress generic fan fallback | `lcars-entity-utils.js::classifyDevice`, `lcars-illumination-panel.js`, `lcars-homepage-card.js` | 13 | 8 | 8 | 3 | 9.67 | P3 |
-| QA-E02 | Eric QA | Bug | Replace `OTHER ENTITIES` catch-all dumps with LCARS-aware suppression or routing | `lcars-homepage-card.js` fallback renderer, `lcars-entity-utils.js` | 13 | 13 | 13 | 5 | 7.80 | P3 |
-| QA-E03 | Eric QA | Bug | Make standalone smoke detectors consistently classify as HAZARD DETECTION | `lcars-entity-utils.js::classifyDevice`, hazard detector logic | 8 | 13 | 8 | 3 | 9.67 | P3 |
-| QA-E04 | Eric QA | Bug | Filter or reroute FP2 and presence devices instead of raw device-card fallback | `lcars-entity-utils.js`, tactical routing, `lcars-homepage-card.js` | 8 | 8 | 8 | 3 | 8.00 | P3 |
-| QA-E05 | Eric QA | Bug | Deduplicate sparkline tray labels before truncation rules apply | `lcars-lifesupport-panel.js::_renderSparklineTray`, `lcars-format-utils.js` | 8 | 8 | 5 | 2 | 10.50 | P3 |
-| QA-E06 | Eric QA | Bug | Filter Nest Protect diagnostic entities from default Life Support views | `lcars-lifesupport-panel.js`, `lcars-environment-panel.js` | 8 | 8 | 8 | 3 | 8.00 | P3 |
-| QA-E07 | Eric QA | Bug | Route generic device-card sensors through the shared numeric formatter | `lcars-homepage-card.js`, `lcars-format-utils.js` | 8 | 8 | 8 | 2 | 12.00 | P3 |
-| QA-E08 | Eric QA | Bug | Remove cross-panel sensor and circuit label truncation | panel CSS files, `lcars-styles.js`, pool/power/camera styles | 8 | 5 | 5 | 5 | 3.60 | P8 |
-| QA-E09 | Eric QA | Bug | Strip possessive area names without leaving orphan punctuation | `lcars-base-panel.js::_shortenName`, `lcars-format-utils.js::canonicalLabel` | 3 | 2 | 3 | 1 | 8.00 | P8 |
-| QA-E10 | Eric QA | Bug | Humanize large storage and data-size values with unit scaling | `lcars-format-utils.js::formatNumber`, `lcars-base-panel.js` | 5 | 5 | 8 | 2 | 9.00 | P7 |
-| QA-E11 | Eric QA | Bug | Format raw ISO timestamps into human-readable date or relative-time output | `lcars-format-utils.js`, `lcars-base-panel.js`, sensor row rendering | 8 | 8 | 8 | 3 | 8.00 | P7 |
+| QA-E01 | Boimler QA | Bug | Route ceiling fans to illumination or suppress generic fan fallback | `lcars-entity-utils.js::classifyDevice`, `lcars-illumination-panel.js`, `lcars-homepage-card.js` | 13 | 8 | 8 | 3 | 9.67 | P3 |
+| QA-E02 | Boimler QA | Bug | Replace `OTHER ENTITIES` catch-all dumps with LCARS-aware suppression or routing | `lcars-homepage-card.js` fallback renderer, `lcars-entity-utils.js` | 13 | 13 | 13 | 5 | 7.80 | P3 |
+| QA-E03 | Boimler QA | Bug | Make standalone smoke detectors consistently classify as HAZARD DETECTION | `lcars-entity-utils.js::classifyDevice`, hazard detector logic | 8 | 13 | 8 | 3 | 9.67 | P3 |
+| QA-E04 | Boimler QA | Bug | Filter or reroute FP2 and presence devices instead of raw device-card fallback | `lcars-entity-utils.js`, tactical routing, `lcars-homepage-card.js` | 8 | 8 | 8 | 3 | 8.00 | P3 |
+| QA-E05 | Boimler QA | Bug | Deduplicate sparkline tray labels before truncation rules apply | `lcars-lifesupport-panel.js::_renderSparklineTray`, `lcars-format-utils.js` | 8 | 8 | 5 | 2 | 10.50 | P3 |
+| QA-E06 | Boimler QA | Bug | Filter Nest Protect diagnostic entities from default Life Support views | `lcars-lifesupport-panel.js`, `lcars-environment-panel.js` | 8 | 8 | 8 | 3 | 8.00 | P3 |
+| QA-E07 | Boimler QA | Bug | Route generic device-card sensors through the shared numeric formatter | `lcars-homepage-card.js`, `lcars-format-utils.js` | 8 | 8 | 8 | 2 | 12.00 | P3 |
+| QA-E08 | Boimler QA | Bug | Remove cross-panel sensor and circuit label truncation | panel CSS files, `lcars-styles.js`, pool/power/camera styles | 8 | 5 | 5 | 5 | 3.60 | P8 |
+| QA-E09 | Boimler QA | Bug | Strip possessive area names without leaving orphan punctuation | `lcars-base-panel.js::_shortenName`, `lcars-format-utils.js::canonicalLabel` | 3 | 2 | 3 | 1 | 8.00 | P8 |
+| QA-E10 | Boimler QA | Bug | Humanize large storage and data-size values with unit scaling | `lcars-format-utils.js::formatNumber`, `lcars-base-panel.js` | 5 | 5 | 8 | 2 | 9.00 | P7 |
+| QA-E11 | Boimler QA | Bug | Format raw ISO timestamps into human-readable date or relative-time output | `lcars-format-utils.js`, `lcars-base-panel.js`, sensor row rendering | 8 | 8 | 8 | 3 | 8.00 | P7 |
 | WESLEY-UX-001 | Wesley | UX | Replace Adopt Device ambiguity with actionable guidance | `lcars-camera-panel.js`, empty-state CTA helper | 5 | 5 | 3 | 2 | 6.50 | P3 |
 | WESLEY-UX-002 | Wesley | UX | Collapse unavailable media players | `lcars-media-panel.js` | 8 | 5 | 3 | 5 | 3.20 | P6b |
 | WESLEY-UX-003 | Wesley | UX | Show READY / NO DATA instead of red UNKNOWN | `lcars-base-panel.js`, `lcars-color-utils.js` | 8 | 8 | 8 | 2 | 12.00 | P2 |
@@ -139,7 +139,7 @@ Description: Fix the systemic classification defects first so the dashboard stop
 - Dependencies: None
 - Test after pass:
   - Build the JS bundle.
-  - Room-level visual QA in Leith Back Yard, Garage, Office and Eric Alex, Ephraim, Kyler, Kitchen, Garage, Outside.
+  - Room-level visual QA in mariner Back Yard, Garage, Office and Boimler Tendi, Freeman, Rutherford, Kitchen, Garage, Outside.
   - Verify illumination no longer absorbs irrigation, EcoFlow, appliance, or cross-domain switches.
   - Verify ceiling-fan rooms do not spawn Life Support unless actual AQ signals exist.
   - Verify GE fridges and ScreenLogic pool climate entities stop feeding Life Support.
@@ -194,7 +194,7 @@ Description: Centralize how values, labels, and idle/error states render. This r
     - Add canonical label map for `PM2.5`, `PM10`, `PM1`, `CO₂`, `VOC`, `AQI`, `TEMP`, `RH`, plus pool chemistry abbreviations.
   - `lcars-sensor-row.js`
     - Ensure the component receives already-formatted label/value pairs and preserves focusability for dynamic rows.
-- GitHub issue overlap after Eric QA:
+- GitHub issue overlap after Boimler QA:
   - `#47` maps to DATA-008 and GEORDI-001. P2 addressed the shared formatter core, but battery-specific and generic-device-card coverage gaps remain open through QA-E07 and QA-E10.
   - `#48` maps to DATA-008 and GEORDI-001. Treat it as a P2 regression check only; the implementation surface belongs to the shipped pass.
   - `#49` maps to GEORDI-032 and WESLEY-UX-010. P2 addressed canonical sparkline labeling, but duplicated label selection remains open through QA-E05.
@@ -268,7 +268,7 @@ Description: Clean up circuit identity, pairing, and load presentation in one pa
 - Dependencies: P2
 - Test after pass:
   - Build the JS bundle.
-  - Verify Eric Garage, Laundry, Pool, and any 0W standby rooms.
+  - Verify Boimler Garage, Laundry, Pool, and any 0W standby rooms.
   - Confirm duplicate `POOL EQUIPMENT` names are disambiguated, `-- Dryer` artifacts are gone, aggregate hidden-wattage labels are correct, and 0W views collapse as intended.
 - Implementation notes:
   - `lcars-power-panel.js`
@@ -370,7 +370,7 @@ Description: Fix the media panels as a family. This pass collapses dead or stand
 - Dependencies: P2
 - Test after pass:
   - Build the JS bundle.
-  - Verify Leith Master Bedroom and Eric Back Porch.
+  - Verify mariner Master Bedroom and Boimler Back Porch.
   - Confirm unavailable players collapse into a compact offline strip, standby siblings collapse into a comm-array view, and 100% volume gets a visible warning color.
 - Implementation notes:
   - `lcars-media-panel.js`
@@ -396,7 +396,7 @@ Description: Standardize calm, useful offline states plus human-readable time an
 - Dependencies: P2
 - Test after pass:
   - Build the JS bundle.
-  - Verify Eric Outside and Utility rooms.
+  - Verify Boimler Outside and Utility rooms.
   - Confirm offline weather uses gray framing plus last-known readings; irrigation offline disables controls, clarifies controller state, and surfaces last active context.
   - Verify storage, data-size, and similar telemetry values scale to readable units instead of exposing raw MB-sized magnitudes.
   - Verify timestamp entities and vehicle activity rows render human-readable dates or relative-time strings instead of raw ISO payloads.
@@ -441,7 +441,7 @@ Description: Finish the presentation layer after the core behavior is stable. Th
     - Add room vitals / last-activity shell treatment only after the core layouts are stable.
     - Prototype View Transitions and boot animation behind feature detection; do not make them required for navigation.
   - `lcars-base-panel.js`
-    - Tighten `_shortenName()` so possessive area prefixes like `Alex's` strip cleanly instead of leaving orphan punctuation behind.
+    - Tighten `_shortenName()` so possessive area prefixes like `Tendi's` strip cleanly instead of leaving orphan punctuation behind.
   - `lcars-styles.js` and component styles
     - Increase or outline low-contrast indicator dots and verify focus rings through shadow DOM.
     - Audit cross-panel label containers so long chemistry, circuit, and person/device labels either wrap, abbreviate intentionally, or get wider containers instead of ellipsis-by-default.

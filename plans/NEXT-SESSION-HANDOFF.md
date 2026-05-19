@@ -69,4 +69,4 @@ Per `memories/repo/lcars-lovelace-dashboard.md` policy and `lcars-train-lessons.
 - `npm audit` 0 vulnerabilities
 - Bundle: **1,173,053 bytes** (−5.5 KB vs beta.4)
 - Three-file version sync verified: `const.py` / `manifest.json` / `js/package.json` all on `5.10.0-beta.5`
-- HACS deploy: pre-release published; ha.malick.us update via HACS UI (Cloudflare-proxied, no SSH)
+- HACS deploy: pre-release published; ha.mariner.example update via HACS UI (Cloudflare-proxied, no SSH)

@@ -90,7 +90,7 @@ Note: Priority is implementation order, not original report order. I used the ac
 | P78 | DATA-014 | Data | LOW | External Config | Unadopted IPC camera should likely collapse to offline bucket | None | v4.23.0 |
 | P79 | DATA-015 | Data | LOW | External Config | Renamed area stale friendly_names are HA maintenance, not code | None | HA config |
 | P80 | GEORDI-025 | Geordi | LOW | External Config | Link Color label is an HA naming problem | None | HA config |
-| P81 | GEORDI-026 | Geordi | LOW | External Config | Ephraim/Elysia mismatch is stale HA entity naming | DATA-015 | HA config |
+| P81 | GEORDI-026 | Geordi | LOW | External Config | Freeman/Freeman mismatch is stale HA entity naming | DATA-015 | HA config |
 | P82 | WESLEY-IDEA-008 | Wesley | COULD | Creative Idea | Room last-activity header indicator for sparse spaces | None | v5.x |
 | P83 | WESLEY-IDEA-014 | Wesley | COULD | Creative Idea | Adaptive climate arc for legitimate non-standard HVAC ranges | DATA-004, DATA-005 fixed first | v5.x |
 | P84 | WESLEY-IDEA-016 | Wesley | COULD | Creative Idea | Trend arrows from sparkline history | Sparkline data scope limits | v5.x |

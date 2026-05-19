@@ -20,17 +20,19 @@ Version 5.0 replaces the single monolithic dashboard with a **multi-dashboard sy
 
 ### Available Dashboards
 
+Each dashboard has its own full documentation in [`dashboards/`](dashboards/) — click the dashboard name to open it.
+
 | Dashboard | Sidebar Title | Frame Color | Sidebar Filters | What It Shows |
 |-----------|--------------|-------------|-----------------|---------------|
-| **Habitat** | Habitat | butterscotch | Area navigation | Room-by-room device control — the main dashboard. Floor-grouped sidebar, auto-detected panels per area |
-| **Tactical** | Tactical | ice | ALL / ACCESS / ZONES | Security overview — alarm control, camera grid, door/window sensors, motion detectors, smoke/CO |
-| **Engineering** | Power Distribution | butterscotch | ALL / STORAGE / CIRCUITS | Power topology — grid/UPS/battery source cards → distribution bus → load circuit grid |
-| **Life Support** | Life Support | bluey | ALL / CLIMATE / AIR | Environmental monitoring — thermostats, air purifiers, per-room AQ tables, CO₂ sparklines, ring gauges |
-| **Illumination** | Illumination | sunflower | ALL / LIGHTS / CIRCUITS | Lighting control — brightness bars, color presets, effects, scenes, and lighting circuit toggles |
-| **Cetacean Ops** | Cetacean Ops | sky | ALL / WATER / CHEMISTRY / FEATURES / POWER | Pool & spa operations — water bodies, chemistry gauges, pump telemetry, equipment circuits |
-| **Subspace Relay** | Subspace Relay | butterscotch + ice | ALL / NETWORK / EQUIPMENT / WAN / CLIENTS | Network health — UniFi infrastructure, WAN reachability, peripherals, connected clients (privacy-redacted by default with 60s reveal toggle) |
-| **Medical Bay** | Sickbay | gold + african-violet | SUMMARY / ANATOMICAL / BIOMEDICAL | Biofunction monitor — vitals (HR / HRV / BP / SpO₂ / body temp Δ / weight / sleep / steps / Oura readiness + sub-scores), front silhouette with anchor callouts, rest-mode banner, enum-aware resilience chip, decorative ECG strip. Admin-gated, default-disabled, per-profile consent gate |
-| **Starship Health** | Starship Health | gold + butterscotch | SUMMARY / ENGINEERING / TACTICAL | Vessel diagnostic — CPU / mem / temp / disk / WAN / addons rolled up onto a top-down landscape starship silhouette. Admin-gated. Multi-host: every Glances config entry adds a new vessel |
+| **[Habitat](dashboards/HABITAT.md)** | Habitat | butterscotch | Area navigation | Room-by-room device control — the main dashboard. Floor-grouped sidebar, auto-detected panels per area |
+| **[Tactical](dashboards/TACTICAL.md)** | Tactical | ice | ALL / ACCESS / ZONES | Security overview — alarm control, camera grid, door/window sensors, motion detectors, smoke/CO |
+| **[Engineering](dashboards/ENGINEERING.md)** | Power Distribution | butterscotch | ALL / STORAGE / CIRCUITS | Power topology — grid/UPS/battery source cards → distribution bus → load circuit grid |
+| **[Life Support](dashboards/LIFE-SUPPORT.md)** | Life Support | bluey | ALL / CLIMATE / AIR | Environmental monitoring — thermostats, air purifiers, per-room AQ tables, CO₂ sparklines, ring gauges |
+| **[Illumination](dashboards/ILLUMINATION.md)** | Illumination | sunflower | ALL / LIGHTS / CIRCUITS | Lighting control — brightness bars, color presets, effects, scenes, and lighting circuit toggles |
+| **[Cetacean Ops](dashboards/CETACEAN-OPS.md)** | Cetacean Ops | sky | ALL / WATER / CHEMISTRY / FEATURES / POWER | Pool & spa operations — water bodies, chemistry gauges, pump telemetry, equipment circuits |
+| **[Subspace Relay](dashboards/SUBSPACE-RELAY.md)** | Subspace Relay | butterscotch + ice | ALL / NETWORK / EQUIPMENT / WAN / CLIENTS | Network health — UniFi infrastructure, WAN reachability, peripherals, connected clients (privacy-redacted by default with 60s reveal toggle) |
+| **[Sickbay](dashboards/SICKBAY.md)** | Sickbay | gold + african-violet | SUMMARY / ANATOMICAL / BIOMEDICAL | Biofunction monitor — vitals (HR / HRV / BP / SpO₂ / body temp Δ / weight / sleep / steps / Oura readiness + sub-scores), front silhouette with anchor callouts, rest-mode banner, enum-aware resilience chip, decorative ECG strip. Admin-gated, default-disabled, per-profile consent gate. Includes [MQTT Sensor Setup](dashboards/SICKBAY.md#mqtt-sensor-setup) for the HealthyApps bridge |
+| **[Starship Health](dashboards/STARSHIP-HEALTH.md)** | Starship Health | gold + butterscotch | SUMMARY / ENGINEERING / TACTICAL | Vessel diagnostic — CPU / mem / temp / disk / WAN / addons rolled up onto a top-down landscape starship silhouette. Admin-gated. Multi-host: every Glances config entry adds a new vessel |
 
 Only **Habitat** is enabled by default. Enable additional dashboards through the integration options flow.
 
@@ -89,104 +91,25 @@ Currently supported:
 
 ### Auto-Detected Panels (Habitat)
 
-The Habitat dashboard auto-discovers devices and routes them to the correct panel using a priority-ordered classifier: camera → alarm → pool/spa → climate → media → environment → irrigation → weather → ev charger → power → battery. Area-level composite panels (life support, illumination) aggregate entities across devices. Diagnostic and config entities (`entity_category`) are filtered from classification signals to prevent false positives. Platform-aware exclusions prevent galley appliances, pool equipment, and wallbox cable locks from being absorbed by Life Support or Tactical.
+The Habitat dashboard auto-discovers devices and routes them to the correct panel using a priority-ordered classifier: camera → alarm → pool/spa → climate → media → environment → irrigation → weather → ev charger → power → battery. Area-level composite panels (life support, illumination) aggregate entities across devices.
 
-#### Camera Panel
-Live camera feeds with LCARS-framed viewscreen and activation animation. Three-state display: ESTABLISHING LINK (connecting), live feed, VIEWSCREEN OFFLINE (error/timeout). Stale image prevention via forced src binding on room switch.
-- **Integrations**: Any HA camera entity (UniFi Protect, Amcrest, ONVIF, Reolink, etc.)
-
-#### Climate Panel
-Thermostat control with SVG temperature arc, dynamic HVAC action colors (heating=butterscotch, cooling=ice), debounced setpoint controls with safety clamping, HVAC mode/fan mode/preset mode/swing mode strips, dual setpoint support for heat_cool mode. Portable AC support: auxiliary switch toggles (eco/turbo/swing) with per-switch colors, timer stepper.
-- **Integrations**: Nest, Ecobee, Honeywell, Z-Wave thermostats, Midea portable AC (midea_ac_lan)
-
-#### Alarm Panel
-Shield viewscreen with state-reactive glow, digit-only PIN keypad with 3-attempt/60s rate limiting, arm mode selector strip, zone sensor roster with micro-pip status and inline sibling telemetry (battery/illuminance), arming countdown with urgency escalation.
-- **Integrations**: SimpliSafe, Honeywell Home, Ring, Alarmo
-
-#### Media Panel
-Album art viewscreen with transport controls (play/pause/prev/next/shuffle/repeat) gated by `supported_features` bitmask, click-to-set volume bar with keyboard arrow support, source/shuffle/repeat metadata, 12-bar audio waveform visualizer. Transport controls and volume hidden when player is idle/standby/off.
-- **Integrations**: Apple TV, HomePod, Sonos, Chromecast, Plex
-
-#### Pool & Spa Panel
-Dual body viewscreens (pool=ice, spa=butterscotch) with setpoint controls, circuit toggles, chemistry sensor readouts (pH, ORP, salt), pool lighting controls, caustic water shimmer animation.
-- **Integrations**: Pentair ScreenLogic, Jandy iAqualink
-
-#### Weather Panel
-SVG condition display with ambient glow, wind compass with gust oscillation, 7-day forecast strip with range bars and precipitation probability pips, sun arc with tracking dot.
-- **Integrations**: Davis Instruments, WeatherFlow Tempest, NWS, OpenWeatherMap
-
-#### Irrigation Panel
-Full-featured irrigation control with zone photo thumbnails (from Rachio cloud, with vegetation icon fallback), expandable zone detail badges (shade, vegetation type, slope), barberpole flow animation with real-time progress tracking, countdown timer, schedule management strips (Flex/Fixed type badges), controller status telemetry (connectivity, standby, rain delay, rain sensor), conditional rain alert banner, Quick Run builder (multi-zone selector + duration + ENGAGE), and pause/resume/stop-all controls.
-- **Entity coverage**: Zone switches (with photos, attributes), schedule switches, standby/rain-delay controller, connectivity/rain binary sensors
-- **Rachio services**: `start_watering`, `start_multiple_zone_schedule`, `pause_watering`, `resume_watering`, `stop_watering`
-- **Integrations**: Rachio, RainMachine, OpenSprinkler
-
-#### Environment / Atmoscrubber Panel
-Animated particle cylinder with AQI-mapped colors, 24h SVG sparklines, fan/preset controls, CO₂ 3-tier threshold coloring (ice/sunflower/tomato), filter life segment bar (10 segments with critical pulse animation). AQI and PM2.5 scale labels below score numbers for metric disambiguation. Sensor-only mode for monitor-only devices (compact readout grid without cylinder). Sparkline labels use canonical device_class names (PM₂.₅, CO₂, VOC).
-- **Integrations**: Awair, VeSync purifiers, BlueAir (Blue Pure 311i Max), SwitchBot meters (WoTHP/WoTHPc)
-
-#### Power Systems Panel
-Consolidated per-area power monitoring with three sections: CIRCUITS (tile grid), MONITORED DEVICES (toggle + stats rows), POWER STRIPS (parent→child blocks with per-outlet sliding track toggles). SVG half-arc distribution chart for 3+ sources, singleton popover for circuit detail, 240V pair detection, SHOW ALL truncation for 12+ items.
-- **Smart dedup**: Excludes aggregate circuits (Balance/Total/Mains) and UPS parent wattage when children are present
-- **Integrations**: Emporia Vue, TP-Link Kasa (KP115, KP125M, HS110, HS300), Shelly Pro 3EM
-
-#### Warp Core Battery Panel
-CSS reactor core with charge-level color, SOC gauge, power flow I/O arrows, telemetry sensors, integrated config/diagnostic entity controls with LCARS option strips. NUT UPS devices auto-detected with Grid→UPS→Load flow, load/runtime telemetry, and NUT status code parsing (OL/OB/CHRG/LB/FSD).
-- **Integrations**: EcoFlow (River, Delta), Victron, Tesla Powerwall, NUT (CyberPower, APC, Tripp Lite, Eaton)
-
-#### EV Charger Panel
-Bidirectional EV charger monitoring with SVG energy flow visualization (animated chevron cascade for charging/V2G, directional flip, idle dashes), 15-row sensor telemetry column (status, session, energy balance, vehicle, charger), solar mode radio strip, max charging current ±adjuster, and cable lock toggle. Dynamic frame color by charger state (charging=butterscotch, V2G=ice, error=tomato, idle=lilac). SoC progress bar with 4-tier color coding. Offline empty state with gray "OFFLINE" badge when charger is unavailable.
-- **Integrations**: Wallbox (Vilya V2G, Pulsar Plus)
-
-#### Life Support Panel (per-area)
-Area-level composite panel aggregating climate, environment (air quality), and ambient sensor entities into a unified view. Four graceful degradation configurations: full (thermostat + purifier + sensors), atmos-only, climate-only, and sensor-hero (standalone temp/humidity). Composes existing climate and environment panels as nested substations. Adaptive sparkline tray (160×32px) shows 24-hour trends for temperature, humidity, AQI, PM2.5, CO₂, VOC. Camera-derived binary sensors (motion/tamper) auto-filtered. HomeKit air purifiers (fan + AQ sensor on same device) auto-detected.
-- **Integrations**: Any combination of climate entities, air quality devices, and ambient sensors in an area, plus HomeKit Controller purifiers (Smartmi P1, etc.)
+The 12 auto-detected panel types (Camera, Climate, Alarm, Media, Pool & Spa, Weather, Irrigation, Environment / Atmoscrubber, Power Systems, Warp Core Battery, EV Charger, Life Support per-area) are documented in detail in **[dashboards/HABITAT.md](dashboards/HABITAT.md)**, along with their integration coverage and routing rules.
 
 ---
 
-## Dedicated Dashboards (5.0+)
+## Per-Dashboard Documentation
 
-These are full-screen dashboards accessible from the HA sidebar, each with their own layout and entity classification. Enable them via the [Dashboard Subscription](#dashboard-subscription-config-flow) config flow.
+Every dashboard has its own document in [`dashboards/`](dashboards/) covering layout, entity scope, integrations, and any setup steps.
 
-### Tactical Dashboard
-Single pane of glass for security. Camera grid (2×3 viewscreen tiles with LCARS corner brackets), alarm control with shield viewscreen, door/window sensor pills (SEALED/BREACH), motion indicator dots, smoke/gas/safety sensors. Summary bar shows shield status, perimeter integrity, and active camera count. Camera badges highlight with red alert for pending/triggered alarm states.
-- **Entity scope**: `alarm_control_panel`, `lock`, `camera`, `binary_sensor` (door, window, motion, occupancy, smoke, safety, glass break)
-- **Integrations**: SimpliSafe, UniFi Protect, Insteon, Nest Protect
-
-### Engineering Dashboard
-Power distribution topology: Sources → Distribution Bus → Load Circuits.
-- **Source row**: GRID card (voltage/frequency/energy/power bar), UPS card, battery cards with animated mini warp core bars (SOC fill, idle pulse, charging stripes)
-- **Distribution bus**: Butterscotch bar with solid EPS conduit connectors (6px source → 4px trunk) and breathing pulse
-- **Voltage overview**: Three-tier display — HIGH VOLTAGE (>130V, tomato), HOME VOLTAGE (110–130V, auto-averaged, ice), LOW VOLTAGE (<110V, sunflower for doorbells/PoE)
-- **Circuit grid**: Top 15 active circuits sorted by wattage, grouped by category (DEDICATED / OUTLETS / LIGHTING / INFRASTRUCTURE / BATTERY / OTHER), 4-tier color-coded bars, relative scaling
-- **Circuit tagging**: HA Labels override name heuristics — see [TAGGING.md](TAGGING.md) for setup
-- **System status sidebar**: Total load, grid power, battery count, average SOC, total stored kWh, circuit count, health status
-- **Double-count prevention**: Aggregate sensors (totalusage, balance, mainload) excluded; 240V L1/L2 pairs deduplicated
-- **Deep linking**: Battery DETAIL ► navigates to Habitat with `#area:<area_id>` hash
-- **Accessibility**: `prefers-reduced-motion` fallback, keyboard focus on all interactive elements (WCAG 2.1.1)
-- **Integrations**: Emporia Vue, TP-Link Kasa, NUT UPS, EcoFlow batteries, Shelly Pro 3EM
-
-### Life Support Dashboard
-Environmental monitoring with 3-column layout (main content + AQ sidebar).
-- **Overview cards**: 4 ring gauge summary cards (Purifiers, Thermostats, AQ, Environment) with distinct border colors, glowing rings, and action buttons (VIEW DETAILS / VIEW ZONES)
-- **Air Purifiers table**: Location, Model, Status, Speed, Filter life bar (with shimmer animation), PM2.5 — color-coded
-- **Per-room atmosphere**: 7-column comparison table (Score, PM2.5, CO₂, VOC, Temp, RH) — area-grouped, averaged, purifier sensors excluded
-- **CO₂ sparklines**: Per-room 24h trend lines below the atmosphere table
-- **AQ sidebar**: Hero AQI ring gauge (96px, glowing), metric rows (PM2.5, PM10, CO₂, TVOC), 24h history sparklines
-- **Environment sidebar**: 24h temperature + humidity sparklines
-- **Combined climate panel**: Thermostat zones + temp/humidity grid in one section
-- **Animations**: Scanning section headers, thermostat breathing glow (warm/cool), AQ hero pulse, filter bar shimmer, ring gauge glow
-- **Integrations**: Awair, VeSync, BlueAir, HomeKit purifiers, Nest thermostats, SwitchBot meters
-
-### Illumination Dashboard
-Area-level lighting control spanning full width. Multi-column responsive grid (2-3 lights per row). Full-width brightness bars with color temperature awareness (warm amber to cool white). **Effect strip**: 2-column LCARS pill grid for Nanoleaf/Govee/smart light effects — active effect shown in bar value. **Color presets**: 6 LCARS palette pills (Warm, Cool, Red, Green, Blue, Purple) for HS/RGB color lights. Toggle-only lights show ON/OFF without slider. Scene activation strip and lighting circuit toggles. Drag-and-drop reorder in edit mode with FLIP animation.
-- **Entity detection**: Insteon dimmers/relays (SwitchLinc/LampLinc/ToggleLinc — platform-level detection), infrastructure LED exclusion (UniFi, ESPHome status), device-level dedup
-- **Integrations**: Any `light` domain entities, Nanoleaf, Govee, lighting switches (auto-detected by name heuristic), HA scenes
-
-### Cetacean Ops Dashboard
-Pool & spa operations named after Enterprise-D's aquatic monitoring station on Deck 13. Water body viewscreens (pool=ice, spa=butterscotch), chemistry Langford gauges, pump telemetry, water feature toggles, and per-equipment power circuit breakdowns from Emporia Vue.
-- **Entity discovery**: Platform-based O(1) set membership against pool platforms (`screenlogic`, `waterguru`), plus Emporia Vue keyword matching for pool circuits
-- **Integrations**: Pentair ScreenLogic, WaterGuru GrandeBridge S2, Emporia Vue (pool circuits)
+- **[Habitat](dashboards/HABITAT.md)** — Room-by-room auto-detected panels
+- **[Tactical](dashboards/TACTICAL.md)** — Security overview (cameras, alarm, perimeter sensors)
+- **[Engineering](dashboards/ENGINEERING.md)** — Power distribution topology
+- **[Life Support](dashboards/LIFE-SUPPORT.md)** — Climate + air quality
+- **[Illumination](dashboards/ILLUMINATION.md)** — Lighting control
+- **[Cetacean Ops](dashboards/CETACEAN-OPS.md)** — Pool & spa operations
+- **[Subspace Relay](dashboards/SUBSPACE-RELAY.md)** — Network health (UniFi, WAN, clients)
+- **[Sickbay](dashboards/SICKBAY.md)** — Biofunction monitor + **[HealthyApps MQTT sensor setup](dashboards/SICKBAY.md#mqtt-sensor-setup)**
+- **[Starship Health](dashboards/STARSHIP-HEALTH.md)** — Vessel diagnostic (CPU / mem / disk / WAN)
 
 ---
 
@@ -297,82 +220,7 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 
 > Screenshots use Star Trek: Lower Decks character/place names to obfuscate real device, area, and person names from the live deployments.
 
-### Habitat Auto-Detected Panels
-
-<table>
-<tr>
-<td width="50%">
-
-**Climate** — SVG temperature arc with segmented fill, dual setpoints, HVAC/fan/preset mode strips, sibling zone summary.
-
-</td>
-<td width="50%">
-
-**Environment / Atmoscrubber** — AQI cylinder with particle animation, PM2.5/CO₂/VOC sensor rows, 24h sparkline tray, fan controls.
-
-</td>
-</tr>
-<tr>
-<td>
-
-**Battery / Warp Core** — Charge-level reactor core with SOC gauge, power flow telemetry, NUT UPS status parsing.
-
-</td>
-<td>
-
-**Alarm** — Shield viewscreen, zone sensor roster, rate-limited PIN keypad, arm mode strip with countdown.
-
-</td>
-</tr>
-<tr>
-<td>
-
-**Media** — Album art viewscreen, 12-bar audio waveform, transport toolbar, volume slider with keyboard support.
-
-</td>
-<td>
-
-**Power Systems** — Circuit tile grid with 5-tier color coding, smart plug toggles, power strip parent/child blocks, SVG arc chart.
-
-</td>
-</tr>
-<tr>
-<td>
-
-**Camera** — LCARS-framed viewscreen with three-state display (connecting, live, offline), sensor rows, privacy controls.
-
-</td>
-<td>
-
-**Weather** — Condition display with ambient glow, forecast strip with range bars, sun arc indicator, wind compass.
-
-</td>
-</tr>
-<tr>
-<td>
-
-**Irrigation** — Zone rows with photo thumbnails, barberpole progress, countdown timers, schedule strips, Quick Run builder.
-
-</td>
-<td>
-
-**Pool & Spa** — Dual body viewscreens, chemistry segmented bars (pH, chlorine, salt), circuit groups, freeze protection.
-
-</td>
-</tr>
-<tr>
-<td>
-
-**Life Support (per-area)** — Composite panel composing climate + environment substations, ambient sensor row, adaptive sparkline tray.
-
-</td>
-<td>
-
-**EV Charger** — SVG energy flow visualization with animated chevrons, 15-row sensor telemetry, solar mode strip, max current adjuster, cable lock toggle.
-
-</td>
-</tr>
-</table>
+> Detailed per-panel breakdowns for every auto-detected Habitat panel — Camera, Climate, Alarm, Media, Pool & Spa, Weather, Irrigation, Environment / Atmoscrubber, Power Systems, Warp Core Battery, EV Charger, Life Support (per-area) — live in **[dashboards/HABITAT.md](dashboards/HABITAT.md)**.
 
 ## Screenshots
 

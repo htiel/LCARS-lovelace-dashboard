@@ -3,7 +3,7 @@
 > Filed by: Data, Lt. Cmdr. — Chief Operations Officer
 > Date: Stardate 2026-04-18
 > Scope: Entity classification, panel assignment, data formatting, architecture
-> Homes audited: Leith, Eric
+> Homes audited: mariner, Boimler
 
 ---
 
@@ -57,7 +57,7 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 - **Severity**: CRITICAL
 - **Category**: ENTITY-CLASSIFICATION
 - **Home**: Both
-- **Room(s)**: Leith (Back Yard, Garage, Office), Eric (Kyler, Master Bed, multiple)
+- **Room(s)**: mariner (Back Yard, Garage, Office), Boimler (Rutherford, Master Bed, multiple)
 - **What's wrong**: `_partitionLightingEntities()` Pass 2 has a fallback path (line ~166) that absorbs **every** `switch`-domain entity not already claimed by another panel (`classifyDevice`) and not `device_class: outlet`. This catch-all dumps irrigation zone switches, EcoFlow config switches (`AC Enabled`, `X-Boost Enabled`, `DC (12V) Enabled`, `Backup Reserve Enabled`, `Battery Auto-Heating Enabled`, `DC Mode`), appliance switches (`Sound Machine`, `Air Filter`, `Bedtime Fan`, `Humidifier`, `Nap Mode Devices`), and cross-room leaks (`2nd Floor Crawl N Light`, `Rec Room Light`) into Illumination circuits.
 - **Root cause**: In `lcars-illumination-panel.js` `_partitionLightingEntities()`, the circuit collection logic is:
   ```js
@@ -76,8 +76,8 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: CRITICAL
 - **Category**: ENTITY-CLASSIFICATION
-- **Home**: Eric
-- **Room(s)**: Alex, Ephraim, Kyler, Office, 3rd Floor, Master Bed, Master Bath
+- **Home**: Boimler
+- **Room(s)**: Tendi, Freeman, Rutherford, Office, 3rd Floor, Master Bed, Master Bath
 - **What's wrong**: TP-Link Kasa smart switches (HS200, KP200) expose a `binary_sensor` with `device_class: carbon_monoxide` named "CO Status" — this is a diagnostic indicator for the device's internal air sensor, NOT a safety detector. The DETECTORS array's hazard detector (priority 2) triggers on `≥1 binary_sensor` with `device_class` in `HAZARD_STATUS_CLASSES` (`{'smoke', 'gas', 'carbon_monoxide', 'heat', 'safety'}`). Since hazard runs before galley, climate, environment, and everything else, these Kasa switches get classified as `PANEL_TYPE_HAZARD` and render with the Life Support/atmoscrubber green cylinder (via the Life Support compositor that composes environment panels for hazard devices).
 - **Root cause**: In `lcars-entity-utils.js` DETECTORS[2] (hazard detector):
   ```js
@@ -87,7 +87,7 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
   if (hazardCount >= 1) return PANEL_TYPE_HAZARD;
   ```
   No platform check. No entity_category check. TP-Link's CO Status sensor has `entity_category: 'diagnostic'`, but `classifyDevice()` receives augmented entries (including diagnostic ones) from the illumination panel's augmentation step. The hazard detector does not filter out `entity_category: 'diagnostic'` entities before counting.
-- **Impact**: 7+ rooms in Eric's home. Ceiling fans, outlets, and switches all rendering as hazard/life-support panels instead of their correct types. This causes bugs #3, #4, #5, #6 in the report.
+- **Impact**: 7+ rooms in Boimler's home. Ceiling fans, outlets, and switches all rendering as hazard/life-support panels instead of their correct types. This causes bugs #3, #4, #5, #6 in the report.
 - **Suggested fix**: The hazard detector should exclude `entity_category: 'diagnostic'` and `entity_category: 'config'` entities from the hazard signal count. Additionally, add a platform exclusion set for known false positives (`tplink`, `kasa`). The `nest_protect` platform check is correct and should remain the primary hazard signal. For secondary detection, require `≥2` hazard binary_sensors from non-diagnostic entities to reduce false positives.
 
 ---
@@ -96,7 +96,7 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: MEDIUM *(downgraded from HIGH — the observed issues have other root causes)*
 - **Category**: ARCHITECTURE
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Multiple rooms with multi-function devices
 - **What's wrong**: `classifyDevice()` runs detectors in fixed priority order and returns on **first match**. This works correctly for most cases, but the architecture has no signal-strength weighting. A device with 1 weak signal (e.g., a single diagnostic CO binary_sensor) can outweigh 10 strong signals (e.g., power sensors, lighting controls) if the weak signal's detector runs first.
 - **Root cause**: Linear priority DETECTORS array with binary "has any matching entity" detection. The architecture is sound for most cases but susceptible to false positives when diagnostic entities leak into the entry set (see DATA-002, DATA-011).
@@ -110,7 +110,7 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: HIGH
 - **Category**: PANEL-ASSIGNMENT
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Kitchen, Garage
 - **What's wrong**: GE Home refrigerators expose `climate` entities for fridge/freezer temperature control. `classifyDevice()` runs the galley detector (priority 3) which checks `GALLEY_PLATFORMS.has(e.entity?.platform)` for `ge_home`. This should work — but the observation shows refrigerators rendering as "Life Support climate panels with arcs and setpoint controls." This means either: (a) the galley detector isn't matching because the entity's `platform` attribute isn't `ge_home`, or (b) the Life Support area-level panel is absorbing the climate entity before the device-level galley panel can claim it.
 - **Root cause**: `classifyArea()` adds `PANEL_TYPE_LIFE_SUPPORT` if **any** climate entity exists in the area. The area-level Life Support panel then absorbs all climate entities via `_buildAreaPanelFilter()` → `isClimateEntity()`. The GE fridge's climate entity gets consumed by Life Support before device-level `classifyDevice()` ever runs for the fridge device. The galley detector never gets a chance.
@@ -123,7 +123,7 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: HIGH
 - **Category**: PANEL-ASSIGNMENT
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Outside
 - **What's wrong**: Pentair ScreenLogic pool equipment has `climate` entities for pool/spa temperature. `classifyArea()` detects "has climate" → adds Life Support. The pool climate entity gets consumed by the Life Support panel and renders with a room HVAC arc showing 73°/52° pool temperatures.
 - **Root cause**: Same as DATA-004. `classifyArea()` does not check platform before claiming climate entities for Life Support. `isClimateEntity()` is domain-only (`CLIMATE_DOMAINS.has(entry.domain)`) with no pool/spa exclusion.
@@ -136,8 +136,8 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: HIGH
 - **Category**: PANEL-ASSIGNMENT
-- **Home**: Eric
-- **Room(s)**: Riah (Ephraim & Riah)
+- **Home**: Boimler
+- **Room(s)**: Shaxs (Freeman & Shaxs)
 - **What's wrong**: Nest Protect renders as Life Support panel with full diagnostics dump (Buzzer Test, Battery Health, Smoke Test, Speaker Test, PIR Test, Humidity Test, CO Test, Line Power, LED Test, WiFi Test, Replace By, Battery Level) and empty green atmoscrubber cylinder. Should be in the Hazard Detection panel only.
 - **Root cause (REVISED)**: After code review, `classifyDevice()` correctly identifies Nest Protect as `PANEL_TYPE_HAZARD` via the platform check at DETECTORS[2]. However, the rendering pipeline appears to route hazard-classified devices through the environment panel for sensor display, which always renders the atmoscrubber cylinder — even when no AQ data exists. The `_partitionEnvironmentEntities()` method in `lcars-environment-panel.js` renders ALL telemetry and diagnostics unconditionally. The Life Support panel composes environment panels as substations, which explains how a hazard device ends up in Life Support with an empty atmoscrubber.
   
@@ -154,11 +154,11 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: HIGH
 - **Category**: DATA-FORMAT / PANEL-ASSIGNMENT
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Outside (Garage Side Entrance Camera)
 - **What's wrong**: Camera panel shows PM1/PM2.5/PM10 readings (2.536232, 2.826087 MG/M³), storage info (2613487.599616 MB), disk write speeds, recording modes, overlay settings. Camera panels should show camera-relevant sensors only.
 - **Root cause**: `lcars-camera-panel.js` `renderContent()` calls `this._partitionDeviceEntities(this.group.entities)` which partitions into cameras/sensors/controls via simple domain check. ALL `sensor` and `binary_sensor` entities on the device are dumped into the sensors section with no relevance filter. UniFi Protect cameras expose dozens of diagnostic and telemetry sensors that have nothing to do with the camera feed.
-- **Impact**: Every UniFi Protect camera across Eric's home. Raw data dump makes camera panels unusable.
+- **Impact**: Every UniFi Protect camera across Boimler's home. Raw data dump makes camera panels unusable.
 - **Suggested fix**: Camera panel should define a relevance filter: only show sensors with device_class in `{'motion', 'occupancy', 'sound', 'connectivity', 'battery'}` or entity_ids matching camera-specific patterns (motion, person, vehicle, doorbell). Diagnostic/telemetry sensors (storage, disk, PM, overlay) should be suppressed or collapsed under a "Diagnostics" expander.
 
 ---
@@ -167,7 +167,7 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: HIGH
 - **Category**: DATA-FORMAT
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Family Room, Garage, Outside, Kitchen, multiple
 - **What's wrong**: Sensor values displayed with full floating-point precision: `2.1594203...`, `0.6011987...`, `-2.74°F`, `56.1379529460026°F`, `67.3054447465789°F`, `2613487.599616 MB`, `0.56208057 MB/S`, `Temperature 2.66°F`. These should be rounded to appropriate precision (0-1 decimal places for temperature, 0 for large storage values, 2 for small measurements).
 - **Root cause**: `lcars-sensor-row` and all panel sensor renderers use raw `state.state` values directly:
@@ -194,11 +194,11 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: MEDIUM
 - **Category**: DATA-FORMAT
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Garage, Pool
 - **What's wrong**: Power circuits showing raw Emporia Vue channel identifiers: `VUEG3_MAINLOAD1`, `VUEG3_MAINLOAD2`, `BALANCE`. Pool equipment circuits show 8 identical "POOL EQUIPMENT" names with no differentiation.
 - **Root cause**: Emporia Vue entity naming pattern is `sensor.power_{device_name}_{channel_id}`. The `_shortDeviceName()` method strips the area prefix but not the device prefix, leaving raw channel IDs. The duplicate "POOL EQUIPMENT" names occur when multiple circuits have the same friendly_name — the power panel doesn't deduplicate or append a differentiator.
-- **Impact**: Garage and Pool rooms in Eric's home. Makes power circuit identification impossible.
+- **Impact**: Garage and Pool rooms in Boimler's home. Makes power circuit identification impossible.
 - **Suggested fix**: Power panel's circuit rendering should: (a) Strip common device prefixes from circuit names (e.g., `VUEG3_` prefix). (b) For duplicate names, append the channel number or entity_id suffix as a differentiator. (c) Consider using the Emporia Vue `channel_id` attribute if available to build meaningful names.
 
 ---
@@ -207,7 +207,7 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: MEDIUM
 - **Category**: DATA-FORMAT
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Laundry
 - **What's wrong**: "Dryer 0W" and "-- Dryer 0W" appearing as separate circuits. The `--` prefix suggests a 240V pair detection artifact.
 - **Root cause**: `lcars-power-panel.js` `_detect240VPairs()` uses regex `L1L2_PATTERN = /^(.+?)[\s_]*(l[12]|line[\s_]*[12])$/i` to detect 240V pairs. If one leg matches and the other doesn't (e.g., slightly different naming), the matched leg becomes a combined entry while the unmatched leg appears as a separate circuit with a `--` prefix from the name stripping logic.
@@ -242,8 +242,8 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: LOW
 - **Category**: DATA-FORMAT
-- **Home**: Eric
-- **Room(s)**: Alex, Ephraim, Kyler, Office, Master Bath, Master Bed
+- **Home**: Boimler
+- **Room(s)**: Tendi, Freeman, Rutherford, Office, Master Bath, Master Bed
 - **What's wrong**: "Restart" button entities showing "UNKNOWN" in red across multiple rooms. These are TP-Link Kasa device restart buttons — their state is always `unknown` because button entities have no persistent state in HA (they're fire-and-forget).
 - **Root cause**: Sensor/entity renderers apply the `[data-off]` or warning styling when state is `unknown`. For `button` domain entities, `unknown` is the normal resting state per HA architecture — it doesn't indicate an error.
 - **Impact**: 6+ rooms. Visual noise — users think something is broken when it's working correctly.
@@ -255,8 +255,8 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: MEDIUM
 - **Category**: ENTITY-CLASSIFICATION
-- **Home**: Eric
-- **Room(s)**: Kyler (showing 2nd Floor Crawl N Light, Rec Room Light), Master Bath (showing Kitchen Table Light)
+- **Home**: Boimler
+- **Room(s)**: Rutherford (showing 2nd Floor Crawl N Light, Rec Room Light), Master Bath (showing Kitchen Table Light)
 - **What's wrong**: Entities from other rooms appearing in the wrong room's Illumination panel.
 - **Root cause**: This is likely an HA entity registry issue — entities are assigned to the wrong area_id, or their device's area_id doesn't match the entity's expected room. `getAreaEntities()` uses device_id → area_id inheritance: if an entity has no `area_id` but its device is in area X, the entity inherits area X. If a multi-device hub (e.g., Insteon PLM) is in one room but controls devices in other rooms, all child entities inherit the hub's area.
 - **Impact**: 3+ rooms. Entities from wrong areas polluting room views.
@@ -268,7 +268,7 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: LOW
 - **Category**: DATA-FORMAT
-- **Home**: Leith
+- **Home**: mariner
 - **Room(s)**: Server Room
 - **What's wrong**: Device showing as UNAVAILABLE with "Adopt Device" button — UniFi Protect device not yet adopted.
 - **Root cause**: `getAreaEntities()` excludes `disabled_by` and `hidden_by` entities but does not filter `unavailable` state entities. HA shows unadopted UniFi Protect devices as entities in `unavailable` state.
@@ -281,10 +281,10 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: LOW
 - **Category**: DATA-FORMAT
-- **Home**: Eric
-- **Room(s)**: Ephraim
-- **What's wrong**: Room header says "EPHRAIM" but all entities reference "Elysia" — HA area was renamed but entity friendly_names weren't updated.
-- **Root cause**: HA entity friendly_names are set at entity creation time and not automatically updated when areas are renamed. This is an HA platform behavior, not an LCARS bug. The `_shortenName()` method strips the current area name prefix, but if the entities use the old area name ("Elysia"), the stripping doesn't match.
+- **Home**: Boimler
+- **Room(s)**: Freeman
+- **What's wrong**: Room header says "Freeman" but all entities reference "Freeman" — HA area was renamed but entity friendly_names weren't updated.
+- **Root cause**: HA entity friendly_names are set at entity creation time and not automatically updated when areas are renamed. This is an HA platform behavior, not an LCARS bug. The `_shortenName()` method strips the current area name prefix, but if the entities use the old area name ("Freeman"), the stripping doesn't match.
 - **Impact**: 1 room. Cosmetic confusion.
 - **Suggested fix**: Not an LCARS bug. User needs to rename entities in HA. However, `_shortenName()` could be enhanced to also strip known aliases or previous area names if stored in config. Low priority.
 
@@ -311,8 +311,8 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: MEDIUM
 - **Category**: PANEL-ASSIGNMENT
-- **Home**: Eric
-- **Room(s)**: Rooms with ceiling fans + temperature sensors (Alex, Ephraim, Kyler, Office, 3rd Floor)
+- **Home**: Boimler
+- **Room(s)**: Rooms with ceiling fans + temperature sensors (Tendi, Freeman, Rutherford, Office, 3rd Floor)
 - **What's wrong (REVISED)**: Rooms with ceiling fans AND ambient sensors (temp/humidity) incorrectly trigger Life Support panels. The atmoscrubber cylinder renders empty because there's no AQ data — just a ceiling fan and a thermometer.
 - **Root cause (REVISED)**: After code review, my original analysis was partially incorrect:
   
@@ -324,7 +324,7 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
   - `classifyArea()` adds Life Support
   
   The issue is that `isEnvironmentEntity()` treats ALL fans without device_class as air purifiers. Only `ha_blueair`, `vesync`, and `smartthinq_sensors` fans are actually air purifiers.
-- **Impact**: ~5+ rooms in Eric's home. Combined with DATA-002, this causes Life Support over-proliferation.
+- **Impact**: ~5+ rooms in Boimler's home. Combined with DATA-002, this causes Life Support over-proliferation.
 - **Suggested fix**: Same as DATA-021 — restrict `isEnvironmentEntity()` fan matching to known AQ platforms:
   ```js
   const AQ_FAN_PLATFORMS = new Set(['ha_blueair', 'vesync', 'smartthinq_sensors']);
@@ -366,11 +366,11 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: MEDIUM
 - **Category**: ENTITY-CLASSIFICATION
-- **Home**: Leith
+- **Home**: mariner
 - **Room(s)**: Office, Garage
 - **What's wrong**: EcoFlow devices (`ecoflow_cloud` integration) have many switch entities (`AC Enabled`, `X-Boost Enabled`, `DC (12V) Enabled`, etc.) that leak into Illumination because `classifyDevice()` doesn't recognize the `ecoflow_cloud` platform in the fallback `PLATFORM_PANEL_MAP`. The battery detector should catch them (they have battery + power sensors), but the battery detector requires `entity_category` sensors that are filtered out before reaching the orchestrator's `classifyDevice()`.
 - **Root cause**: `PLATFORM_PANEL_MAP` has entries for `emporia_vue → POWER` but not `ecoflow_cloud → BATTERY`. The battery detector in DETECTORS depends on seeing diagnostic entities (battery % sensor) that are excluded at the query layer.
-- **Impact**: 2+ rooms in Leith's home. EcoFlow config switches polluting Illumination.
+- **Impact**: 2+ rooms in mariner's home. EcoFlow config switches polluting Illumination.
 - **Suggested fix**: Add `['ecoflow_cloud', PANEL_TYPE_BATTERY]` to `PLATFORM_PANEL_MAP`. This ensures the platform-based fallback detector (last in DETECTORS) catches EcoFlow devices even when their diagnostic sensors are filtered.
 
 ---
@@ -379,8 +379,8 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 
 - **Severity**: MEDIUM
 - **Category**: ENTITY-CLASSIFICATION
-- **Home**: Eric
-- **Room(s)**: Rooms with ceiling fans (Alex, Ephraim, Kyler, Office, 3rd Floor)
+- **Home**: Boimler
+- **Room(s)**: Rooms with ceiling fans (Tendi, Freeman, Rutherford, Office, 3rd Floor)
 - **What's wrong**: `isEnvironmentEntity()` returns true for `domain === 'fan' && !dc` — any fan entity without a device_class. This is intended to match air purifier fans (Blueair, Levoit) but also matches ceiling fans, exhaust fans, and standalone fans.
 - **Root cause**: In `lcars-entity-utils.js`:
   ```js
@@ -401,16 +401,16 @@ against Geordi's report (`visual-qa-geordi-bugs.md`) and Wesley's report
 | Priority | Bug ID | Fix | Est. Impact | Notes |
 |----------|--------|-----|-------------|-------|
 | 1 | DATA-001 | Remove catch-all switch absorption in illumination circuits | ~15 rooms, both homes | CRITICAL — largest single bug |
-| 2 | DATA-002 | Filter diagnostic entities from hazard detector | ~7 rooms, Eric | CRITICAL — causes Kasa CO false positives |
+| 2 | DATA-002 | Filter diagnostic entities from hazard detector | ~7 rooms, Boimler | CRITICAL — causes Kasa CO false positives |
 | 3 | DATA-011 | Establish entity_category filtering policy | Systemic | HIGH — architectural prerequisite |
-| 4 | DATA-004, DATA-005 | Exclude appliance/pool climate from area Life Support | ~3 rooms, Eric | HIGH — fridge/pool climate wrong panel |
-| 5 | DATA-021, DATA-017 | Restrict `isEnvironmentEntity()` fan matching to AQ platforms only | ~5 rooms, Eric | MEDIUM — ceiling fans trigger Life Support |
-| 6 | DATA-020 | Add `ecoflow_cloud` to PLATFORM_PANEL_MAP | ~2 rooms, Leith | MEDIUM — EcoFlow switches leak to Illumination |
+| 4 | DATA-004, DATA-005 | Exclude appliance/pool climate from area Life Support | ~3 rooms, Boimler | HIGH — fridge/pool climate wrong panel |
+| 5 | DATA-021, DATA-017 | Restrict `isEnvironmentEntity()` fan matching to AQ platforms only | ~5 rooms, Boimler | MEDIUM — ceiling fans trigger Life Support |
+| 6 | DATA-020 | Add `ecoflow_cloud` to PLATFORM_PANEL_MAP | ~2 rooms, mariner | MEDIUM — EcoFlow switches leak to Illumination |
 | 7 | DATA-008, DATA-018 | Implement shared sensor value formatting | All rooms, both homes | HIGH — raw decimals everywhere |
-| 8 | DATA-007 | Filter camera panel sensors to camera-relevant only | ~3 rooms, Eric | HIGH — diagnostic dump in camera panels |
-| 9 | DATA-006 | Investigate hazard→environment render path; hide empty atmoscrubber | ~1 room, Eric | HIGH — Nest Protect wrong render |
-| 10 | DATA-009, DATA-010 | Improve Emporia Vue circuit name resolution | ~2 rooms, Eric | MEDIUM — raw channel IDs |
-| 11 | DATA-012 | Button entity state display normalization ("READY" not "UNKNOWN") | ~6 rooms, Eric | LOW — cosmetic |
+| 8 | DATA-007 | Filter camera panel sensors to camera-relevant only | ~3 rooms, Boimler | HIGH — diagnostic dump in camera panels |
+| 9 | DATA-006 | Investigate hazard→environment render path; hide empty atmoscrubber | ~1 room, Boimler | HIGH — Nest Protect wrong render |
+| 10 | DATA-009, DATA-010 | Improve Emporia Vue circuit name resolution | ~2 rooms, Boimler | MEDIUM — raw channel IDs |
+| 11 | DATA-012 | Button entity state display normalization ("READY" not "UNKNOWN") | ~6 rooms, Boimler | LOW — cosmetic |
 | 12 | DATA-003, DATA-016 | Defense-in-depth improvements (signal scoring, negative keywords) | Theoretical | LOW — addressed by higher-priority fixes |
 
 ### Architectural Dependencies

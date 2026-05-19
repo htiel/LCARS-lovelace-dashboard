@@ -3,7 +3,7 @@
 **Audit date**: 2026-04-18
 **Auditor**: Geordi La Forge (LCARS UI / Accessibility)
 **Scope**: Visual design compliance, LCARS rule violations, accessibility, layout/styling bugs
-**Homes inspected**: Leith's house (16 rooms), Eric's house (23 rooms)
+**Homes inspected**: mariner's house (16 rooms), Boimler's house (23 rooms)
 
 > **Note**: Entity classification bugs (wrong panel type rendered for a device) are
 > catalogued here only when they cause a **visual design violation**. The root-cause
@@ -57,7 +57,7 @@ Re-reviewed by Geordi with fresh perspective. Cross-referenced against Data's re
 
 - **Severity**: CRITICAL
 - **Home**: Both
-- **Room(s)**: Eric — Family Room, Garage, Outside, 3rd Floor
+- **Room(s)**: Boimler — Family Room, Garage, Outside, 3rd Floor
 - **Panel type**: Environment (fan sensors), Ambient Sensors, Camera diagnostics
 - **What's wrong**: Sensor values are rendered with full floating-point precision —
   e.g. `2.1594203...`, `0.6011987...`, `-2.74°F`, `-0.759999999999998°F`,
@@ -82,8 +82,8 @@ Re-reviewed by Geordi with fresh perspective. Cross-referenced against Data's re
 ## GEORDI-002 — Atmoscrubber Cylinder Rendered for Non-Air-Quality Devices
 
 - **Severity**: CRITICAL
-- **Home**: Eric
-- **Room(s)**: Alex, Riah, Ephraim ("Elysia"), Office, Kyler, Master Bath, Master Bed
+- **Home**: Boimler
+- **Room(s)**: Tendi, Shaxs, Freeman ("Freeman"), Office, Rutherford, Master Bath, Master Bed
 - **Panel type**: Life Support → Environment substation
 - **What's wrong**: Ceiling fans, Nest Protects, smart outlets, and non-AQ devices
   are being rendered through the environment panel pipeline, producing an empty green
@@ -114,7 +114,7 @@ Re-reviewed by Geordi with fresh perspective. Cross-referenced against Data's re
 ## GEORDI-003 — Label Truncation Cutting Off Critical Information (Pool WaterGuru)
 
 - **Severity**: HIGH
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Pool
 - **Panel type**: Environment / Galley sensor rows
 - **What's wrong**: WaterGuru chemical readings are truncated with ellipsis:
@@ -139,7 +139,7 @@ Re-reviewed by Geordi with fresh perspective. Cross-referenced against Data's re
 ## GEORDI-004 — Irrigation Zones Leaking Into Illumination "Circuits" Section
 
 - **Severity**: HIGH
-- **Home**: Leith
+- **Home**: mariner
 - **Room(s)**: Back Yard
 - **Panel type**: Illumination Control
 - **What's wrong**: Rachio irrigation zone switches (Front Side Yard, Front Lawn,
@@ -167,7 +167,7 @@ Re-reviewed by Geordi with fresh perspective. Cross-referenced against Data's re
 ## GEORDI-005 — Non-Lighting Entities Leaking Into Illumination "Circuits" (Garage)
 
 - **Severity**: HIGH
-- **Home**: Leith
+- **Home**: mariner
 - **Room(s)**: Garage
 - **Panel type**: Illumination Control
 - **What's wrong**: "Battery Auto-Heating Enabled", "DC Mode", and "Workspace"
@@ -185,7 +185,7 @@ Re-reviewed by Geordi with fresh perspective. Cross-referenced against Data's re
 ## GEORDI-006 — UNAVAILABLE Atmoscrubber Visual Is Unclear (Dashed Orange Outline)
 
 - **Severity**: HIGH
-- **Home**: Leith
+- **Home**: mariner
 - **Room(s)**: Duncan's Room
 - **Panel type**: Life Support → Environment substation
 - **What's wrong**: When all AQ sensors (VOC, CO₂, PM2.5) report UNAVAILABLE,
@@ -211,7 +211,7 @@ Re-reviewed by Geordi with fresh perspective. Cross-referenced against Data's re
 ## GEORDI-007 — Identical Circuit Names in Power Panel (Pool Equipment)
 
 - **Severity**: HIGH
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Pool
 - **Panel type**: Power Systems
 - **What's wrong**: All 8 sub-circuits show the identical name "POOL EQUIPMENT"
@@ -234,7 +234,7 @@ Re-reviewed by Geordi with fresh perspective. Cross-referenced against Data's re
 ## GEORDI-008 — Duplicate/Redundant Circuit Entries in Power Panel (Laundry)
 
 - **Severity**: MEDIUM
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Laundry
 - **Panel type**: Power Systems
 - **What's wrong**: Duplicate entries showing "-- Dryer 0W" — the same circuit
@@ -253,7 +253,7 @@ Re-reviewed by Geordi with fresh perspective. Cross-referenced against Data's re
 ## GEORDI-009 — Generic/Unfriendly Circuit Names in Power Panel (Garage)
 
 - **Severity**: MEDIUM
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Garage
 - **Panel type**: Power Systems
 - **What's wrong**: Circuit names show raw internal identifiers:
@@ -272,7 +272,7 @@ Re-reviewed by Geordi with fresh perspective. Cross-referenced against Data's re
 ## GEORDI-010 — Fridge Rendered as Climate Panel with Arc at Extreme Cold
 
 - **Severity**: MEDIUM *(visual impact only — entity classification is DATA-004)*
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Kitchen (5°F Kitchen Refrigerator), Garage (34°F Garage Refrigerator)
 - **Panel type**: Life Support → Climate substation
 - **Visual impact**: Refrigerators rendered through the climate panel show a
@@ -303,7 +303,7 @@ See **DATA-013** for cross-room entity leakage analysis.
 ## GEORDI-012 — Smart Outlet Rendered as Life Support with Empty Atmoscrubber
 
 - **Severity**: HIGH *(duplicate visual manifestation of GEORDI-002)*
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Master Bed ("Master Bed Side Outlet" showing CO Status)
 - **Panel type**: Life Support → Environment substation
 - **What's wrong**: A KP200 smart outlet is rendered through the Life Support
@@ -323,7 +323,7 @@ See **DATA-013** for cross-room entity leakage analysis.
 ## GEORDI-013 — Massive Diagnostics Dump Overflowing Camera Panel
 
 - **Severity**: HIGH
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Outside (Garage Side Entrance Camera)
 - **Panel type**: Camera / Environment
 - **What's wrong**: The camera panel displays a massive diagnostics dump:
@@ -349,7 +349,7 @@ See **DATA-013** for cross-room entity leakage analysis.
 - **Severity**: MEDIUM
 - **Home**: Both
 - **Room(s)**: Multiple — Server Room (IPC-Model), Game Room (Ender 3 Cam Motion),
-  Eric's Family Room (Diagnostics UNKNOWN), multiple rooms (Restart UNKNOWN)
+  Boimler's Family Room (Diagnostics UNKNOWN), multiple rooms (Restart UNKNOWN)
 - **Panel type**: Various
 - **What's wrong**: "UNAVAILABLE" and "UNKNOWN" sensor states are rendered in
   `--lcars-tomato` (#ff5555) — the Red Alert color. For diagnostic attributes
@@ -375,8 +375,8 @@ See **DATA-013** for cross-room entity leakage analysis.
 
 - **Severity**: MEDIUM
 - **Home**: Both
-- **Room(s)**: Leith — Server Room (Bread Cam), Back Yard (G6 Instant);
-  Eric — Master Bath, Ender-3 room
+- **Room(s)**: mariner — Server Room (Bread Cam), Back Yard (G6 Instant);
+  Boimler — Master Bath, Ender-3 room
 - **Panel type**: Camera / Viewport
 - **What's wrong**: "Viewscreen Offline" cameras show a generic text message
   but no visual treatment that immediately conveys the camera is non-functional.
@@ -400,7 +400,7 @@ See **DATA-013** for cross-room entity leakage analysis.
 ## GEORDI-016 — Sparse Rooms Show Mostly Empty Content Area
 
 - **Severity**: LOW
-- **Home**: Leith
+- **Home**: mariner
 - **Room(s)**: Kitchen, Dining Room, Quinn's Room
 - **Panel type**: Illumination Control (sole panel)
 - **What's wrong**: Rooms with only one or two entities show a single small
@@ -421,7 +421,7 @@ See **DATA-013** for cross-room entity leakage analysis.
 ## GEORDI-017 — Three Identical Media Panels in One Room (Master Bedroom)
 
 - **Severity**: LOW
-- **Home**: Leith
+- **Home**: mariner
 - **Room(s)**: Master Bedroom
 - **Panel type**: Media
 - **What's wrong**: Three separate media panels (Left, Right, Master Bedroom
@@ -442,7 +442,7 @@ See **DATA-013** for cross-room entity leakage analysis.
 ## GEORDI-018 — Alarm Panel "DISARMED" Using Warm Red/Salmon Background
 
 - **Severity**: MEDIUM
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Family Room (Tactical: DISARMED with red/tomato background)
 - **Panel type**: Alarm / Tactical
 - **What's wrong**: The DISARMED state is showing with a red/tomato-tinted
@@ -462,7 +462,7 @@ See **DATA-013** for cross-room entity leakage analysis.
 ## GEORDI-019 — WCAG Target Size Violation on Alarm Keypad Buttons
 
 - **Severity**: MEDIUM
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Family Room, Front Foyer (any room with alarm keypad)
 - **Panel type**: Alarm
 - **What's wrong**: The alarm keypad grid uses `3.5rem` height buttons in a
@@ -494,7 +494,7 @@ number formatter), same fix.
 ## GEORDI-021 — WeatherFlow/Weather Panel Shows UNAVAILABLE Without Graceful Degradation
 
 - **Severity**: MEDIUM
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Outside (Grandbridge Tempest UNAVAILABLE), Utility (WeatherFlow Hub UNAVAILABLE with red frame)
 - **Panel type**: Weather
 - **What's wrong**: When the weather station is UNAVAILABLE, the weather panel
@@ -516,7 +516,7 @@ number formatter), same fix.
 ## GEORDI-022 — Irrigation Panel Shows "OFFLINE" Controller Without Visual Treatment
 
 - **Severity**: MEDIUM
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Outside (Flume Sensor IDLE, Controller OFFLINE), Garage (Rachio 3 OFFLINE)
 - **Panel type**: Irrigation
 - **What's wrong**: The irrigation controller shows OFFLINE status but the panel
@@ -543,8 +543,8 @@ later, re-file with specific evidence.
 ## GEORDI-024 — Diagnostic Sensor Rows Missing Entity Category Suppression
 
 - **Severity**: MEDIUM
-- **Home**: Eric
-- **Room(s)**: Riah (Nest Protect dump), Alex, Kyler, Master Bath, Master Bed
+- **Home**: Boimler
+- **Room(s)**: Shaxs (Nest Protect dump), Tendi, Rutherford, Master Bath, Master Bed
 - **Panel type**: Life Support → Environment substation
 - **What's wrong**: Diagnostic-category entities (Buzzer Test, Battery Health,
   Smoke Test, Speaker Test, PIR Test, Humidity Test, CO Test, WiFi Test, LED
@@ -567,7 +567,7 @@ later, re-file with specific evidence.
 ## GEORDI-025 — Upstairs Bathroom Label Styling: "Link Color 100%"
 
 - **Severity**: LOW *(HA configuration issue)*
-- **Home**: Leith
+- **Home**: mariner
 - **Room(s)**: Upstairs Bathroom
 - **Panel type**: Illumination Control
 - **What's wrong**: The light circuit label "Link Color 100%" is a raw entity
@@ -584,20 +584,20 @@ later, re-file with specific evidence.
 
 ---
 
-## GEORDI-026 — Room Name Mismatch: "Ephraim" Room Shows "Elysia" Entities
+## GEORDI-026 — Room Name Mismatch: "Freeman" Room Shows "Freeman" Entities
 
 - **Severity**: LOW *(HA configuration issue)*
-- **Home**: Eric
-- **Room(s)**: Ephraim
+- **Home**: Boimler
+- **Room(s)**: Freeman
 - **Panel type**: Illumination, Life Support
-- **What's wrong**: The room is named "Ephraim" but entities inside show
-  "Elysia Light", "SB Motion - Elysia", "Elysia's Ceiling Fan". This is a
+- **What's wrong**: The room is named "Freeman" but entities inside show
+  "Freeman Light", "SB Motion - Freeman", "Freeman's Ceiling Fan". This is a
   HA configuration issue (room was renamed but entities weren't updated), but
   it creates visual confusion on the dashboard.
 - **What it should look like**: Entity display names should match the room
   context. The `_shortenName` function should strip the room prefix — but if
-  the entity says "Elysia" and the room is "Ephraim", the prefix stripping
-  won't match, so the full "Elysia Light" is shown instead of just "Light".
+  the entity says "Freeman" and the room is "Freeman", the prefix stripping
+  won't match, so the full "Freeman Light" is shown instead of just "Light".
 - **LCARS rule**: WCAG 2.4.6 (Headings and Labels) — consistent naming.
 - **Note**: This is a Home Assistant entity naming issue, not a dashboard code
   bug. The user should update entity friendly_names after renaming areas.
@@ -610,7 +610,7 @@ later, re-file with specific evidence.
 ## GEORDI-027 — Volume at 100% on Media Panel Without Visual Warning
 
 - **Severity**: LOW
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Back Porch (Media IDLE, volume 100%)
 - **Panel type**: Media
 - **What's wrong**: The volume slider shows 100% without any visual distinction
@@ -630,7 +630,7 @@ later, re-file with specific evidence.
 ## GEORDI-028 — Pool Panel: Pentair Equipment Names Need Humanization
 
 - **Severity**: LOW
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Outside (Pool/Spa panel)
 - **Panel type**: Pool/Spa
 - **What's wrong**: "Pentair: 1F-3C-25 OFF" is shown as a device name in the

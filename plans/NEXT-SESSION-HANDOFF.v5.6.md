@@ -31,7 +31,7 @@ Working tree is clean. Tags 5.5.8/5.6.0/5.6.1/5.6.2/5.6.3/5.6.4/5.6.5/5.6.6 are 
   ```
 - **gh issue create with body:** must use `--body-file .tmp.md` not heredoc (PowerShell limitation).
 - **Address Captain as "Captain"**, William Riker as "Commander", etc.
-- **HACS deploy is via GitHub releases only** — `ha.malick.us` is behind Cloudflare proxy, SSH/SCP do NOT work.
+- **HACS deploy is via GitHub releases only** — `ha.mariner.example` is behind Cloudflare proxy, SSH/SCP do NOT work.
 - **Pattern observed 7+ times this train:** before editing for an issue, grep the file — many "open" issues are already-fixed in tree with comments citing the issue number. Close with line citation rather than re-fixing.
 - **Closed shadow root cards:** medical, network, starship — never break the `mode: 'closed'` invariant.
 - **Screenshot redaction is OUT-OF-CARD ONLY:** `localinfo/screenshot-obfuscator.js` keys off `data-medical|data-network|data-starship` attributes. Cards never apply runtime CSS-class obfuscation (Captain's #219 directive). Preserve the `data-*` hooks on every PHI/identity node.
@@ -94,7 +94,7 @@ Single dashboard pass; #165 cache-clear regression looks high-impact.
 ## Recommended next session opening move
 
 ```powershell
-cd c:/Users/leithma/LocalRepos/LCARS-lovelace-dashboard
+cd c:/Users/mariner/LocalRepos/LCARS-lovelace-dashboard
 git fetch --tags
 git log --oneline 5.6.6..HEAD       # should be empty
 git status                          # should be clean

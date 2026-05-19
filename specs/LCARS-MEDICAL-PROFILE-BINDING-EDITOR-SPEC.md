@@ -19,7 +19,7 @@
 5. Survive token rotation, integration delete-and-re-add, and HA restarts without data loss or surprise routing changes.
 6. Render unbound integrations under the existing "BIOBED" pseudo-profile so users who never open the editor see exactly what they see today (zero regression).
 7. Auto-suggest bindings on first boot from `person.user_id` ↔ `config_entry.title`/email matches; never auto-write after the store exists.
-8. **First-class support for HAE (Health Auto Export) and other webhook/REST/template-based bridges** that have NO config entry. These bind via `kind: entity_prefix` and discovery walks `hass.states` (not just the entity registry). The HAE prefix (configured by the operator inside the Health Auto Export iOS app — Captain confirmation 2026-05-15: "leith is my name and I configured it in the sync; should be unique per user who syncs data") is treated as the **authoritative person identifier** for HAE-derived sources. A second household member would pick a different prefix, producing a separate `kind: entity_prefix` binding rather than colliding.
+8. **First-class support for HAE (Health Auto Export) and other webhook/REST/template-based bridges** that have NO config entry. These bind via `kind: entity_prefix` and discovery walks `hass.states` (not just the entity registry). The HAE prefix (configured by the operator inside the Health Auto Export iOS app — Captain confirmation 2026-05-15: "mariner is my name and I configured it in the sync; should be unique per user who syncs data") is treated as the **authoritative person identifier** for HAE-derived sources. A second household member would pick a different prefix, producing a separate `kind: entity_prefix` binding rather than colliding.
 9. **Tiles with sensor history are clickable** — tap a tile to open HA's native more-info dialog (with built-in history chart) for the canonical entity that resolved into that tile.
 
 ## 1. Non-Goals
@@ -37,7 +37,7 @@
 While the editor + backend WS commands are still in flight, the following Phase A behavior ships with v5.11.0-beta.1 to immediately fix the S0 release blockers and unlock HAE/Apple Health rendering:
 
 - **Single-profile collapse with HAE-prefix preference.** `discoverProfiles(hass)` walks `hass.states`; for each entity that `classifyVital` admits:
-  - If the entity has no registry entry OR its platform is in `STATE_ONLY_BRIDGE_PLATFORMS` (`apple_health`, `hae`, `health_auto_export`), bucket by the **leading object_id segment** (Captain's `leith` becomes the `leith` profile).
+  - If the entity has no registry entry OR its platform is in `STATE_ONLY_BRIDGE_PLATFORMS` (`apple_health`, `hae`, `health_auto_export`), bucket by the **leading object_id segment** (Captain's `mariner` becomes the `mariner` profile).
   - Otherwise bucket provisionally by `device:<device_id>` or `entry:<config_entry_id>`.
   - **Collapse**: All non-HAE buckets are merged into the largest HAE bucket if any exists; otherwise into a synthetic `biobed` profile. Multiple HAE prefix buckets remain separate (multi-person households).
 - **No persistent storage in Phase A.** No `medical_profiles.yaml`, no WS commands, no editor card. The collapse heuristic is deterministic from `hass.states` alone.

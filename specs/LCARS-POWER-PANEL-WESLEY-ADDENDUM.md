@@ -759,7 +759,7 @@ _renderStripChild(childGroup) {
 
 ### 4.1 The Scale Problem
 
-Admiral's "Main Panel" area has 43 Emporia circuits. Eric's has 58. Each circuit has a `*_power_minute_average` entity that needs a 24h sparkline. The existing `fetchSparklineData()` caps at 10 entities per call.
+Admiral's "Main Panel" area has 43 Emporia circuits. Boimler's has 58. Each circuit has a `*_power_minute_average` entity that needs a 24h sparkline. The existing `fetchSparklineData()` caps at 10 entities per call.
 
 ### 4.2 Batched Fetch Strategy
 

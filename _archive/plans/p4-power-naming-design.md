@@ -760,10 +760,10 @@ Step 7: Progressive rendering tiers               [Section 10]
 
 | Scenario | What to verify |
 |----------|---------------|
-| Eric Garage power | `VUEG3_MAINLOAD1` → `MAIN LOAD 1`, `BALANCE` stays clean |
-| Eric Pool power | 8× `POOL EQUIPMENT` → disambiguated names + color tiers |
-| Eric Laundry | No `-- Dryer` artifact, no duplicate entries |
-| Eric Pool panel (device names) | `Pentair: 1F-3C-25` → `POOL CONTROLLER` |
+| Boimler Garage power | `VUEG3_MAINLOAD1` → `MAIN LOAD 1`, `BALANCE` stays clean |
+| Boimler Pool power | 8× `POOL EQUIPMENT` → disambiguated names + color tiers |
+| Boimler Laundry | No `-- Dryer` artifact, no duplicate entries |
+| Boimler Pool panel (device names) | `Pentair: 1F-3C-25` → `POOL CONTROLLER` |
 | Any room with >12 circuits | Pill shows `EXPAND GRID — N MORE (X W)` + alert dot if applicable |
 | Office 0W power | Collapsed to `ALL CIRCUITS STANDBY — N MONITORED` |
 | Low-activity room (<100W) | Summary + top 3 active circuits only |

@@ -3,7 +3,7 @@
 **Audit date**: 2026-04-18
 **Auditor**: Wesley Crusher (UX / Creative / Interaction Design)
 **Scope**: Usability problems, creative improvements, information architecture, empty states, user delight
-**Homes inspected**: Leith's house (16 rooms), Eric's house (23 rooms)
+**Homes inspected**: mariner's house (16 rooms), Boimler's house (23 rooms)
 
 > **Note**: LCARS design compliance bugs are Geordi's domain. Entity classification
 > bugs are Data's domain. This report focuses on **user experience**, **creative
@@ -88,7 +88,7 @@ and Data's updated report (`visual-qa-data-bugs.md`).
 ## WESLEY-UX-001 — No Actionable Guidance When Devices Need Adoption
 
 - **Severity**: HIGH
-- **Home**: Leith
+- **Home**: mariner
 - **Room(s)**: Server Room (IPC-Model camera)
 - **What's confusing**: The camera shows "Adopt Device" button alongside "UNAVAILABLE" state. The user sees two signals — one suggesting action ("adopt"), one suggesting failure ("unavailable") — but has no idea what "adopt" means in this context, where to go to do it, or why the camera is in this state. Is it broken? Is it new? Does the user need to go to UniFi Protect? The dashboard gives zero context.
 - **Suggested UX improvement**: When a device has a config entry that requires adoption/setup, show a contextual message: "This device needs setup in [integration name]" with a link or deep-link to the HA integration page. Replace the ambiguous "Adopt Device" button with an LCARS-styled call-to-action: "CONFIGURE IN UNIFI PROTECT" in `--lcars-gold`. The button should open the relevant integration's device page via `navigate(/config/devices/device/[device_id])`.
@@ -99,7 +99,7 @@ and Data's updated report (`visual-qa-data-bugs.md`).
 ## WESLEY-UX-002 — UNAVAILABLE Media Players Waste Space With No Value
 
 - **Severity**: HIGH
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Multiple rooms with offline media players
 - **What's confusing**: Dead media players render full-size panels showing "UNAVAILABLE 551-520" — the LCARS code suffix makes it look like an error code the user should investigate. Multiple unavailable media panels stacked in a room create walls of unhelpful identical panels. The user scrolls past 3-4 unavailable panels to find one that actually works.
 - **Suggested UX improvement**: Unavailable media players should collapse to a single-line compact row within a "COMM SYSTEMS OFFLINE" summary strip — showing device name and "OFFLINE" in gray. Only render full media panels for devices that are in `idle`, `standby`, `playing`, or `paused` states. The LCARS code ("551-520") should be suppressed or grayed when the device is unavailable — it looks like a diagnostic code the user needs to act on.
@@ -121,7 +121,7 @@ and Data's updated report (`visual-qa-data-bugs.md`).
 ## WESLEY-UX-004 — Standby Media Panels Are Visually Identical and Repetitive
 
 - **Severity**: MEDIUM
-- **Home**: Leith
+- **Home**: mariner
 - **Room(s)**: Master Bedroom (3 media panels: Left, Right, AppleTV all in Standby)
 - **What's confusing**: Three full-height media panels each showing an identical music note glyph + "STANDBY" label. The user can't quickly distinguish between them without reading the panel title. It's visually monotonous and wastes significant vertical space for zero informational value.
 - **Suggested UX improvement**: When multiple media players in the same room are all idle/standby, collapse them into a single "COMM ARRAY" panel showing a compact row per player: `[icon] [name] — STANDBY`. Only expand to full media panel when a player transitions to `playing` or `paused`. The expanded panel gets hero treatment (album art, waveform, transport controls) while siblings stay compact. This mirrors how a real Starfleet bridge would handle multiple comm channels — the active one gets the main viewscreen.
@@ -155,7 +155,7 @@ and Data's updated report (`visual-qa-data-bugs.md`).
 ## WESLEY-UX-007 — Irrigation Controller "OFFLINE" Has No User Explanation
 
 - **Severity**: MEDIUM
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Irrigation panel (Flume Sensor showing Controller OFFLINE)
 - **What's confusing**: "Controller OFFLINE" is displayed but the user doesn't know: Is this seasonal? Is the Rachio disconnected from WiFi? Is the Flume sensor separate from the Rachio? The irrigation panel shows "IDLE" alongside "OFFLINE" which is contradictory — is it idle or offline?
 - **Suggested UX improvement**: Distinguish between sensor states clearly:
@@ -168,7 +168,7 @@ and Data's updated report (`visual-qa-data-bugs.md`).
 ## WESLEY-UX-008 — 0W Power Panels Render Full-Size With No Value
 
 - **Severity**: MEDIUM *(raised from LOW — affects any room where all circuits are off, common overnight; multiple rooms impacted)*
-- **Home**: Leith
+- **Home**: mariner
 - **Room(s)**: Office (Power 0W)
 - **What's confusing**: A room showing "Power 0W" renders a full donut chart and panel frame for... nothing. Zero watts. No circuits drawing power. The panel exists but communicates "everything is off" using the same visual weight as an active power panel.
 - **Suggested UX improvement**: When total power draw is 0W, collapse the power panel to a compact single-line summary: "POWER SYSTEMS — STANDBY — 0W" in `--lcars-gray`. The donut chart adds nothing when it's empty. Reserve the full power panel rendering for when actual power is being drawn (> 0W). This follows the Trek principle: dark/quiet panels mean everything is nominal.
@@ -179,7 +179,7 @@ and Data's updated report (`visual-qa-data-bugs.md`).
 ## WESLEY-UX-009 — Garage Door "UNKNOWN" Toggle With No Position Feedback
 
 - **Severity**: MEDIUM
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Garage (Single Door, Double Door, Toggle Door)
 - **What's confusing**: Garage doors show "0%" position and a "Toggle Door" button in "UNKNOWN" state. The user sees three different labels (Single Door, Double Door, Toggle Door) with cryptic states. Is 0% open or closed? What does "Toggle" do — open or close? There's no visual representation of the door's physical state.
 - **Suggested UX improvement**: Replace the percentage display with clear state labels: "CLOSED" (0%), "OPEN" (100%), "PARTIAL 35%" for intermediate positions. Replace "Toggle Door" with a contextual action: "OPEN DOOR" when closed, "CLOSE DOOR" when open. Add a simple visual — even a horizontal bar that fills from left to right showing the door position — to make the physical state immediately obvious.
@@ -201,7 +201,7 @@ and Data's updated report (`visual-qa-data-bugs.md`).
 ## WESLEY-UX-011 — Tactical/Alarm Panel Duplicated Across Every Room
 
 - **Severity**: MEDIUM *(raised from LOW — full Tactical panels in 4–5 rooms occupies significant space for zero informational gain over a compact badge)*
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Family Room, Front Foyer, and other rooms with Tactical panels
 - **What's confusing**: The alarm system is a whole-house entity, but it renders a full Tactical panel (shield visualization, keypad, perimeter sensors, motion list) in multiple rooms. The user sees the same DISARMED state, the same keypad, the same shield graphic repeated room after room. This is redundant — the alarm state doesn't change per room.
 - **Suggested UX improvement**: Show the full Tactical panel (shield + keypad + sensors) only in the primary security area (e.g., Front Foyer or wherever the physical keypad is). In other rooms, show a compact "SHIELDS" status badge in the room header: "DISARMED" in ice blue, "ARMED HOME" in butterscotch, "ARMED AWAY" in gold. Tapping the compact badge navigates to the full Tactical panel. This eliminates duplication while keeping the security state visible everywhere.
@@ -212,7 +212,7 @@ and Data's updated report (`visual-qa-data-bugs.md`).
 ## WESLEY-UX-012 — Weather UNAVAILABLE Shows Empty Panel With Red Frame
 
 - **Severity**: MEDIUM
-- **Home**: Eric
+- **Home**: Boimler
 - **Room(s)**: Outside (Grandbridge Tempest), Utility (WeatherFlow Hub)
 - **What's confusing**: When the weather station goes offline, the panel shows a red frame and effectively empty content. The user sees "UNAVAILABLE" but gets no context: is the station dead? Is the WiFi down? Is this temporary? The red frame creates urgency for something that's probably just a temporary cloud service hiccup.
 - **Suggested UX improvement**: Weather UNAVAILABLE should show:
@@ -423,7 +423,7 @@ and Data's updated report (`visual-qa-data-bugs.md`).
 ## WESLEY-IDEA-012 — Pool Equipment Circuit Disambiguation
 
 - **Priority**: SHOULD
-- **What it improves**: Eric's Pool panel showing 8 circuits all named "POOL EQUIPMENT"
+- **What it improves**: Boimler's Pool panel showing 8 circuits all named "POOL EQUIPMENT"
 - **Creative description**: When multiple circuits share the same friendly name, the power panel should automatically disambiguate:
   - **Step 1**: Append entity_id suffix as a numeric identifier: "POOL EQUIPMENT 1", "POOL EQUIPMENT 2", etc.
   - **Step 2**: If the entity has a `device_class` or known pattern in the entity_id (e.g., `pool_pump`, `pool_heater`, `pool_cleaner`, `spa_blower`), use that as the label instead: "PUMP", "HEATER", "CLEANER", "SPA BLOWER".

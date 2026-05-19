@@ -35,6 +35,7 @@ import {
   findRestModeState,
   classifyRestMode,
   discoverReadinessSubscores,
+  convertImperial,
 } from './lcars-medical-utils.js';
 
 const STATUS_COLOR = {
@@ -231,7 +232,17 @@ class LcarsMedicalCard extends LitElement {
       const uom = (e.state.attributes && e.state.attributes.unit_of_measurement) || '';
       const rawVal = parseFloat(e.state.state);
       const isBp = e.cls.isSystolic || e.cls.isDiastolic;
-      const val = (isBp && uom === 'inHg' && Number.isFinite(rawVal)) ? rawVal * 25.4 : rawVal;
+      let val;
+      if (isBp && uom === 'inHg' && Number.isFinite(rawVal)) {
+        val = rawVal * 25.4;
+      } else if (!isBp && Number.isFinite(rawVal)) {
+        // 5.13.x — normalize imperial units from HealthyApps MQTT bridge
+        // (mi, mph, in, ft, ft/s, °F, lb) to metric so thresholds, sparklines,
+        // and tile rendering all see a single unit system per kind.
+        val = convertImperial(rawVal, uom).value;
+      } else {
+        val = rawVal;
+      }
       let cur = byKind.get(kind);
       if (!cur) {
         cur = { kind, variants: [], ts: 0 };
@@ -392,19 +403,36 @@ class LcarsMedicalCard extends LitElement {
   // 5.3.1 — Biomedical scan: ECG-style HR waveform + top-down silhouette placeholder.
   // ECG samples are derived directly from the present heart_rate vital (decorative
   // squarewave around the current value). No PHI leaves the closed shadow root.
+  //
+  // 5.13.x — when HealthyApps MQTT Apple ECG entities are present, the right pane
+  // replaces the SCAN MODE PENDING placeholder with a real HR ALERTS composite,
+  // and the left pane appends an ECG composite summary beneath the decorative
+  // waveform. Both composites no-op when their kind is absent so the legacy
+  // pre-MQTT view (waveform + placeholder) still renders for users on the
+  // state-only HAE bridge or no Apple Health at all.
   _renderBiomedicalZone(vitalsByKind, anchors) {
     const hrVital = vitalsByKind.get('heart_rate');
     const hrValue = hrVital && !isNaN(hrVital.value) ? hrVital.value : null;
+    const ecg = vitalsByKind.get('ecg');
+    const hrAlerts = vitalsByKind.get('hr_notifications');
+    const hasEcg = ecg && ecg.variants && ecg.variants.length;
+    const hasHrAlerts = hrAlerts && hrAlerts.variants && hrAlerts.variants.length;
     return html`
-      <section class="scan-pair" aria-label="Biomedical waveform + top-down scan">
+      <section class="scan-pair" aria-label="Biomedical waveform + ECG + HR alerts">
         <div class="scan-pane">
           <div class="scan-cap">ECG — HEART RATE</div>
           ${this._renderEcgWaveform(hrValue)}
+          ${hasEcg ? this._renderEcgCompositeInline(ecg) : ''}
         </div>
-        <div class="scan-pane placeholder" aria-label="Top-down">
-          <div class="scan-cap">TOP-DOWN</div>
-          <div class="scan-pending">SCAN MODE PENDING — 6.0</div>
-        </div>
+        ${hasHrAlerts ? html`
+          <div class="scan-pane">
+            <div class="scan-cap">HR ALERTS</div>
+            ${this._renderHrAlertsInline(hrAlerts)}
+          </div>` : html`
+          <div class="scan-pane placeholder" aria-label="Top-down">
+            <div class="scan-cap">TOP-DOWN</div>
+            <div class="scan-pending">SCAN MODE PENDING — 6.0</div>
+          </div>`}
       </section>
     `;
   }
@@ -459,6 +487,16 @@ class LcarsMedicalCard extends LitElement {
           // 5.12.0-beta.6 — weight composite absorbs body comp children.
           if (vc.composite === 'body_comp' && vc.kind === 'weight') {
             return this._renderBodyCompositionTile(vc, vitalsByKind);
+          }
+          // 5.13.x — HealthyApps MQTT bridge composites (ECG / HR alerts / data link).
+          if (vc.composite === 'ecg' && vc.kind === 'ecg') {
+            return this._renderEcgCompositeTile(vc, vitalsByKind.get('ecg'));
+          }
+          if (vc.composite === 'hr_notifications' && vc.kind === 'hr_notifications') {
+            return this._renderHrNotificationsTile(vc, vitalsByKind.get('hr_notifications'));
+          }
+          if (vc.composite === 'data_link' && vc.kind === 'data_link') {
+            return this._renderDataLinkTile(vc, vitalsByKind.get('data_link'));
           }
           const v = vitalsByKind.get(vc.kind);
           // v5.7.2 hybrid: render canonical row + any additional variants stacked beneath.
@@ -645,6 +683,398 @@ class LcarsMedicalCard extends LitElement {
            style=${`color:${color}`}>${formatVital('enum', canonical.value)}</div>
       <div class="tile-unit">${vc.unit}${showSrc ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
     `);
+  }
+
+  // 5.13.x — internal helper for composite tiles. Given a composite vital
+  // (collected as variants of the same kind by classifyVital + suffix priority),
+  // walk an ORDERED list of expected child labels and pick the first variant
+  // whose label matches. Returns an array of { label, value, eid, ts } in the
+  // requested order; missing children are simply absent (no empty rows).
+  _pickCompositeChildren(v, expectedLabels) {
+    if (!v || !v.variants) return [];
+    const out = [];
+    for (const want of expectedLabels) {
+      const W = String(want).toUpperCase();
+      const hit = v.variants.find((vt) => String(vt.label || '').toUpperCase() === W);
+      if (!hit) continue;
+      if (hit.value == null || (typeof hit.value === 'number' && isNaN(hit.value))) continue;
+      out.push({ label: want, value: hit.value, eid: hit.eid, ts: hit.ts });
+    }
+    return out;
+  }
+
+  // 5.13.x — format a timestamp variant (ISO string or epoch ms) as relative
+  // age (e.g. "12m", "3h", "2d") for telemetry-link freshness display. Returns
+  // '—' on unparseable input. No timezone; uses now-relative duration.
+  _formatStaleness(value) {
+    if (value == null || value === '' || value === 'unknown' || value === 'unavailable') return '—';
+    const d = (typeof value === 'number') ? new Date(value) : new Date(String(value));
+    const ts = d.getTime();
+    if (!Number.isFinite(ts)) return '—';
+    const delta = Math.max(0, Date.now() - ts);
+    const m = Math.floor(delta / 60000);
+    if (m < 1) return 'now';
+    if (m < 60) return `${m}m`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h`;
+    const days = Math.floor(h / 24);
+    return `${days}d`;
+  }
+
+  // 5.13.x — ECG composite tile (HealthyApps MQTT bridge: Apple Watch ECG).
+  // Headline: latest classification (Sinus Rhythm / AFib / Inconclusive).
+  // Status: ALERT if AFib detected today, ELEVATED if inconclusive present,
+  // NOMINAL on sinus, OFFLINE if no readings ever.
+  // Rows: latest avg HR, today counts (sinus / AFib / inconclusive / total),
+  // last AFib timestamp.
+  _renderEcgCompositeTile(vc, v) {
+    const variants = v && v.variants && v.variants.length ? v.variants : null;
+    if (!variants) {
+      return html`
+        <div class="tile">
+          <div class="tile-label">${vc.label}</div>
+          <div class="tile-value tile-offline"
+               style=${`color:var(--lcars-gray, #666688)`}>—</div>
+          <div class="tile-unit">${vc.unit}</div>
+        </div>`;
+    }
+    const byLabel = (L) => variants.find((vt) => String(vt.label || '').toUpperCase() === L);
+    const cls = byLabel('CLASS');
+    const afibDetected = byLabel('AFIB?');
+    const sinusToday = byLabel('SINUS');
+    const afibToday = byLabel('AFIB');
+    const inconcToday = byLabel('INCONC');
+    const countToday = byLabel('TODAY #');
+    const avgHr = byLabel('AVG HR');
+    const lastAfib = byLabel('LAST AFIB');
+    const sev = byLabel('SEVERITY');
+    const lastRead = byLabel('LAST READ');
+
+    // Status decision: AFib detected today → ALERT; AFib historical reading today → ELEVATED;
+    // any inconclusive today → ELEVATED; sinus only → NOMINAL.
+    let status = MEDICAL_STATUS.NOMINAL;
+    const afibDetectedNow = afibDetected && /on|true|1|yes|detect/i.test(String(afibDetected.value));
+    const afibCountToday = Number(afibToday?.value) > 0;
+    const inconcCountToday = Number(inconcToday?.value) > 0;
+    if (afibDetectedNow) status = MEDICAL_STATUS.ALERT;
+    else if (afibCountToday) status = MEDICAL_STATUS.ELEVATED;
+    else if (inconcCountToday) status = MEDICAL_STATUS.ELEVATED;
+    if (!cls && !countToday) status = MEDICAL_STATUS.OFFLINE;
+    const color = STATUS_COLOR[status] || STATUS_COLOR.OFFLINE;
+
+    const headline = cls ? String(cls.value).toUpperCase().replace(/_/g, ' ') : '—';
+
+    const rows = [];
+    if (sev && String(sev.value).toLowerCase() !== 'unknown') {
+      rows.push({ label: 'SEVERITY', value: String(sev.value).toUpperCase().replace(/_/g, ' '), unit: '' });
+    }
+    if (avgHr && Number.isFinite(parseFloat(avgHr.value))) {
+      rows.push({ label: 'AVG HR', value: String(Math.round(parseFloat(avgHr.value))), unit: 'bpm' });
+    }
+    if (countToday && Number(countToday.value) >= 0) {
+      rows.push({ label: 'TODAY #', value: String(Math.round(Number(countToday.value))), unit: '' });
+    }
+    if (sinusToday && Number(sinusToday.value) > 0) {
+      rows.push({ label: 'SINUS', value: String(Math.round(Number(sinusToday.value))), unit: '' });
+    }
+    if (afibToday && Number(afibToday.value) > 0) {
+      rows.push({ label: 'AFIB', value: String(Math.round(Number(afibToday.value))), unit: '' });
+    }
+    if (inconcToday && Number(inconcToday.value) > 0) {
+      rows.push({ label: 'INCONC', value: String(Math.round(Number(inconcToday.value))), unit: '' });
+    }
+    if (lastAfib && lastAfib.value) {
+      rows.push({ label: 'LAST AFIB', value: this._formatStaleness(lastAfib.value), unit: 'ago' });
+    }
+    if (lastRead && lastRead.value) {
+      rows.push({ label: 'LAST READ', value: this._formatStaleness(lastRead.value), unit: 'ago' });
+    }
+
+    return this._wrapTile(vc.label, (cls || avgHr || countToday)?.eid, html`
+      <div class="tile-label">${vc.label}</div>
+      <div class="tile-value" data-medical="phi"
+           aria-live="off"
+           ?aria-hidden=${this._audioMuted}
+           style=${`color:${color}`}>${headline}</div>
+      <div class="tile-unit">${vc.unit || 'classification'}</div>
+      ${rows.length ? html`
+        <div class="tile-variants" aria-label="ECG breakdown">
+          ${rows.map((r) => html`
+            <div class="tile-variant">
+              <span class="tile-variant-label">${r.label}</span>
+              <span class="tile-variant-value" data-medical="phi"
+                    ?aria-hidden=${this._audioMuted}>${r.value}${r.unit ? html` <span class="tile-variant-unit">${r.unit}</span>` : ''}</span>
+            </div>`)}
+        </div>` : ''}
+    `);
+  }
+
+  // 5.13.x — HR Notifications composite tile (HealthyApps MQTT bridge).
+  // Headline: today's irregular notification count (Apple Watch irregular-rhythm
+  // notifications drive the AFib screening pathway), with high / low / latest
+  // breakdown rows. Status: ALERT on any irregular today, ELEVATED on high/low
+  // events today, NOMINAL on no events, OFFLINE if no data at all.
+  _renderHrNotificationsTile(vc, v) {
+    const variants = v && v.variants && v.variants.length ? v.variants : null;
+    if (!variants) {
+      return html`
+        <div class="tile">
+          <div class="tile-label">${vc.label}</div>
+          <div class="tile-value tile-offline"
+               style=${`color:var(--lcars-gray, #666688)`}>—</div>
+          <div class="tile-unit">${vc.unit}</div>
+        </div>`;
+    }
+    const byLabel = (L) => variants.find((vt) => String(vt.label || '').toUpperCase() === L);
+    const high = byLabel('HIGH #');
+    const low = byLabel('LOW #');
+    const irreg = byLabel('IRREG #');
+    const irregBinary = byLabel('IRREG?');
+    const lastType = byLabel('LAST TYPE');
+    const peakHr = byLabel('PEAK HR');
+    const thresh = byLabel('THRESH');
+    const dur = byLabel('DURATION');
+    const evtHrv = byLabel('EVT HRV');
+    const lastAt = byLabel('LAST AT');
+    const lastIrreg = byLabel('LAST IRREG');
+
+    const n = (x) => Number.isFinite(parseFloat(x?.value)) ? parseFloat(x.value) : 0;
+    const irregBin = irregBinary && /on|true|1|yes|detect/i.test(String(irregBinary.value));
+
+    let status = MEDICAL_STATUS.NOMINAL;
+    if (irregBin || n(irreg) > 0) status = MEDICAL_STATUS.ALERT;
+    else if (n(high) > 0 || n(low) > 0) status = MEDICAL_STATUS.ELEVATED;
+    if (!high && !low && !irreg && !lastType) status = MEDICAL_STATUS.OFFLINE;
+    const color = STATUS_COLOR[status] || STATUS_COLOR.OFFLINE;
+
+    const headline = irregBin
+      ? 'IRREGULAR'
+      : (n(irreg) > 0
+        ? `${Math.round(n(irreg))} IRREG`
+        : (n(high) + n(low) > 0
+          ? `${Math.round(n(high) + n(low))} ALERT`
+          : '0'));
+
+    const rows = [];
+    if (high) rows.push({ label: 'HIGH #', value: String(Math.round(n(high))), unit: '' });
+    if (low)  rows.push({ label: 'LOW #',  value: String(Math.round(n(low))),  unit: '' });
+    if (irreg) rows.push({ label: 'IRREG #', value: String(Math.round(n(irreg))), unit: '' });
+    if (lastType && lastType.value && String(lastType.value).toLowerCase() !== 'unknown') {
+      rows.push({ label: 'TYPE', value: String(lastType.value).toUpperCase().replace(/_/g, ' '), unit: '' });
+    }
+    if (peakHr && Number.isFinite(parseFloat(peakHr.value))) {
+      rows.push({ label: 'PEAK', value: String(Math.round(parseFloat(peakHr.value))), unit: 'bpm' });
+    }
+    if (thresh && Number.isFinite(parseFloat(thresh.value))) {
+      rows.push({ label: 'THRESH', value: String(Math.round(parseFloat(thresh.value))), unit: 'bpm' });
+    }
+    if (dur && Number.isFinite(parseFloat(dur.value))) {
+      rows.push({ label: 'DURATION', value: String(Math.round(parseFloat(dur.value))), unit: 'min' });
+    }
+    if (evtHrv && Number.isFinite(parseFloat(evtHrv.value))) {
+      rows.push({ label: 'EVT HRV', value: String(Math.round(parseFloat(evtHrv.value))), unit: 'ms' });
+    }
+    if (lastAt && lastAt.value) {
+      rows.push({ label: 'LAST AT', value: this._formatStaleness(lastAt.value), unit: 'ago' });
+    }
+    if (lastIrreg && lastIrreg.value) {
+      rows.push({ label: 'LAST IRREG', value: this._formatStaleness(lastIrreg.value), unit: 'ago' });
+    }
+
+    return this._wrapTile(vc.label, (irreg || high || low || lastType)?.eid, html`
+      <div class="tile-label">${vc.label}</div>
+      <div class="tile-value" data-medical="phi"
+           aria-live="off"
+           ?aria-hidden=${this._audioMuted}
+           style=${`color:${color}`}>${headline}</div>
+      <div class="tile-unit">${vc.unit || 'today'}</div>
+      ${rows.length ? html`
+        <div class="tile-variants" aria-label="HR notification breakdown">
+          ${rows.map((r) => html`
+            <div class="tile-variant">
+              <span class="tile-variant-label">${r.label}</span>
+              <span class="tile-variant-value" data-medical="phi"
+                    ?aria-hidden=${this._audioMuted}>${r.value}${r.unit ? html` <span class="tile-variant-unit">${r.unit}</span>` : ''}</span>
+            </div>`)}
+        </div>` : ''}
+    `);
+  }
+
+  // 5.13.x — Data Link composite tile (HealthyApps MQTT bridge: telemetry
+  // freshness). Headline: most-stale push age across (metrics, workouts, ECG, HRN).
+  // Status: NOMINAL <1h, ELEVATED <6h, ALERT <24h, CRITICAL ≥24h, OFFLINE never.
+  _renderDataLinkTile(vc, v) {
+    const variants = v && v.variants && v.variants.length ? v.variants : null;
+    if (!variants) {
+      return html`
+        <div class="tile">
+          <div class="tile-label">${vc.label}</div>
+          <div class="tile-value tile-offline"
+               style=${`color:var(--lcars-gray, #666688)`}>—</div>
+          <div class="tile-unit">${vc.unit}</div>
+        </div>`;
+    }
+    const channels = [
+      { key: 'METRICS',  label: 'METRICS'  },
+      { key: 'WORKOUTS', label: 'WORKOUTS' },
+      { key: 'ECG',      label: 'ECG'      },
+      { key: 'HR NOTIF', label: 'HR NOTIF' },
+    ];
+    const rows = [];
+    let oldestDeltaMs = -1;
+    let oldestEid = null;
+    for (const ch of channels) {
+      const vt = variants.find((x) => String(x.label || '').toUpperCase() === ch.key);
+      if (!vt || !vt.value || vt.value === 'unknown' || vt.value === 'unavailable') {
+        rows.push({ label: ch.label, value: '—', unit: '' });
+        continue;
+      }
+      const d = (typeof vt.value === 'number') ? new Date(vt.value) : new Date(String(vt.value));
+      const ts = d.getTime();
+      if (!Number.isFinite(ts)) {
+        rows.push({ label: ch.label, value: '—', unit: '' });
+        continue;
+      }
+      const delta = Math.max(0, Date.now() - ts);
+      if (delta > oldestDeltaMs) {
+        oldestDeltaMs = delta;
+        oldestEid = vt.eid;
+      }
+      rows.push({ label: ch.label, value: this._formatStaleness(vt.value), unit: 'ago' });
+    }
+
+    let status = MEDICAL_STATUS.OFFLINE;
+    if (oldestDeltaMs >= 0) {
+      if (oldestDeltaMs < 60 * 60 * 1000) status = MEDICAL_STATUS.NOMINAL;
+      else if (oldestDeltaMs < 6 * 60 * 60 * 1000) status = MEDICAL_STATUS.ELEVATED;
+      else if (oldestDeltaMs < 24 * 60 * 60 * 1000) status = MEDICAL_STATUS.ALERT;
+      else status = MEDICAL_STATUS.CRITICAL;
+    }
+    const color = STATUS_COLOR[status] || STATUS_COLOR.OFFLINE;
+    const headline = oldestDeltaMs < 0
+      ? '—'
+      : (oldestDeltaMs < 60000 ? 'LIVE' : this._formatStaleness(Date.now() - oldestDeltaMs));
+
+    return this._wrapTile(vc.label, oldestEid, html`
+      <div class="tile-label">${vc.label}</div>
+      <div class="tile-value" data-medical="phi"
+           aria-live="off"
+           ?aria-hidden=${this._audioMuted}
+           style=${`color:${color}`}>${headline}</div>
+      <div class="tile-unit">oldest push</div>
+      ${rows.length ? html`
+        <div class="tile-variants" aria-label="Channel freshness">
+          ${rows.map((r) => html`
+            <div class="tile-variant">
+              <span class="tile-variant-label">${r.label}</span>
+              <span class="tile-variant-value" data-medical="phi"
+                    ?aria-hidden=${this._audioMuted}>${r.value}${r.unit ? html` <span class="tile-variant-unit">${r.unit}</span>` : ''}</span>
+            </div>`)}
+        </div>` : ''}
+    `);
+  }
+
+  // 5.13.x — inline ECG summary rendered BELOW the decorative waveform in the
+  // BIOMEDICAL view. Compact 2-line layout: classification on top, AFib + today
+  // counts on the bottom. Designed to fit inside `scan-pane` without scrolling.
+  _renderEcgCompositeInline(v) {
+    const variants = v && v.variants && v.variants.length ? v.variants : null;
+    if (!variants) return '';
+    const byLabel = (L) => variants.find((vt) => String(vt.label || '').toUpperCase() === L);
+    const cls = byLabel('CLASS');
+    const sev = byLabel('SEVERITY');
+    const avgHr = byLabel('AVG HR');
+    const afibDetected = byLabel('AFIB?');
+    const countToday = byLabel('TODAY #');
+    const lastAfib = byLabel('LAST AFIB');
+    const headline = cls ? String(cls.value).toUpperCase().replace(/_/g, ' ') : '—';
+    const afibDetectedNow = afibDetected && /on|true|1|yes|detect/i.test(String(afibDetected.value));
+    let status = MEDICAL_STATUS.NOMINAL;
+    if (afibDetectedNow) status = MEDICAL_STATUS.ALERT;
+    else if (sev && /high|severe/i.test(String(sev.value))) status = MEDICAL_STATUS.ELEVATED;
+    const color = STATUS_COLOR[status] || STATUS_COLOR.OFFLINE;
+    return html`
+      <div class="ecg-inline" data-medical="phi" ?aria-hidden=${this._audioMuted}>
+        <div class="ecg-inline-row">
+          <span class="ecg-inline-label">LATEST</span>
+          <span class="ecg-inline-value" style=${`color:${color}`}>${headline}</span>
+          ${avgHr ? html`<span class="ecg-inline-sub">${Math.round(parseFloat(avgHr.value))} bpm</span>` : ''}
+        </div>
+        <div class="ecg-inline-row">
+          ${countToday ? html`<span class="ecg-inline-sub">${Math.round(Number(countToday.value))} today</span>` : ''}
+          ${afibDetectedNow ? html`<span class="ecg-inline-sub" style="color:var(--lcars-alert,#cc6666)">AFIB DETECTED</span>` : ''}
+          ${lastAfib && lastAfib.value ? html`<span class="ecg-inline-sub">last AFib ${this._formatStaleness(lastAfib.value)}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // 5.13.x — inline HR Alerts summary rendered as the RIGHT pane of the
+  // BIOMEDICAL view when HealthyApps HR notifications are present. Lists today's
+  // event counts and the most-recent notification metadata.
+  _renderHrAlertsInline(v) {
+    const variants = v && v.variants && v.variants.length ? v.variants : null;
+    if (!variants) return '';
+    const byLabel = (L) => variants.find((vt) => String(vt.label || '').toUpperCase() === L);
+    const high = byLabel('HIGH #');
+    const low = byLabel('LOW #');
+    const irreg = byLabel('IRREG #');
+    const irregBin = byLabel('IRREG?');
+    const lastType = byLabel('LAST TYPE');
+    const peakHr = byLabel('PEAK HR');
+    const thresh = byLabel('THRESH');
+    const dur = byLabel('DURATION');
+    const lastAt = byLabel('LAST AT');
+    const n = (x) => Number.isFinite(parseFloat(x?.value)) ? parseFloat(x.value) : 0;
+    const irregActive = irregBin && /on|true|1|yes|detect/i.test(String(irregBin.value));
+    const tone = irregActive || n(irreg) > 0
+      ? 'var(--lcars-alert, #cc6666)'
+      : (n(high) > 0 || n(low) > 0 ? 'var(--lcars-gold, #ffaa00)' : 'var(--lcars-data-accent, #99cc99)');
+    return html`
+      <div class="hr-alerts-inline" data-medical="phi" ?aria-hidden=${this._audioMuted}>
+        <div class="hr-alerts-counts">
+          <div class="hr-alerts-count">
+            <span class="hr-alerts-count-label">HIGH</span>
+            <span class="hr-alerts-count-value" style=${`color:${tone}`}>${high ? Math.round(n(high)) : 0}</span>
+          </div>
+          <div class="hr-alerts-count">
+            <span class="hr-alerts-count-label">LOW</span>
+            <span class="hr-alerts-count-value" style=${`color:${tone}`}>${low ? Math.round(n(low)) : 0}</span>
+          </div>
+          <div class="hr-alerts-count">
+            <span class="hr-alerts-count-label">IRREG</span>
+            <span class="hr-alerts-count-value" style=${`color:${tone}`}>${irreg ? Math.round(n(irreg)) : 0}</span>
+          </div>
+        </div>
+        ${lastType && String(lastType.value).toLowerCase() !== 'unknown' ? html`
+          <div class="hr-alerts-latest">
+            <div class="hr-alerts-row">
+              <span class="hr-alerts-label">LATEST</span>
+              <span class="hr-alerts-value">${String(lastType.value).toUpperCase().replace(/_/g, ' ')}</span>
+            </div>
+            ${peakHr && Number.isFinite(parseFloat(peakHr.value)) ? html`
+              <div class="hr-alerts-row">
+                <span class="hr-alerts-label">PEAK</span>
+                <span class="hr-alerts-value">${Math.round(parseFloat(peakHr.value))} bpm</span>
+              </div>` : ''}
+            ${thresh && Number.isFinite(parseFloat(thresh.value)) ? html`
+              <div class="hr-alerts-row">
+                <span class="hr-alerts-label">THRESH</span>
+                <span class="hr-alerts-value">${Math.round(parseFloat(thresh.value))} bpm</span>
+              </div>` : ''}
+            ${dur && Number.isFinite(parseFloat(dur.value)) ? html`
+              <div class="hr-alerts-row">
+                <span class="hr-alerts-label">DURATION</span>
+                <span class="hr-alerts-value">${Math.round(parseFloat(dur.value))} min</span>
+              </div>` : ''}
+            ${lastAt && lastAt.value ? html`
+              <div class="hr-alerts-row">
+                <span class="hr-alerts-label">WHEN</span>
+                <span class="hr-alerts-value">${this._formatStaleness(lastAt.value)} ago</span>
+              </div>` : ''}
+          </div>` : html`<div class="hr-alerts-empty">NO RECENT ALERTS</div>`}
+      </div>
+    `;
   }
 
   // 5.8.0-beta.1 (Worf Gap E) — Rest mode banner. Surfaces when Oura's rest_mode binary
@@ -1073,6 +1503,99 @@ class LcarsMedicalCard extends LitElement {
           color: var(--lcars-data-accent, #99cc99);
           letter-spacing: 0.08em;
           text-align: center;
+        }
+
+        /* 5.13.x — HealthyApps MQTT bridge: BIOMEDICAL view ECG / HR alerts panes */
+        .ecg-inline {
+          margin-top: 0.6rem;
+          padding-top: 0.6rem;
+          border-top: 1px solid rgba(153, 204, 255, 0.18);
+          display: flex;
+          flex-direction: column;
+          gap: 0.3rem;
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+        }
+        .ecg-inline-row {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: baseline;
+          gap: 0.6rem;
+        }
+        .ecg-inline-label {
+          font-size: 0.8rem;
+          letter-spacing: 0.12em;
+          color: var(--lcars-gray, #aaaadd);
+        }
+        .ecg-inline-value {
+          font-size: 1.2rem;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+        }
+        .ecg-inline-sub {
+          font-size: 0.9rem;
+          color: var(--lcars-text, #ccccee);
+          letter-spacing: 0.04em;
+        }
+
+        .hr-alerts-inline {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 0.8rem;
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+        }
+        .hr-alerts-counts {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 0.5rem;
+        }
+        .hr-alerts-count {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 0.6rem 0.4rem;
+          background: rgba(102, 102, 136, 0.15);
+          border-radius: 0.3rem;
+        }
+        .hr-alerts-count-label {
+          font-size: 0.75rem;
+          letter-spacing: 0.12em;
+          color: var(--lcars-gray, #aaaadd);
+        }
+        .hr-alerts-count-value {
+          font-size: 1.8rem;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+        }
+        .hr-alerts-latest {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+          padding-top: 0.5rem;
+          border-top: 1px solid rgba(153, 204, 255, 0.18);
+        }
+        .hr-alerts-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          gap: 0.6rem;
+        }
+        .hr-alerts-label {
+          font-size: 0.8rem;
+          letter-spacing: 0.12em;
+          color: var(--lcars-gray, #aaaadd);
+        }
+        .hr-alerts-value {
+          font-size: 1rem;
+          color: var(--lcars-text, #ccccee);
+          letter-spacing: 0.04em;
+        }
+        .hr-alerts-empty {
+          font-size: 0.95rem;
+          letter-spacing: 0.1em;
+          color: var(--lcars-gray, #888899);
+          text-align: center;
+          padding: 1rem 0;
         }
       `,
     ];

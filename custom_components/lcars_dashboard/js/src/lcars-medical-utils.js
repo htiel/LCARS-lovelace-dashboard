@@ -17,6 +17,12 @@ export const MEDICAL_PLATFORMS = new Set([
   'apple_health',
   'hae',
   'health_auto_export',
+  // 5.13.x — HealthyApps Health Auto Export MQTT bridge (device-separated:
+  // Activity / Audio Exposure / Heart Health / Respiratory / Workouts under a
+  // parent "Health Auto Export (iPhone)" device). classifyVital gates MQTT
+  // entities by entity_id prefix OR device manufacturer so non-health MQTT
+  // sensors are NOT auto-promoted to vitals.
+  'mqtt',
 ]);
 
 // 5.11.0-beta.1 — bridge platforms whose entities are state-only (no entity_registry
@@ -30,6 +36,72 @@ const STATE_ONLY_BRIDGE_PLATFORMS = new Set(['apple_health', 'hae', 'health_auto
 // Captain can map ALL of an Apple Health user's data to a person, not just
 // the subset that happens to match a current classifyVital suffix pattern.
 const STATE_ONLY_BRIDGE_DOMAINS = new Set(['hae', 'apple_health']);
+
+// 5.13.x — entity_id object-id prefixes that admit an MQTT entity through the
+// medical classifier. The HealthyApps Health Auto Export MQTT discovery names
+// everything `sensor.health_auto_export_<device>_<metric>` so this prefix is a
+// safe contained gate: other MQTT sensors will not pass classifyVital.
+const MQTT_HEALTHYAPPS_OBJ_PREFIX = 'health_auto_export_';
+const MQTT_HEALTHYAPPS_MANUFACTURERS = new Set(['HealthyApps']);
+const MQTT_HEALTHYAPPS_MODEL_RE = /Health Auto Export|HealthyApps/i;
+
+// 5.13.x — walk MQTT device chain (via_device_id) up to the root and extract
+// the HealthyApps "user tag" from the root device identifier
+// (`mqtt:hae_iphone_<user>`). Returns a string like `leith` or null when the
+// device is not a HealthyApps MQTT device. Used to derive a stable binding key
+// `hae:<user>` so the new MQTT-separated devices cluster with any pre-existing
+// state-only `hae:<user>` mapping the Captain already curated.
+export function healthyAppsUserTag(deviceId, hassDevices) {
+  if (!deviceId || !hassDevices) return null;
+  let dev = hassDevices[deviceId];
+  let safety = 6;
+  while (dev && dev.via_device_id && safety-- > 0) {
+    const parent = hassDevices[dev.via_device_id];
+    if (!parent) break;
+    dev = parent;
+  }
+  if (!dev) return null;
+  const ids = dev.identifiers || [];
+  for (const id of ids) {
+    if (!Array.isArray(id) || id[0] !== 'mqtt') continue;
+    const tag = String(id[1] || '');
+    if (!/^hae_iphone_/.test(tag)) continue;
+    const user = tag.split('_').slice(2).join('_');
+    return user || 'iphone';
+  }
+  return null;
+}
+
+// 5.13.x — true when an entity (with its registry + device entries) belongs to
+// the HealthyApps Health Auto Export MQTT bridge. Used by classifyVital to
+// gate the broad `mqtt` platform and by discoverProfiles/listObservedBindings
+// to derive the `hae:<user>` binding key.
+function isHealthyAppsMqtt(eid, reEntry, deviceEntry) {
+  if (!reEntry || reEntry.platform !== 'mqtt') return false;
+  const objId = (eid || '').split('.')[1] || '';
+  if (objId.startsWith(MQTT_HEALTHYAPPS_OBJ_PREFIX)) return true;
+  if (deviceEntry && MQTT_HEALTHYAPPS_MANUFACTURERS.has(deviceEntry.manufacturer)) return true;
+  if (deviceEntry && MQTT_HEALTHYAPPS_MODEL_RE.test(deviceEntry.model || '')) return true;
+  return false;
+}
+
+// 5.13.x — imperial → metric value conversion for Apple Health units exposed
+// via the HealthyApps MQTT bridge. Returns { value, unit } — value is
+// converted, unit is the new UoM string. Pass-through for already-metric or
+// unknown units. Wrist temperature is treated as ABSOLUTE °F → °C; the
+// wrist_temperature vital kind renders the absolute, not a deviation.
+export function convertImperial(value, uom) {
+  if (!Number.isFinite(value) || !uom) return { value, unit: uom || '' };
+  const u = String(uom).trim().toLowerCase();
+  if (u === 'mi' || u === 'mile' || u === 'miles')        return { value: value * 1.609344,  unit: 'km' };
+  if (u === 'mph')                                         return { value: value * 1.609344,  unit: 'km/h' };
+  if (u === 'in' || u === 'inch' || u === 'inches')       return { value: value * 2.54,      unit: 'cm' };
+  if (u === 'ft' || u === 'foot' || u === 'feet')         return { value: value * 0.3048,    unit: 'm' };
+  if (u === 'ft/s')                                        return { value: value * 0.3048,    unit: 'm/s' };
+  if (u === '°f' || u === 'f' || u === 'degf')            return { value: (value - 32) * 5 / 9, unit: '°C' };
+  if (u === 'lb' || u === 'lbs' || u === 'pound')         return { value: value * 0.45359237,unit: 'kg' };
+  return { value, unit: uom };
+}
 
 // Vital kinds in display order. Anchor slot = where on the silhouette the value renders.
 // `tile` = whether it gets a Zone C detail tile.  `spark` = sparkline-eligible.
@@ -85,6 +157,25 @@ export const MEDICAL_VITAL_CLASSES = [
   { kind: 'audio_exposure',     anchor: null,         label: 'AUDIO',       unit: 'dB',   spark: false, tile: true, composite: 'audio' },
   { kind: 'workout_distance',   anchor: 'right_leg',  label: 'DISTANCE',    unit: 'km',   spark: false, tile: false },
   { kind: 'last_workout',       anchor: null,         label: 'LAST WORKOUT',unit: '',     spark: false, tile: true },
+  // 5.13.x — HealthyApps MQTT bridge: ECG sub-system (composite tile).
+  // Children: latest classification / severity / avg-HR, today counts
+  // (sinus / AFib / inconclusive / total), AFib binary, last AFib timestamp.
+  // Rendered prominently in the BIOMEDICAL focus mode as the primary widget.
+  { kind: 'ecg',                anchor: null,         label: 'ECG',         unit: '',     spark: false, tile: true, composite: 'ecg' },
+  // 5.13.x — HealthyApps MQTT bridge: HR notification sub-system (composite tile).
+  // Children: today counts (high / low / irregular), latest notification metadata
+  // (type, peak HR, threshold, duration, avg HRV, timestamp), last-irregular ts.
+  { kind: 'hr_notifications',   anchor: null,         label: 'HR ALERTS',   unit: '',     spark: false, tile: true, composite: 'hr_notifications' },
+  // 5.13.x — HealthyApps MQTT bridge: Apple Watch wrist temperature (absolute).
+  // Note: this is NOT a deviation reading — Apple reports the absolute reading
+  // via this MQTT entity (unit °F). The HAE state-only `_apple_sleeping_wrist_temperature$`
+  // (deviation in °C) continues to route to body_temp_deviation; the two paths
+  // intentionally coexist so users on either transport see their data.
+  { kind: 'wrist_temperature',  anchor: null,         label: 'WRIST TEMP',  unit: '°C',   spark: true,  tile: true },
+  // 5.13.x — HealthyApps MQTT bridge: telemetry-link freshness indicator.
+  // Children: last metrics push, last workouts push, last ECG push, last HRN push.
+  // Status: any push >1h → ELEVATED, >6h → ALERT, >24h → CRITICAL.
+  { kind: 'data_link',          anchor: null,         label: 'DATA LINK',   unit: '',     spark: false, tile: true, composite: 'data_link' },
 ];
 
 // Anchor map (slot → {x,y} as % of 200x480 silhouette bodyBox).
@@ -244,6 +335,10 @@ export const VITAL_SUFFIX_PRIORITY = {
     { re: /_heart_pulse$/,                   label: 'PULSE' },
     { re: /_resting_heart_rate$/,            label: 'RESTING' },
     { re: /_walking_heart_rate_average$/,    label: 'WALK AVG' },
+    // 5.13.x — HealthyApps MQTT bridge uses `_avg` (not `_average`).
+    { re: /_walking_heart_rate_avg$/,        label: 'WALK AVG' },
+    // 5.13.x — Apple Watch beat-to-beat recovery metric, surfaced via HealthyApps.
+    { re: /_cardio_recovery$/,               label: 'RECOVERY' },
     { re: /_maximum_heart_rate$/,            label: 'MAX' },
     { re: /_minimum_heart_rate$/,            label: 'MIN' },
     { re: /_heart_rate_max$/,                label: 'MAX' },
@@ -338,6 +433,8 @@ export const VITAL_SUFFIX_PRIORITY = {
     { re: /_steps$/,                         label: 'STEPS' },
     // 5.12.0-beta.6 — HAE Apple Health uses _step_count not _steps.
     { re: /_step_count$/,                    label: 'STEPS' },
+    // 5.13.x — HealthyApps MQTT bridge: `_steps_today`.
+    { re: /_steps_today$/,                   label: 'TODAY' },
   ],
   active_minutes: [
     { re: /_high_activity_time$/,            label: 'HIGH' },
@@ -350,11 +447,18 @@ export const VITAL_SUFFIX_PRIORITY = {
     { re: /_apple_stand_time$/,              label: 'STAND' },
     { re: /_apple_stand_hour$/,              label: 'STAND HRS' },
     { re: /_physical_effort$/,               label: 'EFFORT' },
+    // 5.13.x — HealthyApps MQTT bridge: today-rollup activity entities.
+    { re: /_exercise_minutes_today$/,        label: 'EXERCISE' },
+    { re: /_stand_minutes_today$/,           label: 'STAND' },
+    { re: /_stand_hours_today$/,             label: 'STAND HRS' },
   ],
   workout_distance: [
     { re: /_last_workout_distance$/,                  label: 'LAST' },
     { re: /_last_activity_distance$/,                 label: 'LAST' },
     { re: /_distance_trave(lle|le)d_last_workout$/,   label: 'LAST' },
+    // 5.13.x — HealthyApps MQTT bridge uses `_latest_*` and a `_workouts_today_*` rollup.
+    { re: /_latest_workout_distance$/,                label: 'LAST' },
+    { re: /_workouts_today_distance$/,                label: 'TODAY' },
   ],
   last_workout: [
     { re: /_last_workout_type$/,             label: 'TYPE' },
@@ -366,11 +470,25 @@ export const VITAL_SUFFIX_PRIORITY = {
     { re: /_pause_during_last_workout$/,     label: 'PAUSE' },
     { re: /_last_workout_/,                  label: 'WORKOUT' },
     { re: /_last_activity_/,                 label: 'ACTIVITY' },
+    // 5.13.x — HealthyApps MQTT bridge: `_latest_workout_*` mirror of legacy `_last_workout_*`.
+    { re: /_latest_workout_type$/,           label: 'TYPE' },
+    { re: /_latest_workout_duration$/,       label: 'DURATION' },
+    { re: /_latest_workout_active_energy$/,  label: 'KCAL' },
+    { re: /_latest_workout_avg_hr$/,         label: 'AVG HR' },
+    { re: /_latest_workout_max_hr$/,         label: 'MAX HR' },
+    { re: /_latest_workout_start$/,          label: 'START' },
+    { re: /_latest_workout_end$/,            label: 'END' },
+    { re: /_workouts_today_count$/,          label: 'TODAY #' },
+    { re: /_workouts_today_active_energy$/,  label: 'TODAY KCAL' },
+    { re: /_workouts_today_duration$/,       label: 'TODAY DUR' },
   ],
   // 5.12.0-beta.6 — new HAE-driven kinds. Labels echo the breakdown row text.
   calories_burned: [
     { re: /_active_energy$/,                 label: 'ACTIVE' },
     { re: /_basal_energy_burned$/,           label: 'BASAL' },
+    // 5.13.x — HealthyApps MQTT bridge: today-rollup energy entities.
+    { re: /_active_energy_today$/,           label: 'ACTIVE' },
+    { re: /_basal_energy_today$/,            label: 'BASAL' },
   ],
   mobility: [
     { re: /_walking_speed$/,                 label: 'SPEED' },
@@ -382,6 +500,12 @@ export const VITAL_SUFFIX_PRIORITY = {
     { re: /_flights_climbed$/,               label: 'FLIGHTS' },
     { re: /_stair_speed_up$/,                label: 'STAIRS UP' },
     { re: /_stair_speed_down$/,              label: 'STAIRS DN' },
+    // 5.13.x — HealthyApps MQTT bridge: bare suffix and today-rollup variants.
+    { re: /_walking_asymmetry$/,             label: 'ASYMMETRY' },
+    { re: /_walking_double_support$/,        label: 'DBL SUPP' },
+    { re: /_walking_running_distance_today$/,label: 'DISTANCE' },
+    { re: /_six_minute_walking_test$/,       label: '6MWT' },
+    { re: /_flights_climbed_today$/,         label: 'FLIGHTS' },
   ],
   audio_exposure: [
     { re: /_environmental_audio_exposure$/,  label: 'AMBIENT' },
@@ -389,6 +513,46 @@ export const VITAL_SUFFIX_PRIORITY = {
   ],
   sleep_breathing: [
     { re: /_breathing_disturbances$/,        label: 'DISTURB' },
+    // 5.13.x — HealthyApps MQTT bridge: `_breathing_disturbances_latest`.
+    { re: /_breathing_disturbances_latest$/, label: 'DISTURB' },
+  ],
+  // 5.13.x — HealthyApps MQTT bridge: ECG sub-system composite.
+  ecg: [
+    { re: /_latest_ecg_classification$/,     label: 'CLASS' },
+    { re: /_latest_ecg_severity$/,           label: 'SEVERITY' },
+    { re: /_latest_ecg_avg_hr$/,             label: 'AVG HR' },
+    { re: /_latest_ecg_timestamp$/,          label: 'LAST READ' },
+    { re: /_ecg_count_today$/,               label: 'TODAY #' },
+    { re: /_ecg_sinus_rhythm_today$/,        label: 'SINUS' },
+    { re: /_ecg_afib_today$/,                label: 'AFIB' },
+    { re: /_ecg_inconclusive_today$/,        label: 'INCONC' },
+    { re: /_ecg_afib_detected_today$/,       label: 'AFIB?' },
+    { re: /_last_afib_ecg$/,                 label: 'LAST AFIB' },
+  ],
+  // 5.13.x — HealthyApps MQTT bridge: HR notification sub-system composite.
+  hr_notifications: [
+    { re: /_hr_high_notifications_today$/,           label: 'HIGH #' },
+    { re: /_hr_low_notifications_today$/,            label: 'LOW #' },
+    { re: /_hr_irregular_notifications_today$/,      label: 'IRREG #' },
+    { re: /_hr_irregular_rhythm_today$/,             label: 'IRREG?' },
+    { re: /_latest_hr_notification_type$/,           label: 'LAST TYPE' },
+    { re: /_latest_hr_notification_peak_hr$/,        label: 'PEAK HR' },
+    { re: /_latest_hr_notification_threshold$/,      label: 'THRESH' },
+    { re: /_latest_hr_notification_duration$/,       label: 'DURATION' },
+    { re: /_latest_hr_notification_avg_hrv$/,        label: 'EVT HRV' },
+    { re: /_latest_hr_notification_timestamp$/,      label: 'LAST AT' },
+    { re: /_last_irregular_rhythm$/,                 label: 'LAST IRREG' },
+  ],
+  // 5.13.x — HealthyApps MQTT bridge: Apple Watch absolute wrist temperature.
+  wrist_temperature: [
+    { re: /_sleeping_wrist_temperature$/,    label: 'SLEEP' },
+  ],
+  // 5.13.x — HealthyApps MQTT bridge: telemetry-link freshness composite.
+  data_link: [
+    { re: /_last_push$/,                     label: 'METRICS' },
+    { re: /_last_workouts_push$/,            label: 'WORKOUTS' },
+    { re: /_last_ecg_push$/,                 label: 'ECG' },
+    { re: /_last_hrn_push$/,                 label: 'HR NOTIF' },
   ],
 };
 
@@ -411,12 +575,22 @@ export function entityPriority(kind, eid) {
 // HAE / Apple Health bridges write directly to hass.states). The platform gate
 // still rejects entities whose registry entry exists but isn't a medical integration
 // (so a zigbee `sensor.bedroom_temperature` cannot be misclassified).
-export function classifyVital(state, entityRegistryEntry) {
+//
+// 5.13.x — third optional argument `deviceRegistryEntry` lets the classifier
+// distinguish HealthyApps HAE MQTT entities from other MQTT sensors so the
+// broad `mqtt` platform doesn't sweep e.g. zigbee2mqtt thermometers into vitals.
+export function classifyVital(state, entityRegistryEntry, deviceRegistryEntry = null) {
   const eid = state.entity_id;
   const platform = entityRegistryEntry?.platform || '';
   // Reject only when a registry entry exists AND its platform is non-medical.
   // Missing registry entry → state-only bridge → fall through to suffix matching.
   if (entityRegistryEntry && !MEDICAL_PLATFORMS.has(platform)) return null;
+  // 5.13.x — secondary gate for the very broad `mqtt` platform: only admit
+  // HealthyApps Health Auto Export entities. Other MQTT sensors must NOT be
+  // promoted to vitals just because their suffix happens to match a pattern.
+  if (platform === 'mqtt' && !isHealthyAppsMqtt(eid, entityRegistryEntry, deviceRegistryEntry)) {
+    return null;
+  }
   const lid = eid.toLowerCase();
 
   // Worf MUST-FIX: drop chrome/diagnostic/timestamp/enum suffixes BEFORE any vital regex
@@ -436,6 +610,25 @@ export function classifyVital(state, entityRegistryEntry) {
   if (/_systolic.*blood.*pressure$|_systolic_blood_pressure$/.test(lid)) return { kind: 'blood_pressure', isSystolic: true, sourceLabel: 'SYS' };
   if (/_diastolic.*blood.*pressure$|_diastolic_blood_pressure$/.test(lid)) return { kind: 'blood_pressure', isDiastolic: true, sourceLabel: 'DIA' };
 
+  // 5.13.x — HealthyApps MQTT bridge: ECG sub-system. Must precede heart_rate
+  // matchers so `_latest_ecg_avg_hr` claims the ECG composite (not heart_rate)
+  // even though it carries BPM units.
+  if (/_latest_ecg_(classification|severity|avg_hr|timestamp)$|_ecg_(count|sinus_rhythm|afib|inconclusive|afib_detected)_today$|_last_afib_ecg$/.test(lid)) {
+    return withLabel({ kind: 'ecg' });
+  }
+  // 5.13.x — HealthyApps MQTT bridge: HR notification sub-system. Must precede
+  // heart_rate matchers so `_latest_hr_notification_peak_hr` and friends route
+  // to the alerts composite instead of being silently dropped or misclassified.
+  if (/_hr_(high|low|irregular)_notifications_today$|_hr_irregular_rhythm_today$|_latest_hr_notification_(type|peak_hr|threshold|duration|avg_hrv|timestamp)$|_last_irregular_rhythm$/.test(lid)) {
+    return withLabel({ kind: 'hr_notifications' });
+  }
+  // 5.13.x — HealthyApps MQTT bridge: telemetry-link freshness sensors. These
+  // are timestamps; the composite renderer interprets ISO/epoch values into
+  // staleness bands.
+  if (/_last_(push|workouts_push|ecg_push|hrn_push)$/.test(lid)) {
+    return withLabel({ kind: 'data_link' });
+  }
+
   // Heart rate — explicit suffix set; `_score` variants are NOT HR (Oura readiness components).
   // 5.11.0-beta.1 (S0-3): `_resting_heart_rate` is a 0-100 SCORE (not BPM) on Oura
   // post-v2.0.0; for Oura it's intentionally dropped here so it doesn't poison the
@@ -447,7 +640,10 @@ export function classifyVital(state, entityRegistryEntry) {
   }
   // 5.11.0-beta.1 — HAE Apple Health emits `_heart_rate_avg`, `_heart_rate_max`,
   // `_heart_rate_min` (all BPM). Add to the heart_rate kind so they stack as variants.
-  if (/_(heart_pulse|heart_rate|current_heart_rate|average_heart_rate|lowest_sleep_heart_rate|average_sleep_heart_rate|heart_rate_avg|heart_rate_max|heart_rate_min|walking_heart_rate_average)$/.test(lid)) return withLabel({ kind: 'heart_rate' });
+  // 5.13.x — HealthyApps MQTT bridge adds `_walking_heart_rate_avg` (Apple Watch
+  // walking-period average) and `_cardio_recovery` (post-exercise HR recovery,
+  // also BPM). Both fold into the heart_rate kind as labeled variants.
+  if (/_(heart_pulse|heart_rate|current_heart_rate|average_heart_rate|lowest_sleep_heart_rate|average_sleep_heart_rate|heart_rate_avg|heart_rate_max|heart_rate_min|walking_heart_rate_average|walking_heart_rate_avg|cardio_recovery)$/.test(lid)) return withLabel({ kind: 'heart_rate' });
 
   // SpO2 — accept Oura's `_average` suffix and the standard. HAE: `_blood_oxygen_saturation`.
   if (/_(spo2|spo2_average|oxygen_saturation|latest_spo2|blood_oxygen_saturation)$/.test(lid)) return withLabel({ kind: 'spo2' });
@@ -484,19 +680,34 @@ export function classifyVital(state, entityRegistryEntry) {
   // 5.12.0-beta.6 — HAE Apple Health additions. Order matters: keep these before
   // the more permissive sleep/activity matchers fall through.
   // body_temp_deviation extension (Apple sleeping wrist temperature)
+  // NOTE: HAE's `_apple_sleeping_wrist_temperature` is a DEVIATION (°C).
+  // The HealthyApps MQTT `_sleeping_wrist_temperature` is an ABSOLUTE reading
+  // (°F) — it routes to the new wrist_temperature kind below.
   if (/_apple_sleeping_wrist_temperature$/.test(lid)) return withLabel({ kind: 'body_temp_deviation' });
+  // 5.13.x — HealthyApps MQTT bridge: absolute wrist temperature (NOT a deviation).
+  if (/_sleeping_wrist_temperature$/.test(lid) && !/_apple_sleeping_wrist_temperature$/.test(lid)) {
+    return withLabel({ kind: 'wrist_temperature' });
+  }
   // Energy expenditure — active + basal calories.
-  if (/_active_energy$|_basal_energy_burned$/.test(lid)) return withLabel({ kind: 'calories_burned' });
+  // 5.13.x — HealthyApps MQTT bridge: today-rollup variants `_active_energy_today`,
+  // `_basal_energy_today`.
+  if (/_(active_energy|basal_energy_burned|active_energy_today|basal_energy_today)$/.test(lid)) return withLabel({ kind: 'calories_burned' });
   // Mobility / gait analytics.
-  if (/_(walking_speed|walking_step_length|walking_asymmetry_percentage|walking_double_support_percentage|walking_running_distance|six_minute_walking_test_distance|flights_climbed|stair_speed_up|stair_speed_down)$/.test(lid)) return withLabel({ kind: 'mobility' });
+  // 5.13.x — HealthyApps MQTT bridge: bare suffixes (`_walking_asymmetry$`,
+  // `_walking_double_support$`, `_six_minute_walking_test$`) and today-rollup
+  // (`_walking_running_distance_today$`, `_flights_climbed_today$`).
+  if (/_(walking_speed|walking_step_length|walking_asymmetry_percentage|walking_double_support_percentage|walking_running_distance|six_minute_walking_test_distance|flights_climbed|stair_speed_up|stair_speed_down|walking_asymmetry|walking_double_support|walking_running_distance_today|six_minute_walking_test|flights_climbed_today)$/.test(lid)) return withLabel({ kind: 'mobility' });
   // Hearing safety — environmental + headphone dB exposure.
   if (/_(environmental_audio_exposure|headphone_audio_exposure)$/.test(lid)) return withLabel({ kind: 'audio_exposure' });
   // Sleep apnea screening — Apple Watch breathing disturbances.
-  if (/_breathing_disturbances$/.test(lid)) return withLabel({ kind: 'sleep_breathing' });
+  // 5.13.x — HealthyApps MQTT bridge: `_breathing_disturbances_latest`.
+  if (/_breathing_disturbances(_latest)?$/.test(lid)) return withLabel({ kind: 'sleep_breathing' });
   // Apple step_count is the same metric as Withings _steps; fold into existing kind.
-  if (/_step_count$/.test(lid)) return withLabel({ kind: 'steps' });
+  // 5.13.x — HealthyApps MQTT bridge: `_steps_today` (today-rollup variant).
+  if (/_(step_count|steps_today)$/.test(lid)) return withLabel({ kind: 'steps' });
   // Apple activity rings — fold into active_minutes.
-  if (/_(apple_exercise_time|apple_stand_time|apple_stand_hour|physical_effort)$/.test(lid)) return withLabel({ kind: 'active_minutes' });
+  // 5.13.x — HealthyApps MQTT bridge: today-rollup variants for stand/exercise.
+  if (/_(apple_exercise_time|apple_stand_time|apple_stand_hour|physical_effort|exercise_minutes_today|stand_minutes_today|stand_hours_today)$/.test(lid)) return withLabel({ kind: 'active_minutes' });
 
   // Sleep score — Oura sleep_score primary + regularity as a variant. (readiness_score
   // and sleep_efficiency MOVED OUT to first-class kinds above.)
@@ -517,8 +728,8 @@ export function classifyVital(state, entityRegistryEntry) {
   // Active minutes — Oura high/medium/low activity time, Fitbit very_active, Garmin intensity.
   if (/_(high_activity_time|medium_activity_time|low_activity_time|minutes_very_active|intensity)$/.test(lid)) return withLabel({ kind: 'active_minutes' });
 
-  if (/_last_workout_distance$|_last_activity_distance$|_distance_travelled_last_workout$|_distance_traveled_last_workout$/.test(lid)) return withLabel({ kind: 'workout_distance' });
-  if (/_last_workout_|_last_activity_|_last_workout$|_last_activity$|_calories_burnt_last_workout$|_elevation_change_last_workout$|_pause_during_last_workout$/.test(lid)) return withLabel({ kind: 'last_workout' });
+  if (/_last_workout_distance$|_last_activity_distance$|_distance_travelled_last_workout$|_distance_traveled_last_workout$|_latest_workout_distance$|_workouts_today_distance$/.test(lid)) return withLabel({ kind: 'workout_distance' });
+  if (/_last_workout_|_last_activity_|_last_workout$|_last_activity$|_calories_burnt_last_workout$|_elevation_change_last_workout$|_pause_during_last_workout$|_latest_workout_|_workouts_today_/.test(lid)) return withLabel({ kind: 'last_workout' });
 
   if (/_glucose_value$/.test(lid)) return withLabel({ kind: 'glucose' });
 
@@ -689,7 +900,10 @@ export function discoverProfiles(hass) {
     if (entityExcludes.has(eid)) continue;
 
     const reEntry = reg[eid];
-    const cls = classifyVital(states[eid], reEntry);
+    // 5.13.x — pass device-registry entry so classifyVital can gate the broad
+    // `mqtt` platform on HealthyApps manufacturer / model.
+    const devEntry = reEntry?.device_id ? (hass.devices || {})[reEntry.device_id] : null;
+    const cls = classifyVital(states[eid], reEntry, devEntry);
     if (!cls) continue;
 
     const objId = eid.split('.')[1] || '';
@@ -703,6 +917,16 @@ export function discoverProfiles(hass) {
       bindingKey = `hae:${profileKey}`;
       isHae = true;
       haePrefixKeys.add(profileKey);
+    } else if (isHealthyAppsMqtt(eid, reEntry, devEntry)) {
+      // 5.13.x — HealthyApps MQTT bridge: walk via_device_id chain to root
+      // (`mqtt:hae_iphone_<user>`) and reuse the same `hae:<user>` binding so
+      // these entities cluster with any pre-existing state-only HAE bucket
+      // (the Captain's existing person mapping then applies automatically).
+      const userTag = healthyAppsUserTag(reEntry.device_id, hass.devices || {}) || 'iphone';
+      profileKey = userTag;
+      bindingKey = `hae:${userTag}`;
+      isHae = true;
+      haePrefixKeys.add(userTag);
     } else if (reEntry.config_entry_id) {
       profileKey = `entry:${reEntry.config_entry_id}`;
       bindingKey = `${reEntry.platform || 'unknown'}:${reEntry.config_entry_id}`;
@@ -855,7 +1079,8 @@ export function listObservedBindings(hass) {
   // Pass 1 — every entity classifyVital recognizes.
   for (const eid of Object.keys(states)) {
     const reEntry = reg[eid];
-    const cls = classifyVital(states[eid], reEntry);
+    const devEntry = reEntry?.device_id ? dev[reEntry.device_id] : null;
+    const cls = classifyVital(states[eid], reEntry, devEntry);
     if (!cls) continue;
     classifiedEids.add(eid);
     const objId = eid.split('.')[1] || '';
@@ -865,6 +1090,14 @@ export function listObservedBindings(hass) {
     if (!reEntry || STATE_ONLY_BRIDGE_PLATFORMS.has(reEntry?.platform) || STATE_ONLY_BRIDGE_DOMAINS.has(eid.split('.')[0])) {
       bindingKey = `hae:${objId.split('_')[0] || 'biobed'}`;
       platform = 'hae';
+    } else if (isHealthyAppsMqtt(eid, reEntry, devEntry)) {
+      // 5.13.x — HealthyApps MQTT bridge: cluster under the same `hae:<user>`
+      // bucket as the state-only HAE entities so the Captain's existing person
+      // mapping (if any) carries over without re-mapping.
+      const userTag = healthyAppsUserTag(reEntry.device_id, dev) || 'iphone';
+      bindingKey = `hae:${userTag}`;
+      platform = 'hae';
+      deviceLabel = deviceLabelFor(reEntry.device_id);
     } else if (reEntry.config_entry_id) {
       platform = reEntry.platform || 'unknown';
       bindingKey = `${platform}:${reEntry.config_entry_id}`;
@@ -891,6 +1124,20 @@ export function listObservedBindings(hass) {
     const objId = eid.split('.')[1] || '';
     const prefix = objId.split('_')[0] || 'biobed';
     bump(`hae:${prefix}`, { platform: 'hae', sampleEntityId: eid }, false);
+  }
+
+  // 5.13.x — Pass 3: sweep every entity belonging to a HealthyApps MQTT device
+  // (parent + children, identified via via_device_id chain) into the same
+  // `hae:<user>` bucket as Pass 1. Unclassified siblings (e.g. parent device
+  // info attributes, diagnostic sensors) get counted alongside classified ones.
+  for (const eid of Object.keys(states)) {
+    const reEntry = reg[eid];
+    if (!reEntry || reEntry.platform !== 'mqtt') continue;
+    if (classifiedEids.has(eid)) continue;
+    const devEntry = reEntry.device_id ? dev[reEntry.device_id] : null;
+    if (!isHealthyAppsMqtt(eid, reEntry, devEntry)) continue;
+    const userTag = healthyAppsUserTag(reEntry.device_id, dev) || 'iphone';
+    bump(`hae:${userTag}`, { platform: 'hae', sampleEntityId: eid, deviceLabel: deviceLabelFor(reEntry.device_id) }, false);
   }
 
   // 5.12.0-beta.5 — only return buckets with at least one classified vital.
@@ -1029,6 +1276,17 @@ export function formatVital(kind, value, secondary = null) {
       // exists for explicit enum-vital additions (none currently).
       return String(value).toUpperCase().replace(/_/g, ' ');
     }
+    // 5.13.x — HealthyApps MQTT bridge formats. These are composite kinds; their
+    // tile renderer emits each child row directly. The fallbacks here cover the
+    // edge cases where the composite tile asks formatVital for a single child
+    // value (e.g. spark, threshold gate).
+    case 'ecg':
+    case 'hr_notifications':
+    case 'data_link':
+      return typeof value === 'number' ? String(Math.round(value)) : String(value);
+    case 'wrist_temperature':
+      // Absolute wrist temperature (converted to °C upstream).
+      return Number.isFinite(value) ? value.toFixed(1) : String(value);
     default:
       return String(value);
   }

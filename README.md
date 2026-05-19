@@ -34,7 +34,50 @@ Each dashboard has its own full documentation in [`dashboards/`](dashboards/) �
 | **[Sickbay](dashboards/SICKBAY.md)** | Sickbay | gold + african-violet | SUMMARY / ANATOMICAL / BIOMEDICAL | Biofunction monitor — vitals (HR / HRV / BP / SpO₂ / body temp Δ / weight / sleep / steps / Oura readiness + sub-scores), front silhouette with anchor callouts, rest-mode banner, enum-aware resilience chip, decorative ECG strip. Admin-gated, default-disabled, per-profile consent gate. Includes [MQTT Sensor Setup](dashboards/SICKBAY.md#mqtt-sensor-setup) for the HealthyApps bridge |
 | **[Starship Health](dashboards/STARSHIP-HEALTH.md)** | Starship Health | gold + butterscotch | SUMMARY / ENGINEERING / TACTICAL | Vessel diagnostic — CPU / mem / temp / disk / WAN / addons rolled up onto a top-down landscape starship silhouette. Admin-gated. Multi-host: every Glances config entry adds a new vessel |
 
-Only **Habitat** is enabled by default. Enable additional dashboards through the integration options flow.
+Only **Habitat** is enabled by default. Enable additional dashboards through the integration options flow ([see below](#dashboard-subscription-config-flow)).
+
+#### Panel Gallery
+
+> **[View the interactive panel gallery →](https://htmlpreview.github.io/?https://github.com/htiel/LCARS-lovelace-dashboard/blob/4.0/examples/lcars-panel-gallery.html)**
+> Or open `examples/lcars-panel-gallery.html` locally to see static mockups of every panel type with sample data.
+
+<table>
+<tr>
+<td width="33%" align="center">
+<a href="examples/screenshots/habitat.png"><img src="examples/screenshots/habitat.png" alt="Habitat dashboard screenshot" width="320"></a><br><strong>Habitat</strong>
+</td>
+<td width="33%" align="center">
+<a href="examples/screenshots/tactical.png"><img src="examples/screenshots/tactical.png" alt="Tactical dashboard screenshot" width="320"></a><br><strong>Tactical</strong>
+</td>
+<td width="33%" align="center">
+<a href="examples/screenshots/power.png"><img src="examples/screenshots/power.png" alt="Engineering / Power Distribution dashboard screenshot" width="320"></a><br><strong>Engineering</strong>
+</td>
+</tr>
+<tr>
+<td align="center">
+<a href="examples/screenshots/life-support.png"><img src="examples/screenshots/life-support.png" alt="Life Support dashboard screenshot" width="320"></a><br><strong>Life Support</strong>
+</td>
+<td align="center">
+<a href="examples/screenshots/illumination.png"><img src="examples/screenshots/illumination.png" alt="Illumination dashboard screenshot" width="320"></a><br><strong>Illumination</strong>
+</td>
+<td align="center">
+<a href="examples/screenshots/cetacean-ops.png"><img src="examples/screenshots/cetacean-ops.png" alt="Cetacean Ops dashboard screenshot" width="320"></a><br><strong>Cetacean Ops</strong>
+</td>
+</tr>
+<tr>
+<td align="center">
+<a href="examples/screenshots/subspace-relay.png"><img src="examples/screenshots/subspace-relay.png" alt="Subspace Relay dashboard screenshot" width="320"></a><br><strong>Subspace Relay</strong>
+</td>
+<td align="center">
+<a href="examples/screenshots/sickbay.png"><img src="examples/screenshots/sickbay.png" alt="Sickbay dashboard screenshot" width="320"></a><br><strong>Sickbay</strong>
+</td>
+<td align="center">
+<a href="examples/screenshots/starship-health.png"><img src="examples/screenshots/starship-health.png" alt="Starship Health dashboard screenshot" width="320"></a><br><strong>Starship Health</strong>
+</td>
+</tr>
+</table>
+
+> Screenshots use Star Trek: Lower Decks character/place names to obfuscate real device, area, and person names from the live deployments.
 
 ### Dashboard Subscription (Config Flow)
 
@@ -97,22 +140,6 @@ The 12 auto-detected panel types (Camera, Climate, Alarm, Media, Pool & Spa, Wea
 
 ---
 
-## Per-Dashboard Documentation
-
-Every dashboard has its own document in [`dashboards/`](dashboards/) covering layout, entity scope, integrations, and any setup steps.
-
-- **[Habitat](dashboards/HABITAT.md)** — Room-by-room auto-detected panels
-- **[Tactical](dashboards/TACTICAL.md)** — Security overview (cameras, alarm, perimeter sensors)
-- **[Engineering](dashboards/ENGINEERING.md)** — Power distribution topology
-- **[Life Support](dashboards/LIFE-SUPPORT.md)** — Climate + air quality
-- **[Illumination](dashboards/ILLUMINATION.md)** — Lighting control
-- **[Cetacean Ops](dashboards/CETACEAN-OPS.md)** — Pool & spa operations
-- **[Subspace Relay](dashboards/SUBSPACE-RELAY.md)** — Network health (UniFi, WAN, clients)
-- **[Sickbay](dashboards/SICKBAY.md)** — Biofunction monitor + **[HealthyApps MQTT sensor setup](dashboards/SICKBAY.md#mqtt-sensor-setup)**
-- **[Starship Health](dashboards/STARSHIP-HEALTH.md)** — Vessel diagnostic (CPU / mem / disk / WAN)
-
----
-
 ### Domain-Specific Renderers (Habitat)
 
 Entities not routed to a panel render with domain-specific controls:
@@ -161,11 +188,6 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 - **ARIA landmarks** — Full keyboard navigation, `role` structure, `aria-live` announcements
 - **WCAG 2.2 AA** — Color-blind safe indicators, `focus-visible` outlines (ice), 24×24px minimum targets, summary bar contrast ≥4.5:1
 - **Self-contained** — All fonts (Antonio) and dependencies vendored locally, no external CDN calls
-
-## Panel Gallery
-
-> **[View the interactive panel gallery →](https://htmlpreview.github.io/?https://github.com/htiel/LCARS-lovelace-dashboard/blob/4.0/examples/lcars-panel-gallery.html)**
-> Open `examples/lcars-panel-gallery.html` in a browser to see static mockups of all panel types with sample data.
 
 <table>
 <tr>
@@ -218,14 +240,6 @@ Standalone `lcars-internal-sensors-grid` card for temperature/humidity monitorin
 </tr>
 </table>
 
-> Screenshots use Star Trek: Lower Decks character/place names to obfuscate real device, area, and person names from the live deployments.
-
-> Detailed per-panel breakdowns for every auto-detected Habitat panel — Camera, Climate, Alarm, Media, Pool & Spa, Weather, Irrigation, Environment / Atmoscrubber, Power Systems, Warp Core Battery, EV Charger, Life Support (per-area) — live in **[dashboards/HABITAT.md](dashboards/HABITAT.md)**.
-
-## Screenshots
-
-
-
 ## Installation (HACS)
 
 ### Stable (4.x)
@@ -254,12 +268,7 @@ To return to stable, repeat steps 2–6 but toggle **Show beta versions** OFF an
 
 ### Enabling Additional Dashboards
 
-After installation, enable more dashboards via the options flow:
-
-1. **Settings** → **Devices & Services** → **LCARS Dashboard** → **Configure**
-2. Check the dashboards you want (Tactical, Engineering, Life Support, Illumination, Cetacean Ops)
-3. Optionally customize each dashboard's sidebar title and icon
-4. Click **Submit** — new dashboards appear in the sidebar immediately
+After installation, additional dashboards are enabled through the integration options flow. See **[Dashboard Subscription (Config Flow)](#dashboard-subscription-config-flow)** above for the step-by-step.
 
 ### Upgrading from 4.x
 

@@ -4,6 +4,10 @@
 
 [← Back to README](../README.md) · [Spec: LCARS-SUBSPACE-RELAY-DASHBOARD-SPEC.md](../specs/LCARS-SUBSPACE-RELAY-DASHBOARD-SPEC.md)
 
+<p align="center">
+  <a href="../examples/screenshots/subspace-relay.png"><img src="../examples/screenshots/subspace-relay.png" alt="Subspace Relay dashboard screenshot" width="640"></a>
+</p>
+
 ## Sidebar Metadata
 
 | Field | Value |

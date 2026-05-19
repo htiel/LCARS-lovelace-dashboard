@@ -4,6 +4,10 @@
 
 [← Back to README](../README.md) · [Spec: LCARS-STARSHIP-HEALTH-DASHBOARD-SPEC.md](../specs/LCARS-STARSHIP-HEALTH-DASHBOARD-SPEC.md)
 
+<p align="center">
+  <a href="../examples/screenshots/starship-health.png"><img src="../examples/screenshots/starship-health.png" alt="Starship Health dashboard screenshot" width="640"></a>
+</p>
+
 ## Sidebar Metadata
 
 | Field | Value |

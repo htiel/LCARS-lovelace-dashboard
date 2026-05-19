@@ -4,6 +4,10 @@
 
 [← Back to README](../README.md) · [Spec: LCARS-MEDICAL-BAY-DASHBOARD-SPEC.md](../specs/LCARS-MEDICAL-BAY-DASHBOARD-SPEC.md)
 
+<p align="center">
+  <a href="../examples/screenshots/sickbay.png"><img src="../examples/screenshots/sickbay.png" alt="Sickbay dashboard screenshot" width="640"></a>
+</p>
+
 ## Sidebar Metadata
 
 | Field | Value |

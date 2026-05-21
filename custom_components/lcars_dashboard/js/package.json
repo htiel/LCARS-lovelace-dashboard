@@ -36,7 +36,7 @@
     "@mdi/js": "^6.5.95",
     "card-tools": "github:thomasloven/lovelace-card-tools#477f3d4eeb5c70cab047d418d19afb6b0f07bf49",
     "custom-card-helpers": "^1.8.0",
-    "js-cookie": "^3.0.1",
+    "js-cookie": "^3.0.7",
     "lit-element": "^2.2.1",
     "lit-html": "^1.1.2",
     "sortablejs": "^1.14.0"

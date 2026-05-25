@@ -16,6 +16,10 @@ import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsAudio } from './lcars-audio.js';
 import { showMoreInfo } from './lcars-helpers.js';
 import './lcars-anatomical-silhouette.js';
+// 5.14.0-beta.1 — new primitives wired into BIOMEDICAL focus mode (no HAI deps).
+import './lcars-hr-zones.js';
+import './lcars-bp-range.js';
+import './lcars-sleep-score-bar.js';
 import { MEDICAL_SILHOUETTE_PATHS } from './lcars-medical-silhouette-paths.js';
 import {
   MEDICAL_VITAL_CLASSES,
@@ -36,6 +40,10 @@ import {
   classifyRestMode,
   discoverReadinessSubscores,
   convertImperial,
+  // 5.14.0-beta.1 (crew C2 / Wesley #2)
+  vitalKindsForTab,
+  MEDICAL_SOURCE_PRIORITY,
+  sourceChipForEntity,
 } from './lcars-medical-utils.js';
 
 const STATUS_COLOR = {
@@ -330,11 +338,24 @@ class LcarsMedicalCard extends LitElement {
 
   _renderHeader(profile, fileId, status) {
     const cols = decorativeNumerics(fileId, 3);
-    const pillColor = STATUS_COLOR[status] || STATUS_COLOR.NOMINAL;
+    // 5.14.0-beta.1 (Wesley #6) — RECOVERY MODE pill modifier. When Oura
+    // rest_mode is on/sick the status pill displays `RECOVERY MODE · DAY N`
+    // (amber) regardless of the underlying reducer, preserving the "ship takes
+    // care of you" tone. Day count derived from rest_mode_start when present.
+    const isRecovery = this._restMode === 'rest' || this._restMode === 'sick';
+    let pillText = status;
+    let pillColor = STATUS_COLOR[status] || STATUS_COLOR.NOMINAL;
+    if (isRecovery) {
+      const days = this._restModeDayCount(profile.profileId);
+      pillText = days ? `RECOVERY MODE · DAY ${days}` : 'RECOVERY MODE';
+      pillColor = STATUS_COLOR[MEDICAL_STATUS.ELEVATED];
+    }
     const mode = this._focusMode;
     // 5.8.0-beta.1 (#176) — status pill legend. Tooltip describes the meaning of each
     // status tier; aria-describedby surfaces the same to AT.
-    const pillLegend = `${status} — Biofunction rollup status. NOMINAL: all vitals in range. ELEVATED: at least one vital outside nominal band. ALERT: vital outside warning band. CRITICAL: life-threatening tier. OFFLINE: no recent data.`;
+    const pillLegend = isRecovery
+      ? `${pillText} — Oura recovery / rest mode is active. Vital thresholds are not enforced; recover at your own pace.`
+      : `${status} — Biofunction rollup status. NOMINAL: all vitals in range. ELEVATED: at least one vital outside nominal band. ALERT: vital outside warning band. CRITICAL: life-threatening tier. OFFLINE: no recent data.`;
     const thermLegend = 'Thermal overlay — decorative gradient; not a calibrated thermal map.';
     return html`
       <header class="zone-a">
@@ -363,10 +384,11 @@ class LcarsMedicalCard extends LitElement {
             THERM
           </button>
           <span class="sr-only" id="med-therm-legend">${thermLegend}</span>
-          <span class="status-pill" aria-live="polite"
+          <span class="status-pill ${isRecovery ? 'status-pill-recovery' : ''}"
+                aria-live="polite"
                 aria-describedby="med-status-legend"
                 title=${pillLegend}
-                style=${`background:${pillColor};color:#000`}>${status}</span>
+                style=${`background:${pillColor};color:#000`}>${pillText}</span>
           <span class="sr-only" id="med-status-legend">${pillLegend}</span>
         </div>
       </header>
@@ -376,7 +398,10 @@ class LcarsMedicalCard extends LitElement {
   // 5.3.1 — Anatomical scan: front + back silhouette pair. Back is a placeholder
   // until back-anchor SVG paths are authored. v5.8.0-beta.1 (#119): formally deferred
   // to 6.0 — ANTERIOR + BIOMEDICAL cover the operational use case.
-  _renderAnatomicalZone(anchors) {
+  // 5.14.0-beta.1 (crew C2) — appends a tile strip filtered to the ANATOMICAL
+  // kinds (body composition + mobility + fitness gauges). Kinds are routed via
+  // `tabs[]` on MEDICAL_VITAL_CLASSES.
+  _renderAnatomicalZone(anchors, vitalsByKind = new Map(), profileKey = null) {
     return html`
       <section class="scan-pair" aria-label="Anatomical front + back scan">
         <div class="scan-pane" aria-label="Anterior">
@@ -397,6 +422,7 @@ class LcarsMedicalCard extends LitElement {
           <div class="scan-pending">SCAN MODE PENDING — 6.0</div>
         </div>
       </section>
+      ${this._renderTiles(vitalsByKind, profileKey, 'anatomical')}
     `;
   }
 
@@ -407,16 +433,25 @@ class LcarsMedicalCard extends LitElement {
   // 5.13.x — when HealthyApps MQTT Apple ECG entities are present, the right pane
   // replaces the SCAN MODE PENDING placeholder with a real HR ALERTS composite,
   // and the left pane appends an ECG composite summary beneath the decorative
-  // waveform. Both composites no-op when their kind is absent so the legacy
-  // pre-MQTT view (waveform + placeholder) still renders for users on the
-  // state-only HAE bridge or no Apple Health at all.
-  _renderBiomedicalZone(vitalsByKind, anchors) {
+  // waveform.
+  //
+  // 5.14.0-beta.1 (crew C2) — appends the cardiac-tile strip filtered to the
+  // BIOMEDICAL kinds, and below that wires the three new v5.14 primitives:
+  // `<lcars-bp-range>` (30-day BP min/max/avg) and `<lcars-hr-zones>` (HR zone
+  // bars for the most recent workout). When neither workout HR nor a BP series
+  // is present, the new primitives render their own NO DATA empty states.
+  _renderBiomedicalZone(vitalsByKind, anchors, profileKey = null) {
     const hrVital = vitalsByKind.get('heart_rate');
     const hrValue = hrVital && !isNaN(hrVital.value) ? hrVital.value : null;
     const ecg = vitalsByKind.get('ecg');
     const hrAlerts = vitalsByKind.get('hr_notifications');
     const hasEcg = ecg && ecg.variants && ecg.variants.length;
     const hasHrAlerts = hrAlerts && hrAlerts.variants && hrAlerts.variants.length;
+    // 5.14.0-beta.1 — workout HR primitive props from existing HAI/Withings sensors.
+    const workout = this._extractLastWorkout(profileKey);
+    // 5.14.0-beta.1 — derive person max-HR estimate (220 - age) from person.birthdate
+    // when present; otherwise null → <lcars-hr-zones> renders its "set birthdate" pill.
+    const personMaxHrEst = this._personMaxHrEstimate(profileKey);
     return html`
       <section class="scan-pair" aria-label="Biomedical waveform + ECG + HR alerts">
         <div class="scan-pane">
@@ -434,8 +469,157 @@ class LcarsMedicalCard extends LitElement {
             <div class="scan-pending">SCAN MODE PENDING — 6.0</div>
           </div>`}
       </section>
+      ${this._renderTiles(vitalsByKind, profileKey, 'biomedical')}
+      <section class="scan-pair" aria-label="Cardiac primitives">
+        <div class="scan-pane">
+          <div class="scan-cap">BLOOD PRESSURE — 30 DAYS</div>
+          <lcars-bp-range
+            .hass=${this._hass}
+            .systolicEntity=${this._systolicEntityFor(profileKey)}
+            .diastolicEntity=${this._diastolicEntityFor(profileKey)}
+          ></lcars-bp-range>
+        </div>
+        <div class="scan-pane">
+          <div class="scan-cap">LAST WORKOUT — HR ZONES</div>
+          <lcars-hr-zones
+            .avgHr=${workout.avgHr}
+            .maxHr=${workout.maxHr}
+            .durationS=${workout.durationS}
+            .workoutType=${workout.type}
+            .personMaxHrEst=${personMaxHrEst}
+          ></lcars-hr-zones>
+        </div>
+      </section>
+      <section class="scan-pair" aria-label="Sleep score breakdown">
+        <div class="scan-pane scan-pane-wide">
+          <div class="scan-cap">SLEEP SCORE</div>
+          <lcars-sleep-score-bar
+            .score=${this._extractSleepScore(vitalsByKind)}
+            .contributors=${this._extractSleepContributors(vitalsByKind, profileKey)}
+          ></lcars-sleep-score-bar>
+        </div>
+      </section>
     `;
   }
+
+  // 5.14.0-beta.1 — extract the canonical last-workout block for <lcars-hr-zones>.
+  // Walks both the legacy `last_workout` variants (Withings/Oura) and the HAI
+  // workouts.workout_last_* sensor family. Returns a plain object; null fields
+  // collapse the dependent UI per the primitive's empty-state policy.
+  _extractLastWorkout(profileKey) {
+    const empty = { avgHr: null, maxHr: null, durationS: null, type: null };
+    if (!this._hass || !this._hass.states) return empty;
+    const haiPrefixes = [
+      'sensor.health_auto_import_workouts_workout_last_',
+      'sensor.health_auto_export_workouts_workout_last_',
+    ];
+    const out = { ...empty };
+    const states = this._hass.states;
+    for (const id of Object.keys(states)) {
+      for (const prefix of haiPrefixes) {
+        if (!id.startsWith(prefix)) continue;
+        const tail = id.slice(prefix.length);
+        const v = parseFloat(states[id].state);
+        if (tail === 'avg_hr' && Number.isFinite(v)) out.avgHr = v;
+        else if (tail === 'max_hr' && Number.isFinite(v)) out.maxHr = v;
+        else if (tail === 'duration' && Number.isFinite(v)) out.durationS = v;
+        else if (tail === 'type') out.type = String(states[id].state || '').toUpperCase();
+      }
+    }
+    // Withings fallback for duration/type when HAI is absent.
+    if (out.durationS == null && states['sensor.withings_last_workout_duration']) {
+      const w = parseFloat(states['sensor.withings_last_workout_duration'].state);
+      if (Number.isFinite(w)) out.durationS = w;
+    }
+    if (!out.type && states['sensor.withings_last_workout_type']) {
+      out.type = String(states['sensor.withings_last_workout_type'].state || '').toUpperCase();
+    }
+    return out;
+  }
+
+  // 5.14.0-beta.1 — resolve the systolic/diastolic entity for the BP-range
+  // primitive. Picks the first matching entity bound to this profile; falls
+  // back to Withings defaults when discoverProfiles hasn't bound the entity.
+  _systolicEntityFor(profileKey) {
+    return this._findBpEntity(profileKey, /_systolic.*blood.*pressure$|_systolic_blood_pressure$/);
+  }
+  _diastolicEntityFor(profileKey) {
+    return this._findBpEntity(profileKey, /_diastolic.*blood.*pressure$|_diastolic_blood_pressure$/);
+  }
+  _findBpEntity(profileKey, re) {
+    if (!this._hass || !this._hass.states) return null;
+    for (const id of Object.keys(this._hass.states)) {
+      if (re.test(id)) return id;
+    }
+    return null;
+  }
+
+  // 5.14.0-beta.1 — derive max-HR estimate (220 - age) from person.birthdate.
+  // Returns null when birthdate is not set on the bound HA person, which signals
+  // <lcars-hr-zones> to render its "set birthdate" pill instead of hidden bars.
+  _personMaxHrEstimate(profileKey) {
+    if (!this._hass || !this._hass.states) return null;
+    const candidates = [];
+    if (profileKey) candidates.push(`person.${profileKey.replace(/^person:/, '')}`);
+    for (const id of Object.keys(this._hass.states)) {
+      if (id.startsWith('person.')) candidates.push(id);
+    }
+    for (const id of candidates) {
+      const st = this._hass.states[id];
+      if (!st) continue;
+      const bday = (st.attributes && (st.attributes.birthdate || st.attributes.dob || st.attributes.birthday)) || null;
+      if (!bday) continue;
+      const dt = new Date(bday);
+      if (Number.isNaN(dt.getTime())) continue;
+      const ageMs = Date.now() - dt.getTime();
+      const ageYears = ageMs / (365.2422 * 24 * 60 * 60 * 1000);
+      if (ageYears < 10 || ageYears > 110) continue;
+      return Math.round(220 - ageYears);
+    }
+    return null;
+  }
+
+  // 5.14.0-beta.1 — pull the sleep-score numeric for <lcars-sleep-score-bar>.
+  // Returns null when no score is present, which collapses the primitive to a
+  // single LCARS pill per its empty-state contract.
+  _extractSleepScore(vitalsByKind) {
+    const v = vitalsByKind.get('sleep_score');
+    if (!v || !v.variants || !v.variants.length) return null;
+    const value = v.variants[0].value;
+    return Number.isFinite(value) ? value : null;
+  }
+
+  // 5.14.0-beta.1 — build the contributors map for <lcars-sleep-score-bar>.
+  // Pulls the existing Oura / HAI contributor sensors from hass.states (these
+  // are not part of MEDICAL_VITAL_CLASSES so we walk states directly). Returns
+  // a `{label: {value, max, label}}` map ordered roughly by clinical weight.
+  _extractSleepContributors(vitalsByKind, profileKey) {
+    const out = {};
+    if (!this._hass || !this._hass.states) return out;
+    // Sleep efficiency (Oura sensor.oura_ring_*_sleep_efficiency / HAI variant).
+    const eff = vitalsByKind.get('sleep_efficiency');
+    if (eff && eff.variants && eff.variants.length) {
+      const val = parseFloat(eff.variants[0].value);
+      if (Number.isFinite(val)) out.EFFICIENCY = { value: val, max: 100, label: 'EFFICIENCY' };
+    }
+    // Other Oura contributors live on free-form sensors; walk states for
+    // suffix matches scoped to this profile (defensive — never accept arbitrary).
+    const profileSlug = (profileKey || '').replace(/^person:/, '').replace(/^oura:/, '');
+    const oraPrefix = profileSlug ? `sensor.oura_ring_${profileSlug}_` : 'sensor.oura_ring_';
+    const tryAdd = (suffix, label, max = 100) => {
+      const id = oraPrefix + suffix;
+      const st = this._hass.states[id];
+      if (!st) return;
+      const v = parseFloat(st.state);
+      if (Number.isFinite(v)) out[label] = { value: v, max, label };
+    };
+    tryAdd('sleep_latency', 'LATENCY', 60);
+    tryAdd('sleep_regularity_score', 'REGULARITY', 100);
+    tryAdd('restfulness', 'RESTFULNESS', 100);
+    return out;
+  }
+
+
 
   _renderEcgWaveform(bpm) {
     // Decorative ECG strip; not a clinical waveform. PHI: heart-rate value only.
@@ -468,15 +652,16 @@ class LcarsMedicalCard extends LitElement {
     `;
   }
 
-  _renderTiles(vitalsByKind, profileKey) {
-    // 5.12.0-beta.6 — body composition is now a composite tile owned by `weight`;
-    // the standalone tiles for these kinds are skipped and rendered as breakdown
-    // rows inside the WEIGHT tile. Frees ~7 grid slots for new HAE-derived kinds
-    // (CALORIES, MOBILITY, AUDIO, BREATHING, sleep stages, activity rings).
-    // 5.12.0-beta.7 — raised slice from 16 to 20 to surface the new HAE kinds.
-    const tiles = MEDICAL_VITAL_CLASSES
-      .filter((vc) => vc.tile && !BODY_COMP_CHILD_KINDS.has(vc.kind))
-      .slice(0, 20);
+  _renderTiles(vitalsByKind, profileKey, tab = 'summary') {
+    // 5.12.0-beta.6 — body composition is a composite tile owned by `weight`;
+    // standalone tiles for its children are skipped and rendered as breakdown rows.
+    // 5.14.0-beta.1 (crew C2) — tile selection driven by per-kind `tabs[]` field on
+    // MEDICAL_VITAL_CLASSES. The previous "first 20 tiles" slice is replaced with
+    // a tab-filtered list so SUMMARY / ANATOMICAL / BIOMEDICAL / SLEEP each render
+    // their own slice. Default tab='summary' preserves back-compat for callers.
+    const tiles = vitalKindsForTab(tab)
+      .filter((vc) => vc.tile && !BODY_COMP_CHILD_KINDS.has(vc.kind));
+    if (!tiles.length) return '';
     return html`
       <section class="zone-c" aria-label="Vital detail tiles">
         ${tiles.map((vc) => {
@@ -497,6 +682,10 @@ class LcarsMedicalCard extends LitElement {
           }
           if (vc.composite === 'data_link' && vc.kind === 'data_link') {
             return this._renderDataLinkTile(vc, vitalsByKind.get('data_link'));
+          }
+          // 5.14.0-beta.1 (Wesley #1) — HAI medications composite.
+          if (vc.composite === 'medications' && vc.kind === 'medications') {
+            return this._renderMedicationsTile(vc, vitalsByKind.get('medications'));
           }
           const v = vitalsByKind.get(vc.kind);
           // v5.7.2 hybrid: render canonical row + any additional variants stacked beneath.
@@ -524,8 +713,14 @@ class LcarsMedicalCard extends LitElement {
           // v5.8.0-beta.2 (Geordi+Wesley P1) — source pill suppressed when the source
           // label echoes the tile label (e.g. EFFICIENCY · EFFICIENCY).
           const showSrc = canonical.label && canonical.label.toUpperCase() !== vc.label.toUpperCase();
+          // 5.14.0-beta.1 (Wesley #2) — multi-platform superscript source chip.
+          // Only shows when this kind has variants from more than one platform
+          // (otherwise the chip is visual noise on a single-source household).
+          const platforms = new Set(variants.map((vt) => sourceChipForEntity(vt.eid)));
+          const multiSource = platforms.size > 1;
+          const sourceChip = multiSource ? sourceChipForEntity(canonical.eid) : '';
           return this._wrapTile(vc.label, canonical.eid, html`
-            <div class="tile-label">${vc.label}</div>
+            <div class="tile-label">${vc.label}${sourceChip ? html` <sup class="tile-source-chip" aria-label="Source platform">${sourceChip}</sup>` : ''}</div>
             <div class="tile-value" data-medical="phi"
                  aria-live="off"
                  ?aria-hidden=${this._audioMuted}
@@ -535,7 +730,7 @@ class LcarsMedicalCard extends LitElement {
               <div class="tile-variants" aria-label="Additional sources">
                 ${variants.slice(1).map((vt) => html`
                   <div class="tile-variant">
-                    <span class="tile-variant-label">${vt.label || '·'}</span>
+                    <span class="tile-variant-label">${vt.label || '·'}${multiSource ? html` <sup class="tile-source-chip">${sourceChipForEntity(vt.eid)}</sup>` : ''}</span>
                     <span class="tile-variant-value" data-medical="phi"
                           ?aria-hidden=${this._audioMuted}>${formatVital(vc.kind, vt.value)}</span>
                   </div>`)}
@@ -719,6 +914,30 @@ class LcarsMedicalCard extends LitElement {
     if (h < 24) return `${h}h`;
     const days = Math.floor(h / 24);
     return `${days}d`;
+  }
+
+  // 5.14.0-beta.1 (Wesley #6) — derive the day count for the RECOVERY MODE
+  // pill modifier. Walks the profile-bound `_rest_mode_start` Oura sensor and
+  // returns the integer day count since rest mode began. Returns 0 when the
+  // start timestamp is missing or in the future, which downgrades the pill to
+  // just `RECOVERY MODE` without a day counter (still amber).
+  _restModeDayCount(profileKey) {
+    if (!this._hass || !this._hass.states || !profileKey) return 0;
+    const slug = profileKey.replace(/^person:/, '').replace(/^oura:/, '');
+    const candidates = [
+      `sensor.oura_ring_${slug}_rest_mode_start`,
+      `sensor.oura_${slug}_rest_mode_start`,
+    ];
+    for (const id of candidates) {
+      const st = this._hass.states[id];
+      if (!st || !st.state || st.state === 'unknown' || st.state === 'unavailable') continue;
+      const ts = Date.parse(st.state);
+      if (!Number.isFinite(ts)) continue;
+      const delta = Date.now() - ts;
+      if (delta <= 0) return 1;
+      return Math.max(1, Math.ceil(delta / (24 * 60 * 60 * 1000)));
+    }
+    return 0;
   }
 
   // 5.13.x — ECG composite tile (HealthyApps MQTT bridge: Apple Watch ECG).
@@ -974,6 +1193,146 @@ class LcarsMedicalCard extends LitElement {
     `);
   }
 
+  // 5.14.0-beta.1 (Wesley #1) — Medications composite tile.
+  // Headline: most-recent status (TAKEN / MISSED / OVERDUE band derived from
+  // STATUS + SCHEDULED timestamp delta). Subrow shows the scheduled time and
+  // status enum so the captain can glance at "did mom take her morning pill?".
+  // Status mapping:
+  //   STATUS = 'taken'/'logged'/'recorded'           → NOMINAL
+  //   STATUS = 'pending' AND scheduled <30m ago      → NOMINAL
+  //   STATUS = 'pending' AND scheduled 30m–2h ago    → ELEVATED
+  //   STATUS = 'missed'/'overdue' OR scheduled >2h   → ALERT
+  //   Anything else (no data)                        → OFFLINE
+  _renderMedicationsTile(vc, v) {
+    const variants = v && v.variants && v.variants.length ? v.variants : null;
+    if (!variants) {
+      return html`
+        <div class="tile">
+          <div class="tile-label">${vc.label}</div>
+          <div class="tile-value tile-offline"
+               style=${`color:var(--lcars-gray, #666688)`}>—</div>
+          <div class="tile-unit">no data</div>
+        </div>`;
+    }
+    const byLabel = (L) => variants.find((vt) => String(vt.label || '').toUpperCase() === L);
+    const scheduled = byLabel('SCHEDULED');
+    const status = byLabel('STATUS');
+    const taken = byLabel('TAKEN');
+    const statusRaw = String((status && status.value) || '').toLowerCase();
+    let scheduledMs = NaN;
+    if (scheduled && scheduled.value) {
+      const t = typeof scheduled.value === 'number' ? scheduled.value : Date.parse(scheduled.value);
+      if (Number.isFinite(t)) scheduledMs = t;
+    }
+    const ageMs = Number.isFinite(scheduledMs) ? (Date.now() - scheduledMs) : NaN;
+    let band = MEDICAL_STATUS.OFFLINE;
+    let headline = '—';
+    if (statusRaw) {
+      if (/taken|logged|recorded|complete/.test(statusRaw)) {
+        band = MEDICAL_STATUS.NOMINAL;
+        headline = 'TAKEN';
+      } else if (/missed|overdue|skip/.test(statusRaw)) {
+        band = MEDICAL_STATUS.ALERT;
+        headline = 'OVERDUE';
+      } else if (/pending|due/.test(statusRaw)) {
+        if (Number.isFinite(ageMs) && ageMs > 2 * 60 * 60 * 1000) {
+          band = MEDICAL_STATUS.ALERT;
+          headline = 'OVERDUE';
+        } else if (Number.isFinite(ageMs) && ageMs > 30 * 60 * 1000) {
+          band = MEDICAL_STATUS.ELEVATED;
+          headline = 'PENDING';
+        } else {
+          band = MEDICAL_STATUS.NOMINAL;
+          headline = 'PENDING';
+        }
+      } else {
+        band = MEDICAL_STATUS.NOMINAL;
+        headline = String(statusRaw).toUpperCase();
+      }
+    } else if (taken && taken.value) {
+      band = MEDICAL_STATUS.NOMINAL;
+      headline = 'TAKEN';
+    }
+    const color = STATUS_COLOR[band] || STATUS_COLOR.OFFLINE;
+    const schedDisplay = Number.isFinite(scheduledMs)
+      ? this._formatStaleness(scheduledMs)
+      : '—';
+    const headlineEid = (status && status.eid) || (scheduled && scheduled.eid) || (taken && taken.eid);
+    return this._wrapTile(vc.label, headlineEid, html`
+      <div class="tile-label">${vc.label}</div>
+      <div class="tile-value" data-medical="phi"
+           aria-live="off"
+           ?aria-hidden=${this._audioMuted}
+           style=${`color:${color}`}>${headline}</div>
+      <div class="tile-unit">${schedDisplay !== '—' ? html`scheduled ${schedDisplay} ago` : 'no schedule'}</div>
+      ${variants.length ? html`
+        <div class="tile-variants" aria-label="Medication detail">
+          ${variants.map((vt) => html`
+            <div class="tile-variant">
+              <span class="tile-variant-label">${vt.label || '·'}</span>
+              <span class="tile-variant-value" data-medical="phi"
+                    ?aria-hidden=${this._audioMuted}>${this._formatMedicationValue(vt)}</span>
+            </div>`)}
+        </div>` : ''}
+    `);
+  }
+
+  // Helper for the medications composite — formats timestamps as relative age
+  // and pretty-cases status enums. Keeps the composite tile rendering clean.
+  _formatMedicationValue(vt) {
+    if (!vt || vt.value == null || vt.value === '' || vt.value === 'unknown' || vt.value === 'unavailable') return '—';
+    const label = String(vt.label || '').toUpperCase();
+    if (label === 'SCHEDULED' || label === 'TAKEN') {
+      return this._formatStaleness(vt.value) + ' ago';
+    }
+    return String(vt.value).toUpperCase();
+  }
+
+  // 5.14.0-beta.1 — Last-sync row (per spec §3.1.2). Renders a single LCARS
+  // pill at the bottom of SUMMARY: `LAST SYNC · {max_freshness} · {N} SOURCES
+  // ({comma_list})`. max_freshness = age of the most-recent sample across all
+  // bound entities for this profile. comma_list = platforms that produced ≥1
+  // rendered value (uniqued by sourceChipForEntity → platform name).
+  _renderLastSyncRow(profile) {
+    if (!profile || !Array.isArray(profile.entities) || !profile.entities.length) {
+      return html`<div class="last-sync-row" role="contentinfo">LAST SYNC · NO DATA</div>`;
+    }
+    let newestMs = 0;
+    const platformsSet = new Set();
+    for (const e of profile.entities) {
+      const ts = Date.parse(e.state.last_changed || e.state.last_updated || 0);
+      if (Number.isFinite(ts) && ts > newestMs) newestMs = ts;
+      const eid = e.eid || (e.state && e.state.entity_id);
+      const chip = sourceChipForEntity(eid);
+      if (chip && chip !== '·') platformsSet.add(this._platformNameForChip(chip));
+    }
+    const freshness = newestMs ? this._formatStaleness(newestMs) : '—';
+    const platforms = [...platformsSet];
+    const platformList = platforms.length ? platforms.join(' · ') : 'NONE';
+    return html`
+      <div class="last-sync-row" role="contentinfo"
+           aria-label="Last sync ${freshness} ago, ${platforms.length} sources">
+        LAST SYNC · ${freshness} AGO · ${platforms.length} SOURCE${platforms.length === 1 ? '' : 'S'}
+        <span class="last-sync-platforms">(${platformList})</span>
+      </div>`;
+  }
+
+  _platformNameForChip(chip) {
+    switch (chip) {
+      case 'ᴼ': return 'OURA';
+      case 'ᵂ': return 'WITHINGS';
+      case 'ᴴ': return 'HEALTH AUTO IMPORT';
+      case 'ᴬ': return 'APPLE HEALTH';
+      case 'ᴹ': return 'MQTT';
+      case 'ᶠ': return 'FITBIT';
+      case 'ᴳ': return 'GARMIN';
+      case 'ᵍ': return 'GOOGLE FIT';
+      case 'ᴰ': return 'DEXCOM';
+      case 'ᴺ': return 'NEST PROTECT';
+      default:  return chip;
+    }
+  }
+
   // 5.13.x — inline ECG summary rendered BELOW the decorative waveform in the
   // BIOMEDICAL view. Compact 2-line layout: classification on top, AFib + today
   // counts on the bottom. Designed to fit inside `scan-pane` without scrolling.
@@ -1159,8 +1518,8 @@ class LcarsMedicalCard extends LitElement {
               <h2 id=${`med-h-${fileId}`} class="sr-only">Biofunction card ${fileId}</h2>
               ${this._renderHeader(profile, fileId, overall)}
               ${this._renderRestBanner(profile.profileId)}
-              ${this._focusMode === 'anatomical' ? this._renderAnatomicalZone(anchors)
-                : this._focusMode === 'biomedical' ? this._renderBiomedicalZone(vitalsByKind, anchors)
+              ${this._focusMode === 'anatomical' ? this._renderAnatomicalZone(anchors, vitalsByKind, profile.profileId)
+                : this._focusMode === 'biomedical' ? this._renderBiomedicalZone(vitalsByKind, anchors, profile.profileId)
                 : html`
                   <section class="zone-b" aria-label="Anatomical vital map">
                     <lcars-anatomical-silhouette
@@ -1175,7 +1534,8 @@ class LcarsMedicalCard extends LitElement {
                     ></lcars-anatomical-silhouette>
                     ${!consentGranted ? this._renderConsentGate(fileId) : ''}
                   </section>
-                  ${this._renderTiles(vitalsByKind, profile.profileId)}
+                  ${this._renderTiles(vitalsByKind, profile.profileId, 'summary')}
+                  ${this._renderLastSyncRow(profile)}
                 `}
               ${this._focusMode !== 'summary' && !consentGranted ? this._renderConsentGate(fileId) : ''}
             </article>`;
@@ -1597,6 +1957,42 @@ class LcarsMedicalCard extends LitElement {
           text-align: center;
           padding: 1rem 0;
         }
+
+        /* 5.14.0-beta.1 — last-sync row, source chip, recovery pill modifier */
+        .last-sync-row {
+          margin-top: 0.6rem;
+          padding: 0.5rem 0.75rem;
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.85rem;
+          letter-spacing: 0.1em;
+          color: var(--lcars-gray, #aaaadd);
+          background: rgba(153, 204, 255, 0.04);
+          border-left: 3px solid var(--lcars-ice, #a8d8ff);
+          border-radius: 0 var(--lcars-btn-radius, 0.6rem) var(--lcars-btn-radius, 0.6rem) 0;
+          text-transform: uppercase;
+        }
+        .last-sync-row .last-sync-platforms {
+          margin-left: 0.5rem;
+          color: var(--lcars-text, #ccccee);
+          opacity: 0.85;
+          font-size: 0.78rem;
+          letter-spacing: 0.06em;
+        }
+        .tile-source-chip {
+          font-size: 0.65em;
+          color: var(--lcars-gold, #ffcc66);
+          margin-left: 0.18em;
+          letter-spacing: 0;
+          vertical-align: super;
+        }
+        .status-pill-recovery {
+          /* Visually distinguish recovery from the standard rollup pill so it
+             doesn't read as a regular ELEVATED. Slight glow + uppercase comma. */
+          box-shadow: 0 0 0 2px var(--lcars-gold, #ffaa00) inset;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+        }
+        .scan-pane-wide { grid-column: 1 / -1; }
       `,
     ];
   }

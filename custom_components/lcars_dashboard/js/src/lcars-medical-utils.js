@@ -110,72 +110,77 @@ export function convertImperial(value, uom) {
 //   - 'body_comp' — weight composite that absorbs body_fat_pct/fat_mass/lean_mass/
 //     muscle_mass/bone_mass/visceral_fat/bmi/hydration as breakdown rows. Children
 //     are skipped from the standalone tile loop. (5.12.0-beta.6)
+//
+// `tabs` (5.14.0-beta.1 — crew C2/Data CR-1): the focus-mode tab(s) this kind
+// renders on. Default = ['summary']. Folded into MEDICAL_VITAL_CLASSES rather
+// than living as a parallel map so the two sources of truth can't drift.
+// Tab names: 'summary' | 'anatomical' | 'biomedical' | 'sleep' (sleep gated by
+// dashboard_options.sickbay_sleep_tab in a later train).
 export const MEDICAL_VITAL_CLASSES = [
-  { kind: 'blood_pressure',     anchor: 'left_arm',   label: 'BP',          unit: 'mmHg', spark: true,  tile: false, paired: true },
-  { kind: 'heart_rate',         anchor: 'heart',      label: 'HR',          unit: 'bpm',  spark: true,  tile: true },
-  { kind: 'spo2',               anchor: 'right_arm',  label: 'SpO2',        unit: '%',    spark: true,  tile: false },
-  { kind: 'respiration_rate',   anchor: 'throat',     label: 'RESP',        unit: 'brpm', spark: false, tile: false },
+  { kind: 'blood_pressure',     anchor: 'left_arm',   label: 'BP',          unit: 'mmHg', spark: true,  tile: false, paired: true, tabs: ['summary', 'biomedical'] },
+  // 5.14.0-beta.1 — HR appears in SUMMARY at-a-glance + cardiac strip in BIOMEDICAL.
+  { kind: 'heart_rate',         anchor: 'heart',      label: 'HR',          unit: 'bpm',  spark: true,  tile: true,  tabs: ['summary', 'biomedical'] },
+  { kind: 'spo2',               anchor: 'right_arm',  label: 'SpO2',        unit: '%',    spark: true,  tile: false, tabs: ['summary', 'biomedical'] },
+  { kind: 'respiration_rate',   anchor: 'throat',     label: 'RESP',        unit: 'brpm', spark: false, tile: false, tabs: ['summary', 'biomedical'] },
   // 5.11.0-beta.3 — TEMP relocated from 'forehead' (top edge, clipped the head
   // ellipse) to 'left_chest' (left edge above BP) per Captain visual review.
-  { kind: 'body_temp_deviation',anchor: 'left_chest', label: 'TEMP',        unit: '°C',   spark: true,  tile: true },
+  { kind: 'body_temp_deviation',anchor: 'left_chest', label: 'TEMP',        unit: '°C',   spark: true,  tile: true,  tabs: ['summary'] },
   // 5.12.0-beta.6 — weight is now a composite tile that pulls body_fat_pct,
   // fat_mass, lean_mass, muscle_mass, bone_mass, visceral_fat, bmi, hydration as
   // breakdown rows. Those kinds are filtered from the standalone tile loop.
-  { kind: 'weight',             anchor: 'abdomen',    label: 'WEIGHT',      unit: 'kg',   spark: true,  tile: true, composite: 'body_comp' },
-  { kind: 'body_fat_pct',       anchor: null,         label: 'BODY FAT',    unit: '%',    spark: false, tile: true },
-  { kind: 'fat_mass',           anchor: null,         label: 'FAT MASS',    unit: 'kg',   spark: true,  tile: true },
-  { kind: 'lean_mass',          anchor: null,         label: 'LEAN',        unit: 'kg',   spark: true,  tile: true },
-  { kind: 'muscle_mass',        anchor: null,         label: 'MUSCLE',      unit: 'kg',   spark: true,  tile: true },
-  { kind: 'bone_mass',          anchor: null,         label: 'BONE',        unit: 'kg',   spark: true,  tile: true },
-  { kind: 'visceral_fat',       anchor: null,         label: 'VISCERAL',    unit: '',     spark: false, tile: true },
-  { kind: 'bmi',                anchor: null,         label: 'BMI',         unit: '',     spark: false, tile: true },
-  { kind: 'hydration',          anchor: null,         label: 'HYDRATION',   unit: 'L',    spark: false, tile: true },
+  // 5.14.0-beta.1 — body composition moves to ANATOMICAL tab.
+  { kind: 'weight',             anchor: 'abdomen',    label: 'WEIGHT',      unit: 'kg',   spark: true,  tile: true,  tabs: ['anatomical'], composite: 'body_comp' },
+  { kind: 'body_fat_pct',       anchor: null,         label: 'BODY FAT',    unit: '%',    spark: false, tile: true,  tabs: ['anatomical'] },
+  { kind: 'fat_mass',           anchor: null,         label: 'FAT MASS',    unit: 'kg',   spark: true,  tile: true,  tabs: ['anatomical'] },
+  { kind: 'lean_mass',          anchor: null,         label: 'LEAN',        unit: 'kg',   spark: true,  tile: true,  tabs: ['anatomical'] },
+  { kind: 'muscle_mass',        anchor: null,         label: 'MUSCLE',      unit: 'kg',   spark: true,  tile: true,  tabs: ['anatomical'] },
+  { kind: 'bone_mass',          anchor: null,         label: 'BONE',        unit: 'kg',   spark: true,  tile: true,  tabs: ['anatomical'] },
+  { kind: 'visceral_fat',       anchor: null,         label: 'VISCERAL',    unit: '',     spark: false, tile: true,  tabs: ['anatomical'] },
+  { kind: 'bmi',                anchor: null,         label: 'BMI',         unit: '',     spark: false, tile: true,  tabs: ['anatomical'] },
+  { kind: 'hydration',          anchor: null,         label: 'HYDRATION',   unit: 'L',    spark: false, tile: true,  tabs: ['anatomical'] },
   // 5.12.0-beta.8 — SLEEP TIME (with deep/rem/light breakdown) is the row-1
   // sleep tile; SLEEP score follows on row 2. Captain visual review on beta.7.
-  { kind: 'sleep_duration',     anchor: null,         label: 'SLEEP TIME',  unit: 'h',    spark: false, tile: true },
-  { kind: 'sleep_score',        anchor: null,         label: 'SLEEP',       unit: '/100', spark: true,  tile: true },
-  { kind: 'readiness',          anchor: null,         label: 'READINESS',   unit: '/100', spark: true,  tile: true, composite: true },
-  { kind: 'sleep_efficiency',   anchor: null,         label: 'EFFICIENCY',  unit: '%',    spark: false, tile: true },
+  { kind: 'sleep_duration',     anchor: null,         label: 'SLEEP TIME',  unit: 'h',    spark: false, tile: true,  tabs: ['summary', 'sleep'] },
+  { kind: 'sleep_score',        anchor: null,         label: 'SLEEP',       unit: '/100', spark: true,  tile: true,  tabs: ['summary', 'sleep'] },
+  { kind: 'readiness',          anchor: null,         label: 'READINESS',   unit: '/100', spark: true,  tile: true,  tabs: ['summary'], composite: true },
+  { kind: 'sleep_efficiency',   anchor: null,         label: 'EFFICIENCY',  unit: '%',    spark: false, tile: true,  tabs: ['sleep'] },
   // 5.12.0-beta.6 — sleep apnea screening (Apple Watch breathing disturbances).
-  { kind: 'sleep_breathing',    anchor: null,         label: 'BREATHING',   unit: '',     spark: true,  tile: true },
-  { kind: 'hrv',                anchor: null,         label: 'HRV',         unit: 'ms',   spark: true,  tile: true },
-  { kind: 'hrv_balance',        anchor: null,         label: 'HRV BAL',     unit: '/100', spark: false, tile: true },
-  { kind: 'body_battery',       anchor: null,         label: 'BODY BATT',   unit: '/100', spark: true,  tile: true },
-  { kind: 'recovery_score',     anchor: null,         label: 'RECOVERY',    unit: '/100', spark: true,  tile: true },
-  { kind: 'stress_resilience',  anchor: null,         label: 'RESILIENCE',  unit: '',     spark: false, tile: true },
-  { kind: 'vo2_max',            anchor: null,         label: 'VO2 MAX',     unit: 'ml/kg/min', spark: false, tile: true },
-  { kind: 'cardiovascular_age', anchor: null,         label: 'CV AGE',      unit: 'yr',   spark: false, tile: true },
-  { kind: 'activity_score',     anchor: null,         label: 'ACTIVITY',    unit: '/100', spark: false, tile: true },
-  { kind: 'steps',              anchor: 'right_foot', label: 'STEPS',       unit: '',     spark: true,  tile: true },
-  { kind: 'active_minutes',     anchor: 'left_leg',   label: 'ACTIVE',      unit: 'min',  spark: false, tile: true },
+  { kind: 'sleep_breathing',    anchor: null,         label: 'BREATHING',   unit: '',     spark: true,  tile: true,  tabs: ['sleep'] },
+  // 5.14.0-beta.1 — cardiac kinds move to BIOMEDICAL.
+  { kind: 'hrv',                anchor: null,         label: 'HRV',         unit: 'ms',   spark: true,  tile: true,  tabs: ['biomedical'] },
+  { kind: 'hrv_balance',        anchor: null,         label: 'HRV BAL',     unit: '/100', spark: false, tile: true,  tabs: ['biomedical'] },
+  { kind: 'body_battery',       anchor: null,         label: 'BODY BATT',   unit: '/100', spark: true,  tile: true,  tabs: ['summary'] },
+  { kind: 'recovery_score',     anchor: null,         label: 'RECOVERY',    unit: '/100', spark: true,  tile: true,  tabs: ['summary'] },
+  { kind: 'stress_resilience',  anchor: null,         label: 'RESILIENCE',  unit: '',     spark: false, tile: true,  tabs: ['summary'] },
+  { kind: 'vo2_max',            anchor: null,         label: 'VO2 MAX',     unit: 'ml/kg/min', spark: false, tile: true, tabs: ['biomedical', 'anatomical'] },
+  { kind: 'cardiovascular_age', anchor: null,         label: 'CV AGE',      unit: 'yr',   spark: false, tile: true,  tabs: ['biomedical'] },
+  { kind: 'activity_score',     anchor: null,         label: 'ACTIVITY',    unit: '/100', spark: false, tile: true,  tabs: ['summary'] },
+  { kind: 'steps',              anchor: 'right_foot', label: 'STEPS',       unit: '',     spark: true,  tile: true,  tabs: ['summary'] },
+  { kind: 'active_minutes',     anchor: 'left_leg',   label: 'ACTIVE',      unit: 'min',  spark: false, tile: true,  tabs: ['summary'] },
   // 5.12.0-beta.6 — HAE Apple Health energy expenditure (active + basal).
-  { kind: 'calories_burned',    anchor: null,         label: 'CALORIES',    unit: 'kcal', spark: true,  tile: true },
+  { kind: 'calories_burned',    anchor: null,         label: 'CALORIES',    unit: 'kcal', spark: true,  tile: true,  tabs: ['summary'] },
   // 5.12.0-beta.6 — HAE Apple Health gait analytics (walking speed, asymmetry,
   // step length, 6-min walk test, stairs, flights). Multi-row composite tile.
-  { kind: 'mobility',           anchor: null,         label: 'MOBILITY',    unit: '',     spark: false, tile: true, composite: 'mobility' },
+  // 5.14.0-beta.1 — mobility moves to ANATOMICAL.
+  { kind: 'mobility',           anchor: null,         label: 'MOBILITY',    unit: '',     spark: false, tile: true,  tabs: ['anatomical'], composite: 'mobility' },
   // 5.12.0-beta.6 — HAE Apple Watch hearing-safety dB exposure (env + headphone).
-  { kind: 'audio_exposure',     anchor: null,         label: 'AUDIO',       unit: 'dB',   spark: false, tile: true, composite: 'audio' },
-  { kind: 'workout_distance',   anchor: 'right_leg',  label: 'DISTANCE',    unit: 'km',   spark: false, tile: false },
-  { kind: 'last_workout',       anchor: null,         label: 'LAST WORKOUT',unit: '',     spark: false, tile: true },
+  { kind: 'audio_exposure',     anchor: null,         label: 'AUDIO',       unit: 'dB',   spark: false, tile: true,  tabs: ['biomedical'], composite: 'audio' },
+  { kind: 'workout_distance',   anchor: 'right_leg',  label: 'DISTANCE',    unit: 'km',   spark: false, tile: false, tabs: ['biomedical'] },
+  { kind: 'last_workout',       anchor: null,         label: 'LAST WORKOUT',unit: '',     spark: false, tile: true,  tabs: ['summary', 'biomedical'] },
   // 5.13.x — HealthyApps MQTT bridge: ECG sub-system (composite tile).
-  // Children: latest classification / severity / avg-HR, today counts
-  // (sinus / AFib / inconclusive / total), AFib binary, last AFib timestamp.
-  // Rendered prominently in the BIOMEDICAL focus mode as the primary widget.
-  { kind: 'ecg',                anchor: null,         label: 'ECG',         unit: '',     spark: false, tile: true, composite: 'ecg' },
+  // 5.14.0-beta.1 — moves to BIOMEDICAL where it belongs.
+  { kind: 'ecg',                anchor: null,         label: 'ECG',         unit: '',     spark: false, tile: true,  tabs: ['biomedical'], composite: 'ecg' },
   // 5.13.x — HealthyApps MQTT bridge: HR notification sub-system (composite tile).
-  // Children: today counts (high / low / irregular), latest notification metadata
-  // (type, peak HR, threshold, duration, avg HRV, timestamp), last-irregular ts.
-  { kind: 'hr_notifications',   anchor: null,         label: 'HR ALERTS',   unit: '',     spark: false, tile: true, composite: 'hr_notifications' },
+  { kind: 'hr_notifications',   anchor: null,         label: 'HR ALERTS',   unit: '',     spark: false, tile: true,  tabs: ['biomedical'], composite: 'hr_notifications' },
   // 5.13.x — HealthyApps MQTT bridge: Apple Watch wrist temperature (absolute).
-  // Note: this is NOT a deviation reading — Apple reports the absolute reading
-  // via this MQTT entity (unit °F). The HAE state-only `_apple_sleeping_wrist_temperature$`
-  // (deviation in °C) continues to route to body_temp_deviation; the two paths
-  // intentionally coexist so users on either transport see their data.
-  { kind: 'wrist_temperature',  anchor: null,         label: 'WRIST TEMP',  unit: '°C',   spark: true,  tile: true },
+  { kind: 'wrist_temperature',  anchor: null,         label: 'WRIST TEMP',  unit: '°C',   spark: true,  tile: true,  tabs: ['summary', 'sleep'] },
   // 5.13.x — HealthyApps MQTT bridge: telemetry-link freshness indicator.
-  // Children: last metrics push, last workouts push, last ECG push, last HRN push.
-  // Status: any push >1h → ELEVATED, >6h → ALERT, >24h → CRITICAL.
-  { kind: 'data_link',          anchor: null,         label: 'DATA LINK',   unit: '',     spark: false, tile: true, composite: 'data_link' },
+  { kind: 'data_link',          anchor: null,         label: 'DATA LINK',   unit: '',     spark: false, tile: true,  tabs: ['biomedical'], composite: 'data_link' },
+  // 5.14.0-beta.1 (Wesley #1) — Apple Health Auto Import medications tile.
+  // Surfaces "took my pill?" as a SUMMARY slot. HAI exposes:
+  //   sensor.health_auto_import_medications_medication_last_scheduled (ts)
+  //   sensor.health_auto_import_medications_medication_last_status (enum: taken|missed|...)
+  { kind: 'medications',        anchor: null,         label: 'MEDS',        unit: '',     spark: false, tile: true,  tabs: ['summary'], composite: 'medications' },
 ];
 
 // Anchor map (slot → {x,y} as % of 200x480 silhouette bodyBox).
@@ -556,6 +561,76 @@ export const VITAL_SUFFIX_PRIORITY = {
   ],
 };
 
+// 5.14.0-beta.1 (Wesley #2 / crew C11) — Cross-source priority resolver.
+// When multiple platforms emit the same vital_kind for one profile, this table
+// picks a single canonical platform per kind. Tile rendering shows a one-glyph
+// superscript source chip so the captain knows which source won (ᴼ Oura, ᴴ HAI,
+// ᵂ Withings, ᴳ Garmin, ᶠ Fitbit, etc.). Default-first when a kind is absent.
+//
+// Logic in _renderTiles: for each kind, walk the variants array (already sorted
+// by VITAL_SUFFIX_PRIORITY) and pick the first variant whose source platform is
+// the highest-priority match in this table. If no variant matches any platform
+// in the list, fall through to the existing canonical (variants[0]).
+export const MEDICAL_SOURCE_PRIORITY = {
+  resting_heart_rate: ['oura', 'health_auto_import', 'mqtt', 'withings', 'apple_health', 'hae'],
+  heart_rate:         ['mqtt', 'oura', 'health_auto_import', 'withings', 'apple_health', 'hae'],
+  weight:             ['withings', 'health_auto_import', 'mqtt', 'apple_health', 'hae'],
+  body_fat_pct:       ['withings', 'health_auto_import', 'mqtt', 'apple_health', 'hae'],
+  bmi:                ['withings', 'health_auto_import', 'mqtt', 'apple_health', 'hae'],
+  spo2:               ['mqtt', 'health_auto_import', 'oura', 'withings', 'apple_health', 'hae'],
+  blood_pressure:     ['withings', 'health_auto_import', 'mqtt', 'apple_health', 'hae'],
+  hrv:                ['oura', 'mqtt', 'health_auto_import', 'withings', 'apple_health', 'hae'],
+  steps:              ['mqtt', 'health_auto_import', 'oura', 'fitbit', 'garmin_connect', 'apple_health', 'hae'],
+  sleep_score:        ['oura', 'mqtt', 'health_auto_import', 'fitbit', 'garmin_connect', 'apple_health', 'hae'],
+};
+
+// 5.14.0-beta.1 — single-glyph platform abbreviation chip rendered alongside
+// each tile value so multi-source households can tell which platform produced
+// the headline number. Anything not listed renders as '·'.
+export const PLATFORM_SOURCE_CHIPS = {
+  oura:               'ᴼ',
+  withings:           'ᵂ',
+  health_auto_import: 'ᴴ',
+  hae:                'ᴴ',
+  apple_health:       'ᴬ',
+  mqtt:               'ᴹ',
+  fitbit:             'ᶠ',
+  garmin_connect:     'ᴳ',
+  google_fit:         'ᵍ',
+  dexcom:             'ᴰ',
+  nest_protect:       'ᴺ',
+};
+
+// 5.14.0-beta.1 — derive a single-character source chip from an entity id by
+// matching the entity prefix against known platforms. Falls back to '·' for
+// untracked sources. Used by tile rendering when a kind has variants from
+// multiple platforms and the canonical winner needs a visible source label.
+export function sourceChipForEntity(eid) {
+  if (!eid) return '·';
+  const id = String(eid).toLowerCase();
+  if (/^[^.]+\.oura_/.test(id))                       return PLATFORM_SOURCE_CHIPS.oura;
+  if (/^[^.]+\.withings_/.test(id) || /^[^.]+\.bpm_connect_/.test(id)) return PLATFORM_SOURCE_CHIPS.withings;
+  if (/^[^.]+\.health_auto_import_/.test(id))         return PLATFORM_SOURCE_CHIPS.health_auto_import;
+  if (/^[^.]+\.health_auto_export_/.test(id))         return PLATFORM_SOURCE_CHIPS.hae;
+  if (/^hae\./.test(id) || /^apple_health\./.test(id))return PLATFORM_SOURCE_CHIPS.apple_health;
+  if (/^[^.]+\.fitbit_/.test(id))                     return PLATFORM_SOURCE_CHIPS.fitbit;
+  if (/^[^.]+\.garmin_/.test(id))                     return PLATFORM_SOURCE_CHIPS.garmin_connect;
+  if (/^[^.]+\.dexcom_/.test(id))                     return PLATFORM_SOURCE_CHIPS.dexcom;
+  return '·';
+}
+
+// 5.14.0-beta.1 — list the vital_kind entries that should render on a given
+// focus tab. Driven entirely off MEDICAL_VITAL_CLASSES `tabs[]` field added in
+// the same beta (crew C2). Unknown tab returns an empty array. Default 'summary'
+// when an entry has no `tabs` field (back-compat for any out-of-band entries).
+export function vitalKindsForTab(tab) {
+  if (!tab) return [];
+  return MEDICAL_VITAL_CLASSES.filter((vc) => {
+    const list = Array.isArray(vc.tabs) ? vc.tabs : ['summary'];
+    return list.includes(tab);
+  });
+}
+
 // Resolve { priority, label } for a (kind, eid). Lower priority = preferred canonical.
 // Returns { priority: 999, label: '' } when no priority list exists for the kind.
 export function entityPriority(kind, eid) {
@@ -627,6 +702,15 @@ export function classifyVital(state, entityRegistryEntry, deviceRegistryEntry = 
   // staleness bands.
   if (/_last_(push|workouts_push|ecg_push|hrn_push)$/.test(lid)) {
     return withLabel({ kind: 'data_link' });
+  }
+
+  // 5.14.0-beta.1 (Wesley #1) — HAI medications composite. Two children:
+  //   _medications_medication_last_scheduled (ts) → label SCHEDULED
+  //   _medications_medication_last_status (enum)  → label STATUS
+  if (/_medications_medication_last_(scheduled|status|taken)$/.test(lid)) {
+    const m = /_medications_medication_last_([a-z]+)$/.exec(lid);
+    const sub = (m && m[1] ? m[1] : '').toUpperCase();
+    return { kind: 'medications', sourceLabel: sub };
   }
 
   // Heart rate — explicit suffix set; `_score` variants are NOT HR (Oura readiness components).

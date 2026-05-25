@@ -2,6 +2,56 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.14.0-beta.1] — Sickbay tab redesign (Stories 0–4)
+
+First beta of the v5.14 Sickbay redesign — the focus-mode tab content reorganization and the three new BIOMEDICAL primitives that do not depend on Health Auto Import plug-in cooperation. Stories 5–6 (`<lcars-ecg-strip>` waveform, `<lcars-hypnogram>` per-segment, `<lcars-workout-route>`, optional SLEEP tab) ride v5.15 once HAI ships the data-contract attributes per [plans/health-auto-import-data-contract.md](plans/health-auto-import-data-contract.md). The Riker split keeps this train honest.
+
+### Sickbay — tab content reorganization (Story 1)
+
+- **`MEDICAL_VITAL_CLASSES` now carries a `tabs[]` field** per kind (`summary` / `anatomical` / `biomedical` / `sleep`). Replaces the "first 20 tiles" slice. `vitalKindsForTab(tab)` returns the filtered list; `_renderTiles(vitalsByKind, profileKey, tab)` walks it. No parallel `MEDICAL_TAB_ASSIGNMENTS` map (per Data CR-1 — two sources of truth would drift).
+- **SUMMARY** keeps the silhouette + tile strip and gains a new **LAST SYNC row** at the bottom: `LAST SYNC · {max_freshness} · {N} SOURCES ({comma_list})` (per spec §3.1.2). Slot 6 of the tile strip is now the new **MEDS** composite tile (Wesley #1) — surfaces the HAI medications sensors so the captain can glance at "did mom take her morning pill?". Status bands: TAKEN (nominal), PENDING within 30m (nominal), PENDING 30m–2h (elevated), OVERDUE (alert).
+- **ANATOMICAL** still renders the anterior silhouette + posterior placeholder, and now appends the tile strip filtered to body-composition + mobility + fitness kinds (weight composite, body fat, lean / fat / muscle / bone / visceral mass, hydration, BMI, mobility composite, VO2 max).
+- **BIOMEDICAL** retains the existing ECG/HR-alerts panes and appends three new sections:
+  - cardiac tile strip (HRV, HRV BAL, VO2 MAX, CV AGE, audio exposure, data-link, last-workout, ECG composite, HR ALERTS composite)
+  - 30-day `<lcars-bp-range>` chart + `<lcars-hr-zones>` two-up
+  - full-width `<lcars-sleep-score-bar>` (donut REJECTED per crew C3 — circles aren't LCARS grammar)
+
+### Sickbay — cross-source priority + RECOVERY MODE (Story 1c)
+
+- **`MEDICAL_SOURCE_PRIORITY` table** keyed by `vital_kind` → ordered platform list. When a kind has variants from more than one platform, the tile shows a one-glyph superscript chip (ᴼ Oura, ᴴ HAI, ᵂ Withings, ᴹ MQTT, ᴬ Apple Health, ᶠ Fitbit, ᴳ Garmin, ᴰ Dexcom). Wesley #2 — no more "why does this number disagree with my watch" support thread.
+- **`RECOVERY MODE` status-pill modifier** (Wesley #6). When Oura `binary_sensor.*_rest_mode` is on, the Zone-A status pill renders `RECOVERY MODE · DAY N` in amber regardless of the underlying reducer, preserving the "ship takes care of you" tone. Day count derived from `_rest_mode_start`. Reverts to reducer-computed status when rest mode returns to `off`.
+- **Last-sync row** computes `max_freshness` from the newest `last_changed`/`last_updated` across all bound entities for the profile; platform list is uniqued by source-chip class.
+
+### Sickbay — new visual primitives (Stories 2–4)
+
+- **`<lcars-hr-zones>`** — four stacked horizontal LCARS bars (PEAK / INTENSE / MODERATE / LIGHT) sized by time spent in each zone during the last workout. Zone thresholds derived from `220 - age` via `person.birthdate`. Per ratified Q-C: when birthdate is absent, the bars hide and an LCARS pill renders `WORKOUT HR · SET PERSON BIRTHDATE TO ENABLE ZONES`. Sample-based when HAI ships `samples[]`, dominant-zone estimate otherwise (prefixed `~`).
+- **`<lcars-bp-range>`** — 30-day blood-pressure min/max/avg range chart over AHA-banded mmHg scale (80/90/120/130/140 dashed reference lines). Color tokens locked per Geordi C6: sys = `--lcars-butterscotch`, dia = `--lcars-ice`, avg-tick = `--lcars-space-white`, AHA lines = `--lcars-gray` @ 50%. Shadow host carries `data-redact-priority="high"` per Worf W3 so the screenshot macro can blackout the entire 30-day surface in one click. Data via `recorder/statistics_during_period` through the new shared `lcars-recorder-stats.js` helper (Story 0b — per Data CR-4).
+- **`<lcars-sleep-score-bar>`** — horizontal stacked LCARS bar (donut REJECTED per crew C3). One pill-segment per contributor (Oura: EFFICIENCY / LATENCY / REGULARITY / RESTFULNESS / DURATION; HAI: DURATION / BEDTIME / INTERRUPTIONS — vocabulary auto-detected). Score numeric + qualitative band (EXCELLENT / GOOD / OK / POOR / ALERT) above the bar, contributor breakdown table below.
+
+### Architecture (Story 0)
+
+- **`lcars-recorder-stats.js`** — shared HA `recorder/statistics_during_period` fetcher with per-call cache + 5-min TTL + simple batching. Supports both 24h hourly (sparkline-style) and 30-day daily (BP-range-style) windows via the same call. `aggregateDaily()` helper rolls per-hour buckets into per-day min/max/mean rows. `<lcars-sparkline>` continues to use its own helper for now; migration deferred to a future arch refactor.
+- **§7.4 parent-spec redaction selector** — verified that the shipped `data-medical="phi"` data-attribute on shadow hosts is already what the screenshot obfuscator targets in `localinfo/screenshot-obfuscator.js`. Worf S0-1 amendment is documentation-only; no code change required because the contract already matches.
+- **PHI gates W1, W3, W6 enforced** on every new primitive: shadow host carries `data-medical="phi"`, BP-range additionally carries `data-redact-priority="high"`, all primitives implement `_disposeCaches()` (no-op for HR-zones / sleep-score-bar where no cache exists; BP-range clears its recorder cache on profile switch / consent change / unbind).
+
+### Specs + plans
+
+- **New**: [specs/LCARS-SICKBAY-TAB-REDESIGN-SPEC.md](specs/LCARS-SICKBAY-TAB-REDESIGN-SPEC.md) — v2 crew-reviewed, ratified Q-A/B/C/D in §10, expanded §7 privacy (W1–W6 + §7.7 consent.ecg lifecycle + §7.7a ECG history opt-in policy + §7.8 input hygiene + §7.9 W6 cache lifecycle + §7.10 trust-boundary disclosure + §7.11 admin-gate option).
+- **New**: [plans/5.14-sickbay-tab-redesign.md](plans/5.14-sickbay-tab-redesign.md) v2 — Riker split (v5.14 = Stories 1–4 only; Stories 5–6 v5.15 with permanent-degraded-mode fallback if HAI never ships), expanded risk register + verification matrix.
+- **New**: [plans/health-auto-import-data-contract.md](plans/health-auto-import-data-contract.md) v2 — 5 asks (ECG voltage, sleep segments, workout HR samples, **encoded** workout polyline, schema-probe). ECG history list withdrawn per Worf S0-3, raw `route[]` withdrawn per Worf S0-2.
+- **Updated**: [specs/LCARS-MEDICAL-BAY-DASHBOARD-SPEC.md](specs/LCARS-MEDICAL-BAY-DASHBOARD-SPEC.md) — status line now points to the v5.14 redesign spec.
+- **localinfo**: split [combined.entities.csv](localinfo/combined.entities.csv) into 82 per-integration files under [localinfo/entities/](localinfo/entities/) for readability; new health_auto_import.csv captures 64 entities from the Apple Health Auto Import plug-in.
+
+### Crew review
+
+Full crew review of v1 spec/plan/handoff produced 5 verdicts and ~40 change requests; v2 documents apply every accepted change. Geordi: 8 LCARS-grammar fixes; Worf: S0-1/S0-3/S0-4/S0-5 + new W6 gate + 4 Captain-consent items; Data: 10 architecture refinements; Wesley: 11 feature ideas (2 shipped in this beta: medications tile, rest_mode pill modifier); Riker: train split + Story-0 prerequisites + parallel-train-collision risk added.
+
+### Known limitations
+
+- ECG waveform render, per-segment hypnogram, and workout-route map remain spec'd but **not implemented** in this beta — they ride v5.15 once HAI plug-in ships the required attributes. Today's BIOMEDICAL tab keeps the existing decorative ECG strip.
+- Optional 4th SLEEP tab (`dashboard_options.sickbay_sleep_tab`) is spec'd; config plumbing ships in v5.15 alongside the hypnogram migration.
+- `<lcars-bp-range>` requires the user's Withings (or HAI BP) entities to have `state_class: measurement` for `recorder/statistics_during_period` to populate min/max/mean. Most Withings BP sensors already do; HAI BP latest does not always — known follow-on.
+
 ## [5.10.0] — Stable promotion (Train 4)
 
 Stable promotion of the 5.10 line, rolling up all `5.10.0-beta.{1..9}` work into one shipping release. Highlights since v5.9.0:

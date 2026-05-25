@@ -4,7 +4,7 @@
 **Reviewed by**: Cmdr. William Riker (handoff to development)
 **Coordination**: **Worf — privacy review REQUIRED before any Lit code is written** (see §7); Geordi (UI), Wesley (multi-source roadmap)
 **Date**: Stardate 2026.05.04
-**Status**: SHIPPED in v5.8.0 (Sickbay release). Initial structural skeleton landed in v5.3.0; multi-source rendering + Oura coverage in v5.7.2; readiness composite, rest-mode banner, enum-aware tiles, body-temp deviation, HRV balance / sleep efficiency / VO2 max / cardiovascular age / stress resilience, FILE ID label + status-pill legend, generalized `data-*` passthrough, and `--lcars-thermal-bloom` token in v5.8.0. Posterior + top-down SVG anchor paths (#117) remain deferred to 6.0 (`needs-external-artist`).
+**Status**: SHIPPED in v5.8.0 (Sickbay release). Initial structural skeleton landed in v5.3.0; multi-source rendering + Oura coverage in v5.7.2; readiness composite, rest-mode banner, enum-aware tiles, body-temp deviation, HRV balance / sleep efficiency / VO2 max / cardiovascular age / stress resilience, FILE ID label + status-pill legend, generalized `data-*` passthrough, and `--lcars-thermal-bloom` token in v5.8.0. Posterior + top-down SVG anchor paths (#117) remain deferred to 6.0 (`needs-external-artist`). **Focus-mode tab redesign in flight for v5.14** — see [LCARS-SICKBAY-TAB-REDESIGN-SPEC.md](LCARS-SICKBAY-TAB-REDESIGN-SPEC.md) for the new SUMMARY / ANATOMICAL / BIOMEDICAL content split, six new LCARS-grammar visual primitives (ECG strip, hypnogram, HR-zones, BP-range, workout route, sleep-score donut), and the optional fourth `SLEEP` tab.
 **Priority**: MEDIUM-HIGH
 **Branch**: `5.0`
 **Privacy class**: **PHI-adjacent** — opt-in, default-disabled, with non-negotiable design constraints in §7

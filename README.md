@@ -8,7 +8,7 @@ A Home Assistant custom dashboard with a full Star Trek LCARS (Library Computer 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![GitHub stars](https://img.shields.io/github/stars/htiel/LCARS-lovelace-dashboard?style=social)
-![Version](https://img.shields.io/badge/version-5.15.0--beta.5-blue)
+![Version](https://img.shields.io/badge/version-5.15.0--beta.6-blue)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2025.4%2B-blue)
 [![GitHub issues](https://img.shields.io/github/issues/htiel/LCARS-lovelace-dashboard)](https://github.com/htiel/LCARS-lovelace-dashboard/issues)
 
@@ -31,7 +31,7 @@ Each dashboard has its own full documentation in [`dashboards/`](dashboards/) �
 | **[Illumination](dashboards/ILLUMINATION.md)** | Illumination | sunflower | ALL / LIGHTS / CIRCUITS | Lighting control — brightness bars, color presets, effects, scenes, and lighting circuit toggles |
 | **[Cetacean Ops](dashboards/CETACEAN-OPS.md)** | Cetacean Ops | sky | ALL / WATER / CHEMISTRY / FEATURES / POWER | Pool & spa operations — water bodies, chemistry gauges, pump telemetry, equipment circuits |
 | **[Subspace Relay](dashboards/SUBSPACE-RELAY.md)** | Subspace Relay | butterscotch + ice | ALL / NETWORK / EQUIPMENT / WAN / CLIENTS | Network health — UniFi infrastructure, WAN reachability, peripherals, connected clients (privacy-redacted by default with 60s reveal toggle) |
-| **[Sickbay](dashboards/SICKBAY.md)** | Sickbay | gold + african-violet | SUMMARY / PHYSIOLOGY / CARDIOLOGY | Biofunction monitor — focus-mode tabs: SUMMARY (6-tile + silhouette + LAST SYNC row), PHYSIOLOGY (anterior silhouette + body-composition strip + workout-route + sleep score/stages), CARDIOLOGY (HR / HRV / BP / SpO₂ / temp Δ + ECG waveform with LTTB-downsampled samples, BP 30-day range chart, HR-zones bars, and cardiac alert surfaces). Admin-gated, default-disabled, per-profile consent gate + second-layer ECG consent. Wired to HealthyApps MQTT bridge, legacy `hae.*` entities, AND the [Health Auto Import](https://github.com/htiel/health-auto-import) v1.1.0 HACS integration. See [MQTT Sensor Setup](dashboards/SICKBAY.md#mqtt-sensor-setup) |
+| **[Sickbay](dashboards/SICKBAY.md)** | Sickbay | gold + african-violet | SUMMARY / PHYSIOLOGY / CARDIOLOGY | Biofunction monitor — focus-mode tabs: SUMMARY (6-tile + silhouette + LAST SYNC row), PHYSIOLOGY (anterior silhouette + body-composition strip + workout-route + sleep score/stages), CARDIOLOGY (real last single-lead ECG waveform, heart-rate metric panel, BP 30-day range chart, HR-zones bars, HR alerts, AFib/ECG/BP-focused cardiac surfaces). Admin-gated, default-disabled, per-profile consent gate + second-layer ECG consent. Wired to HealthyApps MQTT bridge, legacy `hae.*` entities, AND the [Health Auto Import](https://github.com/htiel/health-auto-import) v1.1.0 HACS integration. See [MQTT Sensor Setup](dashboards/SICKBAY.md#mqtt-sensor-setup) |
 | **[Starship Health](dashboards/STARSHIP-HEALTH.md)** | Starship Health | gold + butterscotch | SUMMARY / ENGINEERING / TACTICAL | Vessel diagnostic — CPU / mem / temp / disk / WAN / addons rolled up onto a top-down landscape starship silhouette. Admin-gated. Multi-host: every Glances config entry adds a new vessel |
 
 Only **Habitat** is enabled by default. Enable additional dashboards through the integration options flow ([see below](#dashboard-subscription-config-flow)).

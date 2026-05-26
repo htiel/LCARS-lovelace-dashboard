@@ -590,9 +590,9 @@ class LcarsMedicalCard extends LitElement {
     `;
   }
 
-  // 5.3.1 — Biomedical scan: ECG-style HR waveform + cardiac detail panes.
-  // ECG samples are derived directly from the present heart_rate vital (decorative
-  // squarewave around the current value). No PHI leaves the closed shadow root.
+  // 5.3.1 — Biomedical scan: cardiac detail panes.
+  // 5.15.x refinement — promote the real ECG waveform into the top pane and
+  // replace the duplicate lower waveform section with a heart-rate metrics panel.
   //
   // 5.13.x — when HealthyApps MQTT Apple ECG entities are present, the right pane
   // replaces the SCAN MODE PENDING placeholder with a real HR ALERTS composite,
@@ -606,7 +606,6 @@ class LcarsMedicalCard extends LitElement {
   // is present, the new primitives render their own NO DATA empty states.
   _renderBiomedicalZone(vitalsByKind, anchors, profileKey = null) {
     const hrVital = vitalsByKind.get('heart_rate');
-    const hrValue = hrVital && !isNaN(hrVital.value) ? hrVital.value : null;
     const ecg = vitalsByKind.get('ecg');
     const hrAlerts = vitalsByKind.get('hr_notifications');
     const hasEcg = ecg && ecg.variants && ecg.variants.length;
@@ -629,24 +628,7 @@ class LcarsMedicalCard extends LitElement {
     return html`
       <section class="scan-pair" aria-label="Biomedical waveform + ECG + HR alerts">
         <div class="scan-pane">
-          <div class="scan-cap">ECG — HEART RATE</div>
-          ${this._renderEcgWaveform(hrValue)}
-          ${hasEcg ? this._renderEcgCompositeInline(ecg) : ''}
-        </div>
-        ${hasHrAlerts ? html`
-          <div class="scan-pane">
-            <div class="scan-cap">HR ALERTS</div>
-            ${this._renderHrAlertsInline(hrAlerts)}
-          </div>` : html`
-          <div class="scan-pane" aria-label="Cardiac alerts">
-            <div class="scan-cap">HR ALERTS</div>
-            <div class="scan-pending">NO CARDIAC ALERTS DATA</div>
-          </div>`}
-      </section>
-      ${this._renderTiles(vitalsByKind, profileKey, 'biomedical')}
-      <section class="scan-pair" aria-label="ECG waveform (Story 5)">
-        <div class="scan-pane scan-pane-wide">
-          <div class="scan-cap">ECG · 12-LEAD WAVEFORM</div>
+          <div class="scan-cap">ECG — LAST SINGLE-LEAD READING</div>
           <lcars-ecg-strip
             .voltageAttrs=${ecgProps.voltageAttrs}
             .classification=${ecgProps.classification}
@@ -660,6 +642,23 @@ class LcarsMedicalCard extends LitElement {
             .cacheRevision=${this._cacheRevision}
             @lcars-ecg-consent-request=${() => this._grantEcgConsent(fileIdHere)}
           ></lcars-ecg-strip>
+          ${hasEcg ? this._renderEcgCompositeInline(ecg) : ''}
+        </div>
+        ${hasHrAlerts ? html`
+          <div class="scan-pane">
+            <div class="scan-cap">HR ALERTS</div>
+            ${this._renderHrAlertsInline(hrAlerts)}
+          </div>` : html`
+          <div class="scan-pane" aria-label="Cardiac alerts">
+            <div class="scan-cap">HR ALERTS</div>
+            <div class="scan-pending">NO CARDIAC ALERTS DATA</div>
+          </div>`}
+      </section>
+      ${this._renderTiles(vitalsByKind, profileKey, 'biomedical')}
+      <section class="scan-pair" aria-label="Heart rate metrics panel">
+        <div class="scan-pane scan-pane-wide">
+          <div class="scan-cap">HEART RATE — METRIC PANEL</div>
+          ${this._renderHeartRateMetricsPanel(hrVital, workout)}
         </div>
       </section>
       <section class="scan-pair" aria-label="Cardiac primitives">
@@ -685,6 +684,39 @@ class LcarsMedicalCard extends LitElement {
           ></lcars-hr-zones>
         </div>
       </section>
+    `;
+  }
+
+  _renderHeartRateMetricsPanel(hrVital, workout = {}) {
+    const rows = [];
+    const seen = new Set();
+    const addRow = (label, value, unit = 'bpm') => {
+      if (value == null || !Number.isFinite(Number(value))) return;
+      const key = String(label || '').toUpperCase();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      rows.push({ label: key, value: Math.round(Number(value)), unit });
+    };
+
+    const variants = hrVital && hrVital.variants && hrVital.variants.length ? hrVital.variants : [];
+    variants.forEach((variant) => addRow(variant.label || 'HR', variant.value));
+    addRow('WORKOUT AVG', workout.avgHr);
+    addRow('WORKOUT MAX', workout.maxHr);
+
+    if (!rows.length) {
+      return html`<div class="heart-metrics-empty">HEART RATE · NO DATA</div>`;
+    }
+
+    return html`
+      <div class="heart-metrics-panel" data-medical="phi" ?aria-hidden=${this._audioMuted}>
+        ${rows.map((row) => html`
+          <div class="heart-metric-row">
+            <div class="heart-metric-label">${row.label}</div>
+            <div class="heart-metric-value">${row.value}</div>
+            <div class="heart-metric-unit">${row.unit}</div>
+          </div>
+        `)}
+      </div>
     `;
   }
 
@@ -2368,6 +2400,55 @@ class LcarsMedicalCard extends LitElement {
           color: var(--lcars-gray, #888899);
           text-align: center;
           padding: 1rem 0;
+        }
+
+        .heart-metrics-panel {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          gap: 0.55rem;
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+        }
+        .heart-metric-row {
+          display: grid;
+          grid-template-columns: 1fr auto auto;
+          align-items: baseline;
+          gap: 0.45rem;
+          min-height: 3.4rem;
+          padding: 0.65rem 0.75rem;
+          background: rgba(153, 204, 255, 0.05);
+          border-left: 3px solid var(--lcars-ice, #a8d8ff);
+          border-radius: 0 0.45rem 0.45rem 0;
+        }
+        .heart-metric-label {
+          font-size: 0.78rem;
+          letter-spacing: 0.12em;
+          color: var(--lcars-gray, #aaaadd);
+          text-transform: uppercase;
+        }
+        .heart-metric-value {
+          font-size: 1.45rem;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          color: var(--lcars-data-accent, #99cc99);
+        }
+        .heart-metric-unit {
+          font-size: 0.75rem;
+          letter-spacing: 0.12em;
+          color: var(--lcars-gray, #aaaadd);
+          text-transform: uppercase;
+        }
+        .heart-metrics-empty {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 6rem;
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          font-size: 0.95rem;
+          letter-spacing: 0.1em;
+          color: var(--lcars-gray, #888899);
+          text-transform: uppercase;
+          background: rgba(153, 204, 255, 0.03);
+          border-radius: 0.3rem;
         }
 
         /* 5.14.0-beta.1 — last-sync row, source chip, recovery pill modifier */

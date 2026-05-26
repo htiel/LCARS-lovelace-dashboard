@@ -2,6 +2,16 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.15.0-beta.6] — Sickbay cardiac panel refocus
+
+Follow-up pass on the beta.5 CARDIOLOGY tab to make the cardiac surfaces reflect real data hierarchy instead of mixing decorative and real ECG content.
+
+- **Upper cardiac pane now promotes the real ECG waveform**: the top-left CARDIOLOGY panel renders the actual `lcars-ecg-strip` fed by the last single-lead ECG sample array instead of the old decorative BPM waveform.
+- **Lower duplicate ECG strip removed**: the former full-width ECG waveform repeat has been replaced with a dedicated **HEART RATE — METRIC PANEL** showing the resolved heart-rate variants (current, resting, sleep/workout-related where available) plus workout AVG/MAX when present.
+- **ECG wording tightened** for Apple Watch / HAI semantics: `ECG — LAST SINGLE-LEAD READING` instead of generic/over-broad phrasing.
+
+Build clean.
+
 ## [5.15.0-beta.5] — Sickbay focus-tab rebalance
 
 Layout rebalance pass based on live beta.4 review to reduce BIOMEDICAL density and remove deferred-mode chrome from active tabs.

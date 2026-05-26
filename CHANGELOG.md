@@ -2,6 +2,12 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.15.0-beta.3] — BP chart physical-pixel viewBox
+
+Single bug: BP chart bars still invisible in beta.2 because the SVG viewBox was 0..100 tall with `preserveAspectRatio="none"`, and parent flex containers compressed the 240 px-tall `.chart` element down to ~80 px. Each SVG Y unit became 0.8 px, so 2.4-unit ticks rendered at sub-pixel and disappeared into anti-aliasing.
+
+Rewrote with physical-pixel viewBox (0..600 × 0..240) so SVG units render at roughly real pixel sizes regardless of container compression. Bars are now 6 px wide, ticks 4 px tall, AHA reference lines 1 px stroke with 10 px labels. Added `min-height: 180px` on `.chart` as a defense-in-depth so the parent can't collapse the SVG below useful size.
+
 ## [5.15.0-beta.2] — Sickbay live-review fixes (Stories 5–6)
 
 Three live-review bugs caught after beta.1 install against the malick HAI v1.1.0 deployment.

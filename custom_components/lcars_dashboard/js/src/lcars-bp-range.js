@@ -147,7 +147,8 @@ class LcarsBpRange extends LitElement {
 
   _yFor(mmHg) {
     const clamped = Math.max(Y_MIN, Math.min(Y_MAX, mmHg));
-    return ((Y_MAX - clamped) / (Y_MAX - Y_MIN)) * 100;
+    // 5.15.0-beta.3: viewBox is 0..240 tall (physical px-ish), not 0..100.
+    return ((Y_MAX - clamped) / (Y_MAX - Y_MIN)) * 240;
   }
 
   _summaryStats() {
@@ -194,13 +195,16 @@ class LcarsBpRange extends LitElement {
     if (!stats) {
       return html`<div class="empty" role="figure" aria-label="BP — no data">BP · NO DATA</div>`;
     }
-    // Build SVG: 30 day slots × (sys bar + dia bar). viewBox is 0..300 wide,
-    // 0..100 tall (each Y unit = 1.2 mmHg). Reference lines drawn first so
-    // bars overlay them. Layout: 10 px per day, 4 px wide bars, 2 px gap.
-    const SVG_W = 300;
-    const SVG_H = 100;
-    const slotW = SVG_W / 30;
-    const barW = 3;
+    // Build SVG: 30 day slots × (sys bar + dia bar). viewBox is 0..600 wide,
+    // 0..240 tall — physical-pixel mapping so SVG units render at expected
+    // sizes even when the parent flex container compresses the chart height.
+    // 5.15.0-beta.3: beta.2's 0..100 vertical viewBox was being squashed by
+    // parent flex containers down to ~80 px, making 2.4-unit ticks invisible
+    // sub-pixel artifacts.
+    const SVG_W = 600;
+    const SVG_H = 240;
+    const slotW = SVG_W / 30;       // 20 px per day
+    const barW = 6;                 // 6 px wide bars
     // Right-align so newest day is at the rightmost slot.
     const days = this._data.slice(-30);
     const offset = (30 - days.length) * slotW;
@@ -225,23 +229,20 @@ class LcarsBpRange extends LitElement {
             <line x1="0" x2=${SVG_W}
                   y1=${this._yFor(mmHg)} y2=${this._yFor(mmHg)}
                   stroke="var(--lcars-gray, #666688)" stroke-opacity="0.5"
-                  stroke-width="0.4" stroke-dasharray="2 2"></line>
-            <text x="2" y=${this._yFor(mmHg) - 0.5}
-                  font-size="3" fill="var(--lcars-gray, #888899)"
-                  opacity="0.6">${mmHg}</text>
+                  stroke-width="1" stroke-dasharray="4 4"></line>
+            <text x="4" y=${this._yFor(mmHg) - 2}
+                  font-size="10" fill="var(--lcars-gray, #888899)"
+                  opacity="0.7">${mmHg}</text>
           `)}
           ${days.map((d, i) => {
             const cx = offset + i * slotW + slotW / 2;
             const sys = d.byId[this.systolicEntity];
             const dia = d.byId[this.diastolicEntity];
             const parts = [];
-            // 5.15.0-beta.2 (S2-bp follow-up): Withings stores one BP reading
-            // per day for most users → min == max == mean. Range-only render
-            // produced 0 px bars. We always draw a visible mean-tick marker
-            // PLUS a range bar when a real range exists. Minimum visible bar
-            // height = 3 SVG units (~6 px on screen) so single readings stay
-            // legible.
-            const MIN_BAR_H = 3;
+            // 5.15.0-beta.3: physical-pixel SVG. Minimum bar height = 8 SVG
+            // units (~8 px), tick height = 4 SVG units (~4 px). Always-visible
+            // mean-tick guarantees single-reading days remain legible.
+            const MIN_BAR_H = 8;
             const sysHasMean  = sys && Number.isFinite(sys.mean);
             const sysHasRange = sys && Number.isFinite(sys.min) && Number.isFinite(sys.max) && (sys.max - sys.min) >= 0.5;
             const diaHasMean  = dia && Number.isFinite(dia.mean);
@@ -251,37 +252,36 @@ class LcarsBpRange extends LitElement {
               const y2 = this._yFor(sys.min);
               const h = Math.max(MIN_BAR_H, y2 - y1);
               parts.push(html`
-                <rect x=${cx - barW - 0.6} y=${y1}
+                <rect x=${cx - barW - 1.5} y=${y1}
                       width=${barW} height=${h}
                       fill="var(--lcars-butterscotch, #ffaa66)"
-                      rx="0.6"></rect>`);
+                      rx="1.5"></rect>`);
             }
             if (sysHasMean) {
-              // Always-visible mean tick (drawn even when range exists).
               const ym = this._yFor(sys.mean);
               parts.push(html`
-                <rect x=${cx - barW - 1.6} y=${ym - 1.2}
-                      width=${barW + 2} height="2.4"
+                <rect x=${cx - barW - 3} y=${ym - 2}
+                      width=${barW + 3} height="4"
                       fill="var(--lcars-butterscotch, #ffaa66)"
-                      rx="0.5"></rect>`);
+                      rx="1"></rect>`);
             }
             if (diaHasRange) {
               const y1 = this._yFor(dia.max);
               const y2 = this._yFor(dia.min);
               const h = Math.max(MIN_BAR_H, y2 - y1);
               parts.push(html`
-                <rect x=${cx + 0.6} y=${y1}
+                <rect x=${cx + 1.5} y=${y1}
                       width=${barW} height=${h}
                       fill="var(--lcars-ice, #a8d8ff)"
-                      rx="0.6"></rect>`);
+                      rx="1.5"></rect>`);
             }
             if (diaHasMean) {
               const ym = this._yFor(dia.mean);
               parts.push(html`
-                <rect x=${cx + 0.6 - 1} y=${ym - 1.2}
-                      width=${barW + 2} height="2.4"
+                <rect x=${cx + 0} y=${ym - 2}
+                      width=${barW + 3} height="4"
                       fill="var(--lcars-ice, #a8d8ff)"
-                      rx="0.5"></rect>`);
+                      rx="1"></rect>`);
             }
             return parts;
           })}
@@ -327,7 +327,8 @@ class LcarsBpRange extends LitElement {
       }
       .chart {
         width: 100%;
-        height: 220px;
+        height: 240px;
+        min-height: 180px;
         background: rgba(153, 204, 255, 0.04);
         border-radius: 0.3rem;
         display: block;

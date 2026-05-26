@@ -2,6 +2,20 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.15.0-beta.4] — SVG namespace fix (CRITICAL)
+
+Root cause for the empty BP chart, ECG waveform, hypnogram timeline, and workout-route map across beta.1 through beta.3:
+
+Lit's `html\`\`` template tag parses children using the HTML parser, which does not propagate SVG namespace context into child elements. So `<rect>`, `<line>`, `<polyline>`, `<circle>`, `<polygon>` inside an `<svg>` were created as **HTML elements**, not SVG elements (verified via `element.namespaceURI === "http://www.w3.org/1999/xhtml"` on the live install). The browser dutifully kept them in the DOM with the right attributes, but the SVG renderer ignored them because they were the wrong element type. So the SVG canvas was empty in every primitive that drew shapes.
+
+Fix: switched all SVG subtrees to Lit's dedicated `svg\`\`` template tag (already used elsewhere in the codebase — `lcars-tactical-card.js`, `lcars-anatomical-silhouette.js`, `lcars-ring-gauge.js`). This is the documented Lit pattern for SVG content. Affected files:
+- `lcars-bp-range.js` — 30-day BP range chart
+- `lcars-ecg-strip.js` — ECG waveform + grid
+- `lcars-hypnogram.js` — per-segment sleep stages timeline
+- `lcars-workout-route.js` — GPS route polyline + markers
+
+No other primitives affected (`lcars-hr-zones.js` and `lcars-sleep-score-bar.js` are pure HTML bars).
+
 ## [5.15.0-beta.3] — BP chart physical-pixel viewBox
 
 Single bug: BP chart bars still invisible in beta.2 because the SVG viewBox was 0..100 tall with `preserveAspectRatio="none"`, and parent flex containers compressed the 240 px-tall `.chart` element down to ~80 px. Each SVG Y unit became 0.8 px, so 2.4-unit ticks rendered at sub-pixel and disappeared into anti-aliasing.

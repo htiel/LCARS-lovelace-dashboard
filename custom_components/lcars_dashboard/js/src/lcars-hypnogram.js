@@ -19,7 +19,7 @@
 //   - Numeric PHI in `aria-label` is silenced by default (Worf W7).
 //   - Truncation degraded-mode honored (typeof attrs === 'string').
 
-import { LitElement, html, css } from 'lit-element';
+import { LitElement, html, css, svg } from 'lit-element';
 
 const STAGE_ORDER = ['awake', 'rem', 'core', 'deep'];
 const STAGE_LABEL = {
@@ -160,7 +160,8 @@ class LcarsHypnogram extends LitElement {
     const rows = STAGE_ORDER.map((stage, idx) => {
       const y = idx * (ROW_H + ROW_GAP);
       const stageSegs = segments.filter((s) => s.stage === stage);
-      return html`
+      // 5.15.0-beta.4: use svg`` so children land in SVG namespace and render.
+      return svg`
         <g>
           <text x="0" y=${y + ROW_H / 2 + 4} font-size="10"
                 fill="var(--lcars-gray, #aaaadd)"
@@ -172,7 +173,7 @@ class LcarsHypnogram extends LitElement {
           ${stageSegs.map((s) => {
             const x = 48 + ((s.startMs - t0) / span) * (VIEW_W - 48);
             const w = Math.max(1, ((s.endMs - s.startMs) / span) * (VIEW_W - 48));
-            return html`<rect x=${x} y=${y} width=${w} height=${ROW_H}
+            return svg`<rect x=${x} y=${y} width=${w} height=${ROW_H}
                               fill=${STAGE_COLOR[stage]} rx="2"></rect>`;
           })}
         </g>`;

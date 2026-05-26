@@ -24,7 +24,7 @@
 //     bumped (consent change, binding_unbind, profiles.yaml reload), the
 //     entire cache is flushed before the next render.
 
-import { LitElement, html, css } from 'lit-element';
+import { LitElement, html, css, svg } from 'lit-element';
 import { fetchRecorderStats, aggregateDaily } from './lcars-recorder-stats.js';
 
 const Y_MIN = 60;
@@ -225,7 +225,7 @@ class LcarsBpRange extends LitElement {
         </div>
         <svg viewBox="0 0 ${SVG_W} ${SVG_H}" preserveAspectRatio="none"
              class="chart" aria-hidden="true">
-          ${AHA_LINES.map((mmHg) => html`
+          ${AHA_LINES.map((mmHg) => svg`
             <line x1="0" x2=${SVG_W}
                   y1=${this._yFor(mmHg)} y2=${this._yFor(mmHg)}
                   stroke="var(--lcars-gray, #666688)" stroke-opacity="0.5"
@@ -251,7 +251,7 @@ class LcarsBpRange extends LitElement {
               const y1 = this._yFor(sys.max);
               const y2 = this._yFor(sys.min);
               const h = Math.max(MIN_BAR_H, y2 - y1);
-              parts.push(html`
+              parts.push(svg`
                 <rect x=${cx - barW - 1.5} y=${y1}
                       width=${barW} height=${h}
                       fill="var(--lcars-butterscotch, #ffaa66)"
@@ -259,7 +259,7 @@ class LcarsBpRange extends LitElement {
             }
             if (sysHasMean) {
               const ym = this._yFor(sys.mean);
-              parts.push(html`
+              parts.push(svg`
                 <rect x=${cx - barW - 3} y=${ym - 2}
                       width=${barW + 3} height="4"
                       fill="var(--lcars-butterscotch, #ffaa66)"
@@ -269,7 +269,7 @@ class LcarsBpRange extends LitElement {
               const y1 = this._yFor(dia.max);
               const y2 = this._yFor(dia.min);
               const h = Math.max(MIN_BAR_H, y2 - y1);
-              parts.push(html`
+              parts.push(svg`
                 <rect x=${cx + 1.5} y=${y1}
                       width=${barW} height=${h}
                       fill="var(--lcars-ice, #a8d8ff)"
@@ -277,7 +277,7 @@ class LcarsBpRange extends LitElement {
             }
             if (diaHasMean) {
               const ym = this._yFor(dia.mean);
-              parts.push(html`
+              parts.push(svg`
                 <rect x=${cx + 0} y=${ym - 2}
                       width=${barW + 3} height="4"
                       fill="var(--lcars-ice, #a8d8ff)"

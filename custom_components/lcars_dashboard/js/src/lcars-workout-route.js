@@ -21,7 +21,7 @@
 //   - Numeric PHI in `aria-label` is silenced by default (Worf W7).
 //   - Truncation degraded-mode honored (typeof attrs === 'string').
 
-import { LitElement, html, css } from 'lit-element';
+import { LitElement, html, css, svg } from 'lit-element';
 
 // Google polyline algorithm decoder — in-house, ~30 lines, no external dep.
 // https://developers.google.com/maps/documentation/utilities/polylinealgorithm
@@ -268,32 +268,36 @@ class LcarsWorkoutRoute extends LitElement {
       </section>`;
     }
     // Decorative LCARS dot grid: 6×6 thin lines
+    // 5.15.0-beta.4: use svg`` template tag so children land in SVG namespace.
     const grid = [];
     for (let i = 1; i < 6; i++) {
       const v = (VIEW / 6) * i;
-      grid.push(html`<line x1=${v} x2=${v} y1="0" y2=${VIEW}
+      grid.push(svg`<line x1=${v} x2=${v} y1="0" y2=${VIEW}
                            stroke="var(--lcars-color-grid, rgba(153,204,255,0.10))"
                            stroke-width="0.5"></line>`);
-      grid.push(html`<line x1="0" x2=${VIEW} y1=${v} y2=${v}
+      grid.push(svg`<line x1="0" x2=${VIEW} y1=${v} y2=${v}
                            stroke="var(--lcars-color-grid, rgba(153,204,255,0.10))"
                            stroke-width="0.5"></line>`);
     }
+    const route_polyline = svg`<polyline points=${route.polyline}
+                fill="none"
+                stroke="var(--lcars-cyan, #99cccc)"
+                stroke-width="2"
+                stroke-linejoin="round"
+                stroke-linecap="round"></polyline>`;
+    const startMarker = svg`<circle cx=${route.startX} cy=${route.startY} r="3.5"
+              fill="none" stroke="var(--lcars-color-nominal, #99cc99)" stroke-width="1.5"></circle>`;
+    const endMarker = svg`<polygon points=${`${route.endX - 3.5},${route.endY + 3} ${route.endX + 3.5},${route.endY + 3} ${route.endX},${route.endY - 3.5}`}
+               fill="var(--lcars-gold, #ffcc66)"></polygon>`;
     return html`<section role="figure" aria-label="Workout route">
       ${this._renderHeader(distM, durS)}
       <div class="wr-map">
         <svg viewBox="0 0 ${VIEW} ${VIEW}" preserveAspectRatio="xMidYMid meet"
              class="wr-svg" aria-hidden="true">
           ${grid}
-          <polyline points=${route.polyline}
-                    fill="none"
-                    stroke="var(--lcars-cyan, #99cccc)"
-                    stroke-width="2"
-                    stroke-linejoin="round"
-                    stroke-linecap="round"></polyline>
-          <circle cx=${route.startX} cy=${route.startY} r="3.5"
-                  fill="none" stroke="var(--lcars-color-nominal, #99cc99)" stroke-width="1.5"></circle>
-          <polygon points=${`${route.endX - 3.5},${route.endY + 3} ${route.endX + 3.5},${route.endY + 3} ${route.endX},${route.endY - 3.5}`}
-                   fill="var(--lcars-gold, #ffcc66)"></polygon>
+          ${route_polyline}
+          ${startMarker}
+          ${endMarker}
         </svg>
       </div>
       ${this._renderFooter()}

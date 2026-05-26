@@ -41,7 +41,7 @@
 //     with `ECG · DATA TRUNCATED`. Banner/footer still render from sibling
 //     entities (classification + average_bpm + duration + sampling_frequency).
 
-import { LitElement, html, css } from 'lit-element';
+import { LitElement, html, css, svg } from 'lit-element';
 
 // Allowlist for device-name source string (Worf §7.8 / spec §4.1 footer).
 const SOURCE_SAFE_RE = /^[A-Za-z0-9 \-]+$/;
@@ -314,32 +314,35 @@ class LcarsEcgStrip extends LitElement {
     }
     // Decorative LCARS dot grid: vertical 12 columns × horizontal 5 rows.
     // Pure SVG <line>s; no animation, no glow.
+    // 5.15.0-beta.4: must use svg`` template tag (not html``) so children
+    // are created in the SVG namespace and actually render.
     const gridV = [];
     for (let i = 1; i < 12; i++) {
       const x = (VIEW_W / 12) * i;
-      gridV.push(html`<line x1=${x} x2=${x} y1="0" y2=${VIEW_H}
+      gridV.push(svg`<line x1=${x} x2=${x} y1="0" y2=${VIEW_H}
                             stroke="var(--lcars-color-grid, rgba(153,204,255,0.10))"
                             stroke-width="0.5"></line>`);
     }
     const gridH = [];
     for (let i = 1; i < 5; i++) {
       const y = (VIEW_H / 5) * i;
-      gridH.push(html`<line x1="0" x2=${VIEW_W} y1=${y} y2=${y}
+      gridH.push(svg`<line x1="0" x2=${VIEW_W} y1=${y} y2=${y}
                             stroke="var(--lcars-color-grid, rgba(153,204,255,0.10))"
                             stroke-width="0.5"></line>`);
     }
+    const polyline = svg`<polyline points=${points}
+                  fill="none"
+                  stroke="var(--lcars-data-accent, #99cc99)"
+                  stroke-width="1.5"
+                  stroke-linejoin="round"
+                  stroke-linecap="round"></polyline>`;
     return html`
       <div class="waveform-card">
         <svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" preserveAspectRatio="none"
              class="waveform" aria-hidden="true">
           ${gridV}
           ${gridH}
-          <polyline points=${points}
-                    fill="none"
-                    stroke="var(--lcars-data-accent, #99cc99)"
-                    stroke-width="1.5"
-                    stroke-linejoin="round"
-                    stroke-linecap="round"></polyline>
+          ${polyline}
         </svg>
       </div>
     `;

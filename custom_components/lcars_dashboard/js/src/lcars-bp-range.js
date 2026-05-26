@@ -9,13 +9,20 @@
 // Data source: HA recorder `recorder/statistics_during_period` aggregated to
 // per-day min/max/mean via the shared `lcars-recorder-stats.js` helper.
 //
-// PRIVACY (Worf W3 / §7.8):
+// PRIVACY (Worf W3 / W6 / W7 / §7.8):
 //   - Shadow host carries `data-medical="phi"` AND `data-redact-priority="high"`
 //     so the screenshot obfuscator blackouts the entire 30-day surface in one
 //     click rather than per-bar.
 //   - No console logs. No template binding of `hass.states` attributes.
 //   - `_disposeCaches()` clears the per-instance recorder cache on profile
 //     switch / consent toggle / right-to-erase (W6).
+//   - 5.14.0-beta.2 (Worf W7 / Captain ruling 1): `aria-label` no longer emits
+//     PHI numerics by default. Numeric averages render in the visible footer
+//     (which the obfuscator can blackout); the accessibility tree gets a
+//     generic descriptor only.
+//   - 5.14.0-beta.2 (Worf W6.1): accepts `cacheRevision` from parent; when
+//     bumped (consent change, binding_unbind, profiles.yaml reload), the
+//     entire cache is flushed before the next render.
 
 import { LitElement, html, css } from 'lit-element';
 import { fetchRecorderStats, aggregateDaily } from './lcars-recorder-stats.js';
@@ -24,6 +31,11 @@ const Y_MIN = 60;
 const Y_MAX = 180;
 const AHA_LINES = [80, 90, 120, 130, 140]; // mmHg
 const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+// inHg → mmHg conversion. Some Withings deployments persist BP recorder
+// statistics in inHg even when the live state has been converted to mmHg by
+// the live-vital reducer (`_reduceVitals` in lcars-medical-card.js). The
+// primitive must defend against this divergence per crew S1-1 (beta.1 review).
+const INHG_TO_MMHG = 25.4;
 
 class LcarsBpRange extends LitElement {
   static get properties() {
@@ -31,6 +43,7 @@ class LcarsBpRange extends LitElement {
       hass: { type: Object },
       systolicEntity: { type: String },
       diastolicEntity: { type: String },
+      cacheRevision: { type: Number },  // 5.14.0-beta.2: W6 cache-flush ticker from parent
       _data: { type: Object, state: true },
       _loading: { type: Boolean, state: true },
     };
@@ -48,10 +61,12 @@ class LcarsBpRange extends LitElement {
     this.hass = null;
     this.systolicEntity = null;
     this.diastolicEntity = null;
+    this.cacheRevision = 0;
     this._data = null;
     this._loading = false;
     this._cache = new Map();
     this._lastKey = '';
+    this._lastCacheRevision = 0;
   }
 
   disconnectedCallback() {
@@ -69,6 +84,10 @@ class LcarsBpRange extends LitElement {
     if (changed.has('systolicEntity') || changed.has('diastolicEntity')) {
       this._disposeCaches();
     }
+    if (this.cacheRevision !== this._lastCacheRevision) {
+      this._lastCacheRevision = this.cacheRevision;
+      this._disposeCaches();
+    }
     const ids = [this.systolicEntity, this.diastolicEntity].filter(Boolean);
     if (!ids.length || !this.hass) return;
     const key = ids.join('|');
@@ -76,6 +95,21 @@ class LcarsBpRange extends LitElement {
       this._lastKey = key;
       this._loadData(ids);
     }
+  }
+
+  // 5.14.0-beta.2 (crew S1-1) — read the live entity's unit_of_measurement
+  // and return a scalar to multiply every recorder value by. Defaults to 1
+  // (mmHg already). Withings deployments with HA in imperial mode persist
+  // statistics in inHg even though `_reduceVitals` converts the live state
+  // before display, so the primitive must apply the same conversion when it
+  // pulls history directly from the recorder.
+  _unitScaleFor(eid) {
+    if (!eid || !this.hass || !this.hass.states) return 1;
+    const st = this.hass.states[eid];
+    const uom = st && st.attributes && st.attributes.unit_of_measurement;
+    if (typeof uom !== 'string') return 1;
+    if (uom.toLowerCase() === 'inhg') return INHG_TO_MMHG;
+    return 1;
   }
 
   async _loadData(ids) {
@@ -89,7 +123,23 @@ class LcarsBpRange extends LitElement {
         this._cache,
         { ttlMs: 5 * 60 * 1000 }
       );
-      if (raw) this._data = aggregateDaily(raw);
+      if (!raw) return;
+      // Apply per-entity unit conversion BEFORE aggregating to per-day rows.
+      // The recorder always returns raw values in the entity's stored unit,
+      // never auto-converted.
+      const scaled = {};
+      for (const id of Object.keys(raw)) {
+        const scale = this._unitScaleFor(id);
+        scaled[id] = scale === 1
+          ? raw[id]
+          : (raw[id] || []).map((p) => ({
+              ...p,
+              min:  Number.isFinite(p.min)  ? p.min  * scale : p.min,
+              max:  Number.isFinite(p.max)  ? p.max  * scale : p.max,
+              mean: Number.isFinite(p.mean) ? p.mean * scale : p.mean,
+            }));
+      }
+      this._data = aggregateDaily(scaled);
     } finally {
       this._loading = false;
     }
@@ -154,12 +204,17 @@ class LcarsBpRange extends LitElement {
     // Right-align so newest day is at the rightmost slot.
     const days = this._data.slice(-30);
     const offset = (30 - days.length) * slotW;
-    const ariaLabel = `Blood pressure trend, last 30 days. Systolic average ${stats.sysAvg || '—'}, diastolic average ${stats.diaAvg || '—'}.`;
+    // 5.14.0-beta.2 (Worf W7 / Captain ruling 1): aria-label no longer carries
+    // PHI numerics. Sighted users see the averages in the visible footer (which
+    // the obfuscator can redact); screen-reader users get a generic descriptor
+    // and can read the numeric footer cells via tabular navigation.
+    const ariaLabel = `Blood pressure trend, last ${stats.days} day${stats.days === 1 ? '' : 's'}.`;
+    const dayCountSuffix = stats.days < 30 ? html` · <span class="cap-suffix">${stats.days} DAYS RECORDED</span>` : '';
 
     return html`
       <div class="wrap" role="figure" aria-label=${ariaLabel}>
         <div class="header">
-          <span class="cap">BP · ${stats.days} DAYS</span>
+          <span class="cap">BP · 30 DAYS${dayCountSuffix}</span>
           <span class="cap-avg" data-medical="phi">
             SYS AVG ${stats.sysAvg ?? '—'} · DIA AVG ${stats.diaAvg ?? '—'}
           </span>
@@ -251,6 +306,11 @@ class LcarsBpRange extends LitElement {
       }
       .header .cap { color: var(--lcars-african-violet, #cc99ff); }
       .header .cap-avg { color: var(--lcars-gray, #aaaadd); font-size: 0.72rem; }
+      .header .cap-suffix {
+        color: var(--lcars-gold, #ffcc66);
+        opacity: 0.85;
+        font-size: 0.7rem;
+      }
       .chart {
         width: 100%;
         height: 220px;

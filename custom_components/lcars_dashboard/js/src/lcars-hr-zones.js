@@ -13,15 +13,22 @@
 //     dominant-zone estimate with a `~` prefix in the value column.
 //   - `role="img"` + aria-label per spec §4.8.
 //
-// PRIVACY (Worf §16 / W6 / §7.8):
+// PRIVACY (Worf §16 / W6 / W7 / §7.8):
 //   - Shadow host carries `data-medical="phi"` so the screenshot obfuscator
 //     redacts the entire component in one pass.
 //   - No console logs. No template binding from `hass.states` attributes.
 //   - Input hygiene: all string interpolation goes through Lit `${}`.
 //   - `_disposeCaches()` no-op stub for W6 (no caches today; method present so
 //     parent components can call it uniformly across all primitives).
+//   - 5.14.0-beta.2 (Worf W7 / Captain ruling 1): aria-label no longer leaks
+//     workout duration. The visible total carries `data-medical="phi"` so the
+//     obfuscator redacts it; the accessibility tree gets a generic descriptor.
+//   - 5.14.0-beta.2 (Wesley W-1): when birthdate is absent, the empty-state
+//     pill is keyboard-activatable and dispatches `hass-more-info` for the
+//     bound person entity so the captain can set the birthdate in one click.
 
 import { LitElement, html, css } from 'lit-element';
+import { showMoreInfo } from './lcars-helpers.js';
 
 const ZONES = [
   { key: 'PEAK',     minPct: 90 },
@@ -46,6 +53,8 @@ class LcarsHrZones extends LitElement {
       samples: { type: Array },          // optional: [{ tS, bpm }]
       personMaxHrEst: { type: Number },  // 220 - age; null = hide bars
       workoutType: { type: String },
+      personEntity: { type: String },    // 5.14.0-beta.2 (W-1) used for the SET BIRTHDATE click
+      cacheRevision: { type: Number },   // W6 ticker; no-op stub for this primitive
     };
   }
 
@@ -65,6 +74,8 @@ class LcarsHrZones extends LitElement {
     this.samples = null;
     this.personMaxHrEst = null;
     this.workoutType = null;
+    this.personEntity = null;
+    this.cacheRevision = 0;
   }
 
   _disposeCaches() {
@@ -120,11 +131,29 @@ class LcarsHrZones extends LitElement {
   render() {
     // Birthdate-gated guard (spec Q-C ratified).
     if (!Number.isFinite(this.personMaxHrEst) || this.personMaxHrEst <= 0) {
+      // 5.14.0-beta.2 (Wesley W-1) — clickable pill opens the bound person's
+      // more-info dialog so the captain can set the birthdate in one tap.
+      // Falls back to non-interactive pill when no person entity is bound.
+      const interactive = !!this.personEntity;
+      const ariaLabel = 'Workout heart rate zones unavailable. Person birthdate not set.';
+      const onClick = () => {
+        if (!this.personEntity) return;
+        showMoreInfo(this.personEntity);
+      };
+      const onKey = (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'Spacebar') {
+          ev.preventDefault();
+          onClick();
+        }
+      };
       return html`
-        <div class="empty empty-config"
-             role="img"
-             aria-label="Workout heart rate zones unavailable — person birthdate not set">
-          WORKOUT HR · SET PERSON BIRTHDATE TO ENABLE ZONES
+        <div class="empty empty-config ${interactive ? 'empty-clickable' : ''}"
+             role=${interactive ? 'button' : 'img'}
+             tabindex=${interactive ? '0' : '-1'}
+             aria-label=${ariaLabel}
+             @click=${interactive ? onClick : undefined}
+             @keydown=${interactive ? onKey : undefined}>
+          WORKOUT HR · ${interactive ? 'SET PERSON BIRTHDATE TO ENABLE ZONES »' : 'SET PERSON BIRTHDATE TO ENABLE ZONES'}
         </div>`;
     }
     // No workout data at all.
@@ -139,7 +168,10 @@ class LcarsHrZones extends LitElement {
     const total = Object.values(buckets).reduce((a, b) => a + b, 0) || 1;
     const totalMins = Math.round((Number.isFinite(this.durationS) ? this.durationS : total) / 60);
     const type = this.workoutType ? String(this.workoutType).toUpperCase() : 'WORKOUT';
-    const ariaLabel = `Workout heart rate zones: ${totalMins} minutes total`;
+    // 5.14.0-beta.2 (Worf W7) — aria-label no longer carries the duration
+    // number; the visible total cell wraps it in `data-medical="phi"` so the
+    // obfuscator redacts it.
+    const ariaLabel = 'Workout heart rate zones';
     return html`
       <div class="wrap" role="img" aria-label=${ariaLabel}>
         <div class="header">
@@ -188,6 +220,20 @@ class LcarsHrZones extends LitElement {
         border-radius: 0 0.3rem 0.3rem 0;
       }
       .empty-config { color: var(--lcars-ice, #a8d8ff); border-left-color: var(--lcars-ice, #a8d8ff); }
+      .empty-clickable {
+        cursor: pointer;
+        transition: background 0.12s ease, color 0.12s ease;
+      }
+      .empty-clickable:hover,
+      .empty-clickable:focus-visible {
+        background: rgba(168, 216, 255, 0.12);
+        color: var(--lcars-gold, #ffcc66);
+        outline: none;
+      }
+      .empty-clickable:focus-visible {
+        outline: 2px solid var(--lcars-ice, #a8d8ff);
+        outline-offset: 2px;
+      }
       .wrap { display: flex; flex-direction: column; gap: 0.5rem; }
       .header {
         display: flex; justify-content: space-between; align-items: baseline;

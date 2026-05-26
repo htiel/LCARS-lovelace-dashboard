@@ -83,9 +83,18 @@ class LcarsSleepScoreBar extends LitElement {
     // 100% achievement; segments stack left-to-right. If contributors are empty
     // but score is present, render just the headline tile.
     const totalMax = contribs.reduce((s, c) => s + (Number(c.max) || 0), 0);
-    const ariaLabel = Number.isFinite(this.score)
-      ? `Sleep score: ${Math.round(this.score)} out of 100`
-      : 'Sleep score';
+    // 5.14.0-beta.2 (Worf W7) — generic aria-label only; the visible numeric
+    // cell carries `data-medical="phi"` and is read via tabular nav.
+    const ariaLabel = 'Sleep score breakdown';
+    // 5.14.0-beta.2 (Geordi S2-6) — visually disambiguate "only one contributor
+    // resolved" from "100% achievement" by rendering a dashed placeholder for
+    // any contributor in the canonical set that didn't surface.
+    const CANONICAL_OURA = ['DURATION', 'EFFICIENCY', 'LATENCY', 'REGULARITY', 'RESTFULNESS'];
+    const CANONICAL_HAI  = ['DURATION', 'BEDTIME', 'INTERRUPTIONS'];
+    const seen = new Set(contribs.map((c) => c.key));
+    const usingHai = seen.has('BEDTIME') || seen.has('INTERRUPTIONS');
+    const canonical = usingHai ? CANONICAL_HAI : CANONICAL_OURA;
+    const missing = canonical.filter((k) => !seen.has(k));
     return html`
       <div class="wrap" role="meter" aria-valuemin="0" aria-valuemax="100"
            aria-valuenow=${Number.isFinite(this.score) ? Math.round(this.score) : ''}
@@ -113,7 +122,17 @@ class LcarsSleepScoreBar extends LitElement {
                   <div class="bar-segment-label">${c.key}</div>
                 </div>`;
             })}
+            ${missing.map((k) => html`
+              <div class="bar-segment bar-segment-missing"
+                   style="flex-basis:36px"
+                   title=${`${k}: not reported`}>
+                <div class="bar-segment-label">${k}</div>
+              </div>`)}
           </div>
+          ${missing.length ? html`
+            <div class="contrib-missing-note">
+              ${contribs.length} OF ${contribs.length + missing.length} CONTRIBUTORS RESOLVED
+            </div>` : ''}
           <div class="contrib-table">
             ${contribs.map((c) => {
               const v = Number(c.value);
@@ -222,6 +241,20 @@ class LcarsSleepScoreBar extends LitElement {
       }
       .contrib-value { color: var(--lcars-text, #ccccee); }
       .contrib-max { color: var(--lcars-gray, #888899); font-size: 0.78em; }
+      .bar-segment-missing {
+        opacity: 0.45;
+        background: transparent;
+        border: 1px dashed rgba(170, 170, 221, 0.5);
+        border-radius: 9px;
+      }
+      .contrib-missing-note {
+        margin-top: 1.4rem;
+        font-size: 0.65rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--lcars-gray, #888899);
+        text-align: center;
+      }
     `;
   }
 }

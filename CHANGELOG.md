@@ -2,6 +2,39 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.14.0-beta.2] — Sickbay live-review fixes
+
+Bug-fix beta addressing the issues the crew (Riker / Data / Geordi / Wesley / Worf) caught on the live install of beta.1. Per Captain ruling "fix it all in beta 2" this is a comprehensive synthesis pass — no scope deferred.
+
+### Crew S1 — data correctness
+
+- **BP 30-day range** (`<lcars-bp-range>`) now reads the underlying entity `unit_of_measurement` and rescales `inHg → mmHg` (×25.4) before aggregation. The Withings integration stores blood pressure in `inHg`; the parent reducer was converting, but the recorder-stats path was not — producing `SYS AVG 4 · DIA AVG 3`. Fixed.
+- **Sleep score bar** (`<lcars-sleep-score-bar>`) now resolves contributors from `vitalsByKind` first (EFFICIENCY / RECOVERY / HRV BAL / ACTIVITY) and only falls back to the Oura suffix walk for LATENCY / REGULARITY / RESTFULNESS / SLEEP RECOVERY / DAY RECOVERY / RESILIENCE. Previously only 3 of N contributors rendered. Missing contributors now show as dashed placeholders with `N OF M CONTRIBUTORS RESOLVED` sub-note.
+- **HR zones** (`<lcars-hr-zones>`) `SET BIRTHDATE` empty-state pill is now clickable and fires the standard `hass-more-info` event on the bound `person.<slug>`.
+- **ECG composite tile** now uses `_isEnumValueDisplayable` + `_formatEnum` helpers — the `String(NaN).toUpperCase() → "NAN"` artifact is gone; empty cells render as `NO DATA` or `—`.
+- **ANATOMICAL silhouette** anchor callouts are now filtered to body-composition kinds only (anchored kinds whose `tabs[]` includes `anatomical`). The SUMMARY callout cloud no longer leaks into ANATOMICAL.
+- **Body-temp deviation** classifier is now asymmetric — only positive deviations escalate to ELEVATED / ALERT / CRITICAL; negative deviations cap at ELEVATED only when `|cool| > alertMaxAbs`. A nominal `-0.5 °C` morning reading no longer trips a false ELEVATED.
+- **SUMMARY tab** narrowed from ~15 tiles to ~6 (readiness, sleep_score, stress_resilience, steps, active_minutes, medications, last_workout). Body battery / recovery / cardiac kinds moved to BIOMEDICAL where they belong.
+- **Variant rows** with non-finite or unknown values are now skipped from tile render (`displayVariants` filter).
+- **Breathing Disturbance Index** un-ignored and labeled `BDI` under the sleep-breathing class.
+- **MEDICAL_SOURCE_PRIORITY** re-promotion: when a kind has variants from multiple platforms, the canonical platform per `MEDICAL_SOURCE_PRIORITY` is moved to `variants[0]` so it wins the headline.
+
+### Crew S2 — UX
+
+- **Status pill** now carries a `WHY` sub-line when the rollup is non-NOMINAL — names the highest-severity present anchor (label + value). Value carries `data-medical="phi"` so the screenshot obfuscator redacts cleanly.
+
+### Crew W (Worf) — privacy
+
+- **W7 — aria-label PHI silenced** by default on `<lcars-bp-range>`, `<lcars-sleep-score-bar>`, `<lcars-hr-zones>`. Aria labels are now generic ("Blood pressure 30-day range", "Sleep score breakdown", "Heart rate zone distribution"); numeric values stay visible in the DOM but are gated under `data-medical="phi"` for the obfuscator.
+- **W6 — cache lifecycle**: all three new primitives accept a `cacheRevision` prop. Parent bumps `_cacheRevision` on consent grant, binding change, and focus-mode change so cached frames from a prior consent / profile state cannot survive a transition.
+
+### Captain rulings applied
+
+1. Numeric PHI silenced in `aria-label` by default (W7).
+2. Source chips + last-sync row stay readable (admin-only screen; obfuscator handles screenshots).
+3. `personMaxHrEst` stays precise (220 - age).
+4. Comprehensive synthesis scope — every reviewed item shipped in this beta.
+
 ## [5.14.0-beta.1] — Sickbay tab redesign (Stories 0–4)
 
 First beta of the v5.14 Sickbay redesign — the focus-mode tab content reorganization and the three new BIOMEDICAL primitives that do not depend on Health Auto Import plug-in cooperation. Stories 5–6 (`<lcars-ecg-strip>` waveform, `<lcars-hypnogram>` per-segment, `<lcars-workout-route>`, optional SLEEP tab) ride v5.15 once HAI ships the data-contract attributes per [plans/health-auto-import-data-contract.md](plans/health-auto-import-data-contract.md). The Riker split keeps this train honest.

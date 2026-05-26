@@ -87,6 +87,25 @@ const BODY_COMP_CHILDREN = [
 ];
 const BODY_COMP_CHILD_KINDS = new Set(BODY_COMP_CHILDREN.map((c) => c.kind));
 
+// 5.14.0-beta.2 (crew S1-2 / spec C13) — empty-state helpers shared by the
+// composite tile + inline composite render paths. These exist because beta.1
+// leaked literal 'NaN' / 'undefined' / 'null' strings to user-visible text
+// whenever a composite child value was upstream-typed as a number that came
+// out of `parseFloat` as NaN. `_isEnumValueDisplayable` rejects every flavor
+// of "missing" we've seen in HA states; `_formatEnum` uppercases + replaces
+// underscores so the visible text reads like the rest of LCARS chrome.
+function _isEnumValueDisplayable(v) {
+  if (v == null) return false;
+  if (typeof v === 'number') return Number.isFinite(v);
+  const s = String(v).trim().toLowerCase();
+  if (s === '' || s === 'unknown' || s === 'unavailable' || s === 'none' || s === 'null') return false;
+  if (s === 'nan' || s === 'undefined') return false;
+  return true;
+}
+function _formatEnum(v) {
+  return String(v).toUpperCase().replace(/_/g, ' ');
+}
+
 class LcarsMedicalCard extends LitElement {
   static get properties() {
     return {
@@ -115,10 +134,19 @@ class LcarsMedicalCard extends LitElement {
     this._audioMuted = lcarsAudio.isMuted;
     this._restMode = 'off';
     this._lastRestMode = 'off';
+    // 5.14.0-beta.2 (Worf W6.1) — cache-revision ticker propagated to every
+    // PHI primitive (<lcars-bp-range>, <lcars-hr-zones>, <lcars-sleep-score-bar>).
+    // Bumped on focus-mode change (URL profile switch surrogate today since the
+    // card serves one profile per URL), consent grant/revoke, and the standard
+    // `lcars-medical-consent-changed` / `lcars-binding-changed` window events.
+    // The primitives wipe their LTTB / recorder / contributor caches on each
+    // bump so PHI from a prior profile/consent state cannot survive a switch.
+    this._cacheRevision = 0;
     this._onHashChange = () => {
       const next = this._readFocusFromHash();
       if (next !== this._focusMode) {
         this._focusMode = next;
+        this._cacheRevision += 1;  // focus-mode change → flush primitive caches (W6 trigger a)
         this.requestUpdate();
       }
     };
@@ -132,18 +160,28 @@ class LcarsMedicalCard extends LitElement {
         this.requestUpdate();
       }
     };
+    // 5.14.0-beta.2 (Worf W6.1) — explicit consent / binding change events
+    // wipe primitive caches. Other LCARS code can dispatch either event when
+    // it knows a relevant change has happened; the medical card listens to
+    // both and bumps the cacheRevision in lockstep.
+    this._onConsentChanged = () => { this._cacheRevision += 1; this.requestUpdate(); };
+    this._onBindingChanged = () => { this._cacheRevision += 1; this.requestUpdate(); };
   }
 
   connectedCallback() {
     super.connectedCallback();
     window.addEventListener('hashchange', this._onHashChange);
     window.addEventListener('lcars-audio-mute-changed', this._onMuteChange);
+    window.addEventListener('lcars-medical-consent-changed', this._onConsentChanged);
+    window.addEventListener('lcars-binding-changed', this._onBindingChanged);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener('hashchange', this._onHashChange);
     window.removeEventListener('lcars-audio-mute-changed', this._onMuteChange);
+    window.removeEventListener('lcars-medical-consent-changed', this._onConsentChanged);
+    window.removeEventListener('lcars-binding-changed', this._onBindingChanged);
   }
 
   _readFocusFromHash() {
@@ -179,6 +217,10 @@ class LcarsMedicalCard extends LitElement {
   _grantConsent(fileId) {
     grantConsent(fileId);
     this._consentByFile = { ...this._consentByFile, [fileId]: true };
+    // 5.14.0-beta.2 (Worf W6.1) — consent transition bumps the cache ticker
+    // so any PHI primitive caches from a prior "consent denied" state cannot
+    // survive the transition (and vice versa on revoke).
+    this._cacheRevision += 1;
     lcarsAudio.play('navAcknowledge');
     this.requestUpdate();
   }
@@ -294,6 +336,47 @@ class LcarsMedicalCard extends LitElement {
         seen.add(k);
         return true;
       });
+      // 5.14.0-beta.2 (crew S2-3) — enforce MEDICAL_SOURCE_PRIORITY by
+      // re-promoting the highest-platform-priority variant to the canonical
+      // slot when the kind has a declared priority list. The original suffix
+      // priority still drives variant order within a single platform; the
+      // platform table just chooses which platform's CURRENT-reading wins
+      // for the silhouette / headline value. Variants from other platforms
+      // are NOT removed — they continue to render as stacked rows under the
+      // canonical so the captain can still see HAE-vs-Oura comparisons.
+      const platformList = MEDICAL_SOURCE_PRIORITY[v.kind];
+      if (Array.isArray(platformList) && platformList.length > 0 && v.variants.length > 1) {
+        const platformOf = (eid) => {
+          const id = String(eid || '').toLowerCase();
+          if (/^[^.]+\.oura_/.test(id)) return 'oura';
+          if (/^[^.]+\.withings_/.test(id) || /^[^.]+\.bpm_connect_/.test(id)) return 'withings';
+          if (/^[^.]+\.health_auto_import_/.test(id)) return 'health_auto_import';
+          if (/^[^.]+\.health_auto_export_/.test(id)) return 'health_auto_export';
+          if (/^hae\./.test(id)) return 'hae';
+          if (/^apple_health\./.test(id)) return 'apple_health';
+          if (/^[^.]+\.fitbit_/.test(id)) return 'fitbit';
+          if (/^[^.]+\.garmin_/.test(id)) return 'garmin_connect';
+          if (/^[^.]+\.dexcom_/.test(id)) return 'dexcom';
+          // Treat MQTT entities by namespace (HealthyApps HAE MQTT bridge)
+          if (/_health_auto_export_/.test(id)) return 'mqtt';
+          return 'unknown';
+        };
+        // Find the variant whose platform is HIGHEST in the priority list AND
+        // whose value is finite. If found and it's not already index 0, move it.
+        let bestIdx = -1;
+        let bestRank = Infinity;
+        for (let i = 0; i < v.variants.length; i++) {
+          const vt = v.variants[i];
+          if (vt.value == null || (typeof vt.value === 'number' && !Number.isFinite(vt.value))) continue;
+          const rank = platformList.indexOf(platformOf(vt.eid));
+          if (rank === -1) continue;
+          if (rank < bestRank) { bestRank = rank; bestIdx = i; }
+        }
+        if (bestIdx > 0) {
+          const [winner] = v.variants.splice(bestIdx, 1);
+          v.variants.unshift(winner);
+        }
+      }
       v.variants[0].isCanonical = true;
       // Back-compat aliases so _buildAnchors / _renderBiomedicalZone keep working.
       v.value = v.variants[0].value;
@@ -336,7 +419,7 @@ class LcarsMedicalCard extends LitElement {
     return anchors;
   }
 
-  _renderHeader(profile, fileId, status) {
+  _renderHeader(profile, fileId, status, anchors = {}) {
     const cols = decorativeNumerics(fileId, 3);
     // 5.14.0-beta.1 (Wesley #6) — RECOVERY MODE pill modifier. When Oura
     // rest_mode is on/sick the status pill displays `RECOVERY MODE · DAY N`
@@ -349,6 +432,30 @@ class LcarsMedicalCard extends LitElement {
       const days = this._restModeDayCount(profile.profileId);
       pillText = days ? `RECOVERY MODE · DAY ${days}` : 'RECOVERY MODE';
       pillColor = STATUS_COLOR[MEDICAL_STATUS.ELEVATED];
+    }
+    // 5.14.0-beta.2 (crew S2-5) — surface WHY the pill is non-NOMINAL by
+    // naming the worst anchor (severity > NOMINAL) driving the rollup. The
+    // sub-line uses the standard `data-medical="phi"` redaction tag so the
+    // numeric value blackouts cleanly under the screenshot obfuscator.
+    let whyLabel = null;
+    let whyValue = null;
+    if (!isRecovery && status !== MEDICAL_STATUS.NOMINAL && status !== MEDICAL_STATUS.OFFLINE) {
+      const SEVERITY_RANK = {
+        [MEDICAL_STATUS.NOMINAL]:  0,
+        [MEDICAL_STATUS.OFFLINE]:  0,
+        [MEDICAL_STATUS.ELEVATED]: 1,
+        [MEDICAL_STATUS.ALERT]:    2,
+        [MEDICAL_STATUS.CRITICAL]: 3,
+      };
+      let worst = null;
+      let worstRank = -1;
+      for (const slot of Object.keys(anchors || {})) {
+        const a = anchors[slot];
+        if (!a || !a.present) continue;
+        const rank = SEVERITY_RANK[a.status] || 0;
+        if (rank > worstRank) { worst = a; worstRank = rank; }
+      }
+      if (worst) { whyLabel = worst.label; whyValue = worst.value; }
     }
     const mode = this._focusMode;
     // 5.8.0-beta.1 (#176) — status pill legend. Tooltip describes the meaning of each
@@ -384,11 +491,17 @@ class LcarsMedicalCard extends LitElement {
             THERM
           </button>
           <span class="sr-only" id="med-therm-legend">${thermLegend}</span>
-          <span class="status-pill ${isRecovery ? 'status-pill-recovery' : ''}"
-                aria-live="polite"
-                aria-describedby="med-status-legend"
-                title=${pillLegend}
-                style=${`background:${pillColor};color:#000`}>${pillText}</span>
+          <div class="status-pill-group">
+            <span class="status-pill ${isRecovery ? 'status-pill-recovery' : ''}"
+                  aria-live="polite"
+                  aria-describedby="med-status-legend"
+                  title=${pillLegend}
+                  style=${`background:${pillColor};color:#000`}>${pillText}</span>
+            ${whyLabel ? html`
+              <span class="status-why" aria-live="polite">
+                ${whyLabel} <span data-medical="phi" ?aria-hidden=${this._audioMuted}>${whyValue}</span>
+              </span>` : ''}
+          </div>
           <span class="sr-only" id="med-status-legend">${pillLegend}</span>
         </div>
       </header>
@@ -401,7 +514,29 @@ class LcarsMedicalCard extends LitElement {
   // 5.14.0-beta.1 (crew C2) — appends a tile strip filtered to the ANATOMICAL
   // kinds (body composition + mobility + fitness gauges). Kinds are routed via
   // `tabs[]` on MEDICAL_VITAL_CLASSES.
+  //
+  // 5.14.0-beta.2 (crew S1-3 / Data CR-6) — anchor callout set is restricted
+  // to body-composition kinds whose `tabs[]` includes 'anatomical'. Today only
+  // `weight` (abdomen) carries an anchor — everything else is anchor-null and
+  // renders as tiles, so the anatomical silhouette is intentionally sparse.
+  // The rest of the anchor slots render as '—' so the silhouette layout stays
+  // visually stable instead of repeating the SUMMARY callout cloud.
   _renderAnatomicalZone(anchors, vitalsByKind = new Map(), profileKey = null) {
+    const allowed = new Set(
+      MEDICAL_VITAL_CLASSES
+        .filter((vc) => vc.anchor && Array.isArray(vc.tabs) && vc.tabs.includes('anatomical'))
+        .map((vc) => vc.anchor)
+    );
+    const filtered = {};
+    for (const slot of Object.keys(anchors)) {
+      const a = anchors[slot];
+      filtered[slot] = allowed.has(slot) ? a : {
+        ...a,
+        value: '—',
+        present: false,
+        status: MEDICAL_STATUS.OFFLINE,
+      };
+    }
     return html`
       <section class="scan-pair" aria-label="Anatomical front + back scan">
         <div class="scan-pane" aria-label="Anterior">
@@ -409,7 +544,7 @@ class LcarsMedicalCard extends LitElement {
           <lcars-anatomical-silhouette
             .paths=${MEDICAL_SILHOUETTE_PATHS}
             .anchorMap=${ANCHOR_MAP}
-            .anchors=${anchors}
+            .anchors=${filtered}
             .thermal=${this._thermal}
             .viewBox=${'-110 0 420 480'}
             .bodyBox=${'0 0 200 480'}
@@ -477,6 +612,7 @@ class LcarsMedicalCard extends LitElement {
             .hass=${this._hass}
             .systolicEntity=${this._systolicEntityFor(profileKey)}
             .diastolicEntity=${this._diastolicEntityFor(profileKey)}
+            .cacheRevision=${this._cacheRevision}
           ></lcars-bp-range>
         </div>
         <div class="scan-pane">
@@ -487,6 +623,8 @@ class LcarsMedicalCard extends LitElement {
             .durationS=${workout.durationS}
             .workoutType=${workout.type}
             .personMaxHrEst=${personMaxHrEst}
+            .personEntity=${this._personEntityFor(profileKey)}
+            .cacheRevision=${this._cacheRevision}
           ></lcars-hr-zones>
         </div>
       </section>
@@ -496,6 +634,7 @@ class LcarsMedicalCard extends LitElement {
           <lcars-sleep-score-bar
             .score=${this._extractSleepScore(vitalsByKind)}
             .contributors=${this._extractSleepContributors(vitalsByKind, profileKey)}
+            .cacheRevision=${this._cacheRevision}
           ></lcars-sleep-score-bar>
         </div>
       </section>
@@ -593,30 +732,64 @@ class LcarsMedicalCard extends LitElement {
   // Pulls the existing Oura / HAI contributor sensors from hass.states (these
   // are not part of MEDICAL_VITAL_CLASSES so we walk states directly). Returns
   // a `{label: {value, max, label}}` map ordered roughly by clinical weight.
+  //
+  // 5.14.0-beta.2 (crew S1-4 / Wesley root-cause) — beta.1 read only 3
+  // hard-coded Oura suffixes while ignoring 5+ already-classified kinds. This
+  // is the v2 implementation: it pulls the contributor values from
+  // `vitalsByKind` FIRST for any kind that already classified (recovery_score,
+  // hrv_balance, stress_resilience, activity_score, sleep_efficiency,
+  // sleep_recovery_score, daytime_recovery_score, sleep_regularity_score),
+  // then falls back to the Oura-prefix walk for `latency` / `restfulness`
+  // which aren't independent kinds today.
   _extractSleepContributors(vitalsByKind, profileKey) {
     const out = {};
     if (!this._hass || !this._hass.states) return out;
-    // Sleep efficiency (Oura sensor.oura_ring_*_sleep_efficiency / HAI variant).
-    const eff = vitalsByKind.get('sleep_efficiency');
-    if (eff && eff.variants && eff.variants.length) {
-      const val = parseFloat(eff.variants[0].value);
-      if (Number.isFinite(val)) out.EFFICIENCY = { value: val, max: 100, label: 'EFFICIENCY' };
-    }
-    // Other Oura contributors live on free-form sensors; walk states for
-    // suffix matches scoped to this profile (defensive — never accept arbitrary).
-    const profileSlug = (profileKey || '').replace(/^person:/, '').replace(/^oura:/, '');
-    const oraPrefix = profileSlug ? `sensor.oura_ring_${profileSlug}_` : 'sensor.oura_ring_';
+    // Helper: pull a contributor from an existing vital kind in vitalsByKind.
+    const fromKind = (kind, label, max = 100) => {
+      const v = vitalsByKind.get(kind);
+      if (!v || !v.variants || !v.variants.length) return;
+      const val = parseFloat(v.variants[0].value);
+      if (Number.isFinite(val)) out[label] = { value: val, max, label };
+    };
+    fromKind('sleep_efficiency', 'EFFICIENCY', 100);
+    fromKind('recovery_score',   'RECOVERY',   100);
+    fromKind('hrv_balance',      'HRV BAL',    100);
+    fromKind('activity_score',   'ACTIVITY',   100);
+    // Oura prefix walk for contributors NOT mapped to their own kind.
+    // Per-profile scoped — defensive against unknown profile keys.
+    const profileSlug = (profileKey || '').replace(/^person[:.]/, '').replace(/^oura[:.]/, '');
+    if (!profileSlug) return out;
+    const ouraPrefix = `sensor.oura_ring_${profileSlug}_`;
     const tryAdd = (suffix, label, max = 100) => {
-      const id = oraPrefix + suffix;
-      const st = this._hass.states[id];
+      const st = this._hass.states[ouraPrefix + suffix];
       if (!st) return;
       const v = parseFloat(st.state);
-      if (Number.isFinite(v)) out[label] = { value: v, max, label };
+      if (!Number.isFinite(v)) return;
+      // Don't overwrite contributors we already pulled from kinds.
+      if (out[label] && Number.isFinite(out[label].value)) return;
+      out[label] = { value: v, max, label };
     };
-    tryAdd('sleep_latency', 'LATENCY', 60);
-    tryAdd('sleep_regularity_score', 'REGULARITY', 100);
-    tryAdd('restfulness', 'RESTFULNESS', 100);
+    tryAdd('sleep_latency',           'LATENCY',         60);   // minutes; lower is better
+    tryAdd('sleep_regularity_score',  'REGULARITY',     100);
+    tryAdd('restfulness',             'RESTFULNESS',    100);
+    tryAdd('sleep_recovery_score',    'SLEEP RECOVERY', 100);
+    tryAdd('daytime_recovery_score',  'DAY RECOVERY',   100);
+    tryAdd('stress_resilience_score', 'RESILIENCE',     100);
     return out;
+  }
+
+  // 5.14.0-beta.2 (Wesley W-1) — resolve the bound HA person entity id for the
+  // current profile. Used to wire the SET-BIRTHDATE click in <lcars-hr-zones>.
+  // Returns null when the profile key is unmappable.
+  _personEntityFor(profileKey) {
+    if (!this._hass || !this._hass.states || !profileKey) return null;
+    const slug = String(profileKey).replace(/^person[:.]/, '').replace(/^oura[:.]/, '').replace(/^withings[:.]/, '');
+    const direct = `person.${slug}`;
+    if (this._hass.states[direct]) return direct;
+    // Fall back to a single-person install: pick the only person if there is one.
+    const persons = Object.keys(this._hass.states).filter((id) => id.startsWith('person.'));
+    if (persons.length === 1) return persons[0];
+    return null;
   }
 
 
@@ -719,6 +892,15 @@ class LcarsMedicalCard extends LitElement {
           const platforms = new Set(variants.map((vt) => sourceChipForEntity(vt.eid)));
           const multiSource = platforms.size > 1;
           const sourceChip = multiSource ? sourceChipForEntity(canonical.eid) : '';
+          // 5.14.0-beta.2 (crew S1-6) — hide variant rows whose value would
+          // render as `—` (non-finite numerics OR explicit unknown/unavailable).
+          // Keeps the tile compact when half the variant sensors are stale.
+          const displayVariants = variants.slice(1).filter((vt) => {
+            if (vt.value == null) return false;
+            if (vt.value === 'unknown' || vt.value === 'unavailable') return false;
+            if (typeof vt.value === 'number' && !Number.isFinite(vt.value)) return false;
+            return true;
+          });
           return this._wrapTile(vc.label, canonical.eid, html`
             <div class="tile-label">${vc.label}${sourceChip ? html` <sup class="tile-source-chip" aria-label="Source platform">${sourceChip}</sup>` : ''}</div>
             <div class="tile-value" data-medical="phi"
@@ -726,9 +908,9 @@ class LcarsMedicalCard extends LitElement {
                  ?aria-hidden=${this._audioMuted}
                  style=${`color:${canonicalColor}`}>${formatVital(vc.kind, canonical.value)}</div>
             <div class="tile-unit">${vc.unit}${showSrc ? html` · <span class="tile-source">${canonical.label}</span>` : ''}</div>
-            ${variants.length > 1 ? html`
+            ${displayVariants.length ? html`
               <div class="tile-variants" aria-label="Additional sources">
-                ${variants.slice(1).map((vt) => html`
+                ${displayVariants.map((vt) => html`
                   <div class="tile-variant">
                     <span class="tile-variant-label">${vt.label || '·'}${multiSource ? html` <sup class="tile-source-chip">${sourceChipForEntity(vt.eid)}</sup>` : ''}</span>
                     <span class="tile-variant-value" data-medical="phi"
@@ -981,16 +1163,21 @@ class LcarsMedicalCard extends LitElement {
     if (!cls && !countToday) status = MEDICAL_STATUS.OFFLINE;
     const color = STATUS_COLOR[status] || STATUS_COLOR.OFFLINE;
 
-    const headline = cls ? String(cls.value).toUpperCase().replace(/_/g, ' ') : '—';
+    // 5.14.0-beta.2 (crew S1-2 / spec C13) — guard against `String(NaN)` →
+    // 'NaN' / `String(undefined)` → 'undefined' leaks into the visible
+    // headline. cls.value upstream comes through `parseFloat` in some HAI
+    // paths so it can legitimately be the number NaN, not just an empty
+    // string. Use the enum-string-safe helper.
+    const headline = _isEnumValueDisplayable(cls?.value) ? _formatEnum(cls.value) : '—';
 
     const rows = [];
-    if (sev && String(sev.value).toLowerCase() !== 'unknown') {
-      rows.push({ label: 'SEVERITY', value: String(sev.value).toUpperCase().replace(/_/g, ' '), unit: '' });
+    if (_isEnumValueDisplayable(sev?.value)) {
+      rows.push({ label: 'SEVERITY', value: _formatEnum(sev.value), unit: '' });
     }
     if (avgHr && Number.isFinite(parseFloat(avgHr.value))) {
       rows.push({ label: 'AVG HR', value: String(Math.round(parseFloat(avgHr.value))), unit: 'bpm' });
     }
-    if (countToday && Number(countToday.value) >= 0) {
+    if (countToday && Number.isFinite(Number(countToday.value))) {
       rows.push({ label: 'TODAY #', value: String(Math.round(Number(countToday.value))), unit: '' });
     }
     if (sinusToday && Number(sinusToday.value) > 0) {
@@ -1007,6 +1194,17 @@ class LcarsMedicalCard extends LitElement {
     }
     if (lastRead && lastRead.value) {
       rows.push({ label: 'LAST READ', value: this._formatStaleness(lastRead.value), unit: 'ago' });
+    }
+
+    // If we have no headline AND no rows, render the standardized empty state.
+    if (headline === '—' && rows.length === 0) {
+      return html`
+        <div class="tile">
+          <div class="tile-label">${vc.label}</div>
+          <div class="tile-value tile-offline"
+               style=${`color:var(--lcars-gray, #666688)`}>NO DATA</div>
+          <div class="tile-unit">${vc.unit || 'classification'}</div>
+        </div>`;
     }
 
     return this._wrapTile(vc.label, (cls || avgHr || countToday)?.eid, html`
@@ -1346,8 +1544,23 @@ class LcarsMedicalCard extends LitElement {
     const afibDetected = byLabel('AFIB?');
     const countToday = byLabel('TODAY #');
     const lastAfib = byLabel('LAST AFIB');
-    const headline = cls ? String(cls.value).toUpperCase().replace(/_/g, ' ') : '—';
+    // 5.14.0-beta.2 (crew S1-2 / spec C13) — NaN-safe headline + cells.
+    const hasHeadline = _isEnumValueDisplayable(cls?.value);
+    const headline = hasHeadline ? _formatEnum(cls.value) : null;
     const afibDetectedNow = afibDetected && /on|true|1|yes|detect/i.test(String(afibDetected.value));
+    const avgHrNum = avgHr && Number.isFinite(parseFloat(avgHr.value)) ? Math.round(parseFloat(avgHr.value)) : null;
+    const countTodayNum = countToday && Number.isFinite(Number(countToday.value)) ? Math.round(Number(countToday.value)) : null;
+    const hasAnyData = headline || avgHrNum != null || countTodayNum != null || afibDetectedNow || (lastAfib && lastAfib.value);
+    if (!hasAnyData) {
+      return html`
+        <div class="ecg-inline" data-medical="phi" ?aria-hidden=${this._audioMuted}>
+          <div class="ecg-inline-row">
+            <span class="ecg-inline-label">ECG</span>
+            <span class="ecg-inline-sub">NO DATA</span>
+          </div>
+        </div>
+      `;
+    }
     let status = MEDICAL_STATUS.NOMINAL;
     if (afibDetectedNow) status = MEDICAL_STATUS.ALERT;
     else if (sev && /high|severe/i.test(String(sev.value))) status = MEDICAL_STATUS.ELEVATED;
@@ -1356,11 +1569,11 @@ class LcarsMedicalCard extends LitElement {
       <div class="ecg-inline" data-medical="phi" ?aria-hidden=${this._audioMuted}>
         <div class="ecg-inline-row">
           <span class="ecg-inline-label">LATEST</span>
-          <span class="ecg-inline-value" style=${`color:${color}`}>${headline}</span>
-          ${avgHr ? html`<span class="ecg-inline-sub">${Math.round(parseFloat(avgHr.value))} bpm</span>` : ''}
+          ${headline ? html`<span class="ecg-inline-value" style=${`color:${color}`}>${headline}</span>` : html`<span class="ecg-inline-sub">—</span>`}
+          ${avgHrNum != null ? html`<span class="ecg-inline-sub">${avgHrNum} bpm</span>` : ''}
         </div>
         <div class="ecg-inline-row">
-          ${countToday ? html`<span class="ecg-inline-sub">${Math.round(Number(countToday.value))} today</span>` : ''}
+          ${countTodayNum != null ? html`<span class="ecg-inline-sub">${countTodayNum} today</span>` : ''}
           ${afibDetectedNow ? html`<span class="ecg-inline-sub" style="color:var(--lcars-alert,#cc6666)">AFIB DETECTED</span>` : ''}
           ${lastAfib && lastAfib.value ? html`<span class="ecg-inline-sub">last AFib ${this._formatStaleness(lastAfib.value)}</span>` : ''}
         </div>
@@ -1405,11 +1618,11 @@ class LcarsMedicalCard extends LitElement {
             <span class="hr-alerts-count-value" style=${`color:${tone}`}>${irreg ? Math.round(n(irreg)) : 0}</span>
           </div>
         </div>
-        ${lastType && String(lastType.value).toLowerCase() !== 'unknown' ? html`
+        ${lastType && _isEnumValueDisplayable(lastType.value) ? html`
           <div class="hr-alerts-latest">
             <div class="hr-alerts-row">
               <span class="hr-alerts-label">LATEST</span>
-              <span class="hr-alerts-value">${String(lastType.value).toUpperCase().replace(/_/g, ' ')}</span>
+              <span class="hr-alerts-value">${_formatEnum(lastType.value)}</span>
             </div>
             ${peakHr && Number.isFinite(parseFloat(peakHr.value)) ? html`
               <div class="hr-alerts-row">
@@ -1516,7 +1729,7 @@ class LcarsMedicalCard extends LitElement {
           return html`
             <article class="biofunction-card" aria-labelledby=${`med-h-${fileId}`}>
               <h2 id=${`med-h-${fileId}`} class="sr-only">Biofunction card ${fileId}</h2>
-              ${this._renderHeader(profile, fileId, overall)}
+              ${this._renderHeader(profile, fileId, overall, anchors)}
               ${this._renderRestBanner(profile.profileId)}
               ${this._focusMode === 'anatomical' ? this._renderAnatomicalZone(anchors, vitalsByKind, profile.profileId)
                 : this._focusMode === 'biomedical' ? this._renderBiomedicalZone(vitalsByKind, anchors, profile.profileId)
@@ -1622,6 +1835,16 @@ class LcarsMedicalCard extends LitElement {
         .status-pill {
           padding: 0.2rem 0.6rem; border-radius: 999px; font-weight: 700;
           font-size: 0.85rem; letter-spacing: 0.08em;
+        }
+        .status-pill-group {
+          display: inline-flex; flex-direction: column; align-items: flex-end;
+          gap: 0.15rem;
+        }
+        .status-why {
+          font-family: var(--lcars-font, 'Antonio', sans-serif);
+          text-transform: uppercase; letter-spacing: 0.06em;
+          font-size: 0.65rem; color: var(--lcars-ice, #99ccff);
+          opacity: 0.85;
         }
         /* Zone B */
         .zone-b {

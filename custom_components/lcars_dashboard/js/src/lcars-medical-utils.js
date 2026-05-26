@@ -1283,6 +1283,20 @@ export function hasConsent(fileId) {
 export function grantConsent(fileId) {
   try { localStorage.setItem(CONSENT_PREFIX + fileId, '1'); } catch (_) { /* noop */ }
 }
+// v5.15.0-beta.1 (Worf S0-4 §7.7): second-layer consent for ECG waveform
+// rendering. Default-off, AND-gated against base consent. Storage path:
+// `lcars_medical_consent.<fileId>.ecg`. Browser-local — full medical_profiles.yaml
+// schema migration deferred to v5.15.0+.
+export function hasEcgConsent(fileId) {
+  try { return localStorage.getItem(CONSENT_PREFIX + fileId + '.ecg') === '1'; }
+  catch (_) { return false; }
+}
+export function grantEcgConsent(fileId) {
+  try { localStorage.setItem(CONSENT_PREFIX + fileId + '.ecg', '1'); } catch (_) { /* noop */ }
+}
+export function revokeEcgConsent(fileId) {
+  try { localStorage.removeItem(CONSENT_PREFIX + fileId + '.ecg'); } catch (_) { /* noop */ }
+}
 
 // Format a numeric value for display in a vital cell. Does NOT log the value.
 // 5.8.0-beta.1 (Worf Gap B): timestamp and enum kinds covered explicitly. Sleep

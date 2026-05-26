@@ -2,6 +2,37 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.15.0-beta.1] — Sickbay Stories 5–6 (HAI-dependent primitives)
+
+The v5.15 train arrives. Three new BIOMEDICAL primitives land once the Health Auto Import HACS integration (v1.1.0) ships the LCARS Sickbay Data Contract v2 attributes. Also rolls in two bugs caught during live review of v5.14.0-beta.2.
+
+### Stories 5–6 — new primitives
+
+- **`<lcars-ecg-strip>`** (Story 5) — LCARS analog of the Apple Health "Electrocardiograms" measurement screen. Classification banner + LTTB-downsampled waveform card (1,200 visible points from any sample density) + footer with status, sanitized source device, timestamp, and folded 7-day HR-alerts notifications. **Two-layer consent gate**: base profile consent AND a second-layer `consent.ecg` (Worf §7.7); the waveform renders only when both are true. Default OFF. Schema-mismatch + truncation degraded states surface as pills, never raw fallback. Per spec §4.1.
+- **`<lcars-hypnogram>`** (Story 6a) — per-segment sleep timeline (Awake / REM / Core / Deep) over the night's clock span. Default placement: BIOMEDICAL tab row 6 with `suppressTimestamps=true` per Worf S2-10 (totals only). When the `segments[]` attribute is absent, falls back to a stacked-bar totals view derived from `time_asleep_min` / `time_in_bed_min`. Per spec §4.2.
+- **`<lcars-workout-route>`** (Story 6b) — workout GPS route. Accepts the Google-encoded polyline string only (Worf S0-2 — raw `{lat,lon}[]` arrays explicitly rejected). Decodes inside the closed shadow root, normalizes to a 200×200 viewBox, and discards the lat/lng pairs. No coordinate text rendered anywhere (Worf W2). Per spec §4.5.
+
+All three primitives:
+- Carry `data-medical="phi"` and `data-redact-priority="high"` so the screenshot obfuscator blackouts the entire surface in one click.
+- Implement the W6 cache-lifecycle contract: `_disposeCaches()` runs on every `cacheRevision` bump (parent ticks on consent change, binding change, profile switch).
+- Silence numeric PHI in `aria-label` by default (Worf W7).
+- Schema-probe HAI's `lcars_schema_version: "1"` attribute and fall back gracefully when absent.
+- Handle the `(truncated — too large for entity attributes)` degraded state per HAI handback caveat #2.
+
+### Consent — second layer
+
+- `hasEcgConsent(fileId)` / `grantEcgConsent(fileId)` / `revokeEcgConsent(fileId)` added to `lcars-medical-utils.js`. Browser-local storage at `lcars_medical_consent.<fileId>.ecg`. AND-gated with base consent. Full medical_profiles.yaml schema migration deferred to a later beta.
+- The waveform card surfaces an `ENABLE WAVEFORM »` pill when consent is missing; clicking grants ECG consent and bumps the cache ticker so any stale frames from the prior consent state cannot survive the transition (§7.7 mid-render toggle contract).
+
+### Bug fixes (rolled in from v5.14.0-beta.2 live review)
+
+- **BP 30-day chart body empty** (live-review bug): when Withings persists only `mean` per day (no separate `min`/`max`), the chart bars never drew even though averages computed correctly. The chart now falls back to a slim 1-unit-tall pill at the mean position when ranges are absent — visually represents the day instead of going blank.
+- **ANATOMICAL silhouette anchor dash spam** (live-review bug): non-anatomical anchors (BP/HR/TEMP/SPO2/RESP/ACTIVE/DISTANCE/STEPS) were rendering as `—` instead of being omitted. The silhouette is now sparse by design — only WEIGHT (abdomen) appears, which is the only body-composition kind with an anchor.
+
+### HAI handoff
+
+- [plans/health-auto-import-data-contract.md](plans/health-auto-import-data-contract.md) gained a new §7 "v5.15.0 implementation feedback" documenting what worked perfectly in HAI v1.1.0 (all five asks shipped cleanly) and four small soft asks for future iteration (none blocking) — `source_devices` on the ECG entity, per-stage `_min` totals on sleep, true `ended_at` on workouts, documented HealthKit classification vocabulary.
+
 ## [5.14.0-beta.2] — Sickbay live-review fixes
 
 Bug-fix beta addressing the issues the crew (Riker / Data / Geordi / Wesley / Worf) caught on the live install of beta.1. Per Captain ruling "fix it all in beta 2" this is a comprehensive synthesis pass — no scope deferred.

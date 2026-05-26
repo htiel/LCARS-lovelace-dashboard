@@ -235,7 +235,15 @@ class LcarsBpRange extends LitElement {
             const sys = d.byId[this.systolicEntity];
             const dia = d.byId[this.diastolicEntity];
             const parts = [];
-            if (sys && Number.isFinite(sys.min) && Number.isFinite(sys.max)) {
+            // 5.15.0-beta.1 (S2-bp): some Withings configs persist only `mean`
+            // per day (no separate `min`/`max`). Fall back to drawing just the
+            // mean tick when ranges are absent — without this the entire chart
+            // body renders empty even though averages compute correctly.
+            const sysHasRange = sys && Number.isFinite(sys.min) && Number.isFinite(sys.max) && sys.max > sys.min;
+            const sysHasMean  = sys && Number.isFinite(sys.mean);
+            const diaHasRange = dia && Number.isFinite(dia.min) && Number.isFinite(dia.max) && dia.max > dia.min;
+            const diaHasMean  = dia && Number.isFinite(dia.mean);
+            if (sysHasRange) {
               const y1 = this._yFor(sys.max);
               const y2 = this._yFor(sys.min);
               parts.push(html`
@@ -243,7 +251,7 @@ class LcarsBpRange extends LitElement {
                       width=${barW} height=${Math.max(0.5, y2 - y1)}
                       fill="var(--lcars-butterscotch, #ffaa66)"
                       rx="0.6"></rect>`);
-              if (Number.isFinite(sys.mean)) {
+              if (sysHasMean) {
                 const ym = this._yFor(sys.mean);
                 parts.push(html`
                   <line x1=${cx - barW - 1.2} x2=${cx - 0.4}
@@ -251,8 +259,17 @@ class LcarsBpRange extends LitElement {
                         stroke="var(--lcars-space-white, #f0f0ff)"
                         stroke-width="0.5"></line>`);
               }
+            } else if (sysHasMean) {
+              // Mean-only fallback: draw a single 1-unit tall pill at the mean
+              // position so the day is visually represented.
+              const ym = this._yFor(sys.mean);
+              parts.push(html`
+                <rect x=${cx - barW - 0.6} y=${ym - 0.5}
+                      width=${barW} height="1"
+                      fill="var(--lcars-butterscotch, #ffaa66)"
+                      rx="0.5"></rect>`);
             }
-            if (dia && Number.isFinite(dia.min) && Number.isFinite(dia.max)) {
+            if (diaHasRange) {
               const y1 = this._yFor(dia.max);
               const y2 = this._yFor(dia.min);
               parts.push(html`
@@ -260,7 +277,7 @@ class LcarsBpRange extends LitElement {
                       width=${barW} height=${Math.max(0.5, y2 - y1)}
                       fill="var(--lcars-ice, #a8d8ff)"
                       rx="0.6"></rect>`);
-              if (Number.isFinite(dia.mean)) {
+              if (diaHasMean) {
                 const ym = this._yFor(dia.mean);
                 parts.push(html`
                   <line x1=${cx + 0.4} x2=${cx + barW + 1.2}
@@ -268,6 +285,13 @@ class LcarsBpRange extends LitElement {
                         stroke="var(--lcars-space-white, #f0f0ff)"
                         stroke-width="0.5"></line>`);
               }
+            } else if (diaHasMean) {
+              const ym = this._yFor(dia.mean);
+              parts.push(html`
+                <rect x=${cx + 0.6} y=${ym - 0.5}
+                      width=${barW} height="1"
+                      fill="var(--lcars-ice, #a8d8ff)"
+                      rx="0.5"></rect>`);
             }
             return parts;
           })}

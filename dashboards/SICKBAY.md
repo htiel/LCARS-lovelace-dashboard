@@ -33,6 +33,27 @@ Live, managed sensors created from MQTT payloads pushed by the **Health Auto Exp
 
 Pre-existing state-only entities created by older Health Auto Export integrations are still recognised. Each integration is bound by `via_device` chain back to the per-iPhone root device, and the dashboard derives a stable `hae:<userTag>` binding key from that root so legacy and MQTT users land on the same per-person tile.
 
+### 3. Health Auto Import HACS integration (`health_auto_import`)
+
+Optional HACS custom integration ([htiel/health-auto-import](https://github.com/htiel/health-auto-import)) that polls the Health Auto Export iOS app's REST endpoint and exposes 60+ `sensor.health_auto_import_*` entities. As of HAI **v1.1.0** it also ships the LCARS Sickbay Data Contract v2 attributes (ECG waveform, sleep-segment hypnogram, workout HR samples, encoded GPS polyline) consumed by the v5.15 BIOMEDICAL primitives.
+
+#### Recorder exclusion (recommended)
+
+The ECG voltage sample array on `sensor.health_auto_import_heart_ecg_voltage_measurements` is a multi-thousand-element integer list refreshed on every ECG reading. HA's recorder will persist it on every state change by default, which bloats the long-term statistics DB and (more importantly) ships clinically-sensitive PHI into a backup-able store. Add this to your `configuration.yaml`:
+
+```yaml
+recorder:
+  exclude:
+    entity_globs:
+      - sensor.*_ecg_voltage_measurements
+```
+
+The LCARS `<lcars-ecg-strip>` renderer reads the array directly from `hass.states` inside a closed shadow root and never persists or transmits it off-device. Excluding the entity from recorder does not affect dashboard rendering. The same recommendation applies to any user-installed Apple-Health ECG bridge that surfaces raw voltage samples.
+
+#### Attribute-truncation degraded mode
+
+HAI replaces the entire attribute dict with the literal string `"(truncated — too large for entity attributes)"` if a JSON-serialized payload exceeds 40 KiB. The Sickbay primitives detect `typeof attrs === 'string'` and render a "DATA TRUNCATED" pill in place of the visualization. No action required from operators — documented here so the pill is not surprising.
+
 ## Composite Vital Tiles
 
 - **READINESS** — sleep score + HRV + resting HR (shrinks to a single-column tile when sub-lozenges are missing)

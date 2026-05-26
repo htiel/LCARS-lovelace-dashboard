@@ -20,6 +20,10 @@ import './lcars-anatomical-silhouette.js';
 import './lcars-hr-zones.js';
 import './lcars-bp-range.js';
 import './lcars-sleep-score-bar.js';
+// 5.15.0-beta.1 — Stories 5–6 HAI-dependent primitives.
+import './lcars-ecg-strip.js';
+import './lcars-hypnogram.js';
+import './lcars-workout-route.js';
 import { MEDICAL_SILHOUETTE_PATHS } from './lcars-medical-silhouette-paths.js';
 import {
   MEDICAL_VITAL_CLASSES,
@@ -33,6 +37,9 @@ import {
   decorativeNumerics,
   hasConsent,
   grantConsent,
+  // 5.15.0-beta.1 (Worf §7.7) — second-layer ECG waveform consent.
+  hasEcgConsent,
+  grantEcgConsent,
   formatVital,
   MEDICAL_STATUS,
   entityPriority,
@@ -515,12 +522,11 @@ class LcarsMedicalCard extends LitElement {
   // kinds (body composition + mobility + fitness gauges). Kinds are routed via
   // `tabs[]` on MEDICAL_VITAL_CLASSES.
   //
-  // 5.14.0-beta.2 (crew S1-3 / Data CR-6) — anchor callout set is restricted
-  // to body-composition kinds whose `tabs[]` includes 'anatomical'. Today only
-  // `weight` (abdomen) carries an anchor — everything else is anchor-null and
-  // renders as tiles, so the anatomical silhouette is intentionally sparse.
-  // The rest of the anchor slots render as '—' so the silhouette layout stays
-  // visually stable instead of repeating the SUMMARY callout cloud.
+  // 5.15.0-beta.1 (S2-anat): anchor set is restricted to body-composition
+  // kinds whose `tabs[]` includes 'anatomical'. Today only `weight` (abdomen)
+  // carries an anchor — everything else is anchor-null and renders as tiles
+  // below. Anchors NOT in the allowed set are OMITTED ENTIRELY (not
+  // dash-padded) so the silhouette is sparse instead of dash-spammed.
   _renderAnatomicalZone(anchors, vitalsByKind = new Map(), profileKey = null) {
     const allowed = new Set(
       MEDICAL_VITAL_CLASSES
@@ -529,13 +535,7 @@ class LcarsMedicalCard extends LitElement {
     );
     const filtered = {};
     for (const slot of Object.keys(anchors)) {
-      const a = anchors[slot];
-      filtered[slot] = allowed.has(slot) ? a : {
-        ...a,
-        value: '—',
-        present: false,
-        status: MEDICAL_STATUS.OFFLINE,
-      };
+      if (allowed.has(slot)) filtered[slot] = anchors[slot];
     }
     return html`
       <section class="scan-pair" aria-label="Anatomical front + back scan">
@@ -587,6 +587,18 @@ class LcarsMedicalCard extends LitElement {
     // 5.14.0-beta.1 — derive person max-HR estimate (220 - age) from person.birthdate
     // when present; otherwise null → <lcars-hr-zones> renders its "set birthdate" pill.
     const personMaxHrEst = this._personMaxHrEstimate(profileKey);
+    // 5.15.0-beta.1 (Stories 5–6) — HAI-dependent primitives.
+    const ecgProps = this._ecgPropsFor(profileKey);
+    const sleepAttrs = this._sleepAttrsFor(profileKey);
+    const workoutRouteProps = this._workoutPropsFor(profileKey);
+    // Two-layer consent: parent already gates the whole card on base consent;
+    // the ECG waveform also requires the second-layer ECG consent. The fileId
+    // comes from the parent's `_renderCard` scope; we re-derive it from the
+    // profileKey so this helper stays self-contained.
+    const fileIdHere = profileKey ? fileIdFor(profileKey) : null;
+    const ecgConsent = this._ecgConsentFor(fileIdHere);
+    // HR-alerts composite — fold the 7-day rollup into ECG-strip footer.
+    const hrAlertsProp = hasHrAlerts ? this._extractHrAlertsRollup(hrAlerts) : null;
     return html`
       <section class="scan-pair" aria-label="Biomedical waveform + ECG + HR alerts">
         <div class="scan-pane">
@@ -605,6 +617,24 @@ class LcarsMedicalCard extends LitElement {
           </div>`}
       </section>
       ${this._renderTiles(vitalsByKind, profileKey, 'biomedical')}
+      <section class="scan-pair" aria-label="ECG waveform (Story 5)">
+        <div class="scan-pane scan-pane-wide">
+          <div class="scan-cap">ECG · 12-LEAD WAVEFORM</div>
+          <lcars-ecg-strip
+            .voltageAttrs=${ecgProps.voltageAttrs}
+            .classification=${ecgProps.classification}
+            .avgBpm=${ecgProps.avgBpm}
+            .durationS=${ecgProps.durationS}
+            .samplingHz=${ecgProps.samplingHz}
+            .lastTakenIso=${ecgProps.lastTakenIso}
+            .source=${ecgProps.source}
+            .consent=${ecgConsent}
+            .hrAlerts=${hrAlertsProp}
+            .cacheRevision=${this._cacheRevision}
+            @lcars-ecg-consent-request=${() => this._grantEcgConsent(fileIdHere)}
+          ></lcars-ecg-strip>
+        </div>
+      </section>
       <section class="scan-pair" aria-label="Cardiac primitives">
         <div class="scan-pane">
           <div class="scan-cap">BLOOD PRESSURE — 30 DAYS</div>
@@ -628,6 +658,17 @@ class LcarsMedicalCard extends LitElement {
           ></lcars-hr-zones>
         </div>
       </section>
+      <section class="scan-pair" aria-label="Workout route (Story 6b)">
+        <div class="scan-pane scan-pane-wide">
+          <div class="scan-cap">LAST WORKOUT — ROUTE</div>
+          <lcars-workout-route
+            .workoutAttrs=${workoutRouteProps.workoutAttrs}
+            .startedIso=${workoutRouteProps.startedIso}
+            .endedIso=${workoutRouteProps.endedIso}
+            .cacheRevision=${this._cacheRevision}
+          ></lcars-workout-route>
+        </div>
+      </section>
       <section class="scan-pair" aria-label="Sleep score breakdown">
         <div class="scan-pane scan-pane-wide">
           <div class="scan-cap">SLEEP SCORE</div>
@@ -636,6 +677,16 @@ class LcarsMedicalCard extends LitElement {
             .contributors=${this._extractSleepContributors(vitalsByKind, profileKey)}
             .cacheRevision=${this._cacheRevision}
           ></lcars-sleep-score-bar>
+        </div>
+      </section>
+      <section class="scan-pair" aria-label="Sleep hypnogram (Story 6a)">
+        <div class="scan-pane scan-pane-wide">
+          <div class="scan-cap">SLEEP STAGES — LAST NIGHT</div>
+          <lcars-hypnogram
+            .sleepAttrs=${sleepAttrs}
+            .suppressTimestamps=${true}
+            .cacheRevision=${this._cacheRevision}
+          ></lcars-hypnogram>
         </div>
       </section>
     `;
@@ -790,6 +841,148 @@ class LcarsMedicalCard extends LitElement {
     const persons = Object.keys(this._hass.states).filter((id) => id.startsWith('person.'));
     if (persons.length === 1) return persons[0];
     return null;
+  }
+
+  // 5.15.0-beta.1 (Story 5) — resolve the HAI ECG voltage sensor for the
+  // current profile. Returns the entity_id string or null when no ECG entity
+  // is bound. The ECG strip primitive falls back to its NO DATA pill.
+  _ecgVoltageEntityFor(profileKey) {
+    if (!this._hass || !this._hass.states) return null;
+    for (const id of Object.keys(this._hass.states)) {
+      if (id === 'sensor.health_auto_import_heart_ecg_voltage_measurements') return id;
+      if (/_heart_ecg_voltage_measurements$/.test(id)) return id;
+    }
+    return null;
+  }
+  _ecgSiblingEntity(suffix) {
+    // 5.15.0-beta.1 — return the first HAI ECG sibling sensor matching the
+    // suffix (`classification`, `average_bpm`, `duration`, `sampling_frequency`,
+    // `last_taken`). Used as the schema-safe fallback when the voltage attribute
+    // contract is not honored.
+    if (!this._hass || !this._hass.states) return null;
+    for (const id of Object.keys(this._hass.states)) {
+      if (id.endsWith(`_heart_ecg_${suffix}`)) return id;
+    }
+    return null;
+  }
+  _ecgPropsFor(profileKey) {
+    // Read all six ECG sensors and merge into the lcars-ecg-strip prop bag.
+    // The voltage entity is the only one that needs schema-version probing —
+    // the siblings are simple numbers/strings.
+    if (!this._hass || !this._hass.states) {
+      return { voltageAttrs: null, classification: null, avgBpm: NaN, durationS: NaN, samplingHz: NaN, lastTakenIso: null, source: null };
+    }
+    const voltageId = this._ecgVoltageEntityFor(profileKey);
+    const st = voltageId ? this._hass.states[voltageId] : null;
+    const voltageAttrs = st ? st.attributes : null;
+    const readNum = (suffix) => {
+      const id = this._ecgSiblingEntity(suffix);
+      if (!id) return NaN;
+      const s = this._hass.states[id];
+      const v = s && s.state != null ? Number(s.state) : NaN;
+      return Number.isFinite(v) ? v : NaN;
+    };
+    const readStr = (suffix) => {
+      const id = this._ecgSiblingEntity(suffix);
+      if (!id) return null;
+      const s = this._hass.states[id];
+      return s && typeof s.state === 'string' && s.state !== 'unknown' && s.state !== 'unavailable' ? s.state : null;
+    };
+    // Prefer attribute-level metadata when the voltage entity ships it.
+    const fromAttr = (key) => (voltageAttrs && typeof voltageAttrs === 'object' ? voltageAttrs[key] : undefined);
+    return {
+      voltageAttrs,
+      classification: readStr('classification') || (typeof fromAttr('classification') === 'string' ? fromAttr('classification') : null),
+      avgBpm:    Number.isFinite(fromAttr('average_bpm')) ? fromAttr('average_bpm') : readNum('average_bpm'),
+      durationS: Number.isFinite(fromAttr('duration_s')) ? fromAttr('duration_s') : readNum('duration'),
+      samplingHz: Number.isFinite(fromAttr('sampling_frequency_hz')) ? fromAttr('sampling_frequency_hz') : readNum('sampling_frequency'),
+      lastTakenIso: typeof fromAttr('recorded_at') === 'string' ? fromAttr('recorded_at') : readStr('last_taken'),
+      source: typeof fromAttr('source') === 'string' ? fromAttr('source') : null,
+    };
+  }
+
+  // 5.15.0-beta.1 (Story 6a) — resolve the HAI sleep-analysis-latest sensor.
+  _sleepAnalysisEntityFor(profileKey) {
+    if (!this._hass || !this._hass.states) return null;
+    for (const id of Object.keys(this._hass.states)) {
+      if (id === 'sensor.health_auto_import_health_metrics_sleep_analysis_latest') return id;
+      if (/_sleep_analysis_latest$/.test(id)) return id;
+    }
+    return null;
+  }
+  _sleepAttrsFor(profileKey) {
+    if (!this._hass || !this._hass.states) return null;
+    const id = this._sleepAnalysisEntityFor(profileKey);
+    if (!id) return null;
+    const st = this._hass.states[id];
+    return st ? st.attributes : null;
+  }
+
+  // 5.15.0-beta.1 (Story 6b) — resolve the HAI workout-last-started sensor.
+  _workoutEntityFor(profileKey) {
+    if (!this._hass || !this._hass.states) return null;
+    for (const id of Object.keys(this._hass.states)) {
+      if (id === 'sensor.health_auto_import_workouts_workout_last_started') return id;
+      if (/_workouts_workout_last_started$/.test(id)) return id;
+    }
+    return null;
+  }
+  _workoutPropsFor(profileKey) {
+    if (!this._hass || !this._hass.states) {
+      return { workoutAttrs: null, startedIso: null, endedIso: null };
+    }
+    const id = this._workoutEntityFor(profileKey);
+    if (!id) return { workoutAttrs: null, startedIso: null, endedIso: null };
+    const st = this._hass.states[id];
+    const attrs = st ? st.attributes : null;
+    const startedIso = st && typeof st.state === 'string' ? st.state : null;
+    // Derive endedIso from started + duration_s when ended isn't surfaced.
+    let endedIso = null;
+    if (startedIso && attrs && Number.isFinite(attrs.duration_s)) {
+      const t = Date.parse(startedIso);
+      if (Number.isFinite(t)) {
+        endedIso = new Date(t + attrs.duration_s * 1000).toISOString();
+      }
+    }
+    return { workoutAttrs: attrs, startedIso, endedIso };
+  }
+
+  // 5.15.0-beta.1 (Story 5 / Worf S0-4 §7.7) — resolve the AND-of base-consent
+  // and ECG-waveform-consent for the given profile id. Returns false unless
+  // both layers are explicitly granted.
+  _ecgConsentFor(fileId) {
+    if (!fileId) return false;
+    // Base consent — already wired via parent §7.5
+    const base = (this._consentByFile[fileId] ?? hasConsent(fileId));
+    if (!base) return false;
+    return hasEcgConsent(fileId);
+  }
+  _grantEcgConsent(fileId) {
+    if (!fileId) return;
+    grantEcgConsent(fileId);
+    // Bump cache so the primitive's `_disposeCaches()` runs before the
+    // waveform is first drawn (W6.1 / §7.7 mid-render toggle contract).
+    this._cacheRevision += 1;
+    lcarsAudio.play('navAcknowledge');
+    this.requestUpdate();
+  }
+
+  // 5.15.0-beta.1 (Story 5 / Geordi C8) — fold the 7-day HR-alerts counts into
+  // a compact `{high7d, low7d, irreg7d, lastEventIso, lastEventKind}` rollup
+  // for the ECG-strip footer's notifications segment.
+  _extractHrAlertsRollup(hrAlerts) {
+    if (!hrAlerts || !hrAlerts.variants || !hrAlerts.variants.length) return null;
+    const byLabel = (L) => hrAlerts.variants.find((vt) => String(vt.label || '').toUpperCase() === L);
+    const n = (v) => Number.isFinite(parseFloat(v?.value)) ? Math.round(parseFloat(v.value)) : 0;
+    const lastType = byLabel('LAST TYPE');
+    const lastAt = byLabel('LAST AT');
+    return {
+      high7d: n(byLabel('HIGH #')),
+      low7d:  n(byLabel('LOW #')),
+      irreg7d: n(byLabel('IRREG #')),
+      lastEventIso: lastAt && typeof lastAt.value === 'string' ? lastAt.value : null,
+      lastEventKind: lastType && typeof lastType.value === 'string' ? lastType.value : null,
+    };
   }
 
 

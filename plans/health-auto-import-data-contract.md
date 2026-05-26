@@ -257,7 +257,47 @@ When you change an attribute shape (rename `samples` → `hr_samples`, etc.), pl
 
 ---
 
-## 6. Contact
+## 7. v5.15.0 implementation feedback (post-handback — 2026.05.25)
+
+HAI v1.1.0 shipped all five asks cleanly — the LCARS Sickbay v5.15.0-beta.1 BIOMEDICAL tab is wired against the documented attribute shapes with no surprises. The renderer fully honors the three caveats in the handback (truncation degraded-mode, absent-vs-null, schema-probe). This section captures observations from wiring up the three new primitives so the HAI team has feedback for any future iteration.
+
+### 7.1 What worked perfectly
+
+- **`voltage_uv` as integer μV** — LTTB downsamples 15,360 samples (30 s × 512 Hz) to 1,200 visible points in ~3 ms. No floating-point precision concerns. Perfect.
+- **`route_compressed`** — built-in polyline encoder in HAI matched the reference Google decoder bit-for-bit; first attempt rendered. Encoded-only + ≤500 points kept the wire format tight (~3 KB). Worf S0-2 honored.
+- **`segments[]` stage normalization** — the lowercase `awake / rem / core / deep` vocabulary on the wire saved the renderer a normalization pass.
+- **`lcars_schema_version: "1"` schema probe** — clean three-state fallback ladder for every primitive: truncated → schema-mismatch → ok.
+
+### 7.2 Soft asks for future HAI revs (not blocking)
+
+These are **observations**, not formal asks. None of them block v5.15.0; each unlocks a smaller polish.
+
+| # | Soft ask | Why | Effort estimate |
+|---|---|---|---|
+| 7.2a | **Surface `source_devices` array on the ECG voltage entity** (it's currently on the sleep entity only — confirmed via the renderer wiring; LCARS sanitizes whichever string lands). | Sickbay footer reads "STATUS · NORMAL SINUS RHYTHM · 78 BPM · 30 SEC · Apple Watch Series 10 · 2026-05-23 08:17" — the device name comes from `source_devices[0]` when present. Without it, the footer omits the device. | XS — pass through existing HAE field |
+| 7.2b | **Per-stage total minutes attribute** on the sleep entity (`deep_min`, `rem_min`, `core_min`, `awake_min`). | When `segments[]` is absent (degraded mode), the renderer can't compute per-stage proportions and falls back to a single asleep-vs-awake stacked bar. Per-stage minutes would let the degraded bar show the full 4-stage breakdown — closer to the live hypnogram visual. | S — compute from segments at coordinator time |
+| 7.2c | **`ended_at` ISO timestamp on the workout entity**. | Derived today as `state + duration_s` inside the renderer, which assumes the workout was contiguous. Apple HealthKit sometimes pauses mid-workout; the derived end-time is off by the pause duration. Surfacing the true `endDate` would fix that. | XS — pass through HAE field |
+| 7.2d | **Document the exact HealthKit `classification` string vocabulary** in the handback. | The renderer covers `sinusRhythm / atrialFibrillation / highHeartRate / lowHeartRate / inconclusive`. If HAI ever surfaces additional values (Apple has added `notClassified` in newer watchOS versions), the renderer falls through to "NO READING". A documented vocabulary lets us add new colors proactively. | XS — docs only |
+
+### 7.3 What is NOT being asked for
+
+To keep this section short and the conversation healthy:
+
+- **History list** — still withdrawn per Worf S0-3. Not revisiting in v5.15.
+- **Raw `{lat,lon}[]`** — explicitly rejected per Worf S0-2. Encoded-only stays.
+- **Workout HR sample density >1 sample / 30 s** — current downsampling gives accurate zone math; raw 1 Hz would balloon the recorder for no visual benefit.
+- **Polling cadence change** — 10 min coordinator interval is correct.
+
+### 7.4 Documentation updates landed on the LCARS side
+
+For visibility:
+
+- [dashboards/SICKBAY.md](../dashboards/SICKBAY.md) gained a "Data Source #3 — Health Auto Import HACS integration" section with the **recorder exclusion YAML** for `sensor.*_ecg_voltage_measurements` (handback caveat #3) and a note about the **`(truncated — too large for entity attributes)` degraded-mode pill** (handback caveat #2).
+- The three new primitives' source files reference this handoff document directly in their header comments, so future contributors trace contract questions back here.
+
+---
+
+## 8. Contact
 
 Open an issue (or PR with shape questions) on:
 - **LCARS Lovelace Dashboard** repo · [github.com/htiel/LCARS-lovelace-dashboard](https://github.com/htiel/LCARS-lovelace-dashboard) — for clarification on what the LCARS renderer expects.

@@ -130,7 +130,12 @@ class LcarsHypnogram extends LitElement {
     const a = this.sleepAttrs && typeof this.sleepAttrs === 'object' ? this.sleepAttrs : null;
     const asleepM = a && Number.isFinite(a.time_asleep_min) ? a.time_asleep_min : null;
     const inBedM  = a && Number.isFinite(a.time_in_bed_min) ? a.time_in_bed_min : null;
-    const effPct  = a && Number.isFinite(a.efficiency_pct) ? a.efficiency_pct : null;
+    const effRaw  = a && Number.isFinite(a.efficiency_pct) ? a.efficiency_pct : null;
+    // 5.15.0-beta.2: HAI / Apple Health occasionally ship efficiency_pct > 100
+    // when a multi-day window is aggregated (or when time_asleep_min exceeds
+    // time_in_bed_min due to overlapping nap sessions). Clamp display at 100%
+    // — anything above is a data quality issue, not a renderable value.
+    const effPct = effRaw != null ? Math.min(100, Math.max(0, effRaw)) : null;
     const parts = ['SLEEP'];
     if (asleepM != null) parts.push(`${fmtDuration(asleepM)} ASLEEP`);
     if (inBedM  != null) parts.push(`${fmtDuration(inBedM)} IN BED`);

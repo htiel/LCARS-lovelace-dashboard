@@ -2,6 +2,16 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.15.0-beta.2] — Sickbay live-review fixes (Stories 5–6)
+
+Three live-review bugs caught after beta.1 install against the malick HAI v1.1.0 deployment.
+
+- **BP chart body visibility**: Withings persists one BP reading per day for most users, so `min == max == mean`. The beta.1 mean-only fallback rendered a 1-SVG-unit pill (~2 px) — invisible. Reworked: every day with a `mean` value now draws a visible 2.4-unit-tall horizontal tick (~5 px); days with a real range additionally draw a range bar with a 3-unit minimum height clamp. Visible regardless of intra-day variability.
+- **Workout-route NO DATA vs ROUTE UNAVAILABLE**: when the HAI workout entity is `state: unavailable`, the attrs dict still contains `{device_class, friendly_name}`. Beta.1 treated that as schema-mismatch (`WORKOUT · ROUTE UNAVAILABLE`). Now correctly falls to `WORKOUT · NO DATA` when no meaningful workout fields are present.
+- **Hypnogram efficiency > 100%**: HAI / Apple Health occasionally ship `efficiency_pct > 100` when a multi-day window aggregates or naps overlap with overnight sleep. Display value is now clamped at 100% in the header pill. Underlying data is not modified.
+
+Build clean.
+
 ## [5.15.0-beta.1] — Sickbay Stories 5–6 (HAI-dependent primitives)
 
 The v5.15 train arrives. Three new BIOMEDICAL primitives land once the Health Auto Import HACS integration (v1.1.0) ships the LCARS Sickbay Data Contract v2 attributes. Also rolls in two bugs caught during live review of v5.14.0-beta.2.

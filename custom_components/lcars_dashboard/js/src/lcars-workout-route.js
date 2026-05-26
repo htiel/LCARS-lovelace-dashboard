@@ -232,7 +232,18 @@ class LcarsWorkoutRoute extends LitElement {
       </section>`;
     }
     const a = this.workoutAttrs && typeof this.workoutAttrs === 'object' ? this.workoutAttrs : null;
-    if (!a) {
+    // 5.15.0-beta.2: HAI ships an empty `{device_class, friendly_name}` dict
+    // when the workout entity is `state: unavailable`. Treat the absence of
+    // EVERY meaningful workout field as NO DATA, not as schema-mismatch — the
+    // user has no workout, not a contract-version problem.
+    const hasAnyWorkoutSignal = a && (
+      'route_compressed' in a ||
+      'distance_m' in a ||
+      'duration_s' in a ||
+      'workout_type' in a ||
+      'lcars_schema_version' in a
+    );
+    if (!a || !hasAnyWorkoutSignal) {
       return html`<section role="figure" aria-label="Workout route">
         <div class="wr-empty">WORKOUT · NO DATA</div>
       </section>`;

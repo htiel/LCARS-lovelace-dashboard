@@ -235,61 +235,51 @@ class LcarsBpRange extends LitElement {
             const sys = d.byId[this.systolicEntity];
             const dia = d.byId[this.diastolicEntity];
             const parts = [];
-            // 5.15.0-beta.1 (S2-bp): some Withings configs persist only `mean`
-            // per day (no separate `min`/`max`). Fall back to drawing just the
-            // mean tick when ranges are absent — without this the entire chart
-            // body renders empty even though averages compute correctly.
-            const sysHasRange = sys && Number.isFinite(sys.min) && Number.isFinite(sys.max) && sys.max > sys.min;
+            // 5.15.0-beta.2 (S2-bp follow-up): Withings stores one BP reading
+            // per day for most users → min == max == mean. Range-only render
+            // produced 0 px bars. We always draw a visible mean-tick marker
+            // PLUS a range bar when a real range exists. Minimum visible bar
+            // height = 3 SVG units (~6 px on screen) so single readings stay
+            // legible.
+            const MIN_BAR_H = 3;
             const sysHasMean  = sys && Number.isFinite(sys.mean);
-            const diaHasRange = dia && Number.isFinite(dia.min) && Number.isFinite(dia.max) && dia.max > dia.min;
+            const sysHasRange = sys && Number.isFinite(sys.min) && Number.isFinite(sys.max) && (sys.max - sys.min) >= 0.5;
             const diaHasMean  = dia && Number.isFinite(dia.mean);
+            const diaHasRange = dia && Number.isFinite(dia.min) && Number.isFinite(dia.max) && (dia.max - dia.min) >= 0.5;
             if (sysHasRange) {
               const y1 = this._yFor(sys.max);
               const y2 = this._yFor(sys.min);
+              const h = Math.max(MIN_BAR_H, y2 - y1);
               parts.push(html`
                 <rect x=${cx - barW - 0.6} y=${y1}
-                      width=${barW} height=${Math.max(0.5, y2 - y1)}
+                      width=${barW} height=${h}
                       fill="var(--lcars-butterscotch, #ffaa66)"
                       rx="0.6"></rect>`);
-              if (sysHasMean) {
-                const ym = this._yFor(sys.mean);
-                parts.push(html`
-                  <line x1=${cx - barW - 1.2} x2=${cx - 0.4}
-                        y1=${ym} y2=${ym}
-                        stroke="var(--lcars-space-white, #f0f0ff)"
-                        stroke-width="0.5"></line>`);
-              }
-            } else if (sysHasMean) {
-              // Mean-only fallback: draw a single 1-unit tall pill at the mean
-              // position so the day is visually represented.
+            }
+            if (sysHasMean) {
+              // Always-visible mean tick (drawn even when range exists).
               const ym = this._yFor(sys.mean);
               parts.push(html`
-                <rect x=${cx - barW - 0.6} y=${ym - 0.5}
-                      width=${barW} height="1"
+                <rect x=${cx - barW - 1.6} y=${ym - 1.2}
+                      width=${barW + 2} height="2.4"
                       fill="var(--lcars-butterscotch, #ffaa66)"
                       rx="0.5"></rect>`);
             }
             if (diaHasRange) {
               const y1 = this._yFor(dia.max);
               const y2 = this._yFor(dia.min);
+              const h = Math.max(MIN_BAR_H, y2 - y1);
               parts.push(html`
                 <rect x=${cx + 0.6} y=${y1}
-                      width=${barW} height=${Math.max(0.5, y2 - y1)}
+                      width=${barW} height=${h}
                       fill="var(--lcars-ice, #a8d8ff)"
                       rx="0.6"></rect>`);
-              if (diaHasMean) {
-                const ym = this._yFor(dia.mean);
-                parts.push(html`
-                  <line x1=${cx + 0.4} x2=${cx + barW + 1.2}
-                        y1=${ym} y2=${ym}
-                        stroke="var(--lcars-space-white, #f0f0ff)"
-                        stroke-width="0.5"></line>`);
-              }
-            } else if (diaHasMean) {
+            }
+            if (diaHasMean) {
               const ym = this._yFor(dia.mean);
               parts.push(html`
-                <rect x=${cx + 0.6} y=${ym - 0.5}
-                      width=${barW} height="1"
+                <rect x=${cx + 0.6 - 1} y=${ym - 1.2}
+                      width=${barW + 2} height="2.4"
                       fill="var(--lcars-ice, #a8d8ff)"
                       rx="0.5"></rect>`);
             }

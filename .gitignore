@@ -21,4 +21,6 @@ localinfo/
 .DS_Store
 ._*
 
+# Agents symlink/junction + contents (OneDrive-linked, OS-specific)
+.github/agents
 .github/agents/

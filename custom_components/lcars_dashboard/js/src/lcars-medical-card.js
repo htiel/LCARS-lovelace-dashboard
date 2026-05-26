@@ -481,10 +481,14 @@ class LcarsMedicalCard extends LitElement {
                 ?aria-hidden=${this._audioMuted}>${fileId}</span>
         </div>
         <div class="focus-tabs" aria-label="Scan focus mode">
-          ${['summary', 'anatomical', 'biomedical'].map((m) => html`
+          ${[
+            { mode: 'summary', label: 'SUMMARY' },
+            { mode: 'anatomical', label: 'PHYSIOLOGY' },
+            { mode: 'biomedical', label: 'CARDIOLOGY' },
+          ].map(({ mode: m, label }) => html`
             <button class="focus-tab ${mode === m ? 'active' : ''}"
                     aria-pressed=${mode === m}
-                    @click=${() => this._setFocus(m)}>${m.toUpperCase()}</button>`)}
+                    @click=${() => this._setFocus(m)}>${label}</button>`)}
         </div>
         <div class="numerics" aria-hidden="true">
           ${cols.map((c) => html`<span class="numeric-col">${c}</span>`)}
@@ -515,9 +519,9 @@ class LcarsMedicalCard extends LitElement {
     `;
   }
 
-  // 5.3.1 — Anatomical scan: front + back silhouette pair. Back is a placeholder
-  // until back-anchor SVG paths are authored. v5.8.0-beta.1 (#119): formally deferred
-  // to 6.0 — ANTERIOR + BIOMEDICAL cover the operational use case.
+  // 5.3.1 — Anatomical scan: front silhouette plus conditioning panel.
+  // 5.15.x refinement: remove placeholder scan panes and reuse this tab for
+  // weight/sleep/workout surfaces to reduce BIOMEDICAL density.
   // 5.14.0-beta.1 (crew C2) — appends a tile strip filtered to the ANATOMICAL
   // kinds (body composition + mobility + fitness gauges). Kinds are routed via
   // `tabs[]` on MEDICAL_VITAL_CLASSES.
@@ -537,6 +541,8 @@ class LcarsMedicalCard extends LitElement {
     for (const slot of Object.keys(anchors)) {
       if (allowed.has(slot)) filtered[slot] = anchors[slot];
     }
+    const workoutRouteProps = this._workoutPropsFor(profileKey);
+    const sleepAttrs = this._sleepAttrsFor(profileKey);
     return html`
       <section class="scan-pair" aria-label="Anatomical front + back scan">
         <div class="scan-pane" aria-label="Anterior">
@@ -552,16 +558,39 @@ class LcarsMedicalCard extends LitElement {
             .ariaLabel=${'Anterior biofunction silhouette'}
           ></lcars-anatomical-silhouette>
         </div>
-        <div class="scan-pane placeholder" aria-label="Posterior">
-          <div class="scan-cap">POSTERIOR</div>
-          <div class="scan-pending">SCAN MODE PENDING — 6.0</div>
+        <div class="scan-pane" aria-label="Workout route">
+          <div class="scan-cap">LAST WORKOUT — ROUTE</div>
+          <lcars-workout-route
+            .workoutAttrs=${workoutRouteProps.workoutAttrs}
+            .startedIso=${workoutRouteProps.startedIso}
+            .endedIso=${workoutRouteProps.endedIso}
+            .cacheRevision=${this._cacheRevision}
+          ></lcars-workout-route>
+        </div>
+      </section>
+      <section class="scan-pair" aria-label="Sleep surfaces">
+        <div class="scan-pane">
+          <div class="scan-cap">SLEEP SCORE</div>
+          <lcars-sleep-score-bar
+            .score=${this._extractSleepScore(vitalsByKind)}
+            .contributors=${this._extractSleepContributors(vitalsByKind, profileKey)}
+            .cacheRevision=${this._cacheRevision}
+          ></lcars-sleep-score-bar>
+        </div>
+        <div class="scan-pane">
+          <div class="scan-cap">SLEEP STAGES — LAST NIGHT</div>
+          <lcars-hypnogram
+            .sleepAttrs=${sleepAttrs}
+            .suppressTimestamps=${true}
+            .cacheRevision=${this._cacheRevision}
+          ></lcars-hypnogram>
         </div>
       </section>
       ${this._renderTiles(vitalsByKind, profileKey, 'anatomical')}
     `;
   }
 
-  // 5.3.1 — Biomedical scan: ECG-style HR waveform + top-down silhouette placeholder.
+  // 5.3.1 — Biomedical scan: ECG-style HR waveform + cardiac detail panes.
   // ECG samples are derived directly from the present heart_rate vital (decorative
   // squarewave around the current value). No PHI leaves the closed shadow root.
   //
@@ -589,8 +618,6 @@ class LcarsMedicalCard extends LitElement {
     const personMaxHrEst = this._personMaxHrEstimate(profileKey);
     // 5.15.0-beta.1 (Stories 5–6) — HAI-dependent primitives.
     const ecgProps = this._ecgPropsFor(profileKey);
-    const sleepAttrs = this._sleepAttrsFor(profileKey);
-    const workoutRouteProps = this._workoutPropsFor(profileKey);
     // Two-layer consent: parent already gates the whole card on base consent;
     // the ECG waveform also requires the second-layer ECG consent. The fileId
     // comes from the parent's `_renderCard` scope; we re-derive it from the
@@ -611,9 +638,9 @@ class LcarsMedicalCard extends LitElement {
             <div class="scan-cap">HR ALERTS</div>
             ${this._renderHrAlertsInline(hrAlerts)}
           </div>` : html`
-          <div class="scan-pane placeholder" aria-label="Top-down">
-            <div class="scan-cap">TOP-DOWN</div>
-            <div class="scan-pending">SCAN MODE PENDING — 6.0</div>
+          <div class="scan-pane" aria-label="Cardiac alerts">
+            <div class="scan-cap">HR ALERTS</div>
+            <div class="scan-pending">NO CARDIAC ALERTS DATA</div>
           </div>`}
       </section>
       ${this._renderTiles(vitalsByKind, profileKey, 'biomedical')}
@@ -656,37 +683,6 @@ class LcarsMedicalCard extends LitElement {
             .personEntity=${this._personEntityFor(profileKey)}
             .cacheRevision=${this._cacheRevision}
           ></lcars-hr-zones>
-        </div>
-      </section>
-      <section class="scan-pair" aria-label="Workout route (Story 6b)">
-        <div class="scan-pane scan-pane-wide">
-          <div class="scan-cap">LAST WORKOUT — ROUTE</div>
-          <lcars-workout-route
-            .workoutAttrs=${workoutRouteProps.workoutAttrs}
-            .startedIso=${workoutRouteProps.startedIso}
-            .endedIso=${workoutRouteProps.endedIso}
-            .cacheRevision=${this._cacheRevision}
-          ></lcars-workout-route>
-        </div>
-      </section>
-      <section class="scan-pair" aria-label="Sleep score breakdown">
-        <div class="scan-pane scan-pane-wide">
-          <div class="scan-cap">SLEEP SCORE</div>
-          <lcars-sleep-score-bar
-            .score=${this._extractSleepScore(vitalsByKind)}
-            .contributors=${this._extractSleepContributors(vitalsByKind, profileKey)}
-            .cacheRevision=${this._cacheRevision}
-          ></lcars-sleep-score-bar>
-        </div>
-      </section>
-      <section class="scan-pair" aria-label="Sleep hypnogram (Story 6a)">
-        <div class="scan-pane scan-pane-wide">
-          <div class="scan-cap">SLEEP STAGES — LAST NIGHT</div>
-          <lcars-hypnogram
-            .sleepAttrs=${sleepAttrs}
-            .suppressTimestamps=${true}
-            .cacheRevision=${this._cacheRevision}
-          ></lcars-hypnogram>
         </div>
       </section>
     `;

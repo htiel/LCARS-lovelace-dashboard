@@ -2,6 +2,22 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.15.0-beta.5] — Sickbay focus-tab rebalance
+
+Layout rebalance pass based on live beta.4 review to reduce BIOMEDICAL density and remove deferred-mode chrome from active tabs.
+
+- **Tab labels updated for operational clarity**: focus tabs now read `SUMMARY / PHYSIOLOGY / CARDIOLOGY` (hash routing remains `summary / anatomical / biomedical` for backwards compatibility).
+- **Workout-route and sleep surfaces moved out of CARDIOLOGY** and into PHYSIOLOGY:
+  - `LAST WORKOUT — ROUTE`
+  - `SLEEP SCORE`
+  - `SLEEP STAGES — LAST NIGHT`
+- **Deferred placeholder panels removed** from active layouts:
+  - ANATOMICAL/PHYSIOLOGY no longer shows `SCAN MODE PENDING — 6.0` for posterior.
+  - CARDIOLOGY no longer shows top-down scan placeholder; when no alerts are present it now renders `NO CARDIAC ALERTS DATA`.
+- **CARDIOLOGY remains focused on cardiac and cardio-respiratory surfaces**: ECG strip, HR alerts, BP 30-day range, HR zones, and the biomedical tile strip.
+
+Build clean.
+
 ## [5.15.0-beta.4] — SVG namespace fix (CRITICAL)
 
 Root cause for the empty BP chart, ECG waveform, hypnogram timeline, and workout-route map across beta.1 through beta.3:

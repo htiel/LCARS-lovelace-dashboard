@@ -1,5 +1,5 @@
 DOMAIN = "lcars_dashboard"
-VERSION = "5.15.0-beta.6"
+VERSION = "5.15.0-beta.7"
 
 # Configuration keys
 CONF_DASHBOARDS = "dashboards"
@@ -38,3 +38,5 @@ if MAX_DASHBOARDS != len(DASHBOARD_REGISTRY):
     raise RuntimeError(
         f"MAX_DASHBOARDS drift: const={MAX_DASHBOARDS} registry={len(DASHBOARD_REGISTRY)}"
     )
+
+

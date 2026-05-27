@@ -67,6 +67,14 @@ const fmtClock = (iso) => {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
+const MONTHS_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const fmtDate = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return '';
+  return `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
+};
+
 const fmtDistance = (m) => {
   if (!Number.isFinite(m) || m <= 0) return '';
   if (m >= 1000) return `${(m / 1000).toFixed(2)} KM`;
@@ -100,6 +108,8 @@ class LcarsWorkoutRoute extends LitElement {
       workoutAttrs: { type: Object },
       startedIso: { type: String },
       endedIso: { type: String },
+      // 5.15.0-beta.7 — recent workouts list for multi-day display
+      workoutHistory: { type: Array },
       cacheRevision: { type: Number },
     };
   }
@@ -116,6 +126,7 @@ class LcarsWorkoutRoute extends LitElement {
     this.workoutAttrs = null;
     this.startedIso = null;
     this.endedIso = null;
+    this.workoutHistory = null;
     this.cacheRevision = 0;
     this._pointsCache = null;
     this._pointsCacheKey = null;
@@ -218,11 +229,44 @@ class LcarsWorkoutRoute extends LitElement {
   _renderFooter() {
     const s = fmtClock(this.startedIso);
     const e = fmtClock(this.endedIso);
-    if (!s && !e) return '';
+    const date = fmtDate(this.startedIso);
+    if (!s && !e && !date) return '';
     return html`<div class="wr-footer" data-medical="phi">
+      ${date ? html`<span class="wr-footer-date">${date}</span>` : ''}
       ${s ? html`<span>START ${s}</span>` : ''}
       ${e ? html`<span>END ${e}</span>` : ''}
     </div>`;
+  }
+
+  // 5.15.0-beta.7 — compact list of recent workouts below the main panel.
+  // Shows up to 7 prior workouts (index 1+ from the history array; index 0 is
+  // the same workout currently displayed as the primary content).
+  _renderHistoryList() {
+    const hist = this.workoutHistory;
+    if (!Array.isArray(hist) || hist.length < 2) return '';
+    const rows = hist.slice(1, 8);
+    if (!rows.length) return '';
+    return html`
+      <div class="wr-history">
+        <div class="wr-history-cap">RECENT WORKOUTS</div>
+        ${rows.map((item) => {
+          const a = item.workoutAttrs;
+          const type = a && typeof a.workout_type === 'string'
+            ? a.workout_type.toUpperCase() : 'WORKOUT';
+          const dist = a ? fmtDistance(Number(a.distance_m)) : '';
+          const dur  = a ? fmtDurationS(Number(a.duration_s)) : '';
+          const date = fmtDate(item.startedIso);
+          const time = fmtClock(item.startedIso);
+          const stats = [dist, dur].filter(Boolean).join(' · ');
+          return html`
+            <div class="wr-hist-row" data-medical="phi">
+              <span class="wr-hist-date">${date} ${time}</span>
+              <span class="wr-hist-type">${type}</span>
+              ${stats ? html`<span class="wr-hist-stats">${stats}</span>` : ''}
+            </div>`;
+        })}
+      </div>
+    `;
   }
 
   render() {
@@ -255,6 +299,7 @@ class LcarsWorkoutRoute extends LitElement {
         ${this._renderHeader(distM, durS)}
         <div class="wr-empty">WORKOUT · ROUTE UNAVAILABLE</div>
         ${this._renderFooter()}
+        ${this._renderHistoryList()}
       </section>`;
     }
     const VIEW = 200;
@@ -265,6 +310,7 @@ class LcarsWorkoutRoute extends LitElement {
         ${this._renderHeader(distM, durS)}
         <div class="wr-empty">WORKOUT · NO ROUTE</div>
         ${this._renderFooter()}
+        ${this._renderHistoryList()}
       </section>`;
     }
     // Decorative LCARS dot grid: 6×6 thin lines
@@ -301,6 +347,7 @@ class LcarsWorkoutRoute extends LitElement {
         </svg>
       </div>
       ${this._renderFooter()}
+      ${this._renderHistoryList()}
     </section>`;
   }
 
@@ -341,6 +388,38 @@ class LcarsWorkoutRoute extends LitElement {
         display: flex; gap: 0.9rem;
         font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
         color: var(--lcars-gray, #aaaadd); font-variant-numeric: tabular-nums;
+      }
+      .wr-footer-date {
+        color: var(--lcars-cyan, #99cccc);
+        font-weight: 600;
+      }
+      /* 5.15.0-beta.7 — recent workouts history list */
+      .wr-history {
+        display: flex; flex-direction: column; gap: 0.2rem;
+        margin-top: 0.35rem;
+        border-top: 1px solid rgba(153,204,255,0.12);
+        padding-top: 0.35rem;
+      }
+      .wr-history-cap {
+        font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
+        color: var(--lcars-gray, #888899); margin-bottom: 0.15rem;
+      }
+      .wr-hist-row {
+        display: flex; align-items: baseline; gap: 0.5rem;
+        font-size: 0.7rem; letter-spacing: 0.08em;
+        padding: 0.15rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+      }
+      .wr-hist-row:last-child { border-bottom: none; }
+      .wr-hist-date {
+        font-size: 0.65rem; color: var(--lcars-cyan, #99cccc);
+        font-variant-numeric: tabular-nums; white-space: nowrap;
+        min-width: 7.5ch;
+      }
+      .wr-hist-type { color: var(--lcars-text, #ccccee); flex: 1; }
+      .wr-hist-stats {
+        font-size: 0.65rem; color: var(--lcars-gray, #aaaadd);
+        font-variant-numeric: tabular-nums; white-space: nowrap;
       }
     `;
   }

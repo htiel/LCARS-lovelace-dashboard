@@ -50,6 +50,14 @@ const fmtClock = (iso) => {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
+const MONTHS_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const fmtDate = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return '';
+  return `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
+};
+
 const fmtDuration = (mins) => {
   if (!Number.isFinite(mins) || mins < 0) return '';
   const h = Math.floor(mins / 60);
@@ -66,6 +74,8 @@ class LcarsHypnogram extends LitElement {
       //              sleep_score?, night_start?, night_end?, lcars_schema_version }
       sleepAttrs: { type: Object },
       suppressTimestamps: { type: Boolean },
+      // 5.15.0-beta.7 — recent nights list for multi-day display
+      sleepHistory: { type: Array },
       cacheRevision: { type: Number },
     };
   }
@@ -80,6 +90,7 @@ class LcarsHypnogram extends LitElement {
     super();
     this.sleepAttrs = null;
     this.suppressTimestamps = true;
+    this.sleepHistory = null;
     this.cacheRevision = 0;
     this._segmentsCache = null;
     this._segmentsCacheKey = null;
@@ -140,6 +151,10 @@ class LcarsHypnogram extends LitElement {
     if (asleepM != null) parts.push(`${fmtDuration(asleepM)} ASLEEP`);
     if (inBedM  != null) parts.push(`${fmtDuration(inBedM)} IN BED`);
     if (effPct  != null) parts.push(`${Math.round(effPct)}% EFFICIENCY`);
+    // 5.15.0-beta.7 — show night date (e.g. “MAY 23”) from night_end or night_start
+    const nightIso = a && (a.night_end || a.night_start);
+    const nightDate = fmtDate(nightIso);
+    if (nightDate) parts.push(nightDate);
     if (!this.suppressTimestamps && a && a.night_start && a.night_end) {
       parts.push(`${fmtClock(a.night_start)}–${fmtClock(a.night_end)}`);
     }
@@ -212,6 +227,34 @@ class LcarsHypnogram extends LitElement {
     `;
   }
 
+  // 5.15.0-beta.7 — compact table of recent nights below the main hypnogram.
+  // Shows up to 7 prior nights (index 1+ from the history array).
+  _renderHistoryRows() {
+    const hist = this.sleepHistory;
+    if (!Array.isArray(hist) || hist.length < 2) return '';
+    const rows = hist.slice(1, 8);
+    if (!rows.length) return '';
+    return html`
+      <div class="hp-history">
+        <div class="hp-history-cap">RECENT NIGHTS</div>
+        ${rows.map((item) => {
+          const a = item.sleepAttrs;
+          if (!a) return '';
+          const asleepM = Number.isFinite(a.time_asleep_min) ? a.time_asleep_min : null;
+          const nightIso = a.night_end || a.night_start || item.recordedAt;
+          const date = fmtDate(nightIso);
+          const time = fmtClock(nightIso);
+          const dur  = asleepM != null ? fmtDuration(asleepM) : null;
+          return html`
+            <div class="hp-hist-row" data-medical="phi">
+              <span class="hp-hist-date">${date}${time ? html` <span class="hp-hist-time">${time}</span>` : ''}</span>
+              ${dur ? html`<span class="hp-hist-dur">${dur} ASLEEP</span>` : ''}
+            </div>`;
+        })}
+      </div>
+    `;
+  }
+
   render() {
     if (this._isTruncated()) {
       return html`<section role="figure" aria-label="Sleep hypnogram">
@@ -222,6 +265,7 @@ class LcarsHypnogram extends LitElement {
     if (!this.sleepAttrs) {
       return html`<section role="figure" aria-label="Sleep hypnogram">
         <div class="hp-empty">SLEEP · NO DATA</div>
+        ${this._renderHistoryRows()}
       </section>`;
     }
     // Schema-mismatch: HAI didn't ship the v2 contract. Fall back to totals-only
@@ -232,6 +276,7 @@ class LcarsHypnogram extends LitElement {
       return html`<section role="figure" aria-label="Sleep hypnogram">
         ${this._renderHeader()}
         ${stacked || html`<div class="hp-empty">SLEEP · WAVEFORM UNAVAILABLE</div>`}
+        ${this._renderHistoryRows()}
       </section>`;
     }
     const segs = this._normalizedSegments();
@@ -240,11 +285,13 @@ class LcarsHypnogram extends LitElement {
       return html`<section role="figure" aria-label="Sleep hypnogram">
         ${this._renderHeader()}
         ${stacked || html`<div class="hp-empty">SLEEP · NO SEGMENTS</div>`}
+        ${this._renderHistoryRows()}
       </section>`;
     }
     return html`<section role="figure" aria-label="Sleep hypnogram">
       ${this._renderHeader()}
       ${this._renderTimeline(segs)}
+      ${this._renderHistoryRows()}
     </section>`;
   }
 
@@ -285,6 +332,36 @@ class LcarsHypnogram extends LitElement {
       .hp-fallback-legend {
         font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
         color: var(--lcars-gray, #888899);
+      }
+      /* 5.15.0-beta.7 — recent nights history list */
+      .hp-history {
+        display: flex; flex-direction: column; gap: 0.2rem;
+        margin-top: 0.35rem;
+        border-top: 1px solid rgba(153,204,255,0.12);
+        padding-top: 0.35rem;
+      }
+      .hp-history-cap {
+        font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
+        color: var(--lcars-gray, #888899); margin-bottom: 0.15rem;
+      }
+      .hp-hist-row {
+        display: flex; align-items: baseline; gap: 0.6rem;
+        font-size: 0.7rem; letter-spacing: 0.08em;
+        padding: 0.15rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+      }
+      .hp-hist-row:last-child { border-bottom: none; }
+      .hp-hist-date {
+        font-size: 0.65rem; color: var(--lcars-violet-creme, #cca0cc);
+        font-variant-numeric: tabular-nums; white-space: nowrap;
+        min-width: 6ch;
+      }
+      .hp-hist-time {
+        color: var(--lcars-gray, #aaaadd);
+      }
+      .hp-hist-dur {
+        color: var(--lcars-text, #ccccee);
+        font-variant-numeric: tabular-nums;
       }
     `;
   }

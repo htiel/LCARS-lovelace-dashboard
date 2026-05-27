@@ -123,6 +123,9 @@ class LcarsMedicalCard extends LitElement {
       _focusMode: { type: String },   // 5.3.1 — 'summary' | 'anatomical' | 'biomedical'
       _audioMuted: { type: Boolean }, // #169 — mirrors lcarsAudio.isMuted to gate PHI aria-hidden
       _restMode: { type: String },    // 5.8.0-beta.1 (Worf Gap E) — 'off' | 'rest' | 'sick'
+      // 5.15.0-beta.7 — multi-day history for PHYSIOLOGY tab panels
+      _workoutHistory: { type: Array },
+      _sleepHistory: { type: Array },
     };
   }
 
@@ -149,6 +152,11 @@ class LcarsMedicalCard extends LitElement {
     // The primitives wipe their LTTB / recorder / contributor caches on each
     // bump so PHI from a prior profile/consent state cannot survive a switch.
     this._cacheRevision = 0;
+    // 5.15.0-beta.7 — history load state for multi-day panels
+    this._workoutHistory = null;
+    this._sleepHistory = null;
+    this._historyLoadKey = '';
+    this._historyLoading = false;
     this._onHashChange = () => {
       const next = this._readFocusFromHash();
       if (next !== this._focusMode) {
@@ -193,7 +201,11 @@ class LcarsMedicalCard extends LitElement {
 
   _readFocusFromHash() {
     const h = (window.location.hash || '').replace(/^#/, '').toLowerCase();
-    if (h === 'anatomical' || h === 'biomedical') return h;
+    // 5.15.0-beta.7 — accept display-name hashes (physiology/cardiology) as aliases
+    // for the internal mode names (anatomical/biomedical). Back-compat: old anchors
+    // (anatomical/biomedical) still work so existing bookmarks aren't broken.
+    if (h === 'anatomical' || h === 'physiology') return 'anatomical';
+    if (h === 'biomedical' || h === 'cardiology') return 'biomedical';
     return 'summary';
   }
 
@@ -203,8 +215,11 @@ class LcarsMedicalCard extends LitElement {
     if (mode === 'summary') {
       // Drop the fragment cleanly without scrolling.
       history.replaceState(null, '', window.location.pathname + window.location.search);
-    } else {
-      history.replaceState(null, '', `#${mode}`);
+    } else if (mode === 'anatomical') {
+      // 5.15.0-beta.7 — push the visual label as the hash, not the internal mode
+      history.replaceState(null, '', '#physiology');
+    } else if (mode === 'biomedical') {
+      history.replaceState(null, '', '#cardiology');
     }
     lcarsAudio.play('navAcknowledge');
     this.requestUpdate();
@@ -543,6 +558,12 @@ class LcarsMedicalCard extends LitElement {
     }
     const workoutRouteProps = this._workoutPropsFor(profileKey);
     const sleepAttrs = this._sleepAttrsFor(profileKey);
+    // 5.15.0-beta.7 — kick off history load (no-op if already running/cached)
+    this._maybeLoadHistory(profileKey);
+    // Derive recordedAt for sleep score from the night_end attribute or sensor last_changed
+    const sleepAnalysisId = this._sleepAnalysisEntityFor(profileKey);
+    const sleepSt = sleepAnalysisId && this._hass && this._hass.states && this._hass.states[sleepAnalysisId];
+    const sleepRecordedAt = (sleepSt && sleepAttrs && sleepAttrs.night_end) || (sleepSt && sleepSt.last_changed) || null;
     return html`
       <section class="scan-pair" aria-label="Anatomical front + back scan">
         <div class="scan-pane" aria-label="Anterior">
@@ -564,6 +585,7 @@ class LcarsMedicalCard extends LitElement {
             .workoutAttrs=${workoutRouteProps.workoutAttrs}
             .startedIso=${workoutRouteProps.startedIso}
             .endedIso=${workoutRouteProps.endedIso}
+            .workoutHistory=${this._workoutHistory}
             .cacheRevision=${this._cacheRevision}
           ></lcars-workout-route>
         </div>
@@ -574,6 +596,8 @@ class LcarsMedicalCard extends LitElement {
           <lcars-sleep-score-bar
             .score=${this._extractSleepScore(vitalsByKind)}
             .contributors=${this._extractSleepContributors(vitalsByKind, profileKey)}
+            .recordedAt=${sleepRecordedAt}
+            .scoreHistory=${this._sleepHistory}
             .cacheRevision=${this._cacheRevision}
           ></lcars-sleep-score-bar>
         </div>
@@ -581,7 +605,8 @@ class LcarsMedicalCard extends LitElement {
           <div class="scan-cap">SLEEP STAGES — LAST NIGHT</div>
           <lcars-hypnogram
             .sleepAttrs=${sleepAttrs}
-            .suppressTimestamps=${true}
+            .sleepHistory=${this._sleepHistory}
+            .suppressTimestamps=${false}
             .cacheRevision=${this._cacheRevision}
           ></lcars-hypnogram>
         </div>
@@ -973,6 +998,64 @@ class LcarsMedicalCard extends LitElement {
       }
     }
     return { workoutAttrs: attrs, startedIso, endedIso };
+  }
+
+  // 5.15.0-beta.7 — load 14-day HA state history for the workout + sleep sensors.
+  // Triggers a fire-and-forget async fetch keyed by entity IDs; re-renders when
+  // data arrives. Called from _renderAnatomicalZone so it only runs while the
+  // PHYSIOLOGY tab is active.
+  _maybeLoadHistory(profileKey) {
+    if (!this._hass) return;
+    const workoutId = this._workoutEntityFor(profileKey);
+    const sleepId = this._sleepAnalysisEntityFor(profileKey);
+    const key = `${workoutId || ''}|${sleepId || ''}`;
+    if (key === '|' || key === this._historyLoadKey || this._historyLoading) return;
+    this._loadHistory(workoutId, sleepId, key);
+  }
+
+  async _loadHistory(workoutId, sleepId, key) {
+    if (!this._hass || this._historyLoading) return;
+    this._historyLoading = true;
+    this._historyLoadKey = key;
+    try {
+      const start = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+      const fetchOne = async (eid) => {
+        if (!eid) return [];
+        try {
+          const raw = await this._hass.callApi(
+            'GET',
+            `history/period/${start}?filter_entity_id=${encodeURIComponent(eid)}&minimal_response=0`
+          );
+          return (raw && Array.isArray(raw[0])) ? raw[0] : [];
+        } catch (_) { return []; }
+      };
+      const [wItems, sItems] = await Promise.all([
+        fetchOne(workoutId),
+        fetchOne(sleepId),
+      ]);
+      this._workoutHistory = wItems
+        .filter((s) => s && s.attributes && s.attributes.lcars_schema_version === '1'
+                    && typeof s.state === 'string' && s.state !== 'unavailable' && s.state !== 'unknown')
+        .map((s) => {
+          const startedIso = s.state;
+          const attrs = s.attributes;
+          let endedIso = null;
+          const t = Date.parse(startedIso);
+          if (Number.isFinite(t) && Number.isFinite(attrs.duration_s)) {
+            endedIso = new Date(t + attrs.duration_s * 1000).toISOString();
+          }
+          return { startedIso, endedIso, workoutAttrs: attrs };
+        })
+        .reverse();   // most recent first
+      this._sleepHistory = sItems
+        .filter((s) => s && s.attributes && s.attributes.lcars_schema_version === '1'
+                    && s.state !== 'unavailable' && s.state !== 'unknown')
+        .map((s) => ({ sleepAttrs: s.attributes, recordedAt: s.last_changed }))
+        .reverse();   // most recent first
+      this.requestUpdate();
+    } finally {
+      this._historyLoading = false;
+    }
   }
 
   // 5.15.0-beta.1 (Story 5 / Worf S0-4 §7.7) — resolve the AND-of base-consent

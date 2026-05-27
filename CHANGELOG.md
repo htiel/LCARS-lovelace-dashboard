@@ -2,6 +2,26 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.15.0-beta.7] — Sickbay PHYSIOLOGY multi-day history + hash fix
+
+### Bug fix
+- **Hash navigation now matches tab labels**: navigating to `#physiology` or `#cardiology` correctly activates the PHYSIOLOGY or CARDIOLOGY tab. Clicking a tab now writes the display-name hash (`#physiology`, `#cardiology`) instead of the internal mode names. Back-compat: existing `#anatomical` and `#biomedical` bookmarks still work.
+
+### Feature: PHYSIOLOGY tab — multi-day history and timestamps
+- **Workout panel** (`LAST WORKOUT — ROUTE`):
+  - Footer now shows the calendar date (e.g. `MAY 21`) alongside `START`/`END` clock times.
+  - A **RECENT WORKOUTS** table appears below the main workout block when HA history contains prior workouts (up to 7 previous sessions, date · type · distance · duration per row).
+- **Sleep Stages panel** (`SLEEP STAGES — LAST NIGHT`):
+  - Header now includes the night's calendar date (e.g. `MAY 23`) derived from `night_end` / `night_start`.
+  - Night start/end clock times now shown (was suppressed).
+  - A **RECENT NIGHTS** table appears below showing up to 7 prior nights (date · asleep duration).
+- **Sleep Score panel** (`SLEEP SCORE`):
+  - A `RECORDED MAY XX` line appears below the contributor breakdown.
+  - A **RECENT NIGHTS** table shows up to 7 prior nights (date · score · asleep duration) using `_bandFor` color coding.
+- History data is fetched once from HA's 14-day state history and cached per entity-ID pair; re-fetched automatically when the active entity set changes.
+
+Build clean.
+
 ## [5.15.0-beta.6] — Sickbay cardiac panel refocus
 
 Follow-up pass on the beta.5 CARDIOLOGY tab to make the cardiac surfaces reflect real data hierarchy instead of mixing decorative and real ECG content.

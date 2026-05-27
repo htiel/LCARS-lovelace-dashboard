@@ -36,11 +36,32 @@ function _bandFor(score) {
   return                     { label: 'ALERT',     color: 'var(--lcars-alert, #cc6666)' };
 }
 
+const MONTHS_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const fmtDate = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return '';
+  return `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
+};
+
+const fmtDuration = (mins) => {
+  if (!Number.isFinite(mins) || mins < 0) return '';
+  const h = Math.floor(mins / 60);
+  const m = Math.round(mins - h * 60);
+  if (h === 0) return `${m}M`;
+  if (m === 0) return `${h}H`;
+  return `${h}H ${m}M`;
+};
+
 class LcarsSleepScoreBar extends LitElement {
   static get properties() {
     return {
       score: { type: Number },
       contributors: { type: Object },
+      // 5.15.0-beta.7 — date the current reading was recorded (ISO string)
+      recordedAt: { type: String },
+      // 5.15.0-beta.7 — recent nights [{sleepAttrs, recordedAt}] for trend display
+      scoreHistory: { type: Array },
     };
   }
 
@@ -54,6 +75,8 @@ class LcarsSleepScoreBar extends LitElement {
     super();
     this.score = null;
     this.contributors = null;
+    this.recordedAt = null;
+    this.scoreHistory = null;
   }
 
   _disposeCaches() { /* W6 no-op stub */ }
@@ -145,7 +168,44 @@ class LcarsSleepScoreBar extends LitElement {
                 </div>`;
             })}
           </div>` : ''}
+        ${this._renderRecordedDate()}
+        ${this._renderScoreHistory()}
       </div>`;
+  }
+
+  _renderRecordedDate() {
+    const date = fmtDate(this.recordedAt);
+    if (!date) return '';
+    return html`<div class="ssb-recorded-date" data-medical="phi">RECORDED ${date}</div>`;
+  }
+
+  // 5.15.0-beta.7 — compact score trend table (prior nights, index 1+).
+  _renderScoreHistory() {
+    const hist = this.scoreHistory;
+    if (!Array.isArray(hist) || hist.length < 2) return '';
+    const rows = hist.slice(1, 8);
+    if (!rows.length) return '';
+    return html`
+      <div class="ssb-history">
+        <div class="ssb-history-cap">RECENT NIGHTS</div>
+        ${rows.map((item) => {
+          const a = item.sleepAttrs;
+          if (!a) return '';
+          const score = Number.isFinite(a.sleep_score) ? Math.round(a.sleep_score) : null;
+          const nightIso = a.night_end || a.night_start || item.recordedAt;
+          const date = fmtDate(nightIso);
+          const asleepM = Number.isFinite(a.time_asleep_min) ? a.time_asleep_min : null;
+          const dur = asleepM != null ? fmtDuration(asleepM) : null;
+          const band = score != null ? _bandFor(score) : null;
+          return html`
+            <div class="ssb-hist-row" data-medical="phi">
+              <span class="ssb-hist-date">${date}</span>
+              ${score != null ? html`<span class="ssb-hist-score" style=${band ? `color:${band.color}` : ''}>${score}</span>` : ''}
+              ${dur ? html`<span class="ssb-hist-dur">${dur}</span>` : ''}
+            </div>`;
+        })}
+      </div>
+    `;
   }
 
   static get styles() {
@@ -254,6 +314,40 @@ class LcarsSleepScoreBar extends LitElement {
         text-transform: uppercase;
         color: var(--lcars-gray, #888899);
         text-align: center;
+      }
+      /* 5.15.0-beta.7 — recorded date + score history */
+      .ssb-recorded-date {
+        font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase;
+        color: var(--lcars-gray, #888899); text-align: right;
+        margin-top: -0.2rem;
+      }
+      .ssb-history {
+        display: flex; flex-direction: column; gap: 0.15rem;
+        border-top: 1px solid rgba(153,204,255,0.12);
+        padding-top: 0.35rem; margin-top: 0.1rem;
+      }
+      .ssb-history-cap {
+        font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
+        color: var(--lcars-gray, #888899); margin-bottom: 0.15rem;
+      }
+      .ssb-hist-row {
+        display: flex; align-items: baseline; gap: 0.6rem;
+        font-size: 0.7rem; letter-spacing: 0.08em;
+        padding: 0.12rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+      }
+      .ssb-hist-row:last-child { border-bottom: none; }
+      .ssb-hist-date {
+        font-size: 0.65rem; color: var(--lcars-african-violet, #cc99ff);
+        font-variant-numeric: tabular-nums; min-width: 5.5ch; white-space: nowrap;
+      }
+      .ssb-hist-score {
+        font-weight: 700; font-variant-numeric: tabular-nums;
+        min-width: 3ch; text-align: right;
+      }
+      .ssb-hist-dur {
+        font-size: 0.65rem; color: var(--lcars-gray, #aaaadd);
+        font-variant-numeric: tabular-nums;
       }
     `;
   }

@@ -702,7 +702,7 @@ export function classifyVital(state, entityRegistryEntry, deviceRegistryEntry = 
   // 5.13.x — HealthyApps MQTT bridge: HR notification sub-system. Must precede
   // heart_rate matchers so `_latest_hr_notification_peak_hr` and friends route
   // to the alerts composite instead of being silently dropped or misclassified.
-  if (/_hr_(high|low|irregular)_notifications_today$|_hr_irregular_rhythm_today$|_latest_hr_notification_(type|peak_hr|threshold|duration|avg_hrv|timestamp)$|_last_irregular_rhythm$/.test(lid)) {
+  if (/_hr_(high|low|irregular)_notifications_today$|_hr_irregular_rhythm_today$|_heart_notifications_7d$|_heart_notification_(last_kind|last_event|last_at)$|_latest_hr_notification_(type|peak_hr|threshold|duration|avg_hrv|timestamp)$|_last_irregular_rhythm$/.test(lid)) {
     return withLabel({ kind: 'hr_notifications' });
   }
   // 5.13.x — HealthyApps MQTT bridge: telemetry-link freshness sensors. These

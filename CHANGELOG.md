@@ -2,6 +2,12 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.15.0-beta.8] — HR notification entity-name fix
+
+- **HR alerts now match the new HealthyApps entity names**: the medical classifier recognizes `heart_notification_last_kind`, `heart_notification_last_event`, and `heart_notifications_7d` in addition to the older `hr_*` suffixes, so the CARDIOLOGY HR Alerts composite can render the loaded data.
+
+Build clean.
+
 ## [5.15.0-beta.7] — Sickbay PHYSIOLOGY multi-day history + hash fix
 
 ### Bug fix

@@ -14,6 +14,15 @@ All notable changes to the LCARS Dashboard project are documented here.
 
 Build clean.
 
+## [5.15.0-beta.9] — Cardiac Alerts Data Pipeline
+
+### Bug fix
+- **CARDIOLOGY HR Alerts panel no longer shows empty state**: regenerated the Health Auto Import seed with real HR-notification data so the panel renders actual counts, types, timestamps, and metadata instead of placeholders. Previous releases had the UI classifier in place; this release completes the data pipeline.
+  - Updated the JS and PowerShell seed builders to aggregate HR alerts from the raw export rather than using placeholder values.
+  - HR notification counts, types, timestamps, and metadata now derive from actual health-export records (latest detected irregular heart-rate notification 2025-12-16).
+
+Build clean.
+
 ## [5.15.0-beta.8] — HR notification entity-name fix
 
 - **HR alerts now match the new HealthyApps entity names**: the medical classifier recognizes `heart_notification_last_kind`, `heart_notification_last_event`, and `heart_notifications_7d` in addition to the older `hr_*` suffixes, so the CARDIOLOGY HR Alerts composite can render the loaded data.

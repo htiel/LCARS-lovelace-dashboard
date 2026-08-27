@@ -285,9 +285,9 @@ If you're upgrading from LCARS Dashboard 4.x:
 | Layer | Technology |
 |-------|-----------|
 | HA Integration | Python custom component (`lcars_dashboard`) — config flow, WebSocket API, YAML processing |
-| Dashboards | 6 independent Lovelace YAML panels, each with dedicated layout component and entity classifier |
-| Frontend | Lit Element v2 web components — 12 extracted panel elements + 6 layout components + shared base class |
-| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~951 KiB), output to `js/dist/` |
+| Dashboards | 9 independent Lovelace YAML panels, each with dedicated layout component and entity classifier |
+| Frontend | Lit Element v2 web components — 12 extracted panel elements + 9 layout components + shared base class |
+| Build | Webpack 5 → single `lcars-dashboard.js` bundle (~1.3 MiB), output to `js/dist/` |
 | Styling | 3-tier CSS composition: base variables → component shadow DOM → panel-specific modules |
 | Components | 7 shared components: `<lcars-panel-frame>`, `<lcars-sensor-row>`, `<lcars-section-divider>`, `<lcars-option-strip>`, `<lcars-setpoint>`, `<lcars-segmented-bar>`, `<lcars-summary-badge>` |
 | Communication | WebSocket API (35+ commands) + window custom events |
@@ -299,7 +299,7 @@ If you're upgrading from LCARS Dashboard 4.x:
 config_flow.py                    const.py                        load_dashboard.py
 ┌──────────────┐                 ┌──────────────────┐            ┌─────────────────────┐
 │ Options Flow │──── saves ────→ │ DASHBOARD_REGISTRY│──── maps → │ _register_single_   │
-│ Step 1: Pick │                 │ 6 dashboard defs  │            │  dashboard()         │
+│ Step 1: Pick │                 │ 9 dashboard defs  │            │  dashboard()         │
 │ Step 2: Name │                 └──────────────────┘            │                     │
 └──────────────┘                                                  │ → LovelaceYAML panel│
         ↓                                                         │ → Sidebar entry     │

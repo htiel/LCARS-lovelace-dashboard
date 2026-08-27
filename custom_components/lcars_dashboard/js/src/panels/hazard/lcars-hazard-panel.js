@@ -9,7 +9,7 @@
  */
 import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
-import { showMoreInfo, lcarsLog } from '../../lcars-helpers.js';
+import { showMoreInfo, lcarsLog, defineLcars } from '../../lcars-helpers.js';
 import { lcarsFocusRing } from '../../lcars-styles.js';
 import { hazardPanelStyles } from './lcars-hazard-panel-styles.js';
 
@@ -201,4 +201,4 @@ class LcarsHazardPanel extends LcarsBasePanel {
   }
 }
 
-customElements.define('lcars-hazard-panel', LcarsHazardPanel);
+defineLcars('lcars-hazard-panel', LcarsHazardPanel);

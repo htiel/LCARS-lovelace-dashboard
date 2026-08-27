@@ -3,7 +3,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { fireEvent } from './lcars-helpers.js';
+import { fireEvent, defineLcars } from './lcars-helpers.js';
 import { showErrorToast } from './lcars-toast.js';
 
 
@@ -128,5 +128,5 @@ import { showErrorToast } from './lcars-toast.js';
   }
 
   if (!customElements.get('lcars-edit-more-page-card')) {
-    customElements.define('lcars-edit-more-page-card', LcarsEditMorePageCard);
+    defineLcars('lcars-edit-more-page-card', LcarsEditMorePageCard);
   }

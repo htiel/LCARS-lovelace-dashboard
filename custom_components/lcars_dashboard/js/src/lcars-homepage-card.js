@@ -16,7 +16,7 @@
 import { LitElement, html, css } from 'lit-element';
 import { svg, render } from 'lit-html';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { getHass, showMoreInfo, fireEvent, createCardElement, lcarsEventBus, lcarsLog, openEditPopup } from './lcars-helpers.js';
+import { getHass, showMoreInfo, fireEvent, createCardElement, lcarsEventBus, lcarsLog, openEditPopup, defineLcars } from './lcars-helpers.js';
 import {
   classifyDevice, classifyArea,
   PANEL_TYPE_CAMERA, PANEL_TYPE_ALARM, PANEL_TYPE_AQUATICS,
@@ -8078,7 +8078,7 @@ class LcarsHomepageCard extends LitElement {
   }
 
   if (!customElements.get('homepage-card')) {
-    customElements.define('homepage-card', LcarsHomepageCard);
+    defineLcars('homepage-card', LcarsHomepageCard);
     lcarsLog.debug(TAG, 'Custom element registered: homepage-card');
   } else {
     lcarsLog.warn(TAG, 'Custom element homepage-card already registered � skipping');

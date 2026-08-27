@@ -14,6 +14,7 @@
  * fires `lcars_dashboard_medical_profiles_updated` for live cache
  * invalidation across all connected sessions.
  */
+import { defineLcars } from './lcars-helpers.js';
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { listObservedBindings } from './lcars-medical-utils.js';
@@ -517,5 +518,5 @@ class LcarsMedicalBindingEditor extends LitElement {
 }
 
 if (!customElements.get('lcars-medical-binding-editor')) {
-  customElements.define('lcars-medical-binding-editor', LcarsMedicalBindingEditor);
+  defineLcars('lcars-medical-binding-editor', LcarsMedicalBindingEditor);
 }

@@ -20,6 +20,7 @@
  *
  * Phase 3 — v4.17.0 Panel Extraction Architecture (4X-4)
  */
+import { defineLcars } from '../../lcars-helpers.js';
 import { LitElement, html } from 'lit-element';
 import { optionStripStyles } from './lcars-option-strip-styles.js';
 
@@ -106,5 +107,5 @@ class LcarsOptionStrip extends LitElement {
 }
 
 if (!customElements.get('lcars-option-strip')) {
-  customElements.define('lcars-option-strip', LcarsOptionStrip);
+  defineLcars('lcars-option-strip', LcarsOptionStrip);
 }

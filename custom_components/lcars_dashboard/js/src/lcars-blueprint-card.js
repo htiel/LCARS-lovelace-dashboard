@@ -4,7 +4,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { createCardElement } from './lcars-helpers.js';
+import { createCardElement, defineLcars } from './lcars-helpers.js';
 
 class LcarsBlueprintCard extends LitElement {
     static get properties() {
@@ -79,5 +79,5 @@ class LcarsBlueprintCard extends LitElement {
   }
 
 if (!customElements.get('lcars-blueprint-card')) {
-  customElements.define('lcars-blueprint-card', LcarsBlueprintCard);
+  defineLcars('lcars-blueprint-card', LcarsBlueprintCard);
 }

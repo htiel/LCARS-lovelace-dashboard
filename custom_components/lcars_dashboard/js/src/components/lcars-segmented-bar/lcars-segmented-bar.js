@@ -22,6 +22,7 @@
  *
  * v4.18.0 — 4X-16 Segmented Bar Component
  */
+import { defineLcars } from '../../lcars-helpers.js';
 import { LitElement, html, css } from 'lit-element';
 import { lcarsFocusRing } from '../../lcars-styles.js';
 
@@ -133,4 +134,4 @@ class LcarsSegmentedBar extends LitElement {
   }
 }
 
-customElements.define('lcars-segmented-bar', LcarsSegmentedBar);
+defineLcars('lcars-segmented-bar', LcarsSegmentedBar);

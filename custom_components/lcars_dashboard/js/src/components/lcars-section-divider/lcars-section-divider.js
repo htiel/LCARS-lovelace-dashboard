@@ -10,6 +10,7 @@
  *
  * Phase 0 — v4.17.0 Panel Extraction Architecture (4X-4)
  */
+import { defineLcars } from '../../lcars-helpers.js';
 import { LitElement, html } from 'lit-element';
 import { sectionDividerStyles } from './lcars-section-divider-styles.js';
 
@@ -41,5 +42,5 @@ class LcarsSectionDivider extends LitElement {
 }
 
 if (!customElements.get('lcars-section-divider')) {
-  customElements.define('lcars-section-divider', LcarsSectionDivider);
+  defineLcars('lcars-section-divider', LcarsSectionDivider);
 }

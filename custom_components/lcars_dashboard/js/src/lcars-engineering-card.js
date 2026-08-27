@@ -10,7 +10,7 @@
  * - Leith: EcoFlow batteries (3 units, 191 entities), Emporia Vue (84), Shelly Pro 3EM
  */
 import { LitElement, html, css, svg } from 'lit-element';
-import { lcarsEventBus, showMoreInfo, navigate } from './lcars-helpers.js';
+import { lcarsEventBus, showMoreInfo, navigate, defineLcars } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getAllAreasFlat } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
@@ -1425,4 +1425,4 @@ class LcarsEngineeringCard extends LitElement {
 }
 
 const ready = Promise.race([customElements.whenDefined('hui-masonry-view'), new Promise((r) => setTimeout(r, 5000))]);
-ready.then(() => { if (!customElements.get('engineering-card')) { customElements.define('engineering-card', LcarsEngineeringCard); } });
+ready.then(() => { if (!customElements.get('engineering-card')) { defineLcars('engineering-card', LcarsEngineeringCard); } });

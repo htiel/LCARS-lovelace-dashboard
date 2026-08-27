@@ -22,6 +22,7 @@
  *
  * Phase 0 — v4.17.0 Panel Extraction Architecture (4X-4)
  */
+import { defineLcars } from '../../lcars-helpers.js';
 import { LitElement, html } from 'lit-element';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { panelFrameStyles } from './lcars-panel-frame-styles.js';
@@ -74,5 +75,5 @@ class LcarsPanelFrame extends LitElement {
 }
 
 if (!customElements.get('lcars-panel-frame')) {
-  customElements.define('lcars-panel-frame', LcarsPanelFrame);
+  defineLcars('lcars-panel-frame', LcarsPanelFrame);
 }

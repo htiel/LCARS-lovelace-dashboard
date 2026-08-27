@@ -4,7 +4,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { navigate } from './lcars-helpers.js';
+import { navigate, defineLcars } from './lcars-helpers.js';
 
 
   class LcarsMorePagesCard extends LitElement {
@@ -145,5 +145,5 @@ import { navigate } from './lcars-helpers.js';
   }
 
   if (!customElements.get('lcars-more-pages-card')) {
-    customElements.define('lcars-more-pages-card', LcarsMorePagesCard);
+    defineLcars('lcars-more-pages-card', LcarsMorePagesCard);
   }

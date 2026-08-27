@@ -10,7 +10,7 @@
  * Phase 1: Foundation (Cruise mode, perimeter, shield, cameras, locks)
  */
 import { LitElement, html, css, svg } from 'lit-element';
-import { lcarsLog, lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
+import { lcarsLog, lcarsEventBus, showMoreInfo, defineLcars } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
@@ -1381,4 +1381,4 @@ class LcarsTacticalCard extends LitElement {
 }
 
 const ready = Promise.race([customElements.whenDefined('hui-masonry-view'), new Promise((r) => setTimeout(r, 5000))]);
-ready.then(() => { if (!customElements.get('tactical-card')) { customElements.define('tactical-card', LcarsTacticalCard); } });
+ready.then(() => { if (!customElements.get('tactical-card')) { defineLcars('tactical-card', LcarsTacticalCard); } });

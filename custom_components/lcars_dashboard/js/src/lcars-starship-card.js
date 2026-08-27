@@ -26,7 +26,7 @@
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsAudio } from './lcars-audio.js';
-import { showMoreInfo } from './lcars-helpers.js';
+import { showMoreInfo, defineLcars } from './lcars-helpers.js';
 import './lcars-anatomical-silhouette.js';
 import {
   STARSHIP_STATUS,
@@ -742,5 +742,5 @@ class LcarsStarshipCard extends LitElement {
 }
 
 if (!customElements.get('lcars-starship-card')) {
-  customElements.define('lcars-starship-card', LcarsStarshipCard);
+  defineLcars('lcars-starship-card', LcarsStarshipCard);
 }

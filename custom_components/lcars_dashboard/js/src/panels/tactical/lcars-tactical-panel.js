@@ -18,7 +18,7 @@ import {
   SENSOR_DOMAINS,
 } from '../../lcars-entity-utils.js';
 import { getAlarmStateColor } from '../../lcars-color-utils.js';
-import { showMoreInfo, lcarsLog } from '../../lcars-helpers.js';
+import { showMoreInfo, lcarsLog, defineLcars } from '../../lcars-helpers.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { lcarsFocusRing } from '../../lcars-styles.js';
 import { tacticalPanelStyles } from './lcars-tactical-panel-styles.js';
@@ -553,4 +553,4 @@ class LcarsTacticalPanel extends LcarsBasePanel {
   }
 }
 
-customElements.define('lcars-tactical-panel', LcarsTacticalPanel);
+defineLcars('lcars-tactical-panel', LcarsTacticalPanel);

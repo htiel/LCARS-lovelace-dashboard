@@ -4,7 +4,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { createCardElement } from './lcars-helpers.js';
+import { createCardElement, defineLcars } from './lcars-helpers.js';
 
 class LcarsPopup extends LitElement {
     static get properties() {
@@ -211,5 +211,5 @@ class LcarsPopup extends LitElement {
   }
 
 if (!customElements.get('lcars-popup')) {
-  customElements.define('lcars-popup', LcarsPopup);
+  defineLcars('lcars-popup', LcarsPopup);
 }

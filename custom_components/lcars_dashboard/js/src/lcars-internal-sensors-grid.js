@@ -9,7 +9,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { showMoreInfo, lcarsLog } from './lcars-helpers.js';
+import { showMoreInfo, lcarsLog, defineLcars } from './lcars-helpers.js';
 import {
   getTempColor, getHumidityColor, getTempComfortClass,
   getSafeComfortColor, COMFORT_COLORS
@@ -594,7 +594,7 @@ class LcarsInternalSensorsGrid extends LitElement {
 
 /* ─── Registration ─── */
 if (!customElements.get('lcars-internal-sensors-grid')) {
-  customElements.define('lcars-internal-sensors-grid', LcarsInternalSensorsGrid);
+  defineLcars('lcars-internal-sensors-grid', LcarsInternalSensorsGrid);
   lcarsLog.debug(TAG, 'Custom element registered: lcars-internal-sensors-grid');
 }
 

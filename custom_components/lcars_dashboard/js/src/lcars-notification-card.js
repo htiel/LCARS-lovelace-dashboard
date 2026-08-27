@@ -2,6 +2,7 @@
  * LCARS Notification Card — Displays dashboard notifications
  * Styled as LCARS data readout with alert-colored indicators
  */
+import { defineLcars } from './lcars-helpers.js';
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 
@@ -146,5 +147,5 @@ import { lcarsBaseStyles } from './lcars-styles.js';
   }
 
   if (!customElements.get('lcars-notification-card')) {
-    customElements.define('lcars-notification-card', LcarsNotificationCard);
+    defineLcars('lcars-notification-card', LcarsNotificationCard);
   }

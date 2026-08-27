@@ -8,7 +8,7 @@
  */
 import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
-import { showMoreInfo } from '../../lcars-helpers.js';
+import { showMoreInfo, defineLcars } from '../../lcars-helpers.js';
 import { lcarsFocusRing } from '../../lcars-styles.js';
 import { evChargerPanelStyles } from './lcars-ev-charger-panel-styles.js';
 import { formatNumber } from '../../lcars-format-utils.js';
@@ -452,5 +452,5 @@ class LcarsEvChargerPanel extends LcarsBasePanel {
 }
 
 if (!customElements.get('lcars-ev-charger-panel')) {
-  customElements.define('lcars-ev-charger-panel', LcarsEvChargerPanel);
+  defineLcars('lcars-ev-charger-panel', LcarsEvChargerPanel);
 }

@@ -14,7 +14,7 @@
  * v5.0.0 — 5X-2.4
  */
 import { LitElement, html, css } from 'lit-element';
-import { lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
+import { lcarsEventBus, showMoreInfo, defineLcars } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
@@ -341,5 +341,5 @@ class LcarsLifeSupportCard extends LitElement {
 }
 
 if (!customElements.get('lifesupport-card')) {
-  customElements.define('lifesupport-card', LcarsLifeSupportCard);
+  defineLcars('lifesupport-card', LcarsLifeSupportCard);
 }

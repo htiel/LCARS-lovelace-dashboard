@@ -20,6 +20,67 @@ export const lcarsLog = {
 };
 
 /**
+ * Custom-element registration with scoped-registry self-heal.
+ *
+ * HA 2026.8+ ships the scoped-custom-element-registry polyfill. The LCARS
+ * bundle is injected as a frontend extra *module* URL, so it can evaluate
+ * before the polyfill is installed. When that happens, `customElements.define`
+ * lands in the *native* registry, which the polyfill's `get()`/`whenDefined()`
+ * cannot see — Lovelace then renders "Config error: Custom element doesn't
+ * exist: lcars-dashboard-layout" on the first cold page load (a refresh
+ * reorders evaluation and hides the bug). See issue #134 and upstream
+ * home-assistant/frontend#52960.
+ *
+ * `defineLcars()` records every tag it registers and, once the app shell
+ * (`home-assistant`) is up (i.e. the polyfill is installed), re-defines any tag
+ * that is still not visible through the now-active registry. This is a no-op
+ * when no polyfill is present (the tag is already visible in the single native
+ * registry) and self-heals late/async registrations because each call re-checks
+ * the current registry.
+ */
+const _lcarsDefined = [];
+let _healScheduled = false;
+
+function _healLcarsDefines() {
+  for (const [name, cls] of _lcarsDefined) {
+    try {
+      if (!customElements.get(name)) {
+        customElements.define(name, cls);
+      }
+    } catch (err) {
+      // A tag already defined in the active registry throws — that is the
+      // healthy outcome, so swallow it.
+    }
+  }
+}
+
+function _scheduleLcarsHeal() {
+  if (_healScheduled) return;
+  _healScheduled = true;
+  // `whenDefined('home-assistant')` resolves once the app shell (and, on
+  // 2026.8+, the scoped-registry polyfill) is installed. The timer is a
+  // fallback for environments where it never defines.
+  Promise.race([
+    customElements.whenDefined('home-assistant'),
+    new Promise((resolve) => setTimeout(resolve, 3000)),
+  ])
+    .then(_healLcarsDefines)
+    .catch(_healLcarsDefines);
+}
+
+export function defineLcars(name, cls) {
+  try {
+    if (!customElements.get(name)) {
+      customElements.define(name, cls);
+    }
+  } catch (err) {
+    lcarsLog.error('define', `Failed to define <${name}>`, err);
+  }
+  _lcarsDefined.push([name, cls]);
+  _scheduleLcarsHeal();
+}
+
+/**
  * Private event bus for LCARS inter-component communication.
  * Uses a dedicated EventTarget instead of window to prevent
  * event injection from other cards or extensions.

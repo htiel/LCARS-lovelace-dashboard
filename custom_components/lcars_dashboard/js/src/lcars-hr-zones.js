@@ -28,7 +28,7 @@
 //     bound person entity so the captain can set the birthdate in one click.
 
 import { LitElement, html, css } from 'lit-element';
-import { showMoreInfo } from './lcars-helpers.js';
+import { showMoreInfo, defineLcars } from './lcars-helpers.js';
 
 const ZONES = [
   { key: 'PEAK',     minPct: 90 },
@@ -287,5 +287,5 @@ class LcarsHrZones extends LitElement {
 }
 
 if (!customElements.get('lcars-hr-zones')) {
-  customElements.define('lcars-hr-zones', LcarsHrZones);
+  defineLcars('lcars-hr-zones', LcarsHrZones);
 }

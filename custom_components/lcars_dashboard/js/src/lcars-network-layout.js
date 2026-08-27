@@ -12,7 +12,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { lcarsEventBus } from './lcars-helpers.js';
+import { lcarsEventBus, defineLcars } from './lcars-helpers.js';
 import { lcarsAudio } from './lcars-audio.js';
 import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
 import lcarsPkg from '../package.json';
@@ -164,4 +164,4 @@ class LcarsNetworkLayout extends LitElement {
 }
 
 const ready = Promise.race([customElements.whenDefined('hui-masonry-view'), new Promise((r) => setTimeout(r, 5000))]);
-ready.then(() => { if (!customElements.get('lcars-network-layout')) { customElements.define('lcars-network-layout', LcarsNetworkLayout); } });
+ready.then(() => { if (!customElements.get('lcars-network-layout')) { defineLcars('lcars-network-layout', LcarsNetworkLayout); } });

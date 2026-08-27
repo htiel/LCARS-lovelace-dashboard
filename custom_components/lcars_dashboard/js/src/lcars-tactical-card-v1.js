@@ -14,7 +14,7 @@
  * v5.0.0 — 5X-2.2
  */
 import { LitElement, html, css } from 'lit-element';
-import { lcarsLog, lcarsEventBus } from './lcars-helpers.js';
+import { lcarsLog, lcarsEventBus, defineLcars } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
@@ -487,5 +487,5 @@ class LcarsTacticalCard extends LitElement {
 }
 
 if (!customElements.get('tactical-card')) {
-  customElements.define('tactical-card', LcarsTacticalCard);
+  defineLcars('tactical-card', LcarsTacticalCard);
 }

@@ -16,6 +16,7 @@
  *
  * No localStorage. No payload logging. No camera entities. (See history store.)
  */
+import { defineLcars } from './lcars-helpers.js';
 import { LitElement, html, css, svg } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import {
@@ -751,4 +752,4 @@ export class LcarsTacticalChronicle extends LitElement {
   }
 }
 
-customElements.define('lcars-tactical-chronicle', LcarsTacticalChronicle);
+defineLcars('lcars-tactical-chronicle', LcarsTacticalChronicle);

@@ -20,6 +20,7 @@
  * Security: NEVER puts access_token in URL. NEVER logs payload. Revokes
  * blob URLs on every refresh + on disconnect.
  */
+import { defineLcars } from './lcars-helpers.js';
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 
@@ -271,4 +272,4 @@ export class LcarsCameraTile extends LitElement {
   static get _docListenersInstalled() { return LcarsCameraTile.__docListeners === true; }
 }
 
-customElements.define('lcars-camera-tile', LcarsCameraTile);
+defineLcars('lcars-camera-tile', LcarsCameraTile);

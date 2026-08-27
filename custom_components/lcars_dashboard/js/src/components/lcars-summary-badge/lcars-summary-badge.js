@@ -14,6 +14,7 @@
  *   - role="status" + aria-live="polite" (WCAG 4.1.3)
  *   - No borders, no background, no shadows — text-only
  */
+import { defineLcars } from '../../lcars-helpers.js';
 import { LitElement, html, css } from 'lit-element';
 import { lcarsFocusRing } from '../../lcars-styles.js';
 
@@ -94,5 +95,5 @@ class LcarsSummaryBadge extends LitElement {
   }
 }
 
-customElements.define('lcars-summary-badge', LcarsSummaryBadge);
+defineLcars('lcars-summary-badge', LcarsSummaryBadge);
 export { LcarsSummaryBadge };

@@ -6,6 +6,7 @@
  *
  * v4.17.0 Panel Extraction Architecture (4X-6)
  */
+import { defineLcars } from '../../lcars-helpers.js';
 import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { SENSOR_DOMAINS } from '../../lcars-entity-utils.js';
@@ -269,5 +270,5 @@ class LcarsWeatherPanel extends LcarsBasePanel {
 }
 
 if (!customElements.get('lcars-weather-panel')) {
-  customElements.define('lcars-weather-panel', LcarsWeatherPanel);
+  defineLcars('lcars-weather-panel', LcarsWeatherPanel);
 }

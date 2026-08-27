@@ -2,6 +2,18 @@
 
 All notable changes to the LCARS Dashboard project are documented here.
 
+## [5.15.0-beta.10] — Cold-load custom-element self-heal (HA 2026.8) + dependency bumps
+
+### Bug fix
+- **Fixes "Config error: Custom element doesn't exist: lcars-dashboard-layout" on cold page loads (HA 2026.8.x)** (#134). HA 2026.8 ships the scoped-custom-element-registry polyfill. Because the LCARS bundle is injected as a frontend extra *module* URL, it can evaluate before the polyfill is installed — its `customElements.define()` calls then land in the native registry, which the polyfill's `get()`/`whenDefined()` can't see, so Lovelace renders a configuration error until a manual refresh reorders evaluation.
+  - Added a `defineLcars()` registration helper in `lcars-helpers.js` that records every LCARS tag and, once `home-assistant` is defined (i.e. the polyfill is installed), re-defines any tag still missing from the active registry. Self-heals without a reload; no-op when no polyfill is present.
+  - Routed all custom-element registrations (82 call sites across 81 modules) through `defineLcars()`. Bundle delivery is unchanged (`add_extra_js_url`).
+
+### Dependencies
+- Bumped `js-yaml` 4.1.1 → 4.3.0 (transitive, JS build) and `form-data` / `hono` in `mcp/image-generator` (Dependabot security bumps, #244; supersedes #245).
+
+Build clean.
+
 ## [5.15.0-beta.8] — HR notification entity-name fix
 
 - **HR alerts now match the new HealthyApps entity names**: the medical classifier recognizes `heart_notification_last_kind`, `heart_notification_last_event`, and `heart_notifications_7d` in addition to the older `hr_*` suffixes, so the CARDIOLOGY HR Alerts composite can render the loaded data.

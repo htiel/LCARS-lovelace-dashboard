@@ -12,6 +12,7 @@
 //   - All numeric cells inside the shadow tree carry `data-medical="phi"`.
 //   - `_disposeCaches()` no-op stub (no caches — values read directly from props).
 
+import { defineLcars } from './lcars-helpers.js';
 import { LitElement, html, css } from 'lit-element';
 
 // Contributor → color token. Vocabulary auto-detected; unknown contributors
@@ -354,5 +355,5 @@ class LcarsSleepScoreBar extends LitElement {
 }
 
 if (!customElements.get('lcars-sleep-score-bar')) {
-  customElements.define('lcars-sleep-score-bar', LcarsSleepScoreBar);
+  defineLcars('lcars-sleep-score-bar', LcarsSleepScoreBar);
 }

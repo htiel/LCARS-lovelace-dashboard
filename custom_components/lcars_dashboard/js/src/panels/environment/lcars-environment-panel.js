@@ -6,6 +6,7 @@
  *
  * v4.17.0 Panel Extraction Architecture (4X-4)
  */
+import { defineLcars } from '../../lcars-helpers.js';
 import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { AQ_DEVICE_CLASSES, AQ_ENTITY_SUFFIX_RE } from '../../lcars-entity-utils.js';
@@ -330,5 +331,5 @@ class LcarsEnvironmentPanel extends LcarsBasePanel {
 }
 
 if (!customElements.get('lcars-environment-panel')) {
-  customElements.define('lcars-environment-panel', LcarsEnvironmentPanel);
+  defineLcars('lcars-environment-panel', LcarsEnvironmentPanel);
 }

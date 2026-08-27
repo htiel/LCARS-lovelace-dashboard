@@ -9,7 +9,7 @@
  * SwitchBot meters, VeSync purifiers, HomeKit controllers, WeatherFlow/Link.
  */
 import { LitElement, html, css, svg } from 'lit-element';
-import { lcarsEventBus, showMoreInfo, lcarsLog } from './lcars-helpers.js';
+import { lcarsEventBus, showMoreInfo, lcarsLog, defineLcars } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getAllAreasFlat } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
@@ -923,4 +923,4 @@ class LcarsLifeSupportCard extends LitElement {
 }
 
 const ready = Promise.race([customElements.whenDefined('hui-masonry-view'), new Promise((r) => setTimeout(r, 5000))]);
-ready.then(() => { if (!customElements.get('lifesupport-card')) { customElements.define('lifesupport-card', LcarsLifeSupportCard); } });
+ready.then(() => { if (!customElements.get('lifesupport-card')) { defineLcars('lifesupport-card', LcarsLifeSupportCard); } });

@@ -10,7 +10,7 @@
  * v5.0.0 — 5X-2.5 Lighting Dashboard
  */
 import { LitElement, html, css } from 'lit-element';
-import { getHass, lcarsLog, lcarsEventBus } from './lcars-helpers.js';
+import { getHass, lcarsLog, lcarsEventBus, defineLcars } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
@@ -453,5 +453,5 @@ class LcarsIlluminationCard extends LitElement {
 }
 
 if (!customElements.get('illumination-card')) {
-  customElements.define('illumination-card', LcarsIlluminationCard);
+  defineLcars('illumination-card', LcarsIlluminationCard);
 }

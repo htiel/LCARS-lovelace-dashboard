@@ -41,6 +41,7 @@
 //     with `ECG · DATA TRUNCATED`. Banner/footer still render from sibling
 //     entities (classification + average_bpm + duration + sampling_frequency).
 
+import { defineLcars } from './lcars-helpers.js';
 import { LitElement, html, css, svg } from 'lit-element';
 
 // Allowlist for device-name source string (Worf §7.8 / spec §4.1 footer).
@@ -480,5 +481,5 @@ class LcarsEcgStrip extends LitElement {
 }
 
 if (!customElements.get('lcars-ecg-strip')) {
-  customElements.define('lcars-ecg-strip', LcarsEcgStrip);
+  defineLcars('lcars-ecg-strip', LcarsEcgStrip);
 }

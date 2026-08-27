@@ -1,6 +1,7 @@
 /**
  * LCARS Create Custom Card Card — Form for adding a new custom card to a view
  */
+import { defineLcars } from './lcars-helpers.js';
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 
@@ -63,5 +64,5 @@ import { lcarsBaseStyles } from './lcars-styles.js';
   }
 
   if (!customElements.get('lcars-create-custom-card-card')) {
-    customElements.define('lcars-create-custom-card-card', LcarsCreateCustomCardCard);
+    defineLcars('lcars-create-custom-card-card', LcarsCreateCustomCardCard);
   }

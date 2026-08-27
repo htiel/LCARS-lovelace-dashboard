@@ -12,6 +12,7 @@
  * WCAG: role="slider", keyboard arrows, Home/End, focus-visible.
  * v5.0.0 — Illumination Dashboard
  */
+import { defineLcars } from '../../lcars-helpers.js';
 import { LitElement, html, css } from 'lit-element';
 
 const SEGMENTS = 16;
@@ -258,4 +259,4 @@ class LcarsSlider extends LitElement {
   }
 }
 
-customElements.define('lcars-slider', LcarsSlider);
+defineLcars('lcars-slider', LcarsSlider);

@@ -4,7 +4,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { getHass, navigate, fireEvent } from './lcars-helpers.js';
+import { getHass, navigate, fireEvent, defineLcars } from './lcars-helpers.js';
 
 
   class LcarsNavigationCard extends LitElement {
@@ -131,5 +131,5 @@ import { getHass, navigate, fireEvent } from './lcars-helpers.js';
   }
 
   if (!customElements.get('lcars-navigation-card')) {
-    customElements.define('lcars-navigation-card', LcarsNavigationCard);
+    defineLcars('lcars-navigation-card', LcarsNavigationCard);
   }

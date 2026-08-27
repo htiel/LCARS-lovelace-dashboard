@@ -12,6 +12,7 @@
  *   The audio mode is suppressed by default ("medical" mode); only a soft
  *   navAcknowledge fires on profile selection or thermal-toggle changes.
  */
+import { defineLcars } from './lcars-helpers.js';
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsAudio } from './lcars-audio.js';
@@ -158,6 +159,6 @@ const ready = Promise.race([
 ]);
 ready.then(() => {
   if (!customElements.get('lcars-medical-layout')) {
-    customElements.define('lcars-medical-layout', LcarsMedicalLayout);
+    defineLcars('lcars-medical-layout', LcarsMedicalLayout);
   }
 });

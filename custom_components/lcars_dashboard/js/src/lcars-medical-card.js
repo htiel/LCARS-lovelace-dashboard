@@ -14,7 +14,7 @@
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { lcarsAudio } from './lcars-audio.js';
-import { showMoreInfo } from './lcars-helpers.js';
+import { showMoreInfo, defineLcars } from './lcars-helpers.js';
 import './lcars-anatomical-silhouette.js';
 // 5.14.0-beta.1 — new primitives wired into BIOMEDICAL focus mode (no HAI deps).
 import './lcars-hr-zones.js';
@@ -2575,5 +2575,5 @@ class LcarsMedicalCard extends LitElement {
 }
 
 if (!customElements.get('lcars-medical-card')) {
-  customElements.define('lcars-medical-card', LcarsMedicalCard);
+  defineLcars('lcars-medical-card', LcarsMedicalCard);
 }

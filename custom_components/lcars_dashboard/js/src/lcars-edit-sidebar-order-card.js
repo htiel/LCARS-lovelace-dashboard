@@ -5,6 +5,7 @@
  * them together. Uses HA's per-user frontend/get_user_data and
  * frontend/set_user_data WS APIs (key: "sidebar").
  */
+import { defineLcars } from './lcars-helpers.js';
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 
@@ -263,5 +264,5 @@ class LcarsEditSidebarOrderCard extends LitElement {
 }
 
 if (!customElements.get('lcars-edit-sidebar-order-card')) {
-  customElements.define('lcars-edit-sidebar-order-card', LcarsEditSidebarOrderCard);
+  defineLcars('lcars-edit-sidebar-order-card', LcarsEditSidebarOrderCard);
 }

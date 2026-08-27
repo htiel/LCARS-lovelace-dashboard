@@ -15,7 +15,7 @@ import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { getIrrigationZoneColor } from '../../lcars-color-utils.js';
 import { createRateLimiter, clampValue } from '../../lcars-service-utils.js';
-import { showMoreInfo } from '../../lcars-helpers.js';
+import { showMoreInfo, defineLcars } from '../../lcars-helpers.js';
 import { humanizeTimestamp } from '../../lcars-format-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { irrigationPanelStyles } from './lcars-irrigation-panel-styles.js';
@@ -579,5 +579,5 @@ class LcarsIrrigationPanel extends LcarsBasePanel {
 }
 
 if (!customElements.get('lcars-irrigation-panel')) {
-  customElements.define('lcars-irrigation-panel', LcarsIrrigationPanel);
+  defineLcars('lcars-irrigation-panel', LcarsIrrigationPanel);
 }

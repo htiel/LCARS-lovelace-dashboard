@@ -11,7 +11,7 @@ import { html, svg, render as litRender } from 'lit-html';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { getPowerColor, getPowerLabel } from '../../lcars-color-utils.js';
 import { createRateLimiter } from '../../lcars-service-utils.js';
-import { showMoreInfo } from '../../lcars-helpers.js';
+import { showMoreInfo, defineLcars } from '../../lcars-helpers.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { powerPanelStyles } from './lcars-power-panel-styles.js';
 
@@ -1091,5 +1091,5 @@ class LcarsPowerPanel extends LcarsBasePanel {
 }
 
 if (!customElements.get('lcars-power-panel')) {
-  customElements.define('lcars-power-panel', LcarsPowerPanel);
+  defineLcars('lcars-power-panel', LcarsPowerPanel);
 }

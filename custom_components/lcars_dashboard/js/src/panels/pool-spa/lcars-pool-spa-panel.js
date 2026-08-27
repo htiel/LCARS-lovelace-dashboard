@@ -9,6 +9,7 @@
  *   chemistry segmented bars, freeze banner, circuit grouping,
  *   heating indicator, temperature trend, linkedEntities integration.
  */
+import { defineLcars } from '../../lcars-helpers.js';
 import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { SENSOR_DOMAINS } from '../../lcars-entity-utils.js';
@@ -328,5 +329,5 @@ class LcarsPoolSpaPanel extends LcarsBasePanel {
 }
 
 if (!customElements.get('lcars-pool-spa-panel')) {
-  customElements.define('lcars-pool-spa-panel', LcarsPoolSpaPanel);
+  defineLcars('lcars-pool-spa-panel', LcarsPoolSpaPanel);
 }

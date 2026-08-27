@@ -11,7 +11,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { lcarsLog, lcarsEventBus } from './lcars-helpers.js';
+import { lcarsLog, lcarsEventBus, defineLcars } from './lcars-helpers.js';
 import { lcarsAudio } from './lcars-audio.js';
 import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
 import lcarsPkg from '../package.json';
@@ -380,7 +380,7 @@ const ready = Promise.race([
 ]);
 ready.then(() => {
   if (!customElements.get('lcars-illumination-layout')) {
-    customElements.define('lcars-illumination-layout', LcarsIlluminationLayout);
+    defineLcars('lcars-illumination-layout', LcarsIlluminationLayout);
     lcarsLog.info(TAG, 'Illumination layout registered');
   }
 });

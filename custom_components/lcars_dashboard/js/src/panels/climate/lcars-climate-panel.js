@@ -8,6 +8,7 @@
  * v4.17.0 Panel Extraction Architecture (4X-4)
  * v4.18.0 Visual Refresh (4X-8)
  */
+import { defineLcars } from '../../lcars-helpers.js';
 import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { SENSOR_DOMAINS } from '../../lcars-entity-utils.js';
@@ -511,5 +512,5 @@ class LcarsClimatePanel extends LcarsBasePanel {
 }
 
 if (!customElements.get('lcars-climate-panel')) {
-  customElements.define('lcars-climate-panel', LcarsClimatePanel);
+  defineLcars('lcars-climate-panel', LcarsClimatePanel);
 }

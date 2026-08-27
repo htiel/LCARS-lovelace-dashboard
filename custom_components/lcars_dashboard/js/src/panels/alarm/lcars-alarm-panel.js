@@ -6,6 +6,7 @@
  *
  * v4.17.0 Panel Extraction Architecture (4X-4)
  */
+import { defineLcars } from '../../lcars-helpers.js';
 import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { getAlarmStateColor } from '../../lcars-color-utils.js';
@@ -380,5 +381,5 @@ class LcarsAlarmPanel extends LcarsBasePanel {
 }
 
 if (!customElements.get('lcars-alarm-panel')) {
-  customElements.define('lcars-alarm-panel', LcarsAlarmPanel);
+  defineLcars('lcars-alarm-panel', LcarsAlarmPanel);
 }

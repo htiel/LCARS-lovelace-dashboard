@@ -5,6 +5,7 @@
  * Uses native HTML5 Drag & Drop with grip handles.
  * Loads/saves order via lcars_dashboard/sidebar_order/get|set WS commands.
  */
+import { defineLcars } from './lcars-helpers.js';
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 
@@ -451,4 +452,4 @@ class LcarsSidebarReorder extends LitElement {
   }
 }
 
-customElements.define('lcars-sidebar-reorder', LcarsSidebarReorder);
+defineLcars('lcars-sidebar-reorder', LcarsSidebarReorder);

@@ -11,6 +11,7 @@
  *   Climate only: thermostat + sensors, no purifier → single climate + ambient + sparklines
  *   Sensors only: standalone temp/humidity → sensor hero layout
  */
+import { defineLcars } from '../../lcars-helpers.js';
 import { html, css } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { canonicalLabel, ariaLabel, formatNumber } from '../../lcars-format-utils.js';
@@ -608,5 +609,5 @@ class LcarsLifeSupportPanel extends LcarsBasePanel {
   }
 }
 
-customElements.define('lcars-lifesupport-panel', LcarsLifeSupportPanel);
+defineLcars('lcars-lifesupport-panel', LcarsLifeSupportPanel);
 export { LcarsLifeSupportPanel };

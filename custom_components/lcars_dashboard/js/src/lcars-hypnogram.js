@@ -19,6 +19,7 @@
 //   - Numeric PHI in `aria-label` is silenced by default (Worf W7).
 //   - Truncation degraded-mode honored (typeof attrs === 'string').
 
+import { defineLcars } from './lcars-helpers.js';
 import { LitElement, html, css, svg } from 'lit-element';
 
 const STAGE_ORDER = ['awake', 'rem', 'core', 'deep'];
@@ -368,5 +369,5 @@ class LcarsHypnogram extends LitElement {
 }
 
 if (!customElements.get('lcars-hypnogram')) {
-  customElements.define('lcars-hypnogram', LcarsHypnogram);
+  defineLcars('lcars-hypnogram', LcarsHypnogram);
 }

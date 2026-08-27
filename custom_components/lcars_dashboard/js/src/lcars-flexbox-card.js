@@ -4,7 +4,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { createCardElement } from './lcars-helpers.js';
+import { createCardElement, defineLcars } from './lcars-helpers.js';
 
 class LcarsFlexboxCard extends LitElement {
     static get properties() {
@@ -82,5 +82,5 @@ class LcarsFlexboxCard extends LitElement {
   }
 
 if (!customElements.get('lcars-flexbox-card')) {
-  customElements.define('lcars-flexbox-card', LcarsFlexboxCard);
+  defineLcars('lcars-flexbox-card', LcarsFlexboxCard);
 }

@@ -24,6 +24,7 @@
 //     bumped (consent change, binding_unbind, profiles.yaml reload), the
 //     entire cache is flushed before the next render.
 
+import { defineLcars } from './lcars-helpers.js';
 import { LitElement, html, css, svg } from 'lit-element';
 import { fetchRecorderStats, aggregateDaily } from './lcars-recorder-stats.js';
 
@@ -348,5 +349,5 @@ class LcarsBpRange extends LitElement {
 }
 
 if (!customElements.get('lcars-bp-range')) {
-  customElements.define('lcars-bp-range', LcarsBpRange);
+  defineLcars('lcars-bp-range', LcarsBpRange);
 }

@@ -22,6 +22,7 @@
  *
  * Phase 3 — v4.17.0 Panel Extraction Architecture (4X-4)
  */
+import { defineLcars } from '../../lcars-helpers.js';
 import { LitElement, html } from 'lit-element';
 import { setpointStyles } from './lcars-setpoint-styles.js';
 
@@ -91,5 +92,5 @@ class LcarsSetpoint extends LitElement {
 }
 
 if (!customElements.get('lcars-setpoint')) {
-  customElements.define('lcars-setpoint', LcarsSetpoint);
+  defineLcars('lcars-setpoint', LcarsSetpoint);
 }

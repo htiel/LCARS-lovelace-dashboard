@@ -3,7 +3,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { fireEvent } from './lcars-helpers.js';
+import { fireEvent, defineLcars } from './lcars-helpers.js';
 import { showErrorToast } from './lcars-toast.js';
 
 const EDIT_STYLES = css`
@@ -62,5 +62,5 @@ const EDIT_STYLES = css`
   }
 
   if (!customElements.get('lcars-edit-homepage-header-card')) {
-    customElements.define('lcars-edit-homepage-header-card', LcarsEditHomepageHeaderCard);
+    defineLcars('lcars-edit-homepage-header-card', LcarsEditHomepageHeaderCard);
   }

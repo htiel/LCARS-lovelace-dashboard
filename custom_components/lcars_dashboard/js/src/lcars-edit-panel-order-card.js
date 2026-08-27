@@ -8,7 +8,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { fireEvent } from './lcars-helpers.js';
+import { fireEvent, defineLcars } from './lcars-helpers.js';
 import { PANEL_COLUMN, PANEL_TYPE_ILLUMINATION } from './lcars-entity-utils.js';
 
 const EDIT_STYLES = css`
@@ -291,5 +291,5 @@ class LcarsEditPanelOrderCard extends LitElement {
 }
 
 if (!customElements.get('lcars-edit-panel-order-card')) {
-  customElements.define('lcars-edit-panel-order-card', LcarsEditPanelOrderCard);
+  defineLcars('lcars-edit-panel-order-card', LcarsEditPanelOrderCard);
 }

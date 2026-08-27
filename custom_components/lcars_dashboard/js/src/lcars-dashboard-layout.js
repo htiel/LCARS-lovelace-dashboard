@@ -6,7 +6,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { lcarsEventBus, lcarsLog, openEditPopup } from './lcars-helpers.js';
+import { lcarsEventBus, lcarsLog, openEditPopup, defineLcars } from './lcars-helpers.js';
 import { lcarsAudio } from './lcars-audio.js';
 import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
 import lcarsPkg from '../package.json';
@@ -781,7 +781,7 @@ const ready = Promise.race([
 lcarsLog.debug(TAG, 'Waiting for hui-masonry-view (5s timeout)...');
 ready.then(() => {
   if (!customElements.get('lcars-dashboard-layout')) {
-    customElements.define('lcars-dashboard-layout', LcarsDashboardLayout);
+    defineLcars('lcars-dashboard-layout', LcarsDashboardLayout);
     const pkgVersion = lcarsPkg.version;
     lcarsLog.info(TAG, `v${pkgVersion} registered`);
     console.info(

@@ -16,7 +16,7 @@
  * Phase 0 — v4.17.0 Panel Extraction Architecture (4X-4)
  */
 import { LitElement, html } from 'lit-element';
-import { showMoreInfo } from '../../lcars-helpers.js';
+import { showMoreInfo, defineLcars } from '../../lcars-helpers.js';
 import { sensorRowStyles } from './lcars-sensor-row-styles.js';
 
 class LcarsSensorRow extends LitElement {
@@ -72,5 +72,5 @@ class LcarsSensorRow extends LitElement {
 }
 
 if (!customElements.get('lcars-sensor-row')) {
-  customElements.define('lcars-sensor-row', LcarsSensorRow);
+  defineLcars('lcars-sensor-row', LcarsSensorRow);
 }

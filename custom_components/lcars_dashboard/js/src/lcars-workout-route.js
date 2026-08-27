@@ -21,6 +21,7 @@
 //   - Numeric PHI in `aria-label` is silenced by default (Worf W7).
 //   - Truncation degraded-mode honored (typeof attrs === 'string').
 
+import { defineLcars } from './lcars-helpers.js';
 import { LitElement, html, css, svg } from 'lit-element';
 
 // Google polyline algorithm decoder — in-house, ~30 lines, no external dep.
@@ -426,5 +427,5 @@ class LcarsWorkoutRoute extends LitElement {
 }
 
 if (!customElements.get('lcars-workout-route')) {
-  customElements.define('lcars-workout-route', LcarsWorkoutRoute);
+  defineLcars('lcars-workout-route', LcarsWorkoutRoute);
 }

@@ -30,6 +30,7 @@
 // pass their own anchorMap + paths constants. Backward-compat alias
 // <lcars-biofunction-silhouette> is registered for any external user.
 
+import { defineLcars } from './lcars-helpers.js';
 import { LitElement, html, svg, css } from 'lit-element';
 
 const STATUS_COLOR = {
@@ -383,9 +384,9 @@ class LcarsAnatomicalSilhouette extends LitElement {
 }
 
 if (!customElements.get('lcars-anatomical-silhouette')) {
-  customElements.define('lcars-anatomical-silhouette', LcarsAnatomicalSilhouette);
+  defineLcars('lcars-anatomical-silhouette', LcarsAnatomicalSilhouette);
 }
 // Backward-compat alias for the original medical-only consumer.
 if (!customElements.get('lcars-biofunction-silhouette')) {
-  customElements.define('lcars-biofunction-silhouette', class extends LcarsAnatomicalSilhouette {});
+  defineLcars('lcars-biofunction-silhouette', class extends LcarsAnatomicalSilhouette {});
 }

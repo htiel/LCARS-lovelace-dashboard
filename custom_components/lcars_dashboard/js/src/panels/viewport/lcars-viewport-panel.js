@@ -9,7 +9,7 @@
  */
 import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
-import { showMoreInfo, lcarsLog } from '../../lcars-helpers.js';
+import { showMoreInfo, lcarsLog, defineLcars } from '../../lcars-helpers.js';
 import { lcarsFocusRing } from '../../lcars-styles.js';
 import { viewportPanelStyles } from './lcars-viewport-panel-styles.js';
 import { lcarsAudio } from '../../lcars-audio.js';
@@ -132,4 +132,4 @@ class LcarsViewportPanel extends LcarsBasePanel {
   }
 }
 
-customElements.define('lcars-viewport-panel', LcarsViewportPanel);
+defineLcars('lcars-viewport-panel', LcarsViewportPanel);

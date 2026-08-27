@@ -10,7 +10,7 @@ import { html } from 'lit-element';
 import { LcarsBasePanel } from '../../lcars-base-panel.js';
 import { TOGGLE_DOMAINS, tierEntities, isDiagnosticEntity } from '../../lcars-entity-utils.js';
 import { formatStateValue } from '../../lcars-format-utils.js';
-import { showMoreInfo } from '../../lcars-helpers.js';
+import { showMoreInfo, defineLcars } from '../../lcars-helpers.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { cameraPanelStyles } from './lcars-camera-panel-styles.js';
 import { lcarsAudio } from '../../lcars-audio.js';
@@ -224,5 +224,5 @@ class LcarsCameraPanel extends LcarsBasePanel {
 }
 
 if (!customElements.get('lcars-camera-panel')) {
-  customElements.define('lcars-camera-panel', LcarsCameraPanel);
+  defineLcars('lcars-camera-panel', LcarsCameraPanel);
 }

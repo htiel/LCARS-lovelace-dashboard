@@ -1,6 +1,7 @@
 /**
  * LCARS Heading Card — Section label with LCARS data-line divider
  */
+import { defineLcars } from './lcars-helpers.js';
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
 
@@ -81,5 +82,5 @@ import { lcarsBaseStyles } from './lcars-styles.js';
   }
 
   if (!customElements.get('lcars-heading-card')) {
-    customElements.define('lcars-heading-card', LcarsHeadingCard);
+    defineLcars('lcars-heading-card', LcarsHeadingCard);
   }

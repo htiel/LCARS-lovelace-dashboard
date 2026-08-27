@@ -4,7 +4,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { showMoreInfo } from './lcars-helpers.js';
+import { showMoreInfo, defineLcars } from './lcars-helpers.js';
 
 
   class LcarsHouseInfoCard extends LitElement {
@@ -193,5 +193,5 @@ import { showMoreInfo } from './lcars-helpers.js';
   }
 
   if (!customElements.get('lcars-house-information-card')) {
-    customElements.define('lcars-house-information-card', LcarsHouseInfoCard);
+    defineLcars('lcars-house-information-card', LcarsHouseInfoCard);
   }

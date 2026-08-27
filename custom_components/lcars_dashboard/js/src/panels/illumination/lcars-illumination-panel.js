@@ -13,7 +13,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { isLightingEntity, classifyDevice, classifyLightType } from '../../lcars-entity-utils.js';
-import { showMoreInfo, lcarsLog } from '../../lcars-helpers.js';
+import { showMoreInfo, lcarsLog, defineLcars } from '../../lcars-helpers.js';
 import { createDebouncer, createRateLimiter, clampValue } from '../../lcars-service-utils.js';
 import { sharedKeyframes, sharedReducedMotion } from '../../lcars-shared-animations.js';
 import { lcarsAudio } from '../../lcars-audio.js';
@@ -955,5 +955,5 @@ class LcarsIlluminationPanel extends LitElement {
   }
 }
 
-customElements.define('lcars-illumination-panel', LcarsIlluminationPanel);
+defineLcars('lcars-illumination-panel', LcarsIlluminationPanel);
 export { LcarsIlluminationPanel };

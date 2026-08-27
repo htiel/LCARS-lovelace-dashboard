@@ -8,7 +8,7 @@
  * v5.0.2 — Cetacean Ops Dashboard
  */
 import { LitElement, html, css } from 'lit-element';
-import { lcarsEventBus, showMoreInfo, lcarsLog } from './lcars-helpers.js';
+import { lcarsEventBus, showMoreInfo, lcarsLog, defineLcars } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { POOL_SPA_PLATFORMS } from './lcars-entity-utils.js';
 import { formatNumber } from './lcars-format-utils.js';
@@ -700,4 +700,4 @@ class LcarsCetaceanCard extends LitElement {
 }
 
 const ready = Promise.race([customElements.whenDefined('hui-masonry-view'), new Promise((r) => setTimeout(r, 5000))]);
-ready.then(() => { if (!customElements.get('cetacean-card')) { customElements.define('cetacean-card', LcarsCetaceanCard); } });
+ready.then(() => { if (!customElements.get('cetacean-card')) { defineLcars('cetacean-card', LcarsCetaceanCard); } });

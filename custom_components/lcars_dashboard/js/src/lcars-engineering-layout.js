@@ -9,7 +9,7 @@
  */
 import { LitElement, html, css } from 'lit-element';
 import { lcarsBaseStyles } from './lcars-styles.js';
-import { lcarsLog, lcarsEventBus } from './lcars-helpers.js';
+import { lcarsLog, lcarsEventBus, defineLcars } from './lcars-helpers.js';
 import { lcarsAudio } from './lcars-audio.js';
 import { ensureLcarsSidebarTop } from './lcars-sidebar-reorder.js';
 import lcarsPkg from '../package.json';
@@ -151,4 +151,4 @@ class LcarsEngineeringLayout extends LitElement {
 }
 
 const ready = Promise.race([customElements.whenDefined('hui-masonry-view'), new Promise((r) => setTimeout(r, 5000))]);
-ready.then(() => { if (!customElements.get('lcars-engineering-layout')) { customElements.define('lcars-engineering-layout', LcarsEngineeringLayout); } });
+ready.then(() => { if (!customElements.get('lcars-engineering-layout')) { defineLcars('lcars-engineering-layout', LcarsEngineeringLayout); } });

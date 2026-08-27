@@ -14,7 +14,7 @@
  * v5.0.0 — 5X-2.3
  */
 import { LitElement, html, css } from 'lit-element';
-import { lcarsEventBus, showMoreInfo } from './lcars-helpers.js';
+import { lcarsEventBus, showMoreInfo, defineLcars } from './lcars-helpers.js';
 import { lcarsBaseStyles } from './lcars-styles.js';
 import { getFloors, getAreasByFloor } from './lcars-hierarchy-utils.js';
 import { getAreaEntities } from './lcars-entity-query.js';
@@ -352,5 +352,5 @@ class LcarsEngineeringCard extends LitElement {
 }
 
 if (!customElements.get('engineering-card')) {
-  customElements.define('engineering-card', LcarsEngineeringCard);
+  defineLcars('engineering-card', LcarsEngineeringCard);
 }
